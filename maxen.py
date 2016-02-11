@@ -95,7 +95,7 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-5, ipynb=F
         nit += 1
    
     # Plot the prior
-    plt.figure()
+
     plotcur(logprior)
         
     # Minimize
@@ -121,11 +121,11 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-5, ipynb=F
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim
 
-def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=5e5, beta=1e6, gamma=7.5e5, entropy="gs", stop=1e-5, ipynb=False):
+def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, entropy="gs", stop=1e-5, ipynb=False):
     """Run maximum entropy on the bispectrum with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.
        Returns Image object.
-       Lagrange multipliers alpha and beta are not free parameters.
+       "Lagrange multipliers" are not free parameters.
     """
     
     print "Imaging I with bispectrum . . ." 
@@ -173,8 +173,8 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=5e5, beta=1e6, gamma=7.5e5, 
             s = -stv(im, Prior.xdim, Prior.ydim)
             
         c = alpha * (chisq_bi(im, A3, bi, sigs_2) - 1) # Use Katie's overcounting correction
-        t = beta * (np.sum(im) - flux)**2
-        cm = gamma * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))
+        t = gamma * (np.sum(im) - flux)**2
+        cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
         return  s + c + t + cm
         
     def objgrad(logim):
@@ -189,8 +189,8 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=5e5, beta=1e6, gamma=7.5e5, 
             s = -stvgrad(im, Prior.xdim, Prior.ydim)
         
         c = alpha * chisqgrad_bi(im, A3, bi, sigs_2) # Use Katie's overcounting correction
-        t = 2 * beta * (np.sum(im) - flux)
-        cm = gamma * (coord[:,0] + coord[:,1])
+        t = 2 * gamma * (np.sum(im) - flux)
+        cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
         return  (s + c + t + cm) * im
     
     # Plotting function for each iteration
@@ -203,7 +203,7 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=5e5, beta=1e6, gamma=7.5e5, 
         plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
         nit += 1
    
-    plt.figure()
+
     plotcur(logprior)
        
     # Minimize
@@ -229,13 +229,13 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=5e5, beta=1e6, gamma=7.5e5, 
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim 
     
-def maxen_p(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, prior=True, ipynb=False):
+def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, prior=True, ipynb=False):
     """Run maximum entropy on pol. amplitude and phase
        Obsdata is an Obsdata object,
        Prior is an Image object containing the Stokes I image and Q & U priors.
        Returns an Image object.
        Operates on m and chi images (NOT Q and U)
-       The lagrange multiplier alpha is not a free parameter
+       The lagrange multiplier beta is not a free parameter
     """
     
     print "Imaging Q, U with pol. amplitude and phase . . ."
@@ -286,7 +286,7 @@ def maxen_p(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-500, 
         elif polentropy == "tv":
             s = -stv_pol(mimage, iimage, Prior.xdim, Prior.ydim)
             
-        return s + alpha * (chisq_p(mimage, iimage, A, p, sigmap) - 1)
+        return s + beta * (chisq_p(mimage, iimage, A, p, sigmap) - 1)
    
     def objgrad(cvimage):
         mimage = mcv(cvimage)
@@ -297,7 +297,7 @@ def maxen_p(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-500, 
         elif polentropy == "tv":
             s = -stv_pol_grad(mimage, iimage, Prior.xdim, Prior.ydim)
             
-        return  (s + alpha * chisqgrad_p(mimage, iimage, A, p, sigmap)) * mchainlist(cvimage)
+        return  (s + beta * chisqgrad_p(mimage, iimage, A, p, sigmap)) * mchainlist(cvimage)
     
     # Plotting function for each iteration
     global nit
@@ -309,7 +309,7 @@ def maxen_p(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-500, 
         chi2p = chisq_p(m_step, iimage, A, p, sigmap)
         plot_m(iimage, m_step, Prior, nit, chi2, chi2p, pcut=pcut, nvec=nvec, ipynb=ipynb)
         nit += 1
-    plt.figure()
+
     plotcur(allprior)
     
     # Minimize
@@ -334,13 +334,13 @@ def maxen_p(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-500, 
     outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
     return outim
              
-def maxen_m(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-100, nvec=15, pcut=0.05, prior=True, ipynb=False):
+def maxen_m(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-100, nvec=15, pcut=0.05, prior=True, ipynb=False):
     """Run maximum entropy on pol. ratios. 
        Obsdata is an Obsdata object,
        Prior is an Image object containing the Stokes I image and Q & U priors.
        Returns an Image object.
        Operates on m and chi images (NOT Q and U)
-       The lagrange multiplier alpha is not a free parameter
+       The "lagrange multiplier" is not a free parameter
     """
     
     print "Imaging Q, U with pol. ratios . . ."
@@ -385,7 +385,7 @@ def maxen_m(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-100, 
         elif polentropy == "tv":
             s = -stv_pol(mimage, iimage, Prior.xdim, Prior.ydim)
             
-        return s + alpha * (chisq_m(mimage, iimage, A, m, sigmam) - 1)
+        return s + beta * (chisq_m(mimage, iimage, A, m, sigmam) - 1)
    
     def objgrad(cvimage):
         mimage = mcv(cvimage)
@@ -396,7 +396,7 @@ def maxen_m(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-100, 
         elif polentropy == "tv":
             s = -stv_pol_grad(mimage, iimage, Prior.xdim, Prior.ydim)
         
-        return  (s + alpha * chisqgrad_m(mimage, iimage, A, m, sigmam)) * mchainlist(cvimage)
+        return  (s + beta * chisqgrad_m(mimage, iimage, A, m, sigmam)) * mchainlist(cvimage)
     
     # Plotting function for each iteration
     global nit
@@ -408,7 +408,6 @@ def maxen_m(Obsdata, Prior, maxit=100, alpha=1e4, polentropy="hw", stop=1e-100, 
         chi2m = chisq_m(m_step, iimage, A, m, sigmam)
         plot_m(iimage, m_step, Prior, nit, chi2, chi2m, pcut=pcut, nvec=nvec, ipynb=ipynb)
         nit += 1
-    plt.figure()
     plotcur(allprior)
         
     # Minimize
@@ -504,7 +503,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
             
         c = alpha * (chisq_bi(iim, A3, bi, sigsb_2) - 1) # use Katie's overcounting correction
         t = gamma * (np.sum(iim) - flux)**2
-        cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))
+        cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))**2
         return  s + c + t + cm
         
     def objgrad_b(iim):
@@ -519,7 +518,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
             
         c = alpha * chisqgrad_bi(iim, A3, bi, sigsb_2) # use Katie's overcounting correction
         t = 2 * gamma * (np.sum(iim) - flux)
-        cm = delta * (coord[:,0] + coord[:,1])
+        cm = 2 * delta * (coord[:,0] + coord[:,1]) * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))
         return  (s + c + t + cm)
             
     # Define the total polarimetric objective function and gradient
@@ -567,7 +566,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
         chi2m = chisq_m(m_step, i_step, Apol, m, sigsm)
         plot_m(i_step, m_step, Prior, nit, chi2, chi2m, pcut=pcut, nvec=nvec, ipynb=ipynb)
         nit += 1
-    plt.figure()
+
     plotcur(allprior)
         
     # Minimize
@@ -594,164 +593,164 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
     return outim     
 
-def maxen_bs_both(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5e6, delta=1e5,
-               entropy="gs", polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, ipynb=False):
-    """Run maximum entropy SIMULTANEOUSLY on I and P bispectra 
-       Obsdata is an Obsdata object,
-       Prior is an Image object containing the Stokes I image and Q & U priors.
-       returns an Image object.
-       Lagrange multipliers are not free parameters
-    """
-    
-    print "Imaging I, Q, U with I and P bispectra simulataneously . . ."
-    
-    # Catch problem if uvrange < largest baseline
-    uvrange = 1/Prior.psize
-    maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
-    if uvrange < maxbl:
-        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
-    
-    # Set up priors
-    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
-    if len(Prior.qvec):
-        mprior = np.abs(Prior.qvec + 1j*Prior.uvec) / Prior.imvec
-        chiprior = np.arctan2(Prior.uvec, Prior.qvec) / 2.0
-        polprior = np.hstack((mprior, chiprior))
-    else:
-        mprior = 0.2 * (np.ones(len(iimage)) + 1e-10 * np.random.rand(len(iimage)))
-        chiprior = np.zeros(len(iimage)) + 1e-10 * np.random.rand(len(iimage))
-        polprior = np.hstack((mprior, chiprior))
-    
-    # Change variables and package full prior
-    allprior = np.hstack((np.log(nprior), mcv_r(polprior)))
-      
-    # Get data
-    # ! AC We're assuming p bispectra are on same triangles as I bispectra. May want to relax this assumption!
-    biarr = Obsdata.bispectra(vtype="vis", mode="all")
-    biarr_p = Obsdata.bispectra(vtype="pvis", mode="all")
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bi = biarr['bispec']
-    bi_p = biarr_p['bispec']
-    sigsb = biarr['sigmab']
-    sigsb_p = biarr_p['sigmab']
-    sigsb_2 = scaled_bisigs(Obsdata, vtype="vis") # Correction for overcounting DOF
-    sigsb_p_2 = scaled_bisigs(Obsdata, vtype="pvis")
-    
-    # Compute the Fourier matrices
-    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3)
-         )
-    
-    # Coordinate matrix for COM constraint
-    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim/2,-Prior.xdim/2,-1)]
-                                           for y in np.arange(Prior.ydim/2,-Prior.ydim/2,-1)])
-    coord = coord.reshape(Prior.xdim*Prior.ydim, 2)                                       
+#def maxen_bs_both(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5e6, delta=1e5,
+#               entropy="gs", polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, ipynb=False):
+#    """Run maximum entropy SIMULTANEOUSLY on I and P bispectra 
+#       Obsdata is an Obsdata object,
+#       Prior is an Image object containing the Stokes I image and Q & U priors.
+#       returns an Image object.
+#       Lagrange multipliers are not free parameters
+#    """
+#    
+#    print "Imaging I, Q, U with I and P bispectra simulataneously . . ."
+#    
+#    # Catch problem if uvrange < largest baseline
+#    uvrange = 1/Prior.psize
+#    maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
+#    if uvrange < maxbl:
+#        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+#    
+#    # Set up priors
+#    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
+#    if len(Prior.qvec):
+#        mprior = np.abs(Prior.qvec + 1j*Prior.uvec) / Prior.imvec
+#        chiprior = np.arctan2(Prior.uvec, Prior.qvec) / 2.0
+#        polprior = np.hstack((mprior, chiprior))
+#    else:
+#        mprior = 0.2 * (np.ones(len(iimage)) + 1e-10 * np.random.rand(len(iimage)))
+#        chiprior = np.zeros(len(iimage)) + 1e-10 * np.random.rand(len(iimage))
+#        polprior = np.hstack((mprior, chiprior))
+#    
+#    # Change variables and package full prior
+#    allprior = np.hstack((np.log(nprior), mcv_r(polprior)))
+#      
+#    # Get data
+#    # ! AC We're assuming p bispectra are on same triangles as I bispectra. May want to relax this assumption!
+#    biarr = Obsdata.bispectra(vtype="vis", mode="all")
+#    biarr_p = Obsdata.bispectra(vtype="pvis", mode="all")
+#    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
+#    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
+#    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
+#    bi = biarr['bispec']
+#    bi_p = biarr_p['bispec']
+#    sigsb = biarr['sigmab']
+#    sigsb_p = biarr_p['sigmab']
+#    sigsb_2 = scaled_bisigs(Obsdata, vtype="vis") # Correction for overcounting DOF
+#    sigsb_p_2 = scaled_bisigs(Obsdata, vtype="pvis")
+#    
+#    # Compute the Fourier matrices
+#    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
+#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
+#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3)
+#         )
+#    
+#    # Coordinate matrix for COM constraint
+#    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim/2,-Prior.xdim/2,-1)]
+#                                           for y in np.arange(Prior.ydim/2,-Prior.ydim/2,-1)])
+#    coord = coord.reshape(Prior.xdim*Prior.ydim, 2)                                       
 
-    # Define the bispectrum objective function and gradient
-    def objfunc_b(iim):
-        if entropy == "simple":
-            s = -ssimple(iim, nprior)
-        elif entropy == "l1":
-            s = -sl1(iim, nprior)
-        elif entropy == "gs":
-            s = -sgs(iim, nprior)
-        elif entropy == "tv":
-            s = -stv(iim, Prior.xdim, Prior.ydim)
-             
-        c = alpha * (chisq_bi(iim, A3, bi, sigsb_2) - 1)
-        t = gamma * (np.sum(iim) - flux)**2
-        cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))
-        return  s + c + t + cm
-        
-    def objgrad_b(iim):
-        if entropy == "simple":
-            s = -ssimplegrad(iim, nprior)
-        elif entropy == "l1":
-            s = -sl1grad(iim, nprior)
-        elif entropy == "gs":
-            s = -sgsgrad(iim, nprior) 
-        elif entropy == "tv":
-            s = -stvgrad(iim, Prior.xdim, Prior.ydim)
-            
-        c = alpha * chisqgrad_bi(iim, A3, bi, sigsb_2)
-        t = 2 * gamma * (np.sum(iim) - flux)
-        cm = delta * (coord[:,0] + coord[:,1])
-        return  (s + c + t + cm)
-            
-    # Define the total polarimetric bispectrum objective function and gradient
-    def objfunc(allimage):
-        iim = np.exp(allimage[0:len(nprior)])
-        mim = mcv(allimage[len(nprior):])
-        objb = objfunc_b(iim)
-        
-        if polentropy == "hw":
-            s = -shw(mim, iim)
-        elif polentropy == "logm":
-            s = -sm(mim, iim)
-        elif polentropy == "tv":
-            s = -stv_pol(mim, iim, Prior.xdim, Prior.ydim)    
-            
-        c = beta * (chisq_pbi(mim, iim, A3, bi_p, sigsb_p_2) - 1)
-        return  s + c + objb
-        
-    def objgrad(allimage):
-        iim = np.exp(allimage[0:len(nprior)])
-        mim = mcv(allimage[len(nprior):])
-        gradb = (objgrad_b(iim) + beta * chisqgrad_pbi_i(mim, iim, A3, bi_p, sigsb_p_2)) * iim
-        
-        if polentropy == "hw":
-            s = -shwgrad(mim, iim)
-        elif polentropy == "logm":
-            s = -smgrad(mim, iim)
-        elif polentropy == "tv":
-            s = -stv_pol_grad(mim, iim, Prior.xdim, Prior.ydim)                
-            gradb = gradb - stv_pol_grad_i(mim, iim, Prior.xdim, Prior.ydim) * iim
-              
-        c = beta * chisqgrad_pbi(mim, iim, A3, bi_p, sigsb_p_2)
-        gradm = (s + c) * mchainlist(allimage[len(nprior):])
-        
-        return  np.hstack((gradb, gradm))
-           
-    # Plotting function for each iteration
-    global nit
-    nit = 0
-    def plotcur(all_step):
-        global nit
-        i_step = np.exp(all_step[0:len(nprior)])
-        m_step = mcv(all_step[len(nprior):])
-        chi2 = chisq_bi(i_step, A3, bi, sigsb)
-        chi2m = chisq_pbi(m_step, i_step, A3, bi_p, sigsb_p)
-        plot_m(i_step, m_step, Prior, nit, chi2, chi2m, pcut=pcut, nvec=nvec, ipynb=ipynb)
-        nit += 1
-    plt.figure()
-    plotcur(allprior)
-        
-    # Minimize
-    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
-    tstart = time.time()
-    res = opt.minimize(objfunc, allprior, method='L-BFGS-B', jac=objgrad, 
-                       options=optdict, callback=plotcur)
-    tstop = time.time()
-    outi = np.exp(res.x[0: len(nprior)])
-    outp = mcv(res.x[len(nprior):])
-    
-    # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print "Chi^2_b: %f" % chisq_bi(outi, A3, bi, sigsb)
-    print "Chi^2_m: %f" % chisq_pbi(outp, outi, A3, bi_p, sigsb_p)
-    print res.message
-    
-    # Return Image object
-    qimfinal = qimage(outi, outp[0:len(outi)], outp[len(outi):])
-    uimfinal = uimage(outi, outp[0:len(outi)], outp[len(outi):])
-    outim = vb.Image(outi.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, 
-                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) 
-    outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
-    return outim       
+#    # Define the bispectrum objective function and gradient
+#    def objfunc_b(iim):
+#        if entropy == "simple":
+#            s = -ssimple(iim, nprior)
+#        elif entropy == "l1":
+#            s = -sl1(iim, nprior)
+#        elif entropy == "gs":
+#            s = -sgs(iim, nprior)
+#        elif entropy == "tv":
+#            s = -stv(iim, Prior.xdim, Prior.ydim)
+#             
+#        c = alpha * (chisq_bi(iim, A3, bi, sigsb_2) - 1)
+#        t = gamma * (np.sum(iim) - flux)**2
+#        cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))**2
+#        return  s + c + t + cm
+#        
+#    def objgrad_b(iim):
+#        if entropy == "simple":
+#            s = -ssimplegrad(iim, nprior)
+#        elif entropy == "l1":
+#            s = -sl1grad(iim, nprior)
+#        elif entropy == "gs":
+#            s = -sgsgrad(iim, nprior) 
+#        elif entropy == "tv":
+#            s = -stvgrad(iim, Prior.xdim, Prior.ydim)
+#            
+#        c = alpha * chisqgrad_bi(iim, A3, bi, sigsb_2)
+#        t = 2 * gamma * (np.sum(iim) - flux)
+#        cm = 2 * delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1])) * (coord[:,0] + coord[:,1])
+#        return  (s + c + t + cm)
+#            
+#    # Define the total polarimetric bispectrum objective function and gradient
+#    def objfunc(allimage):
+#        iim = np.exp(allimage[0:len(nprior)])
+#        mim = mcv(allimage[len(nprior):])
+#        objb = objfunc_b(iim)
+#        
+#        if polentropy == "hw":
+#            s = -shw(mim, iim)
+#        elif polentropy == "logm":
+#            s = -sm(mim, iim)
+#        elif polentropy == "tv":
+#            s = -stv_pol(mim, iim, Prior.xdim, Prior.ydim)    
+#            
+#        c = beta * (chisq_pbi(mim, iim, A3, bi_p, sigsb_p_2) - 1)
+#        return  s + c + objb
+#        
+#    def objgrad(allimage):
+#        iim = np.exp(allimage[0:len(nprior)])
+#        mim = mcv(allimage[len(nprior):])
+#        gradb = (objgrad_b(iim) + beta * chisqgrad_pbi_i(mim, iim, A3, bi_p, sigsb_p_2)) * iim
+#        
+#        if polentropy == "hw":
+#            s = -shwgrad(mim, iim)
+#        elif polentropy == "logm":
+#            s = -smgrad(mim, iim)
+#        elif polentropy == "tv":
+#            s = -stv_pol_grad(mim, iim, Prior.xdim, Prior.ydim)                
+#            gradb = gradb - stv_pol_grad_i(mim, iim, Prior.xdim, Prior.ydim) * iim
+#              
+#        c = beta * chisqgrad_pbi(mim, iim, A3, bi_p, sigsb_p_2)
+#        gradm = (s + c) * mchainlist(allimage[len(nprior):])
+#        
+#        return  np.hstack((gradb, gradm))
+#           
+#    # Plotting function for each iteration
+#    global nit
+#    nit = 0
+#    def plotcur(all_step):
+#        global nit
+#        i_step = np.exp(all_step[0:len(nprior)])
+#        m_step = mcv(all_step[len(nprior):])
+#        chi2 = chisq_bi(i_step, A3, bi, sigsb)
+#        chi2m = chisq_pbi(m_step, i_step, A3, bi_p, sigsb_p)
+#        plot_m(i_step, m_step, Prior, nit, chi2, chi2m, pcut=pcut, nvec=nvec, ipynb=ipynb)
+#        nit += 1
+
+#    plotcur(allprior)
+#        
+#    # Minimize
+#    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
+#    tstart = time.time()
+#    res = opt.minimize(objfunc, allprior, method='L-BFGS-B', jac=objgrad, 
+#                       options=optdict, callback=plotcur)
+#    tstop = time.time()
+#    outi = np.exp(res.x[0: len(nprior)])
+#    outp = mcv(res.x[len(nprior):])
+#    
+#    # Print stats
+#    print "time: %f s" % (tstop - tstart)
+#    print "J: %f" % res.fun
+#    print "Chi^2_b: %f" % chisq_bi(outi, A3, bi, sigsb)
+#    print "Chi^2_m: %f" % chisq_pbi(outp, outi, A3, bi_p, sigsb_p)
+#    print res.message
+#    
+#    # Return Image object
+#    qimfinal = qimage(outi, outp[0:len(outi)], outp[len(outi):])
+#    uimfinal = uimage(outi, outp[0:len(outi)], outp[len(outi):])
+#    outim = vb.Image(outi.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, 
+#                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) 
+#    outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
+#    return outim       
            
 ##################################################################################################
 # Chi-squared and Gradient Functions
