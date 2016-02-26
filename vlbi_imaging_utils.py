@@ -1,11 +1,13 @@
 # vlbi_imaging_utils.py
-# Andrew Chael, 01/12/16
+# Andrew Chael, 02/24/16
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
+# 02/24 Added dirty beam, dirty image, and fitting for the clean beam
+# 01/20 Added gain and phase errors
 
 # TODO: 
-#       Add ability to load different scattering kernel
 #       Fix case where there are no data points
 #       Screen for 0 errors 
+#       Add amplitude debiasing
 #       Add closure amplitude debiasing
 #       Closure amplitude combinations
 #       Make forming a data table clearer
@@ -17,6 +19,8 @@ import string
 import numpy as np
 import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
+import scipy.signal
+import scipy.optimize
 import itertools as it
 import astropy.io.fits as fits
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
@@ -36,7 +40,7 @@ ELEV_HIGH = 85.0
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas
 FWHM_MIN = 0.64 * 1000
-POS_ANG = -78 * DEGREE
+POS_ANG = -78 # in degree
 
 # Observation recarray datatypes
 DTPOL = [('time','f8'),('tint','f8'),
@@ -114,15 +118,56 @@ class Image(object):
         self.qvec = qimage.flatten()
         self.uvec = uimage.flatten()
     
+    def copy(self):
+        """Copy the image object"""
+        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.rf, self.source, self.mjd)
+        newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
+        return newim
+        
     def flip_chi(self):
         """Change between different conventions for measuring position angle (East of North vs up from x axis)
         """
         self.qvec = - self.qvec
         return
-        
-    def observe_same(self, obs, ampcal="True", phasecal="True", sgrscat=False):
+
+#    def blur_gauss(self, beamparams):
+#        """Blur image with a Gaussian beam defined by beamparams
+#           beamparams is [FWHMmaj, FWHMmin, theta], all in radian
+#        """
+#        
+#        # Make the gaussian array
+#        xfov = self.xdim * self.psize
+#        yfov = self.ydim * self.psize
+#        sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
+#        sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.))) 
+#        cth = np.cos(beamparams[2])
+#        sth = np.sin(beamparams[2])
+#        gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
+#                                  for i in np.arange(xfov/2., -xfov/2., -self.psize)] 
+#                                  for j in np.arange(yfov/2., -yfov/2., -self.psize)])
+#        
+#        # !AC think more carefully about the different cases here
+#        gauss = gauss[0:self.ydim, 0:self.xdim]
+#        gauss = gauss / np.sum(gauss) # normalize to 1
+#        
+#        # Convolve
+#        im = (self.imvec).reshape(self.ydim, self.xdim)
+#        qim = (self.qvec).reshape(self.ydim, self.xdim)
+#        uim = (self.uvec).reshape(self.ydim, self.xdim)
+#        
+#        out = scipy.signal.fftconvolve(gauss, im, mode='same')
+#        outq = scipy.signal.fftconvolve(gauss, qim, mode='same')
+#        outu = scipy.signal.fftconvolve(gauss, uim, mode='same')
+#                        
+#        self.imvec = out.flatten()
+#        self.qvec = outq.flatten()
+#        self.uvec = outu.flatten()
+#        return
+           
+    def observe_same(self, obs, tau=0.1, gainp=0.1, ampcal="True", phasecal="True", sgrscat=False):
         """Observe the image on the same baselines with the same noise as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
+           tau is the predicted atmospheric opacity, gainp is the percent error in gain and tau
         """
         
         # Check for agreement in coordinates and frequency 
@@ -159,26 +204,27 @@ class Image(object):
                 qvis[i] *= ker
                 uvis[i] *= ker
         
+        # !!AC make conjugate baselines have the same noise
         # !AC Check the order of operations here
         # Add gain and opacity uncertanities to the RMS noise
         if not ampcal:
             # amplitude gain (forward gain on power) = 1.0 + 10% fixed + 10% time-dependent
-            gain1 = np.array([1.0 + 0.1 * hashrandn(sites[i,0], 'gain') + 0.1 * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))])
-            gain2 = np.array([1.0 + 0.1 * hashrandn(sites[i,1], 'gain') + 0.1 * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))])
+            gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
+            gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))
            
             # opacity = 0.1 + 10% time-dependent
-            tau1 = np.array([0.1 + 0.01 * hashrandn(sites[i,0], 'tau', time[i]) for i in xrange(len(time))])
-            tau2 = np.array([0.1 + 0.01 * hashrandn(sites[i,1], 'tau', time[i]) for i in xrange(len(time))])
+            tau1 = np.array([tau + tau * gainp * hashrandn(sites[i,0], 'tau', time[i]) for i in xrange(len(time))])
+            tau2 = np.array([tau + tau * gainp * hashrandn(sites[i,1], 'tau', time[i]) for i in xrange(len(time))])
             
             # Correct noise RMS for gain variation and opacity
             sigma_true = sigma_true / np.sqrt(gain1 * gain2)
             sigma_true = sigma_true * np.sqrt(np.exp(tau1/np.sin(elevs[:,0]*DEGREE) + tau2/np.sin(elevs[:,1]*DEGREE))) 
             
             # Estimated noise using 10% gain and 0.1 opacity
-            sigma_est = sigma_est * np.sqrt(np.exp(0.1/np.sin(elevs[:,0]*DEGREE) + 0.1/np.sin(elevs[:,1]*DEGREE)))
+            sigma_est = sigma_est * np.sqrt(np.exp(tau/np.sin(elevs[:,0]*DEGREE) + 0.1/np.sin(elevs[:,1]*DEGREE)))
             
         # Add the noise the gain error
-        vis  = (vis + cerror(sigma_true)) * (sigma_est/sigma_true)
+        vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
         qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
         uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
 
@@ -198,9 +244,9 @@ class Image(object):
         obsdata['sigma'] = sigma_est
         
         # Return observation object
-        return Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata)
+        return Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata, source=self.source, mjd=self.mjd, ampcal=ampcal, phasecal=phasecal)
     
-    def observe(self, array, tint, tadv, tstart, tstop, bw, ampcal="True", phasecal="True", sgrscat=False):
+    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=0.1, gainp=0.1, ampcal="True", phasecal="True", sgrscat=False):
         """Observe the image with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in GMST.
            tint and tadv should be seconds.
@@ -211,7 +257,7 @@ class Image(object):
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop)
         
         # Observe
-        obs = self.observe_same(obs, ampcal=ampcal, phasecal=phasecal, sgrscat=sgrscat)    
+        obs = self.observe_same(obs, ampcal=ampcal, phasecal=phasecal, sgrscat=sgrscat, tau=0.1, gainp=0.1)    
         return obs
         
     def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotvec=True):
@@ -387,7 +433,7 @@ class Array(object):
             
     def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop):
         """Generate u,v points and baseline errors for the array.
-           Return an Observation object.
+           Return an Observation object with no visibilities.
            tstart and tstop are hrs in GMST
            tint and tadv are seconds.
            rf and bw are Hz
@@ -414,6 +460,7 @@ class Array(object):
        
         # Generate uv points at all times
         # !AC can this be made faster? 
+
         scopes = sorted(self.tdict.keys())
         outlist = []
         
@@ -434,11 +481,11 @@ class Array(object):
                                   np.dot(earthrot(self.tdict[i1][0]-self.tdict[i2][0],theta)/l, projU), # U (lambda)
                                   np.dot(earthrot(self.tdict[i1][0]-self.tdict[i2][0],theta)/l, projV), # V (lambda)
                                   0.0, 0.0, 0.0, # Stokes I, Q, U visibilities (Jy)
-                                  blnoise(self.tdict[i1][1],self.tdict[i2][1], tint, bw) # Sigma (Jy)
+                                  blnoise(self.tdict[i1][1], self.tdict[i2][1], tint, bw) # Sigma (Jy)
                                 ),dtype=DTPOL
                                 ))
 
-        obs = Obsdata(ra, dec, rf, bw, np.array(outlist))      
+        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), source=self.src, mjd=self.mjd)      
         return obs
     
 #    def plotbls(self):
@@ -750,7 +797,128 @@ class Obsdata(object):
                 outlist = np.array(cas)
         
         return outlist
+    
+    def dirtybeam(self, npix, fov):
+        """Return a square Image object of the observation dirty beam
+           fov is in radian
+        """
         
+        # !AC this is a slow way of doing this
+        # !AC add different types of weighting
+        pdim = fov/npix
+        u = self.unpack('u')['u']
+        v = self.unpack('v')['v']
+
+        im = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
+                  for i in np.arange(fov/2., -fov/2., -pdim)] 
+                  for j in np.arange(fov/2., -fov/2., -pdim)])    
+        
+        # !AC think more carefully about the different cases here
+        im = im[0:npix, 0:npix]
+        
+        # !AC is this normalization right?
+        im = im/np.sum(im)
+        
+        src = self.source + "_DB"
+        return Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd)
+    
+    def dirtyimage(self, npix, fov):
+       
+
+        """Return a square Image object of the observation dirty image
+           fov is in radian
+        """
+        # !AC this is a very slow way of doing this
+        # !AC add different types of weighting
+        # !AC is it possible for Q^2 + U^2 > I^2 in the dirty image?
+        
+        pdim = fov/npix
+        u = self.unpack('u')['u']
+        v = self.unpack('v')['v']
+        vis = self.unpack('vis')['vis']
+        qvis = self.unpack('qvis')['qvis']
+        uvis = self.unpack('uvis')['uvis']
+        
+        # !AC here we are enforcing that the visibilities are conjugate-symmetric
+        # !AC Which they aren't currently because of noise?
+        mask = (u >= 0)
+        u = u[mask]
+        v = v[mask]
+        vis = vis[mask]
+        qvis = qvis[mask]
+        uvis = uvis[mask]
+        
+        im  = np.array([[np.mean(np.real(vis)*np.cos(2*np.pi*(i*u + j*v)) - 
+                                 np.imag(vis)*np.sin(2*np.pi*(i*u + j*v)))
+                  for i in np.arange(fov/2., -fov/2., -pdim)] 
+                  for j in np.arange(fov/2., -fov/2., -pdim)])    
+        qim = np.array([[np.mean(np.real(qvis)*np.cos(2*np.pi*(i*u + j*v)) - 
+                                 np.imag(qvis)*np.sin(2*np.pi*(i*u + j*v)))
+                  for i in np.arange(fov/2., -fov/2., -pdim)] 
+                  for j in np.arange(fov/2., -fov/2., -pdim)])     
+        uim = np.array([[np.mean(np.real(uvis)*np.cos(2*np.pi*(i*u + j*v)) - 
+                                 np.imag(uvis)*np.sin(2*np.pi*(i*u + j*v)))
+                  for i in np.arange(fov/2., -fov/2., -pdim)] 
+                  for j in np.arange(fov/2., -fov/2., -pdim)])    
+                                           
+        dim = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
+          for i in np.arange(fov/2., -fov/2., -pdim)] 
+          for j in np.arange(fov/2., -fov/2., -pdim)])   
+           
+        # !AC is this the correct normalization??
+        im = im/np.sum(dim)
+        qim = qim/np.sum(dim)
+        uim = uim/np.sum(dim)
+ 
+        # !AC think more carefully about the different cases here       
+        im = im[0:npix, 0:npix]
+        qim = qim[0:npix, 0:npix]
+        uim = uim[0:npix, 0:npix]   
+        
+        out = Image(im, pdim, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd)
+        out.add_qu(qim, uim)
+        return out
+    
+    def fit_beam(self):
+        """Fit a gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).
+           All params are in radian and theta is measured E of N.
+           Fit the quadratic expansion of the Gaussian (normalized to 1 at the peak) 
+           to the expansion of dirty beam with the same normalization
+        """    
+        # !AC include other weightings
+            
+        # Define the sum of squares function that compares the quadratic expansion of the dirty image
+        # with the quadratic expansion of an elliptical gaussian
+        def fit_chisq(beamparams, db_coeff):
+            
+            (fwhm_maj2, fwhm_min2, theta) = beamparams
+            a = 4 * np.log(2) * (np.cos(theta)**2/fwhm_min2 + np.sin(theta)**2/fwhm_maj2)
+            b = 4 * np.log(2) * (np.cos(theta)**2/fwhm_maj2 + np.sin(theta)**2/fwhm_min2)
+            c = 8 * np.log(2) * np.cos(theta) * np.sin(theta) * (1/fwhm_maj2 - 1/fwhm_min2)
+            gauss_coeff = np.array((a,b,c))
+            
+            chisq = np.sum((np.array(db_coeff) - gauss_coeff)**2)
+            
+            # Enforce fwhm_maj > fwhm_min and theta in reasonable range
+            if fwhm_maj2 < fwhm_min2:
+                chisq += 100 
+            return chisq
+        
+        # These are the coefficients (a,b,c) of a quadratic expansion of the dirty beam
+        # For a point (x,y) in the image plane, the dirty beam expansion is 1-ax^2-by^2-cxy
+        u = self.unpack('u')['u']
+        v = self.unpack('v')['v']
+        n = float(len(u))
+        abc = (2.*np.pi**2/n) * np.array([np.sum(u**2), np.sum(v**2), 2*np.sum(u*v)])                
+        abc = 1e-20 * abc # Decrease size of coefficients
+        
+        # Fit the beam 
+        guess = [(50)**2, (50)**2, 0.0]
+        params = scipy.optimize.minimize(fit_chisq, guess, args=(abc,), method='Powell')
+        out = np.array((1e-10*np.sqrt(params.x[0]), 1e-10*np.sqrt(params.x[1]), params.x[2]))
+
+        return out
+            
     def plotall(self, field1, field2, rangex=False, rangey=False):
         """Make a scatter plot of 2 real observation fields with errors"""
         
@@ -1371,6 +1539,64 @@ def load_im_fits(filename):
     return outim
     
 ##################################################################################################
+# Image domain blurring Functions
+##################################################################################################
+def blur_gauss(Image, beamparams, frac, frac_pol=0):
+    """Blur image with a Gaussian beam defined by beamparams
+       beamparams is [FWHMmaj, FWHMmin, theta], all in radian
+    """
+    
+    im = (Image.imvec).reshape(Image.ydim, Image.xdim)
+    if len(Image.qvec):
+        qim = (Image.qvec).reshape(Image.ydim, Image.xdim)
+        uim = (Image.uvec).reshape(Image.ydim, Image.xdim)
+    xfov = Image.xdim * Image.psize
+    yfov = Image.ydim * Image.psize
+    
+    if beamparams:
+        sigma_maj = frac * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
+        sigma_min = frac * beamparams[1] / (2. * np.sqrt(2. * np.log(2.))) 
+        cth = np.cos(beamparams[2])
+        sth = np.sin(beamparams[2])
+        gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
+                                  for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
+                                  for j in np.arange(yfov/2., -yfov/2., -Image.psize)])
+        
+        # !AC think more carefully about the different cases here
+        gauss = gauss[0:Image.ydim, 0:Image.xdim]
+        gauss = gauss / np.sum(gauss) # normalize to 1
+        
+        # Convolve
+        im = scipy.signal.fftconvolve(gauss, im, mode='same')
+
+
+    if frac_pol:
+        if not len(Image.qvec):
+            raise Exception("There is no polarized image!")
+                
+        sigma_maj = frac_pol * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
+        sigma_min = frac_pol * beamparams[1] / (2. * np.sqrt(2. * np.log(2.))) 
+        cth = np.cos(beamparams[2])
+        sth = np.sin(beamparams[2])
+        gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
+                                  for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
+                                  for j in np.arange(yfov/2., -yfov/2., -Image.psize)])
+        
+        # !AC think more carefully about the different cases here
+        gauss = gauss[0:self.ydim, 0:self.xdim]
+        gauss = gauss / np.sum(gauss) # normalize to 1        
+        
+        # Convolve
+        qim = scipy.signal.fftconvolve(gauss, qim, mode='same')
+        uim = scipy.signal.fftconvolve(gauss, uim, mode='same')
+                                  
+    
+    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)                        
+    if len(Image.qvec):
+        out.add_qu(qim, uim)
+    return out  
+        
+##################################################################################################
 # Scattering Functions
 ##################################################################################################
 def deblur(obs):
@@ -1404,13 +1630,13 @@ def deblur(obs):
 def sgra_kernel_uv(rf, u, v):
     """Return the value of the Sgr A* scattering kernel at a given u,v pt (in lambda), 
        at a given frequency rf (in Hz).
-       Values form Bower et al.
+       Values from Bower et al.
     """
     
     lcm = (C/rf) * 100 # in cm
     sigma_maj = FWHM_MAJ * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     sigma_min = FWHM_MIN * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
-    theta = POS_ANG
+    theta = POS_ANG * DEGREE
     
     
     # Covarience matrix
@@ -1425,7 +1651,19 @@ def sgra_kernel_uv(rf, u, v):
     g = np.exp(-2 * np.pi**2 * x2)
     
     return g
-                                 
+
+def sgra_kernel_params(rf):
+    """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse at a given frequency
+       Values from Bower et al.
+    """
+    
+    lcm = (C/rf) * 100 # in cm
+    fwhm_maj_rf = FWHM_MAJ * (lcm**2)  * RADPERUAS
+    fwhm_min_rf = FWHM_MIN * (lcm**2)  * RADPERUAS
+    theta = POS_ANG * DEGREE
+    
+    return np.array([fwhm_maj_rf, fwhm_min_rf, theta])
+                                     
 ##################################################################################################
 # Other Functions
 ##################################################################################################

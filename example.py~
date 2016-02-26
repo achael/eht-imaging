@@ -18,30 +18,18 @@ im.display()
 # tstart_hr is the GMST time of the start of the observation and tstop_hr is the GMST time of the end
 # bw_hz is the  bandwidth in Hz
 # sgrscat=True blurs the visibilities with the Sgr A* scattering kernel for the appropriate image frequency
-# ampcal and phasecal determine if gain variations and phase errors are included
 tint_sec = 60
 tadv_sec = 600
 tstart_hr = 0
 tstop_hr = 24
 bw_hz = 4e9
-obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=True, ampcal=False, phasecal=False)
+obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=True)
 
 # These are some simple plots you can check
 obs.plotall('u','v') # uv coverage
 obs.plotall('uvdist','amp') # amplitude with baseline distance'
 obs.plot_bl('SMA','ALMA','phase') # visibility phase on a baseline over time
 obs.plot_cphase('SMA', 'SMT', 'ALMA') # closure phase on a triangle over time
-
-# You can check out the dirty image and dirty beam
-npix = 64
-fov = 1.5*im.xdim * im.psize # slightly enlarge the field of view
-dim = obs.dirtyimage(npix, fov)
-dbeam = obs.dirtybeam(npix, fov)
-dim.display()
-dbeam.display()
-
-# Fit for the clean beam parameters (fwhm_maj, fwhm_min, theta)
-beamparams = obs.fit_beam()
 
 # You can deblur the visibilities by dividing by the (hardcoded,frequency-dependent) scattering kernel
 obs = vb.deblur(obs)
@@ -58,21 +46,16 @@ zbl = np.sum(im.imvec) # total flux
 prior_fwhm = 100*vb.RADPERUAS # Gaussian size in microarcssec
 emptyprior = mx.make_square_prior(obs, npix, fov)
 flatprior = mx.add_flat(emptyprior, zbl)
-gaussprior = mx.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0))
+gaussprior = mx.add_gauss_circ(emptyprior, zbl, prior_fwhm, 0, 0)
 
-# Image total flux with the bispectrum
-flux = np.sum(im.imvec)
-out = mx.maxen_bs(obs, gaussprior, flux, maxit=50, alpha=50)
- 
-# Blur the image with a circular beam and image again to help convergance
-out = mx.blur_circ(out, res/2)
-out = mx.maxen_bs(obs, out, flux, maxit=250, alpha=50)
-   
+# Image total flux with amplitudes and phases
+out = mx.maxen(obs, gaussprior, maxit=250)
+    
 # Image Polarization
-out = mx.maxen_m(obs, out, alpha=100, maxit=250, polentropy="hw")
+out = mx.maxen_m(obs, out, alpha=1e3, maxit=1000, polentropy="hw")
 
-# Blur the final image with 1/2 the clean beam
-outblur = vb.blur_gauss(out, beamparams, 0.5, 0.5)
+# Blur the image with a circular beam
+outblur = mx.blur_circ(out, res/3, res/2)
 
 # Save the images
 outname = "test"

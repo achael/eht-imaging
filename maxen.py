@@ -9,6 +9,7 @@ import time
 import numpy as np
 import scipy.optimize as opt
 import scipy.ndimage.filters as filt
+import scipy.signal
 import matplotlib.pyplot as plt
 import itertools as it
 import vlbi_imaging_utils as vb
@@ -1077,7 +1078,7 @@ def stv_pol_grad_i(polimage, iimage, nx, ny):
 ##################################################################################################
 
 def make_square_prior(obs, npix, fov):
-    """makes an empty square flat prior image
+    """Make an empty prior image
        obs is an observation object
        fov is in radians
     """ 
@@ -1087,31 +1088,60 @@ def make_square_prior(obs, npix, fov):
 
 # The following functions will ADD the appropriate shape to an Image object
 def add_flat(Image, flux):
-    """adds flat background to an image""" 
+    """Add flat background to an image""" 
     
     im = (Image.imvec + (flux/float(len(Image.imvec))) * np.ones(len(Image.imvec))).reshape(Image.ydim,Image.xdim)
     out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd) 
     return out
-          
-def add_gauss_circ(Image, flux, fwhm, x, y):
-    """adds a circular gaussian to an image at coordinate x,y
-       fwhm, x, y are in radians
+
+#def add_gauss_circ(Image, flux, fwhm, x, y):
+#    """Add a circular gaussian to an image at coordinate x,y
+#       fwhm, x, y are in radians
+#    """ 
+#    
+#    xfov = Image.xdim * Image.psize
+#    yfov = Image.ydim * Image.psize
+#    sigma = fwhm / (2. * np.sqrt(2. * np.log(2.)))
+#    gauss = np.array([[np.exp(-((i-x)**2 + (j-y)**2)/(2.*sigma**2))
+#                              for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
+#                              for j in np.arange(yfov/2., -yfov/2., -Image.psize)])
+#    
+#    # !AC think more carefully about the different cases here
+#    gauss = gauss[0:Image.ydim, 0:Image.xdim]
+#    
+#    im = Image.imvec.reshape(Image.ydim, Image.xdim) + (gauss * flux/np.sum(gauss))
+#    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
+#    return out
+
+def add_gauss(Image, flux, beamparams):
+    """Add a gaussian to an image
+       beamparams is [fwhm_maj, fwhm_min, theta, x, y], all in rad
+       theta is the orientation angle measured E of N
     """ 
     
     xfov = Image.xdim * Image.psize
-    yfox = Image.ydim * Image.psize
-    sigma = fwhm / (2. * np.sqrt(2. * np.log(2.)))
-    sigmap = sigma / Image.psize
-    gauss = np.array([[np.exp(-((i-x)**2 + (j-y)**2)/(2.*sigma**2))
-                              for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
-                              for j in np.arange(xfov/2., -xfov/2., -Image.psize)])
+    yfov = Image.ydim * Image.psize
+    sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
+    sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.)))
+    cth = np.cos(beamparams[2])
+    sth = np.sin(beamparams[2])
+    x = beamparams[3]
+    y = beamparams[4]
     
-    im = Image.imvec.reshape(Image.ydim, Image.xdim) + gauss * flux/np.sum(gauss)
+    gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
+                      for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
+                      for j in np.arange(yfov/2., -yfov/2., -Image.psize)])    
+  
+    # !AC think more carefully about the different cases here
+    gauss = gauss[0:Image.ydim, 0:Image.xdim]
+    
+    im = Image.imvec.reshape(Image.ydim, Image.xdim) + (gauss * flux/np.sum(gauss))
     out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
     return out
 
+
 def add_const_m(Image, mag, angle):
-    """Adds constant fractional polarization to image
+    """Add a constant fractional polarization to image
        angle is in radians""" 
     
     if not (0 < mag < 1):
@@ -1124,7 +1154,7 @@ def add_const_m(Image, mag, angle):
     return out
 
 def blur_circ(Image, fwhm_i, fwhm_pol=0):
-    """Applies a circular gaussian filter to the I image
+    """Apply a circular gaussian filter to the I image
        fwhm is in radians
     """ 
     
@@ -1143,6 +1173,8 @@ def blur_circ(Image, fwhm_i, fwhm_pol=0):
         out.add_qu(imq, imu)
         
     return out
+
+
     
 ##################################################################################################
 # Plotting Functions
