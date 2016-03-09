@@ -40,10 +40,13 @@ dbeam = obs.dirtybeam(npix, fov)
 dim.display()
 dbeam.display()
 
-# Fit for the clean beam parameters (fwhm_maj, fwhm_min, theta)
+# Fit for the clean beam parameters (fwhm_maj, fwhm_min, theta) in radians
 beamparams = obs.fit_beam()
+res = 1 / np.max(obs.unpack('uvdist')['uvdist'])
+print beamparams 
+print res
 
-# You can deblur the visibilities by dividing by the (hardcoded,frequency-dependent) scattering kernel
+# You can deblur the visibilities by dividing by the (hardcoded, frequency-dependent) scattering kernel
 obs = vb.deblur(obs)
 
 # Export the visibility data to uvfits/text
@@ -51,14 +54,13 @@ obs.save_txt('obs.txt') # exports a text file with the visibilities
 obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 
 # Generate an image prior
-res = 1 / np.max(obs.unpack('uvdist')['uvdist'])
 npix = 64
 fov = 1.5*im.xdim * im.psize # slightly enlarge the field of view
 zbl = np.sum(im.imvec) # total flux
 prior_fwhm = 100*vb.RADPERUAS # Gaussian size in microarcssec
 emptyprior = mx.make_square_prior(obs, npix, fov)
 flatprior = mx.add_flat(emptyprior, zbl)
-gaussprior = mx.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0))
+gaussprior = mx.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with the bispectrum
 flux = np.sum(im.imvec)
@@ -66,7 +68,7 @@ out = mx.maxen_bs(obs, gaussprior, flux, maxit=50, alpha=50)
  
 # Blur the image with a circular beam and image again to help convergance
 out = mx.blur_circ(out, res/2)
-out = mx.maxen_bs(obs, out, flux, maxit=250, alpha=50)
+out = mx.maxen_bs(obs, out, flux, maxit=250, alpha=70)
    
 # Image Polarization
 out = mx.maxen_m(obs, out, alpha=100, maxit=250, polentropy="hw")
