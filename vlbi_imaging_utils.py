@@ -40,7 +40,7 @@ ELEV_HIGH = 85.0
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas
 FWHM_MIN = 0.64 * 1000
-POS_ANG = -78 # in degree
+POS_ANG = 78 # in degree, E of N
 
 # Observation recarray datatypes
 DTPOL = [('time','f8'),('tint','f8'),
@@ -1507,29 +1507,29 @@ def load_im_fits(filename):
 ##################################################################################################
 # Image domain blurring Functions
 ##################################################################################################
-def blur_gauss(Image, beamparams, frac, frac_pol=0):
+def blur_gauss(image, beamparams, frac, frac_pol=0):
     """Blur image with a Gaussian beam defined by beamparams
        beamparams is [FWHMmaj, FWHMmin, theta], all in radian
     """
     
-    im = (Image.imvec).reshape(Image.ydim, Image.xdim)
-    if len(Image.qvec):
-        qim = (Image.qvec).reshape(Image.ydim, Image.xdim)
-        uim = (Image.uvec).reshape(Image.ydim, Image.xdim)
-    xfov = Image.xdim * Image.psize
-    yfov = Image.ydim * Image.psize
+    im = (image.imvec).reshape(image.ydim, image.xdim)
+    if len(image.qvec):
+        qim = (image.qvec).reshape(image.ydim, image.xdim)
+        uim = (image.uvec).reshape(image.ydim, image.xdim)
+    xfov = image.xdim * image.psize
+    yfov = image.ydim * image.psize
     
-    if beamparams:
+    if beamparams[0] > 0.0:
         sigma_maj = frac * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
         sigma_min = frac * beamparams[1] / (2. * np.sqrt(2. * np.log(2.))) 
         cth = np.cos(beamparams[2])
         sth = np.sin(beamparams[2])
         gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
-                                  for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
-                                  for j in np.arange(yfov/2., -yfov/2., -Image.psize)])
+                                  for i in np.arange(xfov/2., -xfov/2., -image.psize)] 
+                                  for j in np.arange(yfov/2., -yfov/2., -image.psize)])
         
         # !AC think more carefully about the different cases here
-        gauss = gauss[0:Image.ydim, 0:Image.xdim]
+        gauss = gauss[0:image.ydim, 0:image.xdim]
         gauss = gauss / np.sum(gauss) # normalize to 1
         
         # Convolve
@@ -1537,7 +1537,7 @@ def blur_gauss(Image, beamparams, frac, frac_pol=0):
 
 
     if frac_pol:
-        if not len(Image.qvec):
+        if not len(image.qvec):
             raise Exception("There is no polarized image!")
                 
         sigma_maj = frac_pol * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
@@ -1545,8 +1545,8 @@ def blur_gauss(Image, beamparams, frac, frac_pol=0):
         cth = np.cos(beamparams[2])
         sth = np.sin(beamparams[2])
         gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
-                                  for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
-                                  for j in np.arange(yfov/2., -yfov/2., -Image.psize)])
+                                  for i in np.arange(xfov/2., -xfov/2., -image.psize)] 
+                                  for j in np.arange(yfov/2., -yfov/2., -image.psize)])
         
         # !AC think more carefully about the different cases here
         gauss = gauss[0:self.ydim, 0:self.xdim]
@@ -1557,8 +1557,8 @@ def blur_gauss(Image, beamparams, frac, frac_pol=0):
         uim = scipy.signal.fftconvolve(gauss, uim, mode='same')
                                   
     
-    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)                        
-    if len(Image.qvec):
+    out = Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)                        
+    if len(image.qvec):
         out.add_qu(qim, uim)
     return out  
         
