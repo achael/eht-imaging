@@ -1,8 +1,6 @@
-# maxen.py
+# maxen_v2.py
 # Andrew Chael, 10/15/2015
 # Maximum Entropy imagers for VLBI data
-
-# TODO: Add elliptical beam + fitting
 
 import sys
 import time
@@ -142,13 +140,13 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
     logprior = np.log(nprior)
     
     # Get bispectra data    
-    biarr = Obsdata.bispectra(mode="all")
+    biarr = Obsdata.bispectra(mode="all", count="min")
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
     bi = biarr['bispec']
     sigs = biarr['sigmab']
-    sigs_2 = scaled_bisigs(Obsdata) # Katie's correction for overcounting number of DOF
+    #sigs_2 = scaled_bisigs(Obsdata) # Katie's correction for overcounting number of DOF
     
     # Compute the fourier matrices
     A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
@@ -173,7 +171,7 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
         elif entropy == "tv":
             s = -stv(im, Prior.xdim, Prior.ydim)
             
-        c = alpha * (chisq_bi(im, A3, bi, sigs_2) - 1) # Use Katie's overcounting correction
+        c = alpha * (chisq_bi(im, A3, bi, sigs) - 1)
         t = gamma * (np.sum(im) - flux)**2
         cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
         return  s + c + t + cm
@@ -189,7 +187,7 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
         elif entropy == "tv":
             s = -stvgrad(im, Prior.xdim, Prior.ydim)
         
-        c = alpha * chisqgrad_bi(im, A3, bi, sigs_2) # Use Katie's overcounting correction
+        c = alpha * chisqgrad_bi(im, A3, bi, sigs)
         t = 2 * gamma * (np.sum(im) - flux)
         cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
         return  (s + c + t + cm) * im
@@ -200,7 +198,7 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
     def plotcur(logim_step):
         global nit
         im_step = np.exp(logim_step)
-        chi2 = chisq_bi(im_step, A3, bi, sigs) # Report chi2 WITHOUT overcounting correction
+        chi2 = chisq_bi(im_step, A3, bi, sigs)
         plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
         nit += 1
    
@@ -472,7 +470,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
     bi = biarr['bispec']
     sigsb = biarr['sigmab']
-    sigsb_2 = scaled_bisigs(Obsdata) # Correction for overcounting NDOF
+    #sigsb_2 = scaled_bisigs(Obsdata) # Correction for overcounting NDOF
     
     poldata = Obsdata.unpack(['u','v','vis','m','sigma'])
     uvpol = np.hstack((poldata['u'].reshape(-1,1), poldata['v'].reshape(-1,1)))
@@ -502,7 +500,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
         elif entropy == "tv":
             s = -stv(iim, Prior.xdim, Prior.ydim)
             
-        c = alpha * (chisq_bi(iim, A3, bi, sigsb_2) - 1) # use Katie's overcounting correction
+        c = alpha * (chisq_bi(iim, A3, bi, sigsb) - 1)
         t = gamma * (np.sum(iim) - flux)**2
         cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))**2
         return  s + c + t + cm
@@ -517,7 +515,8 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
         elif entropy == "tv":
             s = -stvgrad(iim, Prior.xdim, Prior.ydim)
             
-        c = alpha * chisqgrad_bi(iim, A3, bi, sigsb_2) # use Katie's overcounting correction
+        c = alpha * chisqgrad_bi(iim, A3, bi, sigsb)
+        
         t = 2 * gamma * (np.sum(iim) - flux)
         cm = 2 * delta * (coord[:,0] + coord[:,1]) * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))
         return  (s + c + t + cm)
@@ -563,7 +562,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
         global nit
         i_step = np.exp(all_step[0:len(nprior)])
         m_step = mcv(all_step[len(nprior):])
-        chi2 = chisq_bi(i_step, A3, bi, sigsb) # Report chi2 WITHOUT overcounting correction
+        chi2 = chisq_bi(i_step, A3, bi, sigsb)
         chi2m = chisq_m(m_step, i_step, Apol, m, sigsm)
         plot_m(i_step, m_step, Prior, nit, chi2, chi2m, pcut=pcut, nvec=nvec, ipynb=ipynb)
         nit += 1
@@ -636,8 +635,8 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 #    bi_p = biarr_p['bispec']
 #    sigsb = biarr['sigmab']
 #    sigsb_p = biarr_p['sigmab']
-#    sigsb_2 = scaled_bisigs(Obsdata, vtype="vis") # Correction for overcounting DOF
-#    sigsb_p_2 = scaled_bisigs(Obsdata, vtype="pvis")
+#    #sigsb_2 = scaled_bisigs(Obsdata, vtype="vis") # Correction for overcounting DOF
+#    #sigsb_p_2 = scaled_bisigs(Obsdata, vtype="pvis")
 #    
 #    # Compute the Fourier matrices
 #    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
@@ -661,7 +660,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 #        elif entropy == "tv":
 #            s = -stv(iim, Prior.xdim, Prior.ydim)
 #             
-#        c = alpha * (chisq_bi(iim, A3, bi, sigsb_2) - 1)
+#        c = alpha * (chisq_bi(iim, A3, bi, sigsb) - 1)
 #        t = gamma * (np.sum(iim) - flux)**2
 #        cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))**2
 #        return  s + c + t + cm
@@ -676,7 +675,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 #        elif entropy == "tv":
 #            s = -stvgrad(iim, Prior.xdim, Prior.ydim)
 #            
-#        c = alpha * chisqgrad_bi(iim, A3, bi, sigsb_2)
+#        c = alpha * chisqgrad_bi(iim, A3, bi, sigsb)
 #        t = 2 * gamma * (np.sum(iim) - flux)
 #        cm = 2 * delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1])) * (coord[:,0] + coord[:,1])
 #        return  (s + c + t + cm)
@@ -694,13 +693,13 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 #        elif polentropy == "tv":
 #            s = -stv_pol(mim, iim, Prior.xdim, Prior.ydim)    
 #            
-#        c = beta * (chisq_pbi(mim, iim, A3, bi_p, sigsb_p_2) - 1)
+#        c = beta * (chisq_pbi(mim, iim, A3, bi_p, sigsb_p) - 1)
 #        return  s + c + objb
 #        
 #    def objgrad(allimage):
 #        iim = np.exp(allimage[0:len(nprior)])
 #        mim = mcv(allimage[len(nprior):])
-#        gradb = (objgrad_b(iim) + beta * chisqgrad_pbi_i(mim, iim, A3, bi_p, sigsb_p_2)) * iim
+#        gradb = (objgrad_b(iim) + beta * chisqgrad_pbi_i(mim, iim, A3, bi_p, sigsb_p)) * iim
 #        
 #        if polentropy == "hw":
 #            s = -shwgrad(mim, iim)
@@ -710,7 +709,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 #            s = -stv_pol_grad(mim, iim, Prior.xdim, Prior.ydim)                
 #            gradb = gradb - stv_pol_grad_i(mim, iim, Prior.xdim, Prior.ydim) * iim
 #              
-#        c = beta * chisqgrad_pbi(mim, iim, A3, bi_p, sigsb_p_2)
+#        c = beta * chisqgrad_pbi(mim, iim, A3, bi_p, sigsb_p)
 #        gradm = (s + c) * mchainlist(allimage[len(nprior):])
 #        
 #        return  np.hstack((gradb, gradm))
@@ -752,7 +751,31 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 #                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) 
 #    outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
 #    return outim       
-           
+##################################################################################################
+# Blurring Function
+##################################################################################################
+
+def blur_circ(Image, fwhm_i, fwhm_pol=0):
+    """Apply a circular gaussian filter to the I image
+       fwhm is in radians
+    """ 
+    
+    # Blur Stokes I
+    sigma = fwhm_i / (2. * np.sqrt(2. * np.log(2.)))
+    sigmap = sigma / Image.psize
+    im = filt.gaussian_filter(Image.imvec.reshape(Image.ydim, Image.xdim), (sigmap, sigmap))
+    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
+   
+    # Blur Stokes Q and U
+    if len(Image.qvec) and fwhm_pol:
+        sigma = fwhm_pol / (2. * np.sqrt(2. * np.log(2.)))
+        sigmap = sigma / Image.psize
+        imq = filt.gaussian_filter(Image.qvec.reshape(Image.ydim,Image.xdim), (sigmap, sigmap))
+        imu = filt.gaussian_filter(Image.uvec.reshape(Image.ydim,Image.xdim), (sigmap, sigmap))
+        out.add_qu(imq, imu)
+        
+    return out
+          
 ##################################################################################################
 # Chi-squared and Gradient Functions
 ##################################################################################################
@@ -1072,110 +1095,7 @@ def stv_pol_grad_i(polimage, iimage, nx, ny):
     grad = -((1./iimage)*(m1/d1 + m2/d2 + m3/d3)).flatten()
   
     return grad   
-  
-##################################################################################################
-# Priors
-##################################################################################################
-
-def make_square_prior(obs, npix, fov):
-    """Make an empty prior image
-       obs is an observation object
-       fov is in radians
-    """ 
-    pdim = fov/npix
-    im = np.zeros((npix,npix))
-    return vb.Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd)
-
-# The following functions will ADD the appropriate shape to an Image object
-def add_flat(Image, flux):
-    """Add flat background to an image""" 
-    
-    im = (Image.imvec + (flux/float(len(Image.imvec))) * np.ones(len(Image.imvec))).reshape(Image.ydim,Image.xdim)
-    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd) 
-    return out
-
-#def add_gauss_circ(Image, flux, fwhm, x, y):
-#    """Add a circular gaussian to an image at coordinate x,y
-#       fwhm, x, y are in radians
-#    """ 
-#    
-#    xfov = Image.xdim * Image.psize
-#    yfov = Image.ydim * Image.psize
-#    sigma = fwhm / (2. * np.sqrt(2. * np.log(2.)))
-#    gauss = np.array([[np.exp(-((i-x)**2 + (j-y)**2)/(2.*sigma**2))
-#                              for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
-#                              for j in np.arange(yfov/2., -yfov/2., -Image.psize)])
-#    
-#    # !AC think more carefully about the different cases here
-#    gauss = gauss[0:Image.ydim, 0:Image.xdim]
-#    
-#    im = Image.imvec.reshape(Image.ydim, Image.xdim) + (gauss * flux/np.sum(gauss))
-#    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
-#    return out
-
-def add_gauss(Image, flux, beamparams):
-    """Add a gaussian to an image
-       beamparams is [fwhm_maj, fwhm_min, theta, x, y], all in rad
-       theta is the orientation angle measured E of N
-    """ 
-    
-    xfov = Image.xdim * Image.psize
-    yfov = Image.ydim * Image.psize
-    sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
-    sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.)))
-    cth = np.cos(beamparams[2])
-    sth = np.sin(beamparams[2])
-    x = beamparams[3]
-    y = beamparams[4]
-    
-    gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
-                      for i in np.arange(xfov/2., -xfov/2., -Image.psize)] 
-                      for j in np.arange(yfov/2., -yfov/2., -Image.psize)])    
-  
-    # !AC think more carefully about the different cases here
-    gauss = gauss[0:Image.ydim, 0:Image.xdim]
-    
-    im = Image.imvec.reshape(Image.ydim, Image.xdim) + (gauss * flux/np.sum(gauss))
-    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
-    return out
-
-
-def add_const_m(Image, mag, angle):
-    """Add a constant fractional polarization to image
-       angle is in radians""" 
-    
-    if not (0 < mag < 1):
-        raise Exception("fractional polarization magnitude must be beween 0 and 1!")
-        
-    imq = qimage(Image.imvec, mag * np.ones(len(Image.imvec)), angle*np.ones(len(Image.imvec))).reshape(Image.ydim,Image.xdim)
-    imu = uimage(Image.imvec, mag * np.ones(len(Image.imvec)), angle*np.ones(len(Image.imvec))).reshape(Image.ydim,Image.xdim)
-    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
-    out.add_qu(imq, imu)
-    return out
-
-def blur_circ(Image, fwhm_i, fwhm_pol=0):
-    """Apply a circular gaussian filter to the I image
-       fwhm is in radians
-    """ 
-    
-    # Blur Stokes I
-    sigma = fwhm_i / (2. * np.sqrt(2. * np.log(2.)))
-    sigmap = sigma / Image.psize
-    im = filt.gaussian_filter(Image.imvec.reshape(Image.ydim, Image.xdim), (sigmap, sigmap))
-    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
-   
-    # Blur Stokes Q and U
-    if len(Image.qvec) and fwhm_pol:
-        sigma = fwhm_pol / (2. * np.sqrt(2. * np.log(2.)))
-        sigmap = sigma / Image.psize
-        imq = filt.gaussian_filter(Image.qvec.reshape(Image.ydim,Image.xdim), (sigmap, sigmap))
-        imu = filt.gaussian_filter(Image.uvec.reshape(Image.ydim,Image.xdim), (sigmap, sigmap))
-        out.add_qu(imq, imu)
-        
-    return out
-
-
-    
+      
 ##################################################################################################
 # Plotting Functions
 ##################################################################################################
@@ -1271,21 +1191,21 @@ def uimage(iimage, mimage, chiimage):
     """Return the U image from m and chi"""
     return iimage * mimage * np.sin(2*chiimage) 
 
-def scaled_bisigs(Obsdata, vtype="vis"):
-    """scale bispectrum errors for overcounting degrees of freedom
-       see Bouman 2014
-    """
-    bilist = Obsdata.bispectra(mode="time", vtype=vtype)
-    overct = []
-    for entry in bilist:
-        nscope = len(set(list(entry['t1']) + list(entry['t2']) + list(entry['t3'])))
-        for i in range(len(entry)):
-            overct.append(3.0/nscope)
-    overct = np.array(overct)   
-    biarr = Obsdata.bispectra(mode="all", vtype=vtype)
-    sigsb = biarr['sigmab']/np.sqrt(overct)
-    
-    return sigsb
+#def scaled_bisigs(Obsdata, vtype="vis"):
+#    """scale bispectrum errors for overcounting degrees of freedom
+#       see Bouman 2014
+#    """
+#    bilist = Obsdata.bispectra(mode="time", vtype=vtype)
+#    overct = []
+#    for entry in bilist:
+#        nscope = len(set(list(entry['t1']) + list(entry['t2']) + list(entry['t3'])))
+#        for i in range(len(entry)):
+#            overct.append(3.0/nscope)
+#    overct = np.array(overct)   
+#    biarr = Obsdata.bispectra(mode="all", vtype=vtype)
+#    sigsb = biarr['sigmab']/np.sqrt(overct)
+#    
+#    return sigsb
     
 # !AC In these pol. changes of variables, might be useful to 
 # take m -> m/100 by adjusting B (function becomes less steep around m' = 0)

@@ -1,8 +1,8 @@
 # Note: this is an example sequence of commands I might run in ipython
 # The matplotlib windows may not open/close properly if you run this directly as a script
 
-import vlbi_imaging_utils_v2 as vb
-import maxen_v2 as mx
+import vlbi_imaging_utils as vb
+import maxen as mx
 import numpy as np
 
 # Load the image and the array

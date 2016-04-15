@@ -1,17 +1,17 @@
 # Note: this is an example sequence of commands I might run in ipython
-# The matplotlib windows won't open/close properly if you run this as a script
+# The matplotlib windows may not open/close properly if you run this directly as a script
 
-import vlbi_imaging_utils as vb
-import maxen as mx
+import vlbi_imaging_utils_v2 as vb
+import maxen_v2 as mx
 import numpy as np
 
 # Load the image and the array
-#im = vb.load_im_fits('avery_sgra.fits') #for a fits image like the one attached
-im = vb.load_im_txt('image.txt') #for a text file like the one attached
-eht = vb.load_array('EHT2017.txt') #see the attached array text file
+#im = vb.load_im_fits('./models/avery_sgra_eofn.fits') #for a fits image
+im = vb.load_im_txt('./models/avery_sgra_eofn.txt') #for a text file
+eht = vb.load_array('./arrays/EHT2017.txt') #see the attached array text file
 
 # Look at the image
-im.display()
+im.display(plotp=True)
 
 # Observe the image
 # tint_sec is the integration time in seconds, and tadv_sec is the advance time between scans
@@ -26,27 +26,43 @@ tstop_hr = 24
 bw_hz = 4e9
 obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=True, ampcal=False, phasecal=False)
 
+# Or you can load an observation file directly from text or uvfits
+# When loading from uvfits, you must provide an array text file with the stations
+# listed in the same order as their labels in the uvfitsfile
+#obs = vb.load_obs_txt('./data/testobs.txt')
+#obs = vb.load_obs_uvfits('./data/testobs.UVP', './arrays/EHT2017.txt')
+
+
 # These are some simple plots you can check
 obs.plotall('u','v') # uv coverage
 obs.plotall('uvdist','amp') # amplitude with baseline distance'
 obs.plot_bl('SMA','ALMA','phase') # visibility phase on a baseline over time
-obs.plot_cphase('SMA', 'SMT', 'ALMA') # closure phase on a triangle over time
+obs.plot_cphase('SMA', 'SMT', 'ALMA') # closure phase 1-2-3 on a over time
+obs.plot_camp('ALMA','LMT','SMA','SPT') # closure amplitude (1-2)(3-4)/(1-4)(2-3) over time
 
-# You can check out the dirty image and dirty beam
+# You can get lists of closure phases and amplitudes and save them to a file
+#cphases = obs.c_phases(mode='all', count='max') # set count='min' to return a minimal set
+#camps = obs.c_amplitudes(mode='all', count='max') # set count='min' to return a minimal set
+#np.savetxt('./c_phases.txt',cphases)
+#np.savetxt('./c_amplitudes.txt',camps)
+
+# You can check out the dirty image, dirty beam, and clean beam
 npix = 64
 fov = 1.5*im.xdim * im.psize # slightly enlarge the field of view
 dim = obs.dirtyimage(npix, fov)
 dbeam = obs.dirtybeam(npix, fov)
+cbeam = obs.cleanbeam(npix,fov)
 dim.display()
 dbeam.display()
+cleanbeam.display()
 
-# Fit for the clean beam parameters (fwhm_maj, fwhm_min, theta) in radians
-beamparams = obs.fit_beam()
-res = 1 / np.max(obs.unpack('uvdist')['uvdist'])
+# Resolution
+beamparams = obs.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
+res = obs.res() # nominal array resolution, 1/longest baseline
 print beamparams 
 print res
 
-# You can deblur the visibilities by dividing by the (hardcoded, frequency-dependent) scattering kernel
+# You can deblur the visibilities by dividing by the scattering kernel
 obs = vb.deblur(obs)
 
 # Export the visibility data to uvfits/text
@@ -58,9 +74,9 @@ npix = 64
 fov = 1.5*im.xdim * im.psize # slightly enlarge the field of view
 zbl = np.sum(im.imvec) # total flux
 prior_fwhm = 100*vb.RADPERUAS # Gaussian size in microarcssec
-emptyprior = mx.make_square_prior(obs, npix, fov)
-flatprior = mx.add_flat(emptyprior, zbl)
-gaussprior = mx.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
+emptyprior = vb.make_square(obs, npix, fov)
+flatprior = vb.add_flat(emptyprior, zbl)
+gaussprior = vb.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with the bispectrum
 flux = np.sum(im.imvec)

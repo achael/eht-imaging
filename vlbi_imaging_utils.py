@@ -1,19 +1,16 @@
-# vlbi_imaging_utils.py
+# vlbi_imaging_utils_v2.py
 # Andrew Chael, 02/24/16
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
+# 03/24 Added new prescription for computing closures
 # 02/24 Added dirty beam, dirty image, and fitting for the clean beam
 # 01/20 Added gain and phase errors
 
 # TODO: 
-#       Fix case where there are no data points
+#       Fix for case where there are no data points
 #       Screen for 0 errors 
 #       Add amplitude debiasing
 #       Add closure amplitude debiasing
-#       Closure amplitude combinations
-#       Make forming a data table clearer
 #       Add different i,q,u,v SEFDs and calibration errors?
-#       reseed random number generators each time
-
 
 import string
 import numpy as np
@@ -37,15 +34,22 @@ RADPERUAS = RADPERAS/1e6
 ELEV_LOW = 15.0
 ELEV_HIGH = 85.0
 
+# Default Optical Depth and std. dev % on gain
+TAUDEF = 0.1
+GAINPDEF = 0.1
+
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas
 FWHM_MIN = 0.64 * 1000
 POS_ANG = 78 # in degree, E of N
 
 # Observation recarray datatypes
+DTARR = [('site', 'a32'), ('x','f8'), ('y','f8'), ('z','f8'), ('sefd','f8')]
+
 DTPOL = [('time','f8'),('tint','f8'),
          ('t1','a32'),('t2','a32'),
          ('el1','f8'),('el2','f8'),
+         ('tau1','f8'),('tau2','f8'),
          ('u','f8'),('v','f8'),
          ('vis','c16'),('qvis','c16'),('uvis','c16'),('sigma','f8')]
 
@@ -63,7 +67,8 @@ DTCAMP = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),('t4','a32'),
           ('camp','f8'),('sigmaca','f8')]
 
 # Observation fields for plotting and retrieving data        
-FIELDS = ['time','tint','u','v','uvdist','t1','t2','el1','el2',
+FIELDS = ['time','tint','u','v','uvdist',
+          't1','t2','el1','el2','tau1','tau2',
           'vis','amp','phase','snr','sigma',
           'qvis','qamp','qphase','qsnr',
           'uvis','uamp','uphase','usnr',
@@ -130,10 +135,10 @@ class Image(object):
         self.qvec = - self.qvec
         return
            
-    def observe_same(self, obs, tau=0.1, gainp=0.1, ampcal="True", phasecal="True", sgrscat=False):
+    def observe_same(self, obs, gainp=GAINPDEF, ampcal="True", phasecal="True", sgrscat=False):
         """Observe the image on the same baselines with the same noise as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-           tau is the predicted atmospheric opacity, gainp is the percent error in gain and tau
+           gainp is the percent error in gain and tau
         """
         
         # Check for agreement in coordinates and frequency 
@@ -144,9 +149,23 @@ class Image(object):
         
         # Get data
         obsdata = obs.data
+        obslist = obs.tlist()
         
+        # Remove possible conjugate baselines:
+        obsdata = []
+        blpairs = []
+        for tlist in obslist:
+            for dat in tlist:
+                if not ((dat['t1'], dat['t2']) in blpairs 
+                     or (dat['t2'], dat['t1']) in blpairs):
+                     obsdata.append(dat)
+                     
+        obsdata = np.array(obsdata, dtype=DTPOL)
+                          
+        # Extract data
         sites = obsdata[['t1','t2']].view(('a32',2))
         elevs = obsdata[['el1','el2']].view(('f8',2))
+        taus = obsdata[['tau1','tau2']].view(('f8',2))
         time = obsdata['time'].view(('f8',1))
         uv = obsdata[['u','v']].view(('f8',2))
         sigma_true = sigma_est = obsdata['sigma'].view(('f8',1))
@@ -170,24 +189,24 @@ class Image(object):
                 qvis[i] *= ker
                 uvis[i] *= ker
         
-        # !!AC make conjugate baselines have the same noise
-        # !AC Check the order of operations here
         # Add gain and opacity uncertanities to the RMS noise
         if not ampcal:
-            # amplitude gain (forward gain on power) = 1.0 + 10% fixed + 10% time-dependent
-            gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
-            gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))
+            # Amplitude gain
+            gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') 
+                            + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
+            gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') 
+                            + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))
            
-            # opacity = 0.1 + 10% time-dependent
-            tau1 = np.array([tau + tau * gainp * hashrandn(sites[i,0], 'tau', time[i]) for i in xrange(len(time))])
-            tau2 = np.array([tau + tau * gainp * hashrandn(sites[i,1], 'tau', time[i]) for i in xrange(len(time))])
+            # Opacity
+            tau1 = np.array([taus[:,0]*(1 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))])
+            tau2 = np.array([taus[:,1]*(1 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))])
             
             # Correct noise RMS for gain variation and opacity
             sigma_true = sigma_true / np.sqrt(gain1 * gain2)
             sigma_true = sigma_true * np.sqrt(np.exp(tau1/np.sin(elevs[:,0]*DEGREE) + tau2/np.sin(elevs[:,1]*DEGREE))) 
             
-            # Estimated noise using 10% gain and 0.1 opacity
-            sigma_est = sigma_est * np.sqrt(np.exp(tau/np.sin(elevs[:,0]*DEGREE) + tau/np.sin(elevs[:,1]*DEGREE)))
+            # Estimated noise using no gain estimated opacity
+            sigma_est = sigma_est * np.sqrt(np.exp(taus[:,0]/np.sin(elevs[:,0]*DEGREE) + taus[:,1]/np.sin(elevs[:,1]*DEGREE)))
             
         # Add the noise the gain error
         vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
@@ -210,23 +229,24 @@ class Image(object):
         obsdata['sigma'] = sigma_est
         
         # Return observation object
-        return Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata, source=self.source, mjd=self.mjd, ampcal=ampcal, phasecal=phasecal)
+        return Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata, obs.tarr, source=self.source, mjd=self.mjd, ampcal=ampcal, phasecal=phasecal)
     
-    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=0.1, gainp=0.1, ampcal="True", phasecal="True", sgrscat=False):
+    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=TAUDEF, gainp=GAINPDEF, ampcal="True", phasecal="True", sgrscat=False):
         """Observe the image with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in GMST.
            tint and tadv should be seconds.
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel.
+           tau is the estimated optical depth. This can be a single number or a dictionary giving one tau per site
+           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel at the appropriate frequency
 	    """
         
         # Generate empty observation
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau)
         
         # Observe
-        obs = self.observe_same(obs, ampcal=ampcal, phasecal=phasecal, sgrscat=sgrscat, tau=0.1, gainp=0.1)    
+        obs = self.observe_same(obs, ampcal=ampcal, phasecal=phasecal, sgrscat=sgrscat, gainp=gainp)    
         return obs
         
-    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotvec=True):
+    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False):
         """Display the image with matplotlib
         """
         
@@ -235,7 +255,7 @@ class Image(object):
         
         image = self.imvec;
         
-        if len(self.qvec) and plotvec:
+        if len(self.qvec) and plotp:
             thin = self.xdim/nvec 
             mask = (self.imvec).reshape(self.ydim, self.xdim) > pcut * np.max(self.imvec)
             mask2 = mask[::thin, ::thin]
@@ -349,7 +369,7 @@ class Image(object):
         header['FREQ'] = self.rf
         header['MJD'] = self.mjd
         header['TELESCOP'] = 'VLBI'
-        header['BUINT'] = 'JY/PIXEL'
+        header['BUNIT'] = 'JY/PIXEL'
         header['STOKES'] = 'I'
         
         # Create the fits image
@@ -375,29 +395,28 @@ class Array(object):
     """A VLBI array of telescopes with locations and SEFDs
     
         Attributes:
-        tdict: The dictionary of telescope tuples (x, y, z, SEFD) where x,y,z are geocentric coordinates.
-    """    
+        tarr: The array of telescope data (name, x, y, z, SEFD) where x,y,z are geocentric coordinates.
+    """   
     
-    def __init__(self, tdict):
-        self.tdict = tdict
+    def __init__(self, tarr):
+        self.tarr = tarr
         
-    def listscopes(self):
-        """List all telescopes"""
-        
-        print [i for i in sorted(self.tdict.keys())]
+        # Dictionary of array indices for site names
+        # !AC better way?
+        self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
             
     def listbls(self):
         """List all baselines"""
  
         bls = []
-        for i1 in sorted(self.tdict.keys()):
-            for i2 in sorted(self.tdict.keys()):
+        for i1 in sorted(self.tarr['site']):
+            for i2 in sorted(self.tarr['site']):
                 if not ([i1,i2] in bls) and not ([i2,i1] in bls) and i1 != i2:
                     bls.append([i1,i2])
                     
         return np.array(bls)
             
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, tau=TAUDEF):
         """Generate u,v points and baseline errors for the array.
            Return an Observation object with no visibilities.
            tstart and tstop are hrs in GMST
@@ -405,6 +424,7 @@ class Array(object):
            rf and bw are Hz
            ra is fractional hours
            dec is fractional degrees
+           tau can be a single number or a dictionary giving one per site
         """
         
         # Set up coordinate system
@@ -425,42 +445,75 @@ class Array(object):
         times = np.arange(tstart, tstop+tstep, tstep)
        
         # Generate uv points at all times
-        # !AC can this be made faster? 
 
-        scopes = sorted(self.tdict.keys())
-        outlist = []
-        
+        outlist = []        
         for k in xrange(len(times)):
             time = times[k]
             theta = np.mod((time-ra)*360./24, 360)
-            for i1 in scopes:
-                for i2 in scopes:
-                    if (i1!=i2 and elevcut(earthrot(self.tdict[i1][0],theta),sourcevec) and 
-                        elevcut(earthrot(self.tdict[i2][0],theta),sourcevec)):
+            blpairs = []
+            for i1 in xrange(len(self.tarr)):
+                for i2 in xrange(len(self.tarr)):
+                    coord1 = np.array((self.tarr[i1]['x'], self.tarr[i1]['y'], self.tarr[i1]['z']))
+                    coord2 = np.array((self.tarr[i2]['x'], self.tarr[i2]['y'], self.tarr[i2]['z']))
+                    if (i1!=i2 and 
+                        self.tarr[i1]['z'] <= self.tarr[i2]['z'] and # Choose the north one first
+                        not ((i2, i1) in blpairs) and # This cuts out the conjugate baselines
+                        elevcut(earthrot(coord1, theta),sourcevec) and 
+                        elevcut(earthrot(coord2, theta),sourcevec)):
+                        
+                        # Optical Depth
+                        if type(tau) == dict:
+                            try: 
+                                tau1 = tau[i1]
+                                tau2 = tau[i2]
+                            except KeyError:
+                                tau1 = tau2 = TAUDEF
+                        else:
+                            tau1 = tau2 = tau
+                        
+                        # Append data to list   
+                        blpairs.append((i1,i2))
                         outlist.append(np.array((
                                   time,
                                   tint, # Integration 
-                                  i1, # Station 1
-                                  i2, # Station 2
-                                  elev(earthrot(self.tdict[i1][0],theta),sourcevec), # Station 1 elevation
-                                  elev(earthrot(self.tdict[i2][0],theta),sourcevec), # Station 2 elevation
-                                  np.dot(earthrot(self.tdict[i1][0]-self.tdict[i2][0],theta)/l, projU), # U (lambda)
-                                  np.dot(earthrot(self.tdict[i1][0]-self.tdict[i2][0],theta)/l, projV), # V (lambda)
+                                  self.tarr[i1]['site'], # Station 1
+                                  self.tarr[i2]['site'], # Station 2
+                                  elev(earthrot(coord1, theta),sourcevec), # Station 1 elevation
+                                  elev(earthrot(coord2, theta),sourcevec), # Station 2 elevation
+                                  tau1, # Station 1 optical depth
+                                  tau2, # Station 1 optical depth
+                                  np.dot(earthrot(coord1 - coord2, theta)/l, projU), # u (lambda)
+                                  np.dot(earthrot(coord1 - coord2, theta)/l, projV), # v (lambda)
                                   0.0, 0.0, 0.0, # Stokes I, Q, U visibilities (Jy)
-                                  blnoise(self.tdict[i1][1], self.tdict[i2][1], tint, bw) # Sigma (Jy)
-                                ),dtype=DTPOL
+                                  blnoise(self.tarr[i1]['sefd'], self.tarr[i2]['sefd'], tint, bw) # Sigma (Jy)
+                                ), dtype=DTPOL
                                 ))
 
-        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), source="0", mjd=0, ampcal=True, phasecal=True)      
+        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source="0", mjd=0, ampcal=True, phasecal=True)      
         return obs
-    
+     
+    def save_array(self, fname):
+        """Save the array data in a text file"""
+         
+        out = ""
+        for scope in range(len(self.tarr)):
+            dat = (self.tarr[scope]['site'], 
+                   self.tarr[scope]['x'], self.tarr[scope]['y'], 
+                   self.tarr[scope]['z'], self.tarr[scope]['sefd']
+                  )
+            out += "%-8s %15.5f  %15.5f  %15.5f  %6.4f \n" % dat
+        f = open(fname,'w')
+        f.write(out)
+        f.close()
+        return 
+         
 #    def plotbls(self):
 #        """Plot all baselines on a globe"""
 #        
 #        lat = []
 #        lon = []
-#        for t1 in sorted(self.tdict.keys()):
-#            (x,y,z) = self.tdict[t1][0]
+#        for t1 in range(len(tarr)):
+#            (x,y,z) = (self.tarr[t1]['x'], self.tarr[t1]['y'], self.tarr[t1]['z'])
 #            lon.append(np.arctan2(y, x)/DEGREE)
 #            lat.append(90 - np.arccos(z/np.sqrt(x**2 + y**2 + z**2))/DEGREE)
 
@@ -493,8 +546,12 @@ class Obsdata(object):
         data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, sigma)
     """
     
-    def __init__(self, ra, dec, rf, bw, datatable, source="SgrA", mjd=48277, ampcal=True, phasecal=True):
-
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=48277, ampcal=True, phasecal=True):
+        
+        if (datatable.dtype != DTPOL):
+            raise Exception("Data table should be a recarray with datatable.dtype = %s" % DTPOL)
+        
+        # Set the various parameters
         self.source = str(source)
         self.ra = float(ra)
         self.dec = float(dec)
@@ -502,12 +559,46 @@ class Obsdata(object):
         self.bw = float(bw)
         self.ampcal = bool(ampcal)
         self.phasecal = bool(phasecal)
+        self.tarr = tarr
         
-        # Time sort the datatable
-        if (datatable.dtype != DTPOL):
-            raise Exception("Data table should be a recarray with datatable.dtype = %s" % DTPOL)
-        self.data = np.array(sorted(datatable, key=lambda x: x['time']))
+        # Dictionary of array indices for site names
+        # !AC better way?
+        self.tkey = {self.tarr[i]['site']:i for i in range(len(self.tarr))}
         
+        # Time partition the datatable
+        datalist = []
+        for key, group in it.groupby(datatable, lambda x: x['time']):
+            datalist.append(np.array([obs for obs in group]))
+        
+        # Remove conjugate baselines
+        # Make the north site first in each pair
+        obsdata = []
+        for tlist in datalist:
+            blpairs = []
+            for dat in tlist:
+                if not (set((dat['t1'], dat['t2']))) in blpairs:
+                     # Reverse the baseline if not north
+                     if self.tarr[self.tkey[dat['t1']]]['z'] <= self.tarr[self.tkey[dat['t1']]]['z']:
+                        (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
+                        (dat['el1'], dat['el2']) = (dat['el2'], dat['el1'])
+                        dat['u'] = -dat['u']
+                        dat['v'] = -dat['v']
+                        dat['vis'] = np.conj(dat['vis'])
+                        dat['uvis'] = np.conj(dat['uvis'])
+                        dat['qvis'] = np.conj(dat['qvis'])
+                     # Append the data point
+                     blpairs.append(set((dat['t1'],dat['t2'])))    
+                     obsdata.append(dat) 
+        
+        obsdata = np.array(obsdata, dtype=DTPOL)
+        
+        # Sort the data by time
+        obsdata = obsdata[np.argsort(obsdata['time'])]
+
+        # Save the data             
+        self.data = obsdata
+            
+        # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
         self.tstart = times[0]
         self.mjd = fracmjd(mjd, self.tstart)
@@ -515,135 +606,169 @@ class Obsdata(object):
         if self.tstop < self.tstart: 
             self.tstop += 24.0
     
-    def unpack(self, fields):
-        """Return a recarray of all the data for the given fields from the data table"""
+    def data_conj(self):
+        #!AC
+        """Return a data array of same format as self.data but including all conjugate baselines"""
         
-        # Take care of the case where we specify only one field
+        data = np.empty(2*len(self.data),dtype=DTPOL)        
+        
+        # Add the conjugate baseline data
+        for f in DTPOL:
+            f = f[0]
+            if f in ["t1", "t2", "el1", "el2", "tau1", "tau2"]:
+                if f[-1]=='1': f2 = f[:-1]+'2'
+                else: f2 = f[:-1]+'1'
+                data[f] = np.hstack((self.data[f], self.data[f2]))
+            elif f in ["u","v"]:
+                data[f] = np.hstack((self.data[f], -self.data[f]))
+            elif f in ["vis","qvis","uvis"]:
+                data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
+            else:
+                data[f] = np.hstack((self.data[f], self.data[f]))
+        
+        # Sort the data
+        #!AC sort within equal times? 
+        data = data[np.argsort(data['time'])]
+        return data
+        
+    def unpack(self, fields, conj=False):
+        """Return a recarray of all the data for the given fields from the data table
+           If conj=True, will return conjugate baselines"""
+        
+        # If we only specify one field
         if type(fields) == str: fields = [fields]
+            
+        # Get conjugates
+        if conj:
+            data = self.data_conj()     
+        else:
+            data = self.data
         
-        # dictionary of types
-        ty_dict = {f : 'f8' for f in ["u","v","sigma","tint","time","el1","el2",
-                                    "amp", "qamp", "uamp", "pamp", "mamp", "uvdist",
-                                    "phase", "qphase", "uphase", "pphase", "mphase",
-                                    "snr","qsnr","usnr"]}
-        ty_dict.update({f : 'a32' for f in ["t1","t2"]})
-        ty_dict.update({f : 'c16' for f in ["vis","qvis","uvis","pvis","m"]})
-        
-        # dictionary of data
-        out_dict = {f : self.data[f] for f in ["u","v","sigma","tint","time","el1","el2", 
-                                               "t1", "t2", "vis", "qvis", "uvis"]}
-        out_dict["uvdist"] = np.abs(out_dict["u"] + 1j*out_dict["v"])
-        out_dict["pvis"] = out_dict["qvis"] + 1j * out_dict["uvis"]
-        out_dict["m"] = out_dict["pvis"] / out_dict["vis"]
-        out_dict["amp"] = np.abs(out_dict["vis"])
-        out_dict["qamp"] = np.abs(out_dict["qvis"])
-        out_dict["uamp"] = np.abs(out_dict["uvis"])
-        out_dict["pamp"] = np.abs(out_dict["pvis"])
-        out_dict["mamp"] = np.abs(out_dict["m"])
-        out_dict["phase"] = np.angle(out_dict["vis"])/DEGREE
-        out_dict["qphase"] = np.angle(out_dict["qvis"])/DEGREE
-        out_dict["uphase"] = np.angle(out_dict["uvis"])/DEGREE
-        out_dict["pphase"] = np.angle(out_dict["pvis"])/DEGREE
-        out_dict["mphase"] = np.angle(out_dict["m"])/DEGREE
-        out_dict["snr"] = out_dict["amp"] / out_dict["sigma"]
-        out_dict["qsnr"] = out_dict["qamp"] / out_dict["sigma"]
-        out_dict["usnr"] = out_dict["uamp"] / out_dict["sigma"]
-        
-        allout = []
-        
+        # Get field data    
+        allout = []    
         for field in fields:
-             if not (field in FIELDS):
-                raise Exception("%s is not valid field \n" % field + 
-                                "valid field values are " + string.join(FIELDS)) 
-
-             out = out_dict[field]
-             ty = ty_dict[field]
              
-#            # Get field data
-#            if field in ["u","v","sigma","tint","time","elev1","elev2"]: 
-#                out = self.data[field]
-#                ty = 'f8'
-#            elif field in ["t1","t2"]: 
-#                out = self.data[field]
-#                ty = 'a32'
-#            elif field in ["vis","amp","phase","snr"]: 
-#                out = self.data['vis']
-#                ty = 'c16'
-#            elif field in ["qvis","qamp","qphase","qsnr"]: 
-#                out = self.data['qvis']
-#                ty = 'c16'
-#            elif field in ["uvis","uamp","uphase","usnr"]: 
-#                out = self.data['uvis']
-#                ty = 'c16'
-#            elif field in ["pvis","pamp","pphase"]: 
-#                out = self.data['qvis'] + 1j * self.data['uvis']
-#                ty = 'c16'
-#            elif field in ["m","mamp","mphase"]: 
-#                out = (self.data['qvis'] + 1j * self.data['uvis']) / self.data['vis']
-#                ty = 'c16'
-#            elif field in ["uvdist"]: 
-#                out = self.data['u'] + 1j * self.data['v']
-#                ty = 'c16'
-#            else: raise Exception("%s is not valid field \n" % field + 
-#                                  "valid field values are " + string.join(FIELDS)) 
+            if field in ["u","v","sigma","tint","time","el1","el2","tau1","tau2"]: 
+                out = data[field]
+                ty = 'f8'
+            elif field in ["t1","t2"]: 
+                out = data[field]
+                ty = 'a32'
+            elif field in ["vis","amp","phase","snr"]: 
+                out = data['vis']
+                ty = 'c16'
+            elif field in ["qvis","qamp","qphase","qsnr"]: 
+                out = data['qvis']
+                ty = 'c16'
+            elif field in ["uvis","uamp","uphase","usnr"]: 
+                out = data['uvis']
+                ty = 'c16'
+            elif field in ["pvis","pamp","pphase"]: 
+                out = data['qvis'] + 1j * data['uvis']
+                ty = 'c16'
+            elif field in ["m","mamp","mphase"]: 
+                out = (data['qvis'] + 1j * data['uvis']) / data['vis']
+                ty = 'c16'
+            elif field in ["uvdist"]: 
+                out = np.abs(data['u'] + 1j * data['v'])
+                ty = 'f8'
+            else: raise Exception("%s is not valid field \n" % field + 
+                                  "valid field values are " + string.join(FIELDS)) 
 
-#            # Get arg or amps or snr
-#            if field in ["amp", "qamp", "uamp", "pamp", "mamp", "uvdist"]: 
-#                out = np.abs(out)
-#                ty = 'f8'
-#            elif field in ["phase", "qphase", "uphase", "pphase", "mphase"]: 
-#                out = np.angle(out)/DEGREE
-#                ty = 'f8'
-#            elif field in ["snr","qsnr","usnr"]:
-#                out = np.abs(out)/self.data['sigma']
-#                ty = 'f8'
+            # Get arg/amps/snr
+            if field in ["amp", "qamp", "uamp", "pamp", "mamp"]: 
+                out = np.abs(out)
+                ty = 'f8'
+            elif field in ["phase", "qphase", "uphase", "pphase", "mphase"]: 
+                out = np.angle(out)/DEGREE
+                ty = 'f8'
+            elif field in ["snr","qsnr","usnr"]:
+                out = np.abs(out)/data['sigma']
+                ty = 'f8'
+             
                     
-             # Reshape and stack with other fields
-             out = np.array(out, dtype=[(field, ty)])
-             if len(allout) > 0:
-                 allout = rec.merge_arrays((allout, out), asrecarray=True, flatten=True)
-             else:
-                 allout = out
+            # Reshape and stack with other fields
+            out = np.array(out, dtype=[(field, ty)])
+            if len(allout) > 0:
+                allout = rec.merge_arrays((allout, out), asrecarray=True, flatten=True)
+            else:
+                allout = out
             
         return allout
     
-    def tlist(self):
-        """Partition the data into a list of equal time observations"""
+    def tlist(self, conj=False):
+        """Return partitioned data in a list of equal time observations"""
         
-        # Use itertools groupby function
+        if conj: 
+            data = self.data_conj()
+        else: 
+            data = self.data
+        
+        # Use itertools groupby function to partition the data
         datalist = []
-        for key, group in it.groupby(self.data, lambda x: x['time']):
+        for key, group in it.groupby(data, lambda x: x['time']):
             datalist.append(np.array([obs for obs in group]))
         
         return datalist
+    
+    def res(self):
+        """Return the nominal resolution of the observation in radian"""
+        return 1.0/np.max(self.unpack('uvdist')['uvdist'])
         
-    def bispectra(self, vtype="vis", mode='time'):
+    def bispectra(self, vtype='vis', mode='time', count='min'):
         """Return all independent equal time bispectrum values
+           Independent triangles are chosen to contain the minimum sefd station in the scan
+           Set count='max' to return all bispectrum values
            Get Q, U, P bispectra by changing vtype
         """
-        
+        #!AC Error formula for bispectrum only true in high SNR limit!
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")
+        if not count in ('min', 'max'):
+            raise Exception("possible options for count are 'min' and 'max'")
         
-        tlist = self.tlist()    
+        tlist = self.tlist(conj=True)    
         outlist = []
         bis = []
         for tdata in tlist:
             time = tdata[0]['time']
+            sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
+                                        
+            # Create a dictionary of baselines at the current time incl. conjugates;
+            l_dict = {}
+            for dat in tdata:
+                l_dict[(dat['t1'], dat['t2'])] = dat
             
-            # Find all unique triangles and calculate the bispectra
             
-            sites = set(np.hstack((tdata['t1'].view(('a32',1)), tdata['t2'].view(('a32',1)))))
-            tris = list(it.combinations(sites,3))
-            l_dict = {(datapt['t1'],datapt['t2']) : datapt for datapt in tdata}
+            if count == 'min':
+                # If we want a minimal set, choose triangles with the minimum sefd reference
+                # Unless there is no sefd data, in which case choose the northernmost
+                if len(set(self.tarr['sefd'])) > 1:
+                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefd'] for site in sites])]
+                else:
+                    ref = sites[np.argmax([self.tarr[self.tkey[site]]['z'] for site in sites])]
+                sites.remove(ref)
+                
+                # Find all triangles that contain the ref                    
+                tris = list(it.combinations(sites,2))
+                tris = [(ref, t[0], t[1]) for t in tris]
+            elif count == 'max':
+                # Find all triangles
+                tris = list(it.combinations(sites,3))
+            
             for tri in tris:
-                # Select triangle points.
-                # !AC Correct for the case where we don't have all inverse baselines!
-                l1 = l_dict[(tri[0],tri[1])]
-                l2 = l_dict[(tri[1],tri[2])]
-                l3 = l_dict[(tri[2],tri[0])]
+                # The ordering is north-south
+                a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
+                a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
+                a2 = 3 - a1 - a3
+                tri = (tri[a1], tri[a2], tri[a3])
                     
-                # Get the appropriate polarization
+                # Select triangle entries in the data dictionary
+                l1 = l_dict[(tri[0], tri[1])]
+                l2 = l_dict[(tri[1],tri[2])]
+                l3 = l_dict[(tri[2], tri[0])]
+                
+                # Choose the appropriate polarization and compute the bs and err
                 if vtype in ["vis", "qvis", "uvis"]:
                     bi = l1[vtype]*l2[vtype]*l3[vtype]  
                     bisig = np.abs(bi) * np.sqrt((l1['sigma']/np.abs(l1[vtype]))**2 +  
@@ -658,103 +783,173 @@ class Obsdata(object):
                                                  (l2['sigma']/np.abs(p2))**2 + 
                                                  (l3['sigma']/np.abs(p3))**2)
                     bisig = np.sqrt(2) * bisig
-              
+                
                 # Append to the equal-time list
                 bis.append(np.array((time, tri[0], tri[1], tri[2], 
                                      l1['u'], l1['v'], l2['u'], l2['v'], l3['u'], l3['v'],
-                                     bi, bisig),dtype=DTBIS))                 
+                                     bi, bisig), dtype=DTBIS))                 
             
-            # Append all equal time bispectra to outlist    
+            # Append equal time bispectra to outlist    
             if mode=='time' and len(bis) > 0:
                 outlist.append(np.array(bis))
                 bis = []    
-        
+     
         if mode=='all':
             outlist = np.array(bis)
         
         return outlist
    
         
-    def c_phases(self, mode='time'):
+    def c_phases(self, vtype='vis', mode='time', count='min'):
         """Return all independent equal time closure phase values
+           Independent triangles are chosen to contain the minimum sefd station in the scan
+           Set count='max' to return all closure phases
         """
-           
-        #!AC Should I include Q,U,P closure phases? 
+        #!AC Error formula for closure phases only true in high SNR limit!
+        if not mode in ('time', 'all'):
+            raise Exception("possible options for mode are 'time' and 'all'")  
+        if not count in ('max', 'min'):
+            raise Exception("possible options for count are 'max' and 'min'")  
         
-        bis = self.bispectra(mode=mode)
-        if mode == 'all':
-            bis.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
-            bis['sigmacp'] = bis['sigmacp']/np.abs(bis['cphase'])/DEGREE
-            bis['cphase'] = np.angle(bis['cphase'])/DEGREE
-            out = bis.astype(np.dtype(DTCPHASE))
-            
-        elif mode=='time':
-            out = []
+        # Get the bispectra data
+        bispecs = self.bispectra(vtype=vtype, mode='time', count=count)
+        
+        # Reformat into a closure phase list/array
+        outlist = []
+        cps = []
+        for bis in bispecs:
             for bi in bis:
                 if len(bi) == 0: continue
                 bi.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
                 bi['sigmacp'] = bi['sigmacp']/np.abs(bi['cphase'])/DEGREE
                 bi['cphase'] = np.angle(bi['cphase'])/DEGREE
-                out.append(bi.astype(np.dtype(DTCPHASE)))
-        else: 
-            raise Exception("possible options for mode are 'time' and 'all'")
-        
-        return out    
+                cps.append(bi.real.astype(np.dtype(DTCPHASE)))
+            if mode == 'time' and len(cps) > 0:
+                outlist.append(np.array(cps))
+                cps = []
+                
+        if mode == 'all':
+            outlist = np.array(cps)
+
+        return outlist    
          
-    def c_amplitudes(self, mode="time"):
-        """Return all independent equal time closure amplitudes""" 
+    def c_amplitudes(self, vtype='vis', mode='time', count='min'):
+        """Return equal time closure amplitudes
+           Set count='max' to return all closure amplitudes up to inverses
+        """ 
         
         #!AC Add amplitude debiasing! (and elsewhere!)
-        
+        #!AC Error formula for closure amplitudes only true in high SNR limit!
         if not mode in ('time','all'):
             raise Exception("possible options for mode are 'time' and 'all'")
+        if not count in ('max', 'min'):
+            raise Exception("possible options for count are 'max' and 'min'")  
         
-        tlist = self.tlist() 
+        tlist = self.tlist(conj=True) 
         outlist = []
         cas = []
         for tdata in tlist:
             time = tdata[0]['time']
-
-            # Find all unique quadrangles and calculate the closure amplitudes
-            # !AC Can this be made faster?
-            sites = set(np.hstack((tdata['t1'].view(('a32',1)), tdata['t2'].view(('a32',1)))))
-            quadsets = list(it.combinations(sites,4))
-            
-            # Loop over quadrangles
-            for q in quadsets:
-                # Loop over both independent closure amplitudes
-                for quad in (q, [q[0],q[3],q[1],q[2]]): 
-                
-                    # !AC Correct for case where we don't have all the inverse baselines in the array 
-                    l1 = [datapt for datapt in tdata if datapt['t1'] == quad[0] and datapt['t2'] == quad[1]]
-                    l2 = [datapt for datapt in tdata if datapt['t1'] == quad[2] and datapt['t2'] == quad[3]]
-                    l3 = [datapt for datapt in tdata if datapt['t1'] == quad[0] and datapt['t2'] == quad[2]]
-                    l4 = [datapt for datapt in tdata if datapt['t1'] == quad[1] and datapt['t2'] == quad[3]]
-                    
-                    #!AC There should be one entry max in these lists
-                    # Check earlier for no duplicate data points? 
-                    if len(l1) > 0 and len(l2) > 0 and len(l3) > 0 and len(l4) > 0:
-                        l1 = l1[0]
-                        l2 = l2[0]
-                        l3 = l3[0]
-                        l4 = l4[0]
-                    else:
-                        continue
-                    
-                    # Compute the closure amplitude and the error
-                    camp = np.abs((l1['vis']*l2['vis'])/(l3['vis']*l4['vis']))
-                    camperr = camp * np.sqrt((l1['sigma']/np.abs(l1['vis']))**2 +  
-                                             (l2['sigma']/np.abs(l2['vis']))**2 + 
-                                             (l3['sigma']/np.abs(l3['vis']))**2 +
-                                             (l4['sigma']/np.abs(l4['vis']))**2)
-                                             
+            sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
+            if len(sites) < 4:
+                continue
                                             
-                    # Add the closure amplitudes to the equal-time list         
-                    cas.append(np.array((time, quad[0], quad[1], quad[2], quad[3],
-                                         l1['u'], l1['v'], l2['u'], l2['v'], 
-                                         l3['u'], l3['v'], l4['u'], l4['v'],
-                                         camp, camperr),dtype=DTCAMP))                 
+            # Create a dictionary of baselines at the current time incl. conjugates;
+            l_dict = {}
+            for dat in tdata:
+                l_dict[(dat['t1'], dat['t2'])] = dat
             
+            if count == 'min':
+                # If we want a minimal set, choose the minimum sefd reference
+                # !AC sites are ordered by sefd - does that make sense?
+                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefd'] for site in sites])]
+                ref = sites[0]
+                
+                # Loop over other sites >3 and form minimal closure amplitude set
+                for i in xrange(3, len(sites)):
+                    blue1 = l_dict[ref, sites[i]] #!!
+                    for j in xrange(1, i):
+                        if j == i-1: k = 1
+                        else: k = j+1
+                        
+                        red1 = l_dict[sites[i], sites[j]]
+                        red2 = l_dict[ref, sites[k]]
+                        blue2 = l_dict[sites[j], sites[k]] 
+                        
+                        # Compute the closure amplitude and the error
+                        if vtype in ["vis", "qvis", "uvis"]:
+                            camp = np.abs((blue1[vtype]*blue2[vtype])/(red1[vtype]*red2[vtype]))
+                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(blue1[vtype]))**2 +  
+                                                     (blue2['sigma']/np.abs(blue2[vtype]))**2 + 
+                                                     (red1['sigma']/np.abs(red1[vtype]))**2 +
+                                                     (red2['sigma']/np.abs(red2[vtype]))**2)
+                                                 
+                        elif vtype == "pvis":
+                            p1 = blue1['qvis'] + 1j*blue1['uvis']
+                            p2 = blue2['qvis'] + 1j*blue2['uvis']
+                            p3 = red1['qvis'] + 1j*red1['uvis']
+                            p4 = red2['qvis'] + 1j*red2['uvis']
+                            
+                            camp = np.abs((p1*p2)/(p3*p4))
+                            camperr = np.abs(bi) * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
+                                                           (blue2['sigma']/np.abs(p2))**2 + 
+                                                           (red1['sigma']/np.abs(p3))**2 +
+                                                           (red2['sigma']/np.abs(p3))**2)
+                            camperr = np.sqrt(2) * camperr
+                                        
+                        # Add the closure amplitudes to the equal-time list  
+                        # Our site convention is (12)(34)/(14)(23)       
+                        cas.append(np.array((time, 
+                                             ref, sites[i], sites[j], sites[k],
+                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'], 
+                                             red1['u'], red1['v'], red2['u'], red2['v'],
+                                             camp, camperr),
+                                             dtype=DTCAMP)) 
+
+
+            elif count == 'max':
+                # Find all quadrangles
+                quadsets = list(it.combinations(sites,4))
+                for q in quadsets:
+                    # Loop over 3 closure amplitudes
+                    # Our site convention is (12)(34)/(14)(23)
+                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]): 
+                        
+                        # Blue is numerator, red is denominator
+                        blue1 = l_dict[quad[0], quad[1]]
+                        blue2 = l_dict[quad[2], quad[3]]
+                        red1 = l_dict[quad[0], quad[3]]
+                        red2 = l_dict[quad[1], quad[2]]
+                                      
+                        # Compute the closure amplitude and the error
+                        if vtype in ["vis", "qvis", "uvis"]:
+                            camp = np.abs((blue1[vtype]*blue2[vtype])/(red1[vtype]*red2[vtype]))
+                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(blue1[vtype]))**2 +  
+                                                     (blue2['sigma']/np.abs(blue2[vtype]))**2 + 
+                                                     (red1['sigma']/np.abs(red1[vtype]))**2 +
+                                                     (red2['sigma']/np.abs(red2[vtype]))**2)
+                                                 
+                        elif vtype == "pvis":
+                            p1 = blue1['qvis'] + 1j*blue1['uvis']
+                            p2 = blue2['qvis'] + 1j*blue2['uvis']
+                            p3 = red1['qvis'] + 1j*red1['uvis']
+                            p4 = red2['qvis'] + 1j*red2['uvis']
+                            
+                            camp = np.abs((p1*p2)/(p3*p4))
+                            camperr = np.abs(bi) * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
+                                                           (blue2['sigma']/np.abs(p2))**2 + 
+                                                           (red1['sigma']/np.abs(p3))**2 +
+                                                           (red2['sigma']/np.abs(p3))**2)
+                            camperr = np.sqrt(2) * camperr
+                                        
+                        # Add the closure amplitudes to the equal-time list         
+                        cas.append(np.array((time, 
+                                             quad[0], quad[1], quad[2], quad[3],
+                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'], 
+                                             red1['u'], red1['v'], red2['u'], red2['v'],
+                                             camp, camperr),
+                                             dtype=DTCAMP)) 
+
             # Append all equal time closure amps to outlist    
             if mode=='time':
                 outlist.append(np.array(cas))
@@ -768,9 +963,8 @@ class Obsdata(object):
         """Return a square Image object of the observation dirty beam
            fov is in radian
         """
-        
         # !AC this is a slow way of doing this
-        # !AC add different types of weighting
+        # !AC add different types of beam weighting
         pdim = fov/npix
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
@@ -779,10 +973,10 @@ class Obsdata(object):
                   for i in np.arange(fov/2., -fov/2., -pdim)] 
                   for j in np.arange(fov/2., -fov/2., -pdim)])    
         
-        # !AC think more carefully about the different cases here
+        # !AC think more carefully about the different image size cases
         im = im[0:npix, 0:npix]
         
-        # !AC is this normalization right?
+        # Normalize to a total beam power of 1
         im = im/np.sum(im)
         
         src = self.source + "_DB"
@@ -794,8 +988,8 @@ class Obsdata(object):
         """Return a square Image object of the observation dirty image
            fov is in radian
         """
-        # !AC this is a very slow way of doing this
-        # !AC add different types of weighting
+        # !AC this is a slow way of doing this
+        # !AC add different types of beam weighting
         # !AC is it possible for Q^2 + U^2 > I^2 in the dirty image?
         
         pdim = fov/npix
@@ -805,15 +999,9 @@ class Obsdata(object):
         qvis = self.unpack('qvis')['qvis']
         uvis = self.unpack('uvis')['uvis']
         
-        # !AC here we are enforcing that the visibilities are conjugate-symmetric
-        # !AC Which they aren't currently because of noise?
-        mask = (u >= 0)
-        u = u[mask]
-        v = v[mask]
-        vis = vis[mask]
-        qvis = qvis[mask]
-        uvis = uvis[mask]
-        
+        # Take the DFTS
+        # Shouldn't need to real about conjugate baselines b/c unpack
+        # does not return them
         im  = np.array([[np.mean(np.real(vis)*np.cos(2*np.pi*(i*u + j*v)) - 
                                  np.imag(vis)*np.sin(2*np.pi*(i*u + j*v)))
                   for i in np.arange(fov/2., -fov/2., -pdim)] 
@@ -828,15 +1016,15 @@ class Obsdata(object):
                   for j in np.arange(fov/2., -fov/2., -pdim)])    
                                            
         dim = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
-          for i in np.arange(fov/2., -fov/2., -pdim)] 
-          for j in np.arange(fov/2., -fov/2., -pdim)])   
+                  for i in np.arange(fov/2., -fov/2., -pdim)] 
+                  for j in np.arange(fov/2., -fov/2., -pdim)])   
            
-        # !AC is this the correct normalization??
+        # !AC is this the correct normalization?
         im = im/np.sum(dim)
         qim = qim/np.sum(dim)
         uim = uim/np.sum(dim)
  
-        # !AC think more carefully about the different cases here       
+        # !AC think more carefully about the different image size cases here       
         im = im[0:npix, 0:npix]
         qim = qim[0:npix, 0:npix]
         uim = uim[0:npix, 0:npix]   
@@ -845,14 +1033,24 @@ class Obsdata(object):
         out.add_qu(qim, uim)
         return out
     
+    def cleanbeam(self, npix, fov):
+        """Return a square Image object of the observation fitted (clean) beam
+           fov is in radian
+        """
+        # !AC include other beam weightings
+        im = make_square(self, npix, fov)
+        beamparams = self.fit_beam()
+        im = add_gauss(im, 1.0, beamparams)
+        return im
+        
     def fit_beam(self):
         """Fit a gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).
            All params are in radian and theta is measured E of N.
            Fit the quadratic expansion of the Gaussian (normalized to 1 at the peak) 
            to the expansion of dirty beam with the same normalization
         """    
-        # !AC include other weightings
-            
+        # !AC include other beam weightings
+          
         # Define the sum of squares function that compares the quadratic expansion of the dirty image
         # with the quadratic expansion of an elliptical gaussian
         def fit_chisq(beamparams, db_coeff):
@@ -865,9 +1063,6 @@ class Obsdata(object):
             
             chisq = np.sum((np.array(db_coeff) - gauss_coeff)**2)
             
-            # Enforce fwhm_maj > fwhm_min and theta in reasonable range
-            if fwhm_maj2 < fwhm_min2:
-                chisq += 100 
             return chisq
         
         # These are the coefficients (a,b,c) of a quadratic expansion of the dirty beam
@@ -881,49 +1076,67 @@ class Obsdata(object):
         # Fit the beam 
         guess = [(50)**2, (50)**2, 0.0]
         params = scipy.optimize.minimize(fit_chisq, guess, args=(abc,), method='Powell')
-        out = np.array((1e-10*np.sqrt(params.x[0]), 1e-10*np.sqrt(params.x[1]), params.x[2]))
+        
+        # Return parameters, adjusting fwhm_maj and fwhm_min if necessary
+        if params.x[0] > params.x[1]:
+            fwhm_maj = 1e-10*np.sqrt(params.x[0])
+            fwhm_min = 1e-10*np.sqrt(params.x[1])
+            theta = np.mod(params.x[2], np.pi)
+        else:
+            fwhm_maj = 1e-10*np.sqrt(params.x[1])
+            fwhm_min = 1e-10*np.sqrt(params.x[0])
+            theta = np.mod(params.x[2] + np.pi/2, np.pi)
 
-        return out
+        return np.array((fwhm_maj, fwhm_min, theta))
             
-    def plotall(self, field1, field2, rangex=False, rangey=False):
-        """Make a scatter plot of 2 real observation fields with errors"""
+    def plotall(self, field1, field2, rangex=False, rangey=False, conj=False):
+        """Make a scatter plot of 2 real observation fields with errors
+           If conj==True, display conjugate baselines"""
         
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
             raise Exception("valid fields are " + string.join(FIELDS))
                               
         # Unpack x and y axis data
-        data = self.unpack([field1,field2])
+        data = self.unpack([field1,field2], conj=conj)
         
         # X error bars
         if field1 in ['amp', 'qamp', 'uamp']:
-            sigx = self.unpack('sigma')['sigma']
+            sigx = self.unpack('sigma',conj=conj)['sigma']
         elif field1 in ['phase', 'uphase', 'qphase']:
-            sigx = (self.unpack('sigma')['sigma'])/(self.unpack(['amp'])['amp'])/DEGREE
+            sigx = (self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('amp',conj=conj)['amp'])/DEGREE
         elif field1 == 'pamp':
-            sigx = np.sqrt(2) * self.unpack('sigma')['sigma']
+            sigx = np.sqrt(2)*self.unpack('sigma',conj=conj)['sigma']
         elif field1 == 'pphase':
-            sigx = np.sqrt(2) * (self.unpack('sigma')['sigma'])/(self.unpack('pamp')['pamp'])/DEGREE
+            sigx = np.sqrt(2)*(self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('pamp',conj=conj)['pamp'])/DEGREE
         elif field1 == 'mamp':
-            sigx = merr(self.unpack('sigma')['sigma'], self.unpack('amp')['amp'], self.unpack('mamp')['mamp'])
+            sigx = merr(self.unpack('sigma',conj=conj)['sigma'], 
+                        self.unpack('amp',conj=conj)['amp'], 
+                        self.unpack('mamp',conj=conj)['mamp'])
         elif field1 == 'mphase':
-            sigx = merr(self.unpack('sigma')['sigma'], self.unpack('amp')['amp'], self.unpack('mamp')['mamp']) / self.unpack('mamp')['mamp']
+            sigx = merr(self.unpack('sigma',conj=conj)['sigma'], 
+                        self.unpack('amp',conj=conj)['amp'], 
+                        self.unpack('mamp',conj=conj)['mamp']) / self.unpack('mamp',conj=conj)['mamp']
         else:
             sigx = None
             
         # Y error bars
         if field2 in ['amp', 'qamp', 'uamp']:
-            sigy = self.unpack('sigma')['sigma']
+            sigy = self.unpack('sigma',conj=conj)['sigma']
         elif field2 in ['phase', 'uphase', 'qphase']:
-            sigy = (self.unpack('sigma')['sigma'])/(self.unpack(['amp'])['amp'])/DEGREE
+            sigy = (self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('amp',conj=conj)['amp'])/DEGREE
         elif field2 == 'pamp':
-            sigy = np.sqrt(2) * self.unpack('sigma')['sigma']
+            sigy = np.sqrt(2)*self.unpack('sigma',conj=conj)['sigma']
         elif field2 == 'pphase':
-            sigy = np.sqrt(2) * (self.unpack('sigma')['sigma'])/(self.unpack('pamp')['pamp'])/DEGREE
+            sigy = np.sqrt(2)*(self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('pamp',conj=conj)['pamp'])/DEGREE
         elif field2 == 'mamp':
-            sigy = merr(self.unpack('sigma')['sigma'], self.unpack('amp')['amp'], self.unpack('mamp')['mamp'])
+            sigy = merr(self.unpack('sigma',conj=conj)['sigma'],
+                        self.unpack('amp',conj=conj)['amp'],
+                        self.unpack('mamp',conj=conj)['mamp'])
         elif field2 == 'mphase':
-            sigy = merr(self.unpack('sigma')['sigma'], self.unpack('amp')['amp'], self.unpack('mamp')['mamp']) / self.unpack('mamp')['mamp']
+            sigy = merr(self.unpack('sigma',conj=conj)['sigma'],
+                        self.unpack('amp',conj=conj)['amp'], 
+                        self.unpack('mamp',conj=conj)['mamp']) / self.unpack('mamp',conj=conj)['mamp']
         else:
             sigy = None
         
@@ -955,53 +1168,61 @@ class Obsdata(object):
         
         # Get the data from data table on the selected baseline
         plotdata = []
-        for obs in self.data:
-            if (obs['t1'], obs['t2']) == (site1, site2):
-                time = obs['time']
-                if field == 'uvdist':
-                    plotdata.append([time, np.abs(obs['u'] + 1j*obs['v']), obs['sigma']])
-                
-                elif field in ['amp', 'qamp', 'uamp']:
-                    if field == 'amp': l = 'vis'
-                    elif field == 'qamp': l = 'qvis'
-                    elif field == 'uamp': l = 'uvis'
-                    plotdata.append([time, np.abs(obs[l]), obs['sigma']])
-                
-                elif field in ['phase', 'qphase', 'uphase']:
-                    if field == 'phase': l = 'vis'
-                    elif field == 'qphase': l = 'qvis'
-                    elif field == 'uphase': l = 'uvis'
-                    plotdata.append([time, np.angle(obs[l])/DEGREE, obs['sigma']/np.abs(obs[l])/DEGREE])
-                
-                elif field == 'pamp':
-                    plotdata.append([time, np.abs(obs['qvis'] + 1j*obs['uvis']), np.sqrt(2)*obs['sigma']])
-                
-                elif field == 'pphase':
-                    plotdata.append([time, np.angle(obs['qvis'] + 1j*obs['uvis'])/DEGREE, np.sqrt(2)*obs['sigma']/np.abs(obs['qvis'] + 1j*obs['uvis'])/DEGREE])
-                
-                elif field == 'mamp':
-                    plotdata.append([time, np.abs((obs['qvis'] + 1j*obs['uvis'])/obs['vis']), merr(obs['sigma'], obs['vis'], (obs['qvis']+1j*obs['uvis'])/obs['vis'])])
-                
-                elif field == 'mphase':
-                    plotdata.append([time, np.angle((obs['qvis'] + 1j*obs['uvis'])/obs['vis'])/DEGREE, 
-                                    merr(obs['sigma'], obs['vis'], (obs['qvis']+1j*obs['uvis'])/obs['vis'])/np.abs((obs['qvis']+1j*obs['uvis'])/obs['vis'])/DEGREE])
-                            
-                elif field == 'time':
-                    plotdata.append([time, time, 0])
-                
-                else:
-                    plotdata.append([time, obs[field], 0])
-                
-                continue
-                                
+        tlist = self.tlist(conj=True)
+        for scan in tlist:
+            for obs in scan:
+                if (obs['t1'], obs['t2']) == (site1, site2):
+                    time = obs['time']
+                    if field == 'uvdist':
+                        plotdata.append([time, np.abs(obs['u'] + 1j*obs['v']), 0])
+                    
+                    elif field in ['amp', 'qamp', 'uamp']:
+                        if field == 'amp': l = 'vis'
+                        elif field == 'qamp': l = 'qvis'
+                        elif field == 'uamp': l = 'uvis'
+                        plotdata.append([time, np.abs(obs[l]), obs['sigma']])
+                    
+                    elif field in ['phase', 'qphase', 'uphase']:
+                        if field == 'phase': l = 'vis'
+                        elif field == 'qphase': l = 'qvis'
+                        elif field == 'uphase': l = 'uvis'
+                        plotdata.append([time, np.angle(obs[l])/DEGREE, obs['sigma']/np.abs(obs[l])/DEGREE])
+                    
+                    elif field == 'pamp':
+                        plotdata.append([time, np.abs(obs['qvis'] + 1j*obs['uvis']), np.sqrt(2)*obs['sigma']])
+                    
+                    elif field == 'pphase':
+                        plotdata.append([time, 
+                                         np.angle(obs['qvis'] + 1j*obs['uvis'])/DEGREE, 
+                                         np.sqrt(2)*obs['sigma']/np.abs(obs['qvis'] + 1j*obs['uvis'])/DEGREE
+                                       ])
+                    
+                    elif field == 'mamp':
+                        plotdata.append([time,
+                                         np.abs((obs['qvis'] + 1j*obs['uvis'])/obs['vis']), 
+                                         merr(obs['sigma'], obs['vis'], (obs['qvis']+1j*obs['uvis'])/obs['vis'])
+                                       ])
+                    
+                    elif field == 'mphase':
+                        plotdata.append([time, 
+                                        np.angle((obs['qvis'] + 1j*obs['uvis'])/obs['vis'])/DEGREE, 
+                                        (merr(obs['sigma'], obs['vis'], (obs['qvis']+1j*obs['uvis'])/obs['vis'])/
+                                           np.abs((obs['qvis']+1j*obs['uvis'])/obs['vis'])/DEGREE)
+                                       ])
+                    
+                    else:
+                        plotdata.append([time, obs[field], 0])
+                    
+                    # Assume only one relevant entry per scan
+                    break
+        
+        # Plot the data                        
         plotdata = np.array(plotdata)
     
-        # Data ranges
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])), 
                       np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))] 
-        
-        # Plot
+
         plt.figure()    
         plt.cla()
         plt.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.')
@@ -1014,15 +1235,19 @@ class Obsdata(object):
                 
     def plot_cphase(self, site1, site2, site3, rangey=False):
         """Plot closure phase over time on a triangle"""
+
+        # Get closure phases (maximal set)
         
-        # Get closure phases
+        cphases = self.c_phases(mode='time', count='max')
+        
+        # Get requested closure phases over time
         tri = (site1, site2, site3)
-        cphases = self.c_phases()
         plotdata = []
         for entry in cphases:
             for obs in entry:
                 obstri = (obs['t1'],obs['t2'],obs['t3'])
                 if set(obstri) == set(tri):
+                    # Flip the sign of the closure phase if necessary
                     parity = paritycompare(tri, obstri) 
                     plotdata.append([obs['time'], parity*obs['cphase'], obs['sigmacp']])
                     continue
@@ -1051,36 +1276,34 @@ class Obsdata(object):
         
     def plot_camp(self, site1, site2, site3, site4, rangey=False):
         """Plot closure amplitude over time on a quadrange
-           (1-2)(3-4)/(1-3)(2-4)
+           (1-2)(3-4)/(1-4)(2-3)
         """
-        # !AC find a comprehensive way to assemble requested closure amplitude
-        # from the 2 independent ones we may have. 
-        
-        # Get the closure amplitudes
         quad = (site1, site2, site3, site4)
-        camps = self.c_amplitudes()
+        b1 = set((site1, site2))
+        r1 = set((site1, site4))
+              
+        # Get the closure amplitudes
+        camps = self.c_amplitudes(mode='time', count='max')
         plotdata = []
         for entry in camps:
             for obs in entry:
                 obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
-                if quad == obsquad:
-                    plotdata.append([obs['time'], obs['camp'], obs['sigmaca']])
+                if set(quad) == set(obsquad):
+                    num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))] 
+                    denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+                    
+                    if (b1 in num) and (r1 in denom):
+                        plotdata.append([obs['time'], obs['camp'], obs['sigmaca']])
+                    elif (r1 in num) and (b1 in denom):
+                        plotdata.append([obs['time'], 1./obs['camp'], obs['sigmaca']/(obs['camp']**2)])
                     continue
                 
-                # Check reversing labels 1-3, 2-4
-                obsquad = (obs['t3'],obs['t4'],obs['t1'],obs['t2'])
-                if quad == obsquad:
-                    plotdata.append([obs['time'], obs['camp'], obs['sigmaca']])
-                    continue
-                
-                # !AC and other combinations...??
                     
         plotdata = np.array(plotdata)
         if len(plotdata) == 0: 
             print "No closure amplitudes on this quadrangle!"
-            print "Try again with a different scope order?"
             return
-        
+
         # Data ranges
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])), 
@@ -1096,14 +1319,15 @@ class Obsdata(object):
         plt.xlabel('GMT (h)')
         plt.ylabel('Closure Amplitude')
         plt.title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
-                                                           site1,site3,site2,site4))
+                                                           site1,site4,site2,site3))
         plt.show(block=False)       
 
     def save_txt(self, fname):
         """Save visibility data to a text file"""
         
         # Get the necessary data and the header
-        outdata = self.unpack(['time', 'tint', 't1', 't2', 'el1', 'el2', 'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'sigma'])
+        outdata = self.unpack(['time', 'tint', 't1', 't2', 'el1', 'el2', 'tau1','tau2',
+                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'sigma'])
         head = ("SRC: %s \n" % self.source +
                     "RA: " + rastring(self.ra) + "\n" + "DEC: " + decstring(self.dec) + "\n" +
                     "MJD: %.4f - %.4f \n" % (fracmjd(self.mjd,self.tstart), fracmjd(self.mjd,self.tstop)) + 
@@ -1111,23 +1335,47 @@ class Obsdata(object):
                     "BW: %.4f GHz \n" % (self.bw/1e9) +
                     "PHASECAL: %i \n" % self.phasecal + 
                     "AMPCAL: %i \n" % self.ampcal + 
-                    "-------------------------------------------------------------------------------------------------------------------------------------------------\n" +
-                    "time (hr) tint    T1     T2    Elev1   Elev2   U (lambda)       V (lambda)         Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   sigma (Jy)")
+                    "----------------------------------------------------------------\n" +
+                    "Site       X(m)             Y(m)             Z(m)           SEFD\n"
+                )
         
+        for i in range(len(self.tarr)):
+            head += "%-8s %15.5f  %15.5f  %15.5f  %6.4f \n" % (self.tarr[i]['site'], 
+                                                               self.tarr[i]['x'], self.tarr[i]['y'], self.tarr[i]['z'], 
+                                                               self.tarr[i]['sefd'])
+
+        head += ("----------------------------------------------------------------\n" +
+                "time (hr) tint    T1     T2    Elev1   Elev2  Tau1   Tau2   U (lambda)       V (lambda)         "+
+                "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   sigma (Jy)"
+                )
+          
         # Format and save the data
-        fmts = "%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %16.4f %16.4f    %10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f"
+        fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %4.2f   %4.2f  %16.4f %16.4f    "+
+               "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f")
         np.savetxt(fname, outdata, header=head, fmt=fmts)
         return
 
     def save_uvfits(self, fname):
-        # !AC ELEVATION
         """Save visibility data to uvfits
            Needs template.UVP file
            Antenna table is currently incorrect"""
         
-        # Template UVFITS
+        # Open template UVFITS
         hdulist = fits.open('./template.UVP')
         
+        # Load the array data
+        tarr = self.tarr
+        tnames = tarr['site']
+        tnums = np.arange(1, len(tarr)+1)
+        xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in len(tarr)])
+        sefd = tarr['sefd']
+        
+        hdulist['AIPS AN'].data['ANNAME'] = tnames
+        hdulist['AIPS AN'].data['NOSTA'] = tnums
+        hdulist['AIPS AN'].data['STABXYZ'] = xyz
+        #!AC: Figure out how to save the sefd data 
+        #hdulist['AIPS AN'].data['SEFD'] = sefd
+    
         # Header (based on the BU format)
         header = hdulist[0].header
         
@@ -1153,31 +1401,26 @@ class Obsdata(object):
         header['PSCAL3'] = 1/self.rf
              
         # Get data
-        obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','sigma','t1','t2','el1','el2'])
+        obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','sigma','t1','t2','el1','el2','tau1','tau2'])
         ndat = len(obsdata['time'])
         
         # times and tints
         jds = (self.mjd + 2400000.5) + (obsdata['time'] / 24.0) 
         tints = obsdata['tint']
         
-        # Baselines
-        # First convert scopes to numbers
-        scopes = list(set(np.hstack((obsdata['t1'], obsdata['t2']))))
-        scopes.sort()
-        tdict = {}
-        i = 1
-        for scope in scopes:
-            tdict[scope] = i
-            i += 1
-            
+        # Baselines            
         # !AC These HAVE to be correct for CLEAN to work. Why?
-        t1 = [tdict[scope] for scope in obsdata['t1']]
-        t2 = [tdict[scope] for scope in obsdata['t2']]
+        t1 = [self.tkey[scope] + 1 for scope in obsdata['t1']]
+        t2 = [self.tkey[scope] + 1 for scope in obsdata['t2']]
         bl = 256*np.array(t1) + np.array(t2)
         
         # elevations
         el1 = obsdata['el1']
         el2 = obsdata['el2']
+        
+        # opacities
+        tau1 = obsdata['tau1']
+        tau2 = obsdata['tau2']
         
         # uv are in lightseconds
         u = obsdata['u']
@@ -1206,8 +1449,11 @@ class Obsdata(object):
         outdat[:,0,0,0,0,3,2] = weight    
         
         # Save data
-        x = fits.GroupData(outdat, parnames=['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE', 'INTTIM', 'ELEV1', 'ELEV2'], 
-                           pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints, el1, el2], bitpix=-32)
+        pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE', 
+                'INTTIM', 'ELEV1', 'ELEV2', 'TAU1', 'TAU2']
+        x = fits.GroupData(outdat, parnames=pars, 
+                           pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints, el1, el2,tau1,tau2], 
+                           bitpix=-64)
         hdulist[0].data = x
         hdulist[0].header = header
         hdulist.writeto(fname, clobber=True)
@@ -1223,67 +1469,41 @@ def load_array(filename):
     """
     
     tdata = np.loadtxt(filename,dtype=str)
-    tdict = {}
     if tdata.shape[1] != 5:
         raise Exception("Array file should have format: (name, x, y, z, SEFD)") 
-    for row in tdata:
-        tdict[row[0]] = (np.array((row[1], row[2], row[3]), dtype=float), float(row[4]))
-    
-    return Array(tdict)
-    
-def load_challenge_obs(filename):
-    """Read an observation from an imaging challenge text file and return an Obsdata object
-    """
-    
-    src = "unknown"
-    ra = 0
-    dec = 0
-    mjd = 48277
-    rf = 230*1e9
-    bw = 2e9
-    phasecal = False
-    ampcal = False
-    
-    # Load the data, convert to list format, return object
-    datatable = np.loadtxt(filename, dtype=str)
-    datatable2 = []
-    for row in datatable:
-        time = float(row[0])
-        tint = 30 #?
-        t1 = row[1]
-        t2 = row[2]
-        el1 = float(row[3])
-        el2 = float(row[4])
-        u = float(row[5])
-        v = float(row[6])
-        vis = float(row[7]) + 1j*float(row[8])
-        qvis = 0
-        uvis = 0
-        sigma = float(row[9])
-        datatable2.append(np.array((time, tint, t1, t2, el1, el2, u, v, vis, qvis, uvis, sigma), dtype=DTPOL))
-                         
-    datatable2 = np.array(datatable2)
-
-    return Obsdata(ra, dec, rf, bw, datatable2, source=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)        
-    
+    tdata = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4])), dtype=DTARR) for x in tdata]
+    tdata = np.array(tdata)
+    return Array(tdata)
+      
 def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
     
-    # Read the header
+    # Read the header parameters
     file = open(filename)
     src = string.join(file.readline().split()[2:])
     ra = file.readline().split()
     ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
     dec = file.readline().split()
-    dec = float(dec[2]) + float(dec[4])/60. + float(dec[6])/3600.
+    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
     mjd = float(file.readline().split()[2])
     rf = float(file.readline().split()[2]) * 1e9
     bw = float(file.readline().split()[2]) * 1e9
     phasecal = bool(file.readline().split()[2])
     ampcal = bool(file.readline().split()[2])
+    file.readline()
+    file.readline()
+    
+    # read the tarr
+    line = file.readline().split()
+    tarr = []
+    while line[1][0] != "-":
+        tarr.append(np.array((line[1], line[2], line[3], line[4], line[5]), dtype=DTARR))
+        line = file.readline().split()
+    tarr = np.array(tarr, dtype=DTARR)   
     file.close()
+
     
     # Load the data, convert to list format, return object
     datatable = np.loadtxt(filename, dtype=str)
@@ -1295,35 +1515,137 @@ def load_obs_txt(filename):
         t2 = row[3]
         el1 = float(row[4])
         el2 = float(row[5])
-        u = float(row[6])
-        v = float(row[7])
-        vis = float(row[8]) * np.exp(1j * float(row[9]) * DEGREE)
-        if datatable.shape[1] == 15:
-            qvis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-            uvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
-            sigma = float(row[14])
-        elif datatable.shape[1] == 11:
+        tau1 = float(row[6])
+        tau2 = float(row[7])
+        u = float(row[8])
+        v = float(row[9])
+        vis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
+        if datatable.shape[1] == 17:
+            qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
+            uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+            sigma = float(row[16])
+        elif datatable.shape[1] == 13:
             qvis = 0+0j
             uvis = 0+0j
-            sigma = float(row[10])
+            sigma = float(row[12])
         else:
             raise Exception('Text file does not have the right number of fields!')
             
-        datatable2.append(np.array((time, tint, t1, t2, el1, el2, u, v, vis, qvis, uvis, sigma), dtype=DTPOL))
-                         
-    datatable2 = np.array(datatable2)
-
-    return Obsdata(ra, dec, rf, bw, datatable2, source=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)        
-
-def load_obs_uvfits(filename):
-    """Load uvfits data from a BU Blazar datafile. 
-    """
+        datatable2.append(np.array((time, tint, t1, t2, el1, el2, tau1, tau2, 
+                                    u, v, vis, qvis, uvis, sigma), dtype=DTPOL))
     
+    # Return the datatable                      
+    datatable2 = np.array(datatable2)
+    return Obsdata(ra, dec, rf, bw, datatable2, tarr, source=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)        
+
+def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, src='SgrA', mjd=48277, ampcal=False, phasecal=False):
+    """Read an observation from a maps text file and return an Obsdata object
+       text file has the same format as output from Obsdata.savedata()
+    """
+    # Read telescope parameters from the array file
+    tdata = np.loadtxt(arrfile, dtype=str)
+    tdata = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[-1])), dtype=DTARR) for x in tdata]
+    tdata = np.array(tdata)
+
+    # Read parameters from the obs_spec
+    f = open(obsspec)
+    stop = False
+    while not stop:
+        line = f.readline().split()
+        if line==[] or line[0]=='\\':
+            continue
+        elif line[0] == 'FOV_center_RA':
+            x = line[2].split(':')
+            ra = float(x[0]) + float(x[1])/60. + float(x[2])/3600.
+        elif line[0] == 'FOV_center_Dec':
+            x = line[2].split(':')
+            dec = np.sign(float(x[0])) * (abs(float(x[0])) + float(x[1])/60. + float(x[2])/3600.)
+        elif line[0] == 'Corr_int_time':
+            tint = float(line[2])
+        elif line[0] == 'Corr_chan_bw':  #!AC what if multiple channels?
+            bw = float(line[2]) * 1e6 #MHz
+        elif line[0] == 'Channel': #!AC what if multiple scans with different params?
+            rf = float(line[2].split(':')[0]) * 1e6
+        elif line[0] == 'Scan_start':
+            x = line[2].split(':') #!AC properly compute MJD! 
+        elif line[0] == 'Endscan':
+            stop=True
+    f.close()
+    
+    # Load the data, convert to list format, return object
+    datatable = []
+    f = open(ifile)
+    
+    for line in f:
+        line = line.split()
+        if not (line[0] in ['UV', 'Scan','\n']):
+            time = line[0].split(':')
+            time = float(time[2]) + float(time[3])/60. + float(time[4])/3600.
+            u = float(line[1]) * 1000
+            v = float(line[2]) * 1000
+            bl = line[4].split('-')
+            t1 = tdata[int(bl[0])-1]['site']
+            t2 = tdata[int(bl[1])-1]['site']
+            el1 = 0.
+            el2 = 0.
+            tau1 = 0.
+            tau2 = 0.
+            vis = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
+            sigma = float(line[10])
+            datatable.append(np.array((time, tint, t1, t2, el1, el2, tau1, tau2, 
+                                        u, v, vis, 0.0,0.0, sigma), dtype=DTPOL))
+    
+    datatable = np.array(datatable)
+    #!AC: qfile and ufile must have exactly the same format as ifile
+    #!AC: add some consistency check 
+    if not qfile==0:
+        f = open(qfile)
+        i = 0
+        for line in f:
+            line = line.split()
+            if not (line[0] in ['UV', 'Scan','\n']):
+                datatable[i]['qvis'] = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
+                i += 1
+            
+    if not ufile==0:
+        f = open(ufile)
+        i = 0
+        for line in f:
+            line = line.split()
+            if not (line[0] in ['UV', 'Scan','\n']):
+                datatable[i]['uvis'] = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
+                i += 1                                
+    
+    # Return the datatable                      
+    return Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)        
+
+def load_obs_uvfits(filename, flipbl=False):
+    """Load uvfits data from a uvfits file
+       Need an associated array file  text file with the telescope parameters
+       The sites must be in the order in the array file that corresponds numbers they have in the uvfits file
+    """
+        
+    # Load the uvfits file
     hdulist = fits.open(filename)
     header = hdulist[0].header
     data = hdulist[0].data
     
-    # Load various header parameters
+    # Load the array data
+    tnames = hdulist['AIPS AN'].data['ANNAME']
+    #tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
+    xyz = hdulist['AIPS AN'].data['STABXYZ']
+    try:
+        sefd = hdulist['AIPS AN'].data['SEFD']
+    except KeyError:
+        print "Warning! no SEFD data in UVfits file"
+        sefd = np.zeros(len(tnames))
+        
+    tarr = [np.array((tnames[i], xyz[i][0], xyz[i][1], xyz[i][2], sefd[i]),
+            dtype=DTARR) for i in range(len(tnames))]
+            
+    tarr = np.array(tarr)
+    
+    # Various header parameters
     ra = header['OBSRA'] * 12./180.
     dec = header['OBSDEC']   
     src = header['OBJECT']
@@ -1340,27 +1662,51 @@ def load_obs_uvfits(filename):
     lrweight = data['DATA'][:,0,0,0,0,3,2]
     mask = (rrweight > 0) * (llweight > 0) * (rlweight > 0) * (lrweight > 0)
     
-    # Times
+    # Obs Times
     jds = data['DATE'][mask]
-    mjd = int(jdtomjd(jds[0]))
-    times = np.array([mjdtogmt(jdtomjd(jd)) for jd in jds])
+    mjd = int(jdtomjd(np.min(jds)))
+    
+    #!AC: There seems to be different behavior here - 
+    #!AC: BU puts date in _DATE 
+    if len(set(data['DATE'])) > 2:
+        times = np.array([mjdtogmt(jdtomjd(jd)) for jd in jds])
+    else:
+        times = data['_DATE'][mask] * 24.0
+    
+    # Integration times
     tints = data['INTTIM'][mask]
     
-    # Scopes
+    # Sites - add names
     t1 = data['BASELINE'][mask].astype(int)/256
     t2 = data['BASELINE'][mask].astype(int) - t1*256
+    t1 = t1 - 1
+    t2 = t2 - 1
+    scopes_num = np.sort(list(set(np.hstack((t1,t2)))))
+    t1 = np.array([tarr[i]['site'] for i in t1])
+    t2 = np.array([tarr[i]['site'] for i in t2])
     
-    # Elevations
+    # Elevations (not in BU files)
     try: 
         el1 = data['ELEV1'][mask]
         el2 = data['ELEV2'][mask]
     except KeyError:
         el1 = el2 = np.zeros(len(t1))
+
+    # Opacities (not in BU files)
+    try: 
+        tau1 = data['TAU1'][mask]
+        tau2 = data['TAU2'][mask]
+    except KeyError:
+        tau1 = tau2 = np.zeros(len(t1))
         
     # Convert uv in lightsec to lambda by multiplying by rf
-    u = data['UU---SIN'][mask] * rf
-    v = data['VV---SIN'][mask] * rf    
-    
+    try:
+        u = data['UU---SIN'][mask] * rf
+        v = data['VV---SIN'][mask] * rf    
+    except KeyError:
+        u = data['UU'][mask] * rf
+        v = data['VV'][mask] * rf
+           
     # Get vis data
     rr = data['DATA'][:,0,0,0,0,0,0][mask] + 1j*data['DATA'][:,0,0,0,0,0,1][mask]
     ll = data['DATA'][:,0,0,0,0,1,0][mask] + 1j*data['DATA'][:,0,0,0,0,1,1][mask]
@@ -1382,35 +1728,25 @@ def load_obs_uvfits(filename):
     # !AC Should sigma be the avg of the stokes sigmas, or just the I sigma?  
     sigma = isig 
     
-    # Include the negative baselines
-    # !AC First test to see if if the negative bls are already in there!
-    times_d = np.array([[time, time] for time in times]).flatten()
-    t1_d = np.array([[t1[i], t2[i]] for i in range(len(t1))]).flatten()
-    t2_d = np.array([[t2[i], t1[i]] for i in range(len(t1))]).flatten()
-    el1_d = np.array([[el1[i], el2[i]] for i in range(len(t1))]).flatten()
-    el2_d = np.array([[el2[i], el1[i]] for i in range(len(t1))]).flatten()
-    tints_d = np.array([[tint, tint] for tint in tints]).flatten()
-    u_d = np.array([[-uu, uu] for uu in u]).flatten()
-    v_d = np.array([[-vv, vv] for vv in v]).flatten()
-    ivis_d = np.array([[i, np.conj(i)] for i in ivis]).flatten() # !AC Reverse the phases ??
-    qvis_d = np.array([[q, np.conj(q)] for q in qvis]).flatten() # ??
-    uvis_d = np.array([[u, np.conj(u)] for u in uvis]).flatten() # ??
-    sigma_d = np.array([[s, s] for s in sigma]).flatten()
-    
+    # !AC reverse sign of baselines for correct imaging?
+    if flipbl:
+        u = -u
+        v = -v
     
     # Make a datatable
     # !AC Can I make this faster?
     datatable = []
-    for i in xrange(len(times_d)):
+    for i in xrange(len(times)):
         datatable.append(np.array((
-                           times_d[i], tints_d[i], t1_d[i], t2_d[i], el1_d[i], el2_d[i],
-                           u_d[i], v_d[i],
-                           ivis_d[i], qvis_d[i], uvis_d[i], sigma_d[i]
+                           times[i], tints[i], 
+                           t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], 
+                           u[i], v[i],
+                           ivis[i], qvis[i], uvis[i], sigma[i]
                            ), dtype=DTPOL
                          ))
     datatable = np.array(datatable)
-    
-    return Obsdata(ra, dec, rf, bw, datatable, source=src, mjd=mjd, ampcal=True, phasecal=True)
+
+    return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd, ampcal=True, phasecal=True)
 
 def load_im_txt(filename):
     """Read in an image from a text file and create an Image object
@@ -1424,7 +1760,7 @@ def load_im_txt(filename):
     ra = file.readline().split()
     ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
     dec = file.readline().split()
-    dec = float(dec[2]) + float(dec[4])/60. + float(dec[6])/3600.
+    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
     mjd = float(file.readline().split()[2])
     rf = float(file.readline().split()[2]) * 1e9
     xdim = file.readline().split()
@@ -1503,6 +1839,66 @@ def load_im_fits(filename):
         print 'Loaded Stokes I image only'
                 
     return outim
+
+##################################################################################################
+# Image Construction Functions
+##################################################################################################
+
+def make_square(obs, npix, fov):
+    """Make an empty prior image
+       obs is an observation object
+       fov is in radians
+    """ 
+    pdim = fov/npix
+    im = np.zeros((npix,npix))
+    return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd)
+
+def add_flat(im, flux):
+    """Add flat background to an image""" 
+    
+    imout = (im.imvec + (flux/float(len(im.imvec))) * np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
+    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd) 
+    return out
+
+def add_gauss(im, flux, beamparams, x=0, y=0):
+    """Add a gaussian to an image
+       beamparams is [fwhm_maj, fwhm_min, theta], all in rad
+       x,y are gaussian position in rad
+       theta is the orientation angle measured E of N
+    """ 
+    
+    xfov = im.xdim * im.psize
+    yfov = im.ydim * im.psize
+    sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
+    sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.)))
+    cth = np.cos(beamparams[2])
+    sth = np.sin(beamparams[2])
+
+    gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
+                      for i in np.arange(xfov/2., -xfov/2., -im.psize)] 
+                      for j in np.arange(yfov/2., -yfov/2., -im.psize)])    
+  
+    # !AC think more carefully about the different cases for array size here
+    gauss = gauss[0:im.ydim, 0:im.xdim]
+    
+    imout = im.imvec.reshape(im.ydim, im.xdim) + (gauss * flux/np.sum(gauss))
+    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd)
+    return out
+
+
+def add_const_m(im, mag, angle):
+    """Add a constant fractional polarization to image
+       angle is in radians""" 
+    
+    if not (0 < mag < 1):
+        raise Exception("fractional polarization magnitude must be beween 0 and 1!")
+    
+    imi = im.imvec.reshape(im.ydim,im.xdim)    
+    imq = qimage(im.imvec, mag * np.ones(len(im.imvec)), angle*np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
+    imu = uimage(im.imvec, mag * np.ones(len(im.imvec)), angle*np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
+    out = Image(imi, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd)
+    out.add_qu(imq, imu)
+    return out
     
 ##################################################################################################
 # Image domain blurring Functions
@@ -1527,8 +1923,8 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
                                   for i in np.arange(xfov/2., -xfov/2., -image.psize)] 
                                   for j in np.arange(yfov/2., -yfov/2., -image.psize)])
-        
-        # !AC think more carefully about the different cases here
+
+        # !AC think more carefully about the different image size cases here
         gauss = gauss[0:image.ydim, 0:image.xdim]
         gauss = gauss / np.sum(gauss) # normalize to 1
         
@@ -1590,7 +1986,7 @@ def deblur(obs):
     datatable['uvis'] = uvis
     datatable['sigma'] = sigma
     
-    obsdeblur = Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable)
+    obsdeblur = Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr)
     return obsdeblur
     
 def sgra_kernel_uv(rf, u, v):
@@ -1707,7 +2103,7 @@ def fracmjd(mjd, gmt):
 def mjdtogmt(mjd):
     """Return the gmt of a fractional mjd, in days"""
     
-    return (mjd - int(mjd)) * 24
+    return (mjd - int(mjd)) * 24.0
     
 def jdtomjd(jd):
     """Return the mjd of a jd"""
