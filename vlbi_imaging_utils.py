@@ -1795,10 +1795,18 @@ def load_im_txt(filename):
     
     return outim
     
-def load_im_fits(filename):
+def load_im_fits(filename, punit="deg"):
     """Read in an image from a FITS file and create an Image object
     """
     
+    # Radian or Degree?
+    if punit=="deg":
+        pscl = DEGREE
+    elif punit=="rad":
+        pscl = 1.0
+    elif punit=="uas":
+        pscl = RADPERUAS
+        
     # Open the FITS file
     hdulist = fits.open(filename)
     
@@ -1809,9 +1817,9 @@ def load_im_fits(filename):
     ra = header['OBSRA']*12/180.
     dec = header['OBSDEC']
     xdim_p = header['NAXIS1']
-    psize_x = np.abs(header['CDELT1'])
+    psize_x = np.abs(header['CDELT1']) * pscl
     dim_p = header['NAXIS2']
-    psize_y = np.abs(header['CDELT2'])
+    psize_y = np.abs(header['CDELT2']) * pscl
     
     if 'MJD' in header.keys(): mjd = header['MJD']
     else: mjd = 48277.0 
