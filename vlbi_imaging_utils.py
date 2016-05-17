@@ -203,11 +203,11 @@ class Image(object):
 
             # Correct noise RMS for gain variation and opacity
             sigma_true = sigma_true / np.sqrt(gain1 * gain2)
-
-
-            # Estimated noise using no gain estimated opacity
-            sigma_est  *= np.sqrt(np.exp(taus[:,0]/np.sin(elevs[:,0]*DEGREE) + taus[:,1]/np.sin(elevs[:,1]*DEGREE)))
-
+            sigma_true = sigma_true * np.sqrt(np.exp(tau1/np.sin(elevs[:,0]*DEGREE) + tau2/np.sin(elevs[:,1]*DEGREE)))
+            
+            # Estimated noise using no gain and estimated opacity
+            sigma_est = sigma_est * np.sqrt(np.exp(taus[:,0]/np.sin(elevs[:,0]*DEGREE) + taus[:,1]/np.sin(elevs[:,1]*DEGREE)))
+        
         # Add the noise the gain error
 
         vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
