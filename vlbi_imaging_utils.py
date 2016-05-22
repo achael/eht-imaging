@@ -168,12 +168,13 @@ class Image(object):
         taus = obsdata[['tau1','tau2']].view(('f8',2))
         time = obsdata['time'].view(('f8',1))
         uv = obsdata[['u','v']].view(('f8',2))
-        sigma_true = sigma_est = obsdata['sigma'].view(('f8',1))
 
         # Perform DFT
         mat = ftmatrix(self.psize, self.xdim, self.ydim, uv)
         vis = np.dot(mat, self.imvec)
-
+        
+        # Estimated noise using no gain and estimated opacity
+        
         # If there are polarized images, observe them:
         qvis = np.zeros(len(vis))
         uvis = np.zeros(len(vis))
@@ -202,20 +203,18 @@ class Image(object):
             tau2 = np.array([taus[i,1]*(1 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))])
 
             # Correct noise RMS for gain variation and opacity
-            sigma_true = sigma_true / np.sqrt(gain1 * gain2)
+            sigma_true = sigma_clean / np.sqrt(gain1 * gain2)
             sigma_true = sigma_true * np.sqrt(np.exp(tau1/np.sin(elevs[:,0]*DEGREE) + tau2/np.sin(elevs[:,1]*DEGREE)))
-            
-            # Estimated noise using no gain and estimated opacity
-            sigma_est = sigma_est * np.sqrt(np.exp(taus[:,0]/np.sin(elevs[:,0]*DEGREE) + taus[:,1]/np.sin(elevs[:,1]*DEGREE)))
+        
+        else: 
+            sigma_true = sigma_est
         
         # Add the noise the gain error
-
         vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
         qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
         uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
 
         # Add random atmospheric phases    
-
         if not phasecal:
             phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i]) for i in xrange(len(time))])
             phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i]) for i in xrange(len(time))])
