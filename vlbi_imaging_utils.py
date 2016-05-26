@@ -1,4 +1,4 @@
-# vlbi_imaging_utils_v2.py
+# vlbi_imaging_utils.py
 # Andrew Chael, 02/24/16
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
 # 03/24 Added new prescription for computing closures
@@ -168,12 +168,14 @@ class Image(object):
         taus = obsdata[['tau1','tau2']].view(('f8',2))
         time = obsdata['time'].view(('f8',1))
         uv = obsdata[['u','v']].view(('f8',2))
+        sigma_clean = obsdata['sigma'].view(('f8',1))
 
         # Perform DFT
         mat = ftmatrix(self.psize, self.xdim, self.ydim, uv)
         vis = np.dot(mat, self.imvec)
         
         # Estimated noise using no gain and estimated opacity
+        sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/np.sin(elevs[:,0]*DEGREE) + taus[:,1]/np.sin(elevs[:,1]*DEGREE)))
         
         # If there are polarized images, observe them:
         qvis = np.zeros(len(vis))
@@ -1368,14 +1370,15 @@ class Obsdata(object):
         tarr = self.tarr
         tnames = tarr['site']
         tnums = np.arange(1, len(tarr)+1)
-        xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in len(tarr)])
+        xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in np.arange(len(tarr))])
         sefd = tarr['sefd']
         
-        hdulist['AIPS AN'].data['ANNAME'] = tnames
-        hdulist['AIPS AN'].data['NOSTA'] = tnums
-        hdulist['AIPS AN'].data['STABXYZ'] = xyz
-        #!AC: Figure out how to save the sefd data 
-        #hdulist['AIPS AN'].data['SEFD'] = sefd
+	col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
+	col2 = fits.Column(name='STABXYZ', format='3D', array=xyz)
+	col3 = fits.Column(name='NOSTA', format='IJ', array=tnums)
+	col4 = fits.Column(name='SEFD', format='1D', array=sefd)
+        tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col3,col4]), name='AIPS AN')
+        hdulist['AIPS AN'] = tbhdu
     
         # Header (based on the BU format)
         header = hdulist[0].header
@@ -1633,7 +1636,7 @@ def load_obs_uvfits(filename, flipbl=False):
     
     # Load the array data
     tnames = hdulist['AIPS AN'].data['ANNAME']
-    #tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
+    tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
     xyz = hdulist['AIPS AN'].data['STABXYZ']
     try:
         sefd = hdulist['AIPS AN'].data['SEFD']
@@ -1830,17 +1833,21 @@ def load_im_fits(filename, punit="deg"):
     else: src = 'SgrA'
     
     # Get the image and create the object
-    image = hdulist[0].data[::-1,:] # flip y-axis!
+    data = hdulist[0].data
+    data = data.reshape((data.shape[-2],data.shape[-1]))
+    image = data[::-1,:] # flip y-axis!
     outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd)
     
     # Look for Stokes Q and U
     qimage = uimage = np.array([])
     for hdu in hdulist[1:]:
         header = hdu.header
+        data = hdu.data
+        data = data.reshape((data.shape[-2],data.shape[-1]))
         if 'STOKES' in header.keys() and header['STOKES'] == 'Q':
-            qimage = hdu.data[::-1,:] # flip y-axis!
+            qimage = data[::-1,:] # flip y-axis!
         if 'STOKES' in header.keys() and header['STOKES'] == 'U':
-            uimage = hdu.data[::-1,:] # flip y-axis!
+            uimage = data[::-1,:] # flip y-axis!
     if qimage.shape == uimage.shape == image.shape:
         print 'Loaded Stokes I, Q, and U images'
         outim.add_qu(qimage, uimage)
