@@ -897,7 +897,7 @@ class Obsdata(object):
                             camperr = camp * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
                                                            (blue2['sigma']/np.abs(p2))**2 + 
                                                            (red1['sigma']/np.abs(p3))**2 +
-                                                           (red2['sigma']/np.abs(p3))**2)
+                                                           (red2['sigma']/np.abs(p4))**2)
                             camperr = np.sqrt(2) * camperr
                                         
                         # Add the closure amplitudes to the equal-time list  
