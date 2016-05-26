@@ -894,7 +894,7 @@ class Obsdata(object):
                             p4 = red2['qvis'] + 1j*red2['uvis']
                             
                             camp = np.abs((p1*p2)/(p3*p4))
-                            camperr = np.abs(bi) * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
+                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
                                                            (blue2['sigma']/np.abs(p2))**2 + 
                                                            (red1['sigma']/np.abs(p3))**2 +
                                                            (red2['sigma']/np.abs(p3))**2)
@@ -939,7 +939,7 @@ class Obsdata(object):
                             p4 = red2['qvis'] + 1j*red2['uvis']
                             
                             camp = np.abs((p1*p2)/(p3*p4))
-                            camperr = np.abs(bi) * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
+                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
                                                            (blue2['sigma']/np.abs(p2))**2 + 
                                                            (red1['sigma']/np.abs(p3))**2 +
                                                            (red2['sigma']/np.abs(p3))**2)
