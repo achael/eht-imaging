@@ -868,7 +868,7 @@ class Obsdata(object):
                 sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefd'] for site in sites])]
                 ref = sites[0]
                 
-                # Loop over other sites >3 and form minimal closure amplitude set
+                # Loop over other sites >=3 and form minimal closure amplitude set
                 for i in xrange(3, len(sites)):
                     blue1 = l_dict[ref, sites[i]] #!!
                     for j in xrange(1, i):
