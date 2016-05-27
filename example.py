@@ -89,7 +89,7 @@ out = mx.blur_circ(out, res/2)
 out = mx.maxen_bs(obs, out, flux, maxit=250, alpha=100)
 
 # Image Polarization
-out = mx.maxen_m(obs, out, alpha=100, maxit=250, polentropy="hw")
+out = mx.maxen_m(obs, out, beta=100, maxit=250, polentropy="hw")
 
 # Blur the final image with 1/2 the clean beam
 outblur = vb.blur_gauss(out, beamparams, 0.5, 0.5)
