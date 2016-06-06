@@ -1955,7 +1955,7 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
                                   for j in np.arange(yfov/2., -yfov/2., -image.psize)])
         
         # !AC think more carefully about the different cases here
-        gauss = gauss[0:self.ydim, 0:self.xdim]
+        gauss = gauss[0:image.ydim, 0:image.xdim]
         gauss = gauss / np.sum(gauss) # normalize to 1        
         
         # Convolve
