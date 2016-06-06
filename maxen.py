@@ -26,7 +26,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 ##################################################################################################
 # Imagers
 ##################################################################################################
-def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-5, ipynb=False):
+def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=False):
     """Run maximum entropy with full amplitudes and phases. 
        Uses I = exp(I') change of variables.
        Obsdata is an Obsdata object, and Prior is an Image object.
@@ -120,7 +120,7 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-5, ipynb=F
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim
 
-def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, entropy="gs", stop=1e-5, ipynb=False):
+def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, entropy="gs", stop=1e-10, ipynb=False):
     """Run maximum entropy on the bispectrum with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.
        Returns Image object.
