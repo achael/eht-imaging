@@ -6,11 +6,13 @@
 # 01/20 Added gain and phase errors
 
 # TODO: 
-#       Fix for case where there are no data points
-#       Screen for 0 errors 
+#       Raise error if there no data points
+#       Screen for 0-valued errors 
+#       Add non-circular errors
 #       Add amplitude debiasing
 #       Add closure amplitude debiasing
 #       Add different i,q,u,v SEFDs and calibration errors?
+#       Incorporate Katherine's scattering code?
 
 import string
 import numpy as np
@@ -20,6 +22,10 @@ import scipy.signal
 import scipy.optimize
 import itertools as it
 import astropy.io.fits as fits
+import datetime
+import writeData
+import oifits
+import time as ttime
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
 
 ##################################################################################################
@@ -1361,7 +1367,7 @@ class Obsdata(object):
     def save_uvfits(self, fname):
         """Save visibility data to uvfits
            Needs template.UVP file
-           Antenna table is currently incorrect"""
+        """
         
         # Open template UVFITS
         hdulist = fits.open('./template.UVP')
@@ -1373,10 +1379,10 @@ class Obsdata(object):
         xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in np.arange(len(tarr))])
         sefd = tarr['sefd']
         
-	col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
-	col2 = fits.Column(name='STABXYZ', format='3D', array=xyz)
-	col3 = fits.Column(name='NOSTA', format='IJ', array=tnums)
-	col4 = fits.Column(name='SEFD', format='1D', array=sefd)
+        col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
+        col2 = fits.Column(name='STABXYZ', format='3D', array=xyz)
+        col3 = fits.Column(name='NOSTA', format='IJ', array=tnums)
+        col4 = fits.Column(name='SEFD', format='1D', array=sefd)
         tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col3,col4]), name='AIPS AN')
         hdulist['AIPS AN'] = tbhdu
     
@@ -1462,6 +1468,75 @@ class Obsdata(object):
         hdulist[0].header = header
         hdulist.writeto(fname, clobber=True)
         
+        return
+    
+    def save_oifits(self, fname):
+        """Save visibility data to oifits
+            Antenna diameter currently incorrect and the exact times are not correct in the datetime object
+            Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function 
+        """
+        #todo: Add polarization to oifits??
+        print 'Warning: save_oifits does NOT save polarimetric visibility data!'
+        
+        data = self.unpack(['u','v','amp','phase', 'sigma', 'time', 't1', 't2', 'tint'])
+        biarr = self.bispectra(mode="all", count="min")
+
+        # extract the telescope names and parameters
+        antennaNames = self.tarr['site'] #np.array(self.tkey.keys())
+        sefd = self.tarr['sefd']
+        antennaX = self.tarr['x']
+        antennaY = self.tarr['y']
+        antennaZ = self.tarr['z']
+        #antennaDiam = -np.ones(antennaX.shape) #todo: this is incorrect and there is just a dummy variable here
+        antennaDiam = sefd # replace antennaDiam with SEFD for radio observtions
+        
+        # create dictionary
+        union = {};
+        union = writeData.arrayUnion(antennaNames, union)
+
+        # extract the integration time
+        intTime = data['tint'][0]
+        if not all(data['tint'][0] == item for item in np.reshape(data['tint'], (-1)) ):
+            raise TypeError("The time integrations for each visibility are different")
+
+        # get visibility information
+        amp = data['amp']
+        phase = data['phase']
+        viserror = data['sigma']
+        u = data['u']
+        v = data['v']
+        
+        # convert antenna name strings to number identifiers
+        ant1 = writeData.convertStrings(data['t1'], union)
+        ant2 = writeData.convertStrings(data['t2'], union)
+        
+        # convert times to datetime objects
+        time = data['time']
+        dttime = np.array([datetime.datetime.utcfromtimestamp(x*60*60) for x in time]); #todo: these do not correspond to the acutal times
+        
+        # get the bispectrum information
+        bi = biarr['bispec']
+        t3amp = np.abs(bi);
+        t3phi = np.angle(bi, deg=1)
+        t3amperr = biarr['sigmab']
+        t3phierr = 180.0/np.pi * (1/t3amp) * t3amperr;
+        uClosure = np.transpose(np.array([np.array(biarr['u1']), np.array(biarr['u2'])]));
+        vClosure = np.transpose(np.array([np.array(biarr['v1']), np.array(biarr['v2'])]));
+        
+        # convert times to datetime objects
+        timeClosure = biarr['time']
+        dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x) for x in timeClosure]); #todo: these do not correspond to the acutal times
+
+        # convert antenna name strings to number identifiers
+        biarr_ant1 = writeData.convertStrings(biarr['t1'], union)
+        biarr_ant2 = writeData.convertStrings(biarr['t2'], union)
+        biarr_ant3 = writeData.convertStrings(biarr['t3'], union)
+        antOrder = np.transpose(np.array([biarr_ant1, biarr_ant2, biarr_ant3]))
+
+        # todo: check that putting the negatives on the phase and t3phi is correct
+        writeData.writeOIFITS(fname, self.ra, self.dec, self.rf, self.bw, intTime, amp, viserror, phase, viserror, u, v, ant1, ant2, dttime, 
+                              t3amp, t3amperr, t3phi, t3phierr, uClosure, vClosure, antOrder, dttimeClosure, antennaNames, antennaDiam, antennaX, antennaY, antennaZ)
+
         return
         
 ##################################################################################################
@@ -1624,9 +1699,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, src='SgrA', mjd=482
     return Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)        
 
 def load_obs_uvfits(filename, flipbl=False):
-    """Load uvfits data from a uvfits file
-       Need an associated array file  text file with the telescope parameters
-       The sites must be in the order in the array file that corresponds numbers they have in the uvfits file
+    """Load uvfits data from a uvfits file.
     """
         
     # Load the uvfits file
@@ -1752,6 +1825,101 @@ def load_obs_uvfits(filename, flipbl=False):
 
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd, ampcal=True, phasecal=True)
 
+def load_obs_oifits(filename):
+    """Load data from an oifits file
+       Does NOT currently support polarization
+    """
+    
+    print 'Warning: load_obs_oifits does NOT currently support polarimetric data!' 
+    #open oifits file and get visibilities
+    oidata=oifits.open(filename)
+    vis_data = oidata.vis
+    
+    # get source info
+    src = oidata.target[0].target
+    ra = oidata.target[0].raep0.angle
+    dec = oidata.target[0].decep0.angle
+    
+    # get annena info
+    nAntennas = len(oidata.array[oidata.array.keys()[0]].station)
+    #sites = np.array([str((oidata.array[oidata.array.keys()[0]].station[i])).replace(" ", "") for i in range(nAntennas)])
+    sites = np.array([oidata.array[oidata.array.keys()[0]].station[i].sta_name for i in range(nAntennas)])
+    arrayX = oidata.array[oidata.array.keys()[0]].arrxyz[0]
+    arrayY = oidata.array[oidata.array.keys()[0]].arrxyz[1]
+    arrayZ = oidata.array[oidata.array.keys()[0]].arrxyz[2]
+    x = np.array([arrayX + oidata.array[oidata.array.keys()[0]].station[i].staxyz[0] for i in range(nAntennas)])
+    y = np.array([arrayY + oidata.array[oidata.array.keys()[0]].station[i].staxyz[1] for i in range(nAntennas)])
+    z = np.array([arrayZ + oidata.array[oidata.array.keys()[0]].station[i].staxyz[2] for i in range(nAntennas)])
+    
+    # get wavelength and corresponding frequencies
+    wavelength = oidata.wavelength[oidata.wavelength.keys()[0]].eff_wave
+    nWavelengths = wavelength.shape[0]
+    bandpass = oidata.wavelength[oidata.wavelength.keys()[0]].eff_band
+    frequency = C/wavelength
+    # todo: this result seems wrong...
+    bw = np.mean(2*(np.sqrt( bandpass**2*frequency**2 + C**2) - C)/bandpass)
+    rf = np.mean(frequency)
+    
+    # get the u-v point for each visibility
+    u = np.array([vis_data[i].ucoord/wavelength for i in range(len(vis_data))])
+    v = np.array([vis_data[i].vcoord/wavelength for i in range(len(vis_data))])
+    
+    # get visibility info - currently the phase error is not being used properly
+    amp = np.array([vis_data[i]._visamp for i in range(len(vis_data))])
+    phase = np.array([vis_data[i]._visphi for i in range(len(vis_data))])
+    amperr = np.array([vis_data[i]._visamperr for i in range(len(vis_data))])
+    visphierr = np.array([vis_data[i]._visphierr for i in range(len(vis_data))])
+    timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]) #convert to single number
+    time = np.transpose(np.tile(np.array([(ttime.mktime(timeobs[i].timetuple())-ttime.mktime(datetime.datetime.utcfromtimestamp(0).timetuple()))/(60.0*60.0) 
+                                          for i in range(len(timeobs))]), [nWavelengths, 1]))
+    
+    # integration time
+    tint = np.array([vis_data[i].int_time for i in range(len(vis_data))])
+    if not all(tint[0] == item for item in np.reshape(tint, (-1)) ):
+        raise TypeError("The time integrations for each visibility are different")
+    tint = tint[0]
+    tint = tint * np.ones( amp.shape )
+
+    # get telescope names for each visibility
+    t1 = np.transpose(np.tile( np.array([ vis_data[i].station[0].sta_name for i in range(len(vis_data))]), [nWavelengths,1]))
+    t2 = np.transpose(np.tile( np.array([ vis_data[i].station[1].sta_name for i in range(len(vis_data))]), [nWavelengths,1]))
+    #t1 = np.transpose(np.tile( np.array([ str(vis_data[i].station[0]).replace(" ", "") for i in range(len(vis_data))]), [nWavelengths,1]))
+    #t2 = np.transpose(np.tile( np.array([ str(vis_data[i].station[1]).replace(" ", "") for i in range(len(vis_data))]), [nWavelengths,1]))
+
+    # dummy variables
+    el1 = -np.ones(amp.shape)
+    el2 = -np.ones(amp.shape)
+    tau1 = -np.ones(amp.shape)
+    tau2 = -np.ones(amp.shape)
+    qvis = -np.ones(amp.shape)
+    uvis = -np.ones(amp.shape)
+    sefd = -np.ones(x.shape)
+
+    # vectorize
+    time = time.ravel()
+    tint = tint.ravel()
+    t1 = t1.ravel()
+    t2 = t2.ravel()
+    el1 = el1.ravel()
+    el2 = el2.ravel()
+    tau1 = tau1.ravel()
+    tau2 = tau2.ravel()
+    u = u.ravel()
+    v = v.ravel()
+    vis = amp.ravel() * np.exp ( -1j * phase.ravel() * np.pi/180.0 )
+    qvis = qvis.ravel()
+    uvis = uvis.ravel()
+    amperr = amperr.ravel()
+
+    #todo - check that we are properly using the error from the amplitude and phase
+
+    # create data tables
+    datatable = np.array([ (time[i], tint[i], t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], u[i], v[i], vis[i], qvis[i], uvis[i], amperr[i]) for i in range(len(vis))], dtype=DTPOL)
+    tarr = np.array([ (sites[i], x[i], y[i], z[i], sefd[i]) for i in range(nAntennas)], dtype=DTARR)
+
+    # return object
+    return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0], ampcal=False, phasecal=False)
+    
 def load_im_txt(filename):
     """Read in an image from a text file and create an Image object
        Text file should have the same format as output from Image.save_txt()
