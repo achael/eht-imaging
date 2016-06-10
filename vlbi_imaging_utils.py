@@ -1379,14 +1379,30 @@ class Obsdata(object):
         xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in np.arange(len(tarr))])
         sefd = tarr['sefd']
         
+        nsta = len(tnames)
         col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
-        col2 = fits.Column(name='STABXYZ', format='3D', array=xyz)
-        col3 = fits.Column(name='NOSTA', format='IJ', array=tnums)
-        col4 = fits.Column(name='SEFD', format='1D', array=sefd)
-        tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col3,col4]), name='AIPS AN')
+        col2 = fits.Column(name='STABXYZ', format='3D', unit='METERS', array=xyz)
+        col3 = fits.Column(name='NOSTA', format='1J', array=tnums)
+        colfin = fits.Column(name='SEFD', format='1D', array=sefd)
+        
+        #!AC these antenna fields+header are questionable - look into them
+        col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
+        col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
+        col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
+        col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['X' for i in range(nsta)], dtype='|S1'))
+        col7 = fits.Column(name='POLAA', format='1E', unit='DEGREES', array=np.zeros(nsta))
+        col8 = fits.Column(name='POLCALA', format='3E', array=np.zeros((nsta,3)))
+        col9 = fits.Column(name='POLTYB', format='1A', array=np.array(['Y' for i in range(nsta)], dtype='|S1'))
+        col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES', array=(90.*np.ones(nsta)))
+        col11 = fits.Column(name='POLCALB', format='3E', array=np.zeros((nsta,3)))
+
+        head = hdulist['AIPS AN'].header
+        head['FREQ']= self.rf
+        #!AC Change more antenna header params?
+        tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
         hdulist['AIPS AN'] = tbhdu
     
-        # Header (based on the BU format)
+        # Data header (based on the BU format)
         header = hdulist[0].header
         
         header['OBSRA'] = self.ra * 180./12.
@@ -1415,7 +1431,8 @@ class Obsdata(object):
         ndat = len(obsdata['time'])
         
         # times and tints
-        jds = (self.mjd + 2400000.5) + (obsdata['time'] / 24.0) 
+        jds = (self.mjd + 2400000.5) 
+        fractimes = (obsdata['time'] / 24.0) 
         tints = obsdata['tint']
         
         # Baselines            
@@ -1461,13 +1478,19 @@ class Obsdata(object):
         # Save data
         pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE', 
                 'INTTIM', 'ELEV1', 'ELEV2', 'TAU1', 'TAU2']
+        #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE', 
+        #        'INTTIM']
         x = fits.GroupData(outdat, parnames=pars, 
-                           pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints, el1, el2,tau1,tau2], 
-                           bitpix=-64)
+                           pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints, el1, el2,tau1,tau2],
+                           bitpix=-32)
+        #x = fits.GroupData(outdat, parnames=pars, 
+        #                   pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints], 
+        #                   bitpix=-32)
+
+        
         hdulist[0].data = x
         hdulist[0].header = header
         hdulist.writeto(fname, clobber=True)
-        
         return
     
     def save_oifits(self, fname):
