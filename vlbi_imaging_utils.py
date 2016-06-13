@@ -6,6 +6,7 @@
 # 01/20 Added gain and phase errors
 
 # TODO: 
+#       Rework save_uvfits to not require header & correct time vals
 #       Raise error if there no data points
 #       Screen for 0-valued errors 
 #       Add non-circular errors
@@ -1389,42 +1390,114 @@ class Obsdata(object):
         col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
         col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
         col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
-        col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['X' for i in range(nsta)], dtype='|S1'))
+        col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['R' for i in range(nsta)], dtype='|S1'))
         col7 = fits.Column(name='POLAA', format='1E', unit='DEGREES', array=np.zeros(nsta))
         col8 = fits.Column(name='POLCALA', format='3E', array=np.zeros((nsta,3)))
-        col9 = fits.Column(name='POLTYB', format='1A', array=np.array(['Y' for i in range(nsta)], dtype='|S1'))
+        col9 = fits.Column(name='POLTYB', format='1A', array=np.array(['L' for i in range(nsta)], dtype='|S1'))
         col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES', array=(90.*np.ones(nsta)))
         col11 = fits.Column(name='POLCALB', format='3E', array=np.zeros((nsta,3)))
-
-        head = hdulist['AIPS AN'].header
-        head['FREQ']= self.rf
+        
         #!AC Change more antenna header params?
+        head = hdulist['AIPS AN'].header
+        #head = fits.Header()
+        head['GSTIA0'] = 119.85 # for mjd 48277
+        head['FREQ']= self.rf
+        head['RDATE'] = '1991-01-21'
+        head['ARRNAM'] = 'VLBI' #!!
+        head['XYZHAND'] = 'RIGHT'
+        head['ARRAYX'] = 0.e0
+        head['ARRAYY'] = 0.e0
+        head['ARRAYZ'] = 0.e0
+        head['DEGPDY'] = 360.985
+        head['POLARX'] = 0.e0
+        head['POLARY'] = 0.e0
+        head['UT1UTC'] = 0.e0
+        head['DATUTC'] = 0.e0
+        head['TIMESYS'] = 'UTC'
+        head['FRAME'] = '????'
+        head['NUMORB'] = 0
+        head['NO_IF'] = 1
+        head['NOPCAL'] = 2
+        head['POLTYPE'] = 'APPROX'
+        head['FREQID'] = 1
         tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
         hdulist['AIPS AN'] = tbhdu
     
         # Data header (based on the BU format)
+        ###
         header = hdulist[0].header
-        
+        #header = fits.Header()
+        #header['EXTEND'] = True
         header['OBSRA'] = self.ra * 180./12.
         header['OBSDEC'] = self.dec
         header['OBJECT'] = self.source
         header['MJD'] = self.mjd
+        header['DATE-OBS'] = '1991-01-21' # !AC convert mjd to date!!
+        header['BUNIT'] = 'JY'
+        header['VELREF'] = 3 #??
+        header['ALTRPIX'] = 1.e0
         header['TELESCOP'] = 'VLBI' # !AC Can I change this??
         header['INSTRUME'] = 'VLBI'
+        
+        header['CTYPE2'] = 'COMPLEX'
+        header['CRVAL2'] = 1.e0
+        header['CDELT2'] = 1.e0
+        header['CRPIX2'] = 1.e0
+        header['CROTA2'] = 0.e0
+        header['CTYPE3'] = 'STOKES'
+        header['CRVAL3'] = -1.e0
+        header['CRDELT3'] = -1.e0
+        header['CRPIX3'] = 1.e0
+        header['CROTA3'] = 0.e0
         header['CTYPE4'] = 'FREQ'
         header['CRVAL4'] = self.rf
         header['CDELT4'] = self.bw   
         header['CRPIX4'] = 1.e0
+        header['CROTA4'] = 0.e0
         header['CTYPE6'] = 'RA'
         header['CRVAL6'] = header['OBSRA']
+        header['CDELT6'] = 1.e0
+        header['CRPIX6'] = 1.e0
+        header['CROTA6'] = 0.e0
         header['CTYPE7'] = 'DEC'
-        header['CRVAL7'] = header['OBSRA']
+        header['CRVAL7'] = header['OBSDEC']
+        header['CDELT7'] = 1.e0
+        header['CRPIX7'] = 1.e0
+        header['CROTA7'] = 0.e0
+        
         header['PTYPE1'] = 'UU---SIN'
         header['PSCAL1'] = 1/self.rf
+        header['PZERO1'] = 0.e0
         header['PTYPE2'] = 'VV---SIN'
         header['PSCAL2'] = 1/self.rf
+        header['PZERO2'] = 0.e0
         header['PTYPE3'] = 'WW---SIN'
         header['PSCAL3'] = 1/self.rf
+        header['PZERO3'] = 0.e0
+        header['PTYPE4'] = 'BASELINE'
+        header['PSCAL4'] = 1.e0
+        header['PZERO4'] = 0.e0
+        header['PTYPE5'] = 'DATE'
+        header['PSCAL5'] = 1.e0
+        header['PZERO5'] = self.mjd
+        header['PTYPE6'] = '_DATE'
+        header['PSCAL6'] = 1.e0
+        header['PZERO6'] = self.mjd
+        header['PTYPE7'] = 'INTTIM'
+        header['PSCAL7'] = 1.e0
+        header['PZERO7'] = 0.e0
+        header['PTYPE8'] = 'ELEV1'
+        header['PSCAL8'] = 1.e0
+        header['PZERO8'] = 0.e0
+        header['PTYPE9'] = 'ELEV2'
+        header['PSCAL9'] = 1.e0
+        header['PZERO9'] = 0.e0
+        header['PTYPE10'] = 'TAU1'
+        header['PSCAL10'] = 1.e0
+        header['PZERO10'] = 0.e0
+        header['PTYPE11'] = 'TAU2'
+        header['PSCAL11'] = 1.e0
+        header['PZERO11'] = 0.e0
              
         # Get data
         obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','sigma','t1','t2','el1','el2','tau1','tau2'])
@@ -1487,7 +1560,7 @@ class Obsdata(object):
         #                   pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints], 
         #                   bitpix=-32)
 
-        
+        #hdulist[0] = fits.GroupsHDU(data=x, header=header)
         hdulist[0].data = x
         hdulist[0].header = header
         hdulist.writeto(fname, clobber=True)
