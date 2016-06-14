@@ -1403,7 +1403,7 @@ class Obsdata(object):
         head['GSTIA0'] = 119.85 # for mjd 48277
         head['FREQ']= self.rf
         head['RDATE'] = '1991-01-21'
-        head['ARRNAM'] = 'VLBI' #!!
+        head['ARRNAM'] = 'ALMA' #!AC
         head['XYZHAND'] = 'RIGHT'
         head['ARRAYX'] = 0.e0
         head['ARRAYY'] = 0.e0
@@ -1420,7 +1420,7 @@ class Obsdata(object):
         head['NOPCAL'] = 2
         head['POLTYPE'] = 'APPROX'
         head['FREQID'] = 1
-        tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
+        tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11]), name='AIPS AN', header=head)
         hdulist['AIPS AN'] = tbhdu
     
         # Data header (based on the BU format)
@@ -1436,8 +1436,8 @@ class Obsdata(object):
         header['BUNIT'] = 'JY'
         header['VELREF'] = 3 #??
         header['ALTRPIX'] = 1.e0
-        header['TELESCOP'] = 'VLBI' # !AC Can I change this??
-        header['INSTRUME'] = 'VLBI'
+        header['TELESCOP'] = 'ALMA' # !AC Can I change this??
+        header['INSTRUME'] = 'ALMA'
         
         header['CTYPE2'] = 'COMPLEX'
         header['CRVAL2'] = 1.e0
@@ -1559,11 +1559,12 @@ class Obsdata(object):
         #x = fits.GroupData(outdat, parnames=pars, 
         #                   pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints], 
         #                   bitpix=-32)
-
+        
         #hdulist[0] = fits.GroupsHDU(data=x, header=header)
         hdulist[0].data = x
         hdulist[0].header = header
         hdulist.writeto(fname, clobber=True)
+        
         return
     
     def save_oifits(self, fname):
