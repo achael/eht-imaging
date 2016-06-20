@@ -227,7 +227,164 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
         uvec = Prior.uvec * out / Prior.imvec
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim 
+
+def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_clamp=100, gamma=500, delta=500, entropy="gs", stop=1e-5, grads=True, ipynb=False):
+    """Run maximum entropy on only closure quantities with an exponential change of variables 
+       Obsdata is an Obsdata object, and Prior is an Image object.
+       Returns Image object.
+       "Lagrange multipliers" are not free parameters.
+    """
     
+    print "Imaging I with only closure quantities . . ." 
+    
+    # Note: total flux is completely unconstrained by only using closure quantities
+
+    # Catch problem if uvrange < largest baseline
+    uvrange = 1/Prior.psize
+    maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
+    if uvrange < maxbl:
+        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+    
+    # Normalize prior image to total flux (this doesn't actually matter because total flux is unconstrained)
+    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
+    logprior = np.log(nprior)
+    
+    # Get closure phase data
+    clphasearr = Obsdata.c_phases(mode="all", count="min")
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
+    clphase = clphasearr['cphase']
+    sigs_clphase = clphasearr['sigmacp']
+    
+    
+    # Compute the fourier matrices
+    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3)
+         )
+    
+    # Get closure amplitude data
+    clamparr = Obsdata.c_amplitudes(mode="all", count="min")
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigs_clamp = clamparr['sigmaca']
+
+    A4 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv4)
+         )
+
+    del clphasearr
+    del clamparr
+    del uv1, uv2, uv3, uv4
+    
+    # Coordinate matrix for COM constraint
+    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim/2,-Prior.xdim/2,-1)]
+                                           for y in np.arange(Prior.ydim/2,-Prior.ydim/2,-1)])
+    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)                                   
+    
+    # Define the objective function and gradient
+    def objfunc(logim):
+        im = np.exp(logim)
+        if entropy == "simple":
+            s = -ssimple(im, nprior)
+        elif entropy == "l1":
+            s = -sl1(im, nprior)
+        elif entropy == "gs":
+            s = -sgs(im, nprior)
+        elif entropy == "tv":
+            s = -stv(im, Prior.xdim, Prior.ydim)
+            
+        c_clphase = alpha_clphase * (chisq_clphase(im, A3, clphase, sigs_clphase) - 1)
+        c_clamp   = alpha_clamp   * (chisq_clamp(im, A4, clamp, sigs_clamp) - 1)
+        t = gamma * (np.sum(im) - flux)**2
+        cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
+        return  s + c_clphase + c_clamp + t + cm
+    
+    def objgrad(logim):
+        im = np.exp(logim)
+        if entropy == "simple":
+            s = -ssimplegrad(im, nprior)
+        elif entropy == "l1":
+            s = -sl1grad(im, nprior)
+        elif entropy == "gs":
+            s = -sgsgrad(im, nprior) 
+        elif entropy == "tv":
+            s = -stvgrad(im, Prior.xdim, Prior.ydim)
+        
+        c_clphase = alpha_clphase * chisqgrad_clphase(im, A3, clphase, sigs_clphase)
+        c_clamp = alpha_clamp * chisqgrad_clamp(im, A4, clamp, sigs_clamp)
+        t = 2 * gamma * (np.sum(im) - flux)
+        cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
+        return  (s + c_clphase + c_clamp + t + cm) * im
+    
+    def objgrad_num(x):  #This calculates the gradient numerically
+		dx = 0.000001* np.mean(x) 
+		J0 = objfunc(x)
+		Jgrad = np.copy(x)
+		for i in range(len(x)):
+			xp = np.copy(x)
+			xp[i] = xp[i] + dx
+			J1 = objfunc(xp)
+			Jgrad[i] = (J1-J0)/dx
+		return Jgrad
+		    
+    # test gradients
+    #test = nprior + 5* np.random.rand(len(nprior))
+    #test = np.log(test)
+    #print np.abs((objgrad_num(test) - objgrad(test))/objgrad_num(test))
+    #print np.max(np.abs((objgrad_num(test) - objgrad(test))/objgrad_num(test)))
+    #print np.mean(np.abs((objgrad_num(test) - objgrad(test))/objgrad_num(test)))
+    #return
+    
+    
+    # Plotting function for each iteration
+    global nit
+    nit = 0
+    def plotcur(logim_step):
+        global nit
+        im_step = np.exp(logim_step)
+        chi2_clphase = chisq_clphase(im_step, A3, clphase, sigs_clphase)
+        chi2_clamp   = chisq_clamp(im_step, A4, clamp, sigs_clamp)
+	print("chi2_clphase: ",chi2_clphase)
+	print("chi2_clamp: ",chi2_clamp)
+        plot_i(im_step, Prior, nit, chi2_clamp, ipynb=ipynb)
+        nit += 1
+   
+    plotcur(logprior)
+       
+    # Minimize
+    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
+    tstart = time.time()
+    if grads:
+        res = opt.minimize(objfunc, logprior, method='L-BFGS-B', jac=objgrad, 
+                       options=optdict, callback=plotcur)
+    else:
+        res = opt.minimize(objfunc, logprior, method='L-BFGS-B', 
+                       options=optdict, callback=plotcur)
+    tstop = time.time()
+    out = np.exp(res.x)
+    
+    # Print stats
+    print "time: %f s" % (tstop - tstart)
+    print "J: %f" % res.fun
+    print "Closure Phase Chi^2: %f" % chisq_clphase(out, A3, clphase, sigs_clphase)
+    print "Closure Amplitude Chi^2: %f" % chisq_clamp(out, A4, clamp, sigs_clamp)
+    print res.message
+    
+    # Return Image object
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd)
+    if len(Prior.qvec):
+        print "Preserving complex polarization fractions"
+        qvec = Prior.qvec * out / Prior.imvec
+        uvec = Prior.uvec * out / Prior.imvec
+        outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
+    return outim   
 def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, prior=True, ipynb=False):
     """Run maximum entropy on pol. amplitude and phase
        Obsdata is an Obsdata object,
@@ -813,6 +970,54 @@ def chisqgrad_bi(imvec, Amatrices, bis, sigma):
     out = -np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2])) / len(bis)
     return out
 
+#Closure Amplitudes chi-squared
+def chisq_clamp(imvec, Amatrices, clamp, sigma):
+    """Closure Amplitudes (normalized) chi-squared"""
+    
+    clamp_samples = np.abs(np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) / (np.dot(Amatrices[2], imvec) * np.dot(Amatrices[3], imvec)))
+    return np.sum(np.abs((clamp - clamp_samples)/sigma)**2) / (len(clamp))
+
+def chisqgrad_clamp(imvec, Amatrices, clamp, sigma):
+    
+    i1 = np.dot(Amatrices[0], imvec)
+    i2 = np.dot(Amatrices[1], imvec)
+    i3 = np.dot(Amatrices[2], imvec)
+    i4 = np.dot(Amatrices[3], imvec)
+    clamp_samples = np.abs((i1 * i2) / (i3 * i4))
+    
+    pp = ((clamp - clamp_samples) * clamp_samples) / (sigma**2)
+    pt1 = pp / i1
+    pt2 = pp / i2
+    pt3 = -pp / i3
+    pt4 = -pp / i4
+    out = (-2.0/len(clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    return out
+    
+#Closure phases chi-squared
+def chisq_clphase(imvec, Amatrices, clphase, sigma):
+    """Closure Phases (normalized) chi-squared"""
+    clphase = clphase * DEGREE
+    sigma = sigma * DEGREE
+    clphase_samples = np.angle(np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) * np.dot(Amatrices[2], imvec))
+    return (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples)) / (sigma**2))
+
+
+def chisqgrad_clphase(imvec, Amatrices, clphase, sigma):
+    clphase = clphase * DEGREE
+    sigma = sigma * DEGREE
+    
+    i1 = np.dot(Amatrices[0], imvec)
+    i2 = np.dot(Amatrices[1], imvec)
+    i3 = np.dot(Amatrices[2], imvec)
+    clphase_samples = np.angle(i1 * i2 * i3)
+    
+    pref = np.sin(clphase - clphase_samples) / (sigma**2)
+    pt1 = pref / i1
+    pt2 = pref / i2
+    pt3 = pref / i3
+    out = -(2.0/len(clphase)) * np.imag(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))
+    return out
+    
 # Polarimetric Amplitude and Phase chi-squared
 def chisq_p(polimage, iimage, Amatrix, p, sigmap):
     """Pol. ratio chi-squared"""
@@ -954,12 +1159,12 @@ def sl1grad(imvec, priorvec):
     return -np.sign(imvec - priorvec)
     
 def sgs(imvec, priorvec):
-    """Gull-Skilling Image Entropy"""
     return np.sum(imvec - priorvec - imvec*np.log(imvec/priorvec))
 
+
 def sgsgrad(imvec, priorvec):
-    """Gradient of the GS entropy"""
     return -np.log(imvec/priorvec)
+
 
 def stv(imvec, nx, ny):
     """Total variation entropy"""
@@ -1104,7 +1309,7 @@ def plot_i(im, Prior, nit, chi2, ipynb=False):
     plt.ion()
     plt.clf()
     
-    plt.imshow(im.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='nearest')     
+    plt.imshow(im.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')     
     xticks = vb.ticks(Prior.xdim, Prior.psize/RADPERAS/1e-6)
     yticks = vb.ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
     plt.xticks(xticks[0], xticks[1])
@@ -1142,7 +1347,7 @@ def plot_m(im, mim, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
         
     # Stokes I plot
     plt.subplot(121)
-    plt.imshow(im.reshape(Prior.ydim, Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='nearest')
+    plt.imshow(im.reshape(Prior.ydim, Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
     plt.quiver(x, y, a, b,
                headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                width=.01*Prior.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
@@ -1160,7 +1365,7 @@ def plot_m(im, mim, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
     
     # Ratio plot
     plt.subplot(122)
-    plt.imshow(m, cmap=plt.get_cmap('winter'), interpolation='nearest', vmin=0, vmax=1)
+    plt.imshow(m, cmap=plt.get_cmap('winter'), interpolation='gaussian', vmin=0, vmax=1)
     plt.quiver(x, y, a, b,
                headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                width=.01*Prior.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)

@@ -256,10 +256,15 @@ class Image(object):
         obs = self.observe_same(obs, ampcal=ampcal, phasecal=phasecal, sgrscat=sgrscat, gainp=gainp)    
         return obs
         
-    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False):
+    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='nearest'):
         """Display the image with matplotlib
         """
         
+        if interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']
+            interp = 'gaussian'
+        else
+            interp = 'nearest'
+            
         plt.figure()
         plt.clf()
         
@@ -281,7 +286,7 @@ class Image(object):
             
             # Stokes I plot
             plt.subplot(121)
-            im = plt.imshow(image.reshape(self.ydim, self.xdim), cmap=plt.get_cmap(cfun), interpolation='nearest')
+            im = plt.imshow(image.reshape(self.ydim, self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp)
             plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
@@ -300,7 +305,7 @@ class Image(object):
         
             # m plot
             plt.subplot(122)
-            im = plt.imshow(m, cmap=plt.get_cmap('winter'), interpolation='nearest', vmin=0, vmax=1)
+            im = plt.imshow(m, cmap=plt.get_cmap('winter'), interpolation=interp, vmin=0, vmax=1)
             plt.colorbar(im, fraction=0.046, pad=0.04, label='|m|')
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
@@ -318,7 +323,7 @@ class Image(object):
             plt.subplot(111)    
             plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
             
-            im = plt.imshow(image.reshape(self.ydim,self.xdim), cmap=plt.get_cmap(cfun), interpolation='nearest')
+            im = plt.imshow(image.reshape(self.ydim,self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp)
             plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
             xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
             yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
@@ -1400,6 +1405,7 @@ class Obsdata(object):
         #!AC Change more antenna header params?
         head = hdulist['AIPS AN'].header
         #head = fits.Header()
+        head['EXTVER'] = 1
         head['GSTIA0'] = 119.85 # for mjd 48277
         head['FREQ']= self.rf
         head['RDATE'] = '1991-01-21'
