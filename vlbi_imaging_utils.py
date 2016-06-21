@@ -260,9 +260,9 @@ class Image(object):
         """Display the image with matplotlib
         """
         
-        if interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']
+        if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
             interp = 'gaussian'
-        else
+        else:
             interp = 'nearest'
             
         plt.figure()
