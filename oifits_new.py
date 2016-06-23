@@ -1,3 +1,6 @@
+#AC - changed %F to %Y-%m-%d
+#AC - changed %T to %H:%M:%S
+
 """
 A module for reading/writing OIFITS (v1) files
 
@@ -308,7 +311,7 @@ class OI_VIS:
             baselinename = ' (' + self.station[0].sta_name + self.station[1].sta_name + ')'
         else:
             baselinename = ''
-        return '%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V> = %4.2g'%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.visamp), _plurals(len(self.visamp)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord / self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
+        return '%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V> = %4.2g'%(self.target.target, self.timeobs.strftime('%Y-%m-%d %H:%M:%S'), baselinename, len(self.visamp), _plurals(len(self.visamp)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord / self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
 
     def info(self):
         print str(self)
@@ -374,7 +377,7 @@ class OI_VIS2:
             baselinename = ' (' + self.station[0].sta_name + self.station[1].sta_name + ')'
         else:
             baselinename = ''
-        return "%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V^2> = %4.2g"%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.vis2data), _plurals(len(self.vis2data)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord / self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
+        return "%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V^2> = %4.2g"%(self.target.target, self.timeobs.strftime('%Y-%m-%d %H:%M:%S'), baselinename, len(self.vis2data), _plurals(len(self.vis2data)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord / self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
 
     def info(self):
         print str(self)
@@ -450,7 +453,7 @@ class OI_T3:
             baselinename = ' (' + self.station[0].sta_name + self.station[1].sta_name + self.station[2].sta_name + ')'
         else:
             baselinename = ''
-        return "%s %s%s: %d point%s (%d masked), B = %5.1fm, %5.1fm, <T3> = %4.2g"%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.t3amp), _plurals(len(self.t3amp)), np.sum(self.flag), np.sqrt(self.u1coord**2 + self.v1coord**2), np.sqrt(self.u2coord**2 + self.v2coord**2), meant3)
+        return "%s %s%s: %d point%s (%d masked), B = %5.1fm, %5.1fm, <T3> = %4.2g"%(self.target.target, self.timeobs.strftime('%Y-%m-%d %H:%M:%S'), baselinename, len(self.t3amp), _plurals(len(self.t3amp)), np.sum(self.flag), np.sqrt(self.u1coord**2 + self.v1coord**2), np.sqrt(self.u2coord**2 + self.v2coord**2), meant3)
 
     def info(self):
         print str(self)
@@ -875,7 +878,7 @@ class oifits:
 
         hdulist = pyfits.HDUList()
         hdu = pyfits.PrimaryHDU(header=self.header)
-        hdu.header['DATE'] = datetime.datetime.now().strftime(format='%F'), 'Creation date'
+        hdu.header['DATE'] = datetime.datetime.now().strftime(format='%Y-%m-%d'), 'Creation date'
         # Remove old oifits.py comments if they are present
         remcomments = []
         try:
@@ -1099,7 +1102,7 @@ class oifits:
                 hdu.data.field('FLAG').setfield(data['flag'], bool)
                 hdu.header['EXTNAME'] = 'OI_VIS'
                 hdu.header['OI_REVN'] = 1, 'Revision number of the table definition'
-                hdu.header['DATE-OBS'] = refdate.strftime('%F'), 'Zero-point for table (UTC)'
+                hdu.header['DATE-OBS'] = refdate.strftime('%Y-%m-%d'), 'Zero-point for table (UTC)'
                 if key[0]: hdu.header['ARRNAME'] = key[0], 'Identifies corresponding OI_ARRAY'
                 hdu.header['INSNAME'] = key[1], 'Identifies corresponding OI_WAVELENGTH table'
                 hdulist.append(hdu)
@@ -1165,7 +1168,7 @@ class oifits:
                 hdu.data.field('FLAG').setfield(data['flag'], bool)
                 hdu.header['EXTNAME'] = 'OI_VIS2'
                 hdu.header['OI_REVN'] = 1, 'Revision number of the table definition'
-                hdu.header['DATE-OBS'] = refdate.strftime('%F'), 'Zero-point for table (UTC)'
+                hdu.header['DATE-OBS'] = refdate.strftime('%Y-%m-%d'), 'Zero-point for table (UTC)'
                 if key[0]: hdu.header['ARRNAME'] = key[0], 'Identifies corresponding OI_ARRAY'
                 hdu.header['INSNAME'] = key[1], 'Identifies corresponding OI_WAVELENGTH table'
                 hdulist.append(hdu)
@@ -1242,7 +1245,7 @@ class oifits:
                 hdu.data.field('FLAG').setfield(data['flag'], bool)
                 hdu.header['EXTNAME'] = 'OI_T3'
                 hdu.header['OI_REVN'] = 1, 'Revision number of the table definition'
-                hdu.header['DATE-OBS'] = refdate.strftime('%F'), 'Zero-point for table (UTC)'
+                hdu.header['DATE-OBS'] = refdate.strftime('%Y-%m-%d'), 'Zero-point for table (UTC)'
                 if key[0]: hdu.header['ARRNAME'] = key[0], 'Identifies corresponding OI_ARRAY'
                 hdu.header['INSNAME'] = key[1], 'Identifies corresponding OI_WAVELENGTH table'
                 hdulist.append(hdu)

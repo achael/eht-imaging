@@ -1,9 +1,10 @@
 import vlbi_imaging_utils as vb
-import oifits
+import oifits_new as oifits
 import numpy as np
 import datetime
 import numpy as np
 from numpy import pi, cos, sin
+reload(oifits)
 
 def writeOIFITS(filename, RA, DEC, frequency, bandWidth, intTime,
                 visamp, visamperr, visphi, visphierr, u, v, ant1, ant2, timeobs,

@@ -25,9 +25,11 @@ import itertools as it
 import astropy.io.fits as fits
 import datetime
 import writeData
-import oifits
+import oifits_new as oifits
 import time as ttime
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
+reload(writeData)
+reload(oifits)
 
 ##################################################################################################
 # Constants
@@ -155,7 +157,6 @@ class Image(object):
 	        raise Exception("Image frequency is not the same as observation frequency!")
         
         # Get data
-        obsdata = obs.data
         obslist = obs.tlist()
         
         # Remove possible conjugate baselines:
@@ -788,7 +789,12 @@ class Obsdata(object):
                     bi = l1[vtype]*l2[vtype]*l3[vtype]  
                     bisig = np.abs(bi) * np.sqrt((l1['sigma']/np.abs(l1[vtype]))**2 +  
                                                  (l2['sigma']/np.abs(l2[vtype]))**2 + 
-                                                 (l3['sigma']/np.abs(l3[vtype]))**2)   
+                                                 (l3['sigma']/np.abs(l3[vtype]))**2) 
+                    #Katie's 2nd + 3rd order corrections - see CHIRP supplement
+                    bisig = np.sqrt(bisig**2 + (l1['sigma']*l2['sigma']*np.abs(l3[vtype]))**2 +  
+                                               (l1['sigma']*l3['sigma']*np.abs(l2[vtype]))**2 +  
+                                               (l3['sigma']*l2['sigma']*np.abs(l1[vtype]))**2 +  
+                                               (l1['sigma']*l2['sigma']*l3['sigma'])**2 )                                               
                 elif vtype == "pvis":
                     p1 = l1['qvis'] + 1j*l2['uvis']
                     p2 = l2['qvis'] + 1j*l2['uvis']
@@ -797,6 +803,12 @@ class Obsdata(object):
                     bisig = np.abs(bi) * np.sqrt((l1['sigma']/np.abs(p1))**2 +  
                                                  (l2['sigma']/np.abs(p2))**2 + 
                                                  (l3['sigma']/np.abs(p3))**2)
+                    #Katie's 2nd + 3rd order corrections - see CHIRP supplement
+                    bisig = np.sqrt(bisig**2 + (l1['sigma']*l2['sigma']*np.abs(p3))**2 +  
+                                               (l1['sigma']*l3['sigma']*np.abs(p2))**2 +  
+                                               (l3['sigma']*l2['sigma']*np.abs(p1))**2 +  
+                                               (l1['sigma']*l2['sigma']*l3['sigma'])**2 )                                               
+
                     bisig = np.sqrt(2) * bisig
                 
                 # Append to the equal-time list
@@ -1973,8 +1985,13 @@ def load_obs_oifits(filename):
     amperr = np.array([vis_data[i]._visamperr for i in range(len(vis_data))])
     visphierr = np.array([vis_data[i]._visphierr for i in range(len(vis_data))])
     timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]) #convert to single number
-    time = np.transpose(np.tile(np.array([(ttime.mktime(timeobs[i].timetuple())-ttime.mktime(datetime.datetime.utcfromtimestamp(0).timetuple()))/(60.0*60.0) 
-                                          for i in range(len(timeobs))]), [nWavelengths, 1]))
+    #return timeobs
+    #AC - datetime not working!!!
+    time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple()))/(60.0*60.0) 
+                                        for i in range(len(timeobs))]), [nWavelengths, 1]))
+
+    #time = np.transpose(np.tile(np.array([(ttime.mktime(timeobs[i].timetuple()) - ttime.mktime(datetime.datetime.utcfromtimestamp(0).timetuple()))/(60.0*60.0) 
+    #                                      for i in range(len(timeobs))]), [nWavelengths, 1]))
     
     # integration time
     tint = np.array([vis_data[i].int_time for i in range(len(vis_data))])
@@ -2456,4 +2473,83 @@ def ftmatrix(pdim, xdim, ydim, uvlist):
     ftmatrices = np.array([np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist])
     return np.reshape(ftmatrices, (len(uvlist), xdim*ydim))
 
-   
+def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
+    """Re-compute sigmas from SEFDS and add noise again"""
+    print "WARNING: adding noise to visibilities!"
+    print "Simulated visibilities should have NO previous noise added"
+    # Get data
+    obslist = obs.tlist()
+    
+    # Remove possible conjugate baselines:
+    obsdata = []
+    blpairs = []
+    for tlist in obslist:
+        for dat in tlist:
+            if not ((dat['t1'], dat['t2']) in blpairs 
+                 or (dat['t2'], dat['t1']) in blpairs):
+                 obsdata.append(dat)
+                 
+    obsdata = np.array(obsdata, dtype=DTPOL)
+                      
+    # Extract data
+    sites = obsdata[['t1','t2']].view(('a32',2))
+    elevs = obsdata[['el1','el2']].view(('f8',2))
+    taus = obsdata[['tau1','tau2']].view(('f8',2))
+    time = obsdata['time'].view(('f8',1))
+    tint = obsdata['tint'].view(('f8',1))
+    uv = obsdata[['u','v']].view(('f8',2))
+    vis = obsdata['vis'].view(('c16',1))
+    qvis = obsdata['qvis'].view(('c16',1))
+    uvis = obsdata['uvis'].view(('c16',1))
+
+    bw = obs.bw
+    
+    # Overwrite sigma_cleans with values computed from the SEFDs
+    sigma_clean = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefd'], obs.tarr[obs.tkey[sites[i][1]]]['sefd'], tint[i], bw) for i in range(len(tint))])
+    
+    # TODO is this epsilon ok???
+    # Estimated noise using no gain and estimated opacity
+    sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(np.sin(elevs[:,0]*DEGREE) + 1e-10) + taus[:,1]/(np.sin(elevs[:,1]*DEGREE) + 1e-10)))
+
+    #sigma_est = sigma_clean  
+    # Add gain and opacity uncertanities to the RMS noise
+    if not ampcal:
+        # Amplitude gain
+        gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') 
+                        + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
+        gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') 
+                        + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))
+        
+        # Opacity
+        tau1 = np.array([taus[i,0]*(1 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))])
+        tau2 = np.array([taus[i,1]*(1 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))])
+
+        # Correct noise RMS for gain variation and opacity
+        sigma_true = sigma_clean / np.sqrt(gain1 * gain2)
+        sigma_true = sigma_true * np.sqrt(np.exp(tau1/np.sin(elevs[:,0]*DEGREE) + tau2/np.sin(elevs[:,1]*DEGREE)))
+    
+    else: 
+        sigma_true = sigma_est
+    
+    # Add the noise the gain error
+    vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
+    qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
+    uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
+
+    # Add random atmospheric phases    
+    if not phasecal:
+        phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i]) for i in xrange(len(time))])
+        phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i]) for i in xrange(len(time))])
+        
+        vis *= np.exp(1j * (phase2-phase1))
+        qvis *= np.exp(1j * (phase2-phase1))
+        uvis *= np.exp(1j * (phase2-phase1))
+                
+    # Put the visibilities estimated errors back in the obsdata array
+    obsdata['vis'] = vis
+    obsdata['qvis'] = qvis
+    obsdata['uvis'] = uvis
+    obsdata['sigma'] = sigma_est
+    # Return observation object
+    return Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
+
