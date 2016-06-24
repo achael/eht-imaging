@@ -34,7 +34,7 @@ reload(oifits)
 ##################################################################################################
 # Constants
 ##################################################################################################
-EP = 1.e-10
+EP = 1.0e-10
 C = 299792458.0
 DEGREE = np.pi/180.
 RADPERAS = DEGREE/3600
@@ -157,8 +157,6 @@ class Image(object):
 	    if (self.rf != obs.rf):
 	        raise Exception("Image frequency is not the same as observation frequency!")
         
-        ope = 1 + EP # !AC should only use with zero tau!
-        
         # Get data
         obslist = obs.tlist()
         
@@ -186,7 +184,7 @@ class Image(object):
         vis = np.dot(mat, self.imvec)
         
         # Estimated noise using no gain and estimated opacity
-        sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(ope*np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(ope*np.sin(elevs[:,1]*DEGREE))))
+        sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
         
         # If there are polarized images, observe them:
         qvis = np.zeros(len(vis))
@@ -217,7 +215,7 @@ class Image(object):
 
             # Correct noise RMS for gain variation and opacity
             sigma_true = sigma_clean / np.sqrt(gain1 * gain2)
-            sigma_true = sigma_true * np.sqrt(np.exp(tau1/(ope*np.sin(elevs[:,0]*DEGREE)) + tau2/(ope*np.sin(elevs[:,1]*DEGREE))))
+            sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
         
         else: 
             sigma_true = sigma_est
@@ -2481,8 +2479,6 @@ def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
     print "WARNING: adding noise to visibilities!"
     print "Simulated visibilities should have NO previous noise added"
     
-    ope = 1+EP    # !AC is this epsilon ok???
-    
     # Get data
     obslist = obs.tlist()
     
@@ -2514,8 +2510,8 @@ def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
     sigma_clean = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefd'], obs.tarr[obs.tkey[sites[i][1]]]['sefd'], tint[i], bw) for i in range(len(tint))])
     
 
-    # Estimated noise using no gain and estimated opacity
-    sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(ope*np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(ope*np.sin(elevs[:,1]*DEGREE))))
+    # Estimated noise using no gain and estimated opacity                    
+    sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
 
     #sigma_est = sigma_clean  
     # Add gain and opacity uncertanities to the RMS noise
@@ -2532,7 +2528,7 @@ def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
 
         # Correct noise RMS for gain variation and opacity
         sigma_true = sigma_clean / np.sqrt(gain1 * gain2)
-        sigma_true = sigma_true * np.sqrt(np.exp(tau1/(ope*np.sin(elevs[:,0]*DEGREE)) + tau2/(ope*np.sin(elevs[:,1]*DEGREE))))
+        sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
     
     else: 
         sigma_true = sigma_est
