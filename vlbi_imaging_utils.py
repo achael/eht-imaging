@@ -597,7 +597,7 @@ class Obsdata(object):
             for dat in tlist:
                 if not (set((dat['t1'], dat['t2']))) in blpairs:
                      # Reverse the baseline if not north
-                     if self.tarr[self.tkey[dat['t1']]]['z'] <= self.tarr[self.tkey[dat['t1']]]['z']:
+                     if (self.tarr[self.tkey[dat['t1']]]['z']) <= (self.tarr[self.tkey[dat['t2']]]['z']):
                         (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
                         (dat['el1'], dat['el2']) = (dat['el2'], dat['el1'])
                         dat['u'] = -dat['u']
@@ -608,7 +608,7 @@ class Obsdata(object):
                      # Append the data point
                      blpairs.append(set((dat['t1'],dat['t2'])))    
                      obsdata.append(dat) 
-        
+
         obsdata = np.array(obsdata, dtype=DTPOL)
         
         # Sort the data by time
@@ -2556,6 +2556,7 @@ def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
     obsdata['qvis'] = qvis
     obsdata['uvis'] = uvis
     obsdata['sigma'] = sigma_est
+    
     # Return observation object
     return Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
 
