@@ -26,7 +26,7 @@ def vis_resid_analyze(obs, image):
     # chi - squared
     chisq = np.sum(np.abs(resid)**2)
 
-    print  "Chi^2/2N: %f" % (chisq/(2*len(vis)))
+    print("Chi^2/2N: %f" % (chisq/(2*len(vis))))
 
     # plot the histograms
     plt.figure()
@@ -87,8 +87,8 @@ def bis_resid_analyze(obs, image):
     # chi - squared
     chisq = np.sum(np.abs(resid)**2)
 
-    print  "Bispectrum Chi^2/2N: %f" % (chisq/(2*len(bis)))
-    print "Bispectrum Chi^2/2(N-p): %f" % (chisq/(2*(len(bis)-len(image.imvec))))
+    print("Bispectrum Chi^2/2N: %f" % (chisq/(2*len(bis))))
+    print("Bispectrum Chi^2/2(N-p): %f" % (chisq/(2*(len(bis)-len(image.imvec)))))
 
     # plot the histograms
     plt.figure()
@@ -166,10 +166,10 @@ def pol_resid_analyze(obs, image):
     pchisq = np.sum(np.abs(residp)**2)
     mchisq = np.sum(np.abs(residm)**2)
     
-    print  "Q Chi^2/2N: %f" % (qchisq/(2*len(vis)))
-    print  "U Chi^2/2N: %f" % (uchisq/(2*len(vis)))
-    print  "P Chi^2/2N: %f" % (pchisq/(2*len(vis)))
-    print  "m Chi^2/2N: %f" % (mchisq/(2*len(vis)))
+    print("Q Chi^2/2N: %f" % (qchisq/(2*len(vis))))
+    print("U Chi^2/2N: %f" % (uchisq/(2*len(vis))))
+    print("P Chi^2/2N: %f" % (pchisq/(2*len(vis))))
+    print("m Chi^2/2N: %f" % (mchisq/(2*len(vis))))
     
     # plot the histograms
     plt.figure()
