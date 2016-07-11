@@ -21,8 +21,8 @@ gaussprior = vb.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 beamparams = obs.fit_beam()
 res = 1 / np.max(obs.unpack('uvdist')['uvdist'])
-print beamparams 
-print res
+print(beamparams) 
+print(res)
 
 out_cl = mx.maxen_onlyclosure(obs, gaussprior, flux = 1.0, maxit=50, alpha_clphase=10, alpha_clamp=10, gamma=500, delta=1e10, entropy="simple", stop=1e-15, grads=True)
 out_cl = mx.maxen_onlyclosure(obs, mx.blur_circ(out_cl, 1e-10), flux = 1.0, maxit=100, alpha_clphase=10, alpha_clamp=10, gamma=500, delta=1e10, entropy="tv", stop=1e-10, grads=True)

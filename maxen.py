@@ -34,7 +34,7 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
        The lagrange multiplier alpha is not a free parameter
     """
     
-    print "Imaging I with visibility amplitudes and phases . . ."
+    print("Imaging I with visibility amplitudes and phases . . .")
         
     # Catch problem if uvrange < largest baseline
     uvrange = 1/Prior.psize
@@ -106,15 +106,15 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
     out = np.exp(res.x)
     
     # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print "Chi^2: %f" % chisq(out, A, vis, sigma)
-    print res.message
+    print("time: %f s" % (tstop - tstart))
+    print("J: %f" % res.fun)
+    print("Chi^2: %f" % chisq(out, A, vis, sigma))
+    print(res.message)
     
     # Return Image object
     outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd)
     if len(Prior.qvec):
-        print "Preserving image complex polarization fractions!"
+        print("Preserving image complex polarization fractions!")
         qvec = Prior.qvec * out / Prior.imvec
         uvec = Prior.uvec * out / Prior.imvec
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
@@ -127,7 +127,7 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
        "Lagrange multipliers" are not free parameters.
     """
     
-    print "Imaging I with bispectrum . . ." 
+    print("Imaging I with bispectrum . . .") 
     
     # Catch problem if uvrange < largest baseline
     uvrange = 1/Prior.psize
@@ -214,15 +214,15 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
     out = np.exp(res.x)
     
     # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print "Chi^2: %f" % chisq_bi(out, A3, bi, sigs)
-    print res.message
+    print("time: %f s" % (tstop - tstart))
+    print("J: %f" % res.fun)
+    print("Chi^2: %f" % chisq_bi(out, A3, bi, sigs))
+    print(res.message)
     
     # Return Image object
     outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd)
     if len(Prior.qvec):
-        print "Preserving complex polarization fractions"
+        print("Preserving complex polarization fractions")
         qvec = Prior.qvec * out / Prior.imvec
         uvec = Prior.uvec * out / Prior.imvec
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
@@ -235,7 +235,7 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
        "Lagrange multipliers" are not free parameters.
     """
     
-    print "Imaging I with only closure quantities . . ." 
+    print("Imaging I with only closure quantities . . .") 
     
     # Note: total flux is completely unconstrained by only using closure quantities
 
@@ -351,8 +351,8 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
         im_step = np.exp(logim_step)
         chi2_clphase = chisq_clphase(im_step, A3, clphase, sigs_clphase)
         chi2_clamp   = chisq_clamp(im_step, A4, clamp, sigs_clamp)
-	print("chi2_clphase: ",chi2_clphase)
-	print("chi2_clamp: ",chi2_clamp)
+	print(("chi2_clphase: ",chi2_clphase))
+	print(("chi2_clamp: ",chi2_clamp))
         plot_i(im_step, Prior, nit, chi2_clamp, ipynb=ipynb)
         nit += 1
    
@@ -371,16 +371,16 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
     out = np.exp(res.x)
     
     # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print "Closure Phase Chi^2: %f" % chisq_clphase(out, A3, clphase, sigs_clphase)
-    print "Closure Amplitude Chi^2: %f" % chisq_clamp(out, A4, clamp, sigs_clamp)
-    print res.message
+    print("time: %f s" % (tstop - tstart))
+    print("J: %f" % res.fun)
+    print("Closure Phase Chi^2: %f" % chisq_clphase(out, A3, clphase, sigs_clphase))
+    print("Closure Amplitude Chi^2: %f" % chisq_clamp(out, A4, clamp, sigs_clamp))
+    print(res.message)
     
     # Return Image object
     outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd)
     if len(Prior.qvec):
-        print "Preserving complex polarization fractions"
+        print("Preserving complex polarization fractions")
         qvec = Prior.qvec * out / Prior.imvec
         uvec = Prior.uvec * out / Prior.imvec
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
@@ -394,7 +394,7 @@ def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, n
        The lagrange multiplier beta is not a free parameter
     """
     
-    print "Imaging Q, U with pol. amplitude and phase . . ."
+    print("Imaging Q, U with pol. amplitude and phase . . .")
     
     # Catch problem if uvrange < largest baseline
     uvrange = 1/Prior.psize
@@ -477,10 +477,10 @@ def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, n
     out = mcv(res.x)
     
     # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print "Chi^2: %f" % chisq_p(out, iimage, A, p, sigmap)
-    print res.message
+    print("time: %f s" % (tstop - tstart))
+    print("J: %f" % res.fun)
+    print("Chi^2: %f" % chisq_p(out, iimage, A, p, sigmap))
+    print(res.message)
     
     # Return Image object
     qimfinal = qimage(iimage, out[0:len(iimage)], out[len(iimage):])
@@ -499,7 +499,7 @@ def maxen_m(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-100, n
        The "lagrange multiplier" is not a free parameter
     """
     
-    print "Imaging Q, U with pol. ratios . . ."
+    print("Imaging Q, U with pol. ratios . . .")
     
     # Catch problem if uvrange < largest baseline
     uvrange = 1/Prior.psize
@@ -575,10 +575,10 @@ def maxen_m(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-100, n
     out = mcv(res.x)
     
     # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print "Chi^2: %f" % chisq_m(out, iimage, A, m, sigmam)
-    print res.message
+    print("time: %f s" % (tstop - tstart))
+    print("J: %f" % res.fun)
+    print("Chi^2: %f" % chisq_m(out, iimage, A, m, sigmam))
+    print(res.message)
     
     # Return Image object
     qimfinal = qimage(iimage, out[0:len(iimage)], out[len(iimage):])
@@ -597,7 +597,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
        Lagrange multipliers are not free parameters
     """
     
-    print "Imaging I, Q, U with bispectrum and pol. ratios simulaneously . . ."
+    print("Imaging I, Q, U with bispectrum and pol. ratios simulaneously . . .")
     
     # Catch problem if uvrange < largest baseline
     uvrange = 1/Prior.psize
@@ -736,11 +736,11 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     outp = mcv(res.x[len(nprior):])
     
     # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print "Chi^2_b: %f" % chisq_bi(outi, A3, bi, sigsb)
-    print "Chi^2_m: %f" % chisq_m(outp, outi, Apol, m, sigsm)
-    print res.message
+    print("time: %f s" % (tstop - tstart))
+    print("J: %f" % res.fun)
+    print("Chi^2_b: %f" % chisq_bi(outi, A3, bi, sigsb))
+    print("Chi^2_m: %f" % chisq_m(outp, outi, Apol, m, sigsm))
+    print(res.message)
     
     # Return Image object
     qimfinal = qimage(outi, outp[0:len(outi)], outp[len(outi):])

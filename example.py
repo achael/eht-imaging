@@ -59,8 +59,8 @@ cbeam.display()
 # Resolution
 beamparams = obs.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
 res = obs.res() # nominal array resolution, 1/longest baseline
-print beamparams 
-print res
+print(beamparams) 
+print(res)
 
 # You can deblur the visibilities by dividing by the scattering kernel
 obs = vb.deblur(obs)
