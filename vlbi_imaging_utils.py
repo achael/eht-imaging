@@ -27,6 +27,8 @@ import datetime
 import writeData
 import oifits_new as oifits
 import time as ttime
+import pulses
+
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
 reload(writeData)
 reload(oifits)
@@ -93,6 +95,7 @@ class Image(object):
     """A radio frequency image array (in Jy/pixel).
     
     Attributes:
+    	pulse: The function convolved with pixel value dirac comb for continuous image rep. (function from pulses.py)
         psize: The pixel dimension in radians (float)
         xdim: The number of pixels along the x dimension (int)
         ydim: The number of pixels along the y dimension (int)
@@ -104,10 +107,11 @@ class Image(object):
     	mjd: The mjd of the image 
     """
     
-    def __init__(self, image, psize, ra, dec, rf=230e9, source="SgrA", mjd="48277"):
+    def __init__(self, image, psize, ra, dec, rf=230e9, pulse=pulses.deltaPulse2D, source="SgrA", mjd="48277"):
         if len(image.shape) != 2: 
             raise Exception("image must be a 2D numpy array") 
-               
+        
+        self.pulse = pulse       
         self.psize = float(psize)
         self.xdim = image.shape[1]
         self.ydim = image.shape[0]
@@ -135,7 +139,7 @@ class Image(object):
     
     def copy(self):
         """Copy the image object"""
-        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.rf, self.source, self.mjd)
+        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
         return newim
         
@@ -180,7 +184,7 @@ class Image(object):
         sigma_clean = obsdata['sigma'].view(('f8',1))
 
         # Perform DFT
-        mat = ftmatrix(self.psize, self.xdim, self.ydim, uv)
+        mat = ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse)
         vis = np.dot(mat, self.imvec)
         
         # Estimated noise using no gain and estimated opacity
@@ -987,7 +991,7 @@ class Obsdata(object):
         
         return outlist
     
-    def dirtybeam(self, npix, fov):
+    def dirtybeam(self, npix, fov, pulse=pulses.deltaPulse2D):
         """Return a square Image object of the observation dirty beam
            fov is in radian
         """
@@ -1008,9 +1012,9 @@ class Obsdata(object):
         im = im/np.sum(im)
         
         src = self.source + "_DB"
-        return Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd)
+        return Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
     
-    def dirtyimage(self, npix, fov):
+    def dirtyimage(self, npix, fov, pulse=pulses.deltaPulse2D):
        
 
         """Return a square Image object of the observation dirty image
@@ -1057,16 +1061,16 @@ class Obsdata(object):
         qim = qim[0:npix, 0:npix]
         uim = uim[0:npix, 0:npix]   
         
-        out = Image(im, pdim, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd)
+        out = Image(im, pdim, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=pulse)
         out.add_qu(qim, uim)
         return out
     
-    def cleanbeam(self, npix, fov):
+    def cleanbeam(self, npix, fov, pulse=pulses.deltaPulse2D):
         """Return a square Image object of the observation fitted (clean) beam
            fov is in radian
         """
         # !AC include other beam weightings
-        im = make_square(self, npix, fov)
+        im = make_square(self, npix, fov, pulse=pulse)
         beamparams = self.fit_beam()
         im = add_gauss(im, 1.0, beamparams)
         return im
@@ -2041,12 +2045,13 @@ def load_obs_oifits(filename):
     # return object
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0], ampcal=False, phasecal=False)
     
-def load_im_txt(filename):
+def load_im_txt(filename, pulse=pulses.deltaPulse2D):
     """Read in an image from a text file and create an Image object
        Text file should have the same format as output from Image.save_txt()
        Make sure the header has exactly the same form!
     """
     
+    # TODO !AC should pulse type be in header?
     # Read the header
     file = open(filename)
     src = string.join(file.readline().split()[2:])
@@ -2070,7 +2075,7 @@ def load_im_txt(filename):
     # Load the data, convert to list format, make object
     datatable = np.loadtxt(filename, dtype=float)
     image = datatable[:,2].reshape(ydim_p, xdim_p)
-    outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd)
+    outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
     
     # Look for Stokes Q and U
     qimage = uimage = np.zeros(image.shape)
@@ -2086,10 +2091,11 @@ def load_im_txt(filename):
     
     return outim
     
-def load_im_fits(filename, punit="deg"):
+def load_im_fits(filename, punit="deg", pulse=pulses.deltaPulse2D):
     """Read in an image from a FITS file and create an Image object
     """
-    
+    # TODO !AC should pulse type be in header?
+
     # Radian or Degree?
     if punit=="deg":
         pscl = DEGREE
@@ -2125,7 +2131,7 @@ def load_im_fits(filename, punit="deg"):
     data = hdulist[0].data
     data = data.reshape((data.shape[-2],data.shape[-1]))
     image = data[::-1,:] # flip y-axis!
-    outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd)
+    outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
     
     # Look for Stokes Q and U
     qimage = uimage = np.array([])
@@ -2149,20 +2155,49 @@ def load_im_fits(filename, punit="deg"):
 # Image Construction Functions
 ##################################################################################################
 
-def make_square(obs, npix, fov):
+def resample_square(im, xdim_new, ker_size=5):
+	"""Return a new image object that is resampled to the new dimensions xdim x ydim"""
+	
+	# !!???
+	# !AC TODO work with not square image? New xdim & ydim must be compatible!
+	if im.xdim != im.ydim:
+		raise Exception("Image must be square (for now)!")
+	if im.pulse == pulses.deltaPulse2D:
+		raise Exception("This function only works on continuously parametrized images: does not work with delta pulses!")
+	
+	ydim_new = xdim_new
+	fov = im.xdim * im.psize
+	psize_new = fov / xdim_new
+	ij = np.array([[[i*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0, j*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0]
+                    for i in np.arange(0, -im.xdim, -1)] 
+                    for j in np.arange(0, -im.ydim, -1)]).reshape((im.xdim*im.ydim, 2))
+	
+	def im_new(x,y):
+		mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+		return np.sum([im.imvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
+	
+	out = np.array([[im_new(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                      for x in np.arange(0, -xdim_new, -1)] 
+                      for y in np.arange(0, -ydim_new, -1)] )    
+	
+	# TODO !AC check if this normalization is correct!
+	out = out * np.sum(im.imvec)/np.sum(out)
+	return Image(out, psize_new, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+	
+def make_square(obs, npix, fov,pulse=pulses.deltaPulse2D):
     """Make an empty prior image
        obs is an observation object
        fov is in radians
     """ 
     pdim = fov/npix
     im = np.zeros((npix,npix))
-    return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd)
+    return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd, pulse=pulse)
 
 def add_flat(im, flux):
     """Add flat background to an image""" 
     
     imout = (im.imvec + (flux/float(len(im.imvec))) * np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
-    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd) 
+    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse) 
     return out
 
 def add_gauss(im, flux, beamparams, x=0, y=0):
@@ -2172,22 +2207,26 @@ def add_gauss(im, flux, beamparams, x=0, y=0):
        theta is the orientation angle measured E of N
     """ 
     
-    xfov = im.xdim * im.psize
-    yfov = im.ydim * im.psize
+    #xfov = im.xdim * im.psize
+    #yfov = im.ydim * im.psize
     sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
     sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.)))
     cth = np.cos(beamparams[2])
     sth = np.sin(beamparams[2])
 
+    #gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
+    #                  for i in np.arange(xfov/2., -xfov/2., -im.psize)] 
+    #                  for j in np.arange(yfov/2., -yfov/2., -im.psize)])                        
+    
     gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
-                      for i in np.arange(xfov/2., -xfov/2., -im.psize)] 
-                      for j in np.arange(yfov/2., -yfov/2., -im.psize)])    
+                      for i in (np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0)] 
+                      for j in (np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0 )]) 
   
     # !AC think more carefully about the different cases for array size here
     gauss = gauss[0:im.ydim, 0:im.xdim]
     
     imout = im.imvec.reshape(im.ydim, im.xdim) + (gauss * flux/np.sum(gauss))
-    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd)
+    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
     return out
 
 
@@ -2201,7 +2240,7 @@ def add_const_m(im, mag, angle):
     imi = im.imvec.reshape(im.ydim,im.xdim)    
     imq = qimage(im.imvec, mag * np.ones(len(im.imvec)), angle*np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
     imu = uimage(im.imvec, mag * np.ones(len(im.imvec)), angle*np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
-    out = Image(imi, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd)
+    out = Image(imi, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
     out.add_qu(imq, imu)
     return out
     
@@ -2258,7 +2297,7 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         uim = scipy.signal.fftconvolve(gauss, uim, mode='same')
                                   
     
-    out = Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)                        
+    out = Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd, pulse=image.pulse)                        
     if len(image.qvec):
         out.add_qu(qim, uim)
     return out  
@@ -2438,7 +2477,6 @@ def blnoise(sefd1, sefd2, tint, bw):
     
     return np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
 
-
 def cerror(sigma):
     """Return a complex number drawn from a circular complex Gaussian of zero mean"""
     
@@ -2455,7 +2493,7 @@ def hashrand(*args):
     return np.random.rand()
 
       
-def ftmatrix(pdim, xdim, ydim, uvlist):
+def ftmatrix_old(pdim, xdim, ydim, uvlist):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
        that extracts spatial frequencies of the uv points in uvlist.
     """
@@ -2474,6 +2512,21 @@ def ftmatrix(pdim, xdim, ydim, uvlist):
     ftmatrices = np.array([np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist])
     return np.reshape(ftmatrices, (len(uvlist), xdim*ydim))
 
+	
+def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
+    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
+       that extracts spatial frequencies of the uv points in uvlist.
+    """
+    
+    # TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
+    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    
+    # Fortunately, this works for both uvlist recarrays and ndarrays, but be careful! 
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each omega
+    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
+    return ftmatrices	
+	
 def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
     """Re-compute sigmas from SEFDS and add noise again"""
     print "WARNING: adding noise to visibilities!"
