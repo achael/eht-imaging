@@ -104,7 +104,7 @@ class Image(object):
     	mjd: The mjd of the image 
     """
     
-    def __init__(self, image, psize, ra, dec, rf=230e9, source="SgrA", mjd="48277"):
+    def __init__(self, image, psize, ra, dec, rf=230e9, source="SgrA", mjd=0):
         if len(image.shape) != 2: 
             raise Exception("image must be a 2D numpy array") 
                
@@ -505,8 +505,8 @@ class Array(object):
                                   blnoise(self.tarr[i1]['sefd'], self.tarr[i2]['sefd'], tint, bw) # Sigma (Jy)
                                 ), dtype=DTPOL
                                 ))
-
-        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source="0", mjd=0, ampcal=True, phasecal=True)      
+        src = str(ra) + ":" + str(dec) #!AC format??
+        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=src, mjd=0, ampcal=True, phasecal=True)      
         return obs
      
     def save_array(self, fname):
@@ -563,7 +563,7 @@ class Obsdata(object):
         data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, sigma)
     """
     
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=48277, ampcal=True, phasecal=True):
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=0, ampcal=True, phasecal=True):
         
         if (datatable.dtype != DTPOL):
             raise Exception("Data table should be a recarray with datatable.dtype = %s" % DTPOL)
@@ -1421,7 +1421,7 @@ class Obsdata(object):
         head['EXTVER'] = 1
         head['GSTIA0'] = 119.85 # for mjd 48277
         head['FREQ']= self.rf
-        head['RDATE'] = '1991-01-21'
+        #head['RDATE'] = '1991-01-21' # !AC change??
         head['ARRNAM'] = 'ALMA' #!AC
         head['XYZHAND'] = 'RIGHT'
         head['ARRAYX'] = 0.e0
@@ -1451,7 +1451,7 @@ class Obsdata(object):
         header['OBSDEC'] = self.dec
         header['OBJECT'] = self.source
         header['MJD'] = self.mjd
-        header['DATE-OBS'] = '1991-01-21' # !AC convert mjd to date!!
+        #header['DATE-OBS'] = '1991-01-21' # !AC convert mjd to date!!
         header['BUNIT'] = 'JY'
         header['VELREF'] = 3 #??
         header['ALTRPIX'] = 1.e0
@@ -1498,10 +1498,10 @@ class Obsdata(object):
         header['PZERO4'] = 0.e0
         header['PTYPE5'] = 'DATE'
         header['PSCAL5'] = 1.e0
-        header['PZERO5'] = self.mjd
+        header['PZERO5'] = self.mjd + 2400000.5 #JD to MJD
         header['PTYPE6'] = '_DATE'
         header['PSCAL6'] = 1.e0
-        header['PZERO6'] = self.mjd
+        header['PZERO6'] = 0.0
         header['PTYPE7'] = 'INTTIM'
         header['PSCAL7'] = 1.e0
         header['PZERO7'] = 0.e0
@@ -1523,10 +1523,11 @@ class Obsdata(object):
         ndat = len(obsdata['time'])
         
         # times and tints
-        jds = (self.mjd + 2400000.5) 
+        jds = (self.mjd + 2400000.5) * np.ones(len(obsdata))
         fractimes = (obsdata['time'] / 24.0) 
         tints = obsdata['tint']
-        
+        print jds
+        print fractimes
         # Baselines            
         # !AC These HAVE to be correct for CLEAN to work. Why?
         t1 = [self.tkey[scope] + 1 for scope in obsdata['t1']]
@@ -1568,12 +1569,12 @@ class Obsdata(object):
         outdat[:,0,0,0,0,3,2] = weight    
         
         # Save data
-        pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE', 
+        pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
                 'INTTIM', 'ELEV1', 'ELEV2', 'TAU1', 'TAU2']
         #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE', 
         #        'INTTIM']
         x = fits.GroupData(outdat, parnames=pars, 
-                           pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints, el1, el2,tau1,tau2],
+                           pardata=[u, v, np.zeros(ndat), bl, fractimes, np.zeros(ndat), tints, el1, el2,tau1,tau2],
                            bitpix=-32)
         #x = fits.GroupData(outdat, parnames=pars, 
         #                   pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints], 
@@ -1733,7 +1734,7 @@ def load_obs_txt(filename):
     datatable2 = np.array(datatable2)
     return Obsdata(ra, dec, rf, bw, datatable2, tarr, source=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)        
 
-def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, src='SgrA', mjd=48277, ampcal=False, phasecal=False):
+def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, src='SgrA', mjd=0, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
