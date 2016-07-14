@@ -1590,13 +1590,17 @@ class Obsdata(object):
         
         return
     
-    def save_oifits(self, fname):
+    def save_oifits(self, fname, flux=1.0):
         """Save visibility data to oifits
             Antenna diameter currently incorrect and the exact times are not correct in the datetime object
             Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function 
         """
         #todo: Add polarization to oifits??
         print 'Warning: save_oifits does NOT save polarimetric visibility data!'
+        
+        # Normalizing by the total flux passed in - note this is changing the data inside the obs structure
+        self.data['vis'] /= flux
+        self.data['sigma'] /= flux
         
         data = self.unpack(['u','v','amp','phase', 'sigma', 'time', 't1', 't2', 'tint'])
         biarr = self.bispectra(mode="all", count="min")
@@ -1656,7 +1660,11 @@ class Obsdata(object):
         # todo: check that putting the negatives on the phase and t3phi is correct
         writeData.writeOIFITS(fname, self.ra, self.dec, self.rf, self.bw, intTime, amp, viserror, phase, viserror, u, v, ant1, ant2, dttime, 
                               t3amp, t3amperr, t3phi, t3phierr, uClosure, vClosure, antOrder, dttimeClosure, antennaNames, antennaDiam, antennaX, antennaY, antennaZ)
-
+   
+        # Un-Normalizing by the total flux passed in - note this is changing the data inside the obs structure back to what it originally was
+        self.data['vis'] *= flux
+        self.data['sigma'] *= flux
+        
         return
         
 ##################################################################################################
@@ -1945,7 +1953,7 @@ def load_obs_uvfits(filename, flipbl=False):
 
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd, ampcal=True, phasecal=True)
 
-def load_obs_oifits(filename):
+def load_obs_oifits(filename, flux=1.0):
     """Load data from an oifits file
        Does NOT currently support polarization
     """
@@ -2039,7 +2047,7 @@ def load_obs_oifits(filename):
     #todo - check that we are properly using the error from the amplitude and phase
 
     # create data tables
-    datatable = np.array([ (time[i], tint[i], t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], u[i], v[i], vis[i], qvis[i], uvis[i], amperr[i]) for i in range(len(vis))], dtype=DTPOL)
+    datatable = np.array([ (time[i], tint[i], t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], u[i], v[i], flux*vis[i], qvis[i], uvis[i], flux*amperr[i]) for i in range(len(vis))], dtype=DTPOL)
     tarr = np.array([ (sites[i], x[i], y[i], z[i], sefd[i]) for i in range(nAntennas)], dtype=DTARR)
 
     # return object
