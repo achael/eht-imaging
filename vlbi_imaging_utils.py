@@ -1498,7 +1498,8 @@ class Obsdata(object):
         header['PZERO4'] = 0.e0
         header['PTYPE5'] = 'DATE'
         header['PSCAL5'] = 1.e0
-        header['PZERO5'] = self.mjd + 2400000.5 #JD to MJD
+        header['PZERO5'] = 0.
+        #header['PZERO5'] = self.mjd + 2400000.5 #JD to MJD
         header['PTYPE6'] = '_DATE'
         header['PSCAL6'] = 1.e0
         header['PZERO6'] = 0.0
@@ -1526,8 +1527,7 @@ class Obsdata(object):
         jds = (self.mjd + 2400000.5) * np.ones(len(obsdata))
         fractimes = (obsdata['time'] / 24.0) 
         tints = obsdata['tint']
-        print jds
-        print fractimes
+
         # Baselines            
         # !AC These HAVE to be correct for CLEAN to work. Why?
         t1 = [self.tkey[scope] + 1 for scope in obsdata['t1']]
@@ -1574,7 +1574,7 @@ class Obsdata(object):
         #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE', 
         #        'INTTIM']
         x = fits.GroupData(outdat, parnames=pars, 
-                           pardata=[u, v, np.zeros(ndat), bl, fractimes, np.zeros(ndat), tints, el1, el2,tau1,tau2],
+                           pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints, el1, el2,tau1,tau2],
                            bitpix=-32)
         #x = fits.GroupData(outdat, parnames=pars, 
         #                   pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints], 
