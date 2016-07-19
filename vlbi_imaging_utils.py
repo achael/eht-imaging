@@ -1897,10 +1897,17 @@ def load_obs_uvfits(filename, flipbl=False):
     try:
         u = data['UU---SIN'][mask] * rf
         v = data['VV---SIN'][mask] * rf    
-    except KeyError:
-        u = data['UU'][mask] * rf
-        v = data['VV'][mask] * rf
-           
+    except KeyError:   
+        try:
+            u = data['UU'][mask] * rf
+            v = data['VV'][mask] * rf
+        except KeyError:
+            try:
+                u = data['UU--'][mask] * rf
+                v = data['VV--'][mask] * rf
+            except KeyError:
+                raise Exception("Cant figure out column label for UV coords")
+                    
     # Get vis data
     rr = data['DATA'][:,0,0,0,0,0,0][mask] + 1j*data['DATA'][:,0,0,0,0,0,1][mask]
     ll = data['DATA'][:,0,0,0,0,1,0][mask] + 1j*data['DATA'][:,0,0,0,0,1,1][mask]
@@ -2163,6 +2170,23 @@ def add_flat(im, flux):
     """Add flat background to an image""" 
     
     imout = (im.imvec + (flux/float(len(im.imvec))) * np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
+    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd) 
+    return out
+
+def add_tophat(im, flux, radius):
+    """Add tophat flux to an image""" 
+    xfov = im.xdim * im.psize
+    yfov = im.ydim * im.psize
+    
+    # !AC handle actual zeros?
+    hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else EP
+                      for i in np.arange(xfov/2., -xfov/2., -im.psize)] 
+                      for j in np.arange(yfov/2., -yfov/2., -im.psize)])        
+    
+    # !AC think more carefully about the different cases for array size here
+    hat = hat[0:im.ydim, 0:im.xdim]
+    
+    imout = im.imvec.reshape(im.ydim, im.xdim) + (hat * flux/np.sum(hat))
     out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd) 
     return out
 
