@@ -145,10 +145,10 @@ class Image(object):
         self.qvec = - self.qvec
         return
            
-    def observe_same(self, obs, gainp=GAINPDEF, ampcal="True", phasecal="True", sgrscat=False):
-        """Observe the image on the same baselines with the same noise as an existing observation object
+    def observe_same(self, obs, sgrscat=False):
+        """Observe the image on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-           gainp is the percent error in gain and tau
+           Does NOT add noise
         """
         
         # Check for agreement in coordinates and frequency 
@@ -171,20 +171,12 @@ class Image(object):
                      
         obsdata = np.array(obsdata, dtype=DTPOL)
                           
-        # Extract data
-        sites = obsdata[['t1','t2']].view(('a32',2))
-        elevs = obsdata[['el1','el2']].view(('f8',2))
-        taus = obsdata[['tau1','tau2']].view(('f8',2))
-        time = obsdata['time'].view(('f8',1))
+        # Extract uv data
         uv = obsdata[['u','v']].view(('f8',2))
-        sigma_clean = obsdata['sigma'].view(('f8',1))
-
+           
         # Perform DFT
         mat = ftmatrix(self.psize, self.xdim, self.ydim, uv)
         vis = np.dot(mat, self.imvec)
-        
-        # Estimated noise using no gain and estimated opacity
-        sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
         
         # If there are polarized images, observe them:
         qvis = np.zeros(len(vis))
@@ -195,55 +187,23 @@ class Image(object):
         
         # Scatter the visibilities with the SgrA* kernel
         if sgrscat:
+            print 'Scattering Visibilities with Sgr A* kernel!'
             for i in range(len(vis)):
                 ker = sgra_kernel_uv(self.rf, uv[i,0], uv[i,1])
                 vis[i]  *= ker
                 qvis[i] *= ker
                 uvis[i] *= ker
-        
-        # Add gain and opacity uncertanities to the RMS noise
-        if not ampcal:
-            # Amplitude gain
-            gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') 
-                            + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
-            gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') 
-                            + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))
-           
-            # Opacity
-            tau1 = np.array([taus[i,0]*(1 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))])
-            tau2 = np.array([taus[i,1]*(1 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))])
-
-            # Correct noise RMS for gain variation and opacity
-            sigma_true = sigma_clean / np.sqrt(gain1 * gain2)
-            sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
-        
-        else: 
-            sigma_true = sigma_est
-        
-        # Add the noise the gain error
-        vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
-        qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
-        uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
-
-        # Add random atmospheric phases    
-        if not phasecal:
-            phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i]) for i in xrange(len(time))])
-            phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i]) for i in xrange(len(time))])
-            
-            vis *= np.exp(1j * (phase2-phase1))
-            qvis *= np.exp(1j * (phase2-phase1))
-            uvis *= np.exp(1j * (phase2-phase1))
-              
-        # Put the visibilities estimated errors back in the obsdata array
+   
+        # Put the visibilities back in the obsdata array
         obsdata['vis'] = vis
         obsdata['qvis'] = qvis
         obsdata['uvis'] = uvis
-        obsdata['sigma'] = sigma_est
         
         # Return observation object
-        return Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata, obs.tarr, source=self.source, mjd=self.mjd, ampcal=ampcal, phasecal=phasecal)
-    
-    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=TAUDEF, gainp=GAINPDEF, ampcal="True", phasecal="True", sgrscat=False):
+        obs_no_noise = Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata, obs.tarr, source=self.source, mjd=self.mjd)
+        return obs_no_noise
+        
+    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=TAUDEF, gainp=GAINPDEF, opacity_errs=True, ampcal=True, phasecal=True, sgrscat=False):
         """Observe the image with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in GMST.
            tint and tadv should be seconds.
@@ -252,10 +212,14 @@ class Image(object):
 	    """
         
         # Generate empty observation
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, opacity_errs=opacity_errs)
         
         # Observe
-        obs = self.observe_same(obs, ampcal=ampcal, phasecal=phasecal, sgrscat=sgrscat, gainp=gainp)    
+        obs = self.observe_same(obs, sgrscat=sgrscat)    
+        
+        # Add noise
+        obs = add_noise(obs, opacity_errs=opacity_errs, ampcal=ampcal, phasecal=phasecal, gainp=gainp)
+        
         return obs
         
     def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='nearest'):
@@ -433,7 +397,7 @@ class Array(object):
                     
         return np.array(bls)
             
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, tau=TAUDEF):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, tau=TAUDEF, opacity_errs=True):
         """Generate u,v points and baseline errors for the array.
            Return an Observation object with no visibilities.
            tstart and tstop are hrs in GMST
@@ -462,7 +426,6 @@ class Array(object):
         times = np.arange(tstart, tstop+tstep, tstep)
        
         # Generate uv points at all times
-
         outlist = []        
         for k in xrange(len(times)):
             time = times[k]
@@ -505,8 +468,17 @@ class Array(object):
                                   blnoise(self.tarr[i1]['sefd'], self.tarr[i2]['sefd'], tint, bw) # Sigma (Jy)
                                 ), dtype=DTPOL
                                 ))
-        src = str(ra) + ":" + str(dec) #!AC format??
-        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=src, mjd=0, ampcal=True, phasecal=True)      
+        
+        obsarr = np.array(outlist)
+        
+        # Elevation dependence on noise using estimated opacity
+        if opacity_errs:
+            elevs = obsarr[['el1','el2']].view(('f8',2))
+            taus = obsarr[['tau1','tau2']].view(('f8',2))
+            obsarr['sigma'] *= np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))                 
+        
+        # Return
+        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=str(ra) + ":" + str(dec), mjd=0, ampcal=True, phasecal=True)      
         return obs
      
     def save_array(self, fname):
@@ -2499,11 +2471,13 @@ def ftmatrix(pdim, xdim, ydim, uvlist):
     ftmatrices = np.array([np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist])
     return np.reshape(ftmatrices, (len(uvlist), xdim*ydim))
 
-def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
-    """Re-compute sigmas from SEFDS and add noise again"""
-    print "WARNING: adding noise to visibilities!"
-    print "Simulated visibilities should have NO previous noise added"
+def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF):
+    """Re-compute sigmas from SEFDS and add noise with gain & phase errors
+       Be very careful using outside of Image.observe!"""   
     
+    if (not opacity_errs) and (not ampcal):
+        raise Exception("ampcal=False requires opacity_errs=True!")
+        
     # Get data
     obslist = obs.tlist()
     
@@ -2522,24 +2496,25 @@ def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
     sites = obsdata[['t1','t2']].view(('a32',2))
     elevs = obsdata[['el1','el2']].view(('f8',2))
     taus = obsdata[['tau1','tau2']].view(('f8',2))
-    time = obsdata['time'].view(('f8',1))
-    tint = obsdata['tint'].view(('f8',1))
+    time = obsdata[['time']].view(('f8',1))
+    tint = obsdata[['tint']].view(('f8',1))
     uv = obsdata[['u','v']].view(('f8',2))
-    vis = obsdata['vis'].view(('c16',1))
-    qvis = obsdata['qvis'].view(('c16',1))
-    uvis = obsdata['uvis'].view(('c16',1))
+    vis = obsdata[['vis']].view(('c16',1))
+    qvis = obsdata[['qvis']].view(('c16',1))
+    uvis = obsdata[['uvis']].view(('c16',1))
 
     bw = obs.bw
     
     # Overwrite sigma_cleans with values computed from the SEFDs
     sigma_clean = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefd'], obs.tarr[obs.tkey[sites[i][1]]]['sefd'], tint[i], bw) for i in range(len(tint))])
     
-
-    # Estimated noise using no gain and estimated opacity                    
-    sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
-
-    #sigma_est = sigma_clean  
-    # Add gain and opacity uncertanities to the RMS noise
+    # Estimated noise using no gain and estimated opacity
+    if opacity_errs:                    
+        sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
+    else:
+        sigma_est = sigma_clean
+        
+    # Add gain and opacity fluctuations to the true noise
     if not ampcal:
         # Amplitude gain
         gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') 
@@ -2558,7 +2533,7 @@ def add_more_noise(obs, gainp=GAINPDEF, ampcal="True", phasecal="True"):
     else: 
         sigma_true = sigma_est
     
-    # Add the noise the gain error
+    # Add the noise and the gain error to the true visibilities
     vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
     qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
     uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)

@@ -912,23 +912,23 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 # Blurring Function
 ##################################################################################################
 
-def blur_circ(Image, fwhm_i, fwhm_pol=0):
+def blur_circ(image, fwhm_i, fwhm_pol=0):
     """Apply a circular gaussian filter to the I image
        fwhm is in radians
     """ 
     
     # Blur Stokes I
     sigma = fwhm_i / (2. * np.sqrt(2. * np.log(2.)))
-    sigmap = sigma / Image.psize
-    im = filt.gaussian_filter(Image.imvec.reshape(Image.ydim, Image.xdim), (sigmap, sigmap))
-    out = vb.Image(im, Image.psize, Image.ra, Image.dec, rf=Image.rf, source=Image.source, mjd=Image.mjd)
+    sigmap = sigma / image.psize
+    im = filt.gaussian_filter(image.imvec.reshape(image.ydim, image.xdim), (sigmap, sigmap))
+    out = vb.Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
    
     # Blur Stokes Q and U
-    if len(Image.qvec) and fwhm_pol:
+    if len(image.qvec) and fwhm_pol:
         sigma = fwhm_pol / (2. * np.sqrt(2. * np.log(2.)))
-        sigmap = sigma / Image.psize
-        imq = filt.gaussian_filter(Image.qvec.reshape(Image.ydim,Image.xdim), (sigmap, sigmap))
-        imu = filt.gaussian_filter(Image.uvec.reshape(Image.ydim,Image.xdim), (sigmap, sigmap))
+        sigmap = sigma / image.psize
+        imq = filt.gaussian_filter(image.qvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
+        imu = filt.gaussian_filter(image.uvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
         out.add_qu(imq, imu)
         
     return out
@@ -1396,18 +1396,18 @@ def uimage(iimage, mimage, chiimage):
     """Return the U image from m and chi"""
     return iimage * mimage * np.sin(2*chiimage) 
 
-#def scaled_bisigs(Obsdata, vtype="vis"):
+#def scaled_bisigs(obsdata, vtype="vis"):
 #    """scale bispectrum errors for overcounting degrees of freedom
 #       see Bouman 2014
 #    """
-#    bilist = Obsdata.bispectra(mode="time", vtype=vtype)
+#    bilist = obsdata.bispectra(mode="time", vtype=vtype)
 #    overct = []
 #    for entry in bilist:
 #        nscope = len(set(list(entry['t1']) + list(entry['t2']) + list(entry['t3'])))
 #        for i in range(len(entry)):
 #            overct.append(3.0/nscope)
 #    overct = np.array(overct)   
-#    biarr = Obsdata.bispectra(mode="all", vtype=vtype)
+#    biarr = obsdata.bispectra(mode="all", vtype=vtype)
 #    sigsb = biarr['sigmab']/np.sqrt(overct)
 #    
 #    return sigsb
