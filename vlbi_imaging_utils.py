@@ -667,17 +667,7 @@ class Obsdata(object):
                                   "valid field values are " + string.join(FIELDS)) 
 
             # Get arg/amps/snr
-            if field in ["amp", "qamp", "uamp"]: 
-                print "De-biasing amplitudes!"
-                out = amp_debias(out, data['sigma'])
-                ty = 'f8'
-            elif field in ["pamp"]:
-                print "De-biasing amplitudes!"
-                out = amp_debias(out, np.sqrt(2)*data['sigma'])
-                ty = 'f8'
-            # !AC ??
-            elif field in ["mamp"]:
-                print "NOT de-biasing polarimetric ratio amplitudes!"
+            if field in ["amp", "qamp", "uamp","pamp","mamp"]: 
                 out = np.abs(out)
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "pphase", "mphase"]: 
@@ -834,8 +824,8 @@ class Obsdata(object):
                 if len(bi) == 0: continue
                 bi.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
                 bi['sigmacp'] = bi['sigmacp']/np.abs(bi['cphase'])/DEGREE
-                bi['cphase'] = np.angle(bi['cphase'])/DEGREE
-                cps.append(bi.real.astype(np.dtype(DTCPHASE)))
+                bi['cphase'] = (np.angle(bi['cphase'])/DEGREE).real
+                cps.append(bi.astype(np.dtype(DTCPHASE)))
             if mode == 'time' and len(cps) > 0:
                 outlist.append(np.array(cps))
                 cps = []
@@ -1170,6 +1160,15 @@ class Obsdata(object):
         else:
             sigy = None
         
+        # Debias amplitudes if appropriate:
+        if field1 in ['amp', 'qamp', 'uamp', 'pamp', 'mamp']:
+            print "De-biasing amplitudes for plot x values!"
+            data[field1] = amp_debias(data[field1], sigx)
+        
+        if field2 in ['amp', 'qamp', 'uamp', 'pamp', 'mamp']:
+            print "De-biasing amplitudes for plot y values!"
+            data[field2] = amp_debias(data[field2], sigy)
+           
         # Data ranges
         if not rangex:
             rangex = [np.min(data[field1]) - 0.2 * np.abs(np.min(data[field1])), 
@@ -1208,7 +1207,7 @@ class Obsdata(object):
                         plotdata.append([time, np.abs(obs['u'] + 1j*obs['v']), 0])
                     
                     elif field in ['amp', 'qamp', 'uamp']:
-                        print "De-biasing amplitudes!"
+                        print "De-biasing amplitudes for plot!"
                         if field == 'amp': l = 'vis'
                         elif field == 'qamp': l = 'qvis'
                         elif field == 'uamp': l = 'uvis'
@@ -1221,7 +1220,7 @@ class Obsdata(object):
                         plotdata.append([time, np.angle(obs[l])/DEGREE, obs['sigma']/np.abs(obs[l])/DEGREE])
                     
                     elif field == 'pamp':
-                        print "De-biasing amplitudes!"
+                        print "De-biasing amplitudes for plot!"
                         pamp = amp_debias(obs['qvis'] + 1j*obs['uvis'], np.sqrt(2)*obs['sigma'])
                         plotdata.append([time, pamp, np.sqrt(2)*obs['sigma']])
                     
@@ -2544,11 +2543,6 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
 
 def amp_debias(vis, sigma):
     """Return debiased visibility amplitudes"""
-    
-    print "WARNING: not acutally debiasing the amplitudes"
-    return np.abs(vis)
-    
-    
     
     deb2 = np.abs(vis)**2 - np.abs(sigma)**2
     if type(deb2) == float or type(deb2)==np.float64:

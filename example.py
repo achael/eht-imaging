@@ -73,20 +73,20 @@ obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 npix = 100
 fov = 1*im.xdim * im.psize
 zbl = np.sum(im.imvec) # total flux
-prior_fwhm = 150*vb.RADPERUAS # Gaussian size in microarcssec
+prior_fwhm = 200*vb.RADPERUAS # Gaussian size in microarcssec
 emptyprior = vb.make_square(obs, npix, fov)
 flatprior = vb.add_flat(emptyprior, zbl)
 gaussprior = vb.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with the bispectrum
 flux = np.sum(im.imvec)
-out = mx.maxen_bs(obs, gaussprior, gaussprior, flux, maxit=50, alpha=1e5)
+out = mx.maxen_bs(obs, gaussprior, gaussprior, flux, maxit=50, alpha=1000)
  
 # Blur the image with a circular beam and image again to help convergance
 out = mx.blur_circ(out, res)
-out = mx.maxen_bs(obs, out, out, flux, maxit=100, alpha=500)
+out = mx.maxen_bs(obs, out, out, flux, maxit=100, alpha=100, entropy="tv")
 out = mx.blur_circ(out, res/2)
-out = mx.maxen_bs(obs, out, out, flux, maxit=250, alpha=100)
+out = mx.maxen_bs(obs, out, out, flux, maxit=250, alpha=50, entropy="tv")
 
 # Image Polarization
 # out = mx.maxen_m(obs, out, beta=100, maxit=250, polentropy="hw")
