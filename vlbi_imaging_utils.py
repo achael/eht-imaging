@@ -7,8 +7,6 @@
 
 # TODO: 
 #       Rework save_uvfits to not require header & correct time vals
-#       Raise error if there no data points
-#       Screen for 0-valued errors 
 #       Add non-circular errors
 #       Add closure amplitude debiasing
 #       Add different i,q,u,v SEFDs and calibration errors?
@@ -539,6 +537,8 @@ class Obsdata(object):
     
     def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=0, ampcal=True, phasecal=True):
         
+        if len(datatable) == 0:
+            raise Exception("No data in input table!")
         if (datatable.dtype != DTPOL):
             raise Exception("Data table should be a recarray with datatable.dtype = %s" % DTPOL)
         
