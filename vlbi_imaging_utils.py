@@ -10,7 +10,6 @@
 #       Raise error if there no data points
 #       Screen for 0-valued errors 
 #       Add non-circular errors
-#       Add amplitude debiasing
 #       Add closure amplitude debiasing
 #       Add different i,q,u,v SEFDs and calibration errors?
 #       Incorporate Katherine's scattering code?
@@ -665,7 +664,17 @@ class Obsdata(object):
                                   "valid field values are " + string.join(FIELDS)) 
 
             # Get arg/amps/snr
-            if field in ["amp", "qamp", "uamp", "pamp", "mamp"]: 
+            if field in ["amp", "qamp", "uamp"]: 
+                print "De-biasing amplitudes!"
+                out = amp_debias(out, data['sigma'])
+                ty = 'f8'
+            elif field in ["pamp"]:
+                print "De-biasing amplitudes!"
+                out = amp_debias(out, np.sqrt(2)*data['sigma'])
+                ty = 'f8'
+            # !AC ??
+            elif field in ["mamp"]:
+                print "NOT de-biasing polarimetric ratio amplitudes!"
                 out = np.abs(out)
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "pphase", "mphase"]: 
@@ -838,7 +847,6 @@ class Obsdata(object):
            Set count='max' to return all closure amplitudes up to inverses
         """ 
         
-        #!AC Add amplitude debiasing! (and elsewhere!)
         #!AC Error formula for closure amplitudes only true in high SNR limit!
         if not mode in ('time','all'):
             raise Exception("possible options for mode are 'time' and 'all'")
@@ -878,24 +886,33 @@ class Obsdata(object):
                         
                         # Compute the closure amplitude and the error
                         if vtype in ["vis", "qvis", "uvis"]:
-                            camp = np.abs((blue1[vtype]*blue2[vtype])/(red1[vtype]*red2[vtype]))
-                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(blue1[vtype]))**2 +  
-                                                     (blue2['sigma']/np.abs(blue2[vtype]))**2 + 
-                                                     (red1['sigma']/np.abs(red1[vtype]))**2 +
-                                                     (red2['sigma']/np.abs(red2[vtype]))**2)
-                                                 
-                        elif vtype == "pvis":
-                            p1 = blue1['qvis'] + 1j*blue1['uvis']
-                            p2 = blue2['qvis'] + 1j*blue2['uvis']
-                            p3 = red1['qvis'] + 1j*red1['uvis']
-                            p4 = red2['qvis'] + 1j*red2['uvis']
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
                             
-                            camp = np.abs((p1*p2)/(p3*p4))
-                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
-                                                           (blue2['sigma']/np.abs(p2))**2 + 
-                                                           (red1['sigma']/np.abs(p3))**2 +
-                                                           (red2['sigma']/np.abs(p4))**2)
-                            camperr = np.sqrt(2) * camperr
+                            p1 = amp_debias(blue1[vtype], e1)
+                            p2 = amp_debias(blue2[vtype], e2)
+                            p3 = amp_debias(red1[vtype], e3)
+                            p4 = amp_debias(red2[vtype], e4)
+                                                                             
+                        elif vtype == "pvis":
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
+
+                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
+                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
+                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
+                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
+                            
+                        
+                        camp = np.abs((p1*p2)/(p3*p4))
+                        camperr = camp * np.sqrt((e1/np.abs(p1))**2 +  
+                                                 (e2/np.abs(p2))**2 + 
+                                                 (e3/np.abs(p3))**2 +
+                                                 (e4/np.abs(p4))**2)
                                         
                         # Add the closure amplitudes to the equal-time list  
                         # Our site convention is (12)(34)/(14)(23)       
@@ -923,24 +940,34 @@ class Obsdata(object):
                                       
                         # Compute the closure amplitude and the error
                         if vtype in ["vis", "qvis", "uvis"]:
-                            camp = np.abs((blue1[vtype]*blue2[vtype])/(red1[vtype]*red2[vtype]))
-                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(blue1[vtype]))**2 +  
-                                                     (blue2['sigma']/np.abs(blue2[vtype]))**2 + 
-                                                     (red1['sigma']/np.abs(red1[vtype]))**2 +
-                                                     (red2['sigma']/np.abs(red2[vtype]))**2)
-                                                 
-                        elif vtype == "pvis":
-                            p1 = blue1['qvis'] + 1j*blue1['uvis']
-                            p2 = blue2['qvis'] + 1j*blue2['uvis']
-                            p3 = red1['qvis'] + 1j*red1['uvis']
-                            p4 = red2['qvis'] + 1j*red2['uvis']
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
                             
-                            camp = np.abs((p1*p2)/(p3*p4))
-                            camperr = camp * np.sqrt((blue1['sigma']/np.abs(p1))**2 +  
-                                                           (blue2['sigma']/np.abs(p2))**2 + 
-                                                           (red1['sigma']/np.abs(p3))**2 +
-                                                           (red2['sigma']/np.abs(p3))**2)
-                            camperr = np.sqrt(2) * camperr
+                            p1 = amp_debias(blue1[vtype], e1)
+                            p2 = amp_debias(blue2[vtype], e2)
+                            p3 = amp_debias(red1[vtype], e3)
+                            p4 = amp_debias(red2[vtype], e4)
+                                                                             
+                        elif vtype == "pvis":
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
+
+                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
+                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
+                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
+                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
+                            
+                        
+                        camp = np.abs((p1*p2)/(p3*p4))
+                        camperr = camp * np.sqrt((e1/np.abs(p1))**2 +  
+                                                 (e2/np.abs(p2))**2 + 
+                                                 (e3/np.abs(p3))**2 +
+                                                 (e4/np.abs(p4))**2)
+                                        
                                         
                         # Add the closure amplitudes to the equal-time list         
                         cas.append(np.array((time, 
@@ -1167,6 +1194,7 @@ class Obsdata(object):
             raise Exception("valid fields are " + string.join(FIELDS))
         
         # Get the data from data table on the selected baseline
+        # !AC TODO do this with unpack instead?
         plotdata = []
         tlist = self.tlist(conj=True)
         for scan in tlist:
@@ -1177,10 +1205,11 @@ class Obsdata(object):
                         plotdata.append([time, np.abs(obs['u'] + 1j*obs['v']), 0])
                     
                     elif field in ['amp', 'qamp', 'uamp']:
+                        print "De-biasing amplitudes!"
                         if field == 'amp': l = 'vis'
                         elif field == 'qamp': l = 'qvis'
                         elif field == 'uamp': l = 'uvis'
-                        plotdata.append([time, np.abs(obs[l]), obs['sigma']])
+                        plotdata.append([time, amp_debias(obs[l], obs['sigma']), obs['sigma']])
                     
                     elif field in ['phase', 'qphase', 'uphase']:
                         if field == 'phase': l = 'vis'
@@ -1189,7 +1218,9 @@ class Obsdata(object):
                         plotdata.append([time, np.angle(obs[l])/DEGREE, obs['sigma']/np.abs(obs[l])/DEGREE])
                     
                     elif field == 'pamp':
-                        plotdata.append([time, np.abs(obs['qvis'] + 1j*obs['uvis']), np.sqrt(2)*obs['sigma']])
+                        print "De-biasing amplitudes!"
+                        pamp = amp_debias(obs['qvis'] + 1j*obs['uvis'], np.sqrt(2)*obs['sigma'])
+                        plotdata.append([time, pamp, np.sqrt(2)*obs['sigma']])
                     
                     elif field == 'pphase':
                         plotdata.append([time, 
@@ -1198,6 +1229,7 @@ class Obsdata(object):
                                        ])
                     
                     elif field == 'mamp':
+                        print "NOT de-baising polarimetric ratio amplitudes!"
                         plotdata.append([time,
                                          np.abs((obs['qvis'] + 1j*obs['uvis'])/obs['vis']), 
                                          merr(obs['sigma'], obs['vis'], (obs['qvis']+1j*obs['uvis'])/obs['vis'])
@@ -2012,7 +2044,7 @@ def load_obs_oifits(filename):
     uvis = uvis.ravel()
     amperr = amperr.ravel()
 
-    #todo - check that we are properly using the error from the amplitude and phase
+    #TODO - check that we are properly using the error from the amplitude and phase
 
     # create data tables
     datatable = np.array([ (time[i], tint[i], t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], u[i], v[i], vis[i], qvis[i], uvis[i], amperr[i]) for i in range(len(vis))], dtype=DTPOL)
@@ -2471,6 +2503,17 @@ def ftmatrix(pdim, xdim, ydim, uvlist):
     ftmatrices = np.array([np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist])
     return np.reshape(ftmatrices, (len(uvlist), xdim*ydim))
 
+def amp_debias(vis, sigma):
+    """Return debiased visibility amplitudes"""
+    deb2 = np.abs(vis)**2 - np.abs(sigma)**2
+    if type(deb2) == float or type(deb2)==np.float64:
+        if deb2 < 0.0: return 0.0
+        else: return np.sqrt(deb2)
+    else:
+        lowsnr = deb2 < 0.0
+        deb2[lowsnr] = 0.0
+        return np.sqrt(deb2)
+    
 def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF):
     """Re-compute sigmas from SEFDS and add noise with gain & phase errors
        Be very careful using outside of Image.observe!"""   
