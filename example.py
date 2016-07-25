@@ -88,6 +88,7 @@ out = mx.maxen_bs(obs, out, out, flux, maxit=100, alpha=100, entropy="tv")
 out = mx.blur_circ(out, res/2)
 out = mx.maxen_bs(obs, out, out, flux, maxit=250, alpha=50, entropy="tv")
 
+
 # Image Polarization
 # out = mx.maxen_m(obs, out, beta=100, maxit=250, polentropy="hw")
 

@@ -1,12 +1,12 @@
 # vlbi_imaging_utils.py
-# Andrew Chael, 02/24/16
+# Andrew Chael, 10/15/2015
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
 # 03/24 Added new prescription for computing closures
 # 02/24 Added dirty beam, dirty image, and fitting for the clean beam
 # 01/20 Added gain and phase errors
 
 # TODO: 
-#       Rework save_uvfits to not require header & correct time vals
+#       Fix save_uvfits
 #       Add non-circular errors
 #       Add closure amplitude debiasing
 #       Add different i,q,u,v SEFDs and calibration errors?

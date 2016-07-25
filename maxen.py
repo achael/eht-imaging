@@ -1,7 +1,6 @@
 # maxen.py
 # Andrew Chael, 10/15/2015
 # Maximum Entropy imagers for VLBI data
-# 
 
 import sys
 import time
@@ -354,7 +353,7 @@ def maxen_dynamic_minimal(Obsdata_List, Prior_List, maxit=100, alpha=100, beta=5
 ##################################################################################################
 # Imagers
 ##################################################################################################
-def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=False):
+def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=False):
     """Run maximum entropy with full amplitudes and phases. 
        Uses I = exp(I') change of variables.
        Obsdata is an Obsdata object, and Prior is an Image object.
@@ -369,11 +368,15 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
     maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
     if uvrange < maxbl:
         raise Exception("pixel spacing is larger than smallest spatial wavelength!")
-    
+    if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
+        raise Exception("initial image does not match dimensions of the prior image!")
+
     # Normalize prior image to total flux
     zbl = np.max(Obsdata.unpack(['amp'])['amp'])
     nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
+    ninit = zbl * InitIm.imvec / np.sum(InitIm.imvec)
     logprior = np.log(nprior)
+    loginit = np.log(ninit)
     
     # Data
     data = Obsdata.unpack(['u','v','vis','sigma'])
@@ -427,12 +430,12 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
    
     # Plot the prior
 
-    plotcur(logprior)
+    plotcur(loginit)
         
     # Minimize
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST} # minimizer params
     tstart = time.time()
-    res = opt.minimize(objfunc, logprior, method='L-BFGS-B', jac=objgrad, 
+    res = opt.minimize(objfunc, loginit, method='L-BFGS-B', jac=objgrad, 
                        options=optdict, callback=plotcur)
     tstop = time.time()
     out = np.exp(res.x)
@@ -465,14 +468,15 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
     uvrange = 1/Prior.psize
     maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
     if uvrange < maxbl:
-        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
-    
+        raise Exception("Pixel spacing is larger than smallest spatial wavelength!")
+    if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
+        raise Exception("initial image does not match dimensions of the prior image!")
+        
     # Normalize prior image to total flux  TODO: DO WE STILL NEED THIS?
-    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
+    nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
+    ninit = zbl * InitIm.imvec / np.sum(InitIm.imvec)
     logprior = np.log(nprior)
-    
-    ncurrim = flux * InitIm.imvec / np.sum(InitIm.imvec)
-    logcurrim = np.log(ncurrim)
+    loginit = np.log(ninit)
     
     # Get bispectra data    
     biarr = Obsdata.bispectra(mode="all", count="min")
@@ -494,10 +498,10 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
                                            for y in np.arange(Prior.ydim/2,-Prior.ydim/2,-1)])
     coord = coord.reshape(Prior.ydim*Prior.xdim, 2)        
     
-    # if you are using the linearized energy then compute the A and b of your 
+    # Katie - if you are using the linearized energy then compute the A and b of your 
     # linearized equation given your current image
     if datamin=="lin":
-        (Alin, blin) = le.computeLinTerms_bi(ncurrim, A3, bi, sigs, InitIm.xdim*InitIm.ydim, alpha=alpha)                           
+        (Alin, blin) = le.computeLinTerms_bi(ninit, A3, bi, sigs, InitIm.xdim*InitIm.ydim, alpha=alpha)                           
     
     # Define the objective function and gradient
     def objfunc(logim):
@@ -556,13 +560,12 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
         nit += 1
    
-
-    plotcur(logcurrim)
+    plotcur(loginit)
        
     # Minimize    
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
     tstart = time.time()
-    res = opt.minimize(objfunc, logcurrim, method='L-BFGS-B', jac=objgrad, 
+    res = opt.minimize(objfunc, loginit, method='L-BFGS-B', jac=objgrad, 
                        options=optdict, callback=plotcur)
     tstop = time.time()
     out = np.exp(res.x)
@@ -582,7 +585,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim 
 
-def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_clamp=100, gamma=500, delta=500, entropy="gs", stop=1e-5, grads=True, ipynb=False):
+def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_clamp=100, gamma=500, delta=500, entropy="gs", stop=1e-5, grads=True, ipynb=False):
     """Run maximum entropy on only closure quantities with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.
        Returns Image object.
@@ -598,11 +601,15 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
     maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
     if uvrange < maxbl:
         raise Exception("pixel spacing is larger than smallest spatial wavelength!")
-    
+    if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
+        raise Exception("initial image does not match dimensions of the prior image!")
+
     # Normalize prior image to total flux (this doesn't actually matter because total flux is unconstrained)
-    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
+    nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
+    ninit = zbl * InitIm.imvec / np.sum(InitIm.imvec)
     logprior = np.log(nprior)
-    
+    loginit = np.log(ninit)
+
     # Get closure phase data
     clphasearr = Obsdata.c_phases(mode="all", count="min")
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
@@ -687,16 +694,7 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
 			J1 = objfunc(xp)
 			Jgrad[i] = (J1-J0)/dx
 		return Jgrad
-		    
-    # test gradients
-    #test = nprior + 5* np.random.rand(len(nprior))
-    #test = np.log(test)
-    #print np.abs((objgrad_num(test) - objgrad(test))/objgrad_num(test))
-    #print np.max(np.abs((objgrad_num(test) - objgrad(test))/objgrad_num(test)))
-    #print np.mean(np.abs((objgrad_num(test) - objgrad(test))/objgrad_num(test)))
-    #return
-    
-    
+		       
     # Plotting function for each iteration
     global nit
     nit = 0
@@ -710,16 +708,16 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
         plot_i(im_step, Prior, nit, chi2_clamp, ipynb=ipynb)
         nit += 1
    
-    plotcur(logprior)
+    plotcur(loginit)
        
     # Minimize
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
     tstart = time.time()
     if grads:
-        res = opt.minimize(objfunc, logprior, method='L-BFGS-B', jac=objgrad, 
+        res = opt.minimize(objfunc, loginit, method='L-BFGS-B', jac=objgrad, 
                        options=optdict, callback=plotcur)
     else:
-        res = opt.minimize(objfunc, logprior, method='L-BFGS-B', 
+        res = opt.minimize(objfunc, loginit, method='L-BFGS-B', 
                        options=optdict, callback=plotcur)
     tstop = time.time()
     out = np.exp(res.x)
@@ -739,6 +737,7 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
         uvec = Prior.uvec * out / Prior.imvec
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim   
+    
 def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, prior=True, ipynb=False):
     """Run maximum entropy on pol. amplitude and phase
        Obsdata is an Obsdata object,
@@ -758,7 +757,7 @@ def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, n
     
     # Set up priors
     iimage = Prior.imvec
-    if len(Prior.qvec) and prior:
+    if len(Prior.qvec):
         mprior = np.abs(Prior.qvec + 1j*Prior.uvec) / Prior.imvec
         chiprior = np.arctan2(Prior.uvec, Prior.qvec) / 2.0
         allprior = np.hstack((mprior, chiprior))
@@ -958,6 +957,8 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
     if uvrange < maxbl:
         raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+    if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
+        raise Exception("initial image does not match dimensions of the prior image!")
     
     # Set up priors
     nprior = flux * Prior.imvec / np.sum(Prior.imvec)
@@ -1104,164 +1105,6 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
     return outim     
 
-#def maxen_bs_both(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5e6, delta=1e5,
-#               entropy="gs", polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, ipynb=False):
-#    """Run maximum entropy SIMULTANEOUSLY on I and P bispectra 
-#       Obsdata is an Obsdata object,
-#       Prior is an Image object containing the Stokes I image and Q & U priors.
-#       returns an Image object.
-#       Lagrange multipliers are not free parameters
-#    """
-#    
-#    print "Imaging I, Q, U with I and P bispectra simulataneously . . ."
-#    
-#    # Catch problem if uvrange < largest baseline
-#    uvrange = 1/Prior.psize
-#    maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
-#    if uvrange < maxbl:
-#        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
-#    
-#    # Set up priors
-#    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
-#    if len(Prior.qvec):
-#        mprior = np.abs(Prior.qvec + 1j*Prior.uvec) / Prior.imvec
-#        chiprior = np.arctan2(Prior.uvec, Prior.qvec) / 2.0
-#        polprior = np.hstack((mprior, chiprior))
-#    else:
-#        mprior = 0.2 * (np.ones(len(iimage)) + 1e-10 * np.random.rand(len(iimage)))
-#        chiprior = np.zeros(len(iimage)) + 1e-10 * np.random.rand(len(iimage))
-#        polprior = np.hstack((mprior, chiprior))
-#    
-#    # Change variables and package full prior
-#    allprior = np.hstack((np.log(nprior), mcv_r(polprior)))
-#      
-#    # Get data
-#    # ! AC We're assuming p bispectra are on same triangles as I bispectra. May want to relax this assumption!
-#    biarr = Obsdata.bispectra(vtype="vis", mode="all")
-#    biarr_p = Obsdata.bispectra(vtype="pvis", mode="all")
-#    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-#    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-#    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-#    bi = biarr['bispec']
-#    bi_p = biarr_p['bispec']
-#    sigsb = biarr['sigmab']
-#    sigsb_p = biarr_p['sigmab']
-#    #sigsb_2 = scaled_bisigs(Obsdata, vtype="vis") # Correction for overcounting DOF
-#    #sigsb_p_2 = scaled_bisigs(Obsdata, vtype="pvis")
-#    
-#    # Compute the Fourier matrices
-#    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),
-#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse),
-#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse)
-#         )
-#    
-#    # Coordinate matrix for COM constraint
-#    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim/2,-Prior.xdim/2,-1)]
-#                                           for y in np.arange(Prior.ydim/2,-Prior.ydim/2,-1)])
-#    coord = coord.reshape(Prior.xdim*Prior.ydim, 2)                                       
-
-#    # Define the bispectrum objective function and gradient
-#    def objfunc_b(iim):
-#        if entropy == "simple":
-#            s = -ssimple(iim, nprior)
-#        elif entropy == "l1":
-#            s = -sl1(iim, nprior)
-#        elif entropy == "gs":
-#            s = -sgs(iim, nprior)
-#        elif entropy == "tv":
-#            s = -stv(iim, Prior.xdim, Prior.ydim)
-#             
-#        c = alpha * (chisq_bi(iim, A3, bi, sigsb) - 1)
-#        t = gamma * (np.sum(iim) - flux)**2
-#        cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))**2
-#        return  s + c + t + cm
-#        
-#    def objgrad_b(iim):
-#        if entropy == "simple":
-#            s = -ssimplegrad(iim, nprior)
-#        elif entropy == "l1":
-#            s = -sl1grad(iim, nprior)
-#        elif entropy == "gs":
-#            s = -sgsgrad(iim, nprior) 
-#        elif entropy == "tv":
-#            s = -stvgrad(iim, Prior.xdim, Prior.ydim)
-#            
-#        c = alpha * chisqgrad_bi(iim, A3, bi, sigsb)
-#        t = 2 * gamma * (np.sum(iim) - flux)
-#        cm = 2 * delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1])) * (coord[:,0] + coord[:,1])
-#        return  (s + c + t + cm)
-#            
-#    # Define the total polarimetric bispectrum objective function and gradient
-#    def objfunc(allimage):
-#        iim = np.exp(allimage[0:len(nprior)])
-#        mim = mcv(allimage[len(nprior):])
-#        objb = objfunc_b(iim)
-#        
-#        if polentropy == "hw":
-#            s = -shw(mim, iim)
-#        elif polentropy == "logm":
-#            s = -sm(mim, iim)
-#        elif polentropy == "tv":
-#            s = -stv_pol(mim, iim, Prior.xdim, Prior.ydim)    
-#            
-#        c = beta * (chisq_pbi(mim, iim, A3, bi_p, sigsb_p) - 1)
-#        return  s + c + objb
-#        
-#    def objgrad(allimage):
-#        iim = np.exp(allimage[0:len(nprior)])
-#        mim = mcv(allimage[len(nprior):])
-#        gradb = (objgrad_b(iim) + beta * chisqgrad_pbi_i(mim, iim, A3, bi_p, sigsb_p)) * iim
-#        
-#        if polentropy == "hw":
-#            s = -shwgrad(mim, iim)
-#        elif polentropy == "logm":
-#            s = -smgrad(mim, iim)
-#        elif polentropy == "tv":
-#            s = -stv_pol_grad(mim, iim, Prior.xdim, Prior.ydim)                
-#            gradb = gradb - stv_pol_grad_i(mim, iim, Prior.xdim, Prior.ydim) * iim
-#              
-#        c = beta * chisqgrad_pbi(mim, iim, A3, bi_p, sigsb_p)
-#        gradm = (s + c) * mchainlist(allimage[len(nprior):])
-#        
-#        return  np.hstack((gradb, gradm))
-#           
-#    # Plotting function for each iteration
-#    global nit
-#    nit = 0
-#    def plotcur(all_step):
-#        global nit
-#        i_step = np.exp(all_step[0:len(nprior)])
-#        m_step = mcv(all_step[len(nprior):])
-#        chi2 = chisq_bi(i_step, A3, bi, sigsb)
-#        chi2m = chisq_pbi(m_step, i_step, A3, bi_p, sigsb_p)
-#        plot_m(i_step, m_step, Prior, nit, chi2, chi2m, pcut=pcut, nvec=nvec, ipynb=ipynb)
-#        nit += 1
-
-#    plotcur(allprior)
-#        
-#    # Minimize
-#    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
-#    tstart = time.time()
-#    res = opt.minimize(objfunc, allprior, method='L-BFGS-B', jac=objgrad, 
-#                       options=optdict, callback=plotcur)
-#    tstop = time.time()
-#    outi = np.exp(res.x[0: len(nprior)])
-#    outp = mcv(res.x[len(nprior):])
-#    
-#    # Print stats
-#    print "time: %f s" % (tstop - tstart)
-#    print "J: %f" % res.fun
-#    print "Chi^2_b: %f" % chisq_bi(outi, A3, bi, sigsb)
-#    print "Chi^2_m: %f" % chisq_pbi(outp, outi, A3, bi_p, sigsb_p)
-#    print res.message
-#    
-#    # Return Image object
-#    qimfinal = qimage(outi, outp[0:len(outi)], outp[len(outi):])
-#    uimfinal = uimage(outi, outp[0:len(outi)], outp[len(outi):])
-#    outim = vb.Image(outi.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, 
-#                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) 
-#    outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
-#    return outim       
 ##################################################################################################
 # Blurring Function
 ##################################################################################################
