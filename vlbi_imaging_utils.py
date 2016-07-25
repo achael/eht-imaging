@@ -552,7 +552,7 @@ class Obsdata(object):
         
         # Dictionary of array indices for site names
         # !AC better way?
-        self.tkey = {self.tarr[i]['site']:i for i in range(len(self.tarr))}
+        self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
         
         # Time partition the datatable
         datalist = []
@@ -582,7 +582,7 @@ class Obsdata(object):
         obsdata = np.array(obsdata, dtype=DTPOL)
         
         # Sort the data by time
-        obsdata = obsdata[np.argsort(obsdata['time'])]
+        obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
 
         # Save the data             
         self.data = obsdata
@@ -2537,7 +2537,7 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
     qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
     uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
-
+  
     # Add random atmospheric phases    
     if not phasecal:
         phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i]) for i in xrange(len(time))])
@@ -2552,7 +2552,10 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     obsdata['qvis'] = qvis
     obsdata['uvis'] = uvis
     obsdata['sigma'] = sigma_est
-    
-    # Return observation object
-    return Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
+	# Return observation object
+    out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
+    print sigma_est[-2]
+    print out.data[-2]['sigma']
+    print out.data['sigma'][-2]
+    return out
 
