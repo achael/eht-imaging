@@ -1503,7 +1503,7 @@ class Obsdata(object):
         header['PZERO4'] = 0.e0
         header['PTYPE5'] = 'DATE'
         header['PSCAL5'] = 1.e0
-        header['PZERO5'] = 0
+        header['PZERO5'] = 0.e0
         header['PTYPE6'] = '_DATE'
         header['PSCAL6'] = 1.e0
         header['PZERO6'] = 0.0
