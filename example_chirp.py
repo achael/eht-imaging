@@ -39,7 +39,7 @@ fov = im.xdim*im.psize #radians
 flux = 2.0 # total flux
 
 # define the full width half max of an initialization gaussian in radians
-prior_fwhm = 150*vb.RADPERUAS 
+prior_fwhm = 200*vb.RADPERUAS 
 
 # define the number of scales and the size of reconstructions
 nScales = 10; 

@@ -14,7 +14,7 @@ def linearizedSol_bs(Obsdata, currImage, Prior, alpha=100, beta=100, reg="patch"
 	
 	# normalize the prior
 	# TODO: SHOULD THIS BE DONE??
-    zbl = np.max(Obsdata.unpack(['amp'])['amp'])
+    zbl = np.max(np.abs(Obsdata.unpack(['vis'])['vis']))
     nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
 	
     if reg == "patch":

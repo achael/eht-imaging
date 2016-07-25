@@ -80,16 +80,16 @@ gaussprior = vb.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with the bispectrum
 flux = np.sum(im.imvec)
-out = mx.maxen_bs(obs, gaussprior, flux, maxit=50, alpha=1e5)
+out = mx.maxen_bs(obs, gaussprior, gaussprior, flux, maxit=50, alpha=1e5)
  
 # Blur the image with a circular beam and image again to help convergance
 out = mx.blur_circ(out, res)
-out = mx.maxen_bs(obs, out, flux, maxit=100, alpha=500)
+out = mx.maxen_bs(obs, out, out, flux, maxit=100, alpha=500)
 out = mx.blur_circ(out, res/2)
-out = mx.maxen_bs(obs, out, flux, maxit=250, alpha=100)
+out = mx.maxen_bs(obs, out, out, flux, maxit=250, alpha=100)
 
 # Image Polarization
-out = mx.maxen_m(obs, out, beta=100, maxit=250, polentropy="hw")
+# out = mx.maxen_m(obs, out, beta=100, maxit=250, polentropy="hw")
 
 # Blur the final image with 1/2 the clean beam
 outblur = vb.blur_gauss(out, beamparams, 0.5, 0.5)

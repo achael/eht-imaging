@@ -2544,6 +2544,12 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
 
 def amp_debias(vis, sigma):
     """Return debiased visibility amplitudes"""
+    
+    print "WARNING: not acutally debiasing the amplitudes"
+    return np.abs(vis)
+    
+    
+    
     deb2 = np.abs(vis)**2 - np.abs(sigma)**2
     if type(deb2) == float or type(deb2)==np.float64:
         if deb2 < 0.0: return 0.0
@@ -2636,8 +2642,5 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     obsdata['sigma'] = sigma_est
 	# Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
-    print sigma_est[-2]
-    print out.data[-2]['sigma']
-    print out.data['sigma'][-2]
     return out
 
