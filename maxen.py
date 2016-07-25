@@ -1,6 +1,7 @@
-# maxen_v2.py
+# maxen.py
 # Andrew Chael, 10/15/2015
 # Maximum Entropy imagers for VLBI data
+# 
 
 import sys
 import time
@@ -11,6 +12,8 @@ import scipy.signal
 import matplotlib.pyplot as plt
 import itertools as it
 import vlbi_imaging_utils as vb
+import pulses
+import linearize_energy as le
 from IPython import display
 
 ##################################################################################################
@@ -54,7 +57,7 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
     sigma = data['sigma']
     
     # Compute the Fourier matrix
-    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv)
+    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
     
     # Define the objective function and gradient
     def objfunc(logim):
@@ -67,6 +70,8 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
             s = -sgs(im, nprior)
         elif entropy == "tv":
             s = -stv(im, Prior.xdim, Prior.ydim)
+        elif entropy == "patch":
+            s = -spatch(im, nprior)
              
         return s + alpha * (chisq(im, A, vis, sigma) - 1)
         
@@ -80,6 +85,8 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
             s = -sgsgrad(im, nprior) 
         elif entropy == "tv":
             s = -stvgrad(im, Prior.xdim, Prior.ydim)
+        elif entropy == "patch":
+            s = -spatchgrad(im, nprior)
             
         return  (s + alpha * chisqgrad(im, A, vis, sigma)) * im
     
@@ -112,7 +119,7 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
     print res.message
     
     # Return Image object
-    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd)
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse)
     if len(Prior.qvec):
         print "Preserving image complex polarization fractions!"
         qvec = Prior.qvec * out / Prior.imvec
@@ -120,7 +127,7 @@ def maxen(Obsdata, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim
 
-def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, entropy="gs", stop=1e-10, ipynb=False):
+def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, beta=1.0, entropy="gs", datamin="gd", stop=1e-10, ipynb=False):
     """Run maximum entropy on the bispectrum with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.
        Returns Image object.
@@ -135,9 +142,12 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
     if uvrange < maxbl:
         raise Exception("pixel spacing is larger than smallest spatial wavelength!")
     
-    # Normalize prior image to total flux
+    # Normalize prior image to total flux  TODO: DO WE STILL NEED THIS?
     nprior = flux * Prior.imvec / np.sum(Prior.imvec)
     logprior = np.log(nprior)
+    
+    ncurrim = flux * InitIm.imvec / np.sum(InitIm.imvec)
+    logcurrim = np.log(ncurrim)
     
     # Get bispectra data    
     biarr = Obsdata.bispectra(mode="all", count="min")
@@ -149,15 +159,20 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
     #sigs_2 = scaled_bisigs(Obsdata) # Katie's correction for overcounting number of DOF
     
     # Compute the fourier matrices
-    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3)
+    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse)
          )
     
     # Coordinate matrix for COM constraint
     coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim/2,-Prior.xdim/2,-1)]
                                            for y in np.arange(Prior.ydim/2,-Prior.ydim/2,-1)])
-    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)                                   
+    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)        
+    
+    # if you are using the linearized energy then compute the A and b of your 
+    # linearized equation given your current image
+    if datamin=="lin":
+        (Alin, blin) = le.computeLinTerms_bi(ncurrim, A3, bi, sigs, InitIm.xdim*InitIm.ydim, alpha=alpha)                           
     
     # Define the objective function and gradient
     def objfunc(logim):
@@ -170,8 +185,15 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
             s = -sgs(im, nprior)
         elif entropy == "tv":
             s = -stv(im, Prior.xdim, Prior.ydim)
+        elif entropy == "patch":
+            s = -spatch(im, nprior)
             
-        c = alpha * (chisq_bi(im, A3, bi, sigs) - 1)
+        if datamin == "gd":
+            c = alpha * (chisq_bi(im, A3, bi, sigs) - 1)
+        elif datamin== "lin":
+            c = alpha * (chisq_bi(im, A3, bi, sigs) - 1)
+        
+        s = s * beta
         t = gamma * (np.sum(im) - flux)**2
         cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
         return  s + c + t + cm
@@ -186,8 +208,15 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
             s = -sgsgrad(im, nprior)
         elif entropy == "tv":
             s = -stvgrad(im, Prior.xdim, Prior.ydim)
+        elif entropy == "patch":
+            s = -spatchgrad(im, nprior)
+            
+        if datamin == "gd":
+            c = alpha * chisqgrad_bi(im, A3, bi, sigs)
+        elif datamin== "lin":
+            c = 2.0/(2.0*len(sigs)) * np.dot(Alin.T, np.dot(Alin, im) - blin) #negative here? 944202941822.00635
         
-        c = alpha * chisqgrad_bi(im, A3, bi, sigs)
+        s = s * beta
         t = 2 * gamma * (np.sum(im) - flux)
         cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
         return  (s + c + t + cm) * im
@@ -203,12 +232,12 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
         nit += 1
    
 
-    plotcur(logprior)
+    plotcur(logcurrim)
        
-    # Minimize
+    # Minimize    
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
     tstart = time.time()
-    res = opt.minimize(objfunc, logprior, method='L-BFGS-B', jac=objgrad, 
+    res = opt.minimize(objfunc, logcurrim, method='L-BFGS-B', jac=objgrad, 
                        options=optdict, callback=plotcur)
     tstop = time.time()
     out = np.exp(res.x)
@@ -220,7 +249,7 @@ def maxen_bs(Obsdata, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, e
     print res.message
     
     # Return Image object
-    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd)
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse)
     if len(Prior.qvec):
         print "Preserving complex polarization fractions"
         qvec = Prior.qvec * out / Prior.imvec
@@ -259,9 +288,9 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
     
     
     # Compute the fourier matrices
-    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3)
+    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse)
          )
     
     # Get closure amplitude data
@@ -273,10 +302,10 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
     clamp = clamparr['camp']
     sigs_clamp = clamparr['sigmaca']
 
-    A4 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv4)
+    A4 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv4, pulse=Prior.pulse)
          )
 
     del clphasearr
@@ -378,7 +407,7 @@ def maxen_onlyclosure(Obsdata, Prior, flux = 1.0, maxit=100, alpha_clphase=100, 
     print res.message
     
     # Return Image object
-    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd)
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse)
     if len(Prior.qvec):
         print "Preserving complex polarization fractions"
         qvec = Prior.qvec * out / Prior.imvec
@@ -426,7 +455,7 @@ def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, n
     sigmap = np.sqrt(2) * data['sigma']
     
     # Compute the fourier matrix
-    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv)
+    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
 
     # Account for the bispectrum phase shift
     modelvis = np.dot(A, iimage)
@@ -486,7 +515,7 @@ def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, n
     qimfinal = qimage(iimage, out[0:len(iimage)], out[len(iimage):])
     uimfinal = uimage(iimage, out[0:len(iimage)], out[len(iimage):])
     outim = vb.Image(iimage.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, 
-                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) 
+                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse) 
     outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
     return outim
              
@@ -529,7 +558,7 @@ def maxen_m(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-100, n
     sigmam = vb.merr(data['sigma'], data['vis'], data['m'])
     
     # Compute the Fourier matrix
-    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv)
+    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
     
     # Define the objective function and gradient
     def objfunc(cvimage):
@@ -584,7 +613,7 @@ def maxen_m(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-100, n
     qimfinal = qimage(iimage, out[0:len(iimage)], out[len(iimage):])
     uimfinal = uimage(iimage, out[0:len(iimage)], out[len(iimage):])
     outim = vb.Image(iimage.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, 
-                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) 
+                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse) 
     outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
     return outim
 
@@ -635,11 +664,11 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     sigsm = vb.merr(poldata['sigma'], poldata['vis'], poldata['m'])
     
     # Compute the Fourier matrices
-    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
-          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3)
+    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse)
          )
-    Apol = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uvpol)
+    Apol = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uvpol, pulse=Prior.pulse)
     
     # Coordinate matrix for COM constraint
     coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim/2,-Prior.xdim/2,-1)]
@@ -746,7 +775,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     qimfinal = qimage(outi, outp[0:len(outi)], outp[len(outi):])
     uimfinal = uimage(outi, outp[0:len(outi)], outp[len(outi):])
     outim = vb.Image(outi.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, 
-                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) 
+                     rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse) 
     outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
     return outim     
 
@@ -796,9 +825,9 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
 #    #sigsb_p_2 = scaled_bisigs(Obsdata, vtype="pvis")
 #    
 #    # Compute the Fourier matrices
-#    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1),
-#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2),
-#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3)
+#    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),
+#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse),
+#          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse)
 #         )
 #    
 #    # Coordinate matrix for COM constraint
@@ -1146,6 +1175,12 @@ def chisqgrad_pbi_i(polimage, iimage, Amatrices, bis_p, sigma):
 # polimage should be [mimage, chiimage]
 
 # Total intensity Entropys
+def spatch(imvec, priorvec):
+    return -0.5*np.sum( ( imvec - priorvec) ** 2)
+
+def spatchgrad(imvec, priorvec):
+    return -(imvec  - priorvec)
+
 def ssimple(imvec, priorvec):
     return -np.sum(imvec*np.log(imvec/priorvec))
 
