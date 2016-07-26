@@ -1,12 +1,8 @@
 # vlbi_imaging_utils.py
 # Andrew Chael, 10/15/2015
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
-# 03/24 Added new prescription for computing closures
-# 02/24 Added dirty beam, dirty image, and fitting for the clean beam
-# 01/20 Added gain and phase errors
 
 # TODO: 
-#       Make Triangle default pulse?
 #       Fix save_uvfits
 #       Add non-circular errors
 #       Add closure amplitude debiasing
@@ -26,10 +22,8 @@ import writeData
 import oifits_new as oifits
 import time as ttime
 import pulses
-
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
-reload(writeData)
-reload(oifits)
+
 
 ##################################################################################################
 # Constants
@@ -105,7 +99,7 @@ class Image(object):
     	mjd: The mjd of the image 
     """
     
-    def __init__(self, image, psize, ra, dec, rf=230e9, pulse=pulses.deltaPulse2D, source="SgrA", mjd="0"):
+    def __init__(self, image, psize, ra, dec, rf=230e9, pulse=pulses.trianglePulse2D, source="SgrA", mjd="0"):
         if len(image.shape) != 2: 
             raise Exception("image must be a 2D numpy array") 
         
@@ -980,7 +974,7 @@ class Obsdata(object):
         
         return outlist
     
-    def dirtybeam(self, npix, fov, pulse=pulses.deltaPulse2D):
+    def dirtybeam(self, npix, fov, pulse=pulses.trianglePulse2D):
         """Return a square Image object of the observation dirty beam
            fov is in radian
         """
@@ -989,10 +983,12 @@ class Obsdata(object):
         pdim = fov/npix
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
-
+        
+        xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
+        
         im = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
-                  for i in np.arange(fov/2., -fov/2., -pdim)] 
-                  for j in np.arange(fov/2., -fov/2., -pdim)])    
+                  for i in xlist] 
+                  for j in xlist])    
         
         # !AC think more carefully about the different image size cases
         im = im[0:npix, 0:npix]
@@ -1003,7 +999,7 @@ class Obsdata(object):
         src = self.source + "_DB"
         return Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
     
-    def dirtyimage(self, npix, fov, pulse=pulses.deltaPulse2D):
+    def dirtyimage(self, npix, fov, pulse=pulses.trianglePulse2D):
        
 
         """Return a square Image object of the observation dirty image
@@ -1020,25 +1016,26 @@ class Obsdata(object):
         qvis = self.unpack('qvis')['qvis']
         uvis = self.unpack('uvis')['uvis']
         
+        xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
+
         # Take the DFTS
-        # Shouldn't need to real about conjugate baselines b/c unpack
-        # does not return them
+        # Shouldn't need to real about conjugate baselines b/c unpack does not return them
         im  = np.array([[np.mean(np.real(vis)*np.cos(2*np.pi*(i*u + j*v)) - 
                                  np.imag(vis)*np.sin(2*np.pi*(i*u + j*v)))
-                  for i in np.arange(fov/2., -fov/2., -pdim)] 
-                  for j in np.arange(fov/2., -fov/2., -pdim)])    
+                  for i in xlist] 
+                  for j in xlist])    
         qim = np.array([[np.mean(np.real(qvis)*np.cos(2*np.pi*(i*u + j*v)) - 
                                  np.imag(qvis)*np.sin(2*np.pi*(i*u + j*v)))
-                  for i in np.arange(fov/2., -fov/2., -pdim)] 
-                  for j in np.arange(fov/2., -fov/2., -pdim)])     
+                  for i in xlist] 
+                  for j in xlist])     
         uim = np.array([[np.mean(np.real(uvis)*np.cos(2*np.pi*(i*u + j*v)) - 
                                  np.imag(uvis)*np.sin(2*np.pi*(i*u + j*v)))
-                  for i in np.arange(fov/2., -fov/2., -pdim)] 
-                  for j in np.arange(fov/2., -fov/2., -pdim)])    
+                  for i in xlist] 
+                  for j in xlist])    
                                            
         dim = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
-                  for i in np.arange(fov/2., -fov/2., -pdim)] 
-                  for j in np.arange(fov/2., -fov/2., -pdim)])   
+                  for i in xlist] 
+                  for j in xlist])   
            
         # !AC is this the correct normalization?
         im = im/np.sum(dim)
@@ -1054,7 +1051,7 @@ class Obsdata(object):
         out.add_qu(qim, uim)
         return out
     
-    def cleanbeam(self, npix, fov, pulse=pulses.deltaPulse2D):
+    def cleanbeam(self, npix, fov, pulse=pulses.trianglePulse2D):
         """Return a square Image object of the observation fitted (clean) beam
            fov is in radian
         """
@@ -2009,7 +2006,7 @@ def load_obs_oifits(filename, flux=1.0):
     visphierr = np.array([vis_data[i]._visphierr for i in range(len(vis_data))])
     timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]) #convert to single number
     #return timeobs
-    #AC - datetime not working!!!
+    #!AC TODO - datetime not working!!!
     time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple()))/(60.0*60.0) 
                                         for i in range(len(timeobs))]), [nWavelengths, 1]))
 
@@ -2063,7 +2060,7 @@ def load_obs_oifits(filename, flux=1.0):
     # return object
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0], ampcal=False, phasecal=False)
     
-def load_im_txt(filename, pulse=pulses.deltaPulse2D):
+def load_im_txt(filename, pulse=pulses.trianglePulse2D):
     """Read in an image from a text file and create an Image object
        Text file should have the same format as output from Image.save_txt()
        Make sure the header has exactly the same form!
@@ -2109,10 +2106,9 @@ def load_im_txt(filename, pulse=pulses.deltaPulse2D):
     
     return outim
     
-def load_im_fits(filename, punit="deg", pulse=pulses.deltaPulse2D):
+def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
     """Read in an image from a FITS file and create an Image object
     """
-    # TODO !AC should pulse type be in header?
 
     # Radian or Degree?
     if punit=="deg":
@@ -2218,7 +2214,7 @@ def resample_square(im, xdim_new, ker_size=5):
     outim.add_qu(outq, outu)
     return outim
     
-def make_square(obs, npix, fov,pulse=pulses.deltaPulse2D):
+def make_square(obs, npix, fov,pulse=pulses.trianglePulse2D):
     """Make an empty prior image
        obs is an observation object
        fov is in radians
@@ -2239,10 +2235,12 @@ def add_tophat(im, flux, radius):
     xfov = im.xdim * im.psize
     yfov = im.ydim * im.psize
     
+    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
     # !AC handle actual zeros?
     hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else EP
-                      for i in np.arange(xfov/2., -xfov/2., -im.psize)] 
-                      for j in np.arange(yfov/2., -yfov/2., -im.psize)])        
+                      for i in xlist] 
+                      for j in ylist])        
     
     # !AC think more carefully about the different cases for array size here
     hat = hat[0:im.ydim, 0:im.xdim]
@@ -2258,20 +2256,20 @@ def add_gauss(im, flux, beamparams, x=0, y=0):
        theta is the orientation angle measured E of N
     """ 
     
-    #xfov = im.xdim * im.psize
-    #yfov = im.ydim * im.psize
+
     sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
     sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.)))
     cth = np.cos(beamparams[2])
     sth = np.sin(beamparams[2])
-
-    #gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
-    #                  for i in np.arange(xfov/2., -xfov/2., -im.psize)] 
-    #                  for j in np.arange(yfov/2., -yfov/2., -im.psize)])                        
+    
+    xfov = im.xdim * im.psize
+    yfov = im.ydim * im.psize    
+    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
     
     gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
-                      for i in (np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0)] 
-                      for j in (np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0 )]) 
+                      for i in xlist] 
+                      for j in ylist]) 
   
     # !AC think more carefully about the different cases for array size here
     gauss = gauss[0:im.ydim, 0:im.xdim]
@@ -2309,6 +2307,8 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         uim = (image.uvec).reshape(image.ydim, image.xdim)
     xfov = image.xdim * image.psize
     yfov = image.ydim * image.psize
+    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
     
     if beamparams[0] > 0.0:
         sigma_maj = frac * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
@@ -2316,8 +2316,8 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         cth = np.cos(beamparams[2])
         sth = np.sin(beamparams[2])
         gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
-                                  for i in np.arange(xfov/2., -xfov/2., -image.psize)] 
-                                  for j in np.arange(yfov/2., -yfov/2., -image.psize)])
+                                  for i in xlist] 
+                                  for j in ylist])
 
         # !AC think more carefully about the different image size cases here
         gauss = gauss[0:image.ydim, 0:image.xdim]
@@ -2336,9 +2336,10 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         cth = np.cos(beamparams[2])
         sth = np.sin(beamparams[2])
         gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
-                                  for i in np.arange(xfov/2., -xfov/2., -image.psize)] 
-                                  for j in np.arange(yfov/2., -yfov/2., -image.psize)])
+                                  for i in xlist] 
+                                  for j in ylist])
         
+
         # !AC think more carefully about the different cases here
         gauss = gauss[0:image.ydim, 0:image.xdim]
         gauss = gauss / np.sum(gauss) # normalize to 1        
@@ -2553,8 +2554,7 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
 
-    # Fortunately, this works for both uvlist recarrays and ndarrays, but be careful!
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each omega
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
     return ftmatrices
 

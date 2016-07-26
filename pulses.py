@@ -20,7 +20,7 @@ def rectPulse2D(x, y, pdim, dom='F'):
 		return rectPulse_F(x, pdim) * rectPulse_F(y,pdim)
 
 def rectPulse_I(x, pdim):
-	if abs(x) > pdim/2.:
+	if abs(x) >= pdim/2.:
 		return 0.0
 	else:
 		return 1./pdim
