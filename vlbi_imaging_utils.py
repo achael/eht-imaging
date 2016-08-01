@@ -580,7 +580,7 @@ class Obsdata(object):
         
         # Sort the data by time
         obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
-
+        
         # Save the data             
         self.data = obsdata
             
@@ -2194,24 +2194,33 @@ def resample_square(im, xdim_new, ker_size=5):
     def im_new_u(x,y):
         mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
         return np.sum([im.uvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-        
+ 
+       
+    
     out = np.array([[im_new(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
                       for x in np.arange(0, -xdim_new, -1)] 
                       for y in np.arange(0, -ydim_new, -1)] )                     
-    outq = np.array([[im_new_q(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-                      for x in np.arange(0, -xdim_new, -1)] 
-                      for y in np.arange(0, -ydim_new, -1)] ) 
-    outu = np.array([[im_new_u(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-                      for x in np.arange(0, -xdim_new, -1)] 
-                      for y in np.arange(0, -ydim_new, -1)] )
-                      
-    # TODO !AC check if this normalization is correct!
+
+    #TODO: Make sure this scaling is correct
     scaling = np.sum(im.imvec) / np.sum(out)
     out *= scaling
-    outq *= scaling
-    outu *= scaling
+
+    if len(im.qvec):
+        outq = np.array([[im_new_q(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                      for x in np.arange(0, -xdim_new, -1)] 
+                      for y in np.arange(0, -ydim_new, -1)] )
+        outq *= scaling
+    if len(im.uvec):
+        outu = np.array([[im_new_u(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                      for x in np.arange(0, -xdim_new, -1)] 
+                      for y in np.arange(0, -ydim_new, -1)] )
+        outu *=scaling
+    
     outim = Image(out, psize_new, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
-    outim.add_qu(outq, outu)
+    
+    if len(im.uvec) and len(im.qvec):
+        outim.add_qu(outq, outu)
+    
     return outim
     
 def make_square(obs, npix, fov,pulse=pulses.trianglePulse2D):
@@ -2264,8 +2273,8 @@ def add_gauss(im, flux, beamparams, x=0, y=0):
     
     xfov = im.xdim * im.psize
     yfov = im.ydim * im.psize    
-    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+    ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
     
     gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
                       for i in xlist] 

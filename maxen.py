@@ -148,6 +148,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         raise Exception("initial image does not match dimensions of the prior image!")
         
     # Normalize prior image to total flux  TODO: DO WE STILL NEED THIS?
+    zbl = np.max(Obsdata.unpack(['amp'])['amp'])
     nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
     ninit = zbl * InitIm.imvec / np.sum(InitIm.imvec)
     logprior = np.log(nprior)
