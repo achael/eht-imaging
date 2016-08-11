@@ -2244,8 +2244,8 @@ def add_tophat(im, flux, radius):
     xfov = im.xdim * im.psize
     yfov = im.ydim * im.psize
     
-    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+    ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
     # !AC handle actual zeros?
     hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else EP
                       for i in xlist] 
@@ -2316,8 +2316,8 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         uim = (image.uvec).reshape(image.ydim, image.xdim)
     xfov = image.xdim * image.psize
     yfov = image.ydim * image.psize
-    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    xlist = np.arange(0,-image.xdim,-1)*image.psize + (image.psize*image.xdim)/2.0 - image.psize/2.0
+    ylist = np.arange(0,-image.ydim,-1)*image.psize + (image.psize*image.ydim)/2.0 - image.psize/2.0
     
     if beamparams[0] > 0.0:
         sigma_maj = frac * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
