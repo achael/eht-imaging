@@ -339,8 +339,8 @@ class Image(object):
         header['OBJECT'] = self.source
         header['CTYPE1'] = 'RA---SIN'
         header['CTYPE2'] = 'DEC--SIN'
-        header['CDELT1'] = -self.psize
-        header['CDELT2'] = self.psize
+        header['CDELT1'] = -self.psize/DEGREE
+        header['CDELT2'] = self.psize/DEGREE
         header['OBSRA'] = self.ra * 180/12.
         header['OBSDEC'] = self.dec
         header['FREQ'] = self.rf
@@ -1390,7 +1390,7 @@ class Obsdata(object):
     def save_uvfits(self, fname):
         """Save visibility data to uvfits
             Needs template.UVP file
-            """
+        """
         
         # Open template UVFITS
         hdulist = fits.open('./template.UVP')
@@ -2172,7 +2172,6 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
 def resample_square(im, xdim_new, ker_size=5):
     """Return a new image object that is resampled to the new dimensions xdim x ydim"""
     
-    # !!???
     # !AC TODO work with not square image? New xdim & ydim must be compatible!
     if im.xdim != im.ydim:
         raise Exception("Image must be square (for now)!")
@@ -2188,30 +2187,38 @@ def resample_square(im, xdim_new, ker_size=5):
     def im_new(x,y):
         mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
         return np.sum([im.imvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-    def im_new_q(x,y):
-        mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
-        return np.sum([im.qvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-    def im_new_u(x,y):
-        mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
-        return np.sum([im.uvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-        
+    
     out = np.array([[im_new(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
                       for x in np.arange(0, -xdim_new, -1)] 
                       for y in np.arange(0, -ydim_new, -1)] )                     
-    outq = np.array([[im_new_q(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-                      for x in np.arange(0, -xdim_new, -1)] 
-                      for y in np.arange(0, -ydim_new, -1)] ) 
-    outu = np.array([[im_new_u(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-                      for x in np.arange(0, -xdim_new, -1)] 
-                      for y in np.arange(0, -ydim_new, -1)] )
+
                       
     # TODO !AC check if this normalization is correct!
     scaling = np.sum(im.imvec) / np.sum(out)
     out *= scaling
-    outq *= scaling
-    outu *= scaling
     outim = Image(out, psize_new, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
-    outim.add_qu(outq, outu)
+    
+    # Q and U images
+    if len(im.qvec):
+        def im_new_q(x,y):
+            mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * 
+                    ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+            return np.sum([im.qvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
+        def im_new_u(x,y):
+            mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * 
+                    ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+            return np.sum([im.uvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
+        
+        outq = np.array([[im_new_q(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                      for x in np.arange(0, -xdim_new, -1)] 
+                      for y in np.arange(0, -ydim_new, -1)] ) 
+        outu = np.array([[im_new_u(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                      for x in np.arange(0, -xdim_new, -1)] 
+                      for y in np.arange(0, -ydim_new, -1)] )
+        outq *= scaling
+        outu *= scaling
+        outim.add_qu(outq, outu)
+        
     return outim
     
 def make_square(obs, npix, fov,pulse=pulses.trianglePulse2D):
@@ -2264,8 +2271,8 @@ def add_gauss(im, flux, beamparams, x=0, y=0):
     
     xfov = im.xdim * im.psize
     yfov = im.ydim * im.psize    
-    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+    ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
     
     gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
                       for i in xlist] 
@@ -2561,13 +2568,14 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
 def amp_debias(vis, sigma):
     """Return debiased visibility amplitudes"""
     
+    # TODO: what to do if deb2 < 0? 
     deb2 = np.abs(vis)**2 - np.abs(sigma)**2
     if type(deb2) == float or type(deb2)==np.float64:
-        if deb2 < 0.0: return 0.0
+        if deb2 < 0.0: return np.abs(vis)
         else: return np.sqrt(deb2)
     else:
         lowsnr = deb2 < 0.0
-        deb2[lowsnr] = 0.0
+        deb2[lowsnr] = np.abs(vis)**2
         return np.sqrt(deb2)
     
 def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF):
@@ -2606,7 +2614,7 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     
     # Overwrite sigma_cleans with values computed from the SEFDs
     sigma_clean = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefd'], obs.tarr[obs.tkey[sites[i][1]]]['sefd'], tint[i], bw) for i in range(len(tint))])
-    
+ 
     # Estimated noise using no gain and estimated opacity
     if opacity_errs:                    
         sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
@@ -2651,6 +2659,7 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     obsdata['qvis'] = qvis
     obsdata['uvis'] = uvis
     obsdata['sigma'] = sigma_est
+    
 	# Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
     return out

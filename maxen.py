@@ -148,8 +148,8 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         raise Exception("initial image does not match dimensions of the prior image!")
         
     # Normalize prior image to total flux  TODO: DO WE STILL NEED THIS?
-    nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
-    ninit = zbl * InitIm.imvec / np.sum(InitIm.imvec)
+    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
+    ninit = flux * InitIm.imvec / np.sum(InitIm.imvec)
     logprior = np.log(nprior)
     loginit = np.log(ninit)
     
@@ -259,7 +259,136 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         uvec = Prior.uvec * out / Prior.imvec
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim 
+    
+def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_visamp=100, gamma=500, delta=500, entropy="gs", stop=1e-5, grads=True, ipynb=False):
+    """Run maximum entropy on visibility amplitude and closure phase with an exponential change of variables 
+       Obsdata is an Obsdata object, and Prior is an Image object.
+       Returns Image object.
+       "Lagrange multipliers" are not free parameters.
+    """
+    
+    print "Imaging I with visibility amplitudes and closure phases . . ." 
+   
+    # Catch problem if uvrange < largest baseline
+    uvrange = 1/Prior.psize
+    maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
+    if uvrange < maxbl:
+        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+    if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
+        raise Exception("initial image does not match dimensions of the prior image!")
 
+    # Normalize prior image to total flux (this doesn't actually matter because total flux is unconstrained)
+    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
+    ninit = flux * InitIm.imvec / np.sum(InitIm.imvec)
+    logprior = np.log(nprior)
+    loginit = np.log(ninit)
+
+    # Get closure phase data
+    clphasearr = Obsdata.c_phases(mode="all", count="min")
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
+    clphase = clphasearr['cphase']
+    sigs_clphase = clphasearr['sigmacp']
+    
+    
+    # Compute the fourier matrices
+    A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse),
+          vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse)
+         )
+    
+    # Get amplitude data
+    ampdata = Obsdata.unpack(['u','v','amp','sigma'])
+    uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))
+    amp = ampdata['amp']
+    sigs_amp = ampdata['sigma']
+    
+    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
+
+    del clphasearr
+    del uv1, uv2, uv3, uv
+    
+    # Coordinate matrix for COM constraint
+    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim/2,-Prior.xdim/2,-1)]
+                                           for y in np.arange(Prior.ydim/2,-Prior.ydim/2,-1)])
+    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)                                   
+    
+    # Define the objective function and gradient
+    def objfunc(logim):
+        im = np.exp(logim)
+        if entropy == "simple":
+            s = -ssimple(im, nprior)
+        elif entropy == "l1":
+            s = -sl1(im, nprior)
+        elif entropy == "gs":
+            s = -sgs(im, nprior)
+        elif entropy == "tv":
+            s = -stv(im, Prior.xdim, Prior.ydim)
+            
+        c_clphase = alpha_clphase * (chisq_clphase(im, A3, clphase, sigs_clphase) - 1)
+        c_amp   = alpha_visamp   * (chisq_visamp(im, A, amp, sigs_amp) - 1)
+        t = gamma * (np.sum(im) - flux)**2
+        cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
+        return  s + c_clphase + c_amp + t + cm
+    
+    def objgrad(logim):
+        im = np.exp(logim)
+        if entropy == "simple":
+            s = -ssimplegrad(im, nprior)
+        elif entropy == "l1":
+            s = -sl1grad(im, nprior)
+        elif entropy == "gs":
+            s = -sgsgrad(im, nprior) 
+        elif entropy == "tv":
+            s = -stvgrad(im, Prior.xdim, Prior.ydim)
+        
+        c_clphase = alpha_clphase * chisqgrad_clphase(im, A3, clphase, sigs_clphase)
+        c_amp = alpha_visamp * chisqgrad_visamp(im, A, amp, sigs_amp)
+        t = 2 * gamma * (np.sum(im) - flux)
+        cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
+        return  (s + c_clphase + c_amp + t + cm) * im
+		       
+    # Plotting function for each iteration
+    global nit
+    nit = 0
+    def plotcur(logim_step):
+        global nit
+        im_step = np.exp(logim_step)
+        chi2_clphase = chisq_clphase(im_step, A3, clphase, sigs_clphase)
+        chi2_amp   = chisq_visamp(im_step, A, amp, sigs_amp)
+	print("chi2_clphase: ",chi2_clphase)
+	print("chi2_amp: ",chi2_amp)
+        plot_i(im_step, Prior, nit, chi2_amp, ipynb=ipynb)
+        nit += 1
+   
+    plotcur(loginit)
+       
+    # Minimize
+    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST}
+    tstart = time.time()
+    res = opt.minimize(objfunc, loginit, method='L-BFGS-B', jac=objgrad, 
+                       options=optdict, callback=plotcur)
+
+    tstop = time.time()
+    out = np.exp(res.x)
+    
+    # Print stats
+    print "time: %f s" % (tstop - tstart)
+    print "J: %f" % res.fun
+    print "Closure Phase Chi^2: %f" % chisq_clphase(out, A3, clphase, sigs_clphase)
+    print "Amplitude Chi^2: %f" % chisq_visamp(out, A, amp, sigs_amp)
+    print res.message
+    
+    # Return Image object
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse)
+    if len(Prior.qvec):
+        print "Preserving complex polarization fractions"
+        qvec = Prior.qvec * out / Prior.imvec
+        uvec = Prior.uvec * out / Prior.imvec
+        outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
+    return outim   
+    
 def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_clamp=100, gamma=500, delta=500, entropy="gs", stop=1e-5, grads=True, ipynb=False):
     """Run maximum entropy on only closure quantities with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.
@@ -280,8 +409,8 @@ def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clpha
         raise Exception("initial image does not match dimensions of the prior image!")
 
     # Normalize prior image to total flux (this doesn't actually matter because total flux is unconstrained)
-    nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
-    ninit = zbl * InitIm.imvec / np.sum(InitIm.imvec)
+    nprior = flux * Prior.imvec / np.sum(Prior.imvec)
+    ninit = flux * InitIm.imvec / np.sum(InitIm.imvec)
     logprior = np.log(nprior)
     loginit = np.log(ninit)
 
@@ -863,6 +992,22 @@ def chisqgrad_clamp(imvec, Amatrices, clamp, sigma):
     pt3 = -pp / i3
     pt4 = -pp / i4
     out = (-2.0/len(clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    return out
+
+#Visibility Amplitudes chi-squared
+def chisq_visamp(imvec, A, amp, sigma):
+    """Closure Amplitudes (normalized) chi-squared"""
+    
+    amp_samples = np.abs(np.dot(A, imvec))
+    return np.sum(np.abs((amp - amp_samples)/sigma)**2) / (len(amp))
+
+def chisqgrad_visamp(imvec, A, amp, sigma):
+    
+    i1 = np.dot(A, imvec)
+    amp_samples = np.abs(i1)
+    
+    pp = ((amp - amp_samples) * amp_samples) / (sigma**2) / i1
+    out = (-2.0/len(amp)) * np.real(np.dot(pp, A))
     return out
     
 #Closure phases chi-squared
