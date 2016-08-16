@@ -28,7 +28,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 ##################################################################################################
 # Imagers
 ##################################################################################################
-def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10, ipynb=False):
+def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, beta=1.0, entropy="gs", stop=1e-10, ipynb=False):
     """Run maximum entropy with full amplitudes and phases. 
        Uses I = exp(I') change of variables.
        Obsdata is an Obsdata object, and Prior is an Image object.
@@ -75,7 +75,8 @@ def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10
             s = -stv(im, Prior.xdim, Prior.ydim)
         elif entropy == "patch":
             s = -spatch(im, nprior)
-             
+
+        s = s * beta
         return s + alpha * (chisq(im, A, vis, sigma) - 1)
         
     def objgrad(logim):
@@ -90,7 +91,8 @@ def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, entropy="gs", stop=1e-10
             s = -stvgrad(im, Prior.xdim, Prior.ydim)
         elif entropy == "patch":
             s = -spatchgrad(im, nprior)
-            
+        
+        s = s * beta
         return  (s + alpha * chisqgrad(im, A, vis, sigma)) * im
     
     # Plotting function for each iteration
@@ -148,6 +150,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         raise Exception("initial image does not match dimensions of the prior image!")
         
     # Normalize prior image to total flux  TODO: DO WE STILL NEED THIS?
+
     nprior = flux * Prior.imvec / np.sum(Prior.imvec)
     ninit = flux * InitIm.imvec / np.sum(InitIm.imvec)
     logprior = np.log(nprior)
