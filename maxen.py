@@ -26,7 +26,7 @@ NHIST = 5000 # number of steps to store for hessian approx
 nit = 0 # global variable to track the iteration number in the plotting callback
 
 ##################################################################################################
-# Imagers
+# Total Intensity Imagers
 ##################################################################################################
 def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, beta=1.0, entropy="gs", stop=1e-10, ipynb=False):
     """Run maximum entropy with full amplitudes and phases. 
@@ -328,7 +328,9 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
             s = -sgs(im, nprior)
         elif entropy == "tv":
             s = -stv(im, Prior.xdim, Prior.ydim)
-            
+        elif entropy == "patch":
+            s = -spatch(im, nprior)     
+        
         c_clphase = alpha_clphase * (chisq_clphase(im, A3, clphase, sigs_clphase) - 1)
         c_amp   = alpha_visamp   * (chisq_visamp(im, A, amp, sigs_amp) - 1)
         t = gamma * (np.sum(im) - flux)**2
@@ -345,6 +347,8 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
             s = -sgsgrad(im, nprior) 
         elif entropy == "tv":
             s = -stvgrad(im, Prior.xdim, Prior.ydim)
+        elif entropy == "patch":
+            s = -spatchgrad(im, nprior)     
         
         c_clphase = alpha_clphase * chisqgrad_clphase(im, A3, clphase, sigs_clphase)
         c_amp = alpha_visamp * chisqgrad_visamp(im, A, amp, sigs_amp)
@@ -467,7 +471,9 @@ def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clpha
             s = -sgs(im, nprior)
         elif entropy == "tv":
             s = -stv(im, Prior.xdim, Prior.ydim)
-            
+        elif entropy == "patch":
+            s = -spatch(im, nprior)   
+                          
         c_clphase = alpha_clphase * (chisq_clphase(im, A3, clphase, sigs_clphase) - 1)
         c_clamp   = alpha_clamp   * (chisq_clamp(im, A4, clamp, sigs_clamp) - 1)
         t = gamma * (np.sum(im) - flux)**2
@@ -484,7 +490,9 @@ def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clpha
             s = -sgsgrad(im, nprior) 
         elif entropy == "tv":
             s = -stvgrad(im, Prior.xdim, Prior.ydim)
-        
+        elif entropy == "patch":
+            s = -spatchgrad(im, nprior)     
+                    
         c_clphase = alpha_clphase * chisqgrad_clphase(im, A3, clphase, sigs_clphase)
         c_clamp = alpha_clamp * chisqgrad_clamp(im, A4, clamp, sigs_clamp)
         t = 2 * gamma * (np.sum(im) - flux)
@@ -544,7 +552,12 @@ def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clpha
         uvec = Prior.uvec * out / Prior.imvec
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim   
-    
+
+
+##################################################################################################
+# Polarimetric Imagers
+##################################################################################################
+   
 def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, prior=True, ipynb=False):
     """Run maximum entropy on pol. amplitude and phase
        Obsdata is an Obsdata object,
