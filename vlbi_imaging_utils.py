@@ -2192,7 +2192,6 @@ def resample_square(im, xdim_new, ker_size=5):
                       for x in np.arange(0, -xdim_new, -1)] 
                       for y in np.arange(0, -ydim_new, -1)] )                     
 
-<<<<<<< HEAD
                       
     # TODO !AC check if this normalization is correct!
     scaling = np.sum(im.imvec) / np.sum(out)
