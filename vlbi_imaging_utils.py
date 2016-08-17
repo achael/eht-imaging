@@ -2575,7 +2575,7 @@ def amp_debias(vis, sigma):
         else: return np.sqrt(deb2)
     else:
         lowsnr = deb2 < 0.0
-        deb2[lowsnr] = np.abs(vis)**2
+        deb2[lowsnr] = np.abs(vis[lowsnr])**2
         return np.sqrt(deb2)
     
 def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF):
