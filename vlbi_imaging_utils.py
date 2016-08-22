@@ -707,12 +707,13 @@ class Obsdata(object):
            Set count='max' to return all bispectrum values
            Get Q, U, P bispectra by changing vtype
         """
-        #!AC Error formula for bispectrum only true in high SNR limit!
+
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('min', 'max'):
             raise Exception("possible options for count are 'min' and 'max'")
         
+        # Generate the time-sorted data with conjugate baselines
         tlist = self.tlist(conj=True)    
         outlist = []
         bis = []
@@ -725,7 +726,7 @@ class Obsdata(object):
             for dat in tdata:
                 l_dict[(dat['t1'], dat['t2'])] = dat
             
-            
+            # Determine the triangles in the time step
             if count == 'min':
                 # If we want a minimal set, choose triangles with the minimum sefd reference
                 # Unless there is no sefd data, in which case choose the northernmost
@@ -742,6 +743,7 @@ class Obsdata(object):
                 # Find all triangles
                 tris = list(it.combinations(sites,3))
             
+            # Generate bispectra for each triangle
             for tri in tris:
                 # The ordering is north-south
                 a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
@@ -750,10 +752,13 @@ class Obsdata(object):
                 tri = (tri[a1], tri[a2], tri[a3])
                     
                 # Select triangle entries in the data dictionary
-                l1 = l_dict[(tri[0], tri[1])]
-                l2 = l_dict[(tri[1],tri[2])]
-                l3 = l_dict[(tri[2], tri[0])]
-                
+                try:
+                    l1 = l_dict[(tri[0], tri[1])]
+                    l2 = l_dict[(tri[1],tri[2])]
+                    l3 = l_dict[(tri[2], tri[0])]
+                except KeyError:
+                    continue
+                    
                 # Choose the appropriate polarization and compute the bs and err
                 if vtype in ["vis", "qvis", "uvis"]:
                     bi = l1[vtype]*l2[vtype]*l3[vtype]  
