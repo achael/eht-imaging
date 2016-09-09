@@ -25,7 +25,7 @@ def self_cal(obs, im):
 def self_cal_scan(scan, im):
     """Self-calibrate a scan"""
 
-    # calculating model visibs
+    # calculating image true visibs (beware no scattering here..)
     uv = np.hstack((scan['u'].reshape(-1,1), scan['v'].reshape(-1,1)))
     A = vb.ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
     V = np.dot(A, im.imvec)
@@ -33,22 +33,26 @@ def self_cal_scan(scan, im):
     sites = list(set(scan['t1']).union(set(scan['t2'])))
     
     tkey = {b:a for a,b in enumerate(sites)}
+    tidx1 = [tkey[row['t1']] for row in scan]
+    tidx2 = [tkey[row['t2']] for row in scan]
+    sigma_inv = 1. / scan['sigma']
 
     def errfunc(gpar):
-        # ginv = np.sum(gpar.reshape((-1, 2)) * np.array((1, 1j))[np.newaxis,:], axis=-1)
-        ginv = gpar.astype(np.double).view(dtype=np.complex128)
-        Vpred = np.array([row['vis']*ginv[tkey[row['t1']]]*ginv[tkey[row['t2']]].conj() for row in scan])
-        chisq = np.sum(np.abs((Vpred - V)/scan['sigma'])**2)
+        g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
+        Verr = scan['vis'] - g[tidx1]*g[tidx2].conj() * V
+        chisq = np.sum((Verr.real * sigma_inv)**2) + np.sum((Verr.imag * sigma_inv)**2)
         return chisq
 
-    gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.double)
+    gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
 
     # optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST} # minimizer params
     res = opt.minimize(errfunc, gpar_guess, method='Nelder-Mead')
-    ginv_fit = res.x.view(np.complex128)
+    g_fit = res.x.view(np.complex128)
 
-    Vpred = np.array([row['vis']*ginv_fit[tkey[row['t1']]]*ginv_fit[tkey[row['t2']]].conj() for row in scan])
+    gij_inv = (g_fit[tidx1] * g_fit[tidx2].conj())**(-1)
+    scan['vis'] = gij_inv * scan['vis']
+    scan['qvis'] = gij_inv * scan['qvis']
+    scan['uvis'] = gij_inv * scan['uvis']
+    scan['sigma'] = np.abs(gij_inv) * scan['sigma'] 
 
-    scan['vis'] = Vpred
-    scan['sigma'] =  np.array([row['sigma']*np.abs(ginv_fit[tkey[row['t1']]]*ginv_fit[tkey[row['t2']]].conj()) for row in scan])
     return scan
