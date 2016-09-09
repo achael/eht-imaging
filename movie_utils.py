@@ -143,7 +143,7 @@ class Movie(object):
         self.qframes = [-qvec for qvec in self.qframes]
         return
            
-    def observe_same(self, obs, sgrscat=False):
+    def observe_same(self, obs, sgrscat=False, repeat=False):
         """Observe the movie on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
@@ -164,10 +164,8 @@ class Movie(object):
         # Observation MJDs in range?
         # !AC use astropy date conversion!!
         obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
-        print obsmjds
-        print mjdstart
-        print mjdend
-        if ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
+
+        if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
             raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
                    
         # Observe nearest frame
@@ -179,6 +177,10 @@ class Movie(object):
             mjd = obsmjds[i]
             n = int(np.floor((mjd - mjdstart) * 86400.0 / self.framedur))
             
+            if (n >= len(self.frames)):
+                if repeat: n = np.mod(n, len(self.frames))
+                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
+                
             # Extract uv data & perform DFT
             uv = obsdata[['u','v']].view(('f8',2))
             mat = vb.ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse)
@@ -213,7 +215,7 @@ class Movie(object):
         obs_no_noise = vb.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata_out, obs.tarr, source=self.source, mjd=self.mjd)
         return obs_no_noise
         
-    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=TAUDEF, gainp=GAINPDEF, opacity_errs=True, ampcal=True, phasecal=True, sgrscat=False):
+    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=TAUDEF, gainp=GAINPDEF, opacity_errs=True, ampcal=True, phasecal=True, sgrscat=False, repeat=False):
         """Observe the image with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in GMST.
            tint and tadv should be seconds.
@@ -225,7 +227,7 @@ class Movie(object):
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, opacity_errs=opacity_errs, mjd=self.mjd)
         
         # Observe
-        obs = self.observe_same(obs, sgrscat=sgrscat)    
+        obs = self.observe_same(obs, sgrscat=sgrscat, repeat=repeat)    
         
         # Add noise
         obs = vb.add_noise(obs, opacity_errs=opacity_errs, ampcal=ampcal, phasecal=phasecal, gainp=gainp)

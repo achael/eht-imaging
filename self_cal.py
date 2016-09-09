@@ -45,8 +45,8 @@ def self_cal_scan(scan, im):
 
     gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
 
-    # optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST} # minimizer params
-    res = opt.minimize(errfunc, gpar_guess, method='Nelder-Mead')
+    optdict = {'maxiter':1000} # minimizer params
+    res = opt.minimize(errfunc, gpar_guess, method='Powell',options=optdict)
     g_fit = res.x.view(np.complex128)
 
     gij_inv = (g_fit[tidx1] * g_fit[tidx2].conj())**(-1)

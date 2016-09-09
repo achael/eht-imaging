@@ -393,7 +393,7 @@ class Array(object):
                     
         return np.array(bls)
             
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, tau=TAUDEF, opacity_errs=True):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=0.0, tau=TAUDEF, opacity_errs=True):
         """Generate u,v points and baseline errors for the array.
            Return an Observation object with no visibilities.
            tstart and tstop are hrs in GMST
@@ -404,6 +404,9 @@ class Array(object):
            tau can be a single number or a dictionary giving one per site
         """
         
+        if tstart - mjdtogmt(mjd) > 1e-9: #!AC time!
+            raise Exception("Initial time is greater than given mjd!")
+            
         # Set up coordinate system
         sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
         projU = np.cross(np.array([0,0,1]), sourcevec)
@@ -420,7 +423,7 @@ class Array(object):
         
         # Observing times
         times = np.arange(tstart, tstop+tstep, tstep)
-       
+
         # Generate uv points at all times
         outlist = []        
         for k in xrange(len(times)):
@@ -465,7 +468,10 @@ class Array(object):
                                 ), dtype=DTPOL
                                 ))
         obsarr = np.array(outlist)
-        
+         
+        if not len(obsarr):
+            raise Exception("No mutual visibilities in the specified time range!")
+            
         # Elevation dependence on noise using estimated opacity
         if opacity_errs:
             elevs = obsarr[['el1','el2']].view(('f8',2))
@@ -473,7 +479,7 @@ class Array(object):
             obsarr['sigma'] *= np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))                 
         
         # Return
-        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=str(ra) + ":" + str(dec), mjd=0, ampcal=True, phasecal=True)      
+        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=str(ra) + ":" + str(dec), mjd=mjd, ampcal=True, phasecal=True)      
         return obs
      
     def save_array(self, fname):
