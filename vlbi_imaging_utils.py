@@ -404,7 +404,7 @@ class Array(object):
            tau can be a single number or a dictionary giving one per site
         """
         
-        if tstart - mjdtogmt(mjd) > 1e-9: #!AC time!
+        if mjdtogmt(mjd)-tstart > 1e-9: #!AC time!
             raise Exception("Initial time is greater than given mjd!")
             
         # Set up coordinate system
@@ -422,7 +422,7 @@ class Array(object):
         l = C/rf 
         
         # Observing times
-        times = np.arange(tstart, tstop+tstep, tstep)
+        times = np.arange(tstart, tstop, tstep)
 
         # Generate uv points at all times
         outlist = []        

@@ -24,7 +24,10 @@ tadv_sec = 600
 tstart_hr = 0
 tstop_hr = 24
 bw_hz = 4e9
-obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=True, ampcal=False, phasecal=False)
+obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=True, phasecal=False)
+
+# You can deblur the visibilities by dividing by the scattering kernel if necessary
+#obs = vb.deblur(obs)
 
 # Or you can load an observation file directly from text or uvfits
 # When loading from uvfits, you must provide an array text file with the stations
@@ -62,8 +65,7 @@ res = obs.res() # nominal array resolution, 1/longest baseline
 print beamparams 
 print res
 
-# You can deblur the visibilities by dividing by the scattering kernel
-obs = vb.deblur(obs)
+
 
 # Export the visibility data to uvfits/text
 obs.save_txt('obs.txt') # exports a text file with the visibilities
@@ -80,20 +82,25 @@ gaussprior = vb.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with the bispectrum
 flux = np.sum(im.imvec)
-out = mx.maxen_bs(obs, gaussprior, gaussprior, flux, maxit=50, alpha=1000)
+#out = mx.maxen_amp_cphase(obs, gaussprior, gaussprior, flux, maxit=50, alpha_clphase=1000, alpha_visamp=1000)
+
+out = mx.maxen_bs(obs, gaussprior, gaussprior, flux, maxit=25, alpha=5000)
  
 # Blur the image with a circular beam and image again to help convergance
 out = mx.blur_circ(out, res)
+out = mx.maxen_bs(obs, out, out, flux, maxit=100, alpha=500, entropy="tv")
+out = mx.blur_circ(out, res/2)
 out = mx.maxen_bs(obs, out, out, flux, maxit=100, alpha=100, entropy="tv")
 out = mx.blur_circ(out, res/2)
-out = mx.maxen_bs(obs, out, out, flux, maxit=250, alpha=50, entropy="tv")
+out = mx.maxen_bs(obs, out, out, flux, maxit=100, alpha=50, entropy="tv")
 
+# Blur the final image with 1/2 the clean beam
+outblur = vb.blur_gauss(out, beamparams, 0.5)
+out.display()
 
 # Image Polarization
 # out = mx.maxen_m(obs, out, beta=100, maxit=250, polentropy="hw")
 
-# Blur the final image with 1/2 the clean beam
-outblur = vb.blur_gauss(out, beamparams, 0.5, 0.5)
 
 # Save the images
 outname = "test"
