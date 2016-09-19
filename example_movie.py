@@ -29,7 +29,10 @@ mov.mjd = np.floor(mov.mjd) + tstart_hr/24.0
 eht = vb.load_array('./arrays/EHT2017.txt')
 
 # Observe the movie
-obs = mov.observe(eht, tint_sec, tadv_sec, tstart_hr, .999*tstop_hr, bw_hz) 
+obs = mov.observe(eht, tint_sec, tadv_sec, tstart_hr, .999*tstop_hr, bw_hz)
+
+# OR observe the movie for 24 hr with repeats 
+obs2 = mov.observe(eht, tint_sec, 10*tadv_sec, 0., 24., bw_hz, repeat=True) 
 
 # You can then plot and save to file as normal
 obs.plotall('u','v', conj=True) # uv coverage

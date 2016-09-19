@@ -132,7 +132,8 @@ class Image(object):
     def copy(self):
         """Copy the image object"""
         newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
-        newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
+        if len(self.qvec):
+            newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
         return newim
         
     def flip_chi(self):
@@ -597,7 +598,12 @@ class Obsdata(object):
         self.tstop = times[-1]
         if self.tstop < self.tstart: 
             self.tstop += 24.0
-    
+  
+    def copy(self):
+        """Copy the observation object"""
+        newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal)
+        return newobs
+        
     def data_conj(self):
         #!AC
         """Return a data array of same format as self.data but including all conjugate baselines"""
