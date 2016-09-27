@@ -65,7 +65,10 @@ For further information, contact Paul Boley (boley@mpia-hd.mpg.de).
 
 import numpy as np
 from numpy import double, bool, ma
-import pyfits
+try:
+    import pyfits
+except:
+    from astropy.io import fits as pyfits
 import datetime
 import copy
 
