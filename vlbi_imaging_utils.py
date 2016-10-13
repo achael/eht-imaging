@@ -249,7 +249,7 @@ class Image(object):
             
             # Stokes I plot
             plt.subplot(121)
-            im = plt.imshow(image.reshape(self.ydim, self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp)
+            im = plt.imshow(image.reshape(self.ydim, self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp, vmin=0)
             plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
