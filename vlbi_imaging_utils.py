@@ -24,7 +24,6 @@ import time as ttime
 import pulses
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
 
-
 ##################################################################################################
 # Constants
 ##################################################################################################
@@ -1124,7 +1123,7 @@ class Obsdata(object):
 
         return np.array((fwhm_maj, fwhm_min, theta))
             
-    def plotall(self, field1, field2, rangex=False, rangey=False, conj=False):
+    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b'):
         """Make a scatter plot of 2 real observation fields with errors
            If conj==True, display conjugate baselines"""
         
@@ -1193,17 +1192,27 @@ class Obsdata(object):
                       np.max(data[field2]) + 0.2 * np.abs(np.max(data[field2]))] 
         
         # Plot the data
-        plt.figure()
-        plt.cla()
-        plt.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='b.')
-        plt.xlim(rangex)
-        plt.ylim(rangey)
-        plt.xlabel(field1)
-        plt.ylabel(field2)
-        plt.show(block=False)
-        return
+        if axis:
+            x = axis
+        else:
+            fig=plt.figure()
+            x = fig.add_subplot(1,1,1)
+         
+        if ebar and np.any(sigy) and np.any(sigx):
+            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='b.', color=color)
+        else:
+            x.plot(data[field1], data[field2], 'b.', color=color)
+            
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
+        x.set_xlabel(field1)
+        x.set_ylabel(field2)
+
+        if show:
+            plt.show(block=False)
+        return x
         
-    def plot_bl(self, site1, site2, field, rangey=False):
+    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot a field over time on a baseline"""
         
         # Determine if fields are valid
@@ -1265,24 +1274,37 @@ class Obsdata(object):
                     # Assume only one relevant entry per scan
                     break
         
-        # Plot the data                        
-        plotdata = np.array(plotdata)
-    
+
+
+        if not rangex: 
+            rangex = [self.tstart,self.tstop]
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])), 
                       np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))] 
+        # Plot the data                        
+        if axis:
+            x = axis
+        else:
+            fig=plt.figure()
+            x = fig.add_subplot(1,1,1)       
 
-        plt.figure()    
-        plt.cla()
-        plt.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.')
-        plt.xlim([self.tstart,self.tstop])
-        plt.ylim(rangey)
-        plt.xlabel('GMT (h)')
-        plt.ylabel(field)
-        plt.title('%s - %s'%(site1,site2))
-        plt.show(block=False)    
+        if ebar and np.any(plotdata[:,2]):
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='b.', color=color)
+        else:
+            x.plot(plotdata[:,0], plotdata[:,1],'b.', color=color)
+            
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
+        x.set_xlabel('GMST (h)')
+        x.set_ylabel(field)
+        x.set_title('%s - %s'%(site1,site2))
+        
+        if show:
+            plt.show(block=False)    
+        return x
                 
-    def plot_cphase(self, site1, site2, site3, rangey=False):
+                
+    def plot_cphase(self, site1, site2, site3, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure phase over time on a triangle"""
 
         # Get closure phases (maximal set)
@@ -1308,22 +1330,34 @@ class Obsdata(object):
             return
         
         # Data ranges
+        if not rangex: 
+            rangex = [self.tstart,self.tstop]
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])), 
                       np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))] 
         
-        # Plot
-        plt.figure()
-        plt.cla()
-        plt.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.')
-        plt.xlim([self.tstart,self.tstop])
-        plt.ylim(rangey)
-        plt.xlabel('GMT (h)')
-        plt.ylabel('Closure Phase (deg)')
-        plt.title('%s - %s - %s' % (site1,site2,site3))
-        plt.show(block=False)              
+        # Plot the data                        
+        if axis:
+            x = axis
+        else:
+            fig=plt.figure()
+            x = fig.add_subplot(1,1,1)       
+
+        if ebar and np.any(plotdata[:,2]):
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='b.', color=color)
+        else:
+            x.plot(plotdata[:,0], plotdata[:,1],'b.', color=color)
+            
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
+        x.set_xlabel('GMT (h)')
+        x.set_ylabel('Closure Phase (deg)')
+        x.set_title('%s - %s - %s' % (site1,site2,site3))
+        if show:
+            plt.show(block=False)    
+        return x
         
-    def plot_camp(self, site1, site2, site3, site4, rangey=False):
+    def plot_camp(self, site1, site2, site3, site4, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure amplitude over time on a quadrange
            (1-2)(3-4)/(1-4)(2-3)
         """
@@ -1354,23 +1388,36 @@ class Obsdata(object):
             return
 
         # Data ranges
+        if not rangex: 
+            rangex = [self.tstart,self.tstop]
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])), 
                       np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))] 
         
-        # Plot                            
-        plotdata = np.array(plotdata)
-        plt.figure
-        plt.cla()
-        plt.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.')
-        plt.xlim([self.tstart,self.tstop])
-        plt.ylim(rangey)
-        plt.xlabel('GMT (h)')
-        plt.ylabel('Closure Amplitude')
-        plt.title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
+        # Plot the data                        
+        if axis:
+            x = axis
+        else:
+            fig=plt.figure()
+            x = fig.add_subplot(1,1,1)       
+            
+        if ebar and np.any(plotdata[:,2]):
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='b.', color=color)
+        else:
+            x.plot(plotdata[:,0], plotdata[:,1],'b.', color=color)
+            
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
+        x.set_xlabel('GMT (h)')
+        x.set_ylabel('Closure Amplitude')
+        x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
                                                            site1,site4,site2,site3))
-        plt.show(block=False)       
-
+        if show:
+            plt.show(block=False)    
+            return
+        else:
+            return x
+            
     def save_txt(self, fname):
         """Save visibility data to a text file"""
         
