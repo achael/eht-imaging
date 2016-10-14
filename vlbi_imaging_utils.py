@@ -1198,7 +1198,7 @@ class Obsdata(object):
             fig=plt.figure()
             x = fig.add_subplot(1,1,1)
          
-        if ebar and np.any(sigy) and np.any(sigx):
+        if ebar and (np.any(sigy) or np.any(sigx)):
             x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='b.', color=color)
         else:
             x.plot(data[field1], data[field2], 'b.', color=color)
