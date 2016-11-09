@@ -2349,6 +2349,37 @@ def add_gauss(im, flux, beamparams, x=0, y=0):
     out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
     return out
 
+def add_crescent(im, flux, Rp, Rn, a, b, x=0, y=0):
+    """Add a crescent to an image; see Kamruddin & Dexter (2013)
+       all parameters in rad
+       Rp is larger radius
+       Rn is smaller radius
+       a is relative x offset of smaller disk
+       b is relative y offset of smaller disk
+       x,y are center coordinates of the larger disk
+    """ 
+    
+    xfov = im.xdim * im.psize
+    yfov = im.ydim * im.psize    
+    xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+    ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
+    
+    def mask(x2, y2):
+        if (x2-a)**2 + (y2-b)**2 > Rn**2 and x2**2 + y2**2 < Rp**2:
+            return 1.0
+        else:
+            return 0.0
+
+    crescent = np.array([[mask(i-x, j-y)
+                      for i in xlist] 
+                      for j in ylist]) 
+  
+    # !AC think more carefully about the different cases for array size here
+    crescent = crescent[0:im.ydim, 0:im.xdim]
+    
+    imout = im.imvec.reshape(im.ydim, im.xdim) + (crescent * flux/np.sum(crescent))
+    out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+    return out
 
 def add_const_m(im, mag, angle):
     """Add a constant fractional polarization to image
