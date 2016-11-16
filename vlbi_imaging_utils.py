@@ -989,6 +989,173 @@ class Obsdata(object):
                 outlist = np.array(cas)
         
         return outlist
+
+    def log_c_amplitudes(self, cov=True, vtype='vis', mode='time', count='min'):
+        """Return equal time log closure amplitudes and list of covariance matrices
+           Set count='max' to return all closure amplitudes up to inverses
+        """ 
+        
+        #!AC Error formula for closure amplitudes only true in high SNR limit!
+        if not mode in ('time','all'):
+            raise Exception("possible options for mode are 'time' and 'all'")
+        if not count in ('max', 'min'):
+            raise Exception("possible options for count are 'max' and 'min'")  
+        
+        tlist = self.tlist(conj=True) 
+        covs = []
+        outlist = []
+        cas = []
+        for tdata in tlist:
+            time = tdata[0]['time']
+            sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
+            if len(sites) < 4:
+                continue
+                                            
+            # Create a dictionary of baselines at the current time incl. conjugates;
+            l_dict = {}
+            for dat in tdata:
+                l_dict[(dat['t1'], dat['t2'])] = dat
+            
+            if count == 'min':
+                # If we want a minimal set, choose the minimum sefd reference
+                # !AC sites are ordered by sefd - does that make sense?
+                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefd'] for site in sites])]
+                ref = sites[0]
+                
+                # Loop over other sites >=3 and form minimal closure amplitude set
+                for i in xrange(3, len(sites)):
+                    blue1 = l_dict[ref, sites[i]] #!!
+                    for j in xrange(1, i):
+                        if j == i-1: k = 1
+                        else: k = j+1
+                        
+                        red1 = l_dict[sites[i], sites[j]]
+                        red2 = l_dict[ref, sites[k]]
+                        blue2 = l_dict[sites[j], sites[k]] 
+                        
+                        # Compute the closure amplitude and the error
+                        if vtype in ["vis", "qvis", "uvis"]:
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
+                            
+                            p1 = amp_debias(blue1[vtype], e1) #!AC debias or not? 
+                            p2 = amp_debias(blue2[vtype], e2)
+                            p3 = amp_debias(red1[vtype], e3)
+                            p4 = amp_debias(red2[vtype], e4)
+                                                                             
+                        elif vtype == "pvis":
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
+
+                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
+                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
+                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
+                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
+                            
+                        
+                        logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
+
+                        #!ANDREW
+                        logcamperr = np.sqrt((e1/np.abs(p1))**2 +  
+                                             (e2/np.abs(p2))**2 + 
+                                             (e3/np.abs(p3))**2 +
+                                             (e4/np.abs(p4))**2)
+                                        
+                        # Add the closure amplitudes to the equal-time list  
+                        # Our site convention is (12)+(34)-(14)-(23)       
+                        cas.append(np.array((time, 
+                                             ref, sites[i], sites[j], sites[k],
+                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'], 
+                                             red1['u'], red1['v'], red2['u'], red2['v'],
+                                             logcamp, logcamperr),
+                                             dtype=DTCAMP)) 
+                # Make the covariance matrix after making all the scan data points    
+                if cov: 
+                    clbl = np.array([[[self.tkey[cl['t1']],self.tkey[cl['t2']]],
+                                      [self.tkey[cl['t3']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t1']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t2']],self.tkey[cl['t3']]]
+                                    ] for cl in cas])
+                    covmatrix = make_cov(clbl, l_dict)
+                    covs.append(covmatrix)
+
+            elif count == 'max':
+                # Find all quadrangles
+                quadsets = list(it.combinations(sites,4))
+                for q in quadsets:
+                    # Loop over 3 closure amplitudes
+                    # Our site convention is (12)(34)/(14)(23)
+                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]): 
+                        
+                        # Blue is numerator, red is denominator
+                        blue1 = l_dict[quad[0], quad[1]]
+                        blue2 = l_dict[quad[2], quad[3]]
+                        red1 = l_dict[quad[0], quad[3]]
+                        red2 = l_dict[quad[1], quad[2]]
+                                      
+                        # Compute the closure amplitude and the error
+                        if vtype in ["vis", "qvis", "uvis"]:
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
+                            
+                            p1 = amp_debias(blue1[vtype], e1)
+                            p2 = amp_debias(blue2[vtype], e2)
+                            p3 = amp_debias(red1[vtype], e3)
+                            p4 = amp_debias(red2[vtype], e4)
+                                                                             
+                        elif vtype == "pvis":
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
+
+                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
+                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
+                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
+                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
+                            
+                        
+                        logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
+
+                        #!ANDREW
+                        logcamperr = np.sqrt((e1/np.abs(p1))**2 +  
+                                             (e2/np.abs(p2))**2 + 
+                                             (e3/np.abs(p3))**2 +
+                                             (e4/np.abs(p4))**2)
+                                        
+                        # Add the closure amplitudes to the equal-time list  
+                        # Our site convention is (12)+(34)-(14)-(23)       
+                        cas.append(np.array((time, 
+                                             ref, sites[i], sites[j], sites[k],
+                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'], 
+                                             red1['u'], red1['v'], red2['u'], red2['v'],
+                                             logcamp, logcamperr),
+                                             dtype=DTCAMP)) 
+                # Make the covariance matrix after making all the scan data points    
+                if cov: 
+                    covs.append(covmatrix)
+                    clbl = np.array([[[self.tkey[cl['t1']],self.tkey[cl['t2']]],
+                                      [self.tkey[cl['t3']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t1']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t2']],self.tkey[cl['t3']]]
+                                    ] for cl in cas])
+                    covmatrix = make_cov(clbl, l_dict)
+                
+
+            outlist.append(np.array(cas))
+            cas = []    
+
+        #if mode=='all':
+        #    outlist = np.flatten(cas)
+        
+        return outlist
+
     
     def dirtybeam(self, npix, fov, pulse=pulses.trianglePulse2D):
         """Return a square Image object of the observation dirty beam
@@ -2496,6 +2663,26 @@ def sgra_kernel_params(rf):
 ##################################################################################################
 # Other Functions
 ##################################################################################################
+
+def make_cov(clnoisedata, noisebldict):
+    iloc = {cl:i for i, cl in enumerate(cldata)}
+    cov = np.zeros((len(cldata), len(cldata)))
+    bldict = {bl:[] for bl in bldict.iterkeys()}
+    for cl in cldata:
+        if len(cl) == 3: # closure phase parity
+            for bl in cl:
+                parity = 1 if bl[1] > bl[0] else -1
+                bldict[bl[::parity]].append((cl, parity)) # convert key to sorted order
+        elif len(cl) == 4: # closure amplitude parity
+            for bl in cl[:2]:
+                bldict[bl].append((cl, 1)) # numerator
+            for bl in cl[2:]:
+                bldict[bl].append((cl, -1)) # denominator
+    for (bl, cqlist) in bldict.iteritems():
+        for (cq1, cq2) in product(cqlist, cqlist):
+            cov[iloc[cq1[0]], iloc[cq2[0]]] += cq1[1] * cq2[1] * noisebldict[bl]['sigmaca']**2 ##ANDREW FIX THIS FOR PHASES
+    return cov
+
 
 def paritycompare(perm1, perm2):
     """Compare the parity of two permutations.
