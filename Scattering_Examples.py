@@ -46,9 +46,11 @@ Michael_Annulus_image = vb.add_crescent(emptyprior, 3.14, 97.0/2.0*vb.RADPERUAS,
 #ep is the "epsilon screen", which is the normalized scattering screen in Fourier space. Each component is an independent, normalized, complex Gaussian random number. To generate new screen realizations, just change the seed value, rngseed. If you want to see how the scattering looks for different polarizations or frequencies, just use the same ep and everything should work out fine. ep needs to have the same FOV and number of pixels as the unscattered image.
 
 ep = so.MakeEpsilonScreen(Michael_Crescent_image.xdim,Michael_Crescent_image.ydim,rngseed=34)
-
 Rusen_2gauss_image_scatt = so.Scatter(Rusen_2gauss_image,ep,DisplayImage=True)
 Michael_Crescent_image_scatt = so.Scatter(Michael_Crescent_image,ep,DisplayImage=True)
+
+ep2 = so.MakeEpsilonScreen(im.xdim,im.ydim,rngseed=34)
+Avery_image_scatt = so.Scatter(im,ep2,DisplayImage=True)
 
 #try at a different frequency (note that the scattering wraps around the FOV, so pick a sensible choice!)
 Michael_Crescent_image_100GHz = vb.add_crescent(emptyprior, 3.14, 47.9881*vb.RADPERUAS, 11.3345*vb.RADPERUAS, -6.716*vb.RADPERUAS, 33.9294*vb.RADPERUAS)
