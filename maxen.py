@@ -1050,6 +1050,19 @@ def chisqgrad_clphase(imvec, Amatrices, clphase, sigma):
     pt3 = pref / i3
     out = -(2.0/len(clphase)) * np.imag(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))
     return out
+ 
+def chisqgrad_clphase_2(imvec, Amatrices, clphase, sigma):
+    clphase = clphase * DEGREE
+    sigma = sigma * DEGREE
+    
+    i1 = np.dot(Amatrices[0], imvec)
+    i2 = np.dot(Amatrices[1], imvec)
+    i3 = np.dot(Amatrices[2], imvec)
+    clphase_samples = np.angle(i1 * i2 * i3)
+    xx = np.imag(Amatrices[0]/(i1[:,None]) + Amatrices[1]/(i2[:,None]) + Amatrices[2]/(i3[:,None]))
+    cc = 1j*np.exp(1j*clphase_samples)*(np.exp(-1j*clphase)-np.exp(-1j*clphase_samples))/ (sigma**2)
+    out = -(2.0/len(clphase)) * np.real(np.dot(cc,xx))
+    return out    
     
 # Polarimetric Amplitude and Phase chi-squared
 def chisq_p(polimage, iimage, Amatrix, p, sigmap):
