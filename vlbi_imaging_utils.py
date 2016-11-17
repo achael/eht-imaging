@@ -1675,7 +1675,7 @@ class Obsdata(object):
         
         # rr, ll, lr, rl, weights
         rr = obsdata['vis'] + obsdata['vvis']
-        ll = obsdata['vis'] - obsdatap['vvis']
+        ll = obsdata['vis'] - obsdata['vvis']
         rl = obsdata['qvis'] + 1j*obsdata['uvis']
         lr = obsdata['qvis'] - 1j*obsdata['uvis']
         weight = 1 / (2 * obsdata['sigma']**2)
