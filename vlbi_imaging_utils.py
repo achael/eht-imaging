@@ -54,7 +54,8 @@ DTPOL = [('time','f8'),('tint','f8'),
          ('el1','f8'),('el2','f8'),
          ('tau1','f8'),('tau2','f8'),
          ('u','f8'),('v','f8'),
-         ('vis','c16'),('qvis','c16'),('uvis','c16'),('sigma','f8')]
+         ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
+         ('sigma','f8')]
 
 DTBIS = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),
          ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
@@ -75,6 +76,7 @@ FIELDS = ['time','tint','u','v','uvdist',
           'vis','amp','phase','snr','sigma',
           'qvis','qamp','qphase','qsnr',
           'uvis','uamp','uphase','usnr',
+          'vvis','vamp','vphase','vsnr',
           'pvis','pamp','pphase',
           'm','mamp','mphase']
                   
@@ -116,6 +118,7 @@ class Image(object):
         
         self.qvec = []
         self.uvec = []
+        self.vvec = []
         
     def add_qu(self, qimage, uimage):
         """Add Q and U images
@@ -128,6 +131,19 @@ class Image(object):
         self.qvec = qimage.flatten()
         self.uvec = uimage.flatten()
     
+    def add_v(self, vimage):
+        """Add V image
+        """
+        if vimage.shape != (self.ydim, self.xdim):
+            raise Exception("V image shape incompatible with I image!") 
+        self.vvec = vimage.flatten()
+    
+    def add_pol(self, qimage, uimage, vimage):
+        """Add Q, U, V images
+        """
+        self.add_qu(qimage, uimage)
+        self.add_v(vimage)
+        
     def copy(self):
         """Copy the image object"""
         newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
@@ -177,10 +193,13 @@ class Image(object):
         # If there are polarized images, observe them:
         qvis = np.zeros(len(vis))
         uvis = np.zeros(len(vis))
+        vvis = np.zeros(len(vis))
         if len(self.qvec):
             qvis = np.dot(mat, self.qvec)
             uvis = np.dot(mat, self.uvec)
-        
+        if len(self.vvec):
+            vvis = np.dot(mat, self.vvec)
+                    
         # Scatter the visibilities with the SgrA* kernel
         if sgrscat:
             print 'Scattering Visibilities with Sgr A* kernel!'
@@ -189,11 +208,13 @@ class Image(object):
                 vis[i]  *= ker
                 qvis[i] *= ker
                 uvis[i] *= ker
-   
+                vvis[i] *= ker
+                
         # Put the visibilities back in the obsdata array
         obsdata['vis'] = vis
         obsdata['qvis'] = qvis
         obsdata['uvis'] = uvis
+        obsdata['vvis'] = vvis
         
         # Return observation object
         obs_no_noise = Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata, obs.tarr, source=self.source, mjd=self.mjd)
@@ -221,6 +242,7 @@ class Image(object):
     def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='nearest'):
         """Display the image with matplotlib
         """
+        # TODO Display circular polarization 
         
         if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
             interp = 'gaussian'
@@ -306,14 +328,29 @@ class Image(object):
         ys = np.array([[i for j in range(self.xdim)] for i in range(self.ydim)]).reshape(self.xdim*self.ydim,1)
         ys = pdimas * (ys[::-1] - self.xdim/2.0)
         
-        # Data
-        if len(self.qvec):
+        # If V values but no Q/U values, make Q/U zero  
+        if len(self.vvec) and not len(self.qvec): 
+            self.qvec = 0*self.vvec
+            self.uvec = 0*self.vvec
+            
+        # Format Data            
+        if len(self.qvec) and len(self.vvec):
+            outdata = np.hstack((xs, ys, (self.imvec).reshape(self.xdim*self.ydim, 1),
+                                         (self.qvec).reshape(self.xdim*self.ydim, 1),
+                                         (self.uvec).reshape(self.xdim*self.ydim, 1), 
+                                         (self.vvec).reshape(self.xdim*self.ydim, 1)))
+            hf = "x (as)     y (as)       I (Jy/pixel)  Q (Jy/pixel)  U (Jy/pixel)  V (Jy/pixel)"
+
+            fmts = "%10.10f %10.10f %10.10f %10.10f %10.10f %10.10f"
+            
+        elif len(self.qvec):
             outdata = np.hstack((xs, ys, (self.imvec).reshape(self.xdim*self.ydim, 1),
                                          (self.qvec).reshape(self.xdim*self.ydim, 1),
                                          (self.uvec).reshape(self.xdim*self.ydim, 1)))
             hf = "x (as)     y (as)       I (Jy/pixel)  Q (Jy/pixel)  U (Jy/pixel)"
 
             fmts = "%10.10f %10.10f %10.10f %10.10f %10.10f"
+            
         else:
             outdata = np.hstack((xs, ys, (self.imvec).reshape(self.xdim*self.ydim, 1)))
             hf = "x (as)     y (as)       I (Jy/pixel)"
@@ -352,6 +389,7 @@ class Image(object):
         # Create the fits image
         image = np.reshape(self.imvec,(self.ydim,self.xdim))[::-1,:] #flip y axis!
         hdu = fits.PrimaryHDU(image, header=header)
+        hdulist = [hdu]
         if len(self.qvec):
             qimage = np.reshape(self.qvec,(self.xdim,self.ydim))[::-1,:]
             uimage = np.reshape(self.uvec,(self.xdim,self.ydim))[::-1,:]
@@ -359,8 +397,14 @@ class Image(object):
             hduq = fits.ImageHDU(qimage, name='Q', header=header)
             header['STOKES'] = 'U'
             hduu = fits.ImageHDU(uimage, name='U', header=header)
-            hdulist = fits.HDUList([hdu, hduq, hduu])
-        else: hdulist = fits.HDUList([hdu])
+            hdulist = [hdu, hduq, hduu]       
+        if len(self.vvec): 
+            vimage = np.reshape(self.vvec,(self.xdim,self.ydim))[::-1,:]            
+            header['STOKES'] = 'V'
+            hduv = fits.ImageHDU(vimage, name='V', header=header)
+            hdulist.append(hduv)     
+        
+        hdulist = fits.HDUList(hdulist)
       
         # Save fits 
         hdulist.writeto(fname, clobber=True)
@@ -463,7 +507,7 @@ class Array(object):
                                   tau2, # Station 1 optical depth
                                   np.dot(earthrot(coord1 - coord2, theta)/l, projU), # u (lambda)
                                   np.dot(earthrot(coord1 - coord2, theta)/l, projV), # v (lambda)
-                                  0.0, 0.0, 0.0, # Stokes I, Q, U visibilities (Jy)
+                                  0.0, 0.0, 0.0, 0.0, # Stokes I, Q, U, V visibilities (Jy)
                                   blnoise(self.tarr[i1]['sefd'], self.tarr[i2]['sefd'], tint, bw) # Sigma (Jy)
                                 ), dtype=DTPOL
                                 ))
@@ -533,7 +577,7 @@ class Obsdata(object):
         bw: the observing bandwidth (Hz)
         ampcal: amplitudes calibrated T/F
         phasecal: phases calibrated T/F
-        data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, sigma)
+        data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, vvis, sigma)
     """
     
     def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=0, ampcal=True, phasecal=True):
@@ -578,6 +622,8 @@ class Obsdata(object):
                         dat['vis'] = np.conj(dat['vis'])
                         dat['uvis'] = np.conj(dat['uvis'])
                         dat['qvis'] = np.conj(dat['qvis'])
+                        dat['vvis'] = np.conj(dat['vvis'])
+
                      # Append the data point
                      blpairs.append(set((dat['t1'],dat['t2'])))    
                      obsdata.append(dat) 
@@ -607,7 +653,7 @@ class Obsdata(object):
         #!AC
         """Return a data array of same format as self.data but including all conjugate baselines"""
         
-        data = np.empty(2*len(self.data),dtype=DTPOL)        
+        data = np.empty(2*len(self.data), dtype=DTPOL)        
         
         # Add the conjugate baseline data
         for f in DTPOL:
@@ -618,7 +664,7 @@ class Obsdata(object):
                 data[f] = np.hstack((self.data[f], self.data[f2]))
             elif f in ["u","v"]:
                 data[f] = np.hstack((self.data[f], -self.data[f]))
-            elif f in ["vis","qvis","uvis"]:
+            elif f in ["vis","qvis","uvis","vvis"]:
                 data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
             else:
                 data[f] = np.hstack((self.data[f], self.data[f]))
@@ -660,6 +706,9 @@ class Obsdata(object):
             elif field in ["uvis","uamp","uphase","usnr"]: 
                 out = data['uvis']
                 ty = 'c16'
+            elif field in ["vvis","vamp","vphase","vsnr"]: 
+                out = data['vvis']
+                ty = 'c16'               
             elif field in ["pvis","pamp","pphase"]: 
                 out = data['qvis'] + 1j * data['uvis']
                 ty = 'c16'
@@ -673,13 +722,13 @@ class Obsdata(object):
                                   "valid field values are " + string.join(FIELDS)) 
 
             # Get arg/amps/snr
-            if field in ["amp", "qamp", "uamp","pamp","mamp"]: 
+            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp"]: 
                 out = np.abs(out)
                 ty = 'f8'
-            elif field in ["phase", "qphase", "uphase", "pphase", "mphase"]: 
+            elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase"]: 
                 out = np.angle(out)/DEGREE
                 ty = 'f8'
-            elif field in ["snr","qsnr","usnr"]:
+            elif field in ["snr","qsnr","usnr","vsnr"]:
                 out = np.abs(out)/data['sigma']
                 ty = 'f8'
              
@@ -771,7 +820,7 @@ class Obsdata(object):
                     continue
                     
                 # Choose the appropriate polarization and compute the bs and err
-                if vtype in ["vis", "qvis", "uvis"]:
+                if vtype in ["vis", "qvis", "uvis","vvis"]:
                     bi = l1[vtype]*l2[vtype]*l3[vtype]  
                     bisig = np.abs(bi) * np.sqrt((l1['sigma']/np.abs(l1[vtype]))**2 +  
                                                  (l2['sigma']/np.abs(l2[vtype]))**2 + 
@@ -889,7 +938,7 @@ class Obsdata(object):
                         blue2 = l_dict[sites[j], sites[k]] 
                         
                         # Compute the closure amplitude and the error
-                        if vtype in ["vis", "qvis", "uvis"]:
+                        if vtype in ["vis", "qvis", "uvis", "vvis"]:
                             e1 = blue1['sigma']
                             e2 = blue2['sigma']
                             e3 = red1['sigma']
@@ -943,7 +992,7 @@ class Obsdata(object):
                         red2 = l_dict[quad[1], quad[2]]
                                       
                         # Compute the closure amplitude and the error
-                        if vtype in ["vis", "qvis", "uvis"]:
+                        if vtype in ["vis", "qvis", "uvis", "vvis"]:
                             e1 = blue1['sigma']
                             e2 = blue2['sigma']
                             e3 = red1['sigma']
@@ -1198,6 +1247,7 @@ class Obsdata(object):
         vis = self.unpack('vis')['vis']
         qvis = self.unpack('qvis')['qvis']
         uvis = self.unpack('uvis')['uvis']
+        vvis = self.unpack('vvis')['vvis']
         
         xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
 
@@ -1215,7 +1265,11 @@ class Obsdata(object):
                                  np.imag(uvis)*np.sin(2*np.pi*(i*u + j*v)))
                   for i in xlist] 
                   for j in xlist])    
-                                           
+        vim = np.array([[np.mean(np.real(vvis)*np.cos(2*np.pi*(i*u + j*v)) - 
+                                 np.imag(vvis)*np.sin(2*np.pi*(i*u + j*v)))
+                  for i in xlist] 
+                  for j in xlist])    
+                                                             
         dim = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
                   for i in xlist] 
                   for j in xlist])   
@@ -1224,14 +1278,18 @@ class Obsdata(object):
         im = im/np.sum(dim)
         qim = qim/np.sum(dim)
         uim = uim/np.sum(dim)
- 
+        vim = vim/np.sum(dim)
+        
         # !AC think more carefully about the different image size cases here       
         im = im[0:npix, 0:npix]
         qim = qim[0:npix, 0:npix]
         uim = uim[0:npix, 0:npix]   
+        vim = vim[0:npix, 0:npix]
         
         out = Image(im, pdim, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=pulse)
         out.add_qu(qim, uim)
+        out.add_v(vim)
+        
         return out
     
     def cleanbeam(self, npix, fov, pulse=pulses.trianglePulse2D):
@@ -1302,9 +1360,9 @@ class Obsdata(object):
         data = self.unpack([field1,field2], conj=conj)
         
         # X error bars
-        if field1 in ['amp', 'qamp', 'uamp']:
+        if field1 in ['amp', 'qamp', 'uamp', 'vamp']:
             sigx = self.unpack('sigma',conj=conj)['sigma']
-        elif field1 in ['phase', 'uphase', 'qphase']:
+        elif field1 in ['phase', 'uphase', 'qphase', 'vphase']:
             sigx = (self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('amp',conj=conj)['amp'])/DEGREE
         elif field1 == 'pamp':
             sigx = np.sqrt(2)*self.unpack('sigma',conj=conj)['sigma']
@@ -1322,9 +1380,9 @@ class Obsdata(object):
             sigx = None
             
         # Y error bars
-        if field2 in ['amp', 'qamp', 'uamp']:
+        if field2 in ['amp', 'qamp', 'uamp', 'vamp']:
             sigy = self.unpack('sigma',conj=conj)['sigma']
-        elif field2 in ['phase', 'uphase', 'qphase']:
+        elif field2 in ['phase', 'uphase', 'qphase', 'vphase']:
             sigy = (self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('amp',conj=conj)['amp'])/DEGREE
         elif field2 == 'pamp':
             sigy = np.sqrt(2)*self.unpack('sigma',conj=conj)['sigma']
@@ -1342,11 +1400,11 @@ class Obsdata(object):
             sigy = None
         
         # Debias amplitudes if appropriate:
-        if field1 in ['amp', 'qamp', 'uamp', 'pamp', 'mamp']:
+        if field1 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
             print "De-biasing amplitudes for plot x values!"
             data[field1] = amp_debias(data[field1], sigx)
         
-        if field2 in ['amp', 'qamp', 'uamp', 'pamp', 'mamp']:
+        if field2 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
             print "De-biasing amplitudes for plot y values!"
             data[field2] = amp_debias(data[field2], sigy)
            
@@ -1397,17 +1455,19 @@ class Obsdata(object):
                     if field == 'uvdist':
                         plotdata.append([time, np.abs(obs['u'] + 1j*obs['v']), 0])
                     
-                    elif field in ['amp', 'qamp', 'uamp']:
+                    elif field in ['amp', 'qamp', 'uamp', 'vamp']:
                         print "De-biasing amplitudes for plot!"
                         if field == 'amp': l = 'vis'
                         elif field == 'qamp': l = 'qvis'
                         elif field == 'uamp': l = 'uvis'
+                        elif field == 'vamp': l = 'vvis'
                         plotdata.append([time, amp_debias(obs[l], obs['sigma']), obs['sigma']])
                     
-                    elif field in ['phase', 'qphase', 'uphase']:
+                    elif field in ['phase', 'qphase', 'uphase', 'vphase']:
                         if field == 'phase': l = 'vis'
                         elif field == 'qphase': l = 'qvis'
                         elif field == 'uphase': l = 'uvis'
+                        elif field == 'vphase': l = 'vvis'
                         plotdata.append([time, np.angle(obs[l])/DEGREE, obs['sigma']/np.abs(obs[l])/DEGREE])
                     
                     elif field == 'pamp':
@@ -1590,7 +1650,7 @@ class Obsdata(object):
         
         # Get the necessary data and the header
         outdata = self.unpack(['time', 'tint', 't1', 't2', 'el1', 'el2', 'tau1','tau2',
-                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'sigma'])
+                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase', 'sigma'])
         head = ("SRC: %s \n" % self.source +
                     "RA: " + rastring(self.ra) + "\n" + "DEC: " + decstring(self.dec) + "\n" +
                     "MJD: %.4f - %.4f \n" % (fracmjd(self.mjd,self.tstart), fracmjd(self.mjd,self.tstop)) + 
@@ -1609,12 +1669,12 @@ class Obsdata(object):
 
         head += ("----------------------------------------------------------------\n" +
                 "time (hr) tint    T1     T2    Elev1   Elev2  Tau1   Tau2   U (lambda)       V (lambda)         "+
-                "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   sigma (Jy)"
+                "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   Vamp (Jy)    Vphase(d)   sigma (Jy)"
                 )
           
         # Format and save the data
         fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %4.2f   %4.2f  %16.4f %16.4f    "+
-               "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f")
+               "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f %10.4f    %10.8f")
         np.savetxt(fname, outdata, header=head, fmt=fmts)
         return
     
@@ -1754,7 +1814,7 @@ class Obsdata(object):
         header['PZERO11'] = 0.e0
         
         # Get data
-        obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','sigma','t1','t2','el1','el2','tau1','tau2'])
+        obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','t1','t2','el1','el2','tau1','tau2'])
         ndat = len(obsdata['time'])
         
         # times and tints
@@ -1781,8 +1841,8 @@ class Obsdata(object):
         v = obsdata['v']
         
         # rr, ll, lr, rl, weights
-        # !AC Assume V = 0 (linear polarization only)
-        rr = ll = obsdata['vis'] # complex
+        rr = obsdata['vis'] + obsdata['vvis']
+        ll = obsdata['vis'] - obsdata['vvis']
         rl = obsdata['qvis'] + 1j*obsdata['uvis']
         lr = obsdata['qvis'] - 1j*obsdata['uvis']
         weight = 1 / (2 * obsdata['sigma']**2)
@@ -1958,25 +2018,32 @@ def load_obs_txt(filename):
         u = float(row[8])
         v = float(row[9])
         vis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-        if datatable.shape[1] == 17:
+        if datatable.shape[1] == 19:
             qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
             uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+            vvis = float(row[16]) * np.exp(1j * float(row[17]) * DEGREE)
+            sigma = float(row[18])
+        elif datatable.shape[1] == 17:
+            qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
+            uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+            vvis = 0+0j
             sigma = float(row[16])
         elif datatable.shape[1] == 13:
             qvis = 0+0j
             uvis = 0+0j
+            vvis = 0+0j
             sigma = float(row[12])
         else:
             raise Exception('Text file does not have the right number of fields!')
             
         datatable2.append(np.array((time, tint, t1, t2, el1, el2, tau1, tau2, 
-                                    u, v, vis, qvis, uvis, sigma), dtype=DTPOL))
+                                    u, v, vis, qvis, uvis, vvis, sigma), dtype=DTPOL))
     
     # Return the datatable                      
     datatable2 = np.array(datatable2)
     return Obsdata(ra, dec, rf, bw, datatable2, tarr, source=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)        
 
-def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, src='SgrA', mjd=0, ampcal=False, phasecal=False):
+def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA', mjd=0, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
@@ -2031,10 +2098,10 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, src='SgrA', mjd=0, 
             vis = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
             sigma = float(line[10])
             datatable.append(np.array((time, tint, t1, t2, el1, el2, tau1, tau2, 
-                                        u, v, vis, 0.0,0.0, sigma), dtype=DTPOL))
+                                        u, v, vis, 0.0, 0.0, 0.0, sigma), dtype=DTPOL))
     
     datatable = np.array(datatable)
-    #!AC: qfile and ufile must have exactly the same format as ifile
+    #!AC: qfile ufile and vfile must have exactly the same format as ifile
     #!AC: add some consistency check 
     if not qfile==0:
         f = open(qfile)
@@ -2054,6 +2121,15 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, src='SgrA', mjd=0, 
                 datatable[i]['uvis'] = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
                 i += 1                                
     
+    if not vfile==0:
+        f = open(vfile)
+        i = 0
+        for line in f:
+            line = line.split()
+            if not (line[0] in ['UV', 'Scan','\n']):
+                datatable[i]['vvis'] = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
+                i += 1         
+                                           
     # Return the datatable                      
     return Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)        
 
@@ -2161,11 +2237,12 @@ def load_obs_uvfits(filename, flipbl=False):
     lrsig = 1/np.sqrt(lrweight[mask])
     
     # Form stokes parameters
-    ivis = (rr + ll)/2.0
-    qvis = (rl + lr)/2.0
-    uvis = (rl - lr)/(2.0j)
-    isig = np.sqrt(rrsig**2 + llsig**2)/2.0
-    qsig = np.sqrt(rlsig**2 + lrsig**2)/2.0
+    ivis = 0.5 * (rr + ll)
+    qvis = 0.5 * (rl + lr)
+    uvis = 0.5j * (lr - rl)
+    vvis = 0.5 * (rr - ll)
+    isig = 0.5 * np.sqrt(rrsig**2 + llsig**2)
+    qsig = 0.5* np.sqrt(rlsig**2 + lrsig**2)
     usig = qsig
     
     # !AC Should sigma be the avg of the stokes sigmas, or just the I sigma?  
@@ -2180,11 +2257,13 @@ def load_obs_uvfits(filename, flipbl=False):
     # !AC Can I make this faster?
     datatable = []
     for i in xrange(len(times)):
-        datatable.append(np.array((
+        datatable.append(np.array
+                         ((
                            times[i], tints[i], 
                            t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], 
                            u[i], v[i],
-                           ivis[i], qvis[i], uvis[i], sigma[i]
+                           ivis[i], qvis[i], uvis[i], vvis[i],
+                           sigma[i]
                            ), dtype=DTPOL
                          ))
     datatable = np.array(datatable)
@@ -2264,6 +2343,7 @@ def load_obs_oifits(filename, flux=1.0):
     tau2 = -np.ones(amp.shape)
     qvis = -np.ones(amp.shape)
     uvis = -np.ones(amp.shape)
+    vvis = -np.ones(amp.shape)
     sefd = -np.ones(x.shape)
 
     # vectorize
@@ -2280,14 +2360,17 @@ def load_obs_oifits(filename, flux=1.0):
     vis = amp.ravel() * np.exp ( -1j * phase.ravel() * np.pi/180.0 )
     qvis = qvis.ravel()
     uvis = uvis.ravel()
+    vvis = vvis.ravel()
     amperr = amperr.ravel()
 
     #TODO - check that we are properly using the error from the amplitude and phase
 
     # create data tables
-    datatable = np.array([ (time[i], tint[i], t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], u[i], v[i], flux*vis[i], qvis[i], uvis[i], flux*amperr[i]) for i in range(len(vis))], dtype=DTPOL)
+    datatable = np.array([ (time[i], tint[i], t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], u[i], v[i], 
+                            flux*vis[i], qvis[i], uvis[i], vvis[i], flux*amperr[i]) 
+                          for i in range(len(vis))], dtype=DTPOL)
+    
     tarr = np.array([ (sites[i], x[i], y[i], z[i], sefd[i]) for i in range(nAntennas)], dtype=DTARR)
-
     # return object
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0], ampcal=False, phasecal=False)
     
@@ -2324,14 +2407,25 @@ def load_im_txt(filename, pulse=pulses.trianglePulse2D):
     outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
     
     # Look for Stokes Q and U
-    qimage = uimage = np.zeros(image.shape)
-    if datatable.shape[1] == 5:
+    qimage = uimage = vimage = np.zeros(image.shape)
+    if datatable.shape[1] == 6:
         qimage = datatable[:,3].reshape(ydim_p, xdim_p)
         uimage = datatable[:,4].reshape(ydim_p, xdim_p)
+        vimage = datatable[:,5].reshape(ydim_p, xdim_p)
+    elif datatable.shape[1] == 5:
+        qimage = datatable[:,3].reshape(ydim_p, xdim_p)
+        uimage = datatable[:,4].reshape(ydim_p, xdim_p)    
     
-    if np.any((qimage != 0) + (uimage != 0)):
-        print 'Loaded Stokes I, Q, and U images'
+    if np.any((qimage != 0) + (uimage != 0)) and np.any((vimage != 0)):
+        print 'Loaded Stokes I, Q, U, and V images'
         outim.add_qu(qimage, uimage)
+        outim.add_v(vimage)
+    elif np.any((vimage != 0)):
+        print 'Loaded Stokes I and V images'
+        outim.add_v(vimage)
+    elif np.any((qimage != 0) + (uimage != 0)):   
+        print 'Loaded Stokes I, Q, and U images'
+        outim.add_qu(qimage, uimage)     
     else:
         print 'Loaded Stokes I image only'
     
@@ -2379,7 +2473,7 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
     outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
     
     # Look for Stokes Q and U
-    qimage = uimage = np.array([])
+    qimage = uimage = vimage = np.array([])
     for hdu in hdulist[1:]:
         header = hdu.header
         data = hdu.data
@@ -2388,12 +2482,22 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
             qimage = data[::-1,:] # flip y-axis!
         if 'STOKES' in header.keys() and header['STOKES'] == 'U':
             uimage = data[::-1,:] # flip y-axis!
-    if qimage.shape == uimage.shape == image.shape:
-        print 'Loaded Stokes I, Q, and U images'
+        if 'STOKES' in header.keys() and header['STOKES'] == 'V':
+            vimage = data[::-1,:] # flip y-axis!
+    
+    if qimage.shape == uimage.shape == vimage.shape == image.shape:
+        print 'Loaded Stokes I, Q, U, and V images'
         outim.add_qu(qimage, uimage)
+        outim.add_v(vimage)
+    elif vimage.shape == image.shape:
+        print 'Loaded Stokes I and V images'
+        outim.add_v(vimage)
+    elif qimage.shape == uimage.shape == image.shape:   
+        print 'Loaded Stokes I, Q, and U images'
+        outim.add_qu(qimage, uimage)     
     else:
         print 'Loaded Stokes I image only'
-                
+                            
     return outim
 
 ##################################################################################################
@@ -2449,7 +2553,19 @@ def resample_square(im, xdim_new, ker_size=5):
         outq *= scaling
         outu *= scaling
         outim.add_qu(outq, outu)
+    
+    if len(im.vvec):
+        def im_new_v(x,y):
+            mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * 
+                    ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+            return np.sum([im.vvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
         
+        outv = np.array([[im_new_v(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                      for x in np.arange(0, -xdim_new, -1)] 
+                      for y in np.arange(0, -ydim_new, -1)] ) 
+        outv *= scaling
+        outim.add_v(outv)        
+    
     return outim
     
 def make_square(obs, npix, fov,pulse=pulses.trianglePulse2D):
@@ -2549,7 +2665,7 @@ def add_crescent(im, flux, Rp, Rn, a, b, x=0, y=0):
     return out
 
 def add_const_m(im, mag, angle):
-    """Add a constant fractional polarization to image
+    """Add a constant fractional linear polarization to image
        angle is in radians""" 
     
     if not (0 < mag < 1):
@@ -2574,6 +2690,7 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
     if len(image.qvec):
         qim = (image.qvec).reshape(image.ydim, image.xdim)
         uim = (image.uvec).reshape(image.ydim, image.xdim)
+        vim = (image.vvec).reshape(image.ydim, image.xdim)
     xfov = image.xdim * image.psize
     yfov = image.ydim * image.psize
     xlist = np.arange(0,-image.xdim,-1)*image.psize + (image.psize*image.xdim)/2.0 - image.psize/2.0
@@ -2616,11 +2733,15 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         # Convolve
         qim = scipy.signal.fftconvolve(gauss, qim, mode='same')
         uim = scipy.signal.fftconvolve(gauss, uim, mode='same')
-                                  
+        
+        if len(image.vvec):
+            vim = scipy.signal.fftconvolve(gauss, vim, mode='same')                                  
     
     out = Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd, pulse=image.pulse)                        
     if len(image.qvec):
         out.add_qu(qim, uim)
+    if len(image.vvec):
+        out.add_v(vim)
     return out  
         
 ##################################################################################################
@@ -2635,6 +2756,7 @@ def deblur(obs):
     vis = datatable['vis']
     qvis = datatable['qvis']
     uvis = datatable['uvis']
+    vvis = datatable['vvis']
     sigma = datatable['sigma']
     u = datatable['u']
     v = datatable['v']
@@ -2644,11 +2766,13 @@ def deblur(obs):
         vis[i] = vis[i] / ker
         qvis[i] = qvis[i] / ker
         uvis[i] = uvis[i] / ker
+        vvis[i] = vvis[i] / ker
         sigma[i] = sigma[i] / ker
     
     datatable['vis'] = vis
     datatable['qvis'] = qvis
     datatable['uvis'] = uvis
+    datatable['vvis'] = vvis
     datatable['sigma'] = sigma
     
     obsdeblur = Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr)
@@ -2891,7 +3015,7 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     vis = obsdata[['vis']].view(('c16',1))
     qvis = obsdata[['qvis']].view(('c16',1))
     uvis = obsdata[['uvis']].view(('c16',1))
-
+    vvis = obsdata[['vvis']].view(('c16',1))
     bw = obs.bw
     
     # Overwrite sigma_cleans with values computed from the SEFDs
@@ -2926,7 +3050,8 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
     qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
     uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
-  
+    vvis = (vvis + cerror(sigma_true)) * (sigma_est/sigma_true)
+        
     # Add random atmospheric phases    
     if not phasecal:
         phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i]) for i in xrange(len(time))])
@@ -2935,11 +3060,13 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
         vis *= np.exp(1j * (phase2-phase1))
         qvis *= np.exp(1j * (phase2-phase1))
         uvis *= np.exp(1j * (phase2-phase1))
-                
+        vvis *= np.exp(1j * (phase2-phase1))     
+        
     # Put the visibilities estimated errors back in the obsdata array
     obsdata['vis'] = vis
     obsdata['qvis'] = qvis
     obsdata['uvis'] = uvis
+    obsdata['vvis'] = vvis
     obsdata['sigma'] = sigma_est
     
 	# Return observation object

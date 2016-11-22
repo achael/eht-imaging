@@ -23,6 +23,7 @@ FIELDS = ['time','tint','u','v','uvdist',
           'vis','amp','phase','snr','sigma',
           'qvis','qamp','qphase','qsnr',
           'uvis','uamp','uphase','usnr',
+          'vvis','vamp','vphase','vsnr',
           'pvis','pamp','pphase',
           'm','mamp','mphase']
           
