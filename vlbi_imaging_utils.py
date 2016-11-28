@@ -478,8 +478,9 @@ class Array(object):
                 for i2 in xrange(len(self.tarr)):
                     coord1 = np.array((self.tarr[i1]['x'], self.tarr[i1]['y'], self.tarr[i1]['z']))
                     coord2 = np.array((self.tarr[i2]['x'], self.tarr[i2]['y'], self.tarr[i2]['z']))
-                    if (i1!=i2 and 
-                        self.tarr[i1]['z'] <= self.tarr[i2]['z'] and # Choose the north one first
+                    if (i1!=i2 and
+                        i1 < i2 and # This is the right condition for uvfits save
+                        #self.tarr[i1]['z'] <= self.tarr[i2]['z'] and # Choose the north one first
                         not ((i2, i1) in blpairs) and # This cuts out the conjugate baselines
                         elevcut(earthrot(coord1, theta),sourcevec) and 
                         elevcut(earthrot(coord2, theta),sourcevec)):
@@ -607,14 +608,15 @@ class Obsdata(object):
             datalist.append(np.array([obs for obs in group]))
         
         # Remove conjugate baselines
-        # Make the north site first in each pair
         obsdata = []
         for tlist in datalist:
             blpairs = []
             for dat in tlist:
                 if not (set((dat['t1'], dat['t2']))) in blpairs:
+                     # This is the right order for uvfits:
+                     if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):                        
                      # Reverse the baseline if not north
-                     if (self.tarr[self.tkey[dat['t1']]]['z']) <= (self.tarr[self.tkey[dat['t2']]]['z']):
+                     # if (self.tarr[self.tkey[dat['t1']]]['z']) <= (self.tarr[self.tkey[dat['t2']]]['z']):
                         (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
                         (dat['el1'], dat['el2']) = (dat['el2'], dat['el1'])
                         dat['u'] = -dat['u']
@@ -1682,7 +1684,7 @@ class Obsdata(object):
         """Save visibility data to uvfits
             Needs template.UVP file
         """
-        
+
         # Open template UVFITS
         hdulist = fits.open('./template.UVP')
         
@@ -1710,14 +1712,13 @@ class Obsdata(object):
         col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES', array=(90.*np.ones(nsta)))
         col11 = fits.Column(name='POLCALB', format='3E', array=np.zeros((nsta,3)))
         
-        #!AC Change more antenna header params?
-        head = hdulist['AIPS AN'].header
+        #Antenna Header params - do I need to change more of these?? 
         #head = fits.Header()
+        head = hdulist['AIPS AN'].header
         head['EXTVER'] = 1
         head['GSTIA0'] = 119.85 # for mjd 48277
         head['FREQ']= self.rf
-        #head['RDATE'] = '1991-01-21' # !AC change??
-        head['ARRNAM'] = 'ALMA' #!AC
+        head['ARRNAM'] = 'ALMA' #!AC Can we change??
         head['XYZHAND'] = 'RIGHT'
         head['ARRAYX'] = 0.e0
         head['ARRAYY'] = 0.e0
@@ -1734,25 +1735,21 @@ class Obsdata(object):
         head['NOPCAL'] = 2
         head['POLTYPE'] = 'APPROX'
         head['FREQID'] = 1
-        tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11]), name='AIPS AN', header=head)
+        tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
         hdulist['AIPS AN'] = tbhdu
         
         # Data header (based on the BU format)
-        ###
-        header = hdulist[0].header
         #header = fits.Header()
-        #header['EXTEND'] = True
+        header = hdulist[0].header
         header['OBSRA'] = self.ra * 180./12.
         header['OBSDEC'] = self.dec
         header['OBJECT'] = self.source
         header['MJD'] = self.mjd
-        #header['DATE-OBS'] = '1991-01-21' # !AC convert mjd to date!!
         header['BUNIT'] = 'JY'
         header['VELREF'] = 3 #??
         header['ALTRPIX'] = 1.e0
-        header['TELESCOP'] = 'ALMA' # !AC Can I change this??
+        header['TELESCOP'] = 'ALMA' # !AC Can I change this?? EHT doesn't seem to work...
         header['INSTRUME'] = 'ALMA'
-        
         header['CTYPE2'] = 'COMPLEX'
         header['CRVAL2'] = 1.e0
         header['CDELT2'] = 1.e0
@@ -1778,7 +1775,6 @@ class Obsdata(object):
         header['CDELT7'] = 1.e0
         header['CRPIX7'] = 1.e0
         header['CROTA7'] = 0.e0
-        
         header['PTYPE1'] = 'UU---SIN'
         header['PSCAL1'] = 1/self.rf
         header['PZERO1'] = 0.e0
@@ -1823,7 +1819,7 @@ class Obsdata(object):
         tints = obsdata['tint']
 
         # Baselines            
-        # !AC These HAVE to be correct for CLEAN to work. Why?
+        # These HAVE to be correct for CLEAN to work. Why?
         t1 = [self.tkey[scope] + 1 for scope in obsdata['t1']]
         t2 = [self.tkey[scope] + 1 for scope in obsdata['t2']]
         bl = 256*np.array(t1) + np.array(t2)
@@ -1865,20 +1861,46 @@ class Obsdata(object):
         # Save data
         pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
                 'INTTIM', 'ELEV1', 'ELEV2', 'TAU1', 'TAU2']
-        #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE',
-        #        'INTTIM']
         x = fits.GroupData(outdat, parnames=pars,
             pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints, el1, el2,tau1,tau2],
             bitpix=-32)
+
+        #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE',
+        #        'INTTIM']
         #x = fits.GroupData(outdat, parnames=pars,
         #                   pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints],
         #                   bitpix=-32)
                 
-        #hdulist[0] = fits.GroupsHDU(data=x, header=header)
         hdulist[0].data = x
         hdulist[0].header = header
-        hdulist.writeto(fname, clobber=True)
-                
+ 
+        ######ADD AIPS FQ TABLE -- Thanks to Kazu#############
+        # Convert types & columns
+        nif=1
+        col1 = np.array(1, dtype=np.int32).reshape([nif]) #frqsel
+        col2 = np.array(0.0, dtype=np.float64).reshape([nif]) #iffreq
+        col3 = np.array([self.bw], dtype=np.float32).reshape([nif]) #chwidth
+        col4 = np.array([self.bw], dtype=np.float32).reshape([nif]) #bw
+        col5 = np.array([1], dtype=np.int32).reshape([nif]) #sideband
+
+        col1 = fits.Column(name="FRQSEL", format="1J", array=col1)
+        col2 = fits.Column(name="IF FREQ", format="%dD"%(nif), array=col2)
+        col3 = fits.Column(name="CH WIDTH",format="%dE"%(nif),array=col3)
+        col4 = fits.Column(name="TOTAL BANDWIDTH",format="%dE"%(nif),array=col4)
+        col5 = fits.Column(name="SIDEBAND",format="%dJ"%(nif),array=col5)
+        cols = fits.ColDefs([col1, col2,col3,col4,col5])
+
+        # create table
+        tbhdu = fits.BinTableHDU.from_columns(cols)
+        
+        # add header information
+        tbhdu.header.append(("NO_IF", nif, "Number IFs"))
+        tbhdu.header.append(("EXTNAME","AIPS FQ"))
+        hdulist.append(tbhdu)
+         
+        ###### Write final HDUList to file ######
+        #hdulist[0].parnames[5]="DATE" #???
+        hdulist.writeto(fname, clobber=True)                
         return
     
     def save_oifits(self, fname, flux=1.0):
@@ -2566,6 +2588,29 @@ def resample_square(im, xdim_new, ker_size=5):
         outv *= scaling
         outim.add_v(outv)        
     
+    return outim
+
+def im_pad(im, fovx, fovy):
+    """Pad to new fov
+    """ 
+    fovoldx=im.psize*im.xdim
+    fovoldy=im.psize*im.ydim
+    padx=int(0.5*(fovx-fovoldx)/im.psize)
+    pady=int(0.5*(fovy-fovoldy)/im.psize)
+    imarr=im.imvec.reshape(im.xdim, im.ydim)
+    imarr=np.pad(imarr,((padx,padx),(pady,pady)),'constant')
+    outim=Image(imarr, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+
+    if len(im.qvec):
+        qarr=im.qvec.reshape(im.xdim,im.ydim)
+        qarr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
+        uarr=im.uvec.reshape(im.xdim,im.ydim)
+        uarr=np.pad(uarr,((padx,padx),(pady,pady)),'constant')
+        outim.add_qu(qarr,uarr)
+    if len(im.vvec):
+        varr=im.vvec.reshape(im.xdim,im.ydim)
+        varr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
+        outim.add_v(varr)
     return outim
     
 def make_square(obs, npix, fov,pulse=pulses.trianglePulse2D):
