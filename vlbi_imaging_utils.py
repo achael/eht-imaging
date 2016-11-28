@@ -2050,7 +2050,7 @@ def load_obs_txt(filename):
             uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
             vvis = 0+0j
             sigma = float(row[16])
-        elif datatable.shape[1] == 13:
+        elif datatable.shape[1] == 15:
             qvis = 0+0j
             uvis = 0+0j
             vvis = 0+0j
