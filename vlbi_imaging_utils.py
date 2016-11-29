@@ -239,7 +239,7 @@ class Image(object):
         
         return obs
         
-    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='nearest'):
+    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian'):
         """Display the image with matplotlib
         """
         # TODO Display circular polarization 

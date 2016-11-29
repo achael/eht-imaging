@@ -30,10 +30,8 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=Fa
 #obs = vb.deblur(obs)
 
 # Or you can load an observation file directly from text or uvfits
-# When loading from uvfits, you must provide an array text file with the stations
-# listed in the same order as their labels in the uvfitsfile
 #obs = vb.load_obs_txt('./data/testobs.txt')
-#obs = vb.load_obs_uvfits('./data/testobs.UVP', './arrays/EHT2017.txt')
+#obs = vb.load_obs_uvfits('./data/testobs.UVP')
 
 
 # These are some simple plots you can check
