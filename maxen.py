@@ -263,7 +263,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim 
     
-def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_visamp=100, gamma=500, delta=500, entropy="gs", stop=1e-5, grads=True, ipynb=False):
+def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_visamp=100, gamma=500, delta=500, beta=1.0, entropy="gs", stop=1e-5, grads=True, ipynb=False):
     """Run maximum entropy on visibility amplitude and closure phase with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.
        Returns Image object.
@@ -331,6 +331,7 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
         elif entropy == "patch":
             s = -spatch(im, nprior)     
         
+        s = s * beta
         c_clphase = alpha_clphase * (chisq_clphase(im, A3, clphase, sigs_clphase) - 1)
         c_amp   = alpha_visamp   * (chisq_visamp(im, A, amp, sigs_amp) - 1)
         t = gamma * (np.sum(im) - flux)**2
