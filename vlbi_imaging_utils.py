@@ -14,7 +14,7 @@ import numpy as np
 import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
 import scipy.signal
-import scipy.optimize
+import scipy.optimize as opt
 import itertools as it
 import astropy.io.fits as fits
 import datetime
@@ -1336,7 +1336,7 @@ class Obsdata(object):
         
         # Fit the beam 
         guess = [(50)**2, (50)**2, 0.0]
-        params = scipy.optimize.minimize(fit_chisq, guess, args=(abc,), method='Powell')
+        params = opt.minimize(fit_chisq, guess, args=(abc,), method='Powell')
         
         # Return parameters, adjusting fwhm_maj and fwhm_min if necessary
         if params.x[0] > params.x[1]:
@@ -1447,7 +1447,6 @@ class Obsdata(object):
             raise Exception("valid fields are " + string.join(FIELDS))
         
         # Get the data from data table on the selected baseline
-        # !AC TODO do this with unpack instead?
         plotdata = []
         tlist = self.tlist(conj=True)
         for scan in tlist:
@@ -1503,8 +1502,7 @@ class Obsdata(object):
                     # Assume only one relevant entry per scan
                     break
         
-
-
+        plotdata = np.array(plotdata)
         if not rangex: 
             rangex = [self.tstart,self.tstop]
         if not rangey:
@@ -1514,7 +1512,7 @@ class Obsdata(object):
         if axis:
             x = axis
         else:
-            fig=plt.figure()
+            fig = plt.figure()
             x = fig.add_subplot(1,1,1)       
 
         if ebar and np.any(plotdata[:,2]):
@@ -1646,7 +1644,33 @@ class Obsdata(object):
             return
         else:
             return x
-            
+    
+    #NOT WORKING
+    def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
+        """Fit a gaussian to either complex visibilities or visibility amplitudes
+           TODO bispectra/closure phase?
+        """
+        vis = self.data['vis']
+        u = self.data['u']
+        v = self.data['v']
+        sig = self.data['sigma']
+        
+        # error function
+        if fittype=='amp':
+            def errfunc(p):
+            	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
+            	err = np.sum((np.abs(vis)-np.abs(vismodel))**2/sig**2)
+            	return err
+        else:
+            def errfunc(p):
+            	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
+            	err = np.sum(np.abs(vis-vismodel)**2/sig**2)
+            	return err
+        
+        optdict = {'maxiter':5000} # minimizer params
+        res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
+        return res.x
+            	        
     def save_txt(self, fname):
         """Save visibility data to a text file"""
         
@@ -2648,14 +2672,18 @@ def add_tophat(im, flux, radius):
     out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd) 
     return out
 
-def add_gauss(im, flux, beamparams, x=0, y=0):
+def add_gauss(im, flux, beamparams):
     """Add a gaussian to an image
-       beamparams is [fwhm_maj, fwhm_min, theta], all in rad
-       x,y are gaussian position in rad
+       beamparams is [fwhm_maj, fwhm_min, theta, x, y], all in rad
        theta is the orientation angle measured E of N
     """ 
     
-
+    try: 
+    	x=beamparams[3]
+    	y=beamparams[4] 
+    except IndexError:
+    	x=y=0.0
+    	 
     sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
     sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.)))
     cth = np.cos(beamparams[2])
@@ -2757,7 +2785,6 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
         # Convolve
         im = scipy.signal.fftconvolve(gauss, im, mode='same')
 
-
     if frac_pol:
         if not len(image.qvec):
             raise Exception("There is no polarized image!")
@@ -2822,6 +2849,36 @@ def deblur(obs):
     
     obsdeblur = Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr)
     return obsdeblur
+
+def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
+    """Return the value of the Gaussian FT with 
+       beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
+       theta is the orientation angle measured E of N
+    """
+
+    sigma_maj = beamparams[0] / (2*np.sqrt(2*np.log(2))) 
+    sigma_min = beamparams[1] / (2*np.sqrt(2*np.log(2)))
+    theta = beamparams[2]
+    #try: 
+    #	x=beamparams[3]
+    #	y=beamparams[4] 
+    #except IndexError:
+    #	x=y=0.0
+    
+    
+    # Covarience matrix
+    a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
+    b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
+    c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
+    m = np.array([[a, c], [c, b]])
+    
+    uv = np.array([[u[i],v[i]] for i in xrange(len(u))])
+    x2 = np.array([np.dot(uvi,np.dot(m,uvi)) for uvi in uv])   
+    #x2 = np.dot(uv, np.dot(m, uv.T))
+    g = np.exp(-2 * np.pi**2 * x2)
+    p = np.exp(-2j * np.pi * (u*x + v*y))
+
+    return flux * g * p
     
 def sgra_kernel_uv(rf, u, v):
     """Return the value of the Sgr A* scattering kernel at a given u,v pt (in lambda), 
@@ -2841,7 +2898,6 @@ def sgra_kernel_uv(rf, u, v):
     c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
     m = np.array([[a, c], [c, b]])
     uv = np.array([u,v])
-    
     
     x2 = np.dot(uv, np.dot(m, uv))
     g = np.exp(-2 * np.pi**2 * x2)

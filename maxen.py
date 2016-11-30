@@ -28,7 +28,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 ##################################################################################################
 # Total Intensity Imagers
 ##################################################################################################
-def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, beta=1.0, entropy="gs", stop=1e-10, ipynb=False):
+def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False):
     """Run maximum entropy with full amplitudes and phases. 
        Uses I = exp(I') change of variables.
        Obsdata is an Obsdata object, and Prior is an Image object.
@@ -102,6 +102,7 @@ def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=1e5, beta=1.0, entropy="gs", 
         global nit
         im_step = np.exp(logim_step)
         chi2 = chisq(im_step, A, vis, sigma)
+        print "chi2: ",chi2
         plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
         nit += 1
    
@@ -235,6 +236,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         global nit
         im_step = np.exp(logim_step)
         chi2 = chisq_bi(im_step, A3, bi, sigs)
+        print "chi2_bs: ", chi2 
         plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
         nit += 1
    
@@ -365,8 +367,7 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
         im_step = np.exp(logim_step)
         chi2_clphase = chisq_clphase(im_step, A3, clphase, sigs_clphase)
         chi2_amp   = chisq_visamp(im_step, A, amp, sigs_amp)
-	print("chi2_clphase: ",chi2_clphase)
-	print("chi2_amp: ",chi2_amp)
+	print "chi2_clphase: ",chi2_clphase , "chi2_amp: ",chi2_amp
         plot_i(im_step, Prior, nit, chi2_amp, ipynb=ipynb)
         nit += 1
    
@@ -762,7 +763,7 @@ def maxen_m(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-100, n
     outim.add_qu(qimfinal.reshape(Prior.ydim, Prior.xdim), uimfinal.reshape(Prior.ydim, Prior.xdim))
     return outim
 
-def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5e6, delta=1e5,
+def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=100, beta=500, gamma=1.5e6, delta=1e5,
                entropy="gs", polentropy="hw", stop=1e-500, nvec=15, pcut=0.05, ipynb=False):
     """Run maximum entropy SIMULTANEOUSLY on bispectrum and on pol. ratios. 
        Obsdata is an Obsdata object,
@@ -927,8 +928,22 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=1e6, beta=7.5e5, gamma=1.5
     return outim     
 
 ##################################################################################################
-# Blurring Function
+# Restore/Restarting Function
 ##################################################################################################
+def threshold(image, frac_i=1.e-5, frac_pol=1.e-3):
+    """Apply a hard threshold
+    """ 
+    imvec = image.imvec
+    thresh = frac_i*np.abs(np.max(imvec))
+    lowval = frac_i*frac_i*np.abs(np.max(imvec))
+    flux = np.sum(imvec)
+    for pixel in imvec:
+    	if pixel < thresh: 
+            pixel=lowval
+    imvec = flux*imvec/np.sum(imvec)
+    out = vb.Image(imvec.reshape(image.ydim,image.xdim), image.psize, 
+                   image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
+    return out
 
 def blur_circ(image, fwhm_i, fwhm_pol=0):
     """Apply a circular gaussian filter to the I image
