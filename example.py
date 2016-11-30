@@ -33,7 +33,6 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=Fa
 #obs = vb.load_obs_txt('./data/testobs.txt')
 #obs = vb.load_obs_uvfits('./data/testobs.UVP')
 
-
 # These are some simple plots you can check
 obs.plotall('u','v', conj=True) # uv coverage
 obs.plotall('uvdist','amp') # amplitude with baseline distance'
