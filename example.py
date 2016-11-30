@@ -1,7 +1,7 @@
 # Note: this is an example sequence of commands I might run in ipython
 # The matplotlib windows may not open/close properly if you run this directly as a script
 
-import ../vlbi_imaging_utils as vb
+import vlbi_imaging_utils as vb
 import maxen as mx
 import numpy as np
 
@@ -11,7 +11,7 @@ im = vb.load_im_txt('./models/avery_sgra_eofn.txt') #for a text file
 eht = vb.load_array('./arrays/EHT2017.txt') #see the attached array text file
 
 # Look at the image
-im.display(plotp=True)
+im.display()
 
 # Observe the image
 # tint_sec is the integration time in seconds, and tadv_sec is the advance time between scans
