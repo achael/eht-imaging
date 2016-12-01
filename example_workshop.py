@@ -11,7 +11,7 @@ import maxen as mx
 ##########################################################
 #SgrA Image - complex visibilities
 ##########################################################
-obs = vb.load_obs_uvfits('./data/sgraimage.uvfits') 
+obs = vb.load_obs_uvfits('sgraimage_uvdata/data/sgraimage.uvfits')
 
 # Check some diagnostic plots
 obs.plotall('u','v', conj=True) # uv coverage
@@ -39,12 +39,11 @@ print res/vb.RADPERUAS
 # Generate an image prior
 npix = 128
 fov =  200*vb.RADPERUAS
-zbl = 2.5 #CHANGE
+zbl = 2.5
 prior_fwhm = 100*vb.RADPERUAS # Prior Gaussian size
 emptyprior = vb.make_square(obs, npix, fov) # Generate an empty prior
 flatprior = vb.add_flat(emptyprior, zbl) # Generate a flat prior
 
-#gaussparams = obs.fit_gauss(flux=zbl)
 gaussparams = (prior_fwhm, prior_fwhm, 0.0)
 gaussprior = vb.add_gauss(emptyprior, zbl, gaussparams) # Generate a Gaussian prior
 
@@ -77,7 +76,7 @@ outblur.save_fits('./sgraim_blur.fits')
 ##########################################################
 #M87 Image - bispectrum
 ##########################################################
-obs = vb.load_obs_uvfits('./data/m87image.uvfits') 
+obs = vb.load_obs_uvfits('m87image_uvdata/data/m87image.uvfits')
 
 obs.plotall('u','v', conj=True) # uv coverage
 obs.plotall('uvdist','amp') # amplitude with baseline distance'
@@ -115,15 +114,13 @@ gaussprior = vb.add_gauss(emptyprior, zbl, gaussparams) # Generate a Gaussian pr
 # Image with amp and cphase
 # first run imaging with gaussian prior
 out = mx.maxen_amp_cphase(obs, gaussprior, gaussprior, zbl, maxit=100, alpha_visamp=100, alpha_clphase=50, entropy="gs")
-#out = mx.maxen_bs(obs, gaussprior, gaussprior, zbl, maxit=100, alpha=100, entropy="gs")
 
 # blur with 1/2 telescope beam 
 outblur = vb.blur_gauss(out, beamparams, 0.5)
 
-# re-start imaging using TV prior for smoothness
+# re-start imaging using TV prior for smoothness x2
 out=outblur
 out = mx.maxen_amp_cphase(obs, out, out, zbl, maxit=150, alpha_visamp=50, alpha_clphase=25, entropy="tv")
-#out = mx.maxen_bs(obs, out, out, zbl, maxit=100, alpha=100, entropy="gs")
 outblur = vb.blur_gauss(out, beamparams, 0.5)
 out=outblur
 out = mx.maxen_amp_cphase(obs, out, out, zbl, maxit=150, alpha_visamp=50, alpha_clphase=25, entropy="gs")
