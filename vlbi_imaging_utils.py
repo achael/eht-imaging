@@ -177,7 +177,8 @@ class Image(object):
         # Jones Matrix Corruption
         # !AC Do we want to pass opacity_errs?
         if jones:
-            obs_out = add_jones_and_noise(obs_out, add_th_noise=add_th_noise, ampcal=ampcal, gainp=gainp, phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
+            obs_out = add_jones_and_noise(obs_out, add_th_noise=add_th_noise, opacity_errs=opacity_errs, 
+                                          ampcal=ampcal, gainp=gainp, phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
             
         # No Jones Matrices, Add noise the old way
         # !AC AA TODO Not consistent - we scale the sigmas in add_noise not in add_jones_and_noise! 
@@ -3275,9 +3276,10 @@ def observe_same_nonoise(im, obs, sgrscat=False):
     
     return obs_no_noise
         
-def add_jones_and_noise(obs_in, add_th_noise=True, ampcal=True, gainp=GAINPDEF, phasecal=True, dcal=True, dtermp=DTERMPDEF, frcal=True):
+def add_jones_and_noise(obs_in, add_th_noise=True, opacity_errs=True, ampcal=True, gainp=GAINPDEF, phasecal=True, dcal=True, dtermp=DTERMPDEF, frcal=True):
     """Corrupt visibilities in obs with jones matrices and add thermal noise"""  
     
+    #!AC AA We should really make a new observation at the END, and overwrite the sigmas with the new ones we generate here. 
     # Copy the observation
     obs = obs_in.copy()
     
@@ -3300,8 +3302,8 @@ def add_jones_and_noise(obs_in, add_th_noise=True, ampcal=True, gainp=GAINPDEF, 
     
     t1 = obs.data['t1']
     t2 = obs.data['t2']
-    tau1 = obs.data['tau1']
-    tau2 = obs.data['tau2']
+    taus1 = obs.data['tau1']
+    taus2 = obs.data['tau2']
     tints = obs.data['tint']
     el1 = obs.unpack('el1', ang_unit='rad')['el1']
     el2 = obs.unpack('el2', ang_unit='rad')['el2']
@@ -3322,11 +3324,18 @@ def add_jones_and_noise(obs_in, add_th_noise=True, ampcal=True, gainp=GAINPDEF, 
             site1_i = obs.tkey[t1[i]]  
             site2_i = obs.tkey[t2[i]]
             
+            # Opacity with random corrections:
+            tau1 = taus1[i]
+            tau2 = taus2[i]
+            if opacity_errs:
+                tau1 *= (1 + gainp * hashrandn(t1[i], 'tau', times[i]))
+                tau2 *= (1 + gainp * hashrandn(t2[i], 'tau', times[i])) 
+            
             #!AC is the sqrt(2.0) right here ? TODO AA
-            sig_rr = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdr'], obs.tarr[site2_i]['sefdr'], tau1[i], tau2[i], el1[i], el2[i], tints[i], obs.bw)
-            sig_ll = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdl'], obs.tarr[site2_i]['sefdl'], tau1[i], tau2[i], el1[i], el2[i], tints[i], obs.bw)
-            sig_rl = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdr'], obs.tarr[site2_i]['sefdl'], tau1[i], tau2[i], el1[i], el2[i], tints[i], obs.bw)
-            sig_lr = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdl'], obs.tarr[site2_i]['sefdr'], tau1[i], tau2[i], el1[i], el2[i], tints[i], obs.bw)
+            sig_rr = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdr'], obs.tarr[site2_i]['sefdr'], tau1, tau2, el1[i], el2[i], tints[i], obs.bw)
+            sig_ll = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdl'], obs.tarr[site2_i]['sefdl'], tau1, tau2, el1[i], el2[i], tints[i], obs.bw)
+            sig_rl = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdr'], obs.tarr[site2_i]['sefdl'], tau1, tau2, el1[i], el2[i], tints[i], obs.bw)
+            sig_lr = np.sqrt(2.0)*blnoise(obs.tarr[site1_i]['sefdl'], obs.tarr[site2_i]['sefdr'], tau1, tau2, el1[i], el2[i], tints[i], obs.bw)
 
             noise_matrix = np.array([[cerror(sig_rr), cerror(sig_rl)], [cerror(sig_lr), cerror(sig_ll)]])   
             corr_matrix_corrupt += noise_matrix
@@ -3449,13 +3458,15 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
         gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') 
                         + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))
         
-        # Opacity
-        tau1 = np.array([taus[i,0]*(1 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))])
-        tau2 = np.array([taus[i,1]*(1 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))])
-
-        # Correct noise RMS for gain variation and opacity
         sigma_true = sigma_clean / np.sqrt(gain1 * gain2)
-        sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
+
+        if opacity_errs:
+            # Opacity
+            tau1 = np.array([taus[i,0]*(1 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))])
+            tau2 = np.array([taus[i,1]*(1 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))])
+
+            # Correct noise RMS for gain variation and opacity
+            sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
     
     else: 
         sigma_true = sigma_est
@@ -3485,7 +3496,6 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     
     #!AC AA This function doesn't use different visibility sigmas!
     obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
-    
     
 	# Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
