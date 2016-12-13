@@ -19,7 +19,7 @@ def self_cal(obs, im, method="both"):
             data_cal = scan_cal
     
     obs_cal = vb.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, source=obs.source, 
-                                           mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal)
+                                           mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
 def self_cal_scan(scan, im, method="both"):
