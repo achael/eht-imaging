@@ -28,6 +28,7 @@ import pulses
 EP = 1.0e-15
 C = 299792458.0
 DEGREE = np.pi/180.
+HOUR = (180./12.)*DEGREE
 RADPERAS = DEGREE/3600
 RADPERUAS = RADPERAS*1.e-6
 
@@ -450,7 +451,7 @@ class Array(object):
         outlist = []        
         for k in xrange(len(times)):
             time = times[k]
-            theta = np.mod((time-ra)*360./24, 360)*DEGREE
+            theta = np.mod((time-ra)*HOUR, 2*np.pi)
             blpairs = []
             for i1 in xrange(len(self.tarr)):
                 for i2 in xrange(len(self.tarr)):
@@ -785,7 +786,7 @@ class Obsdata(object):
 
             # Elevation and Parallactic Angles
             if field in ["el1","el2"]:
-                thetas = np.mod((data['time']-self.ra)*360./24, 360)*DEGREE
+                thetas = np.mod((data['time']-self.ra)*HOUR, 2*np.pi)
                 coords = tdata[['x','y','z']].view(('f8', 3))
                 el_angle = elev(earthrot(coords, thetas), self.sourcevec())
                 out=el_angle/angle
@@ -793,14 +794,14 @@ class Obsdata(object):
             if field in ["hr_ang1","hr_ang2"]:
                 coords = tdata[['x','y','z']].view(('f8', 3))
                 latlon = xyz_2_latlong(coords)
-                hr_angle = data['time']*360./24.*DEGREE - latlon[:,1] - self.ra*360./24.*DEGREE
-                out = hr_angle/angle
+                hr_angles = hr_angle(data['time']*HOUR, latlon[:,1], self.ra*HOUR)
+                out = hr_angles/angle
                 ty = 'f8'
             if field in ["par_ang1","par_ang2"]:
                 coords = tdata[['x','y','z']].view(('f8', 3))
                 latlon = xyz_2_latlong(coords)
-                hr_angle = data['time']*360./24.*DEGREE - latlon[:,1] - self.ra*360./24.*DEGREE
-                par_ang = par_angle(hr_angle, latlon[:,0], self.dec*DEGREE)
+                hr_angles = hr_angle(data['time']*HOUR, latlon[:,1], self.ra*HOUR)
+                par_ang = par_angle(hr_angles, latlon[:,0], self.dec*DEGREE)
                 out = par_ang/angle
                 ty = 'f8'
                                 
@@ -3148,11 +3149,11 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         latlon = xyz_2_latlong(coords)
             
         # Elevation Angles
-        thetas = np.mod((times - ra)*360./24, 360)*DEGREE
+        thetas = np.mod((times - ra)*HOUR, 2*np.pi)
         el_angles = elev(earthrot(coords, thetas), sourcevec) 
         
-        # Parallactic Angles                      
-        hr_angles = times*360./24.*DEGREE - latlon[:,1] - ra*360./24.*DEGREE
+        # Parallactic Angles 
+        hr_angles = hr_angle(times*HOUR, latlon[:,1], ra*HOUR)
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)        
         
         # Amplitude gain
@@ -3249,11 +3250,11 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         latlon = xyz_2_latlong(coords)
         
         # Elevation Angles
-        thetas = np.mod((times - ra)*360./24, 360)*DEGREE
+        thetas = np.mod((times - ra)*HOUR, 2*np.pi)
         el_angles = elev(earthrot(coords, thetas), sourcevec)
 
-        # Parallactic Angles                      
-        hr_angles = times*360./24.*DEGREE - latlon[:,1] - ra*360./24.*DEGREE
+        # Parallactic Angles (positive longitude EAST)
+        hr_angles = hr_angle(times*HOUR, latlon[:,1], ra*HOUR)
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)         
         
         # Amplitude gain - one by default now
@@ -3787,9 +3788,18 @@ def elevcut(obsvec,sourcevec):
     
     return (angle > ELEV_LOW) * (angle < ELEV_HIGH)
 
-def par_angle(hr_angle, dec, lat):
+def hr_angle(gst, lon, ra):
+    """Computes the hour angle for a source at RA, observer at longitude long, and GST time gst
+       gst in hours, ra & lon ALL in radian
+       longitude positive east
+    """
+    hr_angle = np.mod(gst + lon - ra, 2*np.pi)
+    return hr_angle
+    
+def par_angle(hr_angle, lat, dec):
     """Compute the parallactic angle for a source at hr_angle and dec for an observer with latitude lat. 
-       All angles in rad."""
+       All angles in radian
+    """
        
     num = np.sin(hr_angle)*np.cos(lat)
     denom = np.sin(lat)*np.cos(dec) - np.cos(lat)*np.sin(dec)*np.cos(hr_angle)
