@@ -2,8 +2,12 @@
 # Andrew Chael, 10/15/2015
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
 
-# TODO 
-# check factor of sqrt(2) in the blnoise function!
+# TODO: 
+#       Fix save_uvfits
+#       Add non-circular errors
+#       Add closure amplitude debiasing
+#       Add different i,q,u,v SEFDs and calibration errors?
+#       Incorporate Katherine's scattering code?
 
 import string
 import numpy as np
@@ -23,11 +27,11 @@ import pulses
 ##################################################################################################
 # Constants
 ##################################################################################################
-EP = 1.0e-15
+EP = 1.0e-10
 C = 299792458.0
 DEGREE = np.pi/180.
 RADPERAS = DEGREE/3600
-RADPERUAS = RADPERAS*1.e-6
+RADPERUAS = RADPERAS/1e6
 
 # Telescope elevation cuts (degrees) 
 ELEV_LOW = 15.0
@@ -44,16 +48,15 @@ FWHM_MIN = 0.64 * 1000
 POS_ANG = 78 # in degree, E of N
 
 # Observation recarray datatypes
-DTARR = [('site', 'a32'), ('x','f8'), ('y','f8'), ('z','f8'), 
-         ('sefdr','f8'),('sefdl','f8'),('dr','c16'),('dl','c16'),
-         ('fr_par','f8'),('fr_elev','f8'),('fr_off','f8')]
+DTARR = [('site', 'a32'), ('x','f8'), ('y','f8'), ('z','f8'), ('sefd','f8')]
 
 DTPOL = [('time','f8'),('tint','f8'),
          ('t1','a32'),('t2','a32'),
+         ('el1','f8'),('el2','f8'),
          ('tau1','f8'),('tau2','f8'),
          ('u','f8'),('v','f8'),
          ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
-         ('sigma','f8'),('qsigma','f8'),('usigma','f8'),('vsigma','f8')]
+         ('sigma','f8')]
 
 DTBIS = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),
          ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
@@ -70,17 +73,13 @@ DTCAMP = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),('t4','a32'),
 
 # Observation fields for plotting and retrieving data        
 FIELDS = ['time','tint','u','v','uvdist',
-          't1','t2','tau1','tau2',
-          'el1','el2','hr_ang1','hr_ang2','par_ang1','par_ang2',
-          'vis','amp','phase','snr',
+          't1','t2','el1','el2','tau1','tau2',
+          'vis','amp','phase','snr','sigma',
           'qvis','qamp','qphase','qsnr',
           'uvis','uamp','uphase','usnr',
           'vvis','vamp','vphase','vsnr',
-          'sigma','qsigma','usigma','vsigma',
-          'sigma_phase','qsigma_phase','usigma_phase','vsigma_phase',
-          'psigma_phase','msigma_phase',
-          'pvis','pamp','pphase','psnr',
-          'm','mamp','mphase','msnr']
+          'pvis','pamp','pphase',
+          'm','mamp','mphase']
                   
 ##################################################################################################
 # Classes
@@ -152,11 +151,7 @@ class Image(object):
         if len(self.qvec):
             newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
         return newim
-
-    def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GST)"""
-        return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
-                
+        
     def flip_chi(self):
         """Change between different conventions for measuring position angle (East of North vs up from x axis)
         """
@@ -422,8 +417,7 @@ class Array(object):
     """A VLBI array of telescopes with locations and SEFDs
     
         Attributes:
-        tarr: The array of telescope data (name, x, y, z, sefdr,sefdl,dr,dl, fr_par_angle, fr_elev_angle, fr_offset)
-        where x,y,z are geocentric coordinates.
+        tarr: The array of telescope data (name, x, y, z, SEFD) where x,y,z are geocentric coordinates.
     """   
     
     def __init__(self, tarr):
@@ -479,7 +473,7 @@ class Array(object):
         outlist = []        
         for k in xrange(len(times)):
             time = times[k]
-            theta = np.mod((time-ra)*360./24, 360)*DEGREE
+            theta = np.mod((time-ra)*360./24, 360)
             blpairs = []
             for i1 in xrange(len(self.tarr)):
                 for i2 in xrange(len(self.tarr)):
@@ -489,13 +483,11 @@ class Array(object):
                         i1 < i2 and # This is the right condition for uvfits save
                         #self.tarr[i1]['z'] <= self.tarr[i2]['z'] and # Choose the north one first
                         not ((i2, i1) in blpairs) and # This cuts out the conjugate baselines
-                        elevcut(earthrot(coord1, theta), sourcevec) and 
-                        elevcut(earthrot(coord2, theta), sourcevec)):
+                        elevcut(earthrot(coord1, theta),sourcevec) and 
+                        elevcut(earthrot(coord2, theta),sourcevec)):
                         
                         # Optical Depth
-                        if not opacity_errs:
-                            tau1 = tau2 = 0.0
-                        elif type(tau) == dict:
+                        if type(tau) == dict:
                             try: 
                                 tau1 = tau[i1]
                                 tau2 = tau[i2]
@@ -504,16 +496,6 @@ class Array(object):
                         else:
                             tau1 = tau2 = tau
                         
-                        # Station Elevation
-                        el1 = elev(earthrot(coord1, theta),sourcevec)
-                        el2 = elev(earthrot(coord2, theta),sourcevec)
-                        
-                        # Noise - #!AC Should this factor of sqrt(2) be inside the blnoise function?
-                        sig_rr = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdr'], tau1, tau2, el1, el2, tint, bw)
-                        sig_ll = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdl'], tau1, tau2, el1, el2, tint, bw)
-                        sig_rl = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdl'], tau1, tau2, el1, el2, tint, bw)
-                        sig_lr = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdr'], tau1, tau2, el1, el2, tint, bw)
-                        
                         # Append data to list   
                         blpairs.append((i1,i2))
                         outlist.append(np.array((
@@ -521,44 +503,41 @@ class Array(object):
                                   tint, # Integration 
                                   self.tarr[i1]['site'], # Station 1
                                   self.tarr[i2]['site'], # Station 2
+                                  elev(earthrot(coord1, theta),sourcevec), # Station 1 elevation
+                                  elev(earthrot(coord2, theta),sourcevec), # Station 2 elevation
                                   tau1, # Station 1 optical depth
                                   tau2, # Station 1 optical depth
                                   np.dot(earthrot(coord1 - coord2, theta)/l, projU), # u (lambda)
                                   np.dot(earthrot(coord1 - coord2, theta)/l, projV), # v (lambda)
-                                  0.0, # I Visibility (Jy)
-                                  0.0, # Q Visibility
-                                  0.0, # U Visibility
-                                  0.0, # V Visibilities
-                                  0.5*np.sqrt(sig_rr**2 + sig_ll**2), # I Sigma (Jy)
-                                  0.5*np.sqrt(sig_rl**2 + sig_lr**2), # Q Sigma 
-                                  0.5*np.sqrt(sig_rl**2 + sig_lr**2), # U Sigma
-                                  0.5*np.sqrt(sig_rr**2 + sig_ll**2)  # V Sigma
+                                  0.0, 0.0, 0.0, 0.0, # Stokes I, Q, U, V visibilities (Jy)
+                                  blnoise(self.tarr[i1]['sefd'], self.tarr[i2]['sefd'], tint, bw) # Sigma (Jy)
                                 ), dtype=DTPOL
                                 ))
-                                
         obsarr = np.array(outlist)
          
         if not len(obsarr):
             raise Exception("No mutual visibilities in the specified time range!")
             
+        # Elevation dependence on noise using estimated opacity
+        if opacity_errs:
+            elevs = obsarr[['el1','el2']].view(('f8',2))
+            taus = obsarr[['tau1','tau2']].view(('f8',2))
+            obsarr['sigma'] *= np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))                 
+        
         # Return
         obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=str(ra) + ":" + str(dec), mjd=mjd, ampcal=True, phasecal=True)      
         return obs
      
     def save_array(self, fname):
         """Save the array data in a text file"""
-
-        out = ("#Site      X(m)             Y(m)             Z(m)           "+
-                    "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  "+
-                    "DR_RE    DR_IM    DL_RE    DL_IM   \n")
+         
+        out = ""
         for scope in range(len(self.tarr)):
             dat = (self.tarr[scope]['site'], 
-                   self.tarr[scope]['x'], self.tarr[scope]['y'], self.tarr[scope]['z'], 
-                   self.tarr[scope]['sefdr'], self.tarr[scope]['sefdl'],
-                   self.tarr[scope]['fr_par'], self.tarr[scope]['fr_elev'], self.tarr[scope]['fr_off'],
-                   self.tarr[scope]['dr'].real, self.tarr[scope]['dr'].imag, self.tarr[scope]['dl'].real, self.tarr[scope]['dl'].imag
+                   self.tarr[scope]['x'], self.tarr[scope]['y'], 
+                   self.tarr[scope]['z'], self.tarr[scope]['sefd']
                   )
-            out += "%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % dat
+            out += "%-8s %15.5f  %15.5f  %15.5f  %6.4f \n" % dat
         f = open(fname,'w')
         f.write(out)
         f.close()
@@ -600,7 +579,7 @@ class Obsdata(object):
         bw: the observing bandwidth (Hz)
         ampcal: amplitudes calibrated T/F
         phasecal: phases calibrated T/F
-        data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, vvis, sigma, qsigma, usigma, vsigma)
+        data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, vvis, sigma)
     """
     
     def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=0, ampcal=True, phasecal=True):
@@ -640,7 +619,7 @@ class Obsdata(object):
                      # Reverse the baseline if not north
                      # if (self.tarr[self.tkey[dat['t1']]]['z']) <= (self.tarr[self.tkey[dat['t2']]]['z']):
                         (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
-                        #(dat['el1'], dat['el2']) = (dat['el2'], dat['el1']) #!AC AA elevs not in data table
+                        (dat['el1'], dat['el2']) = (dat['el2'], dat['el1'])
                         dat['u'] = -dat['u']
                         dat['v'] = -dat['v']
                         dat['vis'] = np.conj(dat['vis'])
@@ -674,6 +653,7 @@ class Obsdata(object):
         return newobs
         
     def data_conj(self):
+        #!AC
         """Return a data array of same format as self.data but including all conjugate baselines"""
         
         data = np.empty(2*len(self.data), dtype=DTPOL)        
@@ -681,7 +661,7 @@ class Obsdata(object):
         # Add the conjugate baseline data
         for f in DTPOL:
             f = f[0]
-            if f in ["t1", "t2", "tau1", "tau2"]:
+            if f in ["t1", "t2", "el1", "el2", "tau1", "tau2"]:
                 if f[-1]=='1': f2 = f[:-1]+'2'
                 else: f2 = f[:-1]+'1'
                 data[f] = np.hstack((self.data[f], self.data[f2]))
@@ -696,7 +676,75 @@ class Obsdata(object):
         #!AC sort within equal times? 
         data = data[np.argsort(data['time'])]
         return data
+        
+    def unpack(self, fields, conj=False):
+        """Return a recarray of all the data for the given fields from the data table
+           If conj=True, will return conjugate baselines"""
+        
+        # If we only specify one field
+        if type(fields) == str: fields = [fields]
+            
+        # Get conjugates
+        if conj:
+            data = self.data_conj()     
+        else:
+            data = self.data
+        
+        # Get field data    
+        allout = []    
+        for field in fields:
+             
+            if field in ["u","v","sigma","tint","time","el1","el2","tau1","tau2"]: 
+                out = data[field]
+                ty = 'f8'
+            elif field in ["t1","t2"]: 
+                out = data[field]
+                ty = 'a32'
+            elif field in ["vis","amp","phase","snr"]: 
+                out = data['vis']
+                ty = 'c16'
+            elif field in ["qvis","qamp","qphase","qsnr"]: 
+                out = data['qvis']
+                ty = 'c16'
+            elif field in ["uvis","uamp","uphase","usnr"]: 
+                out = data['uvis']
+                ty = 'c16'
+            elif field in ["vvis","vamp","vphase","vsnr"]: 
+                out = data['vvis']
+                ty = 'c16'               
+            elif field in ["pvis","pamp","pphase"]: 
+                out = data['qvis'] + 1j * data['uvis']
+                ty = 'c16'
+            elif field in ["m","mamp","mphase"]: 
+                out = (data['qvis'] + 1j * data['uvis']) / data['vis']
+                ty = 'c16'
+            elif field in ["uvdist"]: 
+                out = np.abs(data['u'] + 1j * data['v'])
+                ty = 'f8'
+            else: raise Exception("%s is not valid field \n" % field + 
+                                  "valid field values are " + string.join(FIELDS)) 
 
+            # Get arg/amps/snr
+            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp"]: 
+                out = np.abs(out)
+                ty = 'f8'
+            elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase"]: 
+                out = np.angle(out)/DEGREE
+                ty = 'f8'
+            elif field in ["snr","qsnr","usnr","vsnr"]:
+                out = np.abs(out)/data['sigma']
+                ty = 'f8'
+             
+                    
+            # Reshape and stack with other fields
+            out = np.array(out, dtype=[(field, ty)])
+            if len(allout) > 0:
+                allout = rec.merge_arrays((allout, out), asrecarray=True, flatten=True)
+            else:
+                allout = out
+            
+        return allout
+    
     def tlist(self, conj=False):
         """Return partitioned data in a list of equal time observations"""
         
@@ -710,160 +758,8 @@ class Obsdata(object):
         for key, group in it.groupby(data, lambda x: x['time']):
             datalist.append(np.array([obs for obs in group]))
         
-        return np.array(datalist)
-                
-    def unpack_bl(self, site1, site2, in_fields, ang_unit='deg'):
-        """Unpack the data over time on the selected baseline"""
-
-        # If we only specify one field
-        fields=['time']
-        if type(in_fields) == str: fields.append(in_fields)
-        else: 
-            for i in range(len(in_fields)): fields.append(in_fields[i])
-            
-        # Get field data on selected baseline   
-        allout = []    
-        
-        # Get the data from data table on the selected baseline
-        tlist = self.tlist(conj=True)
-        for scan in tlist:
-            for obs in scan:
-                if (obs['t1'], obs['t2']) == (site1, site2):
-                    obs = np.array([obs])
-                    out = self.unpack_dat(obs, fields, ang_unit=ang_unit)             
-                    allout.append(out)
-        return np.array(allout)            
+        return datalist
     
-    def unpack(self, fields, conj=False, ang_unit='deg', mode='all'):
-        
-        if not mode in ('time', 'all'):
-            raise Exception("possible options for mode are 'time' and 'all'")
-                    
-        # If we only specify one field
-        if type(fields) == str: fields = [fields]
-        
-        if mode=='all':    
-            if conj:
-                data = self.data_conj()     
-            else:
-                data = self.data
-            allout=self.unpack_dat(data, fields, ang_unit=ang_unit)
-        elif mode=='time':
-            allout=[]
-            tlist = self.tlist(conj=True)
-            for scan in tlist:
-                out=self.unpack_dat(scan, fields, ang_unit=ang_unit)
-                allout.append(out)
-        
-        return np.array(allout)
-    
-    def unpack_dat(self, data, fields, conj=False, ang_unit='deg'):
-        """Return a recarray of all the data for the given fields from the data table
-           If conj=True, will return conjugate baselines"""
-       
-        if ang_unit=='deg': angle=DEGREE
-        else: angle = 1.0
-        
-        # Get field data    
-        allout = []    
-        for field in fields:
-            if field in ["u","v","tint","time","tau1","tau2"]: 
-                out = data[field]
-                ty = 'f8'
-            elif field in ["uvdist"]: 
-                out = np.abs(data['u'] + 1j * data['v'])
-                ty = 'f8'
-            elif field in ["t1","el1","par_ang1","hr_ang1"]: 
-                sites = data["t1"]
-                keys = [self.tkey[site] for site in sites]
-                tdata = self.tarr[keys]
-                out = sites
-                ty = 'a32'
-            elif field in ["t2","el2","par_ang2","hr_ang2"]: 
-                sites = data["t2"]
-                keys = [self.tkey[site] for site in sites]
-                tdata = self.tarr[keys]
-                out = sites
-                ty = 'a32'
-            elif field in ["vis","amp","phase","snr","sigma","sigma_phase"]: 
-                out = data['vis']
-                sig = data['sigma']
-                ty = 'c16'
-            elif field in ["qvis","qamp","qphase","qsnr","qsigma","qsigma_phase"]: 
-                out = data['qvis']
-                sig = data['qsigma']
-                ty = 'c16'
-            elif field in ["uvis","uamp","uphase","usnr","usigma","usigma_phase"]: 
-                out = data['uvis']
-                sig = data['usigma']
-                ty = 'c16'
-            elif field in ["vvis","vamp","vphase","vsnr","vsigma","vsigma_phase"]: 
-                out = data['vvis']
-                sig = data['vsigma']
-                ty = 'c16'               
-            elif field in ["pvis","pamp","pphase","psnr","psigma","psigma_phase"]: 
-                out = data['qvis'] + 1j * data['uvis']
-                sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                ty = 'c16'
-            elif field in ["m","mamp","mphase","msnr","msigma","msigma_phase"]: 
-                out = (data['qvis'] + 1j * data['uvis']) / data['vis']
-                sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
-                ty = 'c16'
-            
-            else: raise Exception("%s is not valid field \n" % field + 
-                                  "valid field values are " + string.join(FIELDS)) 
-
-            # Elevation and Parallactic Angles
-            if field in ["el1","el2"]:
-                thetas = np.mod((data['time']-self.ra)*360./24, 360)*DEGREE
-                coords = tdata[['x','y','z']].view(('f8', 3))
-                el_angle = elev(earthrot(coords, thetas), self.sourcevec())
-                out=el_angle/angle
-                ty = 'f8'
-            if field in ["hr_ang1","hr_ang2"]:
-                coords = tdata[['x','y','z']].view(('f8', 3))
-                latlon = xyz_2_latlong(coords)
-                hr_angle = data['time']*360./24.*DEGREE - latlon[:,1] - self.ra*360./24.*DEGREE
-                out = hr_angle/angle
-                ty = 'f8'
-            if field in ["par_ang1","par_ang2"]:
-                coords = tdata[['x','y','z']].view(('f8', 3))
-                latlon = xyz_2_latlong(coords)
-                hr_angle = data['time']*360./24.*DEGREE - latlon[:,1] - self.ra*360./24.*DEGREE
-                par_ang = par_angle(hr_angle, latlon[:,0], self.dec)
-                out = par_ang/angle
-                ty = 'f8'
-                                
-            # Get arg/amps/snr
-            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp"]: 
-                out = np.abs(out)
-                ty = 'f8'
-            elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase"]: 
-                out = np.angle(out)/angle
-                ty = 'f8'
-            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma"]:
-                out = np.abs(sig)
-                ty = 'f8'
-            elif field in ["sigma_phase","qsigma_phase","usigma_phase","vsigma_phase","psigma_phase","msigma_phase"]:
-                out = np.abs(sig)/np.abs(out)/angle
-                ty = 'f8'                                                
-            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr"]:
-                out = np.abs(out)/np.abs(sig)
-                ty = 'f8'
-                                            
-            # Reshape and stack with other fields
-            out = np.array(out, dtype=[(field, ty)])
-            if len(allout) > 0:
-                allout = rec.merge_arrays((allout, out), asrecarray=True, flatten=True)
-            else:
-                allout = out
-            
-        return allout
-    
-    def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GST)"""
-        return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
-        
     def res(self):
         """Return the nominal resolution of the observation in radian"""
         return 1.0/np.max(self.unpack('uvdist')['uvdist'])
@@ -879,9 +775,7 @@ class Obsdata(object):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('min', 'max'):
             raise Exception("possible options for count are 'min' and 'max'")
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
-            
+        
         # Generate the time-sorted data with conjugate baselines
         tlist = self.tlist(conj=True)    
         outlist = []
@@ -899,9 +793,8 @@ class Obsdata(object):
             if count == 'min':
                 # If we want a minimal set, choose triangles with the minimum sefd reference
                 # Unless there is no sefd data, in which case choose the northernmost
-                #!AC This should probably be an sefd average
-                if len(set(self.tarr['sefdr'])) > 1:
-                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+                if len(set(self.tarr['sefd'])) > 1:
+                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefd'] for site in sites])]
                 else:
                     ref = sites[np.argmax([self.tarr[self.tkey[site]]['z'] for site in sites])]
                 sites.remove(ref)
@@ -931,38 +824,30 @@ class Obsdata(object):
                     
                 # Choose the appropriate polarization and compute the bs and err
                 if vtype in ["vis", "qvis", "uvis","vvis"]:
-                    if vtype=='vis':  sigmatype='sigma'
-                    if vtype=='qvis': sigmatype='qsigma'
-                    if vtype=='uvis': sigmatype='usigma'
-                    if vtype=='vvis': sigmatype='vsigma'
-                    
-                    p1 = l1[vtype]
-                    p2 = l2[vtype]
-                    p3 = l3[vtype]
-                    
-                    var1 = l1[sigmatype]**2 
-                    var2 = l2[sigmatype]**2                                                        
-                    var3 = l3[sigmatype]**2                                                        
-                                                                                                                                                      
+                    bi = l1[vtype]*l2[vtype]*l3[vtype]  
+                    bisig = np.abs(bi) * np.sqrt((l1['sigma']/np.abs(l1[vtype]))**2 +  
+                                                 (l2['sigma']/np.abs(l2[vtype]))**2 + 
+                                                 (l3['sigma']/np.abs(l3[vtype]))**2) 
+                    #Katie's 2nd + 3rd order corrections - see CHIRP supplement
+                    bisig = np.sqrt(bisig**2 + (l1['sigma']*l2['sigma']*np.abs(l3[vtype]))**2 +  
+                                               (l1['sigma']*l3['sigma']*np.abs(l2[vtype]))**2 +  
+                                               (l3['sigma']*l2['sigma']*np.abs(l1[vtype]))**2 +  
+                                               (l1['sigma']*l2['sigma']*l3['sigma'])**2 )                                               
                 elif vtype == "pvis":
                     p1 = l1['qvis'] + 1j*l2['uvis']
                     p2 = l2['qvis'] + 1j*l2['uvis']
                     p3 = l3['qvis'] + 1j*l3['uvis']
                     bi = p1 * p2 * p3
-                    
-                    var1 = l1['qsigma']**2 + l1['usigma']**2
-                    var2 = l2['qsigma']**2 + l2['usigma']**2
-                    var3 = l3['qsigma']**2 + l3['usigma']**2                                                                                                     
-                
-                bi = p1*p2*p3
-                bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +  
-                                             var2/np.abs(p2)**2 + 
-                                             var3/np.abs(p3)**2)
-                #Katie's 2nd + 3rd order corrections - see CHIRP supplement
-                bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +  
-                                           var1*var3*np.abs(p2)**2 +  
-                                           var2*var3*np.abs(p1)**2 +  
-                                           var1*var2*var3)                                                               
+                    bisig = np.abs(bi) * np.sqrt((l1['sigma']/np.abs(p1))**2 +  
+                                                 (l2['sigma']/np.abs(p2))**2 + 
+                                                 (l3['sigma']/np.abs(p3))**2)
+                    #Katie's 2nd + 3rd order corrections - see CHIRP supplement
+                    bisig = np.sqrt(bisig**2 + (l1['sigma']*l2['sigma']*np.abs(p3))**2 +  
+                                               (l1['sigma']*l3['sigma']*np.abs(p2))**2 +  
+                                               (l3['sigma']*l2['sigma']*np.abs(p1))**2 +  
+                                               (l1['sigma']*l2['sigma']*l3['sigma'])**2 )                                               
+
+                    bisig = np.sqrt(2) * bisig
                 
                 # Append to the equal-time list
                 bis.append(np.array((time, tri[0], tri[1], tri[2], 
@@ -977,25 +862,20 @@ class Obsdata(object):
         if mode=='all':
             outlist = np.array(bis)
         
-        return np.array(outlist)
+        return outlist
    
         
-    def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg'):
+    def c_phases(self, vtype='vis', mode='time', count='min'):
         """Return all independent equal time closure phase values
            Independent triangles are chosen to contain the minimum sefd station in the scan
            Set count='max' to return all closure phases
         """
-
+        #!AC Error formula for closure phases only true in high SNR limit!
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")  
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")  
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
-                
-        if ang_unit=='deg': angle=DEGREE
-        else: angle = 1.0
-                    
+        
         # Get the bispectra data
         bispecs = self.bispectra(vtype=vtype, mode='time', count=count)
         
@@ -1006,8 +886,8 @@ class Obsdata(object):
             for bi in bis:
                 if len(bi) == 0: continue
                 bi.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
-                bi['sigmacp'] = bi['sigmacp']/np.abs(bi['cphase'])/angle
-                bi['cphase'] = (np.angle(bi['cphase'])/angle).real
+                bi['sigmacp'] = bi['sigmacp']/np.abs(bi['cphase'])/DEGREE
+                bi['cphase'] = (np.angle(bi['cphase'])/DEGREE).real
                 cps.append(bi.astype(np.dtype(DTCPHASE)))
             if mode == 'time' and len(cps) > 0:
                 outlist.append(np.array(cps))
@@ -1016,20 +896,19 @@ class Obsdata(object):
         if mode == 'all':
             outlist = np.array(cps)
 
-        return np.array(outlist)    
+        return outlist    
          
     def c_amplitudes(self, vtype='vis', mode='time', count='min'):
         """Return equal time closure amplitudes
            Set count='max' to return all closure amplitudes up to inverses
         """ 
         
+        #!AC Error formula for closure amplitudes only true in high SNR limit!
         if not mode in ('time','all'):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")  
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
-                    
+        
         tlist = self.tlist(conj=True) 
         outlist = []
         cas = []
@@ -1047,8 +926,7 @@ class Obsdata(object):
             if count == 'min':
                 # If we want a minimal set, choose the minimum sefd reference
                 # !AC sites are ordered by sefd - does that make sense?
-                # !AC this should probably be an sefd average
-                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefd'] for site in sites])]
                 ref = sites[0]
                 
                 # Loop over other sites >=3 and form minimal closure amplitude set
@@ -1064,15 +942,10 @@ class Obsdata(object):
                         
                         # Compute the closure amplitude and the error
                         if vtype in ["vis", "qvis", "uvis", "vvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
-                            
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
                             
                             p1 = amp_debias(blue1[vtype], e1)
                             p2 = amp_debias(blue2[vtype], e2)
@@ -1080,21 +953,22 @@ class Obsdata(object):
                             p4 = amp_debias(red2[vtype], e4)
                                                                              
                         elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
 
                             p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
                             p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
                             p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
                             p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
-                                                   
+                            
+                        
                         camp = np.abs((p1*p2)/(p3*p4))
-                        camperr = camp * np.sqrt(var1/np.abs(p1)**2 +  
-                                                 var2/np.abs(p2)**2 + 
-                                                 var3/np.abs(p3)**2 +
-                                                 var4/np.abs(p4)**2)
+                        camperr = camp * np.sqrt((e1/np.abs(p1))**2 +  
+                                                 (e2/np.abs(p2))**2 + 
+                                                 (e3/np.abs(p3))**2 +
+                                                 (e4/np.abs(p4))**2)
                                         
                         # Add the closure amplitudes to the equal-time list  
                         # Our site convention is (12)(34)/(14)(23)       
@@ -1105,7 +979,7 @@ class Obsdata(object):
                                              camp, camperr),
                                              dtype=DTCAMP)) 
 
-            # !AC Can we find a different way to do min/max sets so we don't have to duplicate code here?
+
             elif count == 'max':
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
@@ -1122,37 +996,33 @@ class Obsdata(object):
                                       
                         # Compute the closure amplitude and the error
                         if vtype in ["vis", "qvis", "uvis", "vvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
                             
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
-                            
-                            p1 = amp_debias(blue1[vtype], np.sqrt(var1))
-                            p2 = amp_debias(blue2[vtype], np.sqrt(var2))
-                            p3 = amp_debias(red1[vtype], np.sqrt(var3))
-                            p4 = amp_debias(red2[vtype], np.sqrt(var4))
+                            p1 = amp_debias(blue1[vtype], e1)
+                            p2 = amp_debias(blue2[vtype], e2)
+                            p3 = amp_debias(red1[vtype], e3)
+                            p4 = amp_debias(red2[vtype], e4)
                                                                              
                         elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
 
-                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], np.sqrt(var1))
-                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], np.sqrt(var2))
-                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
-                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
-                                                   
+                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
+                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
+                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
+                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
+                            
+                        
                         camp = np.abs((p1*p2)/(p3*p4))
-                        camperr = camp * np.sqrt(var1/np.abs(p1)**2 +  
-                                                 var2/np.abs(p2)**2 + 
-                                                 var3/np.abs(p3)**2 +
-                                                 var4/np.abs(p4)**2)
+                        camperr = camp * np.sqrt((e1/np.abs(p1))**2 +  
+                                                 (e2/np.abs(p2))**2 + 
+                                                 (e3/np.abs(p3))**2 +
+                                                 (e4/np.abs(p4))**2)
                                         
                                         
                         # Add the closure amplitudes to the equal-time list         
@@ -1170,20 +1040,19 @@ class Obsdata(object):
             elif mode=='all':
                 outlist = np.array(cas)
         
-        return np.array(outlist)
+        return outlist
 
-    #!AC Add covariance matrices!
     def log_c_amplitudes(self, cov=True, vtype='vis', mode='time', count='min'):
-        """Return equal time log closure amplitudes
+        """Return equal time log closure amplitudes and list of covariance matrices
            Set count='max' to return all closure amplitudes up to inverses
-        """     
+        """ 
+        
+        #!AC Error formula for closure amplitudes only true in high SNR limit!
         if not mode in ('time','all'):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")  
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
-                    
+        
         tlist = self.tlist(conj=True) 
         covs = []
         outlist = []
@@ -1202,8 +1071,7 @@ class Obsdata(object):
             if count == 'min':
                 # If we want a minimal set, choose the minimum sefd reference
                 # !AC sites are ordered by sefd - does that make sense?
-                # !AC this should probably be an sefd average
-                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefd'] for site in sites])]
                 ref = sites[0]
                 
                 # Loop over other sites >=3 and form minimal closure amplitude set
@@ -1219,40 +1087,35 @@ class Obsdata(object):
                         
                         # Compute the closure amplitude and the error
                         if vtype in ["vis", "qvis", "uvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
                             
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
-                            
-                            p1 = amp_debias(blue1[vtype], np.sqrt(var1)) #!AC debias or not? 
-                            p2 = amp_debias(blue2[vtype], np.sqrt(var2))
-                            p3 = amp_debias(red1[vtype], np.sqrt(var3))
-                            p4 = amp_debias(red2[vtype], np.sqrt(var4))
+                            p1 = amp_debias(blue1[vtype], e1) #!AC debias or not? 
+                            p2 = amp_debias(blue2[vtype], e2)
+                            p3 = amp_debias(red1[vtype], e3)
+                            p4 = amp_debias(red2[vtype], e4)
                                                                              
                         elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
-                            
-                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], np.sqrt(var1))
-                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], np.sqrt(var2))
-                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
-                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
+
+                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
+                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
+                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
+                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
                             
                         
                         logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
 
-                        #!AC -- is this correct? 
-                        logcamperr = np.sqrt(var1/np.abs(p1)**2 +  
-                                             var2/np.abs(p2)**2 + 
-                                             var3/np.abs(p3)**2 +
-                                             var4/np.abs(p4)**2)
+                        #!ANDREW
+                        logcamperr = np.sqrt((e1/np.abs(p1))**2 +  
+                                             (e2/np.abs(p2))**2 + 
+                                             (e3/np.abs(p3))**2 +
+                                             (e4/np.abs(p4))**2)
                                         
                         # Add the closure amplitudes to the equal-time list  
                         # Our site convention is (12)+(34)-(14)-(23)       
@@ -1262,19 +1125,16 @@ class Obsdata(object):
                                              red1['u'], red1['v'], red2['u'], red2['v'],
                                              logcamp, logcamperr),
                                              dtype=DTCAMP)) 
-           
-                #!AC
                 # Make the covariance matrix after making all the scan data points    
-                #if cov: 
-                #    clbl = np.array([[[self.tkey[cl['t1']],self.tkey[cl['t2']]],
-                #                      [self.tkey[cl['t3']],self.tkey[cl['t4']]],
-                #                      [self.tkey[cl['t1']],self.tkey[cl['t4']]],
-                #                      [self.tkey[cl['t2']],self.tkey[cl['t3']]]
-                #                    ] for cl in cas])
-                #    covmatrix = make_cov(clbl, l_dict)
-                #    covs.append(covmatrix)
+                if cov: 
+                    clbl = np.array([[[self.tkey[cl['t1']],self.tkey[cl['t2']]],
+                                      [self.tkey[cl['t3']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t1']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t2']],self.tkey[cl['t3']]]
+                                    ] for cl in cas])
+                    covmatrix = make_cov(clbl, l_dict)
+                    covs.append(covmatrix)
 
-            #!AC Can we find a better way to loop over min/max sets so we don't need to duplicate so much code?
             elif count == 'max':
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
@@ -1291,15 +1151,10 @@ class Obsdata(object):
                                       
                         # Compute the closure amplitude and the error
                         if vtype in ["vis", "qvis", "uvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
-                            
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
+                            e1 = blue1['sigma']
+                            e2 = blue2['sigma']
+                            e3 = red1['sigma']
+                            e4 = red2['sigma']
                             
                             p1 = amp_debias(blue1[vtype], e1)
                             p2 = amp_debias(blue2[vtype], e2)
@@ -1307,10 +1162,10 @@ class Obsdata(object):
                             p4 = amp_debias(red2[vtype], e4)
                                                                              
                         elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
+                            e1 = np.sqrt(2)*blue1['sigma']
+                            e2 = np.sqrt(2)*blue2['sigma']
+                            e3 = np.sqrt(2)*red1['sigma']
+                            e4 = np.sqrt(2)*red2['sigma']
 
                             p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
                             p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
@@ -1320,11 +1175,11 @@ class Obsdata(object):
                         
                         logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
 
-                        #!AC -- is this correct? 
-                        logcamperr = np.sqrt(var1/np.abs(p1)**2 +  
-                                             var2/np.abs(p2)**2 + 
-                                             var3/np.abs(p3)**2 +
-                                             var4/np.abs(p4)**2)
+                        #!ANDREW
+                        logcamperr = np.sqrt((e1/np.abs(p1))**2 +  
+                                             (e2/np.abs(p2))**2 + 
+                                             (e3/np.abs(p3))**2 +
+                                             (e4/np.abs(p4))**2)
                                         
                         # Add the closure amplitudes to the equal-time list  
                         # Our site convention is (12)+(34)-(14)-(23)       
@@ -1334,26 +1189,24 @@ class Obsdata(object):
                                              red1['u'], red1['v'], red2['u'], red2['v'],
                                              logcamp, logcamperr),
                                              dtype=DTCAMP)) 
-                
-                #!AC
                 # Make the covariance matrix after making all the scan data points    
-                #if cov: 
-                #    covs.append(covmatrix)
-                #    clbl = np.array([[[self.tkey[cl['t1']],self.tkey[cl['t2']]],
-                #                      [self.tkey[cl['t3']],self.tkey[cl['t4']]],
-                #                      [self.tkey[cl['t1']],self.tkey[cl['t4']]],
-                #                      [self.tkey[cl['t2']],self.tkey[cl['t3']]]
-                #                    ] for cl in cas])
-                #    covmatrix = make_cov(clbl, l_dict)
- 
-            # Append all equal time closure amps to outlist    
-            if mode=='time':
-                outlist.append(np.array(cas))
-                cas = []    
-            elif mode=='all':
-                outlist = np.array(cas)               
+                if cov: 
+                    covs.append(covmatrix)
+                    clbl = np.array([[[self.tkey[cl['t1']],self.tkey[cl['t2']]],
+                                      [self.tkey[cl['t3']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t1']],self.tkey[cl['t4']]],
+                                      [self.tkey[cl['t2']],self.tkey[cl['t3']]]
+                                    ] for cl in cas])
+                    covmatrix = make_cov(clbl, l_dict)
+                
+
+            outlist.append(np.array(cas))
+            cas = []    
+
+        #if mode=='all':
+        #    outlist = np.flatten(cas)
         
-        return np.array(outlist)
+        return outlist
 
     
     def dirtybeam(self, npix, fov, pulse=pulses.trianglePulse2D):
@@ -1401,7 +1254,7 @@ class Obsdata(object):
         
         xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
 
-        # Take the DTFTS
+        # Take the DFTS
         # Shouldn't need to real about conjugate baselines b/c unpack does not return them
         im  = np.array([[np.mean(np.real(vis)*np.cos(2*np.pi*(i*u + j*v)) - 
                                  np.imag(vis)*np.sin(2*np.pi*(i*u + j*v)))
@@ -1497,8 +1350,8 @@ class Obsdata(object):
             theta = np.mod(params.x[2] + np.pi/2, np.pi)
 
         return np.array((fwhm_maj, fwhm_min, theta))
-    
-    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg'):
+            
+    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b'):
         """Make a scatter plot of 2 real observation fields with errors
            If conj==True, display conjugate baselines"""
         
@@ -1507,17 +1360,45 @@ class Obsdata(object):
             raise Exception("valid fields are " + string.join(FIELDS))
                               
         # Unpack x and y axis data
-        data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit)
+        data = self.unpack([field1,field2], conj=conj)
         
         # X error bars
-        if sigtype(field1):
-            sigx = self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field1)]
+        if field1 in ['amp', 'qamp', 'uamp', 'vamp']:
+            sigx = self.unpack('sigma',conj=conj)['sigma']
+        elif field1 in ['phase', 'uphase', 'qphase', 'vphase']:
+            sigx = (self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('amp',conj=conj)['amp'])/DEGREE
+        elif field1 == 'pamp':
+            sigx = np.sqrt(2)*self.unpack('sigma',conj=conj)['sigma']
+        elif field1 == 'pphase':
+            sigx = np.sqrt(2)*(self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('pamp',conj=conj)['pamp'])/DEGREE
+        elif field1 == 'mamp':
+            sigx = merr(self.unpack('sigma',conj=conj)['sigma'], 
+                        self.unpack('amp',conj=conj)['amp'], 
+                        self.unpack('mamp',conj=conj)['mamp'])
+        elif field1 == 'mphase':
+            sigx = merr(self.unpack('sigma',conj=conj)['sigma'], 
+                        self.unpack('amp',conj=conj)['amp'], 
+                        self.unpack('mamp',conj=conj)['mamp']) / self.unpack('mamp',conj=conj)['mamp']
         else:
             sigx = None
             
         # Y error bars
-        if sigtype(field2):
-            sigy = self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field2)]
+        if field2 in ['amp', 'qamp', 'uamp', 'vamp']:
+            sigy = self.unpack('sigma',conj=conj)['sigma']
+        elif field2 in ['phase', 'uphase', 'qphase', 'vphase']:
+            sigy = (self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('amp',conj=conj)['amp'])/DEGREE
+        elif field2 == 'pamp':
+            sigy = np.sqrt(2)*self.unpack('sigma',conj=conj)['sigma']
+        elif field2 == 'pphase':
+            sigy = np.sqrt(2)*(self.unpack('sigma',conj=conj)['sigma'])/(self.unpack('pamp',conj=conj)['pamp'])/DEGREE
+        elif field2 == 'mamp':
+            sigy = merr(self.unpack('sigma',conj=conj)['sigma'],
+                        self.unpack('amp',conj=conj)['amp'],
+                        self.unpack('mamp',conj=conj)['mamp'])
+        elif field2 == 'mphase':
+            sigy = merr(self.unpack('sigma',conj=conj)['sigma'],
+                        self.unpack('amp',conj=conj)['amp'], 
+                        self.unpack('mamp',conj=conj)['mamp']) / self.unpack('mamp',conj=conj)['mamp']
         else:
             sigy = None
         
@@ -1558,23 +1439,76 @@ class Obsdata(object):
         if show:
             plt.show(block=False)
         return x
-                        
-    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
+        
+    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot a field over time on a baseline"""
-                
-        if ang_unit=='deg': angle=DEGREE
-        else: angle = 1.0
         
         # Determine if fields are valid
         if field not in FIELDS:
             raise Exception("valid fields are " + string.join(FIELDS))
         
-        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit)
+        # Get the data from data table on the selected baseline
+        plotdata = []
+        tlist = self.tlist(conj=True)
+        for scan in tlist:
+            for obs in scan:
+                if (obs['t1'], obs['t2']) == (site1, site2):
+                    time = obs['time']
+                    if field == 'uvdist':
+                        plotdata.append([time, np.abs(obs['u'] + 1j*obs['v']), 0])
+                    
+                    elif field in ['amp', 'qamp', 'uamp', 'vamp']:
+                        print "De-biasing amplitudes for plot!"
+                        if field == 'amp': l = 'vis'
+                        elif field == 'qamp': l = 'qvis'
+                        elif field == 'uamp': l = 'uvis'
+                        elif field == 'vamp': l = 'vvis'
+                        plotdata.append([time, amp_debias(obs[l], obs['sigma']), obs['sigma']])
+                    
+                    elif field in ['phase', 'qphase', 'uphase', 'vphase']:
+                        if field == 'phase': l = 'vis'
+                        elif field == 'qphase': l = 'qvis'
+                        elif field == 'uphase': l = 'uvis'
+                        elif field == 'vphase': l = 'vvis'
+                        plotdata.append([time, np.angle(obs[l])/DEGREE, obs['sigma']/np.abs(obs[l])/DEGREE])
+                    
+                    elif field == 'pamp':
+                        print "De-biasing amplitudes for plot!"
+                        pamp = amp_debias(obs['qvis'] + 1j*obs['uvis'], np.sqrt(2)*obs['sigma'])
+                        plotdata.append([time, pamp, np.sqrt(2)*obs['sigma']])
+                    
+                    elif field == 'pphase':
+                        plotdata.append([time, 
+                                         np.angle(obs['qvis'] + 1j*obs['uvis'])/DEGREE, 
+                                         np.sqrt(2)*obs['sigma']/np.abs(obs['qvis'] + 1j*obs['uvis'])/DEGREE
+                                       ])
+                    
+                    elif field == 'mamp':
+                        print "NOT de-baising polarimetric ratio amplitudes!"
+                        plotdata.append([time,
+                                         np.abs((obs['qvis'] + 1j*obs['uvis'])/obs['vis']), 
+                                         merr(obs['sigma'], obs['vis'], (obs['qvis']+1j*obs['uvis'])/obs['vis'])
+                                       ])
+                    
+                    elif field == 'mphase':
+                        plotdata.append([time, 
+                                        np.angle((obs['qvis'] + 1j*obs['uvis'])/obs['vis'])/DEGREE, 
+                                        (merr(obs['sigma'], obs['vis'], (obs['qvis']+1j*obs['uvis'])/obs['vis'])/
+                                           np.abs((obs['qvis']+1j*obs['uvis'])/obs['vis'])/DEGREE)
+                                       ])
+                    
+                    else:
+                        plotdata.append([time, obs[field], 0])
+                    
+                    # Assume only one relevant entry per scan
+                    break
+        
+        plotdata = np.array(plotdata)
         if not rangex: 
             rangex = [self.tstart,self.tstop]
         if not rangey:
-            rangey = [np.min(plotdata[field]) - 0.2 * np.abs(np.min(plotdata[field])), 
-                      np.max(plotdata[field]) + 0.2 * np.abs(np.max(plotdata[field]))] 
+            rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])), 
+                      np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))] 
         # Plot the data                        
         if axis:
             x = axis
@@ -1582,11 +1516,10 @@ class Obsdata(object):
             fig = plt.figure()
             x = fig.add_subplot(1,1,1)       
 
-        if ebar and sigtype(field)!=False:
-            errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit)
-            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0], yerr=errdata[sigtype(field)][:,0], fmt='b.', color=color)
+        if ebar and np.any(plotdata[:,2]):
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='b.', color=color)
         else:
-            x.plot(plotdata['time'][:,0], plotdata[field][:,0],'b.', color=color)
+            x.plot(plotdata[:,0], plotdata[:,1],'b.', color=color)
             
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -1599,14 +1532,12 @@ class Obsdata(object):
         return x
                 
                 
-    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
+    def plot_cphase(self, site1, site2, site3, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure phase over time on a triangle"""
-                
-        if ang_unit=='deg': angle=DEGREE
-        else: angle = 1.0
-        
+
         # Get closure phases (maximal set)
-        cphases = self.c_phases(mode='time', count='max', vtype=vtype)
+        
+        cphases = self.c_phases(mode='time', count='max')
         
         # Get requested closure phases over time
         tri = (site1, site2, site3)
@@ -1654,7 +1585,7 @@ class Obsdata(object):
             plt.show(block=False)    
         return x
         
-    def plot_camp(self, site1, site2, site3, site4, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
+    def plot_camp(self, site1, site2, site3, site4, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure amplitude over time on a quadrange
            (1-2)(3-4)/(1-4)(2-3)
         """
@@ -1663,7 +1594,7 @@ class Obsdata(object):
         r1 = set((site1, site4))
               
         # Get the closure amplitudes
-        camps = self.c_amplitudes(mode='time', count='max', vtype='vtype')
+        camps = self.c_amplitudes(mode='time', count='max')
         plotdata = []
         for entry in camps:
             for obs in entry:
@@ -1715,9 +1646,9 @@ class Obsdata(object):
         else:
             return x
     
-    #!AC AA is this working? 
+    #NOT WORKING
     def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
-        """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes
+        """Fit a gaussian to either complex visibilities or visibility amplitudes
            TODO bispectra/closure phase?
         """
         vis = self.data['vis']
@@ -1745,9 +1676,8 @@ class Obsdata(object):
         """Save visibility data to a text file"""
         
         # Get the necessary data and the header
-        outdata = self.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
-                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
-                               'sigma', 'qsigma', 'usigma', 'vsigma'])
+        outdata = self.unpack(['time', 'tint', 't1', 't2', 'el1', 'el2', 'tau1','tau2',
+                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase', 'sigma'])
         head = ("SRC: %s \n" % self.source +
                     "RA: " + rastring(self.ra) + "\n" + "DEC: " + decstring(self.dec) + "\n" +
                     "MJD: %.4f - %.4f \n" % (fracmjd(self.mjd,self.tstart), fracmjd(self.mjd,self.tstop)) + 
@@ -1755,38 +1685,26 @@ class Obsdata(object):
                     "BW: %.4f GHz \n" % (self.bw/1e9) +
                     "PHASECAL: %i \n" % self.phasecal + 
                     "AMPCAL: %i \n" % self.ampcal + 
-                    "----------------------------------------------------------------------"+
-                    "------------------------------------------------------------------\n" +
-                    "Site       X(m)             Y(m)             Z(m)           "+
-                    "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  "+
-                    "DR_RE    DR_IM    DL_RE    DL_IM   \n"
+                    "----------------------------------------------------------------\n" +
+                    "Site       X(m)             Y(m)             Z(m)           SEFD\n"
                 )
         
         for i in range(len(self.tarr)):
-            head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % (self.tarr[i]['site'], 
-                                                                      self.tarr[i]['x'], self.tarr[i]['y'], self.tarr[i]['z'], 
-                                                                      self.tarr[i]['sefdr'], self.tarr[i]['sefdl'],
-                                                                      self.tarr[i]['fr_par'], self.tarr[i]['fr_elev'], self.tarr[i]['fr_off'],
-                                                                      (self.tarr[i]['dr']).real, (self.tarr[i]['dr']).imag, 
-                                                                      (self.tarr[i]['dl']).real, (self.tarr[i]['dl']).imag
-                                                                     ))
+            head += "%-8s %15.5f  %15.5f  %15.5f  %6.4f \n" % (self.tarr[i]['site'], 
+                                                               self.tarr[i]['x'], self.tarr[i]['y'], self.tarr[i]['z'], 
+                                                               self.tarr[i]['sefd'])
 
-        head += (
-                "----------------------------------------------------------------------"+
-                "------------------------------------------------------------------\n" +
-                "time (hr) tint    T1     T2    Tau1   Tau2   U (lambda)       V (lambda)         "+
-                "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   Vamp (Jy)    Vphase(d)   "+
-                "Isigma (Jy)   Qsigma (Jy)   Usigma (Jy)   Vsigma (Jy)"
+        head += ("----------------------------------------------------------------\n" +
+                "time (hr) tint    T1     T2    Elev1   Elev2  Tau1   Tau2   U (lambda)       V (lambda)         "+
+                "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   Vamp (Jy)    Vphase(d)   sigma (Jy)"
                 )
           
         # Format and save the data
-        fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %16.4f %16.4f    "+
-               "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f %10.4f    "+
-               "%10.8f    %10.8f    %10.8f    %10.8f")
+        fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %4.2f   %4.2f  %16.4f %16.4f    "+
+               "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f %10.4f    %10.8f")
         np.savetxt(fname, outdata, header=head, fmt=fmts)
         return
     
-    #!AC TODO see if dterm and field rotation arrays are in uvfits standard 
     def save_uvfits(self, fname):
         """Save visibility data to uvfits
             Needs template.UVP file
@@ -1800,7 +1718,7 @@ class Obsdata(object):
         tnames = tarr['site']
         tnums = np.arange(1, len(tarr)+1)
         xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in np.arange(len(tarr))])
-        sefd = tarr['sefdr']
+        sefd = tarr['sefd']
         
         nsta = len(tnames)
         col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
@@ -1823,9 +1741,9 @@ class Obsdata(object):
         #head = fits.Header()
         head = hdulist['AIPS AN'].header
         head['EXTVER'] = 1
-        head['GSTIA0'] = 119.85 # !AC for mjd 48277
+        head['GSTIA0'] = 119.85 # for mjd 48277
         head['FREQ']= self.rf
-        head['ARRNAM'] = 'ALMA' #!AC Can we change this field? 
+        head['ARRNAM'] = 'ALMA' #!AC Can we change??
         head['XYZHAND'] = 'RIGHT'
         head['ARRAYX'] = 0.e0
         head['ARRAYY'] = 0.e0
@@ -1917,7 +1835,7 @@ class Obsdata(object):
         header['PZERO11'] = 0.e0
         
         # Get data
-        obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
+        obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','t1','t2','el1','el2','tau1','tau2'])
         ndat = len(obsdata['time'])
         
         # times and tints
@@ -1934,8 +1852,8 @@ class Obsdata(object):
         bl = 256*np.array(t1) + np.array(t2)
         
         # elevations
-        #el1 = obsdata['el1']
-        #el2 = obsdata['el2']
+        el1 = obsdata['el1']
+        el2 = obsdata['el2']
         
         # opacities
         tau1 = obsdata['tau1']
@@ -1950,47 +1868,40 @@ class Obsdata(object):
         ll = obsdata['vis'] - obsdata['vvis']
         rl = obsdata['qvis'] + 1j*obsdata['uvis']
         lr = obsdata['qvis'] - 1j*obsdata['uvis']
+        weight = 1 / (2 * obsdata['sigma']**2)
         
-        #!AC Are these weights correct? 
-        weightrr = 1 / (obsdata['sigma']**2 + obsdata['vsigma']**2)
-        weightll = 1 / (obsdata['sigma']**2 + obsdata['vsigma']**2)
-        weightrl = 1 / (obsdata['qsigma']**2 + obsdata['usigma']**2)
-        weightlr = 1 / (obsdata['qsigma']**2 + obsdata['usigma']**2)
-                                
         # Data array
         outdat = np.zeros((ndat, 1, 1, 1, 1, 4, 3))
         outdat[:,0,0,0,0,0,0] = np.real(rr)
         outdat[:,0,0,0,0,0,1] = np.imag(rr)
-        outdat[:,0,0,0,0,0,2] = weightrr
+        outdat[:,0,0,0,0,0,2] = weight
         outdat[:,0,0,0,0,1,0] = np.real(ll)
         outdat[:,0,0,0,0,1,1] = np.imag(ll)
-        outdat[:,0,0,0,0,1,2] = weightll
+        outdat[:,0,0,0,0,1,2] = weight
         outdat[:,0,0,0,0,2,0] = np.real(rl)
         outdat[:,0,0,0,0,2,1] = np.imag(rl)
-        outdat[:,0,0,0,0,2,2] = weightrl
+        outdat[:,0,0,0,0,2,2] = weight
         outdat[:,0,0,0,0,3,0] = np.real(lr)
         outdat[:,0,0,0,0,3,1] = np.imag(lr)
-        outdat[:,0,0,0,0,3,2] = weightlr
+        outdat[:,0,0,0,0,3,2] = weight
         
         # Save data
-        #!AC AA elevs no longer in data table
-        #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
-        #        'INTTIM', 'ELEV1', 'ELEV2', 'TAU1', 'TAU2']
-        #x = fits.GroupData(outdat, parnames=pars,
-        #    pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints, el1, el2,tau1,tau2],
-        #    bitpix=-32)
-        
         pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
-                'INTTIM', 'TAU1', 'TAU2']
+                'INTTIM', 'ELEV1', 'ELEV2', 'TAU1', 'TAU2']
         x = fits.GroupData(outdat, parnames=pars,
-            pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints,tau1,tau2],
+            pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints, el1, el2,tau1,tau2],
             bitpix=-32)
 
+        #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', '_DATE',
+        #        'INTTIM']
+        #x = fits.GroupData(outdat, parnames=pars,
+        #                   pardata=[u, v, np.zeros(ndat), bl, jds, np.zeros(ndat), tints],
+        #                   bitpix=-32)
                 
         hdulist[0].data = x
         hdulist[0].header = header
  
-        ###### ADD AIPS FQ TABLE -- Thanks to Kazu #############
+        ######ADD AIPS FQ TABLE -- Thanks to Kazu#############
         # Convert types & columns
         nif=1
         col1 = np.array(1, dtype=np.int32).reshape([nif]) #frqsel
@@ -2020,8 +1931,7 @@ class Obsdata(object):
         return
     
     def save_oifits(self, fname, flux=1.0):
-        """ Save visibility data to oifits
-            Polarization data is NOT saved
+        """Save visibility data to oifits
             Antenna diameter currently incorrect and the exact times are not correct in the datetime object
             Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function 
         """
@@ -2037,7 +1947,7 @@ class Obsdata(object):
 
         # extract the telescope names and parameters
         antennaNames = self.tarr['site'] #np.array(self.tkey.keys())
-        sefd = self.tarr['sefdr']
+        sefd = self.tarr['sefd']
         antennaX = self.tarr['x']
         antennaY = self.tarr['y']
         antennaZ = self.tarr['z']
@@ -2105,23 +2015,12 @@ def load_array(filename):
     """Read an array from a text file and return an Array object
     """
     
-    tdata = np.loadtxt(filename,dtype=str,comments='#')
-    if (tdata.shape[1] != 5 and tdata.shape[1] != 13):
-        raise Exception("Array file should have format: "+ 
-                        "(name, x, y, z, SEFDR, SEFDL "+
-                        "FR_PAR_ANGLE FR_ELEV_ANGLE FR_OFFSET" +
-                        "DR_RE   DR_IM   DL_RE    DL_IM )") 
-    if tdata.shape[1] == 5:                    
-    	tdataout = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[4]),0.0, 0.0, 0.0, 0.0, 0.0),
-                           dtype=DTARR) for x in tdata]
-    elif tdata.shape[1] == 13:                    
-    	tdataout = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[5]),
-                           float(x[9])+1j*float(x[10]), float(x[11])+1j*float(x[12]), 
-                           float(x[6]), float(x[7]), float(x[9])), 
-                           dtype=DTARR) for x in tdata]                           
-
-    tdataout = np.array(tdataout)
-    return Array(tdataout)
+    tdata = np.loadtxt(filename,dtype=str)
+    if tdata.shape[1] != 5:
+        raise Exception("Array file should have format: (name, x, y, z, SEFD)") 
+    tdata = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4])), dtype=DTARR) for x in tdata]
+    tdata = np.array(tdata)
+    return Array(tdata)
       
 def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
@@ -2147,17 +2046,12 @@ def load_obs_txt(filename):
     line = file.readline().split()
     tarr = []
     while line[1][0] != "-":
-        if len(line) == 6: 
-        	tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[5], 0, 0, 0, 0, 0), dtype=DTARR))
-        elif len(line) == 14: 
-        	tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[6], 
-        	                      float(line[10])+1j*float(line[11]), float(line[12])+1j*float(line[13]), 
-        	                      line[7], line[8], line[9]), dtype=DTARR))
-        else: raise Exception("Telescope header doesn't have the right number of fields!")
+        tarr.append(np.array((line[1], line[2], line[3], line[4], line[5]), dtype=DTARR))
         line = file.readline().split()
     tarr = np.array(tarr, dtype=DTARR)   
     file.close()
 
+    
     # Load the data, convert to list format, return object
     datatable = np.loadtxt(filename, dtype=str)
     datatable2 = []
@@ -2166,56 +2060,33 @@ def load_obs_txt(filename):
         tint = float(row[1])
         t1 = row[2]
         t2 = row[3]
-        
-        #Old datatable formats
-        if datatable.shape[1] < 20:
-            #el1 = float(row[4]) #!AC AA elevations no longer in Obsdata data table
-            #el2 = float(row[5])
-            tau1 = float(row[6])
-            tau2 = float(row[7])
-            u = float(row[8])
-            v = float(row[9])
-            vis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-            if datatable.shape[1] == 19:
-                qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
-                uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
-                vvis = float(row[16]) * np.exp(1j * float(row[17]) * DEGREE)
-                sigma = qsigma = usigma = vsigma = float(row[18])
-            elif datatable.shape[1] == 17:
-                qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
-                uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
-                vvis = 0+0j
-                sigma = qsigma = usigma = vsigma = float(row[16])
-            elif datatable.shape[1] == 15:
-                qvis = 0+0j
-                uvis = 0+0j
-                vvis = 0+0j
-                sigma = qsigma = usigma = vsigma = float(row[12])
-            else:
-                raise Exception('Text file does not have the right number of fields!')
-        
-        # Current datatable format
-        elif datatable.shape[1] == 20:
-            tau1 = float(row[4])
-            tau2 = float(row[5])
-            u = float(row[6])
-            v = float(row[7])
-            vis = float(row[8]) * np.exp(1j * float(row[9]) * DEGREE)
-            qvis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-            uvis = float(row[12]) * np.exp(1j * float(row[14]) * DEGREE)
-            vvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+        el1 = float(row[4])
+        el2 = float(row[5])
+        tau1 = float(row[6])
+        tau2 = float(row[7])
+        u = float(row[8])
+        v = float(row[9])
+        vis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
+        if datatable.shape[1] == 19:
+            qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
+            uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+            vvis = float(row[16]) * np.exp(1j * float(row[17]) * DEGREE)
+            sigma = float(row[18])
+        elif datatable.shape[1] == 17:
+            qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
+            uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+            vvis = 0+0j
             sigma = float(row[16])
-            qsigma = float(row[17])
-            usigma = float(row[18])            
-            vsigma = float(row[19])
-                                                
+        elif datatable.shape[1] == 15:
+            qvis = 0+0j
+            uvis = 0+0j
+            vvis = 0+0j
+            sigma = float(row[12])
         else:
-            raise Exception('Text file does not have the right number of fields!')            
-        
-        
-        datatable2.append(np.array((time, tint, t1, t2, tau1, tau2, 
-                                    u, v, vis, qvis, uvis, vvis, 
-                                    sigma, qsigma, usigma, vsigma), dtype=DTPOL))
+            raise Exception('Text file does not have the right number of fields!')
+            
+        datatable2.append(np.array((time, tint, t1, t2, el1, el2, tau1, tau2, 
+                                    u, v, vis, qvis, uvis, vvis, sigma), dtype=DTPOL))
     
     # Return the datatable                      
     datatable2 = np.array(datatable2)
@@ -2269,18 +2140,16 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA'
             bl = line[4].split('-')
             t1 = tdata[int(bl[0])-1]['site']
             t2 = tdata[int(bl[1])-1]['site']
-            #el1 = 0. #!AC AA elevations no longer in Obsdata data table
-            #el2 = 0.
+            el1 = 0.
+            el2 = 0.
             tau1 = 0.
             tau2 = 0.
             vis = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
             sigma = float(line[10])
-            datatable.append(np.array((time, tint, t1, t2, tau1, tau2, 
-                                        u, v, vis, 0.0, 0.0, 0.0, 
-                                        sigma, 0.0, 0.0, 0.0), dtype=DTPOL))
+            datatable.append(np.array((time, tint, t1, t2, el1, el2, tau1, tau2, 
+                                        u, v, vis, 0.0, 0.0, 0.0, sigma), dtype=DTPOL))
     
     datatable = np.array(datatable)
-    
     #!AC: qfile ufile and vfile must have exactly the same format as ifile
     #!AC: add some consistency check 
     if not qfile==0:
@@ -2290,7 +2159,6 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA'
             line = line.split()
             if not (line[0] in ['UV', 'Scan','\n']):
                 datatable[i]['qvis'] = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
-                datatable[i]['qsigma'] = float(line[10])
                 i += 1
             
     if not ufile==0:
@@ -2300,7 +2168,6 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA'
             line = line.split()
             if not (line[0] in ['UV', 'Scan','\n']):
                 datatable[i]['uvis'] = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
-                datatable[i]['usigma'] = float(line[10])                
                 i += 1                                
     
     if not vfile==0:
@@ -2310,13 +2177,11 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA'
             line = line.split()
             if not (line[0] in ['UV', 'Scan','\n']):
                 datatable[i]['vvis'] = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
-                datatable[i]['vsigma'] = float(line[10])                
                 i += 1         
                                            
     # Return the datatable                      
     return Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)        
 
-#!AC add in new tarr terms TODO AA
 def load_obs_uvfits(filename, flipbl=False):
     """Load uvfits data from a uvfits file.
     """
@@ -2331,23 +2196,12 @@ def load_obs_uvfits(filename, flipbl=False):
     tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
     xyz = hdulist['AIPS AN'].data['STABXYZ']
     try:
-        sefdr = hdulist['AIPS AN'].data['SEFD']
-        sefdl, = hdulist['AIPS AN'].data['SEFD'] #!AC
+        sefd = hdulist['AIPS AN'].data['SEFD']
     except KeyError:
         print "Warning! no SEFD data in UVfits file"
-        sefdr = np.zeros(len(tnames))
-        sefdl = np.zeros(len(tnames))
-    
-    #!AC TODO - get the real values of these parameters
-    fr_par = np.zeros(len(tnames))
-    fr_el = np.zeros(len(tnames))
-    fr_off = np.zeros(len(tnames))
-    dr = np.zeros(len(tnames)) + 1j*np.zeros(len(tnames))
-    dl = np.zeros(len(tnames)) + 1j*np.zeros(len(tnames))
+        sefd = np.zeros(len(tnames))
         
-    tarr = [np.array((tnames[i], xyz[i][0], xyz[i][1], xyz[i][2], 
-            sefdr[i], sefdl[i], fr_par[i], fr_el[i], fr_off[i],
-            dr[i], dl[i]),
+    tarr = [np.array((tnames[i], xyz[i][0], xyz[i][1], xyz[i][2], sefd[i]),
             dtype=DTARR) for i in range(len(tnames))]
             
     tarr = np.array(tarr)
@@ -2392,13 +2246,12 @@ def load_obs_uvfits(filename, flipbl=False):
     t1 = np.array([tarr[i]['site'] for i in t1])
     t2 = np.array([tarr[i]['site'] for i in t2])
     
-    # !AC AA elevations no longer in data table
     # Elevations (not in BU files)
-    #try: 
-    #    el1 = data['ELEV1'][mask]
-    #    el2 = data['ELEV2'][mask]
-    #except KeyError:
-    #    el1 = el2 = np.zeros(len(t1))
+    try: 
+        el1 = data['ELEV1'][mask]
+        el2 = data['ELEV2'][mask]
+    except KeyError:
+        el1 = el2 = np.zeros(len(t1))
 
     # Opacities (not in BU files)
     try: 
@@ -2437,11 +2290,13 @@ def load_obs_uvfits(filename, flipbl=False):
     qvis = 0.5 * (rl + lr)
     uvis = 0.5j * (lr - rl)
     vvis = 0.5 * (rr - ll)
-    sigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
-    qsigma = 0.5* np.sqrt(rlsig**2 + lrsig**2)
-    usigma = qsigma
-    vsigma = sigma
-   
+    isig = 0.5 * np.sqrt(rrsig**2 + llsig**2)
+    qsig = 0.5* np.sqrt(rlsig**2 + lrsig**2)
+    usig = qsig
+    
+    # !AC Should sigma be the avg of the stokes sigmas, or just the I sigma?  
+    sigma = isig 
+    
     # !AC reverse sign of baselines for correct imaging?
     if flipbl:
         u = -u
@@ -2454,10 +2309,10 @@ def load_obs_uvfits(filename, flipbl=False):
         datatable.append(np.array
                          ((
                            times[i], tints[i], 
-                           t1[i], t2[i], tau1[i], tau2[i], 
+                           t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], 
                            u[i], v[i],
                            ivis[i], qvis[i], uvis[i], vvis[i],
-                           sigma[i], qsigma[i], usigma[i], vsigma[i],
+                           sigma[i]
                            ), dtype=DTPOL
                          ))
     datatable = np.array(datatable)
@@ -2531,28 +2386,22 @@ def load_obs_oifits(filename, flux=1.0):
     #t2 = np.transpose(np.tile( np.array([ str(vis_data[i].station[1]).replace(" ", "") for i in range(len(vis_data))]), [nWavelengths,1]))
 
     # dummy variables
-    #el1 = -np.ones(amp.shape)
-    #el2 = -np.ones(amp.shape)
-    tau1 = np.zeros(amp.shape)
-    tau2 = np.zeros(amp.shape)
-    qvis = np.zeros(amp.shape)
-    uvis = np.zeros(amp.shape)
-    vvis = np.zeros(amp.shape)
-    sefdr = np.zeros(x.shape)
-    sefdl = np.zeros(x.shape)
-    fr_par = np.zeros(x.shape)   
-    fr_el = np.zeros(x.shape)
-    fr_off = np.zeros(x.shape)
-    dr = np.zeros(x.shape) + 1j*np.zeros(x.shape)
-    dl = np.zeros(x.shape) + 1j*np.zeros(x.shape)
-             
+    el1 = -np.ones(amp.shape)
+    el2 = -np.ones(amp.shape)
+    tau1 = -np.ones(amp.shape)
+    tau2 = -np.ones(amp.shape)
+    qvis = -np.ones(amp.shape)
+    uvis = -np.ones(amp.shape)
+    vvis = -np.ones(amp.shape)
+    sefd = -np.ones(x.shape)
+
     # vectorize
     time = time.ravel()
     tint = tint.ravel()
     t1 = t1.ravel()
     t2 = t2.ravel()
-    #el1 = el1.ravel()
-    #el2 = el2.ravel()
+    el1 = el1.ravel()
+    el2 = el2.ravel()
     tau1 = tau1.ravel()
     tau2 = tau2.ravel()
     u = u.ravel()
@@ -2566,17 +2415,11 @@ def load_obs_oifits(filename, flux=1.0):
     #TODO - check that we are properly using the error from the amplitude and phase
 
     # create data tables
-    datatable = np.array([(time[i], tint[i], t1[i], t2[i], tau1[i], tau2[i], u[i], v[i], 
-                           flux*vis[i], qvis[i], uvis[i], vvis[i], 
-                           flux*amperr[i], flux*amperr[i], flux*amperr[i], flux*amperr[i]
-                          ) for i in range(len(vis))
-                         ], dtype=DTPOL)
-
-    tarr = np.array([(sites[i], x[i], y[i], z[i], 
-                       sefdr[i], sefdl[i], fr_par[i], fr_el[i], fr_off[i],
-                       dr[i], dl[i]
-                     ) for i in range(nAntennas)
-                    ], dtype=DTARR)
+    datatable = np.array([ (time[i], tint[i], t1[i], t2[i], el1[i], el2[i], tau1[i], tau2[i], u[i], v[i], 
+                            flux*vis[i], qvis[i], uvis[i], vvis[i], flux*amperr[i]) 
+                          for i in range(len(vis))], dtype=DTPOL)
+    
+    tarr = np.array([ (sites[i], x[i], y[i], z[i], sefd[i]) for i in range(nAntennas)], dtype=DTARR)
     # return object
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0], ampcal=False, phasecal=False)
     
@@ -2990,9 +2833,6 @@ def deblur(obs):
     uvis = datatable['uvis']
     vvis = datatable['vvis']
     sigma = datatable['sigma']
-    qsigma = datatable['qsigma']
-    usigma = datatable['usigma']
-    vsigma = datatable['vsigma']            
     u = datatable['u']
     v = datatable['v']
     
@@ -3003,19 +2843,13 @@ def deblur(obs):
         uvis[i] = uvis[i] / ker
         vvis[i] = vvis[i] / ker
         sigma[i] = sigma[i] / ker
-        qsigma[i] = qsigma[i] / ker
-        usigma[i] = usigma[i] / ker
-        vsigma[i] = vsigma[i] / ker
-                            
+    
     datatable['vis'] = vis
     datatable['qvis'] = qvis
     datatable['uvis'] = uvis
     datatable['vvis'] = vvis
     datatable['sigma'] = sigma
-    datatable['qsigma'] = qsigma
-    datatable['usigma'] = usigma
-    datatable['vsigma'] = vsigma    
-            
+    
     obsdeblur = Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr)
     return obsdeblur
 
@@ -3035,7 +2869,7 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     #	x=y=0.0
     
     
-    # Covariance matrix
+    # Covarience matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
     b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
     c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
@@ -3061,7 +2895,7 @@ def sgra_kernel_uv(rf, u, v):
     theta = POS_ANG * DEGREE
     
     
-    # Covariance matrix
+    # Covarience matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
     b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
     c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
@@ -3089,26 +2923,24 @@ def sgra_kernel_params(rf):
 # Other Functions
 ##################################################################################################
 
-#!AC AA
-# Lindy's function to generate covariance matrices
-#def make_cov(clnoisedata, noisebldict):
-#    iloc = {cl:i for i, cl in enumerate(cldata)}
-#    cov = np.zeros((len(cldata), len(cldata)))
-#    bldict = {bl:[] for bl in bldict.iterkeys()}
-#    for cl in cldata:
-#        if len(cl) == 3: # closure phase parity
-#            for bl in cl:
-#                parity = 1 if bl[1] > bl[0] else -1
-#                bldict[bl[::parity]].append((cl, parity)) # convert key to sorted order
-#        elif len(cl) == 4: # closure amplitude parity
-#            for bl in cl[:2]:
-#                bldict[bl].append((cl, 1)) # numerator
-#            for bl in cl[2:]:
-#                bldict[bl].append((cl, -1)) # denominator
-#    for (bl, cqlist) in bldict.iteritems():
-#        for (cq1, cq2) in product(cqlist, cqlist):
-#            cov[iloc[cq1[0]], iloc[cq2[0]]] += cq1[1] * cq2[1] * noisebldict[bl]['sigmaca']**2 ##ANDREW FIX THIS FOR PHASES
-#    return cov
+def make_cov(clnoisedata, noisebldict):
+    iloc = {cl:i for i, cl in enumerate(cldata)}
+    cov = np.zeros((len(cldata), len(cldata)))
+    bldict = {bl:[] for bl in bldict.iterkeys()}
+    for cl in cldata:
+        if len(cl) == 3: # closure phase parity
+            for bl in cl:
+                parity = 1 if bl[1] > bl[0] else -1
+                bldict[bl[::parity]].append((cl, parity)) # convert key to sorted order
+        elif len(cl) == 4: # closure amplitude parity
+            for bl in cl[:2]:
+                bldict[bl].append((cl, 1)) # numerator
+            for bl in cl[2:]:
+                bldict[bl].append((cl, -1)) # denominator
+    for (bl, cqlist) in bldict.iteritems():
+        for (cq1, cq2) in product(cqlist, cqlist):
+            cov[iloc[cq1[0]], iloc[cq2[0]]] += cq1[1] * cq2[1] * noisebldict[bl]['sigmaca']**2 ##ANDREW FIX THIS FOR PHASES
+    return cov
 
 
 def paritycompare(perm1, perm2):
@@ -3130,33 +2962,10 @@ def paritycompare(perm1, perm2):
     
     if not (transCount % 2): return 1
     else: return  -1
-
-def sigtype(datatype):
-    """Return the type of noise corresponding to the data type"""
     
-    datatype = str(datatype)
-    if datatype in ['vis', 'amp']: sigmatype='sigma'
-    elif datatype in ['qvis', 'qamp']: sigmatype='qsigma'
-    elif datatype in ['uvis', 'uamp']: sigmatype='usigma'
-    elif datatype in ['vvis', 'vamp']: sigmatype='vsigma'
-    elif datatype in ['pvis', 'pamp']: sigmatype='psigma'                
-    elif datatype in ['pvis', 'pamp']: sigmatype='psigma'
-    elif datatype in ['m', 'mamp']: sigmatype='msigma'
-    elif datatype in ['phase']: sigmatype='sigma_phase'
-    elif datatype in ['qphase']: sigmatype='qsigma_phase'
-    elif datatype in ['uphase']: sigmatype='usigma_phase'
-    elif datatype in ['vphase']: sigmatype='vsigma_phase'
-    elif datatype in ['pphase']: sigmatype='psigma_phase'
-    elif datatype in ['mphase']: sigmatype='msigma_phase'
-    else: sigmatype = False
-    
-    return sigmatype                                    
-    
-def merr(sigma, qsigma, usigma, I, m):
+def merr(sigma, I, m):
     """Return the error in mbreve real and imaginary parts"""
-    #err = sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2)) #!AC -- old formula assuming all sigmas the same
-    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/ (np.abs(I) ** 2))
-    return err
+    return sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2))
        
 def ticks(axisdim, psize, nticks=8):
     """Return a list of ticklocs and ticklabels
@@ -3206,78 +3015,36 @@ def fracmjd(mjd, gmt):
 
 def mjdtogmt(mjd):
     """Return the gmt of a fractional mjd, in days"""
-  
+    
     return (mjd - int(mjd)) * 24.0
     
 def jdtomjd(jd):
     """Return the mjd of a jd"""
-  
+    
     return jd - 2400000.5
     
-def earthrot(vecs, thetas):
-    """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)"""
-    if len(vecs.shape)==1: 
-        vecs = np.array([vecs])
-    if np.isscalar(thetas):
-        thetas = np.array([thetas for i in xrange(len(vecs))])
-
-    rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i]) 
-                       for i in xrange(len(vecs))])
+def earthrot(vec, theta):
+    """Rotate a vector about the z-direction by theta (degrees)"""
     
-    if rotvec.shape[0]==1: rotvec = rotvec[0]
-    return rotvec
+    x = theta * DEGREE
+    return np.dot(np.array(((np.cos(x),-np.sin(x),0),(np.sin(x),np.cos(x),0),(0,0,1))),vec)
 
-def elev(obsvecs, sourcevec):
-    """Return the elevation of a source with respect to an observer/observers in radians
-       obsvec can be an array of vectors but sourcevec can only be a single vector"""
-    if len(obsvecs.shape)==1:
-        obsvecs=np.array([obsvecs])
-
-    anglebtw = np.array([np.dot(obsvec,sourcevec)/np.linalg.norm(obsvec)/np.linalg.norm(sourcevec) for obsvec in obsvecs])
-    el = 0.5*np.pi - np.arccos(anglebtw)
-    if len(el)==1: el = el[0]
+def elev(obsvec, sourcevec):
+    """Return the elevation of a source with respect to an observer in degrees"""
+    anglebtw = np.dot(obsvec,sourcevec)/np.linalg.norm(obsvec)/np.linalg.norm(sourcevec)
+    el = 90 - np.arccos(anglebtw)/DEGREE
     return el
         
 def elevcut(obsvec,sourcevec):
     """Return True if a source is observable by a telescope vector"""
-    angle = elev(obsvec, sourcevec)/DEGREE
-    
-    return (angle > ELEV_LOW) * (angle < ELEV_HIGH)
+    angle = elev(obsvec, sourcevec)
+    return ELEV_LOW < angle < ELEV_HIGH
 
-def par_angle(hr_angle, dec, lat):
-    """Compute the parallactic angle for a source at hr_angle and dec for an observer with latitude lat. 
-       All angles in rad."""
-       
-    num = np.sin(hr_angle)*np.cos(lat)
-    denom = np.sin(lat)*np.cos(dec) - np.cos(lat)*np.sin(dec)*np.cos(hr_angle)
-    return np.arctan2(num, denom)
-
-def xyz_2_latlong(obsvecs): 
-    """Compute the (geocentric) latitude and longitude of a site at geocentric position x,y,z"""
-    if len(obsvecs.shape)==1:
-        obsvecs=np.array([obsvecs])        
-    out = []
-    for obsvec in obsvecs:
-        x = obsvec[0]
-        y = obsvec[1]
-        z = obsvec[2]
-        lon = np.array(np.arctan2(y,x))
-        lat = np.array(np.arctan2(z, np.sqrt(x**2+y**2)))
-        out.append([lat,lon])
         
-    out = np.array(out)
-    #if out.shape[0]==1: out = out[0]
-    return out
+def blnoise(sefd1, sefd2, tint, bw):
+    """Determine the standard deviation of Gaussian thermal noise on a baseline (2-bit quantization)"""
     
-#!AC AA are these terms right?
-#!AC AA should I split up the opacity term? (probably yes)        
-def blnoise(sefd1, sefd2, tau1, tau2, el1, el2, tint, bw):
-    """Determine the standard deviation of Gaussian thermal noise on a baseline 
-       2-bit quantization and atmospheric opacity included"""
-    
-    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
-    noise *= np.sqrt(np.exp(tau1/(EP+np.sin(el1)) + tau2/(EP+np.sin(el2))))
-    return noise
+    return np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
 
 def cerror(sigma):
     """Return a complex number drawn from a circular complex Gaussian of zero mean"""
@@ -3300,7 +3067,7 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
        that extracts spatial frequencies of the uv points in uvlist.
     """
 
-    # !AC TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
+    # TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
 
@@ -3320,27 +3087,7 @@ def amp_debias(vis, sigma):
         lowsnr = deb2 < 0.0
         deb2[lowsnr] = np.abs(vis[lowsnr])**2
         return np.sqrt(deb2)
-
-#!AC
-#PIN
-def make_jones(obs, ampcal=True, phasecal=True, gainp=GAINPDEF, polcal=True, dtermp=DTERMPDEF):
-    """Compute all Jones Matrices for an observation, with gain errors
-    """   
     
-    data = obs.unpack(['t1','t2','el1','el2','par_ang1','par_ang2'], conj=False,ang_unit='rad', mode='time')
-  
-    if not ampcal:
-        # Amplitude gain
-        gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') 
-                        + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
-        gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') 
-                        + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))
-    if not phasecal:
-        # Atmospheric Phase
-        phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i]) for i in xrange(len(time))])
-        phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i]) for i in xrange(len(time))])
-
-#!AC This does not properly use l&r sefds!    
 def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF):
     """Re-compute sigmas from SEFDS and add noise with gain & phase errors
        Be very careful using outside of Image.observe!"""   
@@ -3364,8 +3111,7 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
                       
     # Extract data
     sites = obsdata[['t1','t2']].view(('a32',2))
-    elevs = obs.unpack(['el1','el2'],ang_unit='deg').view(('f8',2)) #!AC AA
-    
+    elevs = obsdata[['el1','el2']].view(('f8',2))
     taus = obsdata[['tau1','tau2']].view(('f8',2))
     time = obsdata[['time']].view(('f8',1))
     tint = obsdata[['tint']].view(('f8',1))
@@ -3375,19 +3121,15 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     uvis = obsdata[['uvis']].view(('c16',1))
     vvis = obsdata[['vvis']].view(('c16',1))
     bw = obs.bw
-        
+    
     # Overwrite sigma_cleans with values computed from the SEFDs
-    taus_clean = 0.0*taus
-    sigma_clean = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], 0.,0.,0.,0., tint[i], bw) 
-                            for i in range(len(tint))
-                          ])
-                                                                                  
+    sigma_clean = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefd'], obs.tarr[obs.tkey[sites[i][1]]]['sefd'], tint[i], bw) for i in range(len(tint))])
+ 
     # Estimated noise using no gain and estimated opacity
     if opacity_errs:                    
         sigma_est = sigma_clean * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
     else:
         sigma_est = sigma_clean
-  
         
     # Add gain and opacity fluctuations to the true noise
     if not ampcal:
@@ -3431,10 +3173,7 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
     obsdata['vvis'] = vvis
     obsdata['sigma'] = sigma_est
     
-    #!AC AA This function doesn't use different visibility sigmas!
-    obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
-    
-    
 	# Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
     return out
+
