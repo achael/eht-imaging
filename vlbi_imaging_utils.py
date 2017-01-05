@@ -36,6 +36,7 @@ ELEV_HIGH = 85.0
 # Default Optical Depth and std. dev % on gain
 TAUDEF = 0.1
 GAINPDEF = 0.1
+DTERMPDEF = 0.1
 
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas
@@ -1896,7 +1897,7 @@ class Obsdata(object):
         header['PTYPE5'] = 'DATE'
         header['PSCAL5'] = 1.e0
         header['PZERO5'] = 0.e0
-        header['PTYPE6'] = '_DATE'
+        header['PTYPE6'] = 'DATE'
         header['PSCAL6'] = 1.e0
         header['PZERO6'] = 0.0
         header['PTYPE7'] = 'INTTIM'
@@ -1920,8 +1921,10 @@ class Obsdata(object):
         ndat = len(obsdata['time'])
         
         # times and tints
-        jds = (self.mjd + 2400000.5) * np.ones(len(obsdata))
-        fractimes = (obsdata['time'] / 24.0) 
+        #jds = (self.mjd + 2400000.5) * np.ones(len(obsdata))
+        #fractimes = (obsdata['time'] / 24.0) 
+        jds = (2400000.5) * np.ones(len(obsdata))
+        fractimes = self.mjd + (obsdata['time'] / 24.0)         
         tints = obsdata['tint']
 
         # Baselines            
