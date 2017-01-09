@@ -3185,6 +3185,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         # D Term errors
         dR = dL = 0.0
         if not dcal: 
+            #!AC is this right? are these d terms too big? 
             dR = tarr[i]['dr'] + dtermp * (hashrandn(site, 'drreal') + 1j * hashrandn(site, 'drim'))
             dL = tarr[i]['dl'] + dtermp * (hashrandn(site, 'dlreal') + 1j * hashrandn(site, 'dlim'))
             
