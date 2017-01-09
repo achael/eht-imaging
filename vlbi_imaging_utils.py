@@ -897,6 +897,14 @@ class Obsdata(object):
             outlist = np.array(cps)
 
         return outlist    
+
+    def unique_c_phases(self):
+        """Return all unique closure phase triangles
+        """
+        biarr = self.bispectra(mode="all", count="min")
+        catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
+        uniqueclosure = np.vstack({tuple(row) for row in catsites.T})
+        return uniqueclosure
          
     def c_amplitudes(self, vtype='vis', mode='time', count='min'):
         """Return equal time closure amplitudes
@@ -2549,6 +2557,51 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
                             
     return outim
 
+
+
+def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, src="SgrA", mjd="0" , pulse=pulses.trianglePulse2D):
+
+    # Radian or Degree?
+    if punit=="deg":
+        pscl = DEGREE
+    elif punit=="rad":
+        pscl = 1.0
+    elif punit=="uas":
+        pscl = RADPERUAS
+    elif punit=="mas":
+        pscl = RADPERUAS * 1000.0
+
+
+    hdulist = fits.open(filename)
+    header = hdulist[0].header
+    data = hdulist[0].data
+
+    if 'NAXIS1' in header.keys(): xdim_p = header['NAXIS1']
+    else: xdim_p = data.shape[-2]
+
+    if 'CDELT1' in header.keys(): 
+        psize_x = np.abs(header['CDELT1']) * pscl
+    else: 
+        psize_x = (float(fov) / data.shape[-2]) * pscl
+        if fov==-1:
+            print 'WARNING: Must provide a field of view for the image'
+
+    normalizer = 1.0; 
+    if 'BUNIT' in header.keys():
+        if header['BUNIT'] == 'JY/BEAM':
+            beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
+            normalizer = (header['CDELT2'])**2 / beamarea
+
+    data = data.reshape((data.shape[-2],data.shape[-1]))
+
+    image = data[::-1,:] # flip y-axis!
+    image = np.rot90(image, k=timesrot90)
+    outim = Image(image*normalizer, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
+    
+    print 'Loaded Stokes I image only'
+    return outim
+
+
 ##################################################################################################
 # Image Construction Functions
 ##################################################################################################
@@ -3176,4 +3229,5 @@ def add_noise(obs, opacity_errs=True, ampcal=True, phasecal=True, gainp=GAINPDEF
 	# Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal)
     return out
+
 
