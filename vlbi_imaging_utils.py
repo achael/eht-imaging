@@ -39,7 +39,8 @@ ELEV_HIGH = 85.0
 # Default Optical Depth and std. dev % on gain
 TAUDEF = 0.1
 GAINPDEF = 0.1
-DTERMPDEF = 0.1
+DTERMPDEF = 0.1 # rms amplitude of D-terms if not specified in array file
+DTERMPDEF_RESID = 0.01 # rms *residual* amplitude of D-terms (random, unknown contribution)
 
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas
@@ -3104,7 +3105,7 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
     return ftmatrices
 
 
-def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True, dcal=True, dtermp=DTERMPDEF, frcal=True):
+def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True, dcal=True, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID, frcal=True):
     """Compute ALL Jones Matrices for a list of times (non repeating), with gain and dterm errors.
        ra and dec should be in hours / degrees
        Will return a nested dictionary of matrices indexed by the site, then by the time 
@@ -3185,10 +3186,13 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         # D Term errors
         dR = dL = 0.0
         if not dcal: 
-            #!AC is this right? are these d terms too big? 
-            dR = tarr[i]['dr'] + dtermp * (hashrandn(site, 'drreal') + 1j * hashrandn(site, 'drim'))
-            dL = tarr[i]['dl'] + dtermp * (hashrandn(site, 'dlreal') + 1j * hashrandn(site, 'dlim'))
-            
+            dR = tarr[i]['dr']
+            if dR == 0.0: dR = dtermp * (hashrandn(site, 'drreal') + 1j * hashrandn(site, 'drim'))
+            dL = tarr[i]['dl']
+            if dL == 0.0: dL = dtermp * (hashrandn(site, 'dlreal') + 1j * hashrandn(site, 'dlim'))
+            dR = dR + dtermp_resid * (hashrandn(site, 'drreal_resid') + 1j * hashrandn(site, 'drim_resid'))
+            dL = dL + dtermp_resid * (hashrandn(site, 'dlreal_resid') + 1j * hashrandn(site, 'dlim_resid')) 
+
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
         if not frcal:
