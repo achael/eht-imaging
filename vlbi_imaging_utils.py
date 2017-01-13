@@ -4,7 +4,6 @@
 
 # TODO 
 # img.imvec and obs.obsdata is not a copy!!! what else? is there anything that overwrites??
-# check factor of sqrt(2) in the blnoise function!
 # how do we scale sefds/sigmas in jones noise vs normal noise? 
 # discuss the calibration flags -- do they make sense / are they being applied properly? 
 
@@ -478,11 +477,11 @@ class Array(object):
                             tau1 = tau2 = tau
                         
                         
-                        # Noise - #!AC AA TODO Should this factor of sqrt(2) be inside the blnoise function?
-                        sig_rr = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdr'], tint, bw)
-                        sig_ll = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdl'], tint, bw)
-                        sig_rl = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdl'], tint, bw)
-                        sig_lr = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdr'], tint, bw)
+                        # Noise on the correlations
+                        sig_rr = blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdr'], tint, bw)
+                        sig_ll = blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdl'], tint, bw)
+                        sig_rl = blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdl'], tint, bw)
+                        sig_lr = blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdr'], tint, bw)
                         
                         # Append data to list   
                         blpairs.append((i1,i2))
@@ -3097,10 +3096,12 @@ def sgra_kernel_params(rf):
 
 def blnoise(sefd1, sefd2, tint, bw):
     """Determine the standard deviation of Gaussian thermal noise on a baseline 
-       2-bit quantization and atmospheric opacity included"""
+       This is the noise on the rr/ll/rl/lr correlation, not the stokes parameter
+       2-bit quantization is responsible for the 0.88 factor
+    """
     
     #!AC TODO Is the factor of sqrt(2) correct? 
-    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+    noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
     return noise
 
 def cerror(sigma):
@@ -3400,11 +3401,10 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ga
     lr = obsdata['qvis'] - 1j*obsdata['uvis']   
     
     # Recompute the noise std. deviations from the SEFDs
-    # !AC TODO is the sqrt(2) right here? it is consistent with the sqrt(2) in blnoise()
-    sig_rr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
-    sig_ll = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
-    sig_rl = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
-    sig_lr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
+    sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
+    sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
+    sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
+    sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
     
     print "------------------------------------------------------------"
     if not opacitycal: 
@@ -3475,12 +3475,11 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     lr = obsdata['qvis'] - 1j*obsdata['uvis']   
     
     # Recompute the noise std. deviations from the SEFDs
-    # !AC should we instead get them from the file? 
-    # !AC is the sqrt(2) right here?
-    sig_rr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
-    sig_ll = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
-    sig_rl = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
-    sig_lr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
+    #!AC should we instead get them from the file? 
+    sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
+    sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
+    sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
+    sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
     
     ampcal = obs.ampcal
     phasecal = obs.phasecal
@@ -3576,7 +3575,8 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     bw = obs.bw
         
     # Recompute perfect sigmas from SEFDs
-    sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw) 
+    # Multiply 1/sqrt(2) for sum of polarizations 
+    sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)/np.sqrt(2.0) 
                             for i in range(len(tint))])
                                                                                   
     # Use estimated opacity to compute the ESTIMATED noise
