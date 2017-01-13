@@ -2,6 +2,9 @@
 # Andrew Chael, 10/15/2015
 # Maximum Entropy imagers for VLBI data
 
+#TODO 
+# add amplitude debiasing to amplitude imaging
+
 import sys
 import time
 import numpy as np
@@ -14,7 +17,7 @@ import vlbi_imaging_utils as vb
 import pulses
 import linearize_energy as le
 from IPython import display
-
+reload(vb)
 ##################################################################################################
 # Constants
 ##################################################################################################
@@ -309,6 +312,9 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
     amp = ampdata['amp']
     sigs_amp = ampdata['sigma']
     
+    # Debias the amplitudes
+    amp = vb.amp_debias(amp, sigs_amp)
+    
     A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
 
     del clphasearr
@@ -593,12 +599,12 @@ def maxen_p(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-500, n
     allprior = mcv_r(allprior)
     
     # Data
-    data = Obsdata.unpack(['u','v','pvis','sigma','m'])
+    data = Obsdata.unpack(['u','v','pvis','sigma','m','psigma'])
     uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
     p = data['pvis']
     m = data['m']
-
-    sigmap = np.sqrt(2) * data['sigma']
+    sigmap = data['psigma']
+    #sigmap = np.sqrt(2) * data['sigma']
     
     # Compute the fourier matrix
     A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
@@ -698,10 +704,11 @@ def maxen_m(Obsdata, Prior, maxit=100, beta=1e4, polentropy="hw", stop=1e-100, n
     allprior = mcv_r(allprior)
     
     # Data
-    data = Obsdata.unpack(['u','v','vis','m','sigma'])
+    data = Obsdata.unpack(['u','v','vis','m','sigma','msigma'])
     uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
     m = data['m']
-    sigmam = vb.merr(data['sigma'], data['vis'], data['m'])
+    sigmam = data['msigma']
+    #sigmam = vb.merr(data['sigma'], data['vis'], data['m'])
     
     # Compute the Fourier matrix
     A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
@@ -806,10 +813,11 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=100, beta=500, gamma=1.5e6
     sigsb = biarr['sigmab']
     #sigsb_2 = scaled_bisigs(Obsdata) # Correction for overcounting NDOF
     
-    poldata = Obsdata.unpack(['u','v','vis','m','sigma'])
+    poldata = Obsdata.unpack(['u','v','vis','m','sigma','msigma'])
     uvpol = np.hstack((poldata['u'].reshape(-1,1), poldata['v'].reshape(-1,1)))
     m = poldata['m']
-    sigsm = vb.merr(poldata['sigma'], poldata['vis'], poldata['m'])
+    #sigsm = vb.merr(poldata['sigma'], poldata['vis'], poldata['m'])
+    sigsm = poldata['msigma']
     
     # Compute the Fourier matrices
     A3 = (vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse),

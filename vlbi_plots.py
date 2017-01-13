@@ -18,14 +18,7 @@ import vlbi_imaging_utils as vb
 import pulses
 
 # Observation fields for plotting and retrieving data        
-FIELDS = ['time','tint','u','v','uvdist',
-          't1','t2','el1','el2','tau1','tau2',
-          'vis','amp','phase','snr','sigma',
-          'qvis','qamp','qphase','qsnr',
-          'uvis','uamp','uphase','usnr',
-          'vvis','vamp','vphase','vsnr',
-          'pvis','pamp','pphase',
-          'm','mamp','mphase']
+FIELDS = vb.FIELDS
           
 COLORLIST = ['b','m','g','c','y','k','r']
 
@@ -116,7 +109,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -136,10 +129,11 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
     """Plot data vs time on a single baseline compared to ground truth from an image on the same axes"""
     
     try: len(obslist) 
+   
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -163,7 +157,7 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=Fals
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat,add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -187,7 +181,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
