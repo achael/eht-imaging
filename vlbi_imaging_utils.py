@@ -181,7 +181,7 @@ class Image(object):
         
         # Jones Matrix Corruption
         if jones:
-            print "Applying Jones Matrices and noise to data . . . "
+            print "Applying Jones Matrices to data . . . "
             obs_out = add_jones_and_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
                                           ampcal=ampcal, gainp=gainp, phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
             
@@ -193,7 +193,7 @@ class Image(object):
         # No Jones Matrices, Add noise the old way        
         #!AC There is an asymmetry here - we don't offer the ability to not unscale estimated noise using the old way.                                              
         elif add_th_noise:                
-            print "Applying gain/phase/thermal noise with a priori calibration . . . "
+            print "Adding gain + phase errors to data and applying a priori calibration . . . "
             obs_out = add_noise(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, gainp=gainp, add_th_noise=add_th_noise)
         
         return obs_out
@@ -3202,7 +3202,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         
         # Opacity attenuation of amplitude gain
         if not opacitycal:
-            taus = np.abs(np.array([taudict[site][i] * (1.0 + gainp * hashrandn(site, 'tau', times[i])) for i in xrange(len(times))]))                
+            taus = np.abs(np.array([taudict[site][j] * (1.0 + gainp * hashrandn(site, 'tau', times[j])) for j in xrange(len(times))]))                
             atten = np.exp(-taus/(EP + 2.0*np.sin(el_angles)))
             
             gainR = gainR * atten
@@ -3406,20 +3406,20 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ga
     sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
     sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
     
-    print "------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal: 
-        print "Applying opacity attenuation: opacitycal-->False in output"
+        print "   Applying opacity attenuation: opacitycal-->False"
     if not ampcal: 
-        print "Applying gain corruption: gaincal-->False in output"
+        print "   Applying gain corruption: gaincal-->False"
     if not phasecal: 
-        print "Applying atmospheric phase corruption: phasecal-->False in output" 
+        print "   Applying atmospheric phase corruption: phasecal-->False" 
     if not dcal: 
-        print "Applying D Term mixing: dcal-->False in output"
+        print "   Applying D Term mixing: dcal-->False"
     if not frcal: 
-        print "Applying Field Rotation: frcal-->False in output"
+        print "   Applying Field Rotation: frcal-->False"
     if add_th_noise: 
-        print "Adding thermal noise to output"
-    print "------------------------------------------------------------"
+        print "Adding thermal noise to data . . . "
+    #print "------------------------------------------------------------------------------------------------------------------------"
     
     # Corrupt each IQUV visibilty set with the jones matrices and add noise
     for i in xrange(len(times)):            
@@ -3483,17 +3483,17 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     
     ampcal = obs.ampcal
     phasecal = obs.phasecal
-    print "------------------------------------------------------------------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal: 
-        print "Applying opacity corrections: opacitycal-->True in output"
+        print "   Applying opacity corrections: opacitycal-->True"
         opacitycal=True
     if not dcal: 
-        print "Applying D Term corrections: dcal-->True in output"
+        print "   Applying D Term corrections: dcal-->True"
         dcal=True
     if not frcal: 
-        print "Applying Field Rotation corrections: frcal-->True in output"
+        print "   Applying Field Rotation corrections: frcal-->True"
         frcal=True
-    print "------------------------------------------------------------------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
              
     # Apply the inverse Jones matrices to each visibility
     for i in xrange(len(times)):
@@ -3547,17 +3547,17 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
        Be very careful using outside of Image.observe!
     """   
 
-    print "------------------------------------------------------------------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal: 
-        print "Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True in output"
+        print "   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True"
         opacitycalout = True
     if not ampcal: 
-        print "Applying gain corruption: gaincal-->False in output"
+        print "   Applying gain corruption: gaincal-->False"
     if not phasecal:
-        print "Applying atmospheric phase corruption: phasecal-->False in output" 
+        print "   Applying atmospheric phase corruption: phasecal-->False" 
     if add_th_noise: 
-        print "Adding thermal noise to output"
-    print "------------------------------------------------------------------------------------------------------------------------"
+        print "Adding thermal noise to data . . . "
+    #print "------------------------------------------------------------------------------------------------------------------------"
                
     # Get data
     obsdata = obs.data
