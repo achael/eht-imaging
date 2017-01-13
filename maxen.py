@@ -17,7 +17,7 @@ import vlbi_imaging_utils as vb
 import pulses
 import linearize_energy as le
 from IPython import display
-
+reload(vb)
 ##################################################################################################
 # Constants
 ##################################################################################################
