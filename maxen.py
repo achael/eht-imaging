@@ -982,12 +982,18 @@ def blur_circ(image, fwhm_i, fwhm_pol=0):
 def chisq(imvec, Amatrix, vis, sigma):
     """Visibility chi-squared"""
    
+    if Amatrix == None: 
+        return 1.0
+
     samples = np.dot(Amatrix, imvec)
     return np.sum(np.abs((samples-vis)/sigma)**2) / (2*len(vis))
     
 def chisqgrad(imvec, Amatrix, vis, sigma):
     """The gradient of the visibility chi-squared"""
     
+    if Amatrix == None: 
+        return 0.0
+
     samples = np.dot(Amatrix, imvec)
     wdiff = (vis - samples) / (sigma**2) 
     out = -np.real(np.dot(Amatrix.conj().T, wdiff)) / len(vis)
