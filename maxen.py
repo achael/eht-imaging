@@ -31,7 +31,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 ##################################################################################################
 # Total Intensity Imagers
 ##################################################################################################
-def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False):
+def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False, show_updates=True):
     """Run maximum entropy with full amplitudes and phases. 
        Uses I = exp(I') change of variables.
        Obsdata is an Obsdata object, and Prior is an Image object.
@@ -103,10 +103,12 @@ def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", 
     nit = 0
     def plotcur(logim_step):
         global nit
-        im_step = np.exp(logim_step)
-        chi2 = chisq(im_step, A, vis, sigma)
-        print "chi2: ",chi2
-        plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
+        if show_updates==True: 
+            im_step = np.exp(logim_step)
+            chi2 = chisq(im_step, A, vis, sigma)
+            plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
+            print "chi2: ",chi2
+
         nit += 1
    
     # Plot the prior
