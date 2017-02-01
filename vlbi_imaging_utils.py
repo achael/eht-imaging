@@ -220,7 +220,7 @@ class Image(object):
         
         return obs
         
-    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian'):
+    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin'):
         """Display the image with matplotlib
         """
         # TODO Display circular polarization 
@@ -233,8 +233,9 @@ class Image(object):
         plt.figure()
         plt.clf()
         
-        image = self.imvec;
-        
+        imarr = (self.imvec).reshape(self.ydim, self.xdim)
+        if scale=='log':
+            imarr = np.log(imarr)       
         if len(self.qvec) and plotp:
             thin = self.xdim/nvec 
             mask = (self.imvec).reshape(self.ydim, self.xdim) > pcut * np.max(self.imvec)
@@ -251,7 +252,7 @@ class Image(object):
             
             # Stokes I plot
             plt.subplot(121)
-            im = plt.imshow(image.reshape(self.ydim, self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp, vmin=0)
+            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=0)
             plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
@@ -287,8 +288,7 @@ class Image(object):
         else:
             plt.subplot(111)    
             plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
-            
-            im = plt.imshow(image.reshape(self.ydim,self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp)
+            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
             plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
             xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
             yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
