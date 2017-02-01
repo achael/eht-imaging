@@ -3,7 +3,7 @@
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
 
 # TODO 
-# check factor of sqrt(2) in the blnoise function!
+# img.imvec and obs.obsdata is not a copy!!! what else? is there anything that overwrites??
 # how do we scale sefds/sigmas in jones noise vs normal noise? 
 # discuss the calibration flags -- do they make sense / are they being applied properly? 
 
@@ -39,7 +39,6 @@ ELEV_HIGH = 85.0
 # Default Optical Depth and std. dev % on gain
 TAUDEF = 0.1
 GAINPDEF = 0.1
-
 DTERMPDEF = 0.1 # rms amplitude of D-terms if not specified in array file
 DTERMPDEF_RESID = 0.01 # rms *residual* amplitude of D-terms (random, unknown contribution)
 
@@ -172,6 +171,7 @@ class Image(object):
     def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
                                                                   jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True,
                                                                   inv_jones=False):
+                                                                  
         """Observe the image on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
@@ -181,7 +181,7 @@ class Image(object):
         
         # Jones Matrix Corruption
         if jones:
-            print "Applying Jones Matrices and noise to data . . . "
+            print "Applying Jones Matrices to data . . . "
             obs_out = add_jones_and_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
                                           ampcal=ampcal, gainp=gainp, phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
             
@@ -190,10 +190,10 @@ class Image(object):
                 print "Applying a priori calibration with estimated Jones matrices . . . "
                 obs_out = apply_jones_inverse(obs_out, ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal, dcal=dcal, frcal=frcal)
         
-        #!AC There is an asymmetry here - we don't offer the ability to not unscale estimated noise here.                                              
-        # No Jones Matrices, Add noise the old way
+        # No Jones Matrices, Add noise the old way        
+        #!AC There is an asymmetry here - we don't offer the ability to not unscale estimated noise using the old way.                                              
         elif add_th_noise:                
-            print "Applying gain/phase/thermal noise with a priori calibration"
+            print "Adding gain + phase errors to data and applying a priori calibration . . . "
             obs_out = add_noise(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, gainp=gainp, add_th_noise=add_th_noise)
         
         return obs_out
@@ -405,7 +405,6 @@ class Array(object):
         self.tarr = tarr
         
         # Dictionary of array indices for site names
-        # !AC better way?
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
             
     def listbls(self):
@@ -430,7 +429,7 @@ class Array(object):
            tau can be a single number or a dictionary giving one per site
         """
         
-        if mjdtogmt(mjd)-tstart > 1e-9: #!AC time!
+        if mjdtogmt(mjd)-tstart > 1e-9:
             raise Exception("Initial time is greater than given mjd!")
             
         # Set up coordinate system
@@ -478,11 +477,11 @@ class Array(object):
                             tau1 = tau2 = tau
                         
                         
-                        # Noise - #!AC AA TODO Should this factor of sqrt(2) be inside the blnoise function?
-                        sig_rr = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdr'], tint, bw)
-                        sig_ll = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdl'], tint, bw)
-                        sig_rl = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdl'], tint, bw)
-                        sig_lr = np.sqrt(2.0)*blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdr'], tint, bw)
+                        # Noise on the correlations
+                        sig_rr = blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdr'], tint, bw)
+                        sig_ll = blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdl'], tint, bw)
+                        sig_rl = blnoise(self.tarr[i1]['sefdr'], self.tarr[i2]['sefdl'], tint, bw)
+                        sig_lr = blnoise(self.tarr[i1]['sefdl'], self.tarr[i2]['sefdr'], tint, bw)
                         
                         # Append data to list   
                         blpairs.append((i1,i2))
@@ -595,7 +594,6 @@ class Obsdata(object):
         self.tarr = tarr
         
         # Dictionary of array indices for site names
-        # !AC better way?
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
         
         # Time partition the datatable
@@ -667,7 +665,7 @@ class Obsdata(object):
                 data[f] = np.hstack((self.data[f], self.data[f]))
         
         # Sort the data by time
-        #!AC TODO apply some sorting within equal times? 
+        #!AC TODO should we apply some sorting within equal times? 
         data = data[np.argsort(data['time'])]
         return data
 
@@ -873,7 +871,7 @@ class Obsdata(object):
             if count == 'min':
                 # If we want a minimal set, choose triangles with the minimum sefd reference
                 # Unless there is no sefd data, in which case choose the northernmost
-                #!AC This should probably be an sefd average
+                #!AC This should probably be an sefdr + sefdl average
                 if len(set(self.tarr['sefdr'])) > 1:
                     ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
                 else:
@@ -991,6 +989,15 @@ class Obsdata(object):
             outlist = np.array(cps)
 
         return np.array(outlist)    
+
+    def unique_c_phases(self):
+        """Return all unique closure phase triangles
+        """
+        biarr = self.bispectra(mode="all", count="min")
+        catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
+        uniqueclosure = np.vstack({tuple(row) for row in catsites.T})
+
+        return uniqueclosure
          
     def c_amplitudes(self, vtype='vis', mode='time', count='min'):
         """Return equal time closure amplitudes
@@ -1020,8 +1027,7 @@ class Obsdata(object):
             
             if count == 'min':
                 # If we want a minimal set, choose the minimum sefd reference
-                # !AC sites are ordered by sefd - does that make sense?
-                # !AC this should probably be an sefd average
+                # !AC this should probably be an sefdr + sefdl average
                 sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
                 ref = sites[0]
                 
@@ -1079,7 +1085,7 @@ class Obsdata(object):
                                              camp, camperr),
                                              dtype=DTCAMP)) 
 
-            # !AC Can we find a different way to do min/max sets so we don't have to duplicate code here?
+            # !AC TODO Find a different way to do min/max sets so we don't have to duplicate code here?
             elif count == 'max':
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
@@ -1146,7 +1152,7 @@ class Obsdata(object):
         
         return np.array(outlist)
 
-    #!AC Add covariance matrices!
+    #!AC TODO Add covariance matrices!
     def log_c_amplitudes(self, cov=True, vtype='vis', mode='time', count='min'):
         """Return equal time log closure amplitudes
            Set count='max' to return all closure amplitudes up to inverses
@@ -1175,8 +1181,7 @@ class Obsdata(object):
             
             if count == 'min':
                 # If we want a minimal set, choose the minimum sefd reference
-                # !AC sites are ordered by sefd - does that make sense?
-                # !AC this should probably be an sefd average
+                # !AC this should probably be an sefdr + sefdl average
                 sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
                 ref = sites[0]
                 
@@ -1203,7 +1208,7 @@ class Obsdata(object):
                             var3 = red1[sigmatype]**2
                             var4 = red2[sigmatype]**2
                             
-                            p1 = amp_debias(blue1[vtype], np.sqrt(var1)) #!AC debias or not? 
+                            p1 = amp_debias(blue1[vtype], np.sqrt(var1)) #!AC debias or not in the closure amplitude?
                             p2 = amp_debias(blue2[vtype], np.sqrt(var2))
                             p3 = amp_debias(red1[vtype], np.sqrt(var3))
                             p4 = amp_debias(red2[vtype], np.sqrt(var4))
@@ -1222,7 +1227,6 @@ class Obsdata(object):
                         
                         logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
 
-                        #!AC -- is this correct? 
                         logcamperr = np.sqrt(var1/np.abs(p1)**2 +  
                                              var2/np.abs(p2)**2 + 
                                              var3/np.abs(p3)**2 +
@@ -1237,7 +1241,7 @@ class Obsdata(object):
                                              logcamp, logcamperr),
                                              dtype=DTCAMP)) 
            
-                #!AC
+                #!AC TODO
                 # Make the covariance matrix after making all the scan data points    
                 #if cov: 
                 #    clbl = np.array([[[self.tkey[cl['t1']],self.tkey[cl['t2']]],
@@ -1248,7 +1252,7 @@ class Obsdata(object):
                 #    covmatrix = make_cov(clbl, l_dict)
                 #    covs.append(covmatrix)
 
-            #!AC Can we find a better way to loop over min/max sets so we don't need to duplicate so much code?
+            #!AC TODO find a better way to loop over min/max sets so we don't need to duplicate so much code?
             elif count == 'max':
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
@@ -1294,7 +1298,6 @@ class Obsdata(object):
                         
                         logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
 
-                        #!AC -- is this correct? 
                         logcamperr = np.sqrt(var1/np.abs(p1)**2 +  
                                              var2/np.abs(p2)**2 + 
                                              var3/np.abs(p3)**2 +
@@ -1309,7 +1312,7 @@ class Obsdata(object):
                                              logcamp, logcamperr),
                                              dtype=DTCAMP)) 
                 
-                #!AC
+                #!AC TODO
                 # Make the covariance matrix after making all the scan data points    
                 #if cov: 
                 #    covs.append(covmatrix)
@@ -1334,8 +1337,8 @@ class Obsdata(object):
         """Return a square Image object of the observation dirty beam
            fov is in radian
         """
-        # !AC this is a slow way of doing this
-        # !AC add different types of beam weighting
+
+        # !AC TODO add different types of beam weighting
         pdim = fov/npix
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
@@ -1346,7 +1349,6 @@ class Obsdata(object):
                   for i in xlist] 
                   for j in xlist])    
         
-        # !AC think more carefully about the different image size cases
         im = im[0:npix, 0:npix]
         
         # Normalize to a total beam power of 1
@@ -1361,9 +1363,8 @@ class Obsdata(object):
         """Return a square Image object of the observation dirty image
            fov is in radian
         """
-        # !AC this is a slow way of doing this
-        # !AC add different types of beam weighting
-        # !AC is it possible for Q^2 + U^2 > I^2 in the dirty image?
+
+        # !AC TODO add different types of beam weighting
         
         pdim = fov/npix
         u = self.unpack('u')['u']
@@ -1397,14 +1398,13 @@ class Obsdata(object):
         dim = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
                   for i in xlist] 
                   for j in xlist])   
-           
-        # !AC is this the correct normalization?
+        
+        # Normalization   
         im = im/np.sum(dim)
         qim = qim/np.sum(dim)
         uim = uim/np.sum(dim)
         vim = vim/np.sum(dim)
         
-        # !AC think more carefully about the different image size cases here       
         im = im[0:npix, 0:npix]
         qim = qim[0:npix, 0:npix]
         uim = uim[0:npix, 0:npix]   
@@ -1420,7 +1420,7 @@ class Obsdata(object):
         """Return a square Image object of the observation fitted (clean) beam
            fov is in radian
         """
-        # !AC include other beam weightings
+        # !AC TODO include other beam weightings
         im = make_square(self, npix, fov, pulse=pulse)
         beamparams = self.fit_beam()
         im = add_gauss(im, 1.0, beamparams)
@@ -1432,7 +1432,7 @@ class Obsdata(object):
            Fit the quadratic expansion of the Gaussian (normalized to 1 at the peak) 
            to the expansion of dirty beam with the same normalization
         """    
-        # !AC include other beam weightings
+        # !AC TODO include other beam weightings
           
         # Define the sum of squares function that compares the quadratic expansion of the dirty image
         # with the quadratic expansion of an elliptical gaussian
@@ -1689,7 +1689,6 @@ class Obsdata(object):
         else:
             return x
     
-    #!AC AA is this working? 
     def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
         """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes
            TODO bispectra/closure phase?
@@ -1729,6 +1728,7 @@ class Obsdata(object):
                     "BW: %.4f GHz \n" % (self.bw/1e9) +
                     "PHASECAL: %i \n" % self.phasecal + 
                     "AMPCAL: %i \n" % self.ampcal +
+                    "OPACITYCAL: %i \n" % self.opacitycal +                    
                     "DCAL: %i \n" % self.dcal + 
                     "FRCAL: %i \n" % self.frcal +  
                     "----------------------------------------------------------------------"+
@@ -1762,7 +1762,7 @@ class Obsdata(object):
         np.savetxt(fname, outdata, header=head, fmt=fmts)
         return
     
-    #!AC TODO see if dterm and field rotation arrays are in uvfits standard 
+    #!AC TODO how do we save dterm and field rotation arrays to uvfits 
     def save_uvfits(self, fname):
         """Save visibility data to uvfits
             Needs template.UVP file
@@ -1784,7 +1784,7 @@ class Obsdata(object):
         col3 = fits.Column(name='NOSTA', format='1J', array=tnums)
         colfin = fits.Column(name='SEFD', format='1D', array=sefd)
         
-        #!AC these antenna fields+header are questionable - look into them
+        #!AC TODO these antenna fields+header are questionable - look into them
         col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
         col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
         col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
@@ -1879,19 +1879,13 @@ class Obsdata(object):
         header['PTYPE7'] = 'INTTIM'
         header['PSCAL7'] = 1.e0
         header['PZERO7'] = 0.e0
-        header['PTYPE8'] = 'ELEV1'
+        header['PTYPE8'] = 'TAU1'
         header['PSCAL8'] = 1.e0
         header['PZERO8'] = 0.e0
-        header['PTYPE9'] = 'ELEV2'
+        header['PTYPE9'] = 'TAU2'
         header['PSCAL9'] = 1.e0
         header['PZERO9'] = 0.e0
-        header['PTYPE10'] = 'TAU1'
-        header['PSCAL10'] = 1.e0
-        header['PZERO10'] = 0.e0
-        header['PTYPE11'] = 'TAU2'
-        header['PSCAL11'] = 1.e0
-        header['PZERO11'] = 0.e0
-        
+                
         # Get data
         obsdata = self.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
         ndat = len(obsdata['time'])
@@ -1904,15 +1898,10 @@ class Obsdata(object):
         tints = obsdata['tint']
 
         # Baselines            
-        # These HAVE to be correct for CLEAN to work. Why?
         t1 = [self.tkey[scope] + 1 for scope in obsdata['t1']]
         t2 = [self.tkey[scope] + 1 for scope in obsdata['t2']]
         bl = 256*np.array(t1) + np.array(t2)
-        
-        # elevations
-        #el1 = obsdata['el1']
-        #el2 = obsdata['el2']
-        
+           
         # opacities
         tau1 = obsdata['tau1']
         tau2 = obsdata['tau2']
@@ -1927,7 +1916,6 @@ class Obsdata(object):
         rl = obsdata['qvis'] + 1j*obsdata['uvis']
         lr = obsdata['qvis'] - 1j*obsdata['uvis']
         
-        #!AC Are these weights correct? 
         weightrr = 1 / (obsdata['sigma']**2 + obsdata['vsigma']**2)
         weightll = 1 / (obsdata['sigma']**2 + obsdata['vsigma']**2)
         weightrl = 1 / (obsdata['qsigma']**2 + obsdata['usigma']**2)
@@ -1949,12 +1937,6 @@ class Obsdata(object):
         outdat[:,0,0,0,0,3,2] = weightlr
         
         # Save data
-        #!AC AA elevs no longer in data table
-        #pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
-        #        'INTTIM', 'ELEV1', 'ELEV2', 'TAU1', 'TAU2']
-        #x = fits.GroupData(outdat, parnames=pars,
-        #    pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints, el1, el2,tau1,tau2],
-        #    bitpix=-32)
         
         pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
                 'INTTIM', 'TAU1', 'TAU2']
@@ -1966,7 +1948,7 @@ class Obsdata(object):
         hdulist[0].data = x
         hdulist[0].header = header
  
-        ###### ADD AIPS FQ TABLE -- Thanks to Kazu #############
+        # ADD AIPS FQ TABLE -- Thanks to Kazu
         # Convert types & columns
         nif=1
         col1 = np.array(1, dtype=np.int32).reshape([nif]) #frqsel
@@ -1990,8 +1972,7 @@ class Obsdata(object):
         tbhdu.header.append(("EXTNAME","AIPS FQ"))
         hdulist.append(tbhdu)
          
-        ###### Write final HDUList to file ######
-        #hdulist[0].parnames[5]="DATE" #???
+        # Write final HDUList to file
         hdulist.writeto(fname, clobber=True)                
         return
     
@@ -2156,8 +2137,6 @@ def load_obs_txt(filename):
         
         #Old datatable formats
         if datatable.shape[1] < 20:
-            #el1 = float(row[4]) #!AC AA elevations no longer in Obsdata data table
-            #el2 = float(row[5])
             tau1 = float(row[6])
             tau2 = float(row[7])
             u = float(row[8])
@@ -2258,8 +2237,6 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA'
             bl = line[4].split('-')
             t1 = tdata[int(bl[0])-1]['site']
             t2 = tdata[int(bl[1])-1]['site']
-            #el1 = 0. #!AC AA elevations no longer in Obsdata data table
-            #el2 = 0.
             tau1 = 0.
             tau2 = 0.
             vis = float(line[7][:-1]) * np.exp(1j*float(line[8][:-1])*DEGREE)
@@ -2270,8 +2247,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA'
     
     datatable = np.array(datatable)
     
-    #!AC: qfile ufile and vfile must have exactly the same format as ifile
-    #!AC: add some consistency check 
+    #!AC TODO qfile ufile and vfile must have exactly the same format as ifile: add some consistency check 
     if not qfile==0:
         f = open(qfile)
         i = 0
@@ -2321,7 +2297,7 @@ def load_obs_uvfits(filename, flipbl=False):
     xyz = hdulist['AIPS AN'].data['STABXYZ']
     try:
         sefdr = hdulist['AIPS AN'].data['SEFD']
-        sefdl = hdulist['AIPS AN'].data['SEFD'] #!AC
+        sefdl = hdulist['AIPS AN'].data['SEFD'] #!AC TODO add sefdl
     except KeyError:
         print "Warning! no SEFD data in UVfits file"
         sefdr = np.zeros(len(tnames))
@@ -2362,8 +2338,6 @@ def load_obs_uvfits(filename, flipbl=False):
     jds = data['DATE'][mask]
     mjd = int(jdtomjd(np.min(jds)))
     
-    #!AC: There seems to be different behavior here - 
-    #!AC: BU puts date in _DATE 
     if len(set(data['DATE'])) > 2:
         times = np.array([mjdtogmt(jdtomjd(jd)) for jd in jds])
     else:
@@ -2423,13 +2397,12 @@ def load_obs_uvfits(filename, flipbl=False):
     usigma = qsigma
     vsigma = sigma
    
-    # !AC reverse sign of baselines for correct imaging?
+    # Reverse sign of baselines for correct imaging?
     if flipbl:
         u = -u
         v = -v
     
     # Make a datatable
-    # !AC Can I make this faster?
     datatable = []
     for i in xrange(len(times)):
         datatable.append(np.array
@@ -2443,7 +2416,7 @@ def load_obs_uvfits(filename, flipbl=False):
                          ))
     datatable = np.array(datatable)
     
-    #!AC get calibration flags from uvfits?
+    #!AC TODO get calibration flags from uvfits?
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd)
 
 def load_obs_oifits(filename, flux=1.0):
@@ -2452,10 +2425,11 @@ def load_obs_oifits(filename, flux=1.0):
     """
     
     print 'Warning: load_obs_oifits does NOT currently support polarimetric data!' 
-    #open oifits file and get visibilities
+    
+    # open oifits file and get visibilities
     oidata=oifits.open(filename)
     vis_data = oidata.vis
-    
+
     # get source info
     src = oidata.target[0].target
     ra = oidata.target[0].raep0.angle
@@ -2463,7 +2437,6 @@ def load_obs_oifits(filename, flux=1.0):
     
     # get annena info
     nAntennas = len(oidata.array[oidata.array.keys()[0]].station)
-    #sites = np.array([str((oidata.array[oidata.array.keys()[0]].station[i])).replace(" ", "") for i in range(nAntennas)])
     sites = np.array([oidata.array[oidata.array.keys()[0]].station[i].sta_name for i in range(nAntennas)])
     arrayX = oidata.array[oidata.array.keys()[0]].arrxyz[0]
     arrayY = oidata.array[oidata.array.keys()[0]].arrxyz[1]
@@ -2477,7 +2450,8 @@ def load_obs_oifits(filename, flux=1.0):
     nWavelengths = wavelength.shape[0]
     bandpass = oidata.wavelength[oidata.wavelength.keys()[0]].eff_band
     frequency = C/wavelength
-    # todo: this result seems wrong...
+    
+    # !AC TODO: this result seems wrong...
     bw = np.mean(2*(np.sqrt( bandpass**2*frequency**2 + C**2) - C)/bandpass)
     rf = np.mean(frequency)
     
@@ -2491,13 +2465,11 @@ def load_obs_oifits(filename, flux=1.0):
     amperr = np.array([vis_data[i]._visamperr for i in range(len(vis_data))])
     visphierr = np.array([vis_data[i]._visphierr for i in range(len(vis_data))])
     timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]) #convert to single number
+    
     #return timeobs
-    #!AC TODO - datetime not working!!!
+    #!AC TODO - is datetime working? 
     time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple()))/(60.0*60.0) 
                                         for i in range(len(timeobs))]), [nWavelengths, 1]))
-
-    #time = np.transpose(np.tile(np.array([(ttime.mktime(timeobs[i].timetuple()) - ttime.mktime(datetime.datetime.utcfromtimestamp(0).timetuple()))/(60.0*60.0) 
-    #                                      for i in range(len(timeobs))]), [nWavelengths, 1]))
     
     # integration time
     tint = np.array([vis_data[i].int_time for i in range(len(vis_data))])
@@ -2509,12 +2481,8 @@ def load_obs_oifits(filename, flux=1.0):
     # get telescope names for each visibility
     t1 = np.transpose(np.tile( np.array([ vis_data[i].station[0].sta_name for i in range(len(vis_data))]), [nWavelengths,1]))
     t2 = np.transpose(np.tile( np.array([ vis_data[i].station[1].sta_name for i in range(len(vis_data))]), [nWavelengths,1]))
-    #t1 = np.transpose(np.tile( np.array([ str(vis_data[i].station[0]).replace(" ", "") for i in range(len(vis_data))]), [nWavelengths,1]))
-    #t2 = np.transpose(np.tile( np.array([ str(vis_data[i].station[1]).replace(" ", "") for i in range(len(vis_data))]), [nWavelengths,1]))
 
     # dummy variables
-    #el1 = -np.ones(amp.shape)
-    #el2 = -np.ones(amp.shape)
     tau1 = np.zeros(amp.shape)
     tau2 = np.zeros(amp.shape)
     qvis = np.zeros(amp.shape)
@@ -2533,8 +2501,7 @@ def load_obs_oifits(filename, flux=1.0):
     tint = tint.ravel()
     t1 = t1.ravel()
     t2 = t2.ravel()
-    #el1 = el1.ravel()
-    #el2 = el2.ravel()
+
     tau1 = tau1.ravel()
     tau2 = tau2.ravel()
     u = u.ravel()
@@ -2545,7 +2512,7 @@ def load_obs_oifits(filename, flux=1.0):
     vvis = vvis.ravel()
     amperr = amperr.ravel()
 
-    #TODO - check that we are properly using the error from the amplitude and phase
+    #!AC TODO - check that we are properly using the error from the amplitude and phase
 
     # create data tables
     datatable = np.array([(time[i], tint[i], t1[i], t2[i], tau1[i], tau2[i], u[i], v[i], 
@@ -2561,7 +2528,7 @@ def load_obs_oifits(filename, flux=1.0):
                     ], dtype=DTARR)
     
     # return object
-    #!AC get calibration flags from oifits? 
+    #!AC TODO get calibration flags from oifits? 
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0])
     
 def load_im_txt(filename, pulse=pulses.trianglePulse2D):
@@ -2570,7 +2537,6 @@ def load_im_txt(filename, pulse=pulses.trianglePulse2D):
        Make sure the header has exactly the same form!
     """
     
-    # TODO !AC should pulse type be in header?
     # Read the header
     file = open(filename)
     src = string.join(file.readline().split()[2:])
@@ -2648,18 +2614,28 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
     psize_y = np.abs(header['CDELT2']) * pscl
     
     if 'MJD' in header.keys(): mjd = header['MJD']
-    else: mjd = 48277.0 
+    else: mjd = 0.0 
     
     if 'FREQ' in header.keys(): rf = header['FREQ']
-    else: rf = 230e9
+    else: rf = 0.0
     
     if 'OBJECT' in header.keys(): src = header['OBJECT']
-    else: src = 'SgrA'
+    else: src = ''
     
     # Get the image and create the object
     data = hdulist[0].data
     data = data.reshape((data.shape[-2],data.shape[-1]))
     image = data[::-1,:] # flip y-axis!
+    
+    # normalize the flux
+    normalizer = 1.0;
+    if 'BUNIT' in header.keys():
+        if header['BUNIT'] == 'JY/BEAM':
+            beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
+            normalizer = (header['CDELT2'])**2 / beamarea
+    image *= normalizer
+            
+    # make image object            
     outim = Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
     
     # Look for Stokes Q and U
@@ -2667,13 +2643,15 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
     for hdu in hdulist[1:]:
         header = hdu.header
         data = hdu.data
-        data = data.reshape((data.shape[-2],data.shape[-1]))
+        try: data = data.reshape((data.shape[-2],data.shape[-1]))
+        except IndexError: continue
+        
         if 'STOKES' in header.keys() and header['STOKES'] == 'Q':
-            qimage = data[::-1,:] # flip y-axis!
+            qimage = normalizer*data[::-1,:] # flip y-axis!
         if 'STOKES' in header.keys() and header['STOKES'] == 'U':
-            uimage = data[::-1,:] # flip y-axis!
+            uimage = normalizer*data[::-1,:] # flip y-axis!
         if 'STOKES' in header.keys() and header['STOKES'] == 'V':
-            vimage = data[::-1,:] # flip y-axis!
+            vimage = normalizer*data[::-1,:] # flip y-axis!
     
     if qimage.shape == uimage.shape == vimage.shape == image.shape:
         print 'Loaded Stokes I, Q, U, and V Images'
@@ -2690,16 +2668,60 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
                             
     return outim
 
+
+
+def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, src="SgrA", mjd="0" , pulse=pulses.trianglePulse2D):
+
+    # Radian or Degree?
+    if punit=="deg":
+        pscl = DEGREE
+    elif punit=="rad":
+        pscl = 1.0
+    elif punit=="uas":
+        pscl = RADPERUAS
+    elif punit=="mas":
+        pscl = RADPERUAS * 1000.0
+
+
+    hdulist = fits.open(filename)
+    header = hdulist[0].header
+    data = hdulist[0].data
+
+    if 'NAXIS1' in header.keys(): xdim_p = header['NAXIS1']
+    else: xdim_p = data.shape[-2]
+
+    if 'CDELT1' in header.keys(): 
+        psize_x = np.abs(header['CDELT1']) * pscl
+    else: 
+        psize_x = (float(fov) / data.shape[-2]) * pscl
+        if fov==-1:
+            print 'WARNING: Must provide a field of view for the image'
+
+    normalizer = 1.0; 
+    if 'BUNIT' in header.keys():
+        if header['BUNIT'] == 'JY/BEAM':
+            beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
+            normalizer = (header['CDELT2'])**2 / beamarea
+
+    data = data.reshape((data.shape[-2],data.shape[-1]))
+
+    image = data[::-1,:] # flip y-axis!
+    image = np.rot90(image, k=timesrot90)
+    outim = Image(image*normalizer, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
+    
+    print 'Loaded Stokes I image only'
+    return outim
+
+
 ##################################################################################################
 # Image Construction Functions
 ##################################################################################################
 
 def resample_square(im, xdim_new, ker_size=5):
-    """Return a new image object that is resampled to the new dimensions xdim x ydim"""
+    """Return a new image object that is resampled to the new dimensions xdim_new x xdim_new"""
     
-    # !AC TODO work with not square image? New xdim & ydim must be compatible!
     if im.xdim != im.ydim:
-        raise Exception("Image must be square (for now)!")
+        raise Exception("Image must be square!")
     if im.pulse == pulses.deltaPulse2D:
         raise Exception("This function only works on continuously parametrized images: does not work with delta pulses!")
     
@@ -2718,7 +2740,7 @@ def resample_square(im, xdim_new, ker_size=5):
                       for y in np.arange(0, -ydim_new, -1)] )                     
 
                       
-    # TODO !AC check if this normalization is correct!
+    # Normalize
     scaling = np.sum(im.imvec) / np.sum(out)
     out *= scaling
     outim = Image(out, psize_new, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
@@ -2727,7 +2749,7 @@ def resample_square(im, xdim_new, ker_size=5):
     if len(im.qvec):
         def im_new_q(x,y):
             mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * 
-                    ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+                    ((y - ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y + ker_size*im.psize/2.0))).flatten()
             return np.sum([im.qvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
         def im_new_u(x,y):
             mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * 
@@ -2761,6 +2783,7 @@ def resample_square(im, xdim_new, ker_size=5):
 def im_pad(im, fovx, fovy):
     """Pad to new fov
     """ 
+    
     fovoldx=im.psize*im.xdim
     fovoldy=im.psize*im.ydim
     padx=int(0.5*(fovx-fovoldx)/im.psize)
@@ -2804,12 +2827,11 @@ def add_tophat(im, flux, radius):
     
     xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
     ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
-    # !AC handle actual zeros?
+
     hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else EP
                       for i in xlist] 
                       for j in ylist])        
     
-    # !AC think more carefully about the different cases for array size here
     hat = hat[0:im.ydim, 0:im.xdim]
     
     imout = im.imvec.reshape(im.ydim, im.xdim) + (hat * flux/np.sum(hat))
@@ -2842,7 +2864,6 @@ def add_gauss(im, flux, beamparams):
                       for i in xlist] 
                       for j in ylist]) 
   
-    # !AC think more carefully about the different cases for array size here
     gauss = gauss[0:im.ydim, 0:im.xdim]
     
     imout = im.imvec.reshape(im.ydim, im.xdim) + (gauss * flux/np.sum(gauss))
@@ -2874,7 +2895,6 @@ def add_crescent(im, flux, Rp, Rn, a, b, x=0, y=0):
                       for i in xlist] 
                       for j in ylist]) 
   
-    # !AC think more carefully about the different cases for array size here
     crescent = crescent[0:im.ydim, 0:im.xdim]
     
     imout = im.imvec.reshape(im.ydim, im.xdim) + (crescent * flux/np.sum(crescent))
@@ -2907,6 +2927,7 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
     if len(image.qvec):
         qim = (image.qvec).reshape(image.ydim, image.xdim)
         uim = (image.uvec).reshape(image.ydim, image.xdim)
+    if len(image.vvec):
         vim = (image.vvec).reshape(image.ydim, image.xdim)
     xfov = image.xdim * image.psize
     yfov = image.ydim * image.psize
@@ -2922,7 +2943,6 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
                                   for i in xlist] 
                                   for j in ylist])
 
-        # !AC think more carefully about the different image size cases here
         gauss = gauss[0:image.ydim, 0:image.xdim]
         gauss = gauss / np.sum(gauss) # normalize to 1
         
@@ -2942,7 +2962,6 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
                                   for j in ylist])
         
 
-        # !AC think more carefully about the different cases here
         gauss = gauss[0:image.ydim, 0:image.xdim]
         gauss = gauss / np.sum(gauss) # normalize to 1        
         
@@ -2968,7 +2987,9 @@ def deblur(obs):
        Returns a new observation.
     """
     
-    datatable = np.array(obs.data, copy=True)
+    # make a copy of observation data
+    datatable = (obs.copy()).data
+
     vis = datatable['vis']
     qvis = datatable['qvis']
     uvis = datatable['uvis']
@@ -2980,6 +3001,7 @@ def deblur(obs):
     u = datatable['u']
     v = datatable['v']
     
+    # divide visibilities by the scattering kernel
     for i in range(len(vis)):
         ker = sgra_kernel_uv(obs.rf, u[i], v[i])
         vis[i] = vis[i] / ker
@@ -3000,7 +3022,7 @@ def deblur(obs):
     datatable['usigma'] = usigma
     datatable['vsigma'] = vsigma    
     
-    obsdeblur = Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr, source=obs.sourcs, mjd=obs.mjd, 
+    obsdeblur = Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr, source=obs.source, mjd=obs.mjd, 
                         ampcal=obs.ampcal, phasecal=obs.phasecal, opacitycal=obs.opacitycal, dcal=obs.dcal, frcal=obs.frcal)
     return obsdeblur
 
@@ -3075,9 +3097,12 @@ def sgra_kernel_params(rf):
 
 def blnoise(sefd1, sefd2, tint, bw):
     """Determine the standard deviation of Gaussian thermal noise on a baseline 
-       2-bit quantization and atmospheric opacity included"""
-    #!AC AA Is the factor of sqrt(2) correct? 
-    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+       This is the noise on the rr/ll/rl/lr correlation, not the stokes parameter
+       2-bit quantization is responsible for the 0.88 factor
+    """
+    
+    #!AC TODO Is the factor of sqrt(2) correct? 
+    noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
     return noise
 
 def cerror(sigma):
@@ -3100,11 +3125,15 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
        that extracts spatial frequencies of the uv points in uvlist.
     """
 
-    # !AC TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
 
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
+    # original sign convention
+    #ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
+    
+    # changed the sign convention to agree with BU data (Jan 2017)
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
+    
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
     return ftmatrices
 
@@ -3114,14 +3143,13 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
        ra and dec should be in hours / degrees
        Will return a nested dictionary of matrices indexed by the site, then by the time 
     """   
-    # !AC Get data
+
     tlist = obs.tlist()
     tarr = obs.tarr
     ra = obs.ra
     dec = obs.dec
     sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
     
-    #!AC Is there a better way to do this?
     # Create a dictionary of taus and a list of unique times
     nsites = len(obs.tarr['site'])
     taudict = {site : np.array([]) for site in obs.tarr['site']}
@@ -3175,7 +3203,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         
         # Opacity attenuation of amplitude gain
         if not opacitycal:
-            taus = np.abs(np.array([taudict[site][i] * (1.0 + gainp * hashrandn(site, 'tau', times[i])) for i in xrange(len(times))]))                
+            taus = np.abs(np.array([taudict[site][j] * (1.0 + gainp * hashrandn(site, 'tau', times[j])) for j in xrange(len(times))]))                
             atten = np.exp(-taus/(EP + 2.0*np.sin(el_angles)))
             
             gainR = gainR * atten
@@ -3226,7 +3254,6 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
     dec = obs.dec
     sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
     
-    #!AC Is there a better way to do this?
     # Create a dictionary of taus and a list of unique times
     nsites = len(obs.tarr['site'])
     taudict = {site : np.array([]) for site in obs.tarr['site']}
@@ -3313,8 +3340,8 @@ def observe_same_nonoise(im, obs, sgrscat=False):
     if (im.rf != obs.rf):
         raise Exception("Image frequency is not the same as observation frequency!")
     
-    # Get data               
-    obsdata = obs.data
+    # Get data (must make a copy!)              
+    obsdata = obs.copy().data
                       
     # Extract uv data
     uv = obsdata[['u','v']].view(('f8',2))
@@ -3375,27 +3402,25 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ga
     lr = obsdata['qvis'] - 1j*obsdata['uvis']   
     
     # Recompute the noise std. deviations from the SEFDs
-    # !AC is the sqrt(2.0) right here?
-    sig_rr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
-    sig_ll = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
-    sig_rl = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
-    sig_lr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
+    sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
+    sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
+    sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
+    sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
     
-    # !AC AA TODO WHAT SHOULD THESE FLAGS READ?
-    print "------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal: 
-        print "Applying opacity attenuation - opacitycal-->False in output"
+        print "   Applying opacity attenuation: opacitycal-->False"
     if not ampcal: 
-        print "Applying gain corruption - gaincal-->False in output"
+        print "   Applying gain corruption: gaincal-->False"
     if not phasecal: 
-        print "Applying atmospheric phase corruption - phasecal-->False in output" 
+        print "   Applying atmospheric phase corruption: phasecal-->False" 
     if not dcal: 
-        print "Applying D Term mixing - dcal-->False in output"
+        print "   Applying D Term mixing: dcal-->False"
     if not frcal: 
-        print "Applying Field Rotation - frcal-->False in output"
+        print "   Applying Field Rotation: frcal-->False"
     if add_th_noise: 
-        print "Adding thermal noise to output"
-    print "------------------------------------------------------------"
+        print "Adding thermal noise to data . . . "
+    #print "------------------------------------------------------------------------------------------------------------------------"
     
     # Corrupt each IQUV visibilty set with the jones matrices and add noise
     for i in xrange(len(times)):            
@@ -3451,27 +3476,25 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     lr = obsdata['qvis'] - 1j*obsdata['uvis']   
     
     # Recompute the noise std. deviations from the SEFDs
-    # !AC should we instead get them from the file? 
-    # !AC is the sqrt(2.0) right here?
-    sig_rr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
-    sig_ll = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
-    sig_rl = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
-    sig_lr = np.array(np.sqrt(2.0)*[blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
+    #!AC should we instead get them from the file? 
+    sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(rr))])
+    sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(ll))])
+    sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in xrange(len(rl))])
+    sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in xrange(len(lr))])                  
     
-    # !AC AA TODO WHAT SHOULD THESE FLAGS READ? 
     ampcal = obs.ampcal
     phasecal = obs.phasecal
-    print "------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal: 
-        print "Applying opacity corrections - opacitycal-->True in output"
+        print "   Applying opacity corrections: opacitycal-->True"
         opacitycal=True
     if not dcal: 
-        print "Applying D Term corrections - dcal-->True in output"
+        print "   Applying D Term corrections: dcal-->True"
         dcal=True
     if not frcal: 
-        print "Applying Field Rotation corrections - frcal-->True in output"
+        print "   Applying Field Rotation corrections: frcal-->True"
         frcal=True
-    print "------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
              
     # Apply the inverse Jones matrices to each visibility
     for i in xrange(len(times)):
@@ -3496,7 +3519,7 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
         sig_rl_matrix_new = np.dot(inv_j1, np.dot(sig_rl_matrix, np.conjugate(inv_j2.T)))
         sig_lr_matrix_new = np.dot(inv_j1, np.dot(sig_lr_matrix, np.conjugate(inv_j2.T)))
         
-        # !AC is this correct?
+        # !AC TODO is this correct?
         # Get the final sigma matrix as a quadrature sum
         sig_matrix_new = np.sqrt(np.abs(sig_rr_matrix_new)**2 + np.abs(sig_ll_matrix_new)**2 + 
                                  np.abs(sig_rl_matrix_new)**2 + np.abs(sig_lr_matrix_new)**2)
@@ -3522,19 +3545,20 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
 def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF):
     """Re-compute sigmas from SEFDS and add noise with gain & phase errors
        Returns signals & noises scaled by estimated gains, including opacity attenuation. 
-       Be very careful using outside of Image.observe!"""   
+       Be very careful using outside of Image.observe!
+    """   
 
-    print "------------------------------------------------------------"
+    #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal: 
-        print "Applying opacity attenuation AND estimated opacity corrections - opacitycal-->True in output"
+        print "   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True"
         opacitycalout = True
     if not ampcal: 
-        print "Applying gain corruption - gaincal-->False in output"
+        print "   Applying gain corruption: gaincal-->False"
     if not phasecal:
-        print "Applying atmospheric phase corruption - phasecal-->False in output" 
+        print "   Applying atmospheric phase corruption: phasecal-->False" 
     if add_th_noise: 
-        print "Adding thermal noise to output"
-    print "------------------------------------------------------------"
+        print "Adding thermal noise to data . . . "
+    #print "------------------------------------------------------------------------------------------------------------------------"
                
     # Get data
     obsdata = obs.data
@@ -3552,7 +3576,8 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     bw = obs.bw
         
     # Recompute perfect sigmas from SEFDs
-    sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw) 
+    # Multiply 1/sqrt(2) for sum of polarizations 
+    sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)/np.sqrt(2.0) 
                             for i in range(len(tint))])
                                                                                   
     # Use estimated opacity to compute the ESTIMATED noise
@@ -3601,12 +3626,13 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     obsdata['vvis'] = vvis
     obsdata['sigma'] = sigma_est
     
-    #!AC AA This function doesn't use different visibility sigmas!
+    # This function doesn't use different visibility sigmas!
     obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
     
     # Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycalout)
     return out
+
 
 ##################################################################################################
 # Plot Related Functions
@@ -3629,7 +3655,7 @@ def ticks(axisdim, psize, nticks=8):
 # Other Functions
 ##################################################################################################
 
-#!AC AA
+#!AC TODO
 # Lindy's function to generate covariance matrices
 #def make_cov(clnoisedata, noisebldict):
 #    iloc = {cl:i for i, cl in enumerate(cldata)}
@@ -3708,8 +3734,10 @@ def sigtype(datatype):
     
 def merr(sigma, qsigma, usigma, I, m):
     """Return the error in mbreve real and imaginary parts"""
-    #err = sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2)) #!AC -- old formula assuming all sigmas the same
+
     err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/ (np.abs(I) ** 2))
+    # old formula assumes all sigmas the same
+    #err = sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2))     
     return err
            
 def rastring(ra):
@@ -3832,3 +3860,4 @@ def xyz_2_latlong(obsvecs):
     out = np.array(out)
     #if out.shape[0]==1: out = out[0]
     return out
+

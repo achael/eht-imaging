@@ -17,7 +17,7 @@ import vlbi_imaging_utils as vb
 import pulses
 import linearize_energy as le
 from IPython import display
-
+reload(vb)
 ##################################################################################################
 # Constants
 ##################################################################################################
@@ -31,7 +31,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 ##################################################################################################
 # Total Intensity Imagers
 ##################################################################################################
-def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False):
+def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False, show_updates=True):
     """Run maximum entropy with full amplitudes and phases. 
        Uses I = exp(I') change of variables.
        Obsdata is an Obsdata object, and Prior is an Image object.
@@ -103,10 +103,12 @@ def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", 
     nit = 0
     def plotcur(logim_step):
         global nit
-        im_step = np.exp(logim_step)
-        chi2 = chisq(im_step, A, vis, sigma)
-        print "chi2: ",chi2
-        plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
+        if show_updates==True: 
+            im_step = np.exp(logim_step)
+            chi2 = chisq(im_step, A, vis, sigma)
+            plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
+            print "chi2: ",chi2
+
         nit += 1
    
     # Plot the prior
@@ -982,12 +984,18 @@ def blur_circ(image, fwhm_i, fwhm_pol=0):
 def chisq(imvec, Amatrix, vis, sigma):
     """Visibility chi-squared"""
    
+    if Amatrix == None: 
+        return 1.0
+
     samples = np.dot(Amatrix, imvec)
     return np.sum(np.abs((samples-vis)/sigma)**2) / (2*len(vis))
     
 def chisqgrad(imvec, Amatrix, vis, sigma):
     """The gradient of the visibility chi-squared"""
     
+    if Amatrix == None: 
+        return 0.0
+
     samples = np.dot(Amatrix, imvec)
     wdiff = (vis - samples) / (sigma**2) 
     out = -np.real(np.dot(Amatrix.conj().T, wdiff)) / len(vis)

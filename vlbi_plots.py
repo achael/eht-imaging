@@ -109,7 +109,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -133,7 +133,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -157,7 +157,7 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=Fals
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat,add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -181,7 +181,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat
     except TypeError: obslist = [obslist]
            
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
