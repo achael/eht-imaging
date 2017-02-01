@@ -2783,6 +2783,7 @@ def resample_square(im, xdim_new, ker_size=5):
 def im_pad(im, fovx, fovy):
     """Pad to new fov
     """ 
+    
     fovoldx=im.psize*im.xdim
     fovoldy=im.psize*im.ydim
     padx=int(0.5*(fovx-fovoldx)/im.psize)
@@ -3628,7 +3629,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     # This function doesn't use different visibility sigmas!
     obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
     
-	# Return observation object
+    # Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycalout)
     return out
 
