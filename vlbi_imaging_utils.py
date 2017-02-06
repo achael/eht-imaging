@@ -168,19 +168,27 @@ class Image(object):
         self.qvec = - self.qvec
         return
            
-    def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
+    def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True,
                                                                   jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True,
                                                                   inv_jones=False):
                                                                   
         """Observe the image on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
+           
+           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
+           for each telescope site. This can only be done currently if jones=False. 
+           If gain_offset is a single value than it is the standard deviation 
+           of a randomly selected gain offset. 
         """
         print "Producing clean visibilities from image . . . "
         obs_out = observe_same_nonoise(self, obs, sgrscat=sgrscat)    
         
         # Jones Matrix Corruption
         if jones:
+            if type(gain_offset)== dict:
+                print 'WARNING: cannot use a dictionary gain offset when using jones matrices'
+        
             print "Applying Jones Matrices to data . . . "
             obs_out = add_jones_and_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
                                           ampcal=ampcal, gainp=gainp, phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
@@ -194,12 +202,12 @@ class Image(object):
         #!AC There is an asymmetry here - we don't offer the ability to not unscale estimated noise using the old way.                                              
         elif add_th_noise:                
             print "Adding gain + phase errors to data and applying a priori calibration . . . "
-            obs_out = add_noise(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, gainp=gainp, add_th_noise=add_th_noise)
+            obs_out = add_noise(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, gainp=gainp, gain_offset=gain_offset, add_th_noise=add_th_noise)
         
         return obs_out
         
     def observe(self, array, tint, tadv, tstart, tstop, bw, 
-                sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
+                sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
                 jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True):
                 
         """Observe the image with an array object to produce an obsdata object.
@@ -207,6 +215,11 @@ class Image(object):
            tint and tadv should be seconds.
            tau is the estimated optical depth. This can be a single number or a dictionary giving one tau per site
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel at the appropriate frequency
+           
+           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
+           for each telescope site. This can only be done currently if jones=False. 
+           If gain_offset is a single value than it is the standard deviation 
+           of a randomly selected gain offset. 
 	    """
         
         # Generate empty observation
@@ -215,7 +228,7 @@ class Image(object):
         
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, sgrscat=sgrscat, add_th_noise=add_th_noise, opacitycal=opacitycal,
-                                ampcal=ampcal, gainp=gainp, phasecal=phasecal, 
+                                ampcal=ampcal, gainp=gainp, phasecal=phasecal, gain_offset=gain_offset, 
                                 jones=jones, inv_jones=inv_jones, dcal=dcal, dtermp=dtermp, frcal=frcal)    
         
         return obs
@@ -2783,7 +2796,6 @@ def resample_square(im, xdim_new, ker_size=5):
 def im_pad(im, fovx, fovy):
     """Pad to new fov
     """ 
-    
     fovoldx=im.psize*im.xdim
     fovoldy=im.psize*im.ydim
     padx=int(0.5*(fovx-fovoldx)/im.psize)
@@ -3542,13 +3554,18 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     return out
 
 # The old noise generating function.     
-def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF):
+def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, gain_offset=GAINPDEF):
     """Re-compute sigmas from SEFDS and add noise with gain & phase errors
        Returns signals & noises scaled by estimated gains, including opacity attenuation. 
        Be very careful using outside of Image.observe!
+       
+       gain_offset can be optionally set as a dictionary that specifies the percentage offset 
+       for each telescope site. If it is a single value than it is the standard deviation 
+       of a randomly selected gain offset. 
     """   
 
     #print "------------------------------------------------------------------------------------------------------------------------"
+    opacitycalout = True
     if not opacitycal: 
         print "   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True"
         opacitycalout = True
@@ -3589,10 +3606,17 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     sigma_true = sigma_perf
     if not ampcal:
         # Amplitude gain
-        gain1 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,0], 'gain') 
+        if type(gain_offset) == dict:
+            gain1 = np.abs(np.array([1.0 +  0.01*gain_offset[sites[i,0]] 
                         + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
-        gain2 = np.abs(np.array([1.0 + gainp * hashrandn(sites[i,1], 'gain') 
-                        + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))   
+            gain2 = np.abs(np.array([1.0 +  0.01*gain_offset[sites[i,1]]  
+                        + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))  
+        else: 
+            gain1 = np.abs(np.array([1.0 + gain_offset * hashrandn(sites[i,0], 'gain') 
+                        + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
+            gain2 = np.abs(np.array([1.0 + gain_offset * hashrandn(sites[i,1], 'gain') 
+                        + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))  
+
         sigma_true = sigma_true / np.sqrt(gain1 * gain2)
 
     if not opacitycal:
@@ -3629,7 +3653,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     # This function doesn't use different visibility sigmas!
     obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
     
-    # Return observation object
+	# Return observation object
     out =  Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycalout)
     return out
 
