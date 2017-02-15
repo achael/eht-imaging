@@ -2944,22 +2944,25 @@ def blur_gauss(image, beamparams, frac, frac_pol=0):
     xfov = image.xdim * image.psize
     yfov = image.ydim * image.psize
     xlist = np.arange(0,-image.xdim,-1)*image.psize + (image.psize*image.xdim)/2.0 - image.psize/2.0
-    ylist = np.arange(0,-image.ydim,-1)*image.psize + (image.psize*image.ydim)/2.0 - image.psize/2.0
-    
+    ylist = np.arange(0,-image.ydim,-1)*image.psize + (image.psize*image.ydim)/2.0 - image.psize/2.0        
+
     if beamparams[0] > 0.0:
         sigma_maj = frac * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
         sigma_min = frac * beamparams[1] / (2. * np.sqrt(2. * np.log(2.))) 
         cth = np.cos(beamparams[2])
         sth = np.sin(beamparams[2])
+
         gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
                                   for i in xlist] 
                                   for j in ylist])
 
         gauss = gauss[0:image.ydim, 0:image.xdim]
         gauss = gauss / np.sum(gauss) # normalize to 1
-        
+
         # Convolve
         im = scipy.signal.fftconvolve(gauss, im, mode='same')
+
+
 
     if frac_pol:
         if not len(image.qvec):
@@ -3131,6 +3134,38 @@ def hashrand(*args):
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
     return np.random.rand()
 
+def image_centroid(im):
+    """Return the image centroid (in radians)
+    """
+
+    xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+    ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
+
+    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im.imvec)/np.sum(im.imvec)
+    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec)/np.sum(im.imvec)
+
+    return np.array([x0, y0])
+
+def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
+    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
+       that extracts spatial frequencies of the uv points in uvlist.
+       in this version, it puts the image centroid at the origin
+    """
+
+    # !AC TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
+    # Coordinate matrix for COM constraint
+    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
+    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
+    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
+
+    #Now shift the lists
+    xlist = xlist - x0
+    ylist = ylist - y0
+
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
+    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
+    return ftmatrices
       
 def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
