@@ -31,7 +31,7 @@ emptyprior = vb.make_square(obs, npix, fov)
 
 #Here is the 2-Gaussian fit from Rusen's paper
 Rusen_2gauss_image = vb.add_gauss(emptyprior, 0.77, (18.*vb.RADPERUAS, 18.*vb.RADPERUAS, 0, 0, 0))
-Rusen_2gauss_image = vb.add_gauss(Rusen_2gauss_image, 2.37, (58.*vb.RADPERUAS, 58.*vb.RADPERUAS, 0, 0, 0),x=29.0*vb.RADPERUAS,y=36.0*vb.RADPERUAS)
+Rusen_2gauss_image = vb.add_gauss(Rusen_2gauss_image, 2.37, (58.*vb.RADPERUAS, 58.*vb.RADPERUAS, 0, 29.0*vb.RADPERUAS, 36.0*vb.RADPERUAS))
 
 #Here is the Crescent fit from Rusen's paper (im, flux, Rp, Rn, a, b, x=0, y=0):
 Rusen_Crescent_image = vb.add_crescent(emptyprior, 3.14, 49.0*vb.RADPERUAS, 12.0*vb.RADPERUAS, -1.0*vb.RADPERUAS, 25.0*vb.RADPERUAS)

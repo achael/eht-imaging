@@ -1,3 +1,6 @@
+# Michael Johnson, 2/15/2017
+# See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
+
 import sys
 import time
 import numpy as np
@@ -15,12 +18,23 @@ from IPython import display
 import math
 import cmath
 
-C = 299792458.0 
+C = 299792458.0 #m/s, consistent with other modules
 DEGREE = np.pi/180.
 RADPERAS = DEGREE/3600.
 RADPERUAS = RADPERAS/1e6
 
 no_linear_shift = True #flag for whether or not to allow image shift in the phase screen
+
+def Q(qx, qy, wavelength, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out): #Power spectrum of phase fluctuations
+    #x is aligned with the major axis; y is aligned with the minor axis
+    wavelengthbar = wavelength/(2.0*np.pi)
+    qmin = 2.0*np.pi/r_out
+    qmax = 2.0*np.pi/r_in
+    #rotate qx and qy as needed
+    PA = (90 - vb.POS_ANG) * np.pi/180.0
+    qx_rot =  qx*np.cos(PA) + qy*np.sin(PA)
+    qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)
+    return 2.0**scatt_alpha * np.pi * scatt_alpha * scipy.special.gamma(1.0 + scatt_alpha/2.0)/scipy.special.gamma(1.0 - scatt_alpha/2.0)*wavelengthbar**-2.0*(r0_maj*r0_min)**-(scatt_alpha/2.0) * ( (r0_maj/r0_min)*qx_rot**2.0 + (r0_min/r0_maj)*qy_rot**2.0 + qmin**2.0)**(-(scatt_alpha+2.0)/2.0) * np.exp(-((qx_rot**2.0 + qy_rot**2.0)/qmax**2.0)**0.5)
 
 def Wrapped_Convolve(sig,ker):
     N = sig.shape[0]
@@ -31,6 +45,20 @@ def Wrapped_Gradient(M):
     Gx = G[0][1:-1,1:-1]
     Gy = G[1][1:-1,1:-1]
     return (Gx, Gy)
+
+def reverse_array(M):
+    N = M.shape[0]
+    M_rot = np.copy(M)
+    for x in range(N):
+        for y in range(N):
+            x2 = N - x
+            y2 = N - y
+            if x2 == N:
+                x2 = 0
+            if y2 == N:
+                y2 = 0
+            M_rot[y][x] = M[y2][x2]
+    return M_rot
     
 def MakeEpsilonScreenFromList(EpsilonList, N):
     epsilon = np.zeros((N,N),dtype=np.complex)
@@ -97,34 +125,54 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
 
     return epsilon
 
-def MakePhaseScreen(EpsilonScreen,Reference_Image):
-    wavelength = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
+def MakePhaseScreen(EpsilonScreen, Reference_Image, obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0):
+    """Create a refractive phase screen from standardized Fourier components 
+       All lengths should be specified in centimeters
+       If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image
+       Unspecified scattering parameters are taken to be equal to those of Sgr A*
+       scatt_alpha is the power-law index (Kolmogorov is 5/3)
+       POS_ANG is the position angle of the major axis in degrees East of North
+    """
+    #Observing wavelength
+    if obs_frequency_Hz == 0.0:
+        obs_frequency_Hz = Reference_Image.rf
+
+    wavelength = C/obs_frequency_Hz*100.0 #Observing wavelength [cm]
     wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
-    D_dist = 8.023*10**21 #Observer-Scattering distance [cm]
-    R_dist = 1.790*10**22 #Source-Scattering distance [cm]
-    Mag = D_dist/R_dist
-    r0_maj = (wavelength/0.13)**-1.0*3.134*10**8 #Phase coherence length [cm]
-    r0_min = (wavelength/0.13)**-1.0*6.415*10**8 #Phase coherence length [cm]
-    rF = (wavelength/0.13)**0.5*1.071*10**10 #Fresnel scale [cm]
-    r_in = 1000*10**5 #inner scale [km]
-    r_out = 10**20 #outer scale [km]
-    scatt_alpha = 5.0/3.0 #power-law index
-    FOV = Reference_Image.psize * Reference_Image.xdim * D_dist #Field of view, in cm, at the scattering screen
 
-    def Q(qx, qy): #Power spectrum of phase fluctuations
-        #x is aligned with the major axis; y is aligned with the minor axis
-        qmin = 2.0*np.pi/r_out
-        qmax = 2.0*np.pi/r_in
-        #rotate qx and qy as needed
-        PA = (90 - vb.POS_ANG) * np.pi/180.0
-        qx_rot =  qx*np.cos(PA) + qy*np.sin(PA)
-        qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)
-        return 2.0**scatt_alpha * np.pi * scatt_alpha * scipy.special.gamma(1.0 + scatt_alpha/2.0)/scipy.special.gamma(1.0 - scatt_alpha/2.0)*wavelengthbar**-2.0*(r0_maj*r0_min)**-(scatt_alpha/2.0) * ( (r0_maj/r0_min)*qx_rot**2.0 + (r0_min/r0_maj)*qy_rot**2.0 + qmin**2.0)**(-(scatt_alpha+2.0)/2.0) * np.exp(-((qx_rot**2.0 + qy_rot**2.0)/qmax**2.0)**0.5)
+    #Scattering properties
+    if observer_screen_distance == 0.0: 
+        observer_screen_distance = 8.023*10**21 #Observer-Scattering distance [cm]
 
+    if source_screen_distance == 0.0:
+        source_screen_distance = 1.790*10**22 #Source-Scattering distance [cm]    
+
+    if r0_maj == 0.0:
+        r0_maj = (wavelength/0.13)**-1.0*3.134*10**8 #Phase coherence length [cm]
+
+    if r0_min == 0.0:
+        r0_min = (wavelength/0.13)**-1.0*6.415*10**8 #Phase coherence length [cm]
+
+    if POS_ANG == None:
+        POS_ANG = vb.POS_ANG
+
+    if r_in == 0.0:
+        r_in = 1000*10**5 #inner scale [cm]
+
+    if r_out == 0.0:
+        r_out = 10**20 #outer scale [cm]    
+
+    #Derived parameters
+    Mag = observer_screen_distance/source_screen_distance
+    rF = (source_screen_distance*observer_screen_distance/(source_screen_distance + observer_screen_distance)*wavelengthbar)**0.5 #Fresnel scale [cm]    
+    FOV = Reference_Image.psize * Reference_Image.xdim * observer_screen_distance #Field of view, in cm, at the scattering screen
     Nx = EpsilonScreen.shape[1]
     Ny = EpsilonScreen.shape[0]
 
-    #Now we'll calculate the phase screen gradient
+    if Nx%2 == 0:
+        print "The image dimension should really be odd..."
+
+    #Now we'll calculate the power spectrum for each pixel in Fourier space
     sqrtQ = np.zeros((Ny,Nx)) #just to get the dimensions correct
     dq = 2.0*np.pi/FOV #this is the spacing in wavenumber
 
@@ -136,65 +184,57 @@ def MakePhaseScreen(EpsilonScreen,Reference_Image):
                 x2 = x2 - Nx
             if y2 > (Ny-1)/2:
                 y2 = y2 - Ny 
-            sqrtQ[y][x] = Q(dq*x2,dq*y2)**0.5    
+            sqrtQ[y][x] = Q(dq*x2, dq*y2, wavelength, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out)**0.5    
     sqrtQ[0][0] = 0.0 #A DC offset doesn't affect scattering
 
-    #We'll now calculate the phase screen. We could calculate the gradient directly, but this is more bulletproof for now
+    #Now calculate the phase screen
     phi = np.real(wavelengthbar/FOV*EpsilonScreen.shape[0]*EpsilonScreen.shape[1]*np.fft.ifft2( sqrtQ*EpsilonScreen))
     phi_Image = vb.Image(phi, Reference_Image.psize, Reference_Image.ra, Reference_Image.dec, rf=Reference_Image.rf, source=Reference_Image.source, mjd=Reference_Image.mjd)
 
     return phi_Image
 
 
+def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0, DisplayPhi=False, DisplayImage=False): 
+    """Create a refractive phase screen from standardized Fourier components 
+       All lengths should be specified in centimeters
+       If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
+       Unspecified scattering parameters are taken to be equal to those of Sgr A*
+       scatt_alpha is the power-law index (Kolmogorov is 5/3)
+       POS_ANG is the position angle of the major axis in degrees East of North
+       Note: an odd image dimension is required!
+    """
 
-def reverse_array(M):
-    N = M.shape[0]
-    M_rot = np.copy(M)
-    for x in range(N):
-        for y in range(N):
-            x2 = N - x
-            y2 = N - y
-            if x2 == N:
-                x2 = 0
-            if y2 == N:
-                y2 = 0
-            M_rot[y][x] = M[y2][x2]
-    return M_rot
+    #Observing wavelength
+    if obs_frequency_Hz == 0.0:
+        obs_frequency_Hz = Unscattered_Image.rf
 
-
-def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), DisplayPhi=False, DisplayImage=False): 
-    #This module takes an unscattered image and Fourier components of the phase screen to produce a scattered image
-    #Epsilon_Screen represents the normalized complex spectral values for the phase screen
-
-    #Note: an odd image dimension is required
-
-    # First some preliminary definitions
-    wavelength = C/Unscattered_Image.rf*100.0 #Observing wavelength [cm]
+    wavelength = C/obs_frequency_Hz*100.0 #Observing wavelength [cm]
     wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
-    D_dist = 8.023*10**21 #Observer-Scattering distance [cm]
-    R_dist = 1.790*10**22 #Source-Scattering distance [cm]
-    Mag = D_dist/R_dist
-    r0_maj = (wavelength/0.13)**-1.0*3.134*10**8 #Phase coherence length [cm]
-    r0_min = (wavelength/0.13)**-1.0*6.415*10**8 #Phase coherence length [cm]
-    rF = (wavelength/0.13)**0.5*1.071*10**10 #Fresnel scale [cm]
-    r_in = 1000*10**5 #inner scale [km]
-    r_out = 10**20 #outer scale [km]
-    scatt_alpha = 5.0/3.0 #power-law index
-    FOV = Unscattered_Image.psize * Unscattered_Image.xdim * D_dist #Field of view, in cm, at the scattering screen
 
-    def Q(qx, qy): #Power spectrum of phase fluctuations
-        #x is aligned with the major axis; y is aligned with the minor axis
-        qmin = 2.0*np.pi/r_out
-        qmax = 2.0*np.pi/r_in
-        #rotate qx and qy as needed
-        PA = (90 - vb.POS_ANG) * np.pi/180.0
-        qx_rot =  qx*np.cos(PA) + qy*np.sin(PA)
-        qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)
-        return 2.0**scatt_alpha * np.pi * scatt_alpha * scipy.special.gamma(1.0 + scatt_alpha/2.0)/scipy.special.gamma(1.0 - scatt_alpha/2.0)*wavelengthbar**-2.0*(r0_maj*r0_min)**-(scatt_alpha/2.0) * ( (r0_maj/r0_min)*qx_rot**2.0 + (r0_min/r0_maj)*qy_rot**2.0 + qmin**2.0)**(-(scatt_alpha+2.0)/2.0) * np.exp(-((qx_rot**2.0 + qy_rot**2.0)/qmax**2.0)**0.5)
+    #Scattering properties
+    if observer_screen_distance == 0.0: 
+        observer_screen_distance = 8.023*10**21 #Observer-Scattering distance [cm]
 
+    if source_screen_distance == 0.0:
+        source_screen_distance = 1.790*10**22 #Source-Scattering distance [cm]    
+
+    if r0_maj == 0.0:
+        r0_maj = (wavelength/0.13)**-1.0*3.134*10**8 #Phase coherence length [cm]
+
+    if r0_min == 0.0:
+        r0_min = (wavelength/0.13)**-1.0*6.415*10**8 #Phase coherence length [cm]
+ 
+    if POS_ANG == None:
+        POS_ANG = vb.POS_ANG
+
+    #Derived parameters
+    rF = (source_screen_distance*observer_screen_distance/(source_screen_distance + observer_screen_distance)*wavelengthbar)**0.5 #Fresnel scale [cm]    
+    FOV = Unscattered_Image.psize * Unscattered_Image.xdim * observer_screen_distance #Field of view, in cm, at the scattering screen
+    Mag = observer_screen_distance/source_screen_distance
 
     #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel
-    EA_Image = vb.blur_gauss(Unscattered_Image, vb.sgra_kernel_params(Unscattered_Image.rf), frac=1.0, frac_pol=0)
+    blurring_kernel_params = [ (2.0*np.log(2.0))**0.5/np.pi*wavelength/(r0_maj*(1.0 + Mag)), (2.0*np.log(2.0))**0.5/np.pi*wavelength/(r0_min*(1.0 + Mag)), POS_ANG*np.pi/180.0 ]
+    EA_Image = vb.blur_gauss(Unscattered_Image, blurring_kernel_params, frac=1.0, frac_pol=0)
 
     if Epsilon_Screen.shape[0] == 0:
         return EA_Image
@@ -202,31 +242,19 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), DisplayPhi=False, Di
         Nx = Epsilon_Screen.shape[1]
         Ny = Epsilon_Screen.shape[0]
 
+        if Nx%2 == 0:
+            print "The image dimension should really be odd..."
+
         #Next, we need the gradient of the ensemble-average image
         EA_Gradient = Wrapped_Gradient((EA_Image.imvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))    
         #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
         EA_Gradient_x = -EA_Gradient[1]
         EA_Gradient_y = -EA_Gradient[0]
     
-        #Now we'll calculate the phase screen gradient
-        sqrtQ = np.zeros((Ny,Nx)) #just to get the dimensions correct
-        dq = 2.0*np.pi/FOV #this is the spacing in wavenumber
-
-        for x in range(0, Nx):
-            for y in range(0, Ny):
-                x2 = x
-                y2 = y
-                if x2 > (Nx-1)/2:
-                    x2 = x2 - Nx
-                if y2 > (Ny-1)/2:
-                    y2 = y2 - Ny 
-                sqrtQ[y][x] = Q(dq*x2,dq*y2)**0.5    
-        sqrtQ[0][0] = 0.0 #A DC offset doesn't affect scattering
-
-        #We'll now calculate the phase screen. We could calculate the gradient directly, but this is more bulletproof for now
-        phi = np.real(wavelengthbar/FOV*Epsilon_Screen.shape[0]*Epsilon_Screen.shape[1]*np.fft.ifft2( sqrtQ*Epsilon_Screen))
-        phi_Image = vb.Image(phi, EA_Image.psize, EA_Image.ra, EA_Image.dec, rf=EA_Image.rf, source=EA_Image.source, mjd=EA_Image.mjd)
-    
+        #We'll now calculate the phase screen.       
+        phi_Image = MakePhaseScreen(Epsilon_Screen, Unscattered_Image, obs_frequency_Hz, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out, observer_screen_distance, source_screen_distance)
+        phi = phi_Image.imvec.reshape(Ny,Nx)
+        
         if DisplayPhi:
             phi_Image.display()
 
@@ -250,9 +278,6 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), DisplayPhi=False, Di
             plot_scatt(Unscattered_Image.imvec, EA_Image.imvec, AI_Image.imvec, phi_Image.imvec, Unscattered_Image, 0, 0, ipynb=False)
 
         return AI_Image
-
-
-
 
 ##################################################################################################
 # Plotting Functions
