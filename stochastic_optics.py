@@ -194,7 +194,7 @@ def MakePhaseScreen(EpsilonScreen, Reference_Image, obs_frequency_Hz=0.0, scatt_
     return phi_Image
 
 
-def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0, DisplayPhi=False, DisplayImage=False): 
+def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0, Linearized_Approximation=True, DisplayPhi=False, DisplayImage=False, Force_Positivity=False, Verbose=False): 
     """Create a refractive phase screen from standardized Fourier components 
        All lengths should be specified in centimeters
        If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
@@ -232,6 +232,13 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0
     FOV = Unscattered_Image.psize * Unscattered_Image.xdim * observer_screen_distance #Field of view, in cm, at the scattering screen
     Mag = observer_screen_distance/source_screen_distance
 
+    #Optional: Print info
+    if Verbose == True:
+        print "Major Axis r0/rF: ",(r0_maj/rF)
+        print "Minor Axis r0/rF: ",(r0_maj/rF)
+        print "Major Axis Ensemble-average FWHM: ",((2.0*np.log(2.0))**0.5/np.pi*wavelength/r0_maj*10**6*3600*180/np.pi)
+        print "Minor Axis Ensemble-average FWHM: ",((2.0*np.log(2.0))**0.5/np.pi*wavelength/r0_min*10**6*3600*180/np.pi)
+
     #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel
     blurring_kernel_params = [ (2.0*np.log(2.0))**0.5/np.pi*wavelength/(r0_maj*(1.0 + Mag)), (2.0*np.log(2.0))**0.5/np.pi*wavelength/(r0_min*(1.0 + Mag)), POS_ANG*np.pi/180.0 ]
     EA_Image = vb.blur_gauss(Unscattered_Image, blurring_kernel_params, frac=1.0, frac_pol=0)
@@ -244,12 +251,6 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0
 
         if Nx%2 == 0:
             print "The image dimension should really be odd..."
-
-        #Next, we need the gradient of the ensemble-average image
-        EA_Gradient = Wrapped_Gradient((EA_Image.imvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))    
-        #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
-        EA_Gradient_x = -EA_Gradient[1]
-        EA_Gradient_y = -EA_Gradient[0]
     
         #We'll now calculate the phase screen.       
         phi_Image = MakePhaseScreen(Epsilon_Screen, Unscattered_Image, obs_frequency_Hz, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out, observer_screen_distance, source_screen_distance)
@@ -260,16 +261,32 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0
 
         #Next, we need the gradient of the ensemble-average image
         phi_Gradient = Wrapped_Gradient(phi/(FOV/Nx))    
-
         #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
         phi_Gradient_x = -phi_Gradient[1]
         phi_Gradient_y = -phi_Gradient[0]
 
-        #Now we can patch together the average image
-        AI = (EA_Image.imvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
+        if Linearized_Approximation == True: #Use Equation 10 of Johnson & Narayan (2016)
+            #Calculate the gradient of the ensemble-average image
+            EA_Gradient = Wrapped_Gradient((EA_Image.imvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))    
+            #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
+            EA_Gradient_x = -EA_Gradient[1]
+            EA_Gradient_y = -EA_Gradient[0]
+
+            #Now we can patch together the average image
+            AI = (EA_Image.imvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
+        else: #Use Equation 9 of Johnson & Narayan (2016)
+            EA_im = (EA_Image.imvec).reshape(Ny,Nx)
+            AI = np.copy((EA_Image.imvec).reshape(Ny,Nx))
+            for rx in range(Nx):
+                for ry in range(Ny):
+                    # Annoyingly, the signs here must be negative to match the other approximation. I'm not sure which is correct, but it really shouldn't matter anyway because -phi has the same power spectrum as phi. However, getting the *relative* sign for the x- and y-directions correct is important. 
+                    rxp = int(np.round(rx - rF**2.0 * phi_Gradient_x[ry,rx]/observer_screen_distance/Unscattered_Image.psize))%Nx
+                    ryp = int(np.round(ry - rF**2.0 * phi_Gradient_y[ry,rx]/observer_screen_distance/Unscattered_Image.psize))%Ny
+                    AI[ry,rx] = EA_im[ryp,rxp]            
 
         #Optional: eliminate negative flux
-        #AI = abs(AI)
+        if Force_Positivity == True: 
+           AI = abs(AI)
 
         #Make it into a proper image format
         AI_Image = vb.Image(AI, EA_Image.psize, EA_Image.ra, EA_Image.dec, rf=EA_Image.rf, source=EA_Image.source, mjd=EA_Image.mjd)
