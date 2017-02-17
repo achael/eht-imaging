@@ -242,7 +242,7 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0
     #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel
     blurring_kernel_params = [ (2.0*np.log(2.0))**0.5/np.pi*wavelength/(r0_maj*(1.0 + Mag)), (2.0*np.log(2.0))**0.5/np.pi*wavelength/(r0_min*(1.0 + Mag)), POS_ANG*np.pi/180.0 ]
     EA_Image = vb.blur_gauss(Unscattered_Image, blurring_kernel_params, frac=1.0, frac_pol=0)
-
+   
     if Epsilon_Screen.shape[0] == 0:
         return EA_Image
     else:
@@ -271,18 +271,47 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0
             #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
             EA_Gradient_x = -EA_Gradient[1]
             EA_Gradient_y = -EA_Gradient[0]
-
             #Now we can patch together the average image
             AI = (EA_Image.imvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
+            if len(Unscattered_Image.qvec):
+                    # Scatter the Q image
+                    EA_Gradient = Wrapped_Gradient((EA_Image.qvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim)) 
+                    EA_Gradient_x = -EA_Gradient[1]
+                    EA_Gradient_y = -EA_Gradient[0]
+                    AI_Q = (EA_Image.qvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
+                    # Scatter the U image
+                    EA_Gradient = Wrapped_Gradient((EA_Image.uvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim)) 
+                    EA_Gradient_x = -EA_Gradient[1]
+                    EA_Gradient_y = -EA_Gradient[0]
+                    AI_U = (EA_Image.uvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
+            if len(Unscattered_Image.vvec):
+                    # Scatter the V image
+                    EA_Gradient = Wrapped_Gradient((EA_Image.vvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim)) 
+                    EA_Gradient_x = -EA_Gradient[1]
+                    EA_Gradient_y = -EA_Gradient[0]
+                    AI_V = (EA_Image.vvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
         else: #Use Equation 9 of Johnson & Narayan (2016)
             EA_im = (EA_Image.imvec).reshape(Ny,Nx)
             AI = np.copy((EA_Image.imvec).reshape(Ny,Nx))
+            if len(Unscattered_Image.qvec):
+                AI_Q = np.copy((EA_Image.imvec).reshape(Ny,Nx))
+                AI_U = np.copy((EA_Image.imvec).reshape(Ny,Nx))
+                EA_im_Q = (EA_Image.qvec).reshape(Ny,Nx)
+                EA_im_U = (EA_Image.uvec).reshape(Ny,Nx)
+            if len(Unscattered_Image.vvec):
+                AI_V = np.copy((EA_Image.imvec).reshape(Ny,Nx))
+                EA_im_V = (EA_Image.vvec).reshape(Ny,Nx)
             for rx in range(Nx):
                 for ry in range(Ny):
                     # Annoyingly, the signs here must be negative to match the other approximation. I'm not sure which is correct, but it really shouldn't matter anyway because -phi has the same power spectrum as phi. However, getting the *relative* sign for the x- and y-directions correct is important. 
                     rxp = int(np.round(rx - rF**2.0 * phi_Gradient_x[ry,rx]/observer_screen_distance/Unscattered_Image.psize))%Nx
                     ryp = int(np.round(ry - rF**2.0 * phi_Gradient_y[ry,rx]/observer_screen_distance/Unscattered_Image.psize))%Ny
-                    AI[ry,rx] = EA_im[ryp,rxp]            
+                    AI[ry,rx] = EA_im[ryp,rxp]   
+                    if len(Unscattered_Image.qvec):  
+                        AI_Q[ry,rx] = EA_im_Q[ryp,rxp]          
+                        AI_U[ry,rx] = EA_im_U[ryp,rxp]      
+                    if len(Unscattered_Image.vvec): 
+                        AI_V[ry,rx] = EA_im_V[ryp,rxp]
 
         #Optional: eliminate negative flux
         if Force_Positivity == True: 
@@ -290,6 +319,10 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0
 
         #Make it into a proper image format
         AI_Image = vb.Image(AI, EA_Image.psize, EA_Image.ra, EA_Image.dec, rf=EA_Image.rf, source=EA_Image.source, mjd=EA_Image.mjd)
+        if len(Unscattered_Image.qvec): 
+            AI_Image.add_qu(AI_Q, AI_U)
+        if len(Unscattered_Image.vvec):
+            AI_Image.add_v(AI_V)
 
         if DisplayImage:
             plot_scatt(Unscattered_Image.imvec, EA_Image.imvec, AI_Image.imvec, phi_Image.imvec, Unscattered_Image, 0, 0, ipynb=False)
