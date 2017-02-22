@@ -943,13 +943,13 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=100, beta=500, gamma=1.5e6
 def threshold(image, frac_i=1.e-5, frac_pol=1.e-3):
     """Apply a hard threshold
     """ 
-    imvec = image.imvec
+    imvec = np.copy(image.imvec)
     thresh = frac_i*np.abs(np.max(imvec))
-    lowval = frac_i*frac_i*np.abs(np.max(imvec))
+    lowval = thresh
     flux = np.sum(imvec)
-    for pixel in imvec:
-    	if pixel < thresh: 
-            pixel=lowval
+    for j in range(len(imvec)):
+        if imvec[j] < thresh: 
+            imvec[j]=lowval
     imvec = flux*imvec/np.sum(imvec)
     out = vb.Image(imvec.reshape(image.ydim,image.xdim), image.psize, 
                    image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
