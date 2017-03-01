@@ -3167,7 +3167,7 @@ def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
     return ftmatrices
       
-def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
+def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D, mask=[]):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
        that extracts spatial frequencies of the uv points in uvlist.
     """
@@ -3182,6 +3182,10 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D):
     ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
     
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
+
+    if len(mask):
+        ftmatrices = ftmatrices[:,mask]
+        
     return ftmatrices
 
 

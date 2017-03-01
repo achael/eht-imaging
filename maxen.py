@@ -138,6 +138,144 @@ def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", 
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim
 
+def maxen_clip(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False, show_updates=True, clipfloor=0.):
+    """Run maximum entropy with full amplitudes and phases. 
+       Uses I = exp(I') change of variables.
+       Obsdata is an Obsdata object, and Prior is an Image object.
+       Returns Image object.
+       The lagrange multiplier alpha is not a free parameter
+    """
+    
+    print "Imaging I with visibility amplitudes and phases . . ."
+        
+    # Catch problem if uvrange < largest baseline
+    uvrange = 1/Prior.psize
+    maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
+    if uvrange < maxbl:
+        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+    if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
+        raise Exception("initial image does not match dimensions of the prior image!")
+
+    # Normalize prior image to total flux
+    zbl = np.max(Obsdata.unpack(['amp'])['amp'])
+
+    embed_mask = Prior.imvec >= clipfloor
+    nprior_embed = zbl * Prior.imvec / np.sum((Prior.imvec)[embed_mask])
+    nprior = nprior_embed[embed_mask]
+    
+    ninit_embed = zbl * InitIm.imvec / np.sum((InitIm.imvec)[embed_mask])
+    ninit = ninit_embed[embed_mask]
+    
+    logprior = np.log(nprior)
+    loginit = np.log(ninit)
+    #logprior_embed = np.log(nprior_embed)
+    #loginit_embed = np.log(ninit_embed)
+
+    # Data
+    data = Obsdata.unpack(['u','v','vis','sigma'])
+    uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
+    vis = data['vis']
+    sigma = data['sigma']
+    
+    # Compute the Fourier matrix
+    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=embed_mask)
+    
+    # Define the objective function and gradient
+    def objfunc(logim):
+        im = np.exp(logim)
+        if entropy == "simple":
+            s = -ssimple(im, nprior)
+        elif entropy == "l1":
+            s = -sl1(im, nprior)
+        elif entropy == "gs":
+            s = -sgs(im, nprior)
+        elif entropy == "tv":
+            im_embed = embed(im, embed_mask)
+            s = -stv(im_embed, Prior.xdim, Prior.ydim)
+        elif entropy == "patch":
+            im_embed = embed(im, embed_mask)
+            s = -spatch(im_embed, nprior_embed)
+
+        s = s * beta
+        return s + alpha * (chisq(im, A, vis, sigma) - 1)
+        
+    def objgrad(logim):
+        im = np.exp(logim)
+        if entropy == "simple":
+            s = -ssimplegrad(im, nprior)
+        elif entropy == "l1":
+            s = -sl1grad(im, nprior)
+        elif entropy == "gs":
+            s = -sgsgrad(im, nprior) 
+        elif entropy == "tv":
+            im_embed = embed(im, embed_mask)
+            s = -stvgrad(im_embed, Prior.xdim, Prior.ydim)
+            s = s[embed_mask]
+        elif entropy == "patch":
+            im_embed = embed(im, embed_mask)
+            s = -spatchgrad(im_embed, nprior_embed)
+            s = s[embed_mask]
+        s = s * beta
+        return  (s + alpha * chisqgrad(im, A, vis, sigma)) * im
+    
+    # Plotting function for each iteration
+    global nit
+    nit = 0
+    def plotcur(logim_step):
+        global nit
+        if show_updates==True: 
+            im_step = np.exp(logim_step)
+            chi2 = chisq(im_step, A, vis, sigma)
+            plot_i(embed(im_step,embed_mask), Prior, nit, chi2, ipynb=ipynb)
+            print "chi2: ",chi2
+
+        nit += 1
+   
+    # Plot the prior
+
+    plotcur(loginit)
+    
+    print "Chi^2: %f" % chisq(loginit, A, vis, sigma)
+    print ninit_embed.shape
+    print loginit.shape
+    print A.shape
+    
+    # Minimize
+    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST} # minimizer params
+    tstart = time.time()
+    res = opt.minimize(objfunc, loginit, method='L-BFGS-B', jac=objgrad, 
+                       options=optdict, callback=plotcur)
+    tstop = time.time()
+    out = embed(np.exp(res.x), embed_mask)
+    
+    # Print stats
+    print "time: %f s" % (tstop - tstart)
+    print "J: %f" % res.fun
+    print "Chi^2: %f" % chisq(out[embed_mask], A, vis, sigma)
+    print res.message
+    
+    # Return Image object
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse)
+    if len(Prior.qvec):
+        print "Preserving image complex polarization fractions!"
+        qvec = Prior.qvec * out / Prior.imvec
+        uvec = Prior.uvec * out / Prior.imvec
+        outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
+    return outim
+
+#!AC move this
+def embed(im, mask, clipfloor=0.):
+    """embeds a 1d image array into the size of boolean embed mask"""
+    j=0
+    out=np.zeros(len(mask))
+    for i in xrange(len(mask)):
+        if mask[i]:
+            out[i] = im[j]
+            j += 1
+        else:
+            out[i] = clipfloor
+    return out
+
 def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delta=500, beta=1.0, entropy="gs", datamin="gd", stop=1e-10, ipynb=False):
     """Run maximum entropy on the bispectrum with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.

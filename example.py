@@ -24,7 +24,7 @@ tadv_sec = 600
 tstart_hr = 0
 tstop_hr = 24
 bw_hz = 4e9
-obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=False, phasecal=False)
+obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=False, ampcal=True, phasecal=True)
 
 # You can deblur the visibilities by dividing by the scattering kernel if necessary
 #obs = vb.deblur(obs)
