@@ -1427,7 +1427,7 @@ def plot_m(im, mim, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
     # Create figure and title
     plt.ion()
     plt.clf()
-    plt.suptitle("step: %i  $\chi_b^2$: %f   $\chi_m^2$: %f" % (nit, chi2, chi2m), fontsize=20)
+    plt.suptitle("step: %i  $\chi_{I}^2$: %f   $\chi_{pol}^2$: %f" % (nit, chi2, chi2m), fontsize=20)
         
     # Stokes I plot
     plt.subplot(121)

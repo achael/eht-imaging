@@ -122,7 +122,7 @@ class Image(object):
         self.dec = float(dec)
         self.rf = float(rf)
         self.source = str(source)
-        self.mjd = float(mjd)
+        self.mjd = float(mjd) 
         
         self.qvec = []
         self.uvec = []
@@ -221,7 +221,7 @@ class Image(object):
         
         return obs
         
-    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin'):
+    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin',gamma=0.5):
         """Display the image with matplotlib
         """
         # TODO Display circular polarization 
@@ -239,6 +239,10 @@ class Image(object):
         if scale=='log':
             imarr = np.log(imarr)
             unit = 'log(Jy/pixel)'
+        
+        if scale=='gamma':
+            imarr = imarr**(gamma)
+            unit = '(Jy/pixel)^gamma'    
                    
         if len(self.qvec) and plotp:
             thin = self.xdim/nvec 
@@ -256,7 +260,7 @@ class Image(object):
             
             # Stokes I plot
             plt.subplot(121)
-            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=0)
+            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
             plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
@@ -1574,7 +1578,7 @@ class Obsdata(object):
             
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel('UTC (h)')
+        x.set_xlabel('hr')
         x.set_ylabel(field)
         x.set_title('%s - %s'%(site1,site2))
         
@@ -3566,9 +3570,10 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     """   
 
     #print "------------------------------------------------------------------------------------------------------------------------"
+    opacitycalout=True #With old noise function, output is always calibrated to estimated opacity
+                       #Could change this 
     if not opacitycal: 
         print "   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True"
-        opacitycalout = True
     if not ampcal: 
         print "   Applying gain corruption: gaincal-->False"
     if not phasecal:
@@ -3612,16 +3617,17 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
                         + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))   
         sigma_true = sigma_true / np.sqrt(gain1 * gain2)
 
+    #TODO
     if not opacitycal:
         # Opacity Errors
         tau1 = np.abs(np.array([taus[i,0]* (1.0 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))]))
         tau2 = np.abs(np.array([taus[i,1]* (1.0 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))]))
         
-        # Correct noise RMS for gain variation and opacity
+        # Correct noise RMS for opacity
         sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
         
     # Add the noise and the gain error to the true visibilities
-    vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
+    vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true) #sigma_est/sigma_true = gain
     qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
     uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
     vvis = (vvis + cerror(sigma_true)) * (sigma_est/sigma_true)
