@@ -2,7 +2,7 @@ import vlbi_imaging_utils as vb
 import numpy as np
 import scipy.optimize as opt
 
-def self_cal(obs, im, method="both"):
+def self_cal(obs, im, method="both", show_solution=True):
     """Self-calibrate a dataset to a fixed image""" 
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
@@ -11,7 +11,7 @@ def self_cal(obs, im, method="both"):
 
     data_cal = []
     for scan in scans:
-        scan_cal = self_cal_scan(scan, im, method=method)
+        scan_cal = self_cal_scan(scan, im, method=method, show_solution=show_solution)
 
         if len(data_cal):
             data_cal = np.hstack((data_cal, scan_cal))
@@ -22,7 +22,7 @@ def self_cal(obs, im, method="both"):
                                            mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
-def self_cal_scan(scan, im, method="both"):
+def self_cal_scan(scan, im, method="both", show_solution=True):
     """Self-calibrate a scan"""
 
     # calculating image true visibs (beware no scattering here..)
@@ -61,7 +61,8 @@ def self_cal_scan(scan, im, method="both"):
 
     gij_inv = (g_fit[tidx1] * g_fit[tidx2].conj())**(-1)
 
-    print np.abs(gij_inv)
+    if show_solution == True:
+        print np.abs(gij_inv)
     
     scan['vis'] = gij_inv * scan['vis']
     scan['qvis'] = gij_inv * scan['qvis']
