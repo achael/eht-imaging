@@ -159,7 +159,7 @@ def maxen_clip(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="
     # Normalize prior image to total flux
     zbl = np.max(Obsdata.unpack(['amp'])['amp'])
 
-    embed_mask = Prior.imvec >= clipfloor
+    embed_mask = Prior.imvec > clipfloor
     nprior_embed = zbl * Prior.imvec / np.sum((Prior.imvec)[embed_mask])
     nprior = nprior_embed[embed_mask]
     
@@ -235,7 +235,7 @@ def maxen_clip(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="
 
     plotcur(loginit)
     
-    print "Chi^2: %f" % chisq(loginit, A, vis, sigma)
+    print "Chi^2: %f" % chisq(np.exp(loginit), A, vis, sigma)
     print ninit_embed.shape
     print loginit.shape
     print A.shape
