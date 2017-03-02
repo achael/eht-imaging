@@ -236,9 +236,8 @@ def maxen_clip(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="
     plotcur(loginit)
     
     print "Chi^2: %f" % chisq(np.exp(loginit), A, vis, sigma)
-    print ninit_embed.shape
-    print loginit.shape
-    print A.shape
+    print "Total Pixel #: ",(len(ninit_embed))
+    print "Clipped Pixel #: ",(len(loginit))
     
     # Minimize
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST} # minimizer params
