@@ -235,7 +235,7 @@ def maxen_clip(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="
 
     plotcur(loginit)
     
-    print "Chi^2: %f" % chisq(np.exp(loginit), A, vis, sigma)
+    print "Initial Chi^2: %f" % chisq(np.exp(loginit), A, vis, sigma)
     print "Total Pixel #: ",(len(ninit_embed))
     print "Clipped Pixel #: ",(len(loginit))
     
@@ -250,7 +250,7 @@ def maxen_clip(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="
     # Print stats
     print "time: %f s" % (tstop - tstart)
     print "J: %f" % res.fun
-    print "Chi^2: %f" % chisq(out[embed_mask], A, vis, sigma)
+    print "Final Chi^2: %f" % chisq(out[embed_mask], A, vis, sigma)
     print res.message
     
     # Return Image object
