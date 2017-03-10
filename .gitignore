@@ -1,4 +1,6 @@
 *.pyc
-\#*
 *~
+vex_files/*
+/#*
 docs/_build/*
+
