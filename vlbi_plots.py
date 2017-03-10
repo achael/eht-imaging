@@ -37,7 +37,7 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False, axis=axis, color=clist[i])
+        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
@@ -55,7 +55,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=Fals
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i])
+        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
@@ -74,7 +74,7 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i])
+        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
@@ -93,7 +93,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i])
+        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
@@ -119,7 +119,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False, axis=axis, color=clist[i])
+        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
@@ -143,7 +143,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, sgrscat=False, show=False, axis=axis, color=clist[i])
+        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, sgrscat=False, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
@@ -167,7 +167,7 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=Fals
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i])
+        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
@@ -191,7 +191,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i])
+        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
     
     if show:
         plt.show(block=False)
