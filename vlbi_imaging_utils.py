@@ -3924,3 +3924,30 @@ def xyz_2_latlong(obsvecs):
     #if out.shape[0]==1: out = out[0]
     return out
 
+
+
+
+##################################################################################################
+# Convenience Functions for Data Processing
+##################################################################################################
+
+def split_obs(obs):
+    """Split single observation into multiple observation files, one per scan
+    """
+
+    print "Splitting Observation File into " + str(len(obs.tlist())) + " scans"
+    return [ Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, tdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal) for tdata in obs.tlist() ]
+
+def merge_obs(obs_List):
+    """Merge a list of observations into a single observation file
+    """
+
+    if len(set([obs.ra for obs in obs_List])) > 1 or len(set([obs.dec for obs in obs_List])) > 1 or len(set([obs.rf for obs in obs_List])) > 1 or len(set([obs.bw for obs in obs_List])) > 1 or len(set([obs.source for obs in obs_List])) > 1:
+        print "All observations must have the same parameters!"
+        return 
+
+    #The important things to merge are the mjd and the data
+    data_merge = np.hstack([obs.data for obs in obs_List]) 
+
+    return Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, obs_List[0].tarr, source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal) 
+
