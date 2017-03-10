@@ -345,7 +345,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         
         s = s * beta
         t = gamma * (np.sum(im) - flux)**2
-        cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
+        cm = delta * (np.sum(im * coord[:,0])**2 + np.sum(im * coord[:,1])**2)
         return  s + c + t + cm
         
     def objgrad(logim):
@@ -368,7 +368,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         
         s = s * beta
         t = 2 * gamma * (np.sum(im) - flux)
-        cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
+        cm = 2 * delta * (np.sum(im * coord[:,0])*coord[:,0] + np.sum(im * coord[:,1])*coord[:,1])
         return  (s + c + t + cm) * im
     
     # Plotting function for each iteration
@@ -482,7 +482,7 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
         c_clphase = alpha_clphase * (chisq_clphase(im, A3, clphase, sigs_clphase) - 1)
         c_amp   = alpha_visamp   * (chisq_visamp(im, A, amp, sigs_amp) - 1)
         t = gamma * (np.sum(im) - flux)**2
-        cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
+        cm = delta * (np.sum(im * coord[:,0])**2 + np.sum(im * coord[:,1])**2)
         return  s + c_clphase + c_amp + t + cm
     
     def objgrad(logim):
@@ -501,7 +501,7 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
         c_clphase = alpha_clphase * chisqgrad_clphase(im, A3, clphase, sigs_clphase)
         c_amp = alpha_visamp * chisqgrad_visamp(im, A, amp, sigs_amp)
         t = 2 * gamma * (np.sum(im) - flux)
-        cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
+        cm = 2 * delta * (np.sum(im * coord[:,0])*coord[:,0] + np.sum(im * coord[:,1])*coord[:,1])
         return  (s + c_clphase + c_amp + t + cm) * im
 		       
     # Plotting function for each iteration
@@ -624,7 +624,7 @@ def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clpha
         c_clphase = alpha_clphase * (chisq_clphase(im, A3, clphase, sigs_clphase) - 1)
         c_clamp   = alpha_clamp   * (chisq_clamp(im, A4, clamp, sigs_clamp) - 1)
         t = gamma * (np.sum(im) - flux)**2
-        cm = delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1]))**2
+        cm = delta * (np.sum(im * coord[:,0])**2 + np.sum(im * coord[:,1])**2)
         return  s + c_clphase + c_clamp + t + cm
     
     def objgrad(logim):
@@ -643,7 +643,7 @@ def maxen_onlyclosure(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clpha
         c_clphase = alpha_clphase * chisqgrad_clphase(im, A3, clphase, sigs_clphase)
         c_clamp = alpha_clamp * chisqgrad_clamp(im, A4, clamp, sigs_clamp)
         t = 2 * gamma * (np.sum(im) - flux)
-        cm = 2 * delta * (np.sum(im * coord[:,0]) + np.sum(im * coord[:,1])) * (coord[:,0] + coord[:,1])
+        cm = 2 * delta * (np.sum(im * coord[:,0])*coord[:,0] + np.sum(im * coord[:,1])*coord[:,1]) 
         return  (s + c_clphase + c_clamp + t + cm) * im
     
     def objgrad_num(x):  #This calculates the gradient numerically
@@ -983,7 +983,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=100, beta=500, gamma=1.5e6
             
         c = alpha * (chisq_bi(iim, A3, bi, sigsb) - 1)
         t = gamma * (np.sum(iim) - flux)**2
-        cm = delta * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))**2
+        cm = delta * (np.sum(iim * coord[:,0])**2 + np.sum(iim * coord[:,1])**2)
         return  s + c + t + cm
         
     def objgrad_b(iim):
@@ -999,7 +999,7 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=100, beta=500, gamma=1.5e6
         c = alpha * chisqgrad_bi(iim, A3, bi, sigsb)
         
         t = 2 * gamma * (np.sum(iim) - flux)
-        cm = 2 * delta * (coord[:,0] + coord[:,1]) * (np.sum(iim * coord[:,0]) + np.sum(iim * coord[:,1]))
+        cm = 2 * delta * (np.sum(iim * coord[:,0])*coord[:,0] + np.sum(iim * coord[:,1])*coord[:,1])
         return  (s + c + t + cm)
             
     # Define the total polarimetric objective function and gradient
@@ -1364,7 +1364,7 @@ def chisqgrad_pbi_i(polimage, iimage, Amatrices, bis_p, sigma):
 # !AC May want to pass 2d arrays (esp. in TV)
 # polimage should be [mimage, chiimage]
 
-# Total intensity Entropys
+# Total intensity Entropies
 def spatch(imvec, priorvec):
     return -0.5*np.sum( ( imvec - priorvec) ** 2)
 
@@ -1418,7 +1418,7 @@ def stvgrad(imvec, nx, ny):
     g3 = (im - im_r2) / np.sqrt((im_r2 - im)**2 + (im_l1r2 - im_r2)**2)
     return -(g1 + g2 + g3).flatten()
     
-# Polarimetric Entropys
+# Polarimetric Entropies
 def sm(polimage, iimage):
     """I log m entropy"""
     
