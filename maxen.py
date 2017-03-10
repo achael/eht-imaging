@@ -407,7 +407,7 @@ def maxen_bs(Obsdata, InitIm, Prior, flux, maxit=100, alpha=100, gamma=500, delt
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim 
     
-def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_visamp=100, gamma=500, delta=500, beta=1.0, entropy="gs", stop=1e-5, grads=True, ipynb=False):
+def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphase=100, alpha_visamp=100, gamma=500, delta=500, beta=1.0, entropy="gs", stop=1e-5, grads=True, ipynb=False, show_updates=True):
     """Run maximum entropy on visibility amplitude and closure phase with an exponential change of variables 
        Obsdata is an Obsdata object, and Prior is an Image object.
        Returns Image object.
@@ -509,11 +509,14 @@ def maxen_amp_cphase(Obsdata, InitIm, Prior, flux = 1.0, maxit=100, alpha_clphas
     nit = 0
     def plotcur(logim_step):
         global nit
-        im_step = np.exp(logim_step)
-        chi2_clphase = chisq_clphase(im_step, A3, clphase, sigs_clphase)
-        chi2_amp   = chisq_visamp(im_step, A, amp, sigs_amp)
-	print "chi2_clphase: ",chi2_clphase , "chi2_amp: ",chi2_amp
-        plot_i(im_step, Prior, nit, chi2_amp, ipynb=ipynb)
+
+        if show_updates == True:
+            im_step = np.exp(logim_step)
+            chi2_clphase = chisq_clphase(im_step, A3, clphase, sigs_clphase)
+            chi2_amp   = chisq_visamp(im_step, A, amp, sigs_amp)
+            print "chi2_clphase: ",chi2_clphase , "chi2_amp: ",chi2_amp
+            plot_i(im_step, Prior, nit, chi2_amp, ipynb=ipynb)
+            
         nit += 1
    
     plotcur(loginit)
