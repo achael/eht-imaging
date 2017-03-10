@@ -1080,13 +1080,17 @@ def maxen_bs_m(Obsdata, Prior, flux, maxit=100, alpha=100, beta=500, gamma=1.5e6
 def threshold(image, frac_i=1.e-5, frac_pol=1.e-3):
     """Apply a hard threshold
     """ 
+
     imvec = np.copy(image.imvec)
+
     thresh = frac_i*np.abs(np.max(imvec))
     lowval = thresh
     flux = np.sum(imvec)
+
     for j in range(len(imvec)):
         if imvec[j] < thresh: 
             imvec[j]=lowval
+
     imvec = flux*imvec/np.sum(imvec)
     out = vb.Image(imvec.reshape(image.ydim,image.xdim), image.psize, 
                    image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
@@ -1564,7 +1568,7 @@ def plot_m(im, mim, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
     # Create figure and title
     plt.ion()
     plt.clf()
-    plt.suptitle("step: %i  $\chi_b^2$: %f   $\chi_m^2$: %f" % (nit, chi2, chi2m), fontsize=20)
+    plt.suptitle("step: %i  $\chi_{I}^2$: %f   $\chi_{pol}^2$: %f" % (nit, chi2, chi2m), fontsize=20)
         
     # Stokes I plot
     plt.subplot(121)

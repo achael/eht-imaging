@@ -18,6 +18,7 @@ import astropy.io.fits as fits
 import datetime
 import writeData
 import oifits_new as oifits
+import astropy.time as at
 import time as ttime
 import pulses
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
@@ -121,7 +122,7 @@ class Image(object):
         self.dec = float(dec)
         self.rf = float(rf)
         self.source = str(source)
-        self.mjd = float(mjd)
+        self.mjd = float(mjd) 
         
         self.qvec = []
         self.uvec = []
@@ -159,7 +160,7 @@ class Image(object):
         return newim
 
     def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GST)"""
+        """Returns the source position vector in geocentric coordinates (at 0h GMST)"""
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
                 
     def flip_chi(self):
@@ -211,7 +212,7 @@ class Image(object):
                 jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True):
                 
         """Observe the image with an array object to produce an obsdata object.
-	       tstart and tstop should be hrs in GMST.
+	       tstart and tstop should be hrs in UTC.
            tint and tadv should be seconds.
            tau is the estimated optical depth. This can be a single number or a dictionary giving one tau per site
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel at the appropriate frequency
@@ -224,7 +225,7 @@ class Image(object):
         
         # Generate empty observation
         print "Generating empty observation file . . . "
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, mjd=self.mjd)
         
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, sgrscat=sgrscat, add_th_noise=add_th_noise, opacitycal=opacitycal,
@@ -233,7 +234,7 @@ class Image(object):
         
         return obs
         
-    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian'):
+    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin',gamma=0.5):
         """Display the image with matplotlib
         """
         # TODO Display circular polarization 
@@ -246,8 +247,16 @@ class Image(object):
         plt.figure()
         plt.clf()
         
-        image = self.imvec;
+        imarr = (self.imvec).reshape(self.ydim, self.xdim)
+        unit = 'Jy/pixel'
+        if scale=='log':
+            imarr = np.log(imarr)
+            unit = 'log(Jy/pixel)'
         
+        if scale=='gamma':
+            imarr = imarr**(gamma)
+            unit = '(Jy/pixel)^gamma'    
+                   
         if len(self.qvec) and plotp:
             thin = self.xdim/nvec 
             mask = (self.imvec).reshape(self.ydim, self.xdim) > pcut * np.max(self.imvec)
@@ -264,8 +273,8 @@ class Image(object):
             
             # Stokes I plot
             plt.subplot(121)
-            im = plt.imshow(image.reshape(self.ydim, self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp, vmin=0)
-            plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
+            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+            plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                        width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
@@ -300,9 +309,8 @@ class Image(object):
         else:
             plt.subplot(111)    
             plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
-            
-            im = plt.imshow(image.reshape(self.ydim,self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp)
-            plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
+            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+            plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
             xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
             yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
             plt.xticks(xticks[0], xticks[1])
@@ -431,10 +439,10 @@ class Array(object):
                     
         return np.array(bls)
             
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=0.0, tau=TAUDEF):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=51544.0, tau=TAUDEF):
         """Generate u,v points and baseline errors for the array.
            Return an Observation object with no visibilities.
-           tstart and tstop are hrs in GMST
+           tstart and tstop are hrs in UTC
            tint and tadv are seconds.
            rf and bw are Hz
            ra is fractional hours
@@ -460,13 +468,16 @@ class Array(object):
         l = C/rf 
         
         # Observing times
+        # TODO: Scale - utc or tt? 
         times = np.arange(tstart, tstop, tstep)
+        times_sidereal = utc_to_gmst(times, mjd)
 
         # Generate uv points at all times
         outlist = []        
         for k in xrange(len(times)):
             time = times[k]
-            theta = np.mod((time-ra)*HOUR, 2*np.pi)
+            time_sidereal = times_sidereal[k]
+            theta = np.mod((time_sidereal-ra)*HOUR, 2*np.pi)
             blpairs = []
             for i1 in xrange(len(self.tarr)):
                 for i2 in xrange(len(self.tarr)):
@@ -576,8 +587,8 @@ class Obsdata(object):
         ra: the source right ascension (frac. hours)
         dec: the source declination (frac. degrees)
         mjd: the observation start date 
-        tstart: the observation start time (GMT, frac. hr.)
-        tstop: the observation end time (GMT, frac. hr.)
+        tstart: the observation start time (UTC, hr.)
+        tstop: the observation end time (UTC, hr.)
         rf: the observing frequency (Hz)
         bw: the observing bandwidth (Hz)
         ampcal: amplitudes calibrated T/F
@@ -585,7 +596,7 @@ class Obsdata(object):
         data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, vvis, sigma, qsigma, usigma, vsigma)
     """
     
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=0, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=51544, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
         
         if len(datatable) == 0:
             raise Exception("No data in input table!")
@@ -800,21 +811,24 @@ class Obsdata(object):
 
             # Elevation and Parallactic Angles
             if field in ["el1","el2"]:
-                thetas = np.mod((data['time']-self.ra)*HOUR, 2*np.pi)
+                times_sid = utc_to_gmst(data['time'], self.mjd)
+                thetas = np.mod((times_sid - self.ra)*HOUR, 2*np.pi)
                 coords = tdata[['x','y','z']].view(('f8', 3))
                 el_angle = elev(earthrot(coords, thetas), self.sourcevec())
                 out=el_angle/angle
                 ty = 'f8'
             if field in ["hr_ang1","hr_ang2"]:
+                times_sid = utc_to_gmst(data['time'], self.mjd)
                 coords = tdata[['x','y','z']].view(('f8', 3))
                 latlon = xyz_2_latlong(coords)
-                hr_angles = hr_angle(data['time']*HOUR, latlon[:,1], self.ra*HOUR)
+                hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], self.ra*HOUR)
                 out = hr_angles/angle
                 ty = 'f8'
             if field in ["par_ang1","par_ang2"]:
+                times_sid = utc_to_gmst(data['time'], self.mjd)
                 coords = tdata[['x','y','z']].view(('f8', 3))
                 latlon = xyz_2_latlong(coords)
-                hr_angles = hr_angle(data['time']*HOUR, latlon[:,1], self.ra*HOUR)
+                hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], self.ra*HOUR)
                 par_ang = par_angle(hr_angles, latlon[:,0], self.dec*DEGREE)
                 out = par_ang/angle
                 ty = 'f8'
@@ -846,7 +860,7 @@ class Obsdata(object):
         return allout
     
     def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GST)"""
+        """Returns the source position vector in geocentric coordinates (at 0h GMST)"""
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
         
     def res(self):
@@ -1577,7 +1591,7 @@ class Obsdata(object):
             
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel('GMST (h)')
+        x.set_xlabel('hr')
         x.set_ylabel(field)
         x.set_title('%s - %s'%(site1,site2))
         
@@ -1812,9 +1826,9 @@ class Obsdata(object):
         #head = fits.Header()
         head = hdulist['AIPS AN'].header
         head['EXTVER'] = 1
-        head['GSTIA0'] = 119.85 # !AC for mjd 48277
+        head['GSTIA0'] = 119.85 # !AC TODO for mjd 48277
         head['FREQ']= self.rf
-        head['ARRNAM'] = 'ALMA' #!AC Can we change this field? 
+        head['ARRNAM'] = 'ALMA' #!AC TODO Can we change this field? 
         head['XYZHAND'] = 'RIGHT'
         head['ARRAYX'] = 0.e0
         head['ARRAYY'] = 0.e0
@@ -2036,7 +2050,7 @@ class Obsdata(object):
         
         # convert times to datetime objects
         time = data['time']
-        dttime = np.array([datetime.datetime.utcfromtimestamp(x*60*60) for x in time]); #todo: these do not correspond to the acutal times
+        dttime = np.array([datetime.datetime.utcfromtimestamp(x*60*60) for x in time]); #TODO: these do not correspond to the acutal times
         
         # get the bispectrum information
         bi = biarr['bispec']
@@ -2049,7 +2063,7 @@ class Obsdata(object):
         
         # convert times to datetime objects
         timeClosure = biarr['time']
-        dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x) for x in timeClosure]); #todo: these do not correspond to the acutal times
+        dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x) for x in timeClosure]); #TODO: these do not correspond to the acutal times
 
         # convert antenna name strings to number identifiers
         biarr_ant1 = writeData.convertStrings(biarr['t1'], union)
@@ -2202,7 +2216,7 @@ def load_obs_txt(filename):
                    ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal)        
     return out
     
-def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA', mjd=0, ampcal=False, phasecal=False):
+def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA', mjd=51544, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
@@ -2683,7 +2697,7 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
 
 
 
-def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, src="SgrA", mjd="0" , pulse=pulses.trianglePulse2D):
+def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, src="SgrA", mjd="51544" , pulse=pulses.trianglePulse2D):
 
     # Radian or Degree?
     if punit=="deg":
@@ -3225,6 +3239,9 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
                 if site not in sites_in: 
                     taudict[site] = np.append(taudict[site], 0.0)   
 
+    # Compute Sidereal Times
+    times_sid = utc_to_gmst(times, obs.mjd)
+    
     # Generate Jones Matrices at each time for each telescope 
     out = {}
     for i in xrange(len(tarr)):
@@ -3233,11 +3250,11 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         latlon = xyz_2_latlong(coords)
             
         # Elevation Angles
-        thetas = np.mod((times - ra)*HOUR, 2*np.pi)
+        thetas = np.mod((times_sid - ra)*HOUR, 2*np.pi)
         el_angles = elev(earthrot(coords, thetas), sourcevec) 
         
         # Parallactic Angles 
-        hr_angles = hr_angle(times*HOUR, latlon[:,1], ra*HOUR)
+        hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], ra*HOUR)
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)        
         
         # Amplitude gain
@@ -3282,6 +3299,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
                      
         # Assemble the Jones Matrices and save to dictionary
+        # TODO: indexed by utc or sideral time?
         j_matrices = {times[j]: np.array([
                                 [np.exp(-1j*fr_angle[j])*gainR[j], np.exp(1j*fr_angle[j])*dR*gainR[j]],
                                 [np.exp(-1j*fr_angle[j])*dL*gainL[j], np.exp(1j*fr_angle[j])*gainL[j]]
@@ -3328,7 +3346,10 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
             for site in obs.tarr['site']:
                 if site not in sites_in: 
                     taudict[site] = np.append(taudict[site], 0.0)   
-                                    
+    
+    # Compute Sidereal Times
+    times_sid = utc_to_gmst(times, obs.mjd)  
+                                  
     # Make inverse Jones Matrices
     out = {}
     for i in xrange(len(tarr)):
@@ -3337,11 +3358,11 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         latlon = xyz_2_latlong(coords)
         
         # Elevation Angles
-        thetas = np.mod((times - ra)*HOUR, 2*np.pi)
+        thetas = np.mod((times_sid - ra)*HOUR, 2*np.pi)
         el_angles = elev(earthrot(coords, thetas), sourcevec)
 
         # Parallactic Angles (positive longitude EAST)
-        hr_angles = hr_angle(times*HOUR, latlon[:,1], ra*HOUR)
+        hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], ra*HOUR)
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)         
         
         # Amplitude gain - one by default now
@@ -3604,10 +3625,10 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     """   
 
     #print "------------------------------------------------------------------------------------------------------------------------"
-    opacitycalout = True
+    opacitycalout=True #With old noise function, output is always calibrated to estimated opacity
+                       #Could change this 
     if not opacitycal: 
         print "   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True"
-        opacitycalout = True
     if not ampcal: 
         print "   Applying gain corruption: gaincal-->False"
     if not phasecal:
@@ -3658,16 +3679,17 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
 
         sigma_true = sigma_true / np.sqrt(gain1 * gain2)
 
+    #TODO
     if not opacitycal:
         # Opacity Errors
         tau1 = np.abs(np.array([taus[i,0]* (1.0 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))]))
         tau2 = np.abs(np.array([taus[i,1]* (1.0 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))]))
         
-        # Correct noise RMS for gain variation and opacity
+        # Correct noise RMS for opacity
         sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
         
     # Add the noise and the gain error to the true visibilities
-    vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true)
+    vis  = (vis + cerror(sigma_true))  * (sigma_est/sigma_true) #sigma_est/sigma_true = gain
     qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
     uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
     vvis = (vvis + cerror(sigma_true)) * (sigma_est/sigma_true)
@@ -3844,6 +3866,12 @@ def jdtomjd(jd):
     """Return the mjd of a jd"""
   
     return jd - 2400000.5
+
+def utc_to_gmst(utc, mjd):
+    """Convert utc times in hours to gmst using astropy"""
+    time_obj = at.Time(utc/24.0 + mjd, format='mjd', scale='utc')
+    time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
+    return time_sidereal
     
 def earthrot(vecs, thetas):
     """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)"""
@@ -3889,7 +3917,7 @@ def elevcut(obsvec,sourcevec):
     return (angle > ELEV_LOW) * (angle < ELEV_HIGH)
 
 def hr_angle(gst, lon, ra):
-    """Computes the hour angle for a source at RA, observer at longitude long, and GST time gst
+    """Computes the hour angle for a source at RA, observer at longitude long, and GMST time gst
        gst in hours, ra & lon ALL in radian
        longitude positive east
     """
