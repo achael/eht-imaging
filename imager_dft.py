@@ -1,24 +1,19 @@
 # imager_dft.py
-# Andrew Chael, 10/15/2015
-# General imager for total intensity VLBI data
+# Andrew Chael, 3/11/2017
+# General DFT imager for total intensity VLBI data
 
 #TODO 
-# add amplitude debiasing to amplitude imaging
 # add more general linearized energy functions
+# debias closure amplitudes
 # closure amplitude and phase covariance
-# debias closure amplitudes? 
 
-import sys
 import string
 import time
 import numpy as np
 import scipy.optimize as opt
 import scipy.ndimage.filters as filt
-import scipy.signal
 import matplotlib.pyplot as plt
-import itertools as it
 import vlbi_imaging_utils as vb
-import pulses
 import linearize_energy as le
 from IPython import display
 
@@ -31,23 +26,25 @@ C = 299792458.0
 DEGREE = np.pi/180.
 RADPERAS = DEGREE/3600.
 RADPERUAS = RADPERAS/1e6
-NHIST = 5000 # number of steps to store for hessian approx
-nit = 0 # global variable to track the iteration number in the plotting callback
+NHIST = 100 # number of steps to store for hessian approx
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp']
 REGULARIZERS = ['gs', 'tv', 'l1', 'patch', 'simple']
 
+nit = 0 # global variable to track the iteration number in the plotting callback
+
 ##################################################################################################
 # Total Intensity Imager
 ##################################################################################################
-def imager(Obsdata, Prior, InitIm, flux, d1='vis', d2=False, s1='simple', s2=False,
-           alpha_d1=100, alpha_d2=100, 
+def imager(Obsdata, Prior, InitIm, flux,
+           d1='vis', d2=False, s1='simple', s2=False,
            alpha_s1=1, alpha_s2=1,
+           alpha_d1=100, alpha_d2=100, 
            alpha_flux=500, alpha_cm=500, 
            clipfloor=0., datamin="gd", grads=True, logim=True, 
            maxit=100, stop=1e-10, ipynb=False, show_updates=True):
    
-    """Run general imager
+    """Run a general interferometric imager.
        
        Obsdata is an Obsdata object, and Prior and InitIm are Image objects with matching dimensions.
        flux is the total flux of the output image
@@ -224,8 +221,7 @@ def imager(Obsdata, Prior, InitIm, flux, d1='vis', d2=False, s1='simple', s2=Fal
             cmreg = cm_constraint(im_step) 
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
             plot_i(im_step, Prior, nit, chi2_1, chi2_2, ipynb=ipynb)
-        
-        print "i: %d chi2_1-1: %0.2f chi2_2-1: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1-1, chi2_2-1,s_1,s_2)
+            print "i: %d chi2_1-1: %0.2f chi2_2-1: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1-1, chi2_2-1,s_1,s_2)
         nit += 1
    
     # Plot the initial image
@@ -257,7 +253,10 @@ def imager(Obsdata, Prior, InitIm, flux, d1='vis', d2=False, s1='simple', s2=Fal
     if logim: out = np.exp(res.x)
     if np.any(np.invert(embed_mask)): out = embed(out, embed_mask)
  
-    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse)
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, 
+                     Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, 
+                     mjd=Prior.mjd, pulse=Prior.pulse)
+    
     if len(Prior.qvec):
         print "Preserving image complex polarization fractions!"
         qvec = Prior.qvec * out / Prior.imvec
@@ -440,9 +439,6 @@ def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
 ##################################################################################################
 # Entropy and Gradient Functions
 ##################################################################################################
-# !AC All images should be 1d arrays 
-# !AC May want to pass 2d arrays (esp. in TV)
-# polimage should be [mimage, chiimage]
 
 def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
     if stype == "simple":

@@ -1081,10 +1081,10 @@ class Obsdata(object):
                             var3 = red1[sigmatype]**2
                             var4 = red2[sigmatype]**2
                             
-                            p1 = amp_debias(blue1[vtype], e1)
-                            p2 = amp_debias(blue2[vtype], e2)
-                            p3 = amp_debias(red1[vtype], e3)
-                            p4 = amp_debias(red2[vtype], e4)
+                            p1 = amp_debias(blue1[vtype], np.sqrt(var1))
+                            p2 = amp_debias(blue2[vtype], np.sqrt(var2))
+                            p3 = amp_debias(red1[vtype], np.sqrt(var3))
+                            p4 = amp_debias(red2[vtype], np.sqrt(var4))
                                                                              
                         elif vtype == "pvis":
                             var1 = blue1['qsigma']**2 + blue1['usigma']**2
@@ -1092,10 +1092,10 @@ class Obsdata(object):
                             var3 = red1['qsigma']**2 + red1['usigma']**2
                             var4 = red2['qsigma']**2 + red2['usigma']**2
 
-                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
-                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
-                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
-                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
+                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], np.sqrt(var1))
+                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], np.sqrt(var2))
+                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
+                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
                                                    
                         camp = np.abs((p1*p2)/(p3*p4))
                         camperr = camp * np.sqrt(var1/np.abs(p1)**2 +  
@@ -1664,7 +1664,7 @@ class Obsdata(object):
         r1 = set((site1, site4))
               
         # Get the closure amplitudes
-        camps = self.c_amplitudes(mode='time', count='max', vtype='vtype')
+        camps = self.c_amplitudes(mode='time', count='max', vtype='vis')
         plotdata = []
         for entry in camps:
             for obs in entry:

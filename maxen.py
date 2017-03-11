@@ -18,6 +18,7 @@ import pulses
 import linearize_energy as le
 from IPython import display
 reload(vb)
+
 ##################################################################################################
 # Constants
 ##################################################################################################
@@ -1530,9 +1531,12 @@ def stv_pol_grad_i(polimage, iimage, nx, ny):
 # Plotting Functions
 ##################################################################################################
 def plot_i(im, Prior, nit, chi2, ipynb=False):
-    
+
     plt.ion()
+    plt.pause(0.00001)    
     plt.clf()
+
+
     
     plt.imshow(im.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')     
     xticks = vb.ticks(Prior.xdim, Prior.psize/RADPERAS/1e-6)
@@ -1542,7 +1546,7 @@ def plot_i(im, Prior, nit, chi2, ipynb=False):
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
     plt.title("step: %i  $\chi^2$: %f" % (nit, chi2), fontsize=20)
-    plt.draw()
+    #plt.draw()
 
     if ipynb:
         display.clear_output()
@@ -1566,8 +1570,12 @@ def plot_m(im, mim, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
     m[-mask] = 0
     
     # Create figure and title
+
     plt.ion()
+    plt.pause(0.00001)    
     plt.clf()
+
+
     plt.suptitle("step: %i  $\chi_{I}^2$: %f   $\chi_{pol}^2$: %f" % (nit, chi2, chi2m), fontsize=20)
         
     # Stokes I plot
@@ -1605,7 +1613,7 @@ def plot_m(im, mim, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
     plt.title('m (above %i %% max flux)' % int(pcut*100))
     
     # Display
-    plt.draw()
+    #plt.draw()
     if ipynb:
         display.clear_output()
         display.display(plt.gcf())   
