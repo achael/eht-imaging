@@ -34,7 +34,7 @@ RADPERAS = DEGREE/3600
 RADPERUAS = RADPERAS*1.e-6
 
 # Telescope elevation cuts (degrees) 
-ELEV_LOW = 15.0
+ELEV_LOW = 10.0
 ELEV_HIGH = 85.0
 
 # Default Optical Depth and std. dev % on gain
@@ -209,7 +209,7 @@ class Image(object):
         
     def observe(self, array, tint, tadv, tstart, tstop, bw, 
                 sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
-                jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True):
+                jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True, timetype='UTC'):
                 
         """Observe the image with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in UTC.
@@ -225,7 +225,7 @@ class Image(object):
         
         # Generate empty observation
         print "Generating empty observation file . . . "
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, mjd=self.mjd)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, mjd=self.mjd, timetype=timetype)
         
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, sgrscat=sgrscat, add_th_noise=add_th_noise, opacitycal=opacitycal,
@@ -439,7 +439,7 @@ class Array(object):
                     
         return np.array(bls)
             
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=51544.0, tau=TAUDEF):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=51544.0, tau=TAUDEF, timetype='UTC'):
         """Generate u,v points and baseline errors for the array.
            Return an Observation object with no visibilities.
            tstart and tstop are hrs in UTC
@@ -470,7 +470,13 @@ class Array(object):
         # Observing times
         # TODO: Scale - utc or tt? 
         times = np.arange(tstart, tstop, tstep)
-        times_sidereal = utc_to_gmst(times, mjd)
+        if timetype == 'UTC':
+            times_sidereal = utc_to_gmst(times, mjd)
+        elif timetype == 'GMST':
+            times_sidereal = times
+        else:
+            print "Time Type Not Recognized! Assuming UTC!"
+            times_sidereal = utc_to_gmst(times, mjd)
 
         # Generate uv points at all times
         outlist = []        
@@ -535,7 +541,7 @@ class Array(object):
             raise Exception("No mutual visibilities in the specified time range!")
             
         # Return
-        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=str(ra) + ":" + str(dec), mjd=mjd)      
+        obs = Obsdata(ra, dec, rf, bw, np.array(outlist), self.tarr, source=str(ra) + ":" + str(dec), mjd=mjd, timetype=timetype)      
         return obs
      
     def save_array(self, fname):
@@ -596,7 +602,7 @@ class Obsdata(object):
         data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, vvis, sigma, qsigma, usigma, vsigma)
     """
     
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=51544, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=51544, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC'):
         
         if len(datatable) == 0:
             raise Exception("No data in input table!")
@@ -614,7 +620,7 @@ class Obsdata(object):
         self.opacitycal = bool(opacitycal)
         self.dcal = bool(dcal)
         self.frcal = bool(frcal)
-        
+        self.timetype = timetype
         self.tarr = tarr
         
         # Dictionary of array indices for site names
@@ -810,28 +816,28 @@ class Obsdata(object):
                                   "valid field values are " + string.join(FIELDS)) 
 
             # Elevation and Parallactic Angles
-            if field in ["el1","el2"]:
-                times_sid = utc_to_gmst(data['time'], self.mjd)
+            if field in ["el1","el2","hr_ang1","hr_ang2","par_ang1","par_ang2"]:
+                if self.timetype=='GMST':
+                    times_sid = data['time']
+                else:
+                    times_sid = utc_to_gmst(data['time'], self.mjd)
+
                 thetas = np.mod((times_sid - self.ra)*HOUR, 2*np.pi)
                 coords = tdata[['x','y','z']].view(('f8', 3))
                 el_angle = elev(earthrot(coords, thetas), self.sourcevec())
-                out=el_angle/angle
-                ty = 'f8'
-            if field in ["hr_ang1","hr_ang2"]:
-                times_sid = utc_to_gmst(data['time'], self.mjd)
-                coords = tdata[['x','y','z']].view(('f8', 3))
                 latlon = xyz_2_latlong(coords)
                 hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], self.ra*HOUR)
-                out = hr_angles/angle
-                ty = 'f8'
-            if field in ["par_ang1","par_ang2"]:
-                times_sid = utc_to_gmst(data['time'], self.mjd)
-                coords = tdata[['x','y','z']].view(('f8', 3))
-                latlon = xyz_2_latlong(coords)
-                hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], self.ra*HOUR)
-                par_ang = par_angle(hr_angles, latlon[:,0], self.dec*DEGREE)
-                out = par_ang/angle
-                ty = 'f8'
+
+                if field in ["el1","el2"]:
+                    out=el_angle/angle
+                    ty = 'f8'
+                if field in ["hr_ang1","hr_ang2"]:
+                    out = hr_angles/angle
+                    ty = 'f8'
+                if field in ["par_ang1","par_ang2"]:
+                    par_ang = par_angle(hr_angles, latlon[:,0], self.dec*DEGREE)
+                    out = par_ang/angle
+                    ty = 'f8'
                                 
             # Get arg/amps/snr
             if field in ["amp", "qamp", "uamp","vamp","pamp","mamp"]: 
@@ -3240,7 +3246,10 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
                     taudict[site] = np.append(taudict[site], 0.0)   
 
     # Compute Sidereal Times
-    times_sid = utc_to_gmst(times, obs.mjd)
+    if obs.timetype=='GMST':
+        times_sid=times
+    else:
+        times_sid = utc_to_gmst(times, obs.mjd)
     
     # Generate Jones Matrices at each time for each telescope 
     out = {}
@@ -3348,7 +3357,10 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
                     taudict[site] = np.append(taudict[site], 0.0)   
     
     # Compute Sidereal Times
-    times_sid = utc_to_gmst(times, obs.mjd)  
+    if obs.timetype=='GMST':
+        times_sid=times
+    else:
+        times_sid = utc_to_gmst(times, obs.mjd)
                                   
     # Make inverse Jones Matrices
     out = {}
