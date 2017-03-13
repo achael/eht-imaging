@@ -3,4 +3,9 @@
 vex_files/*
 /#*
 docs/_build/*
+local/*
+*test*
+
+data/3C279JUN16.UVP
+data/OJ287AUG10B.UVP
 

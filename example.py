@@ -2,6 +2,7 @@
 # The matplotlib windows may not open/close properly if you run this directly as a script
 
 import vlbi_imaging_utils as vb
+import imager_dft as imgr
 import maxen as mx
 import numpy as np
 
@@ -28,10 +29,6 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, sgrscat=Fa
 
 # You can deblur the visibilities by dividing by the scattering kernel if necessary
 #obs = vb.deblur(obs)
-
-# Or you can load an observation file directly from text or uvfits
-#obs = vb.load_obs_txt('./data/testobs.txt')
-#obs = vb.load_obs_uvfits('./data/testobs.UVP')
 
 # These are some simple plots you can check
 obs.plotall('u','v', conj=True) # uv coverage
@@ -62,8 +59,6 @@ res = obs.res() # nominal array resolution, 1/longest baseline
 print beamparams 
 print res
 
-
-
 # Export the visibility data to uvfits/text
 obs.save_txt('obs.txt') # exports a text file with the visibilities
 obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
@@ -72,7 +67,7 @@ obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 npix = 100
 fov = 1*im.xdim * im.psize
 zbl = np.sum(im.imvec) # total flux
-prior_fwhm = 200*vb.RADPERUAS # Gaussian size in microarcssec
+prior_fwhm = 60*vb.RADPERUAS # Gaussian size in microarcssec
 emptyprior = vb.make_square(obs, npix, fov)
 flatprior = vb.add_flat(emptyprior, zbl)
 gaussprior = vb.add_gauss(emptyprior, zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
