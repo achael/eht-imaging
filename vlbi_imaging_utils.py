@@ -42,14 +42,8 @@ MJD_DEFAULT = 51544
 PULSE_DEFAULT = pulses.trianglePulse2D
 
 # Telescope elevation cuts (degrees) 
-#ELEV_LOW = 10.0
-#ELEV_HIGH = 85.0
-
-#ELEV_LOW = 0.01
-#ELEV_HIGH = 89.99
-
-ELEV_LOW = 1.
-ELEV_HIGH = 89.
+ELEV_LOW = 10.0
+ELEV_HIGH = 85.0
 
 # Default Optical Depth and std. dev % on gain
 TAUDEF = 0.1
@@ -247,47 +241,47 @@ class Image(object):
         
         return obs_no_noise 
           
-    def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True,
-                                                                  jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True,
-                                                                  inv_jones=False):
+    def observe_same(self, obs,sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
+                           tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
+                           jones=False, inv_jones=False, dcal=True):
                                                                   
         """Observe the image on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
            
            gain_offset can be optionally set as a dictionary that specifies the percentage offset 
-           for each telescope site. This can only be done currently if jones=False. 
-           If gain_offset is a single value than it is the standard deviation 
-           of a randomly selected gain offset. 
+           for each telescope site. 
         """
         print "Producing clean visibilities from image . . . "
         obs_out = self.observe_same_nonoise(obs, sgrscat=sgrscat)    
         
         # Jones Matrix Corruption
         if jones:
-            if type(gain_offset)== dict:
-                print 'WARNING: cannot use a dictionary gain offset when using jones matrices'
-        
             print "Applying Jones Matrices to data . . . "
             obs_out = add_jones_and_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
-                                          ampcal=ampcal, gainp=gainp, phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
+                                                   ampcal=ampcal, phasecal=phasecal, dcal=dcal, frcal=frcal,
+                                                   gainp=gainp, gain_offset=gain_offset, dtermp=dtermp)
             
-            
+            #!AC TODO constant gain_offset is NOT calibrated away in this step. Is this inconsistent?
             if inv_jones:
                 print "Applying a priori calibration with estimated Jones matrices . . . "
-                obs_out = apply_jones_inverse(obs_out, ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal, dcal=dcal, frcal=frcal)
+                obs_out = apply_jones_inverse(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, 
+                                                       dcal=dcal, frcal=frcal)
         
         # No Jones Matrices, Add noise the old way        
         #!AC There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.                                              
         elif add_th_noise:                
             print "Adding gain + phase errors to data and applying a priori calibration . . . "
-            obs_out = add_noise(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, gainp=gainp, gain_offset=gain_offset, add_th_noise=add_th_noise)
+            obs_out = add_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
+                                         ampcal=ampcal, phasecal=phasecal, gainp=gainp,
+                                         gain_offset=gain_offset)
         
         return obs_out
         
     def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, 
-                sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
-                jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True, timetype='UTC'):
+                sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
+                tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
+                jones=False, inv_jones=False, dcal=True, timetype='UTC', elevmin=ELEV_LOW, elevmax=ELEV_HIGH):
                 
         """Observe the image with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in UTC.
@@ -306,7 +300,9 @@ class Image(object):
         if mjd == None:
             mjd = self.mjd
 
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, mjd=mjd, timetype=timetype)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, 
+                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax)
+
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, sgrscat=sgrscat, add_th_noise=add_th_noise, opacitycal=opacitycal,
                                 ampcal=ampcal, gainp=gainp, phasecal=phasecal, gain_offset=gain_offset, 
@@ -523,7 +519,8 @@ class Array(object):
                     
         return np.array(bls)
             
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT, tau=TAUDEF, timetype='UTC'):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT, 
+                      tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH, timetype='UTC'):
         """Generate u,v points and baseline errors for the array.
            Return an Observation object with no visibilities.
            tstart and tstop are hrs in UTC
@@ -577,8 +574,8 @@ class Array(object):
                         i1 < i2 and # This is the right condition for uvfits save
                         #self.tarr[i1]['z'] <= self.tarr[i2]['z'] and # Choose the north one first
                         not ((i2, i1) in blpairs) and # This cuts out the conjugate baselines
-                        elevcut(earthrot(coord1, theta), sourcevec)[0] and 
-                        elevcut(earthrot(coord2, theta), sourcevec)[0]
+                        elevcut(earthrot(coord1, theta), sourcevec, elevmin, elevmax)[0] and 
+                        elevcut(earthrot(coord2, theta), sourcevec, elevmin, elevmax)[0]
                        ):
                         
                         # Optical Depth
@@ -2424,8 +2421,8 @@ def load_obs_uvfits(filename, flipbl=False):
     tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
     xyz = hdulist['AIPS AN'].data['STABXYZ']
     try:
-        sefdr = hdulist['AIPS AN'].data['SEFD']
-        sefdl = hdulist['AIPS AN'].data['SEFD'] #!AC TODO add sefdl to uvfits?
+        sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
+        sefdl = np.real(hdulist['AIPS AN'].data['SEFD']) #!AC TODO add sefdl to uvfits?
     except KeyError:
         print "Warning! no SEFD data in UVfits file"
         sefdr = np.zeros(len(tnames))
@@ -3241,7 +3238,7 @@ def blnoise(sefd1, sefd2, tint, bw):
     """
     
     #!AC TODO Is the factor of sqrt(2) correct? 
-    noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
+    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
     return noise
 
 def cerror(sigma):
@@ -3316,10 +3313,15 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=pulses.deltaPulse2D, mask=[]):
     return ftmatrices
 
 
-def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True, dcal=True, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID, frcal=True):
+def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True, 
+                    dcal=True, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID, frcal=True):
     """Compute ALL Jones Matrices for a list of times (non repeating), with gain and dterm errors.
        ra and dec should be in hours / degrees
        Will return a nested dictionary of matrices indexed by the site, then by the time 
+
+       gain_offset can be optionally set as a dictionary that specifies the constant percentage offset 
+       for each telescope site. If it is a single value than it is the standard deviation 
+       of a randomly selected gain offset. 
     """   
 
     tlist = obs.tlist()
@@ -3340,11 +3342,11 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
             # Should we screen for conflicting same-time measurements of tau? 
             if len(sites_in) >= nsites: break
             
-            if not bl['t1'] in sites_in:
+            if (not len(sites_in)) or (not bl['t1'] in sites_in):
                 taudict[bl['t1']] = np.append(taudict[bl['t1']], bl['tau1'])
                 sites_in = np.append(sites_in, bl['t1'])
             
-            if not bl['t2'] in sites_in:
+            if (not len(sites_in)) or (not bl['t2'] in sites_in):
                 taudict[bl['t2']] = np.append(taudict[bl['t2']], bl['tau2'])
                 sites_in = np.append(sites_in, bl['t2'])                
         if len(sites_in) < nsites:
@@ -3373,21 +3375,24 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], ra*HOUR)
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)        
         
-        # Amplitude gain
-        # !AC TODO this assumes all gains have mean 1: should we put in a fixed gain offset term? 
-        # !AC TODO should we make gainR and gainL different?
-        
+        # Amplitude gain        
+        tproc = str(ttime.time())
         gainR = gainL = np.ones(len(times))
         if not ampcal:
-            #! AC sqrt here to match convention below
-            gainR = np.sqrt(np.abs(np.array([1.0 + gainp * hashrandn(site, 'gain') 
-                            + gainp * hashrandn(site, 'gain', time) for time in times])))
-            gainL = np.sqrt(np.abs(np.array([1.0 + gainp * hashrandn(site, 'gain') 
-                            + gainp * hashrandn(site, 'gain', time) for time in times])))
+            # Amplitude gain
+            if type(gain_offset) == dict:
+                goff = gain_offset[site]
+            else: 
+                goff=gain_offset
+
+            gainR = np.sqrt(np.abs(np.array([1.0 +  0.01*goff + gainp * hashrandn(site, 'gain', time, tproc) 
+                                     for time in times])))
+            gainL = np.sqrt(np.abs(np.array([1.0 +  0.01*goff + gainp * hashrandn(site, 'gain', time, tproc) 
+                                     for time in times])))
         
         # Opacity attenuation of amplitude gain
         if not opacitycal:
-            taus = np.abs(np.array([taudict[site][j] * (1.0 + gainp * hashrandn(site, 'tau', times[j])) for j in xrange(len(times))]))                
+            taus = np.abs(np.array([taudict[site][j] * (1.0 + gainp * hashrandn(site, 'tau', times[j], tproc)) for j in xrange(len(times))]))                
             atten = np.exp(-taus/(EP + 2.0*np.sin(el_angles)))
             
             gainR = gainR * atten
@@ -3395,7 +3400,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
                  
         # Atmospheric Phase
         if not phasecal:
-            phase = np.array([2 * np.pi * hashrand(site, 'phase', time) for time in times])
+            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, tproc) for time in times])
             gainR = gainR * np.exp(1j*phase) 
             gainL = gainL * np.exp(1j*phase)
             
@@ -3403,11 +3408,11 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, phasecal=True,
         dR = dL = 0.0
         if not dcal: 
             dR = tarr[i]['dr']
-            if dR == 0.0: dR = dtermp * (hashrandn(site, 'drreal') + 1j * hashrandn(site, 'drim'))
+            if dR == 0.0: dR = dtermp * (hashrandn(site, 'drreal', tproc) + 1j * hashrandn(site, 'drim', tproc))
             dL = tarr[i]['dl']
-            if dL == 0.0: dL = dtermp * (hashrandn(site, 'dlreal') + 1j * hashrandn(site, 'dlim'))
-            dR = dR + dtermp_resid * (hashrandn(site, 'drreal_resid') + 1j * hashrandn(site, 'drim_resid'))
-            dL = dL + dtermp_resid * (hashrandn(site, 'dlreal_resid') + 1j * hashrandn(site, 'dlim_resid')) 
+            if dL == 0.0: dL = dtermp * (hashrandn(site, 'dlreal', tproc) + 1j * hashrandn(site, 'dlim', tproc))
+            dR = dR + dtermp_resid * (hashrandn(site, 'drreal_resid', tproc) + 1j * hashrandn(site, 'drim_resid', tproc))
+            dL = dL + dtermp_resid * (hashrandn(site, 'dlreal_resid', tproc) + 1j * hashrandn(site, 'dlim_resid', tproc)) 
 
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
@@ -3430,6 +3435,9 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
     """Compute all Inverse Jones Matrices for a list of times (non repeating), with NO gain and dterm errors.
        ra and dec should be in hours / degrees
        Will return a dictionary of matrices for each time, indexed by the site, with the matrices in time order  
+
+       gain_offset can be optionally set as a dictionary that specifies the constant percentage offset 
+       for each telescope site. 
     """   
 
     # Get data
@@ -3451,11 +3459,11 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
             # Should we screen for conflicting same-time measurements of tau? 
             if len(sites_in) >= nsites: break
             
-            if not bl['t1'] in sites_in:
+            if (not len(sites_in)) or (not bl['t1'] in sites_in):
                 taudict[bl['t1']] = np.append(taudict[bl['t1']], bl['tau1'])
                 sites_in = np.append(sites_in, bl['t1'])
             
-            if not bl['t2'] in sites_in:
+            if (not len(sites_in)) or (not bl['t2'] in sites_in):
                 taudict[bl['t2']] = np.append(taudict[bl['t2']], bl['tau2'])
                 sites_in = np.append(sites_in, bl['t2'])                
         if len(sites_in) < nsites:
@@ -3487,6 +3495,21 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         # Amplitude gain - one by default now
         # !AC TODO this assumes all gains 1 - should we put in a fixed gain term? 
         gainR = gainL = np.ones(len(times))        
+        
+        # Amplitude gain        
+        gainR = gainL = np.ones(len(times))
+        
+        #!AC TODO gain_offset not implemented in inverse Jones
+        #          should be added to tarr? 
+        #if not ampcal:
+        #    # Amplitude gain
+        #    if type(gain_offset) == dict:
+        #        goff = gain_offset[site]
+        #    else: 
+        #        goff=gain_offset
+        #
+        #    gainR *= np.sqrt(1.0 +  0.01*goff)
+        #    gainL *= np.sqrt(1.0 +  0.01*goff)
         
         # Opacity attenuation of amplitude gain
         if not opacitycal:
@@ -3687,14 +3710,14 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
        Returns signals & noises scaled by estimated gains, including opacity attenuation. 
        Be very careful using outside of Image.observe!
        
-       gain_offset can be optionally set as a dictionary that specifies the percentage offset 
+       gain_offset can be optionally set as a dictionary that specifies the constant percentage offset 
        for each telescope site. If it is a single value than it is the standard deviation 
        of a randomly selected gain offset. 
     """   
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     opacitycalout=True #With old noise function, output is always calibrated to estimated opacity
-                       #Could change this 
+                       #!AC TODO Could change this 
     if not opacitycal: 
         print "   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True"
     if not ampcal: 
@@ -3732,26 +3755,25 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
         
     # Add gain and opacity fluctuations to the TRUE noise
     sigma_true = sigma_perf
+    tproc = str(ttime.time())
     if not ampcal:
         # Amplitude gain
         if type(gain_offset) == dict:
-            gain1 = np.abs(np.array([1.0 +  0.01*gain_offset[sites[i,0]] 
-                        + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
-            gain2 = np.abs(np.array([1.0 +  0.01*gain_offset[sites[i,1]]  
-                        + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))  
-        else: 
-            gain1 = np.abs(np.array([1.0 + gain_offset * hashrandn(sites[i,0], 'gain') 
-                        + gainp * hashrandn(sites[i,0], 'gain', time[i]) for i in xrange(len(time))]))
-            gain2 = np.abs(np.array([1.0 + gain_offset * hashrandn(sites[i,1], 'gain') 
-                        + gainp * hashrandn(sites[i,1], 'gain', time[i]) for i in xrange(len(time))]))  
+            goff1 = gain_offset[sites[i,0]]
+            goff2 = gain_offset[sites[i,1]]
+        else: goff1=goff2=gain_offset
+
+        gain1 = np.abs(np.array([1.0 +  0.01*goff1 + gainp * hashrandn(sites[i,0], 'gain', time[i], tproc) 
+                                 for i in xrange(len(time))]))
+        gain2 = np.abs(np.array([1.0 +  0.01*goff2 + gainp * hashrandn(sites[i,1], 'gain', time[i], tproc) 
+                                 for i in xrange(len(time))]))  
 
         sigma_true = sigma_true / np.sqrt(gain1 * gain2)
 
-    #TODO
     if not opacitycal:
         # Opacity Errors
-        tau1 = np.abs(np.array([taus[i,0]* (1.0 + gainp * hashrandn(sites[i,0], 'tau', time[i])) for i in xrange(len(time))]))
-        tau2 = np.abs(np.array([taus[i,1]* (1.0 + gainp * hashrandn(sites[i,1], 'tau', time[i])) for i in xrange(len(time))]))
+        tau1 = np.abs(np.array([taus[i,0]* (1.0 + gainp * hashrandn(sites[i,0], 'tau', time[i], tproc)) for i in xrange(len(time))]))
+        tau2 = np.abs(np.array([taus[i,1]* (1.0 + gainp * hashrandn(sites[i,1], 'tau', time[i], tproc)) for i in xrange(len(time))]))
         
         # Correct noise RMS for opacity
         sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
@@ -3764,8 +3786,8 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
         
     # Add random atmospheric phases    
     if not phasecal:
-        phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i]) for i in xrange(len(time))])
-        phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i]) for i in xrange(len(time))])
+        phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i], tproc) for i in xrange(len(time))])
+        phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i], tproc) for i in xrange(len(time))])
         
         vis *= np.exp(1j * (phase2-phase1))
         qvis *= np.exp(1j * (phase2-phase1))
@@ -3854,8 +3876,7 @@ def amp_debias(vis, sigma):
     """Return debiased visibility amplitudes
     """
     
-    # TODO: what to do if deb2 < 0?
-    # Currently we do nothing
+    # !AC TODO: what to do if deb2 < 0? Currently we do nothing
     deb2 = np.abs(vis)**2 - np.abs(sigma)**2
     if type(deb2) == float or type(deb2)==np.float64:
         if deb2 < 0.0: return np.abs(vis)
@@ -3989,13 +4010,13 @@ def elev(obsvecs, sourcevec):
 
     return el
         
-def elevcut(obsvecs, sourcevec):
+def elevcut(obsvecs, sourcevec, elevmin=ELEV_LOW, elevmax=ELEV_HIGH):
     """Return True if a source is observable by a telescope vector
     """
     
     angles = elev(obsvecs, sourcevec)/DEGREE
     
-    return (angles > ELEV_LOW) * (angles < ELEV_HIGH)
+    return (angles > elevmin) * (angles < elevmax)
 
 def hr_angle(gst, lon, ra):
     """Computes the hour angle for a source at RA, observer at longitude long, and GMST time gst
@@ -4086,25 +4107,3 @@ def make_subarray(array, sites):
     mask = np.array([t in sites for t in all_sites])
     return Array(array.tarr[mask])
 
-def observe_vex(im, vex, source):
-    """Generates an observation corresponding to a given vex object
-       im is an image
-       vex is a vex object
-       source is the source string identifier in the vex object, e.g., 'SGRA'
-    """
-    global ELEV_LOW, ELEV_HIGH
-
-    #First, eliminate hard-coded elevation limits
-
-    obs_List=[]
-    for i_scan in range(len(vex.sched)):
-        if vex.sched[i_scan]['source'] != source:
-            continue
-        subarray = make_subarray(vex.array, [vex.sched[i_scan]['scan'][key]['site'] for key in vex.sched[i_scan]['scan'].keys()])
-
-        obs = im.observe(subarray, vex.sched[i_scan]['scan'][0]['scan_sec'], 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'], 
-                                   vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0, 
-                                   vex.bw_hz, vex.sched[i_scan]['mjd_floor'])    
-        obs_List.append(obs)
-
-    return merge_obs(obs_List)

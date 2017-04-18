@@ -1,12 +1,33 @@
-# Read in .vex files.
+# Read in .vex files. and function to observe them
 # Assumes there is only 1 MODE in vex file
-
+# Hotaka Shiokawa - 2017
 
 import vlbi_imaging_utils as vb
 import numpy as np
 import re
 import jdcal
 
+
+def observe_vex(im, vex, source):
+    """Generates an observation corresponding to a given vex object
+       im is an image
+       vex is a vex object
+       source is the source string identifier in the vex object, e.g., 'SGRA'
+    """
+
+    obs_List=[]
+    for i_scan in range(len(vex.sched)):
+        if vex.sched[i_scan]['source'] != source:
+            continue
+        subarray = vb.make_subarray(vex.array, [vex.sched[i_scan]['scan'][key]['site'] for key in vex.sched[i_scan]['scan'].keys()])
+
+        obs = im.observe(subarray, vex.sched[i_scan]['scan'][0]['scan_sec'], 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'], 
+                                   vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0, 
+                                   vex.bw_hz, mjd=vex.sched[i_scan]['mjd_floor'],
+                                   elevmin=.01, elevmax=89.99)    
+        obs_List.append(obs)
+
+    return vb.merge_obs(obs_List)
 
 class Vex(object):
 
