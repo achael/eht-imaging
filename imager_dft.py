@@ -80,10 +80,10 @@ def imager(Obsdata, Prior, InitIm, flux,
     if (not ((s1 in REGULARIZERS) or s1==False)) or (not ((s2 in REGULARIZERS) or s2==False)):
         raise Exception("Invalid regularizer: valid regularizers are: " + string.join(REGULARIZERS))
     
-    # Catch scale and dimension problems
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
         raise Exception("Initial image does not match dimensions of the prior image!")
 
+    # Catch scale and dimension problems
     imsize = np.max([Prior.xdim, Prior.ydim]) * Prior.psize
     uvmax = 1./Prior.psize
     uvmin = 1./imsize
@@ -217,14 +217,14 @@ def imager(Obsdata, Prior, InitIm, flux,
             chi2_2 = chisq2(im_step)
             s_1 = reg1(im_step) 
             s_2 = reg2(im_step) 
-            fluxreg = flux_constraint(im_step) 
-            cmreg = cm_constraint(im_step) 
+            #fluxreg = flux_constraint(im_step) 
+            #cmreg = cm_constraint(im_step) 
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
             plot_i(im_step, Prior, nit, chi2_1, chi2_2, ipynb=ipynb)
             print "i: %d chi2_1-1: %0.2f chi2_2-1: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1-1, chi2_2-1,s_1,s_2)
         nit += 1
    
-    # Plot the initial image
+    # Generate and the initial image
     if logim:
         xinit = np.log(ninit)
     else: 
@@ -483,35 +483,35 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
 def ssimple(imvec, priorvec, flux):
     """Simple entropy
     """
-    #norm = flux
+    norm = flux
     norm = 1
     return -np.sum(imvec*np.log(imvec/priorvec)) / norm
 
 def ssimplegrad(imvec, priorvec, flux):
     """Simple entropy gradient
     """
-    #norm = flux
+    norm = flux
     norm =1
     return (-np.log(imvec/priorvec) - 1) / norm
     
 def sl1(imvec, priorvec, flux):
     """L1 norm regularizer
     """
-    #norm = flux
+    norm = flux
     norm = 1    
     return -np.sum(np.abs(imvec - priorvec))/norm
 
 def sl1grad(imvec, priorvec, flux):
     """L1 norm gradient
     """
-    #norm = flux
+    norm = flux
     norm = 1    
     return -np.sign(imvec - priorvec)/norm
     
 def sgs(imvec, priorvec, flux):
     """Gull-skilling entropy
     """
-    #norm = flux
+    norm = flux
     norm =1    
     return np.sum(imvec - priorvec - imvec*np.log(imvec/priorvec))/norm
 
@@ -519,7 +519,7 @@ def sgs(imvec, priorvec, flux):
 def sgsgrad(imvec, priorvec, flux):
     """Gull-Skilling gradient
     """  
-    #norm = flux
+    norm = flux
     norm = 1
     return -np.log(imvec/priorvec)/norm
 
@@ -527,7 +527,7 @@ def sgsgrad(imvec, priorvec, flux):
 def stv(imvec, nx, ny, flux):
     """Total variation regularizer
     """
-    #norm = flux
+    norm = flux
     norm = 1    
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -539,7 +539,7 @@ def stv(imvec, nx, ny, flux):
 def stvgrad(imvec, nx, ny, flux):
     """Total variation gradient
     """
-    #norm = flux
+    norm = flux
     norm = 1    
     im = imvec.reshape(ny,nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -559,7 +559,7 @@ def stvgrad(imvec, nx, ny, flux):
 def spatch(imvec, priorvec, flux):
     """Patch prior regularizer
     """
-    #norm = flux**2
+    norm = flux**2
     norm = 1    
     out = -0.5*np.sum( ( imvec - priorvec) ** 2)
     return out/norm
@@ -567,7 +567,7 @@ def spatch(imvec, priorvec, flux):
 def spatchgrad(imvec, priorvec, flux):
     """Patch prior gradient
     """
-    #norm = flux**2
+    norm = flux**2
     norm = 1    
     out = -(imvec  - priorvec)
     return out/norm

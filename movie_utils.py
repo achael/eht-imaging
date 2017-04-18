@@ -1,6 +1,8 @@
 # movie_utils.py
 # Andrew Chael, 09/06/2016
 
+#TODO add jones matrices to observe
+
 import string
 import numpy as np
 import numpy.lib.recfunctions as rec

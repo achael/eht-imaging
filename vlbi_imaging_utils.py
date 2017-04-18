@@ -159,6 +159,16 @@ class Image(object):
             newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
         return newim
 
+    def imarr(self, stokes="I"):
+        """Returns the image 2D array of type stokes"""
+
+        imarr = np.array([])
+        if stokes=="I": imarr=im.imvec.reshape(im.xdim, im.ydim)
+        elif stokes=="Q" and len(im.qvec): imarr=im.qvec.reshape(im.xdim, im.ydim)
+        elif stokes=="U" and len(im.uvec): imarr=im.uvec.reshape(im.xdim, im.ydim)
+        elif stokes=="V" and len(im.vvec): imarr=im.vvec.reshape(im.xdim, im.ydim)
+        return imarr
+
     def sourcevec(self):
         """Returns the source position vector in geocentric coordinates (at 0h GMST)"""
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
