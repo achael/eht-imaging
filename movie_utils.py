@@ -26,16 +26,33 @@ import vlbi_imaging_utils as vb
 EP = 1.0e-10
 C = 299792458.0
 DEGREE = np.pi/180.
+HOUR = (180./12.)*DEGREE
 RADPERAS = DEGREE/3600
 RADPERUAS = RADPERAS/1e6
 
+# Default Parameters
+SOURCE_DEFAULT = "SgrA"
+RA_DEFAULT = 17.761122472222223
+DEC_DEFAULT = -28.992189444444445
+RF_DEFAULT = 230e9
+MJD_DEFAULT = 51544
+PULSE_DEFAULT = pulses.trianglePulse2D
+
 # Telescope elevation cuts (degrees) 
-ELEV_LOW = 15.0
-ELEV_HIGH = 85.0
+#ELEV_LOW = 10.0
+#ELEV_HIGH = 85.0
+
+#ELEV_LOW = 0.01
+#ELEV_HIGH = 89.99
+
+ELEV_LOW = 1.
+ELEV_HIGH = 89.
 
 # Default Optical Depth and std. dev % on gain
 TAUDEF = 0.1
 GAINPDEF = 0.1
+DTERMPDEF = 0.1 # rms amplitude of D-terms if not specified in array file
+DTERMPDEF_RESID = 0.01 # rms *residual* amplitude of D-terms (random, unknown contribution)
 
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas
@@ -43,14 +60,16 @@ FWHM_MIN = 0.64 * 1000
 POS_ANG = 78 # in degree, E of N
 
 # Observation recarray datatypes
-DTARR = [('site', 'a32'), ('x','f8'), ('y','f8'), ('z','f8'), ('sefd','f8')]
+DTARR = [('site', 'a32'), ('x','f8'), ('y','f8'), ('z','f8'), 
+         ('sefdr','f8'),('sefdl','f8'),('dr','c16'),('dl','c16'),
+         ('fr_par','f8'),('fr_elev','f8'),('fr_off','f8')]
 
 DTPOL = [('time','f8'),('tint','f8'),
          ('t1','a32'),('t2','a32'),
-         ('el1','f8'),('el2','f8'),
          ('tau1','f8'),('tau2','f8'),
          ('u','f8'),('v','f8'),
-         ('vis','c16'),('qvis','c16'),('uvis','c16'),('sigma','f8')]
+         ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
+         ('sigma','f8'),('qsigma','f8'),('usigma','f8'),('vsigma','f8')]
 
 DTBIS = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),
          ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
@@ -67,12 +86,17 @@ DTCAMP = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),('t4','a32'),
 
 # Observation fields for plotting and retrieving data        
 FIELDS = ['time','tint','u','v','uvdist',
-          't1','t2','el1','el2','tau1','tau2',
-          'vis','amp','phase','snr','sigma',
+          't1','t2','tau1','tau2',
+          'el1','el2','hr_ang1','hr_ang2','par_ang1','par_ang2',
+          'vis','amp','phase','snr',
           'qvis','qamp','qphase','qsnr',
           'uvis','uamp','uphase','usnr',
-          'pvis','pamp','pphase',
-          'm','mamp','mphase']
+          'vvis','vamp','vphase','vsnr',
+          'sigma','qsigma','usigma','vsigma',
+          'sigma_phase','qsigma_phase','usigma_phase','vsigma_phase',
+          'psigma_phase','msigma_phase',
+          'pvis','pamp','pphase','psnr',
+          'm','mamp','mphase','msnr']
           
 class Movie(object):
     """A list of image arrays (in Jy/pixel).
@@ -91,14 +115,13 @@ class Movie(object):
     	mjd: The mjd of the image 
     """
     
-    def __init__(self, movie, framedur, psize, ra, dec, rf=230e9, pulse=pulses.trianglePulse2D, source="SgrA", mjd="0"):
+    def __init__(self, movie, framedur, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT):
         if len(movie[0].shape) != 2: 
             raise Exception("image must be a 2D numpy array") 
         
         self.framedur = float(framedur)
         self.pulse = pulse       
         self.psize = float(psize)
-        # !AC Check on consistency here
         self.xdim = movie[0].shape[1]
         self.ydim = movie[0].shape[0]
         
@@ -106,7 +129,7 @@ class Movie(object):
         self.dec = float(dec)
         self.rf = float(rf)
         self.source = str(source)
-        self.mjd = float(mjd)
+        self.mjd = int(mjd)
         
         #the list of frames
         self.frames = [image.flatten() for image in movie] 
@@ -135,8 +158,12 @@ class Movie(object):
     
     def copy(self):
         """Copy the Movie object"""
-        new = Movie([imvec.reshape(self.ydim,self.xdim) for imvec in self.frames], self.psize, self.framedur, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
-        newim.add_qu([qvec.reshape(self.ydim,self.xdim) for qvec in self.qframes], [uvec.reshape(self.ydim,self.xdim) for uvec in self.uframes])
+        new = Movie([imvec.reshape(self.ydim,self.xdim) for imvec in self.frames], 
+                     self.psize, self.framedur, self.ra, self.dec, rf=self.rf, 
+                     source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        newim.add_qu([qvec.reshape(self.ydim,self.xdim) for qvec in self.qframes], 
+                     [uvec.reshape(self.ydim,self.xdim) for uvec in self.uframes])
         return newim
         
     def flip_chi(self):
@@ -145,7 +172,7 @@ class Movie(object):
         self.qframes = [-qvec for qvec in self.qframes]
         return
            
-    def observe_same(self, obs, sgrscat=False, repeat=False):
+    def observe_same_nonoise(self, obs, sgrscat=False, repeat=False):
         """Observe the movie on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
@@ -157,14 +184,13 @@ class Movie(object):
 	    if (self.rf != obs.rf):
 	        raise Exception("Image frequency is not the same as observation frequency!")
         
-        mjdstart = self.mjd
-        mjdend = self.mjd + (len(self.frames)*self.framedur) / 86400.0 #!AC use astropy date conversion
+        mjdstart = float(self.mjd)
+        mjdend = float(self.mjd) + (len(self.frames)*self.framedur) / 86400.0 
         
         # Get data
         obslist = obs.tlist()
         
-        # Observation MJDs in range?
-        # !AC use astropy date conversion!!
+        # times
         obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
 
         if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
@@ -177,7 +203,7 @@ class Movie(object):
             
             # Frame number
             mjd = obsmjds[i]
-            n = int(np.floor((mjd - mjdstart) * 86400.0 / self.framedur))
+            n = int(np.floor((mjd - mjdstart) * 86400. / self.framedur))
             
             if (n >= len(self.frames)):
                 if repeat: n = np.mod(n, len(self.frames))
@@ -216,106 +242,80 @@ class Movie(object):
         # Return observation object
         obs_no_noise = vb.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata_out, obs.tarr, source=self.source, mjd=self.mjd)
         return obs_no_noise
+
+    def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True,
+                                                                  jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True,
+                                                                  inv_jones=False, repeat=False):                                                     
+        """Observe the movie on the same baselines as an existing observation object
+           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
+           Does NOT add noise
+           
+           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
+           for each telescope site. This can only be done currently if jones=False. 
+           If gain_offset is a single value than it is the standard deviation 
+           of a randomly selected gain offset. 
+        """
+        print "Producing clean visibilities from movie . . . "
+        obs_out = self.observe_same_nonoise(obs, sgrscat=sgrscat, repeat=repeat)    
         
-    def observe(self, array, tint, tadv, tstart, tstop, bw, tau=TAUDEF, gainp=GAINPDEF, opacity_errs=True, ampcal=True, phasecal=True, sgrscat=False, repeat=False):
-        """Observe the image with an array object to produce an obsdata object.
-	       tstart and tstop should be hrs in GMST.
+        # Jones Matrix Corruption
+        if jones:
+            if type(gain_offset)== dict:
+                print 'WARNING: cannot use a dictionary gain offset when using jones matrices'
+        
+            print "Applying Jones Matrices to data . . . "
+            obs_out = vb.add_jones_and_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
+                                             ampcal=ampcal, gainp=gainp, phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
+            
+            
+            if inv_jones:
+                print "Applying a priori calibration with estimated Jones matrices . . . "
+                obs_out = vb.apply_jones_inverse(obs_out, ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal, dcal=dcal, frcal=frcal)
+        
+        # No Jones Matrices, Add noise the old way        
+        #!AC There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.                                              
+        elif add_th_noise:                
+            print "Adding gain + phase errors to data and applying a priori calibration . . . "
+            obs_out = vb.add_noise(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
+                                   gainp=gainp, gain_offset=gain_offset, add_th_noise=add_th_noise)
+        
+        return obs_out
+        
+    def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, 
+                      sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
+                      jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True, timetype='UTC',
+                      repeat=False):
+        """Observe the movie with an array object to produce an obsdata object.
+	       tstart and tstop should be hrs in UTC.
            tint and tadv should be seconds.
            tau is the estimated optical depth. This can be a single number or a dictionary giving one tau per site
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel at the appropriate frequency
+           
+           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
+           for each telescope site. This can only be done currently if jones=False. 
+           If gain_offset is a single value than it is the standard deviation 
+           of a randomly selected gain offset. 
+
+           repeat=True will repeat the movie if necessary to fill the observation time
 	    """
         
         # Generate empty observation
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, opacity_errs=opacity_errs, mjd=self.mjd)
+        print "Generating empty observation file . . . "
+        if mjd == None:
+            mjd = self.mjd
+
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, mjd=mjd, timetype=timetype)
         
-        # Observe
-        obs = self.observe_same(obs, sgrscat=sgrscat, repeat=repeat)    
-        
-        # Add noise
-        obs = vb.add_noise(obs, opacity_errs=opacity_errs, ampcal=ampcal, phasecal=phasecal, gainp=gainp)
+        # Observe on the same baselines as the empty observation and add noise
+        obs = self.observe_same(obs, sgrscat=sgrscat, add_th_noise=add_th_noise, opacitycal=opacitycal,
+                                ampcal=ampcal, gainp=gainp, phasecal=phasecal, gain_offset=gain_offset, 
+                                jones=jones, inv_jones=inv_jones, dcal=dcal, dtermp=dtermp, frcal=frcal,
+                                repeat=repeat)   
         
         return obs
-        
-#    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='nearest'):
-#        """Display the image with matplotlib
-#        """
-#        
-#        if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
-#            interp = 'gaussian'
-#        else:
-#            interp = 'nearest'
-#            
-#        plt.figure()
-#        plt.clf()
-#        
-#        image = self.imvec;
-#        
-#        if len(self.qvec) and plotp:
-#            thin = self.xdim/nvec 
-#            mask = (self.imvec).reshape(self.ydim, self.xdim) > pcut * np.max(self.imvec)
-#            mask2 = mask[::thin, ::thin]
-#            x = (np.array([[i for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
-#            y = (np.array([[j for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
-#            a = (-np.sin(np.angle(self.qvec+1j*self.uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
-#            b = (np.cos(np.angle(self.qvec+1j*self.uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
-
-#            m = (np.abs(self.qvec + 1j*self.uvec)/self.imvec).reshape(self.ydim, self.xdim)
-#            m[-mask] = 0
-#            
-#            plt.suptitle('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
-#            
-#            # Stokes I plot
-#            plt.subplot(121)
-#            im = plt.imshow(image.reshape(self.ydim, self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp)
-#            plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
-#            plt.quiver(x, y, a, b,
-#                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-#                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
-#            plt.quiver(x, y, a, b,
-#                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-#                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
-
-#            xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
-#            yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
-#            plt.xticks(xticks[0], xticks[1])
-#            plt.yticks(yticks[0], yticks[1])
-#            plt.xlabel('Relative RA ($\mu$as)')
-#            plt.ylabel('Relative Dec ($\mu$as)')
-#            plt.title('Stokes I')
-#        
-#            # m plot
-#            plt.subplot(122)
-#            im = plt.imshow(m, cmap=plt.get_cmap('winter'), interpolation=interp, vmin=0, vmax=1)
-#            plt.colorbar(im, fraction=0.046, pad=0.04, label='|m|')
-#            plt.quiver(x, y, a, b,
-#                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-#                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
-#            plt.quiver(x, y, a, b,
-#                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-#                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
-#            plt.xticks(xticks[0], xticks[1])
-#            plt.yticks(yticks[0], yticks[1])
-#            plt.xlabel('Relative RA ($\mu$as)')
-#            plt.ylabel('Relative Dec ($\mu$as)')
-#            plt.title('m (above %0.2f max flux)' % pcut)
-#        
-#        else:
-#            plt.subplot(111)    
-#            plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
-#            
-#            im = plt.imshow(image.reshape(self.ydim,self.xdim), cmap=plt.get_cmap(cfun), interpolation=interp)
-#            plt.colorbar(im, fraction=0.046, pad=0.04, label='Jy/pixel')
-#            xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
-#            yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
-#            plt.xticks(xticks[0], xticks[1])
-#            plt.yticks(yticks[0], yticks[1])
-#            plt.xlabel('Relative RA ($\mu$as)')
-#            plt.ylabel('Relative Dec ($\mu$as)')   
-#        
-#        plt.show(block=False)
-            
+                    
     def save_txt(self, fname):
-        """Save image data to text files"""
+        """Save movie data to text files"""
         
         # Coordinate values
         pdimas = self.psize/RADPERAS
@@ -342,7 +342,7 @@ class Movie(object):
             # Header
             head = ("SRC: %s \n" % self.source +
                         "RA: " + rastring(self.ra) + "\n" + "DEC: " + decstring(self.dec) + "\n" +
-                        "MJD: %.4f \n" % (self.mjd + i*self.framedur/86400.0) + #!AC astropy date conversions!! 
+                        "MJD: %i \n" % np.floor(self.mjd + i*self.framedur/86400.0) + #!AC TODO should this be floor?
                         "RF: %.4f GHz \n" % (self.rf/1e9) + 
                         "FOVX: %i pix %f as \n" % (self.xdim, pdimas * self.xdim) +
                         "FOVY: %i pix %f as \n" % (self.ydim, pdimas * self.ydim) +
@@ -351,45 +351,10 @@ class Movie(object):
             # Save
             np.savetxt(fname_frame, outdata, header=head, fmt=fmts)
 
-#    def save_fits(self, fname):
-#        """Save image data to FITS file"""
-#                
-#        # Create header and fill in some values
-#        header = fits.Header()
-#        header['OBJECT'] = self.source
-#        header['CTYPE1'] = 'RA---SIN'
-#        header['CTYPE2'] = 'DEC--SIN'
-#        header['CDELT1'] = -self.psize/DEGREE
-#        header['CDELT2'] = self.psize/DEGREE
-#        header['OBSRA'] = self.ra * 180/12.
-#        header['OBSDEC'] = self.dec
-#        header['FREQ'] = self.rf
-#        header['MJD'] = self.mjd
-#        header['TELESCOP'] = 'VLBI'
-#        header['BUNIT'] = 'JY/PIXEL'
-#        header['STOKES'] = 'I'
-#        
-#        # Create the fits image
-#        image = np.reshape(self.imvec,(self.ydim,self.xdim))[::-1,:] #flip y axis!
-#        hdu = fits.PrimaryHDU(image, header=header)
-#        if len(self.qvec):
-#            qimage = np.reshape(self.qvec,(self.xdim,self.ydim))[::-1,:]
-#            uimage = np.reshape(self.uvec,(self.xdim,self.ydim))[::-1,:]
-#            header['STOKES'] = 'Q'
-#            hduq = fits.ImageHDU(qimage, name='Q', header=header)
-#            header['STOKES'] = 'U'
-#            hduu = fits.ImageHDU(uimage, name='U', header=header)
-#            hdulist = fits.HDUList([hdu, hduq, hduu])
-#        else: hdulist = fits.HDUList([hdu])
-#      
-#        # Save fits 
-#        hdulist.writeto(fname, clobber=True)
-#        
-#        return
 
-#!AC this needs a lot of work
-#!AC think about how to do the filenames
-def load_movie_txt(basename, nframes, framedur, pulse=pulses.trianglePulse2D):
+#!AC TODO this needs a lot of work
+#!AC TODO think about how to do the filenames
+def load_movie_txt(basename, nframes, framedur, pulse=PULSE_DEFAULT):
     """Read in a movie from text files and create a Movie object
        Text files should be filename + 00001, etc. 
        Text files should have the same format as output from Image.save_txt()
@@ -409,7 +374,7 @@ def load_movie_txt(basename, nframes, framedur, pulse=pulses.trianglePulse2D):
         ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
         dec = file.readline().split()
         dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
-        mjd = float(file.readline().split()[2])
+        mjd = int(float(file.readline().split()[2]))
         rf = float(file.readline().split()[2]) * 1e9
         xdim = file.readline().split()
         xdim_p = int(xdim[2])

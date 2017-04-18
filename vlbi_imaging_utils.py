@@ -20,6 +20,7 @@ import oifits_new as oifits
 import astropy.time as at
 import time as ttime
 import pulses
+
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
 
 ##################################################################################################
@@ -38,11 +39,17 @@ RA_DEFAULT = 17.761122472222223
 DEC_DEFAULT = -28.992189444444445
 RF_DEFAULT = 230e9
 MJD_DEFAULT = 51544
-
+PULSE_DEFAULT = pulses.trianglePulse2D
 
 # Telescope elevation cuts (degrees) 
-ELEV_LOW = 10.0
-ELEV_HIGH = 85.0
+#ELEV_LOW = 10.0
+#ELEV_HIGH = 85.0
+
+#ELEV_LOW = 0.01
+#ELEV_HIGH = 89.99
+
+ELEV_LOW = 1.
+ELEV_HIGH = 89.
 
 # Default Optical Depth and std. dev % on gain
 TAUDEF = 0.1
@@ -101,7 +108,7 @@ FIELDS = ['time','tint','u','v','uvdist',
 class Image(object):
     """A radio frequency image array (in Jy/pixel).
     
-    Attributes:
+       Attributes:
     	pulse: The function convolved with pixel value dirac comb for continuous image rep. (function from pulses.py)
         psize: The pixel dimension in radians (float)
         xdim: The number of pixels along the x dimension (int)
@@ -114,7 +121,7 @@ class Image(object):
     	mjd: The mjd of the image 
     """
     
-    def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=pulses.trianglePulse2D, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT):
+    def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT):
         if len(image.shape) != 2: 
             raise Exception("image must be a 2D numpy array") 
         
@@ -159,7 +166,8 @@ class Image(object):
         self.add_v(vimage)
         
     def copy(self):
-        """Copy the image object"""
+        """Copy the image object
+        """
         newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         if len(self.qvec):
             newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
@@ -176,7 +184,8 @@ class Image(object):
         return imarr
 
     def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GMST)"""
+        """Returns the source position vector in geocentric coordinates (at 0h GMST)
+        """
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
                 
     def flip_chi(self):
@@ -184,7 +193,60 @@ class Image(object):
         """
         self.qvec = - self.qvec
         return
+
+    def observe_same_nonoise(self, obs, sgrscat=False):
+        """Observe the image on the same baselines as an existing observation object
+           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
+           Does NOT add noise
+        """
+        
+        # Check for agreement in coordinates and frequency 
+        if (self.ra!= obs.ra) or (self.dec != obs.dec):
+            raise Exception("Image coordinates are not the same as observtion coordinates!")
+        if (self.rf != obs.rf):
+            raise Exception("Image frequency is not the same as observation frequency!")
+        
+        # Get data (must make a copy!)              
+        obsdata = obs.copy().data
+                          
+        # Extract uv data
+        uv = obsdata[['u','v']].view(('f8',2))
            
+        # Perform DFT
+        mat = ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse)
+        vis = np.dot(mat, self.imvec)
+        
+        # If there are polarized images, observe them:
+        qvis = np.zeros(len(vis))
+        uvis = np.zeros(len(vis))
+        vvis = np.zeros(len(vis))
+        if len(self.qvec):
+            qvis = np.dot(mat, self.qvec)
+            uvis = np.dot(mat, self.uvec)
+        if len(self.vvec):
+            vvis = np.dot(mat, self.vvec)
+                    
+        # Scatter the visibilities with the SgrA* kernel
+        if sgrscat:
+            print 'Scattering Visibilities with Sgr A* kernel!'
+            for i in range(len(vis)):
+                ker = sgra_kernel_uv(self.rf, uv[i,0], uv[i,1])
+                vis[i]  *= ker
+                qvis[i] *= ker
+                uvis[i] *= ker
+                vvis[i] *= ker
+                
+        # Put the visibilities back in the obsdata array
+        obsdata['vis'] = vis
+        obsdata['qvis'] = qvis
+        obsdata['uvis'] = uvis
+        obsdata['vvis'] = vvis
+        
+        # Return observation object (all calibration flags should be True)
+        obs_no_noise = Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata, obs.tarr, source=self.source, mjd=obs.mjd)
+        
+        return obs_no_noise 
+          
     def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True,
                                                                   jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True,
                                                                   inv_jones=False):
@@ -199,7 +261,7 @@ class Image(object):
            of a randomly selected gain offset. 
         """
         print "Producing clean visibilities from image . . . "
-        obs_out = observe_same_nonoise(self, obs, sgrscat=sgrscat)    
+        obs_out = self.observe_same_nonoise(obs, sgrscat=sgrscat)    
         
         # Jones Matrix Corruption
         if jones:
@@ -216,7 +278,7 @@ class Image(object):
                 obs_out = apply_jones_inverse(obs_out, ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal, dcal=dcal, frcal=frcal)
         
         # No Jones Matrices, Add noise the old way        
-        #!AC There is an asymmetry here - we don't offer the ability to not unscale estimated noise using the old way.                                              
+        #!AC There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.                                              
         elif add_th_noise:                
             print "Adding gain + phase errors to data and applying a priori calibration . . . "
             obs_out = add_noise(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, gainp=gainp, gain_offset=gain_offset, add_th_noise=add_th_noise)
@@ -253,8 +315,9 @@ class Image(object):
         return obs
         
     def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin',gamma=0.5):
-        """Display the image with matplotlib
+        """Display the image
         """
+
         # TODO Display circular polarization 
         
         if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
@@ -339,7 +402,8 @@ class Image(object):
         plt.show(block=False)
             
     def save_txt(self, fname):
-        """Save image data to text file"""
+        """Save image data to text file
+        """
         
         # Coordinate values
         pdimas = self.psize/RADPERAS
@@ -389,7 +453,8 @@ class Image(object):
         np.savetxt(fname, outdata, header=head, fmt=fmts)
 
     def save_fits(self, fname):
-        """Save image data to FITS file"""
+        """Save image data to FITS file
+        """
                 
         # Create header and fill in some values
         header = fits.Header()
@@ -447,7 +512,8 @@ class Array(object):
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
             
     def listbls(self):
-        """List all baselines"""
+        """List all baselines
+        """
  
         bls = []
         for i1 in sorted(self.tarr['site']):
@@ -564,7 +630,8 @@ class Array(object):
         return obs
      
     def save_array(self, fname):
-        """Save the array data in a text file"""
+        """Save the array data in a text file
+        """
 
         out = ("#Site      X(m)             Y(m)             Z(m)           "+
                     "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  "+
@@ -656,8 +723,7 @@ class Obsdata(object):
             blpairs = []
             for dat in tlist:
                 if not (set((dat['t1'], dat['t2']))) in blpairs:
-                     # Reverse the baseline if not north
-                     #if (self.tarr[self.tkey[dat['t1']]]['z']) <= (self.tarr[self.tkey[dat['t2']]]['z']):
+
                      # Reverse the baseline in the right order for uvfits:
                      if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):                        
                         (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
@@ -690,13 +756,15 @@ class Obsdata(object):
             self.tstop += 24.0
   
     def copy(self):
-        """Copy the observation object"""
+        """Copy the observation object
+        """
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, 
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal)
         return newobs
         
     def data_conj(self):
-        """Return a data array of same format as self.data but including all conjugate baselines"""
+        """Return a data array of same format as self.data but including all conjugate baselines
+        """
         
         data = np.empty(2*len(self.data), dtype=DTPOL)        
         
@@ -720,7 +788,8 @@ class Obsdata(object):
         return data
 
     def tlist(self, conj=False):
-        """Return partitioned data in a list of equal time observations"""
+        """Return partitioned data in a list of equal time observations
+        """
         
         if conj: 
             data = self.data_conj()
@@ -735,7 +804,8 @@ class Obsdata(object):
         return np.array(datalist)
                 
     def unpack_bl(self, site1, site2, in_fields, ang_unit='deg'):
-        """Unpack the data over time on the selected baseline"""
+        """Unpack the data over time on the selected baseline
+        """
 
         # If we only specify one field
         fields=['time']
@@ -781,7 +851,8 @@ class Obsdata(object):
     
     def unpack_dat(self, data, fields, conj=False, ang_unit='deg'):
         """Return a recarray of all the data for the given fields from the data table
-           If conj=True, will return conjugate baselines"""
+           If conj=True, will return conjugate baselines
+        """
        
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
@@ -887,11 +958,13 @@ class Obsdata(object):
         return allout
     
     def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GMST)"""
+        """Returns the source position vector in geocentric coordinates (at 0h GMST)
+        """
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
         
     def res(self):
-        """Return the nominal resolution of the observation in radian"""
+        """Return the nominal resolution of the observation in radian
+        """
         return 1.0/np.max(self.unpack('uvdist')['uvdist'])
         
     def bispectra(self, vtype='vis', mode='time', count='min'):
@@ -925,7 +998,7 @@ class Obsdata(object):
             if count == 'min':
                 # If we want a minimal set, choose triangles with the minimum sefd reference
                 # Unless there is no sefd data, in which case choose the northernmost
-                #!AC This should probably be an sefdr + sefdl average
+                # !AC TODO This should probably be an sefdr + sefdl average
                 if len(set(self.tarr['sefdr'])) > 1:
                     ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
                 else:
@@ -1081,7 +1154,7 @@ class Obsdata(object):
             
             if count == 'min':
                 # If we want a minimal set, choose the minimum sefd reference
-                # !AC this should probably be an sefdr + sefdl average
+                # !AC TODO this should probably be an sefdr + sefdl average
                 sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
                 ref = sites[0]
                 
@@ -1210,7 +1283,8 @@ class Obsdata(object):
     def log_c_amplitudes(self, cov=True, vtype='vis', mode='time', count='min'):
         """Return equal time log closure amplitudes
            Set count='max' to return all closure amplitudes up to inverses
-        """     
+        """
+     
         if not mode in ('time','all'):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
@@ -1262,7 +1336,7 @@ class Obsdata(object):
                             var3 = red1[sigmatype]**2
                             var4 = red2[sigmatype]**2
                             
-                            p1 = amp_debias(blue1[vtype], np.sqrt(var1)) #!AC debias or not in the closure amplitude?
+                            p1 = amp_debias(blue1[vtype], np.sqrt(var1)) #!AC TODO debias or not in the closure amplitude?
                             p2 = amp_debias(blue2[vtype], np.sqrt(var2))
                             p3 = amp_debias(red1[vtype], np.sqrt(var3))
                             p4 = amp_debias(red2[vtype], np.sqrt(var4))
@@ -1387,7 +1461,7 @@ class Obsdata(object):
         return np.array(outlist)
 
     
-    def dirtybeam(self, npix, fov, pulse=pulses.trianglePulse2D):
+    def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
         """Return a square Image object of the observation dirty beam
            fov is in radian
         """
@@ -1411,15 +1485,12 @@ class Obsdata(object):
         src = self.source + "_DB"
         return Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
     
-    def dirtyimage(self, npix, fov, pulse=pulses.trianglePulse2D):
-       
-
+    def dirtyimage(self, npix, fov, pulse=PULSE_DEFAULT):
         """Return a square Image object of the observation dirty image
            fov is in radian
         """
 
-        # !AC TODO add different types of beam weighting
-        
+        # !AC TODO add different types of beam weighting  
         pdim = fov/npix
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
@@ -1470,7 +1541,7 @@ class Obsdata(object):
         
         return out
     
-    def cleanbeam(self, npix, fov, pulse=pulses.trianglePulse2D):
+    def cleanbeam(self, npix, fov, pulse=PULSE_DEFAULT):
         """Return a square Image object of the observation fitted (clean) beam
            fov is in radian
         """
@@ -1487,7 +1558,6 @@ class Obsdata(object):
            to the expansion of dirty beam with the same normalization
         """    
         # !AC TODO include other beam weightings
-          
         # Define the sum of squares function that compares the quadratic expansion of the dirty image
         # with the quadratic expansion of an elliptical gaussian
         def fit_chisq(beamparams, db_coeff):
@@ -1528,7 +1598,8 @@ class Obsdata(object):
     
     def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg'):
         """Make a scatter plot of 2 real observation fields with errors
-           If conj==True, display conjugate baselines"""
+           If conj==True, display conjugate baselines
+        """
         
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
@@ -1588,7 +1659,8 @@ class Obsdata(object):
         return x
                         
     def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
-        """Plot a field over time on a baseline"""
+        """Plot a field over time on a baseline
+        """
                 
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
@@ -1628,7 +1700,8 @@ class Obsdata(object):
                 
                 
     def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
-        """Plot closure phase over time on a triangle"""
+        """Plot closure phase over time on a triangle
+        """
                 
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
@@ -1770,7 +1843,7 @@ class Obsdata(object):
             	        
     def save_txt(self, fname):
         """Save visibility data to a text file"""
-        #!AC TODO do changes to MJD work??
+
         # Get the necessary data and the header
         outdata = self.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
                                'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
@@ -1816,7 +1889,7 @@ class Obsdata(object):
         np.savetxt(fname, outdata, header=head, fmt=fmts)
         return
     
-    #!AC TODO how do we save dterm and field rotation arrays to uvfits 
+    #!AC TODO how can we save dterm and field rotation arrays to uvfits?
     def save_uvfits(self, fname):
         """Save visibility data to uvfits
            Needs template.UVP file
@@ -2336,7 +2409,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
     # Return the datatable                      
     return Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)        
 
-#!AC AA TODO add in new telescope array terms and flags!
+#!AC TODO can we save new telescope array terms and flags to uvfits and load them?
 def load_obs_uvfits(filename, flipbl=False):
     """Load uvfits data from a uvfits file.
     """
@@ -2358,7 +2431,7 @@ def load_obs_uvfits(filename, flipbl=False):
         sefdr = np.zeros(len(tnames))
         sefdl = np.zeros(len(tnames))
     
-    #!AC TODO - get the real values of these telescope parameters
+    #!AC TODO - get the *real* values of these telescope parameters
     fr_par = np.zeros(len(tnames))
     fr_el = np.zeros(len(tnames))
     fr_off = np.zeros(len(tnames))
@@ -2589,7 +2662,7 @@ def load_obs_oifits(filename, flux=1.0):
 
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0])
     
-def load_im_txt(filename, pulse=pulses.trianglePulse2D):
+def load_im_txt(filename, pulse=PULSE_DEFAULT):
     """Read in an image from a text file and create an Image object
        Text file should have the same format as output from Image.save_txt()
        Make sure the header has exactly the same form!
@@ -2645,7 +2718,7 @@ def load_im_txt(filename, pulse=pulses.trianglePulse2D):
     
     return outim
     
-def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
+def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     """Read in an image from a FITS file and create an Image object
     """
 
@@ -2726,8 +2799,9 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
                             
     return outim
 
-#!AC - what exactly does this do? 
-def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAULT, dec=DEC_DEFAULT, rf=RF_DEFAULT, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT , pulse=pulses.trianglePulse2D):
+#!AC TODO - Michael...what exactly is this for? 
+def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAULT, dec=DEC_DEFAULT,
+                        rf=RF_DEFAULT, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT , pulse=PULSE_DEFAULT):
 
     # Radian or Degree?
     if punit=="deg":
@@ -2775,7 +2849,8 @@ def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAU
 ##################################################################################################
 
 def resample_square(im, xdim_new, ker_size=5):
-    """Return a new image object that is resampled to the new dimensions xdim_new x xdim_new"""
+    """Return a new image object that is resampled to the new dimensions xdim_new x xdim_new
+    """
     
     if im.xdim != im.ydim:
         raise Exception("Image must be square!")
@@ -2838,8 +2913,9 @@ def resample_square(im, xdim_new, ker_size=5):
     return outim
 
 def im_pad(im, fovx, fovy):
-    """Pad to new fov
+    """Pad an image to new fov
     """ 
+
     fovoldx=im.psize*im.xdim
     fovoldy=im.psize*im.ydim
     padx=int(0.5*(fovx-fovoldx)/im.psize)
@@ -2870,14 +2946,17 @@ def make_square(obs, npix, fov,pulse=pulses.trianglePulse2D):
     return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd, pulse=pulse)
 
 def add_flat(im, flux):
-    """Add flat background to an image""" 
+    """Add flat background flux to an image
+    """ 
     
     imout = (im.imvec + (flux/float(len(im.imvec))) * np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
     out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse) 
     return out
 
 def add_tophat(im, flux, radius):
-    """Add tophat flux to an image""" 
+    """Add tophat flux to an image
+    """
+ 
     xfov = im.xdim * im.psize
     yfov = im.ydim * im.psize
     
@@ -2959,7 +3038,8 @@ def add_crescent(im, flux, Rp, Rn, a, b, x=0, y=0):
 
 def add_const_m(im, mag, angle):
     """Add a constant fractional linear polarization to image
-       angle is in radians""" 
+       angle is in radians
+    """ 
     
     if not (0 < mag < 1):
         raise Exception("fractional polarization magnitude must be beween 0 and 1!")
@@ -3165,16 +3245,19 @@ def blnoise(sefd1, sefd2, tint, bw):
     return noise
 
 def cerror(sigma):
-    """Return a complex number drawn from a circular complex Gaussian of zero mean"""
+    """Return a complex number drawn from a circular complex Gaussian of zero mean
+    """
     return np.random.normal(loc=0,scale=sigma) + 1j*np.random.normal(loc=0,scale=sigma)
 
 def hashrandn(*args):
-    """set the seed according to a collection of arguments and return random gaussian var"""
+    """set the seed according to a collection of arguments and return random gaussian var
+    """
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
     return np.random.randn()
 
 def hashrand(*args):
-    """set the seed according to a collection of arguments and return random number in 0,1"""
+    """set the seed according to a collection of arguments and return random number in 0,1
+    """
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
     return np.random.rand()
 
@@ -3435,62 +3518,10 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         out[site] = j_matrices_inv
     
     return out 
-    
-def observe_same_nonoise(im, obs, sgrscat=False):
-    """Observe the image on the same baselines as an existing observation object
-       if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-       Does NOT add noise
-    """
-    
-    # Check for agreement in coordinates and frequency 
-    if (im.ra!= obs.ra) or (im.dec != obs.dec):
-        raise Exception("Image coordinates are not the same as observtion coordinates!")
-    if (im.rf != obs.rf):
-        raise Exception("Image frequency is not the same as observation frequency!")
-    
-    # Get data (must make a copy!)              
-    obsdata = obs.copy().data
-                      
-    # Extract uv data
-    uv = obsdata[['u','v']].view(('f8',2))
-       
-    # Perform DFT
-    mat = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
-    vis = np.dot(mat, im.imvec)
-    
-    # If there are polarized images, observe them:
-    qvis = np.zeros(len(vis))
-    uvis = np.zeros(len(vis))
-    vvis = np.zeros(len(vis))
-    if len(im.qvec):
-        qvis = np.dot(mat, im.qvec)
-        uvis = np.dot(mat, im.uvec)
-    if len(im.vvec):
-        vvis = np.dot(mat, im.vvec)
-                
-    # Scatter the visibilities with the SgrA* kernel
-    if sgrscat:
-        print 'Scattering Visibilities with Sgr A* kernel!'
-        for i in range(len(vis)):
-            ker = sgra_kernel_uv(im.rf, uv[i,0], uv[i,1])
-            vis[i]  *= ker
-            qvis[i] *= ker
-            uvis[i] *= ker
-            vvis[i] *= ker
-            
-    # Put the visibilities back in the obsdata array
-    obsdata['vis'] = vis
-    obsdata['qvis'] = qvis
-    obsdata['uvis'] = uvis
-    obsdata['vvis'] = vvis
-    
-    # Return observation object (all calibration flags should be True)
-    obs_no_noise = Obsdata(im.ra, im.dec, im.rf, obs.bw, obsdata, obs.tarr, source=im.source, mjd=obs.mjd)
-    
-    return obs_no_noise
-        
+         
 def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, gainp=GAINPDEF, phasecal=True, dcal=True, dtermp=DTERMPDEF, frcal=True):
-    """Corrupt visibilities in obs with jones matrices and add thermal noise"""  
+    """Corrupt visibilities in obs with jones matrices and add thermal noise
+    """  
 
     # Build Jones Matrices
     jm_dict = make_jones(obs, 
@@ -3564,7 +3595,8 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ga
     return out
                        
 def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frcal=True):
-    """Corrupt visibilities in obs with jones matrices and add thermal noise"""  
+    """Corrupt visibilities in obs with jones matrices and add thermal noise
+    """  
     
     # Build Inverse Jones Matrices
     jm_dict = make_jones_inverse(obs,
@@ -3819,7 +3851,8 @@ def paritycompare(perm1, perm2):
     else: return  -1
 
 def amp_debias(vis, sigma):
-    """Return debiased visibility amplitudes"""
+    """Return debiased visibility amplitudes
+    """
     
     # TODO: what to do if deb2 < 0?
     # Currently we do nothing
@@ -3833,7 +3866,8 @@ def amp_debias(vis, sigma):
         return np.sqrt(deb2)
         
 def sigtype(datatype):
-    """Return the type of noise corresponding to the data type"""
+    """Return the type of noise corresponding to the data type
+    """
     
     datatype = str(datatype)
     if datatype in ['vis', 'amp']: sigmatype='sigma'
@@ -3862,7 +3896,8 @@ def merr(sigma, qsigma, usigma, I, m):
     return err
            
 def rastring(ra):
-    """Convert a ra in fractional hours to formatted string"""
+    """Convert a ra in fractional hours to formatted string
+    """
     h = int(ra)
     m = int((ra-h)*60.)
     s = (ra-h-m/60.)*3600.
@@ -3870,7 +3905,8 @@ def rastring(ra):
     return out 
 
 def decstring(dec):
-    """Convert a dec in fractional degrees to formatted string"""
+    """Convert a dec in fractional degrees to formatted string
+    """
     
     deg = int(dec)
     m = int((abs(dec)-abs(deg))*60.)
@@ -3879,7 +3915,8 @@ def decstring(dec):
     return out
 
 def gmtstring(gmt):
-    """Convert a gmt in fractional hours to formatted string"""
+    """Convert a gmt in fractional hours to formatted string
+    """
     
     if gmt > 24.0: gmt = gmt-24.0
     h = int(gmt)
@@ -3903,14 +3940,19 @@ def gmtstring(gmt):
 #  
 #    return jd - 2400000.5
 
-def utc_to_gmst(utc, mjd): #Note, this should be changed to take a fractional mjd as the argument
-    """Convert utc times in hours to gmst using astropy"""
-    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc') #Note: mjd is sometimes passed as a fractional mjd, but here it is assumed to be an integer
+def utc_to_gmst(utc, mjd): 
+    """Convert utc times in hours to gmst using astropy
+    """
+
+    mjd=int(mjd) #MJD should always be an integer, but was float in older versions of the code
+    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc') 
     time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
     return time_sidereal
     
 def earthrot(vecs, thetas):
-    """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)"""
+    """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)
+    """
+
     if len(vecs.shape)==1: 
         vecs = np.array([vecs])
     if np.isscalar(thetas):
@@ -3936,7 +3978,8 @@ def earthrot(vecs, thetas):
 
 def elev(obsvecs, sourcevec):
     """Return the elevation of a source with respect to an observer/observers in radians
-       obsvec can be an array of vectors but sourcevec can ONLY be a single vector"""
+       obsvec can be an array of vectors but sourcevec can ONLY be a single vector
+    """
        
     if len(obsvecs.shape)==1:
         obsvecs=np.array([obsvecs])
@@ -3947,7 +3990,8 @@ def elev(obsvecs, sourcevec):
     return el
         
 def elevcut(obsvecs, sourcevec):
-    """Return True if a source is observable by a telescope vector"""
+    """Return True if a source is observable by a telescope vector
+    """
     
     angles = elev(obsvecs, sourcevec)/DEGREE
     
@@ -3958,6 +4002,7 @@ def hr_angle(gst, lon, ra):
        gst in hours, ra & lon ALL in radian
        longitude positive east
     """
+
     hr_angle = np.mod(gst + lon - ra, 2*np.pi)
     return hr_angle
     
@@ -3973,7 +4018,9 @@ def par_angle(hr_angle, lat, dec):
 
 def xyz_2_latlong(obsvecs): 
     """Compute the (geocentric) latitude and longitude of a site at geocentric position x,y,z 
-       The output is in radians"""
+       The output is in radians
+    """
+
     if len(obsvecs.shape)==1:
         obsvecs=np.array([obsvecs])        
     out = []
@@ -3986,6 +4033,7 @@ def xyz_2_latlong(obsvecs):
         out.append([lat,lon])
         
     out = np.array(out)
+
     #if out.shape[0]==1: out = out[0]
     return out
 
@@ -4001,21 +4049,35 @@ def split_obs(obs):
     """
 
     print "Splitting Observation File into " + str(len(obs.tlist())) + " scans"
+
     #Note that the tarr of the output includes all sites, even those that don't participate in the scan
-    return [ Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, tdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal) for tdata in obs.tlist() ]
+    splitlist = [Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, tdata, obs.tarr, source=obs.source,
+                         mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal) 
+                 for tdata in obs.tlist() 
+                ]
+    return splitlist
 
 def merge_obs(obs_List):
     """Merge a list of observations into a single observation file
     """
 
-    if len(set([obs.ra for obs in obs_List])) > 1 or len(set([obs.dec for obs in obs_List])) > 1 or len(set([obs.rf for obs in obs_List])) > 1 or len(set([obs.bw for obs in obs_List])) > 1 or len(set([obs.source for obs in obs_List])) > 1 or len(set([np.floor(obs.mjd) for obs in obs_List])) > 1:
+    if (len(set([obs.ra for obs in obs_List])) > 1 or 
+        len(set([obs.dec for obs in obs_List])) > 1 or 
+        len(set([obs.rf for obs in obs_List])) > 1 or 
+        len(set([obs.bw for obs in obs_List])) > 1 or 
+        len(set([obs.source for obs in obs_List])) > 1 or 
+        len(set([np.floor(obs.mjd) for obs in obs_List])) > 1):
+
         print "All observations must have the same parameters!"
         return 
 
     #The important things to merge are the mjd, the data, and the list of telescopes
     data_merge = np.hstack([obs.data for obs in obs_List]) 
 
-    return Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, np.unique(np.concatenate([obs.tarr for obs in obs_List])), source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal) 
+    mergeobs = Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, np.unique(np.concatenate([obs.tarr for obs in obs_List])), 
+                       source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal) 
+
+    return mergeobs
 
 def make_subarray(array, sites):
     """Make a subarray from the Array object array that only includes the sites listed in sites
@@ -4033,17 +4095,16 @@ def observe_vex(im, vex, source):
     global ELEV_LOW, ELEV_HIGH
 
     #First, eliminate hard-coded elevation limits
-    ELEV_LOW_prev = ELEV_LOW
-    ELEV_HIGH_prev = ELEV_HIGH
-    ELEV_LOW = 0.01
-    ELEV_HIGH = 89.99
 
     obs_List=[]
     for i_scan in range(len(vex.sched)):
         if vex.sched[i_scan]['source'] != source:
             continue
-        obs_List.append(im.observe(make_subarray(vex.array, [vex.sched[i_scan]['scan'][key]['site'] for key in vex.sched[i_scan]['scan'].keys()]), vex.sched[i_scan]['scan'][0]['scan_sec'], 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'], vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0, vex.bw_hz, vex.sched[i_scan]['mjd_floor']))    
+        subarray = make_subarray(vex.array, [vex.sched[i_scan]['scan'][key]['site'] for key in vex.sched[i_scan]['scan'].keys()])
 
-    ELEV_LOW = ELEV_LOW_prev
-    ELEV_HIGH = ELEV_HIGH_prev
+        obs = im.observe(subarray, vex.sched[i_scan]['scan'][0]['scan_sec'], 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'], 
+                                   vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0, 
+                                   vex.bw_hz, vex.sched[i_scan]['mjd_floor'])    
+        obs_List.append(obs)
+
     return merge_obs(obs_List)
