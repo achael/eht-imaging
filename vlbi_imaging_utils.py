@@ -3,7 +3,6 @@
 # Utilities for generating and manipulating VLBI images, datasets, and arrays
 
 # TODO 
-# img.imvec and obs.obsdata is not a copy!!! what else? is there anything that overwrites??
 # how do we scale sefds/sigmas in jones noise vs normal noise? 
 # discuss the calibration flags -- do they make sense / are they being applied properly? 
 
@@ -33,6 +32,14 @@ HOUR = (180./12.)*DEGREE
 RADPERAS = DEGREE/3600
 RADPERUAS = RADPERAS*1.e-6
 
+# Default Parameters
+SOURCE_DEFAULT = "SgrA"
+RA_DEFAULT = 17.761122472222223
+DEC_DEFAULT = -28.992189444444445
+RF_DEFAULT = 230e9
+MJD_DEFAULT = 51544
+
+
 # Telescope elevation cuts (degrees) 
 ELEV_LOW = 10.0
 ELEV_HIGH = 85.0
@@ -42,7 +49,6 @@ TAUDEF = 0.1
 GAINPDEF = 0.1
 DTERMPDEF = 0.1 # rms amplitude of D-terms if not specified in array file
 DTERMPDEF_RESID = 0.01 # rms *residual* amplitude of D-terms (random, unknown contribution)
-
 
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas
@@ -108,7 +114,7 @@ class Image(object):
     	mjd: The mjd of the image 
     """
     
-    def __init__(self, image, psize, ra, dec, rf=230e9, pulse=pulses.trianglePulse2D, source="SgrA", mjd="0"):
+    def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=pulses.trianglePulse2D, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT):
         if len(image.shape) != 2: 
             raise Exception("image must be a 2D numpy array") 
         
@@ -122,7 +128,7 @@ class Image(object):
         self.dec = float(dec)
         self.rf = float(rf)
         self.source = str(source)
-        self.mjd = float(mjd) 
+        self.mjd = int(mjd) 
         
         self.qvec = []
         self.uvec = []
@@ -217,7 +223,7 @@ class Image(object):
         
         return obs_out
         
-    def observe(self, array, tint, tadv, tstart, tstop, bw, mjd = None, 
+    def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, 
                 sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
                 jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True, timetype='UTC'):
                 
@@ -373,7 +379,7 @@ class Image(object):
         # Header
         head = ("SRC: %s \n" % self.source +
                     "RA: " + rastring(self.ra) + "\n" + "DEC: " + decstring(self.dec) + "\n" +
-                    "MJD: %.4f \n" % self.mjd + 
+                    "MJD: %i \n" % self.mjd + 
                     "RF: %.4f GHz \n" % (self.rf/1e9) + 
                     "FOVX: %i pix %f as \n" % (self.xdim, pdimas * self.xdim) +
                     "FOVY: %i pix %f as \n" % (self.ydim, pdimas * self.ydim) +
@@ -395,7 +401,7 @@ class Image(object):
         header['OBSRA'] = self.ra * 180/12.
         header['OBSDEC'] = self.dec
         header['FREQ'] = self.rf
-        header['MJD'] = self.mjd
+        header['MJD'] = float(self.mjd)
         header['TELESCOP'] = 'VLBI'
         header['BUNIT'] = 'JY/PIXEL'
         header['STOKES'] = 'I'
@@ -421,7 +427,7 @@ class Image(object):
         hdulist = fits.HDUList(hdulist)
       
         # Save fits 
-        hdulist.writeto(fname, clobber=True)
+        hdulist.writeto(fname, overwrite=True)
         
         return
                 
@@ -451,7 +457,7 @@ class Array(object):
                     
         return np.array(bls)
             
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=51544.0, tau=TAUDEF, timetype='UTC'):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT, tau=TAUDEF, timetype='UTC'):
         """Generate u,v points and baseline errors for the array.
            Return an Observation object with no visibilities.
            tstart and tstop are hrs in UTC
@@ -462,8 +468,8 @@ class Array(object):
            tau can be a single number or a dictionary giving one per site
         """
         
-        if mjdtogmt(mjd)-tstart > 1e-9:
-            raise Exception("Initial time is greater than given mjd!")            
+        #if mjdtogmt(mjd)-tstart > 1e-9:
+        #    raise Exception("Initial time is greater than given mjd!")            
 
         # Set up coordinate system
         sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
@@ -615,7 +621,7 @@ class Obsdata(object):
         data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, vvis, sigma, qsigma, usigma, vsigma)
     """
     
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, source="SgrA", mjd=51544, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC'):
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC'):
         
         if len(datatable) == 0:
             raise Exception("No data in input table!")
@@ -677,7 +683,8 @@ class Obsdata(object):
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
         self.tstart = times[0]
-        self.mjd = fracmjd(mjd, self.tstart)
+        self.mjd = int(mjd)
+        #self.mjd = fracmjd(mjd, self.tstart)
         self.tstop = times[-1]
         if self.tstop < self.tstart: 
             self.tstop += 24.0
@@ -1763,14 +1770,14 @@ class Obsdata(object):
             	        
     def save_txt(self, fname):
         """Save visibility data to a text file"""
-        
+        #!AC TODO do changes to MJD work??
         # Get the necessary data and the header
         outdata = self.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
                                'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
                                'sigma', 'qsigma', 'usigma', 'vsigma'])
         head = ("SRC: %s \n" % self.source +
                     "RA: " + rastring(self.ra) + "\n" + "DEC: " + decstring(self.dec) + "\n" +
-                    "MJD: %.4f - %.4f \n" % (fracmjd(self.mjd,self.tstart), fracmjd(self.mjd,self.tstop)) + 
+                    "MJD: %i \n" % self.mjd + 
                     "RF: %.4f GHz \n" % (self.rf/1e9) + 
                     "BW: %.4f GHz \n" % (self.bw/1e9) +
                     "PHASECAL: %i \n" % self.phasecal + 
@@ -1812,7 +1819,7 @@ class Obsdata(object):
     #!AC TODO how do we save dterm and field rotation arrays to uvfits 
     def save_uvfits(self, fname):
         """Save visibility data to uvfits
-            Needs template.UVP file
+           Needs template.UVP file
         """
 
         # Open template UVFITS
@@ -1846,7 +1853,7 @@ class Obsdata(object):
         #head = fits.Header()
         head = hdulist['AIPS AN'].header
         head['EXTVER'] = 1
-        head['GSTIA0'] = 119.85 # !AC TODO for mjd 48277
+        head['GSTIA0'] = 119.85 # !AC TODO ?? for mjd 48277
         head['FREQ']= self.rf
         head['ARRNAM'] = 'ALMA' #!AC TODO Can we change this field? 
         head['XYZHAND'] = 'RIGHT'
@@ -1859,7 +1866,6 @@ class Obsdata(object):
         head['UT1UTC'] = 0.e0
         head['DATUTC'] = 0.e0
         head['TIMESYS'] = 'UTC'
-        head['FRAME'] = '????'
         head['NUMORB'] = 0
         head['NO_IF'] = 1
         head['NOPCAL'] = 2
@@ -1874,11 +1880,11 @@ class Obsdata(object):
         header['OBSRA'] = self.ra * 180./12.
         header['OBSDEC'] = self.dec
         header['OBJECT'] = self.source
-        header['MJD'] = self.mjd
+        header['MJD'] = float(self.mjd)
         header['BUNIT'] = 'JY'
         header['VELREF'] = 3 #??
         header['ALTRPIX'] = 1.e0
-        header['TELESCOP'] = 'ALMA' # !AC Can I change this?? EHT doesn't seem to work...
+        header['TELESCOP'] = 'ALMA' # !AC TODO Can we change this field?  
         header['INSTRUME'] = 'ALMA'
         header['CTYPE2'] = 'COMPLEX'
         header['CRVAL2'] = 1.e0
@@ -1940,8 +1946,10 @@ class Obsdata(object):
         # times and tints
         #jds = (self.mjd + 2400000.5) * np.ones(len(obsdata))
         #fractimes = (obsdata['time'] / 24.0) 
-        jds = (2400000.5) * np.ones(len(obsdata))
-        fractimes = self.mjd + (obsdata['time'] / 24.0)         
+        jds = (2400000.5 + self.mjd) * np.ones(len(obsdata))
+        fractimes = (obsdata['time'] / 24.0) 
+        #jds = jds + fractimes
+        #fractimes = np.zeros(len(obsdata))        
         tints = obsdata['tint']
 
         # Baselines            
@@ -2020,7 +2028,7 @@ class Obsdata(object):
         hdulist.append(tbhdu)
          
         # Write final HDUList to file
-        hdulist.writeto(fname, clobber=True)                
+        hdulist.writeto(fname, overwrite=True)                
         return
     
     def save_oifits(self, fname, flux=1.0):
@@ -2236,7 +2244,7 @@ def load_obs_txt(filename):
                    ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal)        
     return out
     
-def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA', mjd=51544, ampcal=False, phasecal=False):
+def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
@@ -2260,9 +2268,9 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src='SgrA'
             dec = np.sign(float(x[0])) * (abs(float(x[0])) + float(x[1])/60. + float(x[2])/3600.)
         elif line[0] == 'Corr_int_time':
             tint = float(line[2])
-        elif line[0] == 'Corr_chan_bw':  #!AC what if multiple channels?
-            bw = float(line[2]) * 1e6 #MHz
-        elif line[0] == 'Channel': #!AC what if multiple scans with different params?
+        elif line[0] == 'Corr_chan_bw':  #!AC TODO what if multiple channels?
+            bw = float(line[2]) * 1e6 #in MHz
+        elif line[0] == 'Channel': #!AC TODO what if multiple scans with different params?
             rf = float(line[2].split(':')[0]) * 1e6
         elif line[0] == 'Scan_start':
             x = line[2].split(':') #!AC properly compute MJD! 
@@ -2344,7 +2352,7 @@ def load_obs_uvfits(filename, flipbl=False):
     xyz = hdulist['AIPS AN'].data['STABXYZ']
     try:
         sefdr = hdulist['AIPS AN'].data['SEFD']
-        sefdl = hdulist['AIPS AN'].data['SEFD'] #!AC TODO add sefdl
+        sefdl = hdulist['AIPS AN'].data['SEFD'] #!AC TODO add sefdl to uvfits?
     except KeyError:
         print "Warning! no SEFD data in UVfits file"
         sefdr = np.zeros(len(tnames))
@@ -2382,13 +2390,18 @@ def load_obs_uvfits(filename, flipbl=False):
     mask = (rrweight > 0) * (llweight > 0) * (rlweight > 0) * (lrweight > 0)
     
     # Obs Times
-    jds = data['DATE'][mask]
-    mjd = int(jdtomjd(np.min(jds)))
-    
-    if len(set(data['DATE'])) > 2:
-        times = np.array([mjdtogmt(jdtomjd(jd)) for jd in jds])
-    else:
-        times = data['_DATE'][mask] * 24.0
+    jds = data['DATE'][mask].astype('d') + data['_DATE'][mask].astype('d')
+    mjd = int(np.min(jds)-2400000.5)
+    times = (jds - 2400000.5 - mjd) * 24.0
+
+    # old time conversion
+    #jds = data['DATE'][mask]
+    #mjd = int(jdtomjd(np.min(jds)))
+    #print len(set(data['DATE']))
+    #if len(set(data['DATE'])) > 2:
+    #    times = np.array([mjdtogmt(jdtomjd(jd)) for jd in jds])
+    #else:
+    #    times = data['_DATE'][mask] * 24.0
     
     # Integration times
     tints = data['INTTIM'][mask]
@@ -2514,7 +2527,6 @@ def load_obs_oifits(filename, flux=1.0):
     timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]) #convert to single number
     
     #return timeobs
-    #!AC TODO - is datetime working? 
     time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple()))/(60.0*60.0) 
                                         for i in range(len(timeobs))]), [nWavelengths, 1]))
     
@@ -2560,7 +2572,6 @@ def load_obs_oifits(filename, flux=1.0):
     amperr = amperr.ravel()
 
     #!AC TODO - check that we are properly using the error from the amplitude and phase
-
     # create data tables
     datatable = np.array([(time[i], tint[i], t1[i], t2[i], tau1[i], tau2[i], u[i], v[i], 
                            flux*vis[i], qvis[i], uvis[i], vvis[i], 
@@ -2575,7 +2586,7 @@ def load_obs_oifits(filename, flux=1.0):
                     ], dtype=DTARR)
     
     # return object
-    #!AC TODO get calibration flags from oifits? 
+
     return Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0])
     
 def load_im_txt(filename, pulse=pulses.trianglePulse2D):
@@ -2591,7 +2602,7 @@ def load_im_txt(filename, pulse=pulses.trianglePulse2D):
     ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
     dec = file.readline().split()
     dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
-    mjd = float(file.readline().split()[2])
+    mjd = int(float(file.readline().split()[2]))
     rf = float(file.readline().split()[2]) * 1e9
     xdim = file.readline().split()
     xdim_p = int(xdim[2])
@@ -2715,9 +2726,8 @@ def load_im_fits(filename, punit="deg", pulse=pulses.trianglePulse2D):
                             
     return outim
 
-
-
-def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, src="SgrA", mjd="51544" , pulse=pulses.trianglePulse2D):
+#!AC - what exactly does this do? 
+def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAULT, dec=DEC_DEFAULT, rf=RF_DEFAULT, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT , pulse=pulses.trianglePulse2D):
 
     # Radian or Degree?
     if punit=="deg":
@@ -3878,20 +3888,20 @@ def gmtstring(gmt):
     out = "%02i:%02i:%2.4f" % (h,m,s)
     return out 
 
-def fracmjd(mjd, gmt):
-    """Convert a int mjd + gmt (frac. hr.) into a fractional mjd"""
-    
-    return int(mjd) + gmt/24.
-
-def mjdtogmt(mjd):
-    """Return the gmt of a fractional mjd, in days"""
-  
-    return (mjd - int(mjd)) * 24.0
-    
-def jdtomjd(jd):
-    """Return the mjd of a jd"""
-  
-    return jd - 2400000.5
+#def fracmjd(mjd, gmt):
+#    """Convert a int mjd + gmt (frac. hr.) into a fractional mjd"""
+#    
+#    return int(mjd) + gmt/24.
+#
+#def mjdtogmt(mjd):
+#    """Return the gmt of a fractional mjd, in days"""
+#  
+#    return (mjd - int(mjd)) * 24.0
+#    
+#def jdtomjd(jd):
+#    """Return the mjd of a jd"""
+#  
+#    return jd - 2400000.5
 
 def utc_to_gmst(utc, mjd): #Note, this should be changed to take a fractional mjd as the argument
     """Convert utc times in hours to gmst using astropy"""
