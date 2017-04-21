@@ -543,8 +543,8 @@ class Array(object):
         # Set up time start and steps
         tstep = tadv/3600.0
         if tstop < tstart:
-            tstop = tstop + 24.0;
-        
+            tstop = tstop + 24.0;       
+
         # Wavelength
         l = C/rf 
         
