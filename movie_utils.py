@@ -43,11 +43,6 @@ GAINPDEF = 0.1
 DTERMPDEF = 0.1 # rms amplitude of D-terms if not specified in array file
 DTERMPDEF_RESID = 0.01 # rms *residual* amplitude of D-terms (random, unknown contribution)
 
-# Sgr A* Kernel Values (Bower et al., in uas/cm^2)
-FWHM_MAJ = 1.309 * 1000 # in uas
-FWHM_MIN = 0.64 * 1000
-POS_ANG = 78 # in degree, E of N
-
 # Observation recarray datatypes
 DTARR = [('site', 'a32'), ('x','f8'), ('y','f8'), ('z','f8'), 
          ('sefdr','f8'),('sefdl','f8'),('dr','c16'),('dl','c16'),
@@ -101,10 +96,11 @@ class Movie(object):
         rf: The radio frequency (Hz)
         imvec: The xdim*ydim vector of jy/pixel values (array)
         source: The astrophysical source name (string)
-    	mjd: The mjd of the image 
+    	mjd: The starting integer mjd of the image 
+        start_hr: Fractional start hour of the movie [default = -1.0, meaning it is inherited from the observation]
     """
     
-    def __init__(self, movie, framedur, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT):
+    def __init__(self, movie, framedur, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, start_hr=0.0):
         if len(movie[0].shape) != 2: 
             raise Exception("image must be a 2D numpy array") 
         
@@ -119,6 +115,7 @@ class Movie(object):
         self.rf = float(rf)
         self.source = str(source)
         self.mjd = int(mjd)
+        self.start_hr = float(start_hr)
         
         #the list of frames
         self.frames = [image.flatten() for image in movie] 
@@ -148,12 +145,14 @@ class Movie(object):
     def copy(self):
         """Copy the Movie object"""
         new = Movie([imvec.reshape(self.ydim,self.xdim) for imvec in self.frames], 
-                     self.psize, self.framedur, self.ra, self.dec, rf=self.rf, 
-                     source=self.source, mjd=self.mjd, pulse=self.pulse)
+                     self.framedur, self.psize, self.ra, self.dec, rf=self.rf, 
+                     source=self.source, mjd=self.mjd, start_hr=self.start_hr, pulse=self.pulse)
+        
+        if len(self.qframes):
+            new.add_qu([qvec.reshape(self.ydim,self.xdim) for qvec in self.qframes], 
+                         [uvec.reshape(self.ydim,self.xdim) for uvec in self.uframes])
 
-        newim.add_qu([qvec.reshape(self.ydim,self.xdim) for qvec in self.qframes], 
-                     [uvec.reshape(self.ydim,self.xdim) for uvec in self.uframes])
-        return newim
+        return new
         
     def flip_chi(self):
         """Change between different conventions for measuring position angle (East of North vs up from x axis).
@@ -169,18 +168,20 @@ class Movie(object):
         
         # Check for agreement in coordinates and frequency 
         if (self.ra!= obs.ra) or (self.dec != obs.dec):
-            raise Exception("Image coordinates are not the same as observtion coordinates!")
+            raise Exception("Image coordinates are not the same as observation coordinates!")
 	    if (self.rf != obs.rf):
 	        raise Exception("Image frequency is not the same as observation frequency!")
         
-        mjdstart = float(self.mjd)
-        mjdend = float(self.mjd) + (len(self.frames)*self.framedur) / 86400.0 
+        mjdstart = float(self.mjd) + float(self.start_hr/24.0)
+        mjdend = mjdstart + (len(self.frames)*self.framedur) / 86400.0 
         
         # Get data
         obslist = obs.tlist()
         
         # times
         obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+
+        print obsmjds
 
         if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
             raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
@@ -229,7 +230,7 @@ class Movie(object):
                 obsdata_out = obsdata
                 
         # Return observation object
-        obs_no_noise = vb.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata_out, obs.tarr, source=self.source, mjd=self.mjd)
+        obs_no_noise = vb.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata_out, obs.tarr, source=self.source, mjd=np.floor(obs.mjd))
         return obs_no_noise
 
     def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True,
@@ -333,7 +334,7 @@ class Movie(object):
             # Header
             head = ("SRC: %s \n" % self.source +
                         "RA: " + rastring(self.ra) + "\n" + "DEC: " + decstring(self.dec) + "\n" +
-                        "MJD: %i \n" % np.floor(self.mjd + i*self.framedur/86400.0) + #!AC TODO should this be floor?
+                        "MJD: %i \n" % (float(self.mjd) + self.start_hr/24.0 + i*self.framedur/86400.0) + 
                         "RF: %.4f GHz \n" % (self.rf/1e9) + 
                         "FOVX: %i pix %f as \n" % (self.xdim, pdimas * self.xdim) +
                         "FOVY: %i pix %f as \n" % (self.ydim, pdimas * self.ydim) +
@@ -345,7 +346,7 @@ class Movie(object):
 
 #!AC TODO this needs a lot of work
 #!AC TODO think about how to do the filenames
-def load_movie_txt(basename, nframes, framedur, pulse=PULSE_DEFAULT):
+def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
     """Read in a movie from text files and create a Movie object
        Text files should be filename + 00001, etc. 
        Text files should have the same format as output from Image.save_txt()
@@ -355,6 +356,7 @@ def load_movie_txt(basename, nframes, framedur, pulse=PULSE_DEFAULT):
     framelist = []
     qlist = []
     ulist = []
+
     for i in xrange(nframes):
         filename = basename + "%05d" % i
         
@@ -365,7 +367,9 @@ def load_movie_txt(basename, nframes, framedur, pulse=PULSE_DEFAULT):
         ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
         dec = file.readline().split()
         dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
-        mjd = int(float(file.readline().split()[2]))
+        mjd_frac = float(file.readline().split()[2])
+        mjd = np.floor(mjd_frac)
+        hour = (mjd_frac - mjd)*24.0
         rf = float(file.readline().split()[2]) * 1e9
         xdim = file.readline().split()
         xdim_p = int(xdim[2])
@@ -382,6 +386,7 @@ def load_movie_txt(basename, nframes, framedur, pulse=PULSE_DEFAULT):
             ra0 = ra
             dec0 = dec
             mjd0 = mjd
+            hour0 = hour
             rf0 = rf
             xdim0 = xdim
             ydim0 = ydim
@@ -402,8 +407,11 @@ def load_movie_txt(basename, nframes, framedur, pulse=PULSE_DEFAULT):
             uimage = datatable[:,4].reshape(ydim_p, xdim_p)
             qlist.append(qimage)
             ulist.append(uimage)
-    
-    out_mov = Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, pulse=pulse)
+
+    if frame_dur == -1:
+        frame_dur = (hour - hour0)/float(nframes)*3600.0
+
+    out_mov = Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, start_hr=hour0, pulse=pulse)
     
     if len(qlist):
         print 'Loaded Stokes I, Q, and U movies'
