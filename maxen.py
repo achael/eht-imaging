@@ -139,6 +139,103 @@ def maxen(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", 
         outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
     return outim
 
+def maxen_hessian(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False, show_updates=True):
+    """Run maximum entropy with full amplitudes and phases using hessian matrix
+       Uses I = exp(I') change of variables.
+       Obsdata is an Obsdata object, and Prior is an Image object.
+       Returns Image object.
+       The lagrange multiplier alpha is not a free parameter
+    """
+    
+    print "Imaging I with visibility amplitudes and phases . . ."
+        
+    # Catch problem if uvrange < largest baseline
+    uvrange = 1/Prior.psize
+    maxbl = np.max(Obsdata.unpack(['uvdist'])['uvdist'])
+    if uvrange < maxbl:
+        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+    if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
+        raise Exception("initial image does not match dimensions of the prior image!")
+
+    # Normalize prior image to total flux
+    zbl = np.max(Obsdata.unpack(['amp'])['amp'])
+    nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
+    ninit = zbl * InitIm.imvec / np.sum(InitIm.imvec)
+    logprior = np.log(nprior)
+    loginit = np.log(ninit)
+    
+    # Data
+    data = Obsdata.unpack(['u','v','vis','sigma'])
+    uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
+    vis = data['vis']
+    sigma = data['sigma']
+    
+    # Compute the Fourier matrix
+    A = vb.ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse)
+    
+    # Define the objective function and gradient
+    def objfunc(logim):
+        im = np.exp(logim)
+        s = -sgs(im, nprior)
+        s = s * beta
+        return s + alpha * (chisq(im, A, vis, sigma) - 1)
+        
+    def objgrad(logim):
+        im = np.exp(logim)
+        s = -sgsgrad(im, nprior) 
+        s = s * beta
+        return  (s + alpha * chisqgrad(im, A, vis, sigma)) * im 
+
+    def objhess(logim):
+        im = np.exp(logim)
+        sgrad = -sgsgrad(im, nprior) 
+        xgrad = chisqgrad(im, A, vis, sigma)
+        shess = -sgshess(im, nprior)
+        xhess = chisqhess(im, A, vis, sigma)
+        shess = shess * beta
+        sgrad = sgrad * beta
+        return  (shess + alpha* xhess) * im + np.diag(sgrad + alpha*xgrad) * im * im
+    
+    # Plotting function for each iteration
+    global nit
+    nit = 0
+    def plotcur(logim_step):
+        global nit
+        if show_updates==True: 
+            im_step = np.exp(logim_step)
+            chi2 = chisq(im_step, A, vis, sigma)
+            plot_i(im_step, Prior, nit, chi2, ipynb=ipynb)
+            print "chi2: ",chi2
+
+        nit += 1
+   
+    # Plot the prior
+
+    plotcur(loginit)
+        
+    # Minimize
+    optdict = {'maxiter':maxit, 'xtol':stop} # minimizer params
+    tstart = time.time()
+    res = opt.minimize(objfunc, loginit, method='Newton-CG', jac=objgrad, hess=objhess,
+                       options=optdict, callback=plotcur)
+    tstop = time.time()
+    out = np.exp(res.x)
+    
+    # Print stats
+    print "time: %f s" % (tstop - tstart)
+    print "J: %f" % res.fun
+    print "Chi^2: %f" % chisq(out, A, vis, sigma)
+    print res.message
+    
+    # Return Image object
+    outim = vb.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse)
+    if len(Prior.qvec):
+        print "Preserving image complex polarization fractions!"
+        qvec = Prior.qvec * out / Prior.imvec
+        uvec = Prior.uvec * out / Prior.imvec
+        outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
+    return outim
+
 def maxen_clip(Obsdata, InitIm, Prior, maxit=100, alpha=100, beta=1.0, entropy="gs", stop=1e-10, ipynb=False, show_updates=True, clipfloor=0.):
     """Run maximum entropy with full amplitudes and phases. 
        Uses I = exp(I') change of variables.
@@ -1146,6 +1243,9 @@ def chisqgrad(imvec, Amatrix, vis, sigma):
     out = -np.real(np.dot(Amatrix.conj().T, wdiff)) / len(vis)
     return out
 
+def chisqhess(imvec, Amatrix, vis, sigma):
+    return np.real(np.dot(Amatrix.conj().T * sigma * sigma, Amatrix)) / len(vis)
+
 # Bispectrum chi-squared
 def chisq_bi(imvec, Amatrices, bis, sigma):
     """Bispectrum chi-squared"""
@@ -1394,6 +1494,8 @@ def sgs(imvec, priorvec):
 def sgsgrad(imvec, priorvec):
     return -np.log(imvec/priorvec)
 
+def sgshess(imvec, priorvec):
+    return -np.diag(1/imvec)
 
 def stv(imvec, nx, ny):
     """Total variation entropy"""

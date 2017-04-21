@@ -19,7 +19,6 @@ import pulses
 import vlbi_imaging_utils as vb
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
 
-
 ##################################################################################################
 # Constants
 ##################################################################################################
@@ -37,16 +36,6 @@ DEC_DEFAULT = -28.992189444444445
 RF_DEFAULT = 230e9
 MJD_DEFAULT = 51544
 PULSE_DEFAULT = pulses.trianglePulse2D
-
-# Telescope elevation cuts (degrees) 
-#ELEV_LOW = 10.0
-#ELEV_HIGH = 85.0
-
-#ELEV_LOW = 0.01
-#ELEV_HIGH = 89.99
-
-ELEV_LOW = 1.
-ELEV_HIGH = 89.
 
 # Default Optical Depth and std. dev % on gain
 TAUDEF = 0.1
@@ -246,6 +235,7 @@ class Movie(object):
     def observe_same(self, obs, sgrscat=False, add_th_noise=True, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True,
                                                                   jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True,
                                                                   inv_jones=False, repeat=False):                                                     
+        
         """Observe the movie on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
@@ -285,6 +275,7 @@ class Movie(object):
                       sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
                       jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True, timetype='UTC',
                       repeat=False):
+
         """Observe the movie with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in UTC.
            tint and tadv should be seconds.

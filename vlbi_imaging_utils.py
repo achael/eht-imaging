@@ -2933,7 +2933,7 @@ def im_pad(im, fovx, fovy):
         outim.add_v(varr)
     return outim
     
-def make_square(obs, npix, fov,pulse=pulses.trianglePulse2D):
+def make_square(obs, npix, fov,pulse=PULSE_DEFAULT):
     """Make an empty prior image
        obs is an observation object
        fov is in radians
