@@ -12,6 +12,7 @@ import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.optimize as opt
+import scipy.ndimage as nd
 import itertools as it
 import astropy.io.fits as fits
 import datetime
@@ -171,10 +172,10 @@ class Image(object):
         """Returns the image 2D array of type stokes"""
 
         imarr = np.array([])
-        if stokes=="I": imarr=im.imvec.reshape(im.xdim, im.ydim)
-        elif stokes=="Q" and len(im.qvec): imarr=im.qvec.reshape(im.xdim, im.ydim)
-        elif stokes=="U" and len(im.uvec): imarr=im.uvec.reshape(im.xdim, im.ydim)
-        elif stokes=="V" and len(im.vvec): imarr=im.vvec.reshape(im.xdim, im.ydim)
+        if stokes=="I": imarr=im.imvec.reshape(im.ydim, im.xdim)
+        elif stokes=="Q" and len(im.qvec): imarr=im.qvec.reshape(im.ydim, im.xdim)
+        elif stokes=="U" and len(im.uvec): imarr=im.uvec.reshape(im.ydim, im.xdim)
+        elif stokes=="V" and len(im.vvec): imarr=im.vvec.reshape(im.ydim, im.xdim)
         return imarr
 
     def sourcevec(self):
@@ -188,37 +189,115 @@ class Image(object):
         self.qvec = - self.qvec
         return
 
-    def observe_same_nonoise(self, obs, sgrscat=False):
+    def observe_same_nonoise(self, obs, sgrscat=False, ft="direct", pad_frac=0.5):
         """Observe the image on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
         """
-        
+
         # Check for agreement in coordinates and frequency 
         if (self.ra!= obs.ra) or (self.dec != obs.dec):
             raise Exception("Image coordinates are not the same as observtion coordinates!")
         if (self.rf != obs.rf):
             raise Exception("Image frequency is not the same as observation frequency!")
         
+        if ft=='direct' or ft=='fast':        
+            print "Producing clean visibilities from image with " + ft + " FT . . . "
+        else:
+            raise Exception("ft=%s, options for ft are 'direct' and 'fast'"%ft)
+
         # Get data (must make a copy!)              
         obsdata = obs.copy().data
                           
         # Extract uv data
         uv = obsdata[['u','v']].view(('f8',2))
-           
-        # Perform DFT
-        mat = ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse)
-        vis = np.dot(mat, self.imvec)
+
+        umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
+        umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
+
+        if not self.psize < 1/(umax): 
+            print "    Warning!: longest baseline > maximum image spatial wavelength!"
+        if not self.psize*np.sqrt(self.xdim*self.ydim) > 1/(umin): 
+            print "    Warning!: shortest baseline < minimum image spatial wavelength!"
         
-        # If there are polarized images, observe them:
-        qvis = np.zeros(len(vis))
-        uvis = np.zeros(len(vis))
-        vvis = np.zeros(len(vis))
-        if len(self.qvec):
-            qvis = np.dot(mat, self.qvec)
-            uvis = np.dot(mat, self.uvec)
-        if len(self.vvec):
-            vvis = np.dot(mat, self.vvec)
+        vis = np.zeros(len(uv))
+        qvis = np.zeros(len(uv))
+        uvis = np.zeros(len(uv))
+        vvis = np.zeros(len(uv))
+
+        #visibilities from FFT
+        if ft=="fast":
+
+            # Pad image
+            npad = int(np.ceil(pad_frac*1./(self.psize*umin)))
+            if npad % 2: npad += 1
+            padvalx1 = padvalx2 = int(np.floor((npad - self.xdim)/2.))
+            if self.xdim % 2:
+                padvalx2 += 1
+            padvaly1 = padvaly2 = int(np.floor((npad - self.xdim)/2.))
+            if self.ydim % 2:
+                padvaly2 += 1
+
+            imarr = self.imvec.reshape(self.ydim, self.xdim)
+            imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+            npad = imarr.shape[0]
+            if imarr.shape[0]!=imarr.shape[1]: 
+                raise Exception("FFT padding did not return a square image!")
+
+            # Scaled uv points
+            du = 1./(npad*self.psize)
+            uv2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+            uv2 = (uv2 / du + 0.5*npad).T
+
+            # FFT for visibilities
+            vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
+
+            # Sample the visibilities
+            visre = nd.map_coordinates(np.real(vis_im), uv2)
+            visim = nd.map_coordinates(np.imag(vis_im), uv2)
+            vis = visre + 1j*visim
+
+            #extra phase to match centroid convention -- right?
+            phase = np.exp(-1j*np.pi*self.psize*(uv[:,0]+uv[:,1]))
+            vis = vis * phase
+
+            if len(self.qvec):
+                qarr = self.qvec.reshape(self.ydim, self.xdim)
+                qarr = np.pad(qarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+                uarr = self.uvec.reshape(self.ydim, self.xdim)
+                uarr = np.pad(uarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+                
+                qvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(qarr)))
+                uvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(uarr)))
+
+                qvisre = nd.map_coordinates(np.real(qvis_im), uv2)
+                qvisim = nd.map_coordinates(np.imag(qvis_im), uv2)
+                qvis = phase*(qvisre + 1j*qvisim)
+
+                uvisre = nd.map_coordinates(np.real(uvis_im), uv2)
+                uvisim = nd.map_coordinates(np.imag(uvis_im), uv2)
+                uvis = phase*(uvisre + 1j*uvisim)
+
+            if len(self.vvec):
+                varr = self.vvec.reshape(self.ydim, self.xdim)
+                varr = np.pad(varr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+              
+                vvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(varr)))
+
+                vvisre = nd.map_coordinates(np.real(vvis_im), uv2)
+                vvisim = nd.map_coordinates(np.imag(vvis_im), uv2)
+                vvis = phase*(vvisre + 1j*qvisim)
+
+        #visibilities from DFT
+        else:
+            mat = ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse)
+            vis = np.dot(mat, self.imvec)
+        
+            if len(self.qvec):
+                qvis = np.dot(mat, self.qvec)
+                uvis = np.dot(mat, self.uvec)
+            if len(self.vvec):
+                vvis = np.dot(mat, self.vvec)
                     
         # Scatter the visibilities with the SgrA* kernel
         if sgrscat:
@@ -241,9 +320,10 @@ class Image(object):
         
         return obs_no_noise 
           
-    def observe_same(self, obs,sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
-                           tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
-                           jones=False, inv_jones=False, dcal=True):
+    def observe_same(self, obs, ft='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True, 
+                                opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
+                                tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
+                                jones=False, inv_jones=False):
                                                                   
         """Observe the image on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
@@ -252,36 +332,35 @@ class Image(object):
            gain_offset can be optionally set as a dictionary that specifies the percentage offset 
            for each telescope site. 
         """
-        print "Producing clean visibilities from image . . . "
-        obs_out = self.observe_same_nonoise(obs, sgrscat=sgrscat)    
+
+        obs_out = self.observe_same_nonoise(obs, sgrscat=sgrscat, ft=ft, pad_frac=pad_frac)    
         
         # Jones Matrix Corruption
         if jones:
-            print "Applying Jones Matrices to data . . . "
             obs_out = add_jones_and_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
                                                    ampcal=ampcal, phasecal=phasecal, dcal=dcal, frcal=frcal,
                                                    gainp=gainp, gain_offset=gain_offset, dtermp=dtermp)
             
             #!AC TODO constant gain_offset is NOT calibrated away in this step. Is this inconsistent?
             if inv_jones:
-                print "Applying a priori calibration with estimated Jones matrices . . . "
                 obs_out = apply_jones_inverse(obs_out, opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, 
                                                        dcal=dcal, frcal=frcal)
         
         # No Jones Matrices, Add noise the old way        
         #!AC There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.                                              
         elif add_th_noise:                
-            print "Adding gain + phase errors to data and applying a priori calibration . . . "
             obs_out = add_noise(obs_out, add_th_noise=add_th_noise, opacitycal=opacitycal, 
                                          ampcal=ampcal, phasecal=phasecal, gainp=gainp,
                                          gain_offset=gain_offset)
         
         return obs_out
         
-    def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, 
-                sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
-                tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
-                jones=False, inv_jones=False, dcal=True, timetype='UTC', elevmin=ELEV_LOW, elevmax=ELEV_HIGH):
+    def observe(self, array, tint, tadv, tstart, tstop, bw, 
+                      mjd=None, timetype='UTC', elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
+                      ft='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True, 
+                      opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                      tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
+                      jones=False, inv_jones=False):
                 
         """Observe the image with an array object to produce an obsdata object.
 	       tstart and tstop should be hrs in UTC.
@@ -304,9 +383,10 @@ class Image(object):
                             tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax)
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, sgrscat=sgrscat, add_th_noise=add_th_noise, opacitycal=opacitycal,
-                                ampcal=ampcal, gainp=gainp, phasecal=phasecal, gain_offset=gain_offset, 
-                                jones=jones, inv_jones=inv_jones, dcal=dcal, dtermp=dtermp, frcal=frcal)   
+        obs = self.observe_same(obs, ft=ft, pad_frac=pad_frac, sgrscat=sgrscat, add_th_noise=add_th_noise,
+                                     opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
+                                     gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,
+                                     jones=jones, inv_jones=inv_jones,)   
         
         return obs
         
@@ -1642,9 +1722,9 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
          
         if ebar and (np.any(sigy) or np.any(sigx)):
-            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='b.', color=color)
+            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='.', color=color)
         else:
-            x.plot(data[field1], data[field2], 'b.', color=color)
+            x.plot(data[field1], data[field2], '.', color=color)
             
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -2917,18 +2997,18 @@ def im_pad(im, fovx, fovy):
     fovoldy=im.psize*im.ydim
     padx=int(0.5*(fovx-fovoldx)/im.psize)
     pady=int(0.5*(fovy-fovoldy)/im.psize)
-    imarr=im.imvec.reshape(im.xdim, im.ydim)
+    imarr=im.imvec.reshape(im.ydim, im.xdim)
     imarr=np.pad(imarr,((padx,padx),(pady,pady)),'constant')
     outim=Image(imarr, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
 
     if len(im.qvec):
-        qarr=im.qvec.reshape(im.xdim,im.ydim)
+        qarr=im.qvec.reshape(im.ydim,im.xdim)
         qarr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
-        uarr=im.uvec.reshape(im.xdim,im.ydim)
+        uarr=im.uvec.reshape(im.ydim,im.xdim)
         uarr=np.pad(uarr,((padx,padx),(pady,pady)),'constant')
         outim.add_qu(qarr,uarr)
     if len(im.vvec):
-        varr=im.vvec.reshape(im.xdim,im.ydim)
+        varr=im.vvec.reshape(im.ydim,im.xdim)
         varr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
         outim.add_v(varr)
     return outim
@@ -3239,6 +3319,7 @@ def blnoise(sefd1, sefd2, tint, bw):
     
     #!AC TODO Is the factor of sqrt(2) correct? 
     noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+    #noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
     return noise
 
 def cerror(sigma):
@@ -3546,6 +3627,8 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ga
     """Corrupt visibilities in obs with jones matrices and add thermal noise
     """  
 
+    print "Applying Jones Matrices to data . . . "
+
     # Build Jones Matrices
     jm_dict = make_jones(obs, 
                          ampcal=ampcal, opacitycal=opacitycal, gainp=gainp, phasecal=phasecal, 
@@ -3620,7 +3703,9 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ga
 def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frcal=True):
     """Corrupt visibilities in obs with jones matrices and add thermal noise
     """  
-    
+
+    print "Applying a priori calibration with estimated Jones matrices . . . "
+
     # Build Inverse Jones Matrices
     jm_dict = make_jones_inverse(obs,
                                  ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
@@ -3714,6 +3799,8 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
        for each telescope site. If it is a single value than it is the standard deviation 
        of a randomly selected gain offset. 
     """   
+
+    print "Adding gain + phase errors to data and applying a priori calibration . . . "
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     opacitycalout=True #With old noise function, output is always calibrated to estimated opacity
