@@ -23,7 +23,7 @@ DEGREE = np.pi/180.
 RADPERAS = DEGREE/3600.
 RADPERUAS = RADPERAS/1e6
 
-no_linear_shift = True #flag for whether or not to allow image shift in the phase screen
+no_linear_shift = False #flag for whether or not to allow image shift in the phase screen
 
 def Q(qx, qy, wavelength, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out): #Power spectrum of phase fluctuations
     #x is aligned with the major axis; y is aligned with the minor axis
@@ -125,13 +125,14 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
 
     return epsilon
 
-def MakePhaseScreen(EpsilonScreen, Reference_Image, obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0):
+def MakePhaseScreen(EpsilonScreen, Reference_Image, obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, Verbose=False):
     """Create a refractive phase screen from standardized Fourier components 
        All lengths should be specified in centimeters
        If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image
        Unspecified scattering parameters are taken to be equal to those of Sgr A*
        scatt_alpha is the power-law index (Kolmogorov is 5/3)
        POS_ANG is the position angle of the major axis in degrees East of North
+       Motion of the screen can be handled with the screen velocity {Vx_km_per_s, Vy_km_per_s} and time parameter t_hr
     """
     #Observing wavelength
     if obs_frequency_Hz == 0.0:
@@ -173,28 +174,38 @@ def MakePhaseScreen(EpsilonScreen, Reference_Image, obs_frequency_Hz=0.0, scatt_
         print "The image dimension should really be odd..."
 
     #Now we'll calculate the power spectrum for each pixel in Fourier space
-    sqrtQ = np.zeros((Ny,Nx)) #just to get the dimensions correct
+    sqrtQ = 1j*np.zeros((Ny,Nx)) #just to get the dimensions correct
     dq = 2.0*np.pi/FOV #this is the spacing in wavenumber
 
-    for x in range(0, Nx):
-        for y in range(0, Ny):
-            x2 = x
-            y2 = y
-            if x2 > (Nx-1)/2:
-                x2 = x2 - Nx
-            if y2 > (Ny-1)/2:
-                y2 = y2 - Ny 
-            sqrtQ[y][x] = Q(dq*x2, dq*y2, wavelength, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out)**0.5    
+    screen_x_offset_pixels = (Vx_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
+    screen_y_offset_pixels = (Vy_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
+
+    if Verbose and (screen_x_offset_pixels != 0.0 or screen_y_offset_pixels != 0.0):
+        print "Screen Offset x (pixels): ",screen_x_offset_pixels
+        print "Screen Offset y (pixels): ",screen_y_offset_pixels
+
+    for s in range(0, Nx):
+        for t in range(0, Ny):
+            s2 = s
+            t2 = t
+            if s2 > (Nx-1)/2:
+                s2 = s2 - Nx
+            if t2 > (Ny-1)/2:
+                t2 = t2 - Ny 
+
+            sqrtQ[t][s] = Q(dq*s2, dq*t2, wavelength, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out)**0.5 
+            sqrtQ[t][s] *= np.exp(2.0*np.pi*1j*(float(s2)*screen_x_offset_pixels + float(t2)*screen_y_offset_pixels)/float(Nx)) #The exponential term rotates the screen (after a Fourier transform to the image domain). Note that it uses {s2,t2}, which is important to get the conjugation symmetry correct. 
+          
     sqrtQ[0][0] = 0.0 #A DC offset doesn't affect scattering
 
     #Now calculate the phase screen
-    phi = np.real(wavelengthbar/FOV*EpsilonScreen.shape[0]*EpsilonScreen.shape[1]*np.fft.ifft2( sqrtQ*EpsilonScreen))
+    phi = np.real(wavelengthbar/FOV*EpsilonScreen.shape[0]*EpsilonScreen.shape[1]*np.fft.ifft2(sqrtQ*EpsilonScreen))
     phi_Image = vb.Image(phi, Reference_Image.psize, Reference_Image.ra, Reference_Image.dec, rf=Reference_Image.rf, source=Reference_Image.source, mjd=Reference_Image.mjd)
 
     return phi_Image
 
 
-def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0, Linearized_Approximation=True, DisplayPhi=False, DisplayImage=False, Force_Positivity=False, Verbose=False): 
+def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, scatt_alpha=5.0/3.0, r0_maj=0.0, r0_min=0.0, POS_ANG=None, r_in=0.0, r_out=0.0, observer_screen_distance=0.0, source_screen_distance=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, Linearized_Approximation=True, DisplayPhi=False, DisplayImage=False, Force_Positivity=False, Verbose=False): 
     """Create a refractive phase screen from standardized Fourier components 
        All lengths should be specified in centimeters
        If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
@@ -253,7 +264,7 @@ def Scatter(Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0
             print "The image dimension should really be odd..."
     
         #We'll now calculate the phase screen.       
-        phi_Image = MakePhaseScreen(Epsilon_Screen, Unscattered_Image, obs_frequency_Hz, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out, observer_screen_distance, source_screen_distance)
+        phi_Image = MakePhaseScreen(Epsilon_Screen, Unscattered_Image, obs_frequency_Hz, scatt_alpha, r0_maj, r0_min, POS_ANG, r_in, r_out, observer_screen_distance, source_screen_distance, Vx_km_per_s=Vx_km_per_s, Vy_km_per_s=Vy_km_per_s, t_hr=t_hr, Verbose=Verbose)
         phi = phi_Image.imvec.reshape(Ny,Nx)
         
         if DisplayPhi:
