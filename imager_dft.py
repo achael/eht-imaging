@@ -1,8 +1,9 @@
 # imager_dft.py
 # Andrew Chael, 3/11/2017
-# General DFT imager for total intensity VLBI data
+# General imager for total intensity VLBI data
 
 #TODO 
+# add ffts and rename!
 # add more general linearized energy functions
 # debias closure amplitudes
 # closure amplitude and phase covariance
@@ -11,6 +12,7 @@ import string
 import time
 import numpy as np
 import scipy.optimize as opt
+import scipy.ndimage as nd
 import scipy.ndimage.filters as filt
 import matplotlib.pyplot as plt
 import vlbi_imaging_utils as vb
@@ -18,6 +20,84 @@ import linearize_energy as le
 from IPython import display
 
 reload(vb)
+
+def conv_func_pill(x,y): 
+    if abs(x) < 0.5 and abs(y) < 0.5: 
+        out = 1.
+    else: 
+        out = 0.
+    return out
+
+def conv_func_gauss(x,ys):
+    return np.exp(-(x**2 + y**2))
+
+# There's a bug in my version of the spheroidal function of order 0! - gives nans for eta<1
+def conv_func_spheroidal(x,y,p,m):
+    etax = 2.*x/float(p)
+    etay = 2.*x/float(p)
+    psix =  abs(1-etax**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etax)[0] 
+    psiy = abs(1-etay**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etay)[0]
+    
+    return psix*psiy
+
+def sampler(uv, griddata, psize, order=3):
+    """
+    Samples griddata sampled at uv points in a npix x npix grid
+    psize is the image domain pixel size of the corresponding real space image
+    order is the order of the spline interpolation
+    the griddata should already be rotated so u,v = 0,0 is in the center
+    to agree with dft result another phase shift may be required
+    """
+
+    if griddata.shape[0] != griddata.shape[0]: 
+        raise Exception("griddata should be a square array!")
+
+    npix = griddata.shape[0]
+    vu2= np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    du = 1./(npix*psize)
+    vu2 = (vu2 / du + 0.5*npix).T
+
+    datare = nd.map_coordinates(np.real(vis_im), vu2, order=order)
+    dataim = nd.map_coordinates(np.imag(vis_im), vu2, order=order)
+    data = visdatare + 1j*visdataim
+
+    return data
+
+def gridder(uv, data, npix, psize, conv_func="pillbox", p_rad=1.):
+    """
+    Grids data sampled at uv points on a square npix x npix array
+    psize is the image domain pixel size of the corresponding real space image
+    conv_func is the convolution function: current options are "pillbox" and "gaussian"
+    p_rad is the radius inside wich the conv_func is nonzero 
+    """
+
+    if len(uv) != len(data): 
+        raise Exception("uv and data are not the same length!")
+    if not (conv_func in ['pillbox','gaussian']):
+        raise Exception("conv_func must be either 'pillbox' or 'gaussian'")
+
+    vu2= np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    du = 1./(npix*psize)
+    vu2 = (vu2 / du + 0.5*npix)
+
+    datagrid = np.zeros((npad, npad)).astype('c16')
+    for k in xrange(len(data)):
+        point = vu2[k]
+        vispoint = data[k]
+
+        vumin = np.ceil(point - prad).astype(int)
+        vumax = np.floor(point + prad).astype(int)
+
+        #print vumin, vumax
+        for i in np.arange(vumin[0], vumax[0]+1):
+            for j in np.arange(vumin[1], vumax[1]+1):
+                if conv_func == 'pillbox':
+                    visgrid[i,j] += conv_func_pill(j-point[1], i-point[0]) * vispoint
+
+                elif conv_func == 'gaussian':
+                    visgrid[i,j] += conv_func_gauss(j-point[1], i-point[0]) * vispoint
+    
+    return datagrid
 
 ##################################################################################################
 # Constants

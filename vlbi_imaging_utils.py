@@ -215,10 +215,10 @@ class Image(object):
         umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
         umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
 
-        if not self.psize < 1/(umax): 
-            print "    Warning!: longest baseline > maximum image spatial wavelength!"
-        if not self.psize*np.sqrt(self.xdim*self.ydim) > 1/(umin): 
-            print "    Warning!: shortest baseline < minimum image spatial wavelength!"
+        if not self.psize < 1/(2*umax): 
+            print "    Warning!: longest baseline > 1/2 x maximum image spatial wavelength!"
+        if not self.psize*np.sqrt(self.xdim*self.ydim) > 1/(0.5*umin): 
+            print "    Warning!: shortest baseline < 2 x minimum image spatial wavelength!"
         
         vis = np.zeros(len(uv))
         qvis = np.zeros(len(uv))
