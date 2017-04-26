@@ -230,11 +230,12 @@ class Image(object):
 
             # Pad image
             npad = int(np.ceil(pad_frac*1./(self.psize*umin)))
-            if npad % 2: npad += 1
+            npad = power_of_two(npad)
+
             padvalx1 = padvalx2 = int(np.floor((npad - self.xdim)/2.))
             if self.xdim % 2:
                 padvalx2 += 1
-            padvaly1 = padvaly2 = int(np.floor((npad - self.xdim)/2.))
+            padvaly1 = padvaly2 = int(np.floor((npad - self.ydim)/2.))
             if self.ydim % 2:
                 padvaly2 += 1
 
@@ -3937,6 +3938,18 @@ def ticks(axisdim, psize, nticks=8):
 #        for (cq1, cq2) in product(cqlist, cqlist):
 #            cov[iloc[cq1[0]], iloc[cq2[0]]] += cq1[1] * cq2[1] * noisebldict[bl]['sigmaca']**2 ##ANDREW FIX THIS FOR PHASES
 #    return cov
+
+def power_of_two(target):
+    """Finds the next greatest power of two
+    """
+    cur = 1
+    if target > 1:
+        for i in xrange(0, int(target)):
+            if (cur >= target):
+                return cur
+            else: cur *= 2
+    else:
+        return 1
 
 
 def paritycompare(perm1, perm2):
