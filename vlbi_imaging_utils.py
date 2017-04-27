@@ -1975,6 +1975,9 @@ class Obsdata(object):
 
         # Open template UVFITS
         hdulist = fits.open('./template.UVP')
+
+        ########################################################################
+        # Antenna table
         
         # Load the array data
         tarr = self.tarr
@@ -1990,7 +1993,7 @@ class Obsdata(object):
         colfin = fits.Column(name='SEFD', format='1D', array=sefd)
         
         #!AC TODO these antenna fields+header are questionable - look into them
-        col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
+
         col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
         col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
         col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['R' for i in range(nsta)], dtype='|S1'))
@@ -1999,6 +2002,7 @@ class Obsdata(object):
         col9 = fits.Column(name='POLTYB', format='1A', array=np.array(['L' for i in range(nsta)], dtype='|S1'))
         col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES', array=(90.*np.ones(nsta)))
         col11 = fits.Column(name='POLCALB', format='3E', array=np.zeros((nsta,3)))
+        col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
         
         #Antenna Header params - do I need to change more of these?? 
         #head = fits.Header()
@@ -2024,7 +2028,9 @@ class Obsdata(object):
         head['FREQID'] = 1
         tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
         hdulist['AIPS AN'] = tbhdu
-        
+
+        ########################################################################
+        # Data table
         # Data header (based on the BU format)
         #header = fits.Header()
         header = hdulist[0].header
@@ -2154,8 +2160,10 @@ class Obsdata(object):
         hdulist[0].data = x
         hdulist[0].header = header
  
-        # ADD AIPS FQ TABLE -- Thanks to Kazu
+        ##################################################################################
+        # AIPS FQ TABLE -- Thanks to Kazu
         # Convert types & columns
+
         nif=1
         col1 = np.array(1, dtype=np.int32).reshape([nif]) #frqsel
         col2 = np.array(0.0, dtype=np.float64).reshape([nif]) #iffreq
@@ -2179,7 +2187,8 @@ class Obsdata(object):
         hdulist.append(tbhdu)
          
         # Write final HDUList to file
-        hdulist.writeto(fname, overwrite=True)                
+        hdulist.writeto(fname, overwrite=True)
+                
         return
     
     def save_oifits(self, fname, flux=1.0):
