@@ -2007,25 +2007,31 @@ class Obsdata(object):
         #Antenna Header params - do I need to change more of these?? 
         #head = fits.Header()
         head = hdulist['AIPS AN'].header
+        head['EXTNAME'] = 'AIPS AN'
         head['EXTVER'] = 1
-        head['GSTIA0'] = 119.85 # !AC TODO ?? for mjd 48277
+        head['RDATE'] = '2000-01-01T00:00:00.0'
+        head['GSTIA0'] = 114.38389781355     # !AC TODO ?? for jan 1 2000
+        head['UT1UTC'] = 0.e0
+        head['DATUTC'] = 0.e0
+        head['TIMESYS'] = 'UTC'
+        head['DEGPDY'] = 360.9856
+
         head['FREQ']= self.rf
-        head['ARRNAM'] = 'ALMA' #!AC TODO Can we change this field? 
+        head['FREQID'] = 1
+
+        head['ARRNAM'] = 'ALMA'     #!AC TODO Can we change this field? 
         head['XYZHAND'] = 'RIGHT'
         head['ARRAYX'] = 0.e0
         head['ARRAYY'] = 0.e0
         head['ARRAYZ'] = 0.e0
-        head['DEGPDY'] = 360.985
         head['POLARX'] = 0.e0
         head['POLARY'] = 0.e0
-        head['UT1UTC'] = 0.e0
-        head['DATUTC'] = 0.e0
-        head['TIMESYS'] = 'UTC'
+
         head['NUMORB'] = 0
         head['NO_IF'] = 1
-        head['NOPCAL'] = 2
+        head['NOPCAL'] = 0            #!AC changed from 1
         head['POLTYPE'] = 'APPROX'
-        head['FREQID'] = 1
+
         tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
         hdulist['AIPS AN'] = tbhdu
 
@@ -2039,7 +2045,7 @@ class Obsdata(object):
         header['OBJECT'] = self.source
         header['MJD'] = float(self.mjd)
         header['BUNIT'] = 'JY'
-        header['VELREF'] = 3 #??
+        header['VELREF'] = 3        # !AC TODO ??
         header['ALTRPIX'] = 1.e0
         header['TELESCOP'] = 'ALMA' # !AC TODO Can we change this field?  
         header['INSTRUME'] = 'ALMA'
