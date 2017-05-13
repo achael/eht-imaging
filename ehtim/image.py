@@ -366,7 +366,7 @@ class Image(object):
         out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd) 
         return out
 
-    def add_gauss(self, flux, beamparams):
+    def     npix = int(npix)make_add_gauss(self, flux, beamparams):
         """Add a gaussian to an image
            beamparams is [fwhm_maj, fwhm_min, theta, x, y], all in rad
            theta is the orientation angle measured E of N
@@ -659,7 +659,9 @@ def make_square(obs, npix, fov,pulse=PULSE_DEFAULT):
        obs is an observation object
        fov is in radians
     """ 
-    pdim = fov/npix
+
+    pdim = fov/float(npix)
+    npix = int(npix)
     im = np.zeros((npix,npix))
     return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd, pulse=pulse)
 
