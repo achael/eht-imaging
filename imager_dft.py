@@ -163,6 +163,13 @@ def imager(Obsdata, InitIm, Prior, flux,
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
         raise Exception("Initial image does not match dimensions of the prior image!")
 
+    if np.all(Prior.imvec == 0):
+        raise Exception("Prior image zero everywhere!")
+
+    if np.all(InitIm.imvec == 0):
+        raise Exception("Initial image zero everywhere!")
+
+
     # Catch scale and dimension problems
     imsize = np.max([Prior.xdim, Prior.ydim]) * Prior.psize
     uvmax = 1./Prior.psize
@@ -185,7 +192,7 @@ def imager(Obsdata, InitIm, Prior, flux,
     embed_mask = Prior.imvec > clipfloor
     nprior = (flux * Prior.imvec / np.sum((Prior.imvec)[embed_mask]))[embed_mask]
     ninit = (flux * InitIm.imvec / np.sum((InitIm.imvec)[embed_mask]))[embed_mask]
-
+ 
     # Get data and fourier matrices for the data terms
     (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1)
     (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2)
@@ -309,13 +316,15 @@ def imager(Obsdata, InitIm, Prior, flux,
         xinit = np.log(ninit)
     else: 
         xinit = ninit       
-    plotcur(xinit)
+
     
     # Print stats
     print "Initial Chi^2_1: %f Chi^2_2: %f" % (chisq1(ninit), chisq2(ninit))
     print "Total Pixel #: ",(len(Prior.imvec))
     print "Clipped Pixel #: ",(len(ninit))
     
+    plotcur(xinit)
+
     # Minimize
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST} # minimizer params
     tstart = time.time()

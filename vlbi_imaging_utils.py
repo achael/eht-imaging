@@ -7,6 +7,7 @@
 # discuss the calibration flags -- do they make sense / are they being applied properly? 
 
 import string
+import os.path
 import numpy as np
 import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
@@ -15,6 +16,7 @@ import scipy.optimize as opt
 import scipy.ndimage as nd
 import itertools as it
 import astropy.io.fits as fits
+import astropy.coordinates as coords
 import datetime
 import writeData
 import oifits_new as oifits
@@ -22,6 +24,7 @@ import astropy.time as at
 import time as ttime
 import pulses
 
+import ephem
 #from mpl_toolkits.basemap import Basemap # for plotting baselines on globe
 
 ##################################################################################################
@@ -582,9 +585,22 @@ class Array(object):
         where x,y,z are geocentric coordinates.
     """   
     
-    def __init__(self, tarr):
+    def __init__(self, tarr, ephem={}):
         self.tarr = tarr
-        
+        self.ephem = ephem
+
+        # check to see if ephemeris is correct
+        for line in self.tarr:
+            if np.any(np.isnan([line['x'],line['y'],line['z']])):
+                sitename = str(line['site'])
+                try:
+                    elen = len(ephem[sitename])
+                except NameError: 
+                    raise Exception ('no ephemeris for site %s !' % sitename)
+                if elen != 3: 
+                    
+                    raise Exception ('wrong ephemeris format for site %s !' % sitename)
+
         # Dictionary of array indices for site names
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
             
@@ -641,22 +657,56 @@ class Array(object):
             times_sidereal = utc_to_gmst(times, mjd)
 
         # Generate uv points at all times
-        outlist = []        
+        outlist = [] 
         for k in xrange(len(times)):
             time = times[k]
+            fracmjd = np.floor(mjd) + time/24.
+            dto = (at.Time(fracmjd, format='mjd')).datetime
             time_sidereal = times_sidereal[k]
             theta = np.mod((time_sidereal-ra)*HOUR, 2*np.pi)
             blpairs = []
+
+
             for i1 in xrange(len(self.tarr)):
                 for i2 in xrange(len(self.tarr)):
                     coord1 = np.array((self.tarr[i1]['x'], self.tarr[i1]['y'], self.tarr[i1]['z']))
                     coord2 = np.array((self.tarr[i2]['x'], self.tarr[i2]['y'], self.tarr[i2]['z']))
+                    site2 =  self.tarr[i2]['site']
+                    site1 =  self.tarr[i1]['site']                    
+                    # use spacecraft ephemeris
+
+                    if np.any(np.isnan(coord1)):
+                        #if site2 != 'ALMA': continue
+                        sat = ephem.readtle(self.ephem[site1][0],self.ephem[site1][1],self.ephem[site1][2])
+                        sat.compute(dto) # often complains if ephemeris out of date!
+                        elev = sat.elevation
+                        lat = sat.sublat / DEGREE
+                        lon = sat.sublong / DEGREE
+                        # pyephem doesn't use ellipsoid!?
+                        coord1 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None) 
+                        coord1 = np.array((coord1.x.value, coord1.y.value, coord1.z.value))
+                        
+                    # use spacecraft ephemeris
+                    if np.any(np.isnan(coord2)):
+                        #if site1 != 'ALMA': continue
+                        sat = ephem.readtle(self.ephem[site2][0],self.ephem[site2][1],self.ephem[site2][2])
+                        sat.compute(dto) # often complains if ephemeris out of date!
+                        elev = sat.elevation
+                        lat = sat.sublat  / DEGREE
+                        lon = sat.sublong / DEGREE
+                        # pyephem doesn't use ellipsoid!?
+                        coord2 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None) 
+                        coord2 = np.array((coord2.x.value, coord2.y.value, coord2.z.value))
+
+                    coord1 = earthrot(coord1, theta)
+                    coord2 = earthrot(coord2, theta)
+
                     if (i1!=i2 and
                         i1 < i2 and # This is the right condition for uvfits save
-                        #self.tarr[i1]['z'] <= self.tarr[i2]['z'] and # Choose the north one first
+
                         not ((i2, i1) in blpairs) and # This cuts out the conjugate baselines
-                        elevcut(earthrot(coord1, theta), sourcevec, elevmin, elevmax)[0] and 
-                        elevcut(earthrot(coord2, theta), sourcevec, elevmin, elevmax)[0]
+                        elevcut(coord1, sourcevec, elevmin, elevmax)[0] and #TODO elevcut should change for spacecraft!
+                        elevcut(coord2, sourcevec, elevmin, elevmax)[0]
                        ):
                         
                         # Optical Depth
@@ -685,8 +735,8 @@ class Array(object):
                                   self.tarr[i2]['site'], # Station 2
                                   tau1, # Station 1 optical depth
                                   tau2, # Station 1 optical depth
-                                  np.dot(earthrot(coord1 - coord2, theta)/l, projU), # u (lambda)
-                                  np.dot(earthrot(coord1 - coord2, theta)/l, projV), # v (lambda)
+                                  np.dot((coord1 - coord2)/l, projU), # u (lambda)
+                                  np.dot((coord1 - coord2)/l, projV), # v (lambda)
                                   0.0, # I Visibility (Jy)
                                   0.0, # Q Visibility
                                   0.0, # U Visibility
@@ -727,27 +777,6 @@ class Array(object):
         f.close()
         return 
          
-#    def plotbls(self):
-#        """Plot all baselines on a globe"""
-#        
-#        lat = []
-#        lon = []
-#        for t1 in range(len(tarr)):
-#            (x,y,z) = (self.tarr[t1]['x'], self.tarr[t1]['y'], self.tarr[t1]['z'])
-#            lon.append(np.arctan2(y, x)/DEGREE)
-#            lat.append(90 - np.arccos(z/np.sqrt(x**2 + y**2 + z**2))/DEGREE)
-
-#        map = Basemap(projection='moll', lon_0=-90)
-#        map.drawmapboundary(fill_color='blue')
-#        map.fillcontinents(color='green', lake_color='blue')
-#        map.drawcoastlines()
-#        for i in range(len(lon)):
-#            for j in range(len(lon)):
-#                x,y = map([lon[i],lon[j]], [lat[i],lat[j]])
-#                map.plot(x, y, marker='D', color='r')
-#        
-#        plt.show()
-        
 ##################################################################################################        
 class Obsdata(object):
     """A VLBI observation of visibility amplitudes and phases. 
@@ -2284,22 +2313,37 @@ def load_array(filename):
     """
     
     tdata = np.loadtxt(filename,dtype=str,comments='#')
+    path = os.path.dirname(filename)
+
+    tdataout = []
     if (tdata.shape[1] != 5 and tdata.shape[1] != 13):
         raise Exception("Array file should have format: "+ 
                         "(name, x, y, z, SEFDR, SEFDL "+
                         "FR_PAR_ANGLE FR_ELEV_ANGLE FR_OFFSET" +
                         "DR_RE   DR_IM   DL_RE    DL_IM )") 
-    if tdata.shape[1] == 5:                    
+
+    elif tdata.shape[1] == 5:                    
     	tdataout = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[4]),0.0, 0.0, 0.0, 0.0, 0.0),
                            dtype=DTARR) for x in tdata]
-    elif tdata.shape[1] == 13:                    
+    elif tdata.shape[1] == 13:                            
     	tdataout = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[5]),
                            float(x[9])+1j*float(x[10]), float(x[11])+1j*float(x[12]), 
                            float(x[6]), float(x[7]), float(x[8])), 
                            dtype=DTARR) for x in tdata]                           
 
     tdataout = np.array(tdataout)
-    return Array(tdataout)
+    edata = {}
+    for line in tdataout:
+        if np.any(np.isnan([line['x'],line['y'],line['z']])):
+            sitename = str(line['site'])
+            ephempath = path  + '/ephemeris/' + sitename
+            try: 
+                edata[sitename] = np.loadtxt(ephempath, dtype=str, comments='#', delimiter='/')
+                print 'loaded spacecraft ephemeris %s' % ephempath
+            except IOError: 
+                raise Exception ('no ephemeris file %s !' % ephempath)
+
+    return Array(tdataout, ephem=edata)
       
 def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
@@ -3034,7 +3078,9 @@ def make_square(obs, npix, fov,pulse=PULSE_DEFAULT):
        obs is an observation object
        fov is in radians
     """ 
-    pdim = fov/npix
+
+    pdim = fov/float(npix)
+    npix = int(npix)
     im = np.zeros((npix,npix))
     return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd, pulse=pulse)
 
@@ -3266,14 +3312,8 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
 
     sigma_maj = beamparams[0] / (2*np.sqrt(2*np.log(2))) 
     sigma_min = beamparams[1] / (2*np.sqrt(2*np.log(2)))
-    theta = beamparams[2]
-    #try: 
-    #	x=beamparams[3]
-    #	y=beamparams[4] 
-    #except IndexError:
-    #	x=y=0.0
-    
-    
+    theta = -beamparams[2] #!AC TODO theta defn is backward
+
     # Covariance matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
     b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
@@ -3297,7 +3337,7 @@ def sgra_kernel_uv(rf, u, v):
     lcm = (C/rf) * 100 # in cm
     sigma_maj = FWHM_MAJ * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     sigma_min = FWHM_MIN * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
-    theta = POS_ANG * DEGREE
+    theta = -POS_ANG * DEGREE #!AC TODO theta defn is backward
     
     
     # Covariance matrix
@@ -3334,8 +3374,8 @@ def blnoise(sefd1, sefd2, tint, bw):
     """
     
     #!AC TODO Is the factor of sqrt(2) correct? 
-    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
-    #noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
+    #noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+    noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
     return noise
 
 def cerror(sigma):
