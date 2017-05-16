@@ -11,11 +11,9 @@ ehtim (eht-imaging)
 
 Python modules for simulating and manipulating VLBI data and producing images with Maximum Entropy methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or need help for your application.
 
-The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the :class:`Image`, :class:`Array`, and :class:`Obsdata`. :class:`Movie` and :class:`Vex` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. ``imager`` is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.  
+The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Array``, ``Obsdata``. ``Movie`` and ``Vex`` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. ``imager`` is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.  
 
-.. note::
-
-    This is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.
+Note that this is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.
 
 Installation
 ------------
@@ -47,11 +45,9 @@ CHIRP
 
 Python code to produce intensity images using patch-prior regularizers. These methods are described in detail in the following paper: 
 
-CVPR Paper: http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html
+`CVPR Paper <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_
 
-Detailed derivations and additional results can be found in the accompanying supplemental material:
-
-Supplemental Material: http://vlbiimaging.csail.mit.edu/static/papers/CHIRPsupp.pdf
+Detailed derivations and additional results can be found in the accompanying `supplemental material <http://vlbiimaging.csail.mit.edu/static/papers/CHIRPsupp.pdf>`_
 
 Please email klbouman@mit.edu if you have trouble or need help for your application.
 
