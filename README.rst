@@ -1,23 +1,40 @@
 eht-imaging
 ============
 
-Python modules for simulating and manipulating VLBI data and producing images with Maximum Entropy methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or
-need help for your application.
+.. ehtim documentation master file, created by
+   sphinx-quickstart on Tue May 16 13:37:05 2017.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+ehtim (eht-imaging)
+===================
+
+Python modules for simulating and manipulating VLBI data and producing images with Maximum Entropy methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or need help for your application.
+
+The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the :class:`Image`, :class:`Array`, and :class:`Obsdata`. :class:`Movie` and :class:`Vex` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. ``imager`` is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.  
+
+.. note::
+
+    This is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.
 
 Installation
 ------------
-To install the ehtim library run
-pyton setup.py --install
+Download the latest version from the `GitHub repository <https://github.com/achael/eht-imaging>`_
+, change to the main directory and run:
+
+.. code-block:: bash
+
+    python setup.py install
+
+You will need working installations of `numpy <http://www.numpy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `scipy <http://www.scipy.org/>`_, and `astropy <http://www.astropy.org/>`_. 
+
 
 Documentation
 -------------
+The `documentation <https://achael.github.io/eht-imaging>`_ is in progress, but here are some ways to learn to use the code: 
 
-Documentation is in progress, but here are some ways to learn to use the code: 
-  1. the file example.py has a series of sample commands to load an image and array, generate data, and produce an image. 
-  2. Slides from the EHT2016 data generation and imaging workshop https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0 contain a tutorial on generating data with the vlbiimaging website (http://vlbiimaging.csail.mit.edu), loading into the library, and producing an image. Note that this presentation used
-a previous version of the code -- function names and prefixes need to be updated
-
-Below is a non-exhaustive list of the imaging applications included in eht-imaging:https://arxiv.org/abs/1605.06156
+- The file example.py has a series of sample commands to load an image and array, generate data, and produce an image. 
+- `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the vlbi imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image. Note that this presentation used a previous version of the code -- function names and prefixes will need to be updated.
 
 PolMEM
 ------------
@@ -38,9 +55,12 @@ Supplemental Material: http://vlbiimaging.csail.mit.edu/static/papers/CHIRPsupp.
 
 Please email klbouman@mit.edu if you have trouble or need help for your application.
 
+
 Acknowledgements
 ----------------
-The oifits_new.py code used for writing/reading oifits files is a slightly modified version of Paul Boley's package at http://astro.ins.urfu.ru/pages/~pboley/oifits/ The oifits read/write functionality is still being tested and may not work with all versions of python or astropy.io.fits.
+The oifits_new code used for reading/writing .oifits files is a slightly modified version of Paul Boley's package at `<http://astro.ins.urfu.ru/pages/~pboley/oifits>`_. The oifits read/write functionality is still being tested and may not work with all versions of python or astropy.io.fits.
 
-The jdcal.py module is from Prasanth Nair http://github.com/phn/jdcal. 
+The jdcal.py module is from Prasanth Nair at `<http://github.com/phn/jdcal>`_.
+
+The documentation is styled after `dfm's projects <https://github.com/dfm>`_ and the documentation for `scatterbrane <https://github.com/krosenfeld/scatterbrane>`_
 
