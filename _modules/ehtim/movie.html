@@ -1,0 +1,597 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ehtim.movie &mdash; ehtim 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="ehtim 1.0.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> ehtim
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../imager.html">Stokes I Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../calibration.html">Self Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Comparison Plots</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ehtim</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>ehtim.movie</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ehtim.movie</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">ehtim.obsdata</span>
+<span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span> <span class="k">as</span> <span class="nn">simobs</span>
+<span class="kn">import</span> <span class="nn">ehtim.io.save</span> 
+<span class="kn">import</span> <span class="nn">ehtim.io.load</span>
+
+<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
+
+<div class="viewcode-block" id="Movie"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie">[docs]</a><span class="k">class</span> <span class="nc">Movie</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A polarimetric movie (in units of Jy/pixel).</span>
+<span class="sd">    </span>
+<span class="sd">       Attributes:</span>
+<span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
+<span class="sd">    	   framedur (float): The frame duration in seconds</span>
+<span class="sd">           psize (float): The pixel dimension in radians</span>
+<span class="sd">           xdim (int): The number of pixels along the x dimension</span>
+<span class="sd">           ydim (int): The number of pixels along the y dimension</span>
+<span class="sd">           mjd (int): The integer MJD of the image </span>
+<span class="sd">           start_hr (float): The start UTC hour of the observation (default = -1.0, meaning it is inherited from the observation)</span>
+<span class="sd">           source (str): The astrophysical source name</span>
+<span class="sd">           ra (float): The source Right Ascension in fractional hours</span>
+<span class="sd">           dec (float): The source declination in fractional degrees</span>
+<span class="sd">           rf (float): The image frequency in Hz</span>
+<span class="sd">           frames (list): The list of frame vectors of stokes I values in Jy/pixel (each of len xdim*ydim)</span>
+<span class="sd">           qframes (list): The list of frame vectors of stokes Q values in Jy/pixel (each of len xdim*ydim)</span>
+<span class="sd">           uframes (list): The list of frame vectors of stokes U values in Jy/pixel (each of len xdim*ydim)</span>
+<span class="sd">           vframes (list): The list of frame vectors of stokes V values in Jy/pixel (each of len xdim*ydim)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movie</span><span class="p">,</span> <span class="n">framedur</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">RF_DEFAULT</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span> 
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;image must be a 2D numpy array&quot;</span><span class="p">)</span> 
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">framedur</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span> <span class="o">=</span> <span class="n">pulse</span>       
+        <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">psize</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">=</span> <span class="n">movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span> <span class="o">=</span> <span class="n">movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ra</span><span class="p">)</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mjd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">start_hr</span><span class="p">)</span>
+        
+        <span class="c1">#the list of frames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">movie</span><span class="p">]</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uframes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vframes</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Movie.add_qu"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.add_qu">[docs]</a>    <span class="k">def</span> <span class="nf">add_qu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qmovie</span><span class="p">,</span> <span class="n">umovie</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add Stokes Q and U movies.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">qmovie</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">umovie</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Q &amp; U movies must have same length as I movie!&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">))]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uframes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">))]</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)):</span> 
+            <span class="n">qimage</span> <span class="o">=</span> <span class="n">qmovie</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">uimage</span> <span class="o">=</span> <span class="n">umovie</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qimage</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">uimage</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;image must be a 2D numpy array!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">qimage</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">uimage</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Q &amp; U image shapes incompatible with I image!&quot;</span><span class="p">)</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">qimage</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uframes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">uimage</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Movie.add_v"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.add_v">[docs]</a>    <span class="k">def</span> <span class="nf">add_v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vmovie</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add Stokes V movie.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vmovie</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;V movie must have same length as I movie!&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">vframes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">))]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)):</span> 
+            <span class="n">vimage</span> <span class="o">=</span> <span class="n">vmovie</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">vimage</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Q &amp; U image shapes incompatible with I image!&quot;</span><span class="p">)</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">vimage</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Movie.copy"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a copy of the Movie object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">([</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="k">for</span> <span class="n">imvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">],</span> 
+                     <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> 
+                     <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">):</span>
+            <span class="n">new</span><span class="o">.</span><span class="n">add_qu</span><span class="p">([</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="k">for</span> <span class="n">qvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">],</span> 
+                         <span class="p">[</span><span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="k">for</span> <span class="n">uvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">uframes</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">new</span></div>
+        
+<div class="viewcode-block" id="Movie.flip_chi"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.flip_chi">[docs]</a>    <span class="k">def</span> <span class="nf">flip_chi</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Flip between the different conventions for measuring position angle (East of North vs up from x axis).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">qvec</span> <span class="k">for</span> <span class="n">qvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">]</span>
+        <span class="k">return</span></div>
+           
+<div class="viewcode-block" id="Movie.observe_same_nonoise"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same_nonoise">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="s2">&quot;direct&quot;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Observe the movie on the same baselines as an existing observation object without adding noise. </span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               obs (Obsdata): the existing observation with  baselines where the image FT will be sampled</span>
+<span class="sd">               ft (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT</span>
+<span class="sd">               repeat (bool): if True, repeat the movie to fill up the observation interval</span>
+<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd"> </span>
+<span class="sd">           Returns:</span>
+<span class="sd">               Obsdata: an observation object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">observe_movie_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="s2">&quot;direct&quot;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">)</span>
+
+        <span class="n">obs_no_noise</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span>
+                                             <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">obs_no_noise</span></div>
+    
+<div class="viewcode-block" id="Movie.observe_same"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obsin</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                           <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                           <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise. </span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled</span>
+<span class="sd">               ft (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT</span>
+<span class="sd">               repeat (bool): if True, repeat the movie to fill up the observation interval</span>
+<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point</span>
+<span class="sd">               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities</span>
+<span class="sd">               ampcal (bool): if False, time-dependent gaussian errors are added to station gains</span>
+<span class="sd">               phasecal (bool): if False, time-dependent station-based random phases are added to data points</span>
+<span class="sd">               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</span>
+<span class="sd">               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</span>
+<span class="sd">               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</span>
+<span class="sd">               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data </span>
+<span class="sd">               tau (float): the base opacity at all sites, or a dict giving one opacity per site</span>
+<span class="sd">               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site</span>
+<span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains and opacities</span>
+<span class="sd">               dtermp (float): the fractional std. dev. of the random error on the D-terms</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               Obsdata: an observation object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">print</span> <span class="s2">&quot;Producing clean visibilities from movie . . . &quot;</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same_nonoise</span><span class="p">(</span><span class="n">obsin</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="n">ft</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="n">pad_frac</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">)</span>    
+        
+        <span class="c1"># Jones Matrix Corruption &amp; Calibration</span>
+        <span class="k">if</span> <span class="n">jones</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s2">&quot;Applying Jones Matrices to data . . . &quot;</span>
+            <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">add_jones_and_noise</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span> 
+                                                 <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> 
+                                                 <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span> 
+                                                 <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">dtermp</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">)</span>
+            
+            <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> 
+                                             <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> 
+                                             <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span>  
+                                             <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">inv_jones</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="s2">&quot;Applying a priori calibration with estimated Jones matrices . . . &quot;</span>
+                <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">apply_jones_inverse</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> 
+                                                     <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> 
+                                                     <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">)</span>
+
+                <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> 
+                                                 <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> 
+                                                 <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span>  
+                                                 <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
+                                                 <span class="c1">#these are always set to True after inverse jones call</span>
+        
+        <span class="c1"># No Jones Matrices, Add noise the old way        </span>
+        <span class="c1"># !AC There is an asymmetry here - in the old way, we don&#39;t offer the ability to *not* unscale estimated noise.                                              </span>
+        <span class="k">elif</span> <span class="n">add_th_noise</span><span class="p">:</span>                
+            <span class="nb">print</span> <span class="s2">&quot;Adding gain + phase errors to data and applying a priori calibration . . . &quot;</span>
+            <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">add_noise</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span>
+                                       <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> 
+                                       <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">)</span>
+            
+            <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> 
+                                             <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> 
+                                             <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> 
+                                             <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
+                                             <span class="c1">#these are always set to True after inverse jones call</span>
+        <span class="k">return</span> <span class="n">obs</span></div>
+
+<div class="viewcode-block" id="Movie.observe"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">elevmin</span><span class="o">=</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
+                      <span class="n">ft</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                      <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the movie. </span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               array (Array): an array object containing sites with which to generate baselines</span>
+<span class="sd">               tint (float): the scan integration time in seconds</span>
+<span class="sd">               tadv (float): the uniform cadence between scans in seconds</span>
+<span class="sd">               tstart (float): the start time of the observation in hours</span>
+<span class="sd">               tstop (float): the end time of the observation in hours</span>
+<span class="sd">               bw (float): the observing bandwidth in Hz</span>
+<span class="sd">               repeat (bool): if True, repeat the movie to fill up the observation interval</span>
+<span class="sd">               mjd (int): the mjd of the observation, if different from the image mjd</span>
+<span class="sd">               timetype (str): how to interpret tstart and tstop; either &#39;GMST&#39; or &#39;UTC&#39; </span>
+<span class="sd">               elevmin (float): station minimum elevation in degrees</span>
+<span class="sd">               elevmax (float): station maximum elevation in degrees</span>
+<span class="sd">               ft (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT</span>
+<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point</span>
+<span class="sd">               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities</span>
+<span class="sd">               ampcal (bool): if False, time-dependent gaussian errors are added to station gains</span>
+<span class="sd">               phasecal (bool): if False, time-dependent station-based random phases are added to data points</span>
+<span class="sd">               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</span>
+<span class="sd">               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</span>
+<span class="sd">               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</span>
+<span class="sd">               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data </span>
+<span class="sd">               tau (float): the base opacity at all sites, or a dict giving one opacity per site</span>
+<span class="sd">               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site</span>
+<span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains and opacities</span>
+<span class="sd">               dtermp (float): the fractional std. dev. of the random error on the D-terms</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               Obsdata: an observation object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c1"># Generate empty observation</span>
+        <span class="nb">print</span> <span class="s2">&quot;Generating empty observation file . . . &quot;</span>
+        <span class="k">if</span> <span class="n">mjd</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mjd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span>
+
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">)</span>
+        
+        <span class="c1"># Observe on the same baselines as the empty observation and add noise</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span>
+                                <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> 
+                                <span class="n">jones</span><span class="o">=</span><span class="n">jones</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="n">inv_jones</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">dtermp</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span>
+                                <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">)</span>   
+        
+        <span class="k">return</span> <span class="n">obs</span></div>
+                 
+<div class="viewcode-block" id="Movie.observe_vex"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_vex">[docs]</a>    <span class="k">def</span> <span class="nf">observe_vex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vex</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">synchronize_start</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">t_int</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> 
+                          <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                          <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;Generate baselines from a vex file and observes the movie. </span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               vex (Vex): an vex object containing sites and scan information</span>
+<span class="sd">               source (str): the source string identifier in the vex object, e.g., &#39;SGRA&#39;</span>
+<span class="sd">               synchronize_start (bool): if True, the start of the movie will be defined to be the start of the observations</span>
+<span class="sd">               t_int (float): if not zero, overrides the vex scans to produce visibilities for each t_int seconds</span>
+
+<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point</span>
+<span class="sd">               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities</span>
+<span class="sd">               ampcal (bool): if False, time-dependent gaussian errors are added to station gains</span>
+<span class="sd">               phasecal (bool): if False, time-dependent station-based random phases are added to data points</span>
+<span class="sd">               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</span>
+<span class="sd">               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</span>
+<span class="sd">               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</span>
+<span class="sd">               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data </span>
+<span class="sd">               tau (float): the base opacity at all sites, or a dict giving one opacity per site</span>
+<span class="sd">               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site</span>
+<span class="sd">               gainp (float): the fractional std. dev. of the random error on the gains and opacities</span>
+<span class="sd">               dtermp (float): the fractional std. dev. of the random error on the D-terms</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               Obsdata: an observation object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">obs_List</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">movie</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c1">#!AC TODO costly??</span>
+
+        <span class="k">if</span> <span class="n">synchronize_start</span><span class="p">:</span>
+            <span class="n">movie</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;mjd_floor&#39;</span><span class="p">]</span>
+            <span class="n">movie</span><span class="o">.</span><span class="n">start_hr</span> <span class="o">=</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">]</span>
+
+        <span class="n">movie_start</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span> <span class="o">+</span> <span class="n">movie</span><span class="o">.</span><span class="n">start_hr</span><span class="o">/</span><span class="mf">24.0</span>
+        <span class="n">movie_end</span>   <span class="o">=</span> <span class="n">movie_start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span><span class="o">*</span><span class="n">movie</span><span class="o">.</span><span class="n">framedur</span><span class="o">/</span><span class="mf">24.0</span><span class="o">/</span><span class="mf">3600.0</span>
+
+        <span class="nb">print</span> <span class="s2">&quot;Movie MJD Range: &quot;</span><span class="p">,</span><span class="n">movie_start</span><span class="p">,</span><span class="n">movie_end</span>
+
+        <span class="n">snapshot</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="n">t_int</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span> 
+            <span class="n">snapshot</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">i_scan</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">source</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">subarray</span> <span class="o">=</span> <span class="n">vex</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">make_subarray</span><span class="p">([</span><span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+
+            <span class="k">if</span> <span class="n">snapshot</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="n">t_int</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">][</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;scan_sec&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]))</span>
+                <span class="nb">print</span> <span class="n">t_int</span>
+                <span class="c1">#vex.sched[i_scan][&#39;scan&#39;][0][&#39;scan_sec&#39;]</span>
+
+            <span class="n">vex_scan_start_mjd</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;mjd_floor&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">24.0</span>
+            <span class="n">vex_scan_stop_mjd</span>  <span class="o">=</span> <span class="n">vex_scan_start_mjd</span> <span class="o">+</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;scan_sec&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">/</span><span class="mf">24.0</span>
+
+            <span class="nb">print</span> <span class="s2">&quot;Scan MJD Range: &quot;</span><span class="p">,</span><span class="n">vex_scan_start_mjd</span><span class="p">,</span><span class="n">vex_scan_stop_mjd</span>
+
+            <span class="k">if</span> <span class="n">vex_scan_start_mjd</span> <span class="o">&lt;</span> <span class="n">movie_start</span> <span class="ow">or</span> <span class="n">vex_scan_stop_mjd</span> <span class="o">&gt;</span> <span class="n">movie_end</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">obs</span> <span class="o">=</span> <span class="n">subarray</span><span class="o">.</span><span class="n">obsdata</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">movie</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">movie</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">vex</span><span class="o">.</span><span class="n">bw_hz</span><span class="p">,</span> <span class="n">t_int</span><span class="p">,</span> <span class="n">t_int</span><span class="p">,</span> 
+                                       <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">],</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;scan_sec&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span> <span class="o">-</span> <span class="n">EP</span><span class="p">,</span> 
+                                       <span class="n">mjd</span><span class="o">=</span><span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;mjd_floor&#39;</span><span class="p">],</span>
+                                       <span class="n">elevmin</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="mf">89.99</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">)</span>   
+            <span class="n">obs_List</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs_List</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Movie has no overlap with the vex file and source=&quot;</span> <span class="o">+</span> <span class="n">source</span><span class="p">)</span> 
+
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">merge_obs</span><span class="p">(</span><span class="n">obs_List</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">movie</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span>
+                                    <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> 
+                                    <span class="n">jones</span><span class="o">=</span><span class="n">jones</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="n">inv_jones</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">dtermp</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span>
+                                    <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>      </div>
+<div class="viewcode-block" id="Movie.save_txt"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save the Movie data to text files with basename fname and filenames basename + 00001, etc. &quot;&quot;&quot;</span>
+        
+        <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">ioutils</span><span class="o">.</span><span class="n">save_mov_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+        <span class="k">return</span></div></div>
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Movie creation functions</span>
+<span class="c1">##################################################################################################</span>
+
+<div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../movie.html#ehtim.movie.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">nframes</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Read in a movie from text files and create a Movie object.</span>
+<span class="sd">       </span>
+<span class="sd">       Args:</span>
+<span class="sd">           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.</span>
+<span class="sd">           nframes (int): The total number of frames</span>
+<span class="sd">           framedur (float): The frame duration (default = -1, corresponding to framedur taken from file headers)</span>
+<span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           Movie: a Movie object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">load_movie_txt</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">nframes</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=</span><span class="n">framedur</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Andrew Chael.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,1088 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ehtim.imaging.imager &mdash; ehtim 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="ehtim 1.0.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> ehtim
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../imager.html">Stokes I Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../calibration.html">Self Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plotting.html">Comparison Plots</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ehtim</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>ehtim.imaging.imager</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ehtim.imaging.imager</h1><div class="highlight"><pre>
+<span></span><span class="c1"># imager_dft.py</span>
+<span class="c1"># Andrew Chael, 3/11/2017</span>
+<span class="c1"># General imager for total intensity VLBI data</span>
+
+<span class="c1">#TODO </span>
+<span class="c1"># add ffts and rename!</span>
+<span class="c1"># add more general linearized energy functions</span>
+<span class="c1"># debias closure amplitudes</span>
+<span class="c1"># closure amplitude and phase covariance</span>
+
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">opt</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage</span> <span class="k">as</span> <span class="nn">nd</span>
+<span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">as</span> <span class="nn">filt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">ehtim.image</span> <span class="k">as</span> <span class="nn">image</span>
+<span class="kn">import</span> <span class="nn">linearize_energy</span> <span class="k">as</span> <span class="nn">le</span>
+
+<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="nn">IPython</span> <span class="k">import</span> <span class="n">display</span>
+
+<span class="k">def</span> <span class="nf">conv_func_pill</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">):</span> 
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span> 
+        <span class="n">out</span> <span class="o">=</span> <span class="mf">1.</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="n">out</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="k">def</span> <span class="nf">conv_func_gauss</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">ys</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="c1"># There&#39;s a bug in my version of the spheroidal function of order 0! - gives nans for eta&lt;1</span>
+<span class="k">def</span> <span class="nf">conv_func_spheroidal</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">m</span><span class="p">):</span>
+    <span class="n">etax</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="n">etay</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">x</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="n">psix</span> <span class="o">=</span>  <span class="nb">abs</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">etax</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="n">m</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">pro_rad1</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">p</span><span class="p">,</span><span class="n">etax</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> 
+    <span class="n">psiy</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">etay</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="n">m</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">pro_rad1</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">p</span><span class="p">,</span><span class="n">etay</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="n">psix</span><span class="o">*</span><span class="n">psiy</span>
+
+<span class="k">def</span> <span class="nf">sampler</span><span class="p">(</span><span class="n">uv</span><span class="p">,</span> <span class="n">griddata</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Samples griddata sampled at uv points in a npix x npix grid</span>
+<span class="sd">    psize is the image domain pixel size of the corresponding real space image</span>
+<span class="sd">    order is the order of the spline interpolation</span>
+<span class="sd">    the griddata should already be rotated so u,v = 0,0 is in the center</span>
+<span class="sd">    to agree with dft result another phase shift may be required</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">griddata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">griddata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> 
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;griddata should be a square array!&quot;</span><span class="p">)</span>
+
+    <span class="n">npix</span> <span class="o">=</span> <span class="n">griddata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">vu2</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">uv</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">uv</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">du</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">npix</span><span class="o">*</span><span class="n">psize</span><span class="p">)</span>
+    <span class="n">vu2</span> <span class="o">=</span> <span class="p">(</span><span class="n">vu2</span> <span class="o">/</span> <span class="n">du</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">npix</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="n">datare</span> <span class="o">=</span> <span class="n">nd</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">vis_im</span><span class="p">),</span> <span class="n">vu2</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+    <span class="n">dataim</span> <span class="o">=</span> <span class="n">nd</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">vis_im</span><span class="p">),</span> <span class="n">vu2</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">visdatare</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">visdataim</span>
+
+    <span class="k">return</span> <span class="n">data</span>
+
+<span class="k">def</span> <span class="nf">gridder</span><span class="p">(</span><span class="n">uv</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">conv_func</span><span class="o">=</span><span class="s2">&quot;pillbox&quot;</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Grids data sampled at uv points on a square npix x npix array</span>
+<span class="sd">    psize is the image domain pixel size of the corresponding real space image</span>
+<span class="sd">    conv_func is the convolution function: current options are &quot;pillbox&quot; and &quot;gaussian&quot;</span>
+<span class="sd">    p_rad is the radius inside wich the conv_func is nonzero </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">uv</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span> 
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;uv and data are not the same length!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">conv_func</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;pillbox&#39;</span><span class="p">,</span><span class="s1">&#39;gaussian&#39;</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;conv_func must be either &#39;pillbox&#39; or &#39;gaussian&#39;&quot;</span><span class="p">)</span>
+
+    <span class="n">vu2</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">uv</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">uv</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">du</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="n">npix</span><span class="o">*</span><span class="n">psize</span><span class="p">)</span>
+    <span class="n">vu2</span> <span class="o">=</span> <span class="p">(</span><span class="n">vu2</span> <span class="o">/</span> <span class="n">du</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">npix</span><span class="p">)</span>
+
+    <span class="n">datagrid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">npad</span><span class="p">,</span> <span class="n">npad</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;c16&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="n">point</span> <span class="o">=</span> <span class="n">vu2</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">vispoint</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+        <span class="n">vumin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">point</span> <span class="o">-</span> <span class="n">prad</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">vumax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">point</span> <span class="o">+</span> <span class="n">prad</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1">#print vumin, vumax</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">vumin</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vumax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">vumin</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">vumax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">conv_func</span> <span class="o">==</span> <span class="s1">&#39;pillbox&#39;</span><span class="p">:</span>
+                    <span class="n">visgrid</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">conv_func_pill</span><span class="p">(</span><span class="n">j</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">i</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">vispoint</span>
+
+                <span class="k">elif</span> <span class="n">conv_func</span> <span class="o">==</span> <span class="s1">&#39;gaussian&#39;</span><span class="p">:</span>
+                    <span class="n">visgrid</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">conv_func_gauss</span><span class="p">(</span><span class="n">j</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">i</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">vispoint</span>
+    
+    <span class="k">return</span> <span class="n">datagrid</span>
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Constants</span>
+<span class="c1">##################################################################################################</span>
+<span class="n">C</span> <span class="o">=</span> <span class="mf">299792458.0</span> 
+<span class="n">DEGREE</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span>
+<span class="n">RADPERAS</span> <span class="o">=</span> <span class="n">DEGREE</span><span class="o">/</span><span class="mf">3600.</span>
+<span class="n">RADPERUAS</span> <span class="o">=</span> <span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e6</span>
+<span class="n">NHIST</span> <span class="o">=</span> <span class="mi">100</span> <span class="c1"># number of steps to store for hessian approx</span>
+
+<span class="n">DATATERMS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">]</span>
+<span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">]</span>
+
+<span class="n">nit</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># global variable to track the iteration number in the plotting callback</span>
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Total Intensity Imager</span>
+<span class="c1">##################################################################################################</span>
+<div class="viewcode-block" id="imager"><a class="viewcode-back" href="../../../imager.html#ehtim.imaging.imager.imager">[docs]</a><span class="k">def</span> <span class="nf">imager</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">InitIm</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span>
+           <span class="n">d1</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">d2</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">s1</span><span class="o">=</span><span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="n">s2</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+           <span class="n">alpha_s1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha_s2</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+           <span class="n">alpha_d1</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">alpha_d2</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> 
+           <span class="n">alpha_flux</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">alpha_cm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> 
+           <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">datamin</span><span class="o">=</span><span class="s2">&quot;gd&quot;</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+           <span class="n">maxit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_updates</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+   
+    <span class="sd">&quot;&quot;&quot;Run a general interferometric imager.</span>
+<span class="sd">       </span>
+<span class="sd">       Args:</span>
+<span class="sd">           Obsdata (Obsdata): The Obsdata object with VLBI data</span>
+<span class="sd">           Prior (Image): The Image object with the prior image </span>
+<span class="sd">           InitIm (Image): The Image object with the initial image for the minimization</span>
+<span class="sd">           flux (float): The total flux of the output image in Jy</span>
+<span class="sd">           d1 (str): The first data term; options are &#39;vis&#39;, &#39;bs&#39;, &#39;amp&#39;, &#39;cphase&#39;, &#39;camp&#39;</span>
+<span class="sd">           d2 (str): The second data term; options are &#39;vis&#39;, &#39;bs&#39;, &#39;amp&#39;, &#39;cphase&#39;, &#39;camp&#39;</span>
+<span class="sd">           s1 (str): The first regularizer; options are &#39;simple&#39;, &#39;gs&#39;, &#39;tv&#39;, &#39;l1&#39;, &#39;patch&#39;</span>
+<span class="sd">           s2 (str): The second regularizer; options are &#39;simple&#39;, &#39;gs&#39;, &#39;tv&#39;, &#39;l1&#39;, &#39;patch&#39;</span>
+<span class="sd">           alpha_d1 (float): The first data term weighting</span>
+<span class="sd">           alpha_d2 (float): The second data term weighting</span>
+<span class="sd">           alpha_s1 (float): The first regularizer term weighting</span>
+<span class="sd">           alpha_s2 (float): The second regularizer term weighting</span>
+<span class="sd">           alpha_flux (float): The weighting for the total flux constraint </span>
+<span class="sd">           alpha_cm (float): The weighting for the center of mass constraint</span>
+<span class="sd">           </span>
+<span class="sd">           clipfloor (float): The Jy/pixel level above which prior image pixels are varied</span>
+<span class="sd">           datamin (str): If &#39;lin&#39;, linearized energy is used (currently only compatible with CHIRP)</span>
+<span class="sd">           grads (bool): If True, analytic gradients are used</span>
+<span class="sd">           logim (bool): If True, uses I = exp(I&#39;) change of variables</span>
+
+<span class="sd">           maxit (int): Maximum number of minimizer iterations</span>
+<span class="sd">           stop (float): The convergence criterion</span>
+<span class="sd">           show_updates (bool): If True, displays the progress of the minimizer</span>
+<span class="sd">           ipynb (bool): If True, adjusts the plotting for the ipython/jupyter notebook </span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           Image: Image object with result</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Make sure data and regularizer options are ok    </span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">d1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">d2</span><span class="p">:</span> 
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one data term!&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">s1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s2</span><span class="p">:</span> 
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one regularizer term!&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="p">((</span><span class="n">d1</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">d1</span><span class="o">==</span><span class="kc">False</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="p">((</span><span class="n">d2</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">d2</span><span class="o">==</span><span class="kc">False</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid data term: valid data terms are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATATERMS</span><span class="p">))</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="p">((</span><span class="n">s1</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">s1</span><span class="o">==</span><span class="kc">False</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="p">((</span><span class="n">s2</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">s2</span><span class="o">==</span><span class="kc">False</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid regularizer: valid regularizers are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REGULARIZERS</span><span class="p">))</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span> <span class="o">!=</span> <span class="n">InitIm</span><span class="o">.</span><span class="n">psize</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="n">InitIm</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="n">InitIm</span><span class="o">.</span><span class="n">ydim</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image does not match dimensions of the prior image!&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Catch scale and dimension problems</span>
+    <span class="n">imsize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">])</span> <span class="o">*</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span>
+    <span class="n">uvmax</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span>
+    <span class="n">uvmin</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">imsize</span>
+    <span class="n">uvdists</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;uvdist&#39;</span><span class="p">)[</span><span class="s1">&#39;uvdist&#39;</span><span class="p">]</span>
+    <span class="n">maxbl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">uvdists</span><span class="p">)</span>
+    <span class="n">minbl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">uvdists</span><span class="p">[</span><span class="n">uvdists</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">maxamp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;amp&#39;</span><span class="p">)[</span><span class="s1">&#39;amp&#39;</span><span class="p">]))</span>
+
+    <span class="k">if</span> <span class="n">uvmax</span> <span class="o">&lt;</span> <span class="n">maxbl</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="s2">&quot;Warning! Pixel Spacing is larger than smallest spatial wavelength!&quot;</span>
+    <span class="k">if</span> <span class="n">uvmin</span> <span class="o">&gt;</span> <span class="n">minbl</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="s2">&quot;Warning! Field of View is smaller than largest nonzero spatial wavelength!&quot;</span> 
+    <span class="k">if</span> <span class="n">flux</span> <span class="o">&gt;</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="s2">&quot;Warning! Specified flux is &gt; 120</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span>
+    <span class="k">if</span> <span class="n">flux</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">8</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="s2">&quot;Warning! Specified flux is &lt; 80</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span>
+
+    <span class="c1"># Normalize prior image to total flux and limit imager range to prior values &gt; clipfloor</span>
+    <span class="n">embed_mask</span> <span class="o">=</span> <span class="n">Prior</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&gt;</span> <span class="n">clipfloor</span>
+    <span class="n">nprior</span> <span class="o">=</span> <span class="p">(</span><span class="n">flux</span> <span class="o">*</span> <span class="n">Prior</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">imvec</span><span class="p">)[</span><span class="n">embed_mask</span><span class="p">]))[</span><span class="n">embed_mask</span><span class="p">]</span>
+    <span class="n">ninit</span> <span class="o">=</span> <span class="p">(</span><span class="n">flux</span> <span class="o">*</span> <span class="n">InitIm</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">InitIm</span><span class="o">.</span><span class="n">imvec</span><span class="p">)[</span><span class="n">embed_mask</span><span class="p">]))[</span><span class="n">embed_mask</span><span class="p">]</span>
+
+    <span class="c1"># Get data and fourier matrices for the data terms</span>
+    <span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">sigma1</span><span class="p">,</span> <span class="n">A1</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">d1</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">sigma2</span><span class="p">,</span> <span class="n">A2</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">d2</span><span class="p">)</span>
+
+    <span class="c1"># Coordinate matrix for center-of-mass constraint</span>
+    <span class="n">coord</span> <span class="o">=</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+                                           <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
+    <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="o">*</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>        
+    <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span><span class="p">[</span><span class="n">embed_mask</span><span class="p">]</span>
+
+    <span class="c1"># Katie - if you are using the linearized energy then compute the A and b of your </span>
+    <span class="c1"># linearized equation given your current image</span>
+    <span class="c1">#TODO generalize this linearization for the other data terms!</span>
+    <span class="k">if</span> <span class="n">d1</span><span class="o">==</span><span class="s1">&#39;bs&#39;</span> <span class="ow">and</span> <span class="n">datamin</span><span class="o">==</span><span class="s1">&#39;lin&#39;</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">Alin1</span><span class="p">,</span> <span class="n">blin1</span><span class="p">)</span> <span class="o">=</span> <span class="n">le</span><span class="o">.</span><span class="n">computeLinTerms_bi</span><span class="p">(</span><span class="n">ninit</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">sigma1</span><span class="p">,</span> 
+                               <span class="nb">len</span><span class="p">(</span><span class="n">ninit</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha_d1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">d2</span><span class="o">==</span><span class="s1">&#39;bs&#39;</span> <span class="ow">and</span> <span class="n">datamin</span><span class="o">==</span><span class="s1">&#39;lin&#39;</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">Alin2</span><span class="p">,</span> <span class="n">blin2</span><span class="p">)</span> <span class="o">=</span> <span class="n">le</span><span class="o">.</span><span class="n">computeLinTerms_bi</span><span class="p">(</span><span class="n">ninit</span><span class="p">,</span> <span class="n">A2</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">sigma2</span><span class="p">,</span> 
+                               <span class="nb">len</span><span class="p">(</span><span class="n">ninit</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha_d2</span><span class="p">)</span>
+
+
+    <span class="c1"># Define the chi^2 and chi^2 gradient</span>
+    <span class="k">def</span> <span class="nf">chisq1</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">sigma1</span><span class="p">,</span> <span class="n">d1</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">chisq1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">d1</span><span class="o">==</span><span class="s1">&#39;bs&#39;</span> <span class="ow">and</span> <span class="n">datamin</span><span class="o">==</span><span class="s1">&#39;lin&#39;</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">sigma1</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Alin1</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Alin1</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">-</span> <span class="n">blin1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A1</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">sigma1</span><span class="p">,</span> <span class="n">d1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">c</span>
+
+    <span class="k">def</span> <span class="nf">chisq2</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A2</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">sigma2</span><span class="p">,</span> <span class="n">d2</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">chisq2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">d1</span><span class="o">==</span><span class="s1">&#39;bs&#39;</span> <span class="ow">and</span> <span class="n">datamin</span><span class="o">==</span><span class="s1">&#39;lin&#39;</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">sigma2</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Alin2</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Alin2</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">-</span> <span class="n">blin2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A2</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">sigma2</span><span class="p">,</span> <span class="n">d2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">c</span>
+
+    <span class="c1"># Define the regularizer and regularizer gradient</span>
+    <span class="k">def</span> <span class="nf">reg1</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">regularizer</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reg1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">regularizergrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">s1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reg2</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">regularizer</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">s2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reg2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">regularizergrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">s2</span><span class="p">)</span>
+
+    <span class="c1"># Define constraint functions</span>
+    <span class="k">def</span> <span class="nf">flux_constraint</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="c1">#norm = flux**2</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>        
+        <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">-</span> <span class="n">flux</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">norm</span>
+
+    <span class="k">def</span> <span class="nf">flux_constraint_grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="c1">#norm = flux**2</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">-</span> <span class="n">flux</span><span class="p">)</span> <span class="o">/</span> <span class="n">norm</span>
+
+    <span class="k">def</span> <span class="nf">cm_constraint</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="c1">#norm = flux**2 * Prior.psize**2</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>        
+        <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="o">*</span><span class="n">coord</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="o">*</span><span class="n">coord</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">norm</span>
+
+    <span class="k">def</span> <span class="nf">cm_constraint_grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="c1">#norm = flux**2 * Prior.psize**2</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="o">*</span><span class="n">coord</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">coord</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="o">*</span><span class="n">coord</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">coord</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">norm</span>
+
+    <span class="c1"># Define the objective function and gradient</span>
+    <span class="k">def</span> <span class="nf">objfunc</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">logim</span><span class="p">:</span> <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+
+        <span class="n">datterm</span>  <span class="o">=</span> <span class="n">alpha_d1</span> <span class="o">*</span> <span class="p">(</span><span class="n">chisq1</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">alpha_d2</span> <span class="o">*</span> <span class="p">(</span><span class="n">chisq2</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">regterm</span>  <span class="o">=</span> <span class="n">alpha_s1</span> <span class="o">*</span> <span class="n">reg1</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">+</span> <span class="n">alpha_s2</span> <span class="o">*</span> <span class="n">reg2</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">conterm</span>  <span class="o">=</span> <span class="n">alpha_flux</span> <span class="o">*</span> <span class="n">flux_constraint</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>  <span class="o">+</span> <span class="n">alpha_cm</span> <span class="o">*</span> <span class="n">cm_constraint</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span> <span class="o">+</span> <span class="n">conterm</span>
+
+    <span class="k">def</span> <span class="nf">objgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">logim</span><span class="p">:</span> <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+        
+        <span class="n">datterm</span>  <span class="o">=</span> <span class="n">alpha_d1</span> <span class="o">*</span> <span class="n">chisq1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">+</span> <span class="n">alpha_d2</span> <span class="o">*</span> <span class="n">chisq2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">regterm</span>  <span class="o">=</span> <span class="n">alpha_s1</span> <span class="o">*</span> <span class="n">reg1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span> <span class="o">+</span> <span class="n">alpha_s2</span> <span class="o">*</span> <span class="n">reg2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">conterm</span>  <span class="o">=</span> <span class="n">alpha_flux</span> <span class="o">*</span> <span class="n">flux_constraint_grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>  <span class="o">+</span> <span class="n">alpha_cm</span> <span class="o">*</span> <span class="n">cm_constraint_grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+
+        <span class="n">grad</span> <span class="o">=</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span> <span class="o">+</span> <span class="n">conterm</span>
+        
+        <span class="c1"># chain rule term for change of variables        </span>
+        <span class="k">if</span> <span class="n">logim</span><span class="p">:</span> <span class="n">grad</span> <span class="o">*=</span> <span class="n">imvec</span>
+
+        <span class="k">return</span> <span class="n">grad</span>
+
+    <span class="c1"># Define plotting function for each iteration</span>
+    <span class="k">global</span> <span class="n">nit</span>
+    <span class="n">nit</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">plotcur</span><span class="p">(</span><span class="n">im_step</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">nit</span>
+        <span class="k">if</span> <span class="n">logim</span><span class="p">:</span> <span class="n">im_step</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">im_step</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">show_updates</span><span class="p">:</span>
+            <span class="n">chi2_1</span> <span class="o">=</span> <span class="n">chisq1</span><span class="p">(</span><span class="n">im_step</span><span class="p">)</span>
+            <span class="n">chi2_2</span> <span class="o">=</span> <span class="n">chisq2</span><span class="p">(</span><span class="n">im_step</span><span class="p">)</span>
+            <span class="n">s_1</span> <span class="o">=</span> <span class="n">reg1</span><span class="p">(</span><span class="n">im_step</span><span class="p">)</span> 
+            <span class="n">s_2</span> <span class="o">=</span> <span class="n">reg2</span><span class="p">(</span><span class="n">im_step</span><span class="p">)</span> 
+            <span class="c1">#fluxreg = flux_constraint(im_step) </span>
+            <span class="c1">#cmreg = cm_constraint(im_step) </span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">embed_mask</span><span class="p">)):</span> <span class="n">im_step</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">im_step</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">)</span>
+            <span class="n">plot_i</span><span class="p">(</span><span class="n">im_step</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">nit</span><span class="p">,</span> <span class="n">chi2_1</span><span class="p">,</span> <span class="n">chi2_2</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="n">ipynb</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="s2">&quot;i: </span><span class="si">%d</span><span class="s2"> chi2_1-1: </span><span class="si">%0.2f</span><span class="s2"> chi2_2-1: </span><span class="si">%0.2f</span><span class="s2"> s_1: </span><span class="si">%0.2f</span><span class="s2"> s_2: </span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nit</span><span class="p">,</span> <span class="n">chi2_1</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">chi2_2</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">s_1</span><span class="p">,</span><span class="n">s_2</span><span class="p">)</span>
+        <span class="n">nit</span> <span class="o">+=</span> <span class="mi">1</span>
+   
+    <span class="c1"># Generate and the initial image</span>
+    <span class="k">if</span> <span class="n">logim</span><span class="p">:</span>
+        <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ninit</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="n">xinit</span> <span class="o">=</span> <span class="n">ninit</span>       
+
+    
+    <span class="c1"># Print stats</span>
+    <span class="nb">print</span> <span class="s2">&quot;Initial Chi^2_1: </span><span class="si">%f</span><span class="s2"> Chi^2_2: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chisq1</span><span class="p">(</span><span class="n">ninit</span><span class="p">),</span> <span class="n">chisq2</span><span class="p">(</span><span class="n">ninit</span><span class="p">))</span>
+    <span class="nb">print</span> <span class="s2">&quot;Total Pixel #: &quot;</span><span class="p">,(</span><span class="nb">len</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">imvec</span><span class="p">))</span>
+    <span class="nb">print</span> <span class="s2">&quot;Clipped Pixel #: &quot;</span><span class="p">,(</span><span class="nb">len</span><span class="p">(</span><span class="n">ninit</span><span class="p">))</span>
+    <span class="n">plotcur</span><span class="p">(</span><span class="n">xinit</span><span class="p">)</span>
+    
+    <span class="c1"># Minimize</span>
+    <span class="n">optdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;maxiter&#39;</span><span class="p">:</span><span class="n">maxit</span><span class="p">,</span> <span class="s1">&#39;ftol&#39;</span><span class="p">:</span><span class="n">stop</span><span class="p">,</span> <span class="s1">&#39;maxcor&#39;</span><span class="p">:</span><span class="n">NHIST</span><span class="p">}</span> <span class="c1"># minimizer params</span>
+    <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">grads</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">objfunc</span><span class="p">,</span> <span class="n">xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="n">objgrad</span><span class="p">,</span> 
+                       <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">plotcur</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">objfunc</span><span class="p">,</span> <span class="n">xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span> 
+                       <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">plotcur</span><span class="p">)</span>
+
+    <span class="n">tstop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="c1"># Format output</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span>
+    <span class="k">if</span> <span class="n">logim</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">embed_mask</span><span class="p">)):</span> <span class="n">out</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">)</span>
+ 
+    <span class="n">outim</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> 
+                     <span class="n">Prior</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> 
+                     <span class="n">mjd</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
+        <span class="nb">print</span> <span class="s2">&quot;Preserving image complex polarization fractions!&quot;</span>
+        <span class="n">qvec</span> <span class="o">=</span> <span class="n">Prior</span><span class="o">.</span><span class="n">qvec</span> <span class="o">*</span> <span class="n">out</span> <span class="o">/</span> <span class="n">Prior</span><span class="o">.</span><span class="n">imvec</span>
+        <span class="n">uvec</span> <span class="o">=</span> <span class="n">Prior</span><span class="o">.</span><span class="n">uvec</span> <span class="o">*</span> <span class="n">out</span> <span class="o">/</span> <span class="n">Prior</span><span class="o">.</span><span class="n">imvec</span>
+        <span class="n">outim</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
+   
+    <span class="c1"># Print stats</span>
+    <span class="nb">print</span> <span class="s2">&quot;time: </span><span class="si">%f</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tstop</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">)</span>
+    <span class="nb">print</span> <span class="s2">&quot;J: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span>
+    <span class="nb">print</span> <span class="s2">&quot;Final Chi^2_1: </span><span class="si">%f</span><span class="s2"> Chi^2_2: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chisq1</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">embed_mask</span><span class="p">]),</span> <span class="n">chisq2</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">embed_mask</span><span class="p">]))</span>
+    <span class="nb">print</span> <span class="n">res</span><span class="o">.</span><span class="n">message</span>
+    
+    <span class="c1"># Return Image object</span>
+    <span class="k">return</span> <span class="n">outim</span></div>
+          
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Chi-squared and Gradient Functions</span>
+<span class="c1">##################################################################################################</span>
+
+<span class="k">def</span> <span class="nf">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return the chi^2 for the appropriate dtype&quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>
+        <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
+        <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;bs&#39;</span><span class="p">:</span>
+        <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;cphase&#39;</span><span class="p">:</span>
+        <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
+        <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">chisq</span> <span class="o">=</span> <span class="mf">1.</span>
+
+    <span class="k">return</span> <span class="n">chisq</span>
+
+<span class="k">def</span> <span class="nf">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return the chi^2 gradient for the appropriate dtype&quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>
+        <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
+        <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;bs&#39;</span><span class="p">:</span>
+        <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;cphase&#39;</span><span class="p">:</span>
+        <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
+        <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">chisqgrad</span>
+
+<span class="c1"># Visibility phase and amplitude chi-squared</span>
+<span class="k">def</span> <span class="nf">chisq_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrix</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Visibility chi-squared&quot;&quot;&quot;</span>
+ 
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrix</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">samples</span><span class="o">-</span><span class="n">vis</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">vis</span><span class="p">))</span>
+    
+<span class="k">def</span> <span class="nf">chisqgrad_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrix</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The gradient of the visibility chi-squared&quot;&quot;&quot;</span>
+
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrix</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">wdiff</span> <span class="o">=</span> <span class="p">(</span><span class="n">vis</span> <span class="o">-</span> <span class="n">samples</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> 
+    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrix</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">wdiff</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">vis</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="c1">#Visibility Amplitudes chi-squared</span>
+<span class="k">def</span> <span class="nf">chisq_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Visibility Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
+    
+    <span class="n">amp_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">imvec</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">amp</span> <span class="o">-</span> <span class="n">amp_samples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">amp</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">chisqgrad_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The gradient of the amplitude chi-squared&quot;&quot;&quot;</span>
+    
+    <span class="n">i1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">amp_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">i1</span><span class="p">)</span>
+    
+    <span class="n">pp</span> <span class="o">=</span> <span class="p">((</span><span class="n">amp</span> <span class="o">-</span> <span class="n">amp_samples</span><span class="p">)</span> <span class="o">*</span> <span class="n">amp_samples</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">i1</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">amp</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pp</span><span class="p">,</span> <span class="n">A</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="c1"># Bispectrum chi-squared</span>
+<span class="k">def</span> <span class="nf">chisq_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Bispectrum chi-squared&quot;&quot;&quot;</span>
+    
+    <span class="n">bisamples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">bis</span> <span class="o">-</span> <span class="n">bisamples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">bis</span><span class="p">))</span>
+    
+<span class="k">def</span> <span class="nf">chisqgrad_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The gradient of the bispectrum chi-squared&quot;&quot;&quot;</span>
+    
+    <span class="n">bisamples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">wdiff</span> <span class="o">=</span> <span class="p">((</span><span class="n">bis</span> <span class="o">-</span> <span class="n">bisamples</span><span class="p">)</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">pt1</span> <span class="o">=</span> <span class="n">wdiff</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">imvec</span><span class="p">)</span>
+    <span class="n">pt2</span> <span class="o">=</span> <span class="n">wdiff</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">imvec</span><span class="p">)</span>
+    <span class="n">pt3</span> <span class="o">=</span> <span class="n">wdiff</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">imvec</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt1</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt2</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt3</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">bis</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="c1">#Closure phases chi-squared</span>
+<span class="k">def</span> <span class="nf">chisq_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared&quot;&quot;&quot;</span>
+    <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">DEGREE</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">DEGREE</span>
+    <span class="n">clphase_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clphase</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">clphase</span><span class="o">-</span><span class="n">clphase_samples</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">chisqgrad_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared&quot;&quot;&quot;</span>    
+    <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">DEGREE</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">DEGREE</span>
+    
+    <span class="n">i1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">i2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">i3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">clphase_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">i1</span> <span class="o">*</span> <span class="n">i2</span> <span class="o">*</span> <span class="n">i3</span><span class="p">)</span>
+    
+    <span class="n">pref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">clphase</span> <span class="o">-</span> <span class="n">clphase_samples</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">pt1</span> <span class="o">=</span> <span class="n">pref</span> <span class="o">/</span> <span class="n">i1</span>
+    <span class="n">pt2</span> <span class="o">=</span> <span class="n">pref</span> <span class="o">/</span> <span class="n">i2</span>
+    <span class="n">pt3</span> <span class="o">=</span> <span class="n">pref</span> <span class="o">/</span> <span class="n">i3</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="mf">2.0</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clphase</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt1</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt2</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt3</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">out</span>
+ 
+<span class="c1">#def chisqgrad_cphase_2(imvec, Amatrices, clphase, sigma):</span>
+<span class="c1">#    clphase = clphase * DEGREE</span>
+<span class="c1">#    sigma = sigma * DEGREE</span>
+<span class="c1">#    </span>
+<span class="c1">#    i1 = np.dot(Amatrices[0], imvec)</span>
+<span class="c1">#    i2 = np.dot(Amatrices[1], imvec)</span>
+<span class="c1">#    i3 = np.dot(Amatrices[2], imvec)</span>
+<span class="c1">#    clphase_samples = np.angle(i1 * i2 * i3)</span>
+<span class="c1">#    xx = np.imag(Amatrices[0]/(i1[:,None]) + Amatrices[1]/(i2[:,None]) + Amatrices[2]/(i3[:,None]))</span>
+<span class="c1">#    cc = 1j*np.exp(1j*clphase_samples)*(np.exp(-1j*clphase)-np.exp(-1j*clphase_samples))/ (sigma**2)</span>
+<span class="c1">#    out = -(2.0/len(clphase)) * np.real(np.dot(cc,xx))</span>
+<span class="c1">#    return out </span>
+
+<span class="c1">#Closure Amplitudes chi-squared</span>
+<span class="k">def</span> <span class="nf">chisq_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
+    
+    <span class="n">clamp_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">clamp</span> <span class="o">-</span> <span class="n">clamp_samples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">clamp</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">chisqgrad_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared&quot;&quot;&quot;</span>    
+    
+    <span class="n">i1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">i2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">i3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">i4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
+    <span class="n">clamp_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">i1</span> <span class="o">*</span> <span class="n">i2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">i3</span> <span class="o">*</span> <span class="n">i4</span><span class="p">))</span>
+    
+    <span class="n">pp</span> <span class="o">=</span> <span class="p">((</span><span class="n">clamp</span> <span class="o">-</span> <span class="n">clamp_samples</span><span class="p">)</span> <span class="o">*</span> <span class="n">clamp_samples</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">pt1</span> <span class="o">=</span> <span class="n">pp</span> <span class="o">/</span> <span class="n">i1</span>
+    <span class="n">pt2</span> <span class="o">=</span> <span class="n">pp</span> <span class="o">/</span> <span class="n">i2</span>
+    <span class="n">pt3</span> <span class="o">=</span> <span class="o">-</span><span class="n">pp</span> <span class="o">/</span> <span class="n">i3</span>
+    <span class="n">pt4</span> <span class="o">=</span> <span class="o">-</span><span class="n">pp</span> <span class="o">/</span> <span class="n">i4</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clamp</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt1</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt2</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt3</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pt4</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">[</span><span class="mi">3</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Entropy and Gradient Functions</span>
+<span class="c1">##################################################################################################</span>
+
+<span class="k">def</span> <span class="nf">regularizer</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">stype</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">ssimple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;l1&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sl1</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;gs&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sgs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;patch&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">spatch</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;tv&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+            <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">stv</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">s</span>
+
+<span class="k">def</span> <span class="nf">regularizergrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">stype</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">ssimplegrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;l1&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sl1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;gs&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sgsgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;patch&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">spatchgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;tv&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+            <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">stvgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">flux</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">s</span>
+
+
+<span class="k">def</span> <span class="nf">ssimple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simple entropy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">imvec</span><span class="o">/</span><span class="n">priorvec</span><span class="p">))</span> <span class="o">/</span> <span class="n">norm</span>
+
+<span class="k">def</span> <span class="nf">ssimplegrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simple entropy gradient</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">imvec</span><span class="o">/</span><span class="n">priorvec</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">norm</span>
+    
+<span class="k">def</span> <span class="nf">sl1</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;L1 norm regularizer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>    
+    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">priorvec</span><span class="p">))</span><span class="o">/</span><span class="n">norm</span>
+
+<span class="k">def</span> <span class="nf">sl1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;L1 norm gradient</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>    
+    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">priorvec</span><span class="p">)</span><span class="o">/</span><span class="n">norm</span>
+    
+<span class="k">def</span> <span class="nf">sgs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gull-skilling entropy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span><span class="mi">1</span>    
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">priorvec</span> <span class="o">-</span> <span class="n">imvec</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">imvec</span><span class="o">/</span><span class="n">priorvec</span><span class="p">))</span><span class="o">/</span><span class="n">norm</span>
+
+
+<span class="k">def</span> <span class="nf">sgsgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gull-Skilling gradient</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">imvec</span><span class="o">/</span><span class="n">priorvec</span><span class="p">)</span><span class="o">/</span><span class="n">norm</span>
+
+
+<span class="k">def</span> <span class="nf">stv</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Total variation regularizer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>    
+    <span class="n">im</span> <span class="o">=</span> <span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">)</span>
+    <span class="n">impad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">im_l1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">im_l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">im_l1</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">im_l2</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
+
+<span class="k">def</span> <span class="nf">stvgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Total variation gradient</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>    
+    <span class="n">im</span> <span class="o">=</span> <span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ny</span><span class="p">,</span><span class="n">nx</span><span class="p">)</span>
+    <span class="n">impad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">im_l1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">im_l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">im_r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">im_r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">im_r1l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">im_l1r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">g1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_l1</span> <span class="o">-</span> <span class="n">im_l2</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">im_l1</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">im_l2</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">g2</span> <span class="o">=</span> <span class="p">(</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_r1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">im_r1</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">im_r1l2</span> <span class="o">-</span> <span class="n">im_r1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">g3</span> <span class="o">=</span> <span class="p">(</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_r2</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">im_r2</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">im_l1r2</span> <span class="o">-</span> <span class="n">im_r2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">g1</span> <span class="o">+</span> <span class="n">g2</span> <span class="o">+</span> <span class="n">g3</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
+    
+<span class="k">def</span> <span class="nf">spatch</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Patch prior regularizer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>    
+    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="p">(</span> <span class="n">imvec</span> <span class="o">-</span> <span class="n">priorvec</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
+
+<span class="k">def</span> <span class="nf">spatchgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Patch prior gradient</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">flux</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>    
+    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">imvec</span>  <span class="o">-</span> <span class="n">priorvec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
+   
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Misc Functions</span>
+<span class="c1">##################################################################################################</span>
+<span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;embeds a 1d image array into the size of boolean embed mask</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">out</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># prevent total variation gradient singularities</span>
+            <span class="k">if</span> <span class="n">randomfloor</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">clipfloor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">clipfloor</span>
+
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="k">def</span> <span class="nf">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return the data, sigma, and matrices for the appropriate dtype</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_vis</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;bs&#39;</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_bs</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;cphase&#39;</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_cphase</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_camp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">chisqdata_vis</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return the visibilities, sigmas, and fourier matrix for and observation, prior, mask</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">data_arr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
+    <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>    
+    <span class="n">vis</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">(</span><span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ampdata</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
+    <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">amp</span> <span class="o">=</span> <span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+    
+    <span class="c1"># Debias the amplitudes</span>
+    <span class="n">amp</span> <span class="o">=</span> <span class="n">amp_debias</span><span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">chisqdata_bs</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return the bispectra, sigmas, and fourier matrices for and observation, prior, mask</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">biarr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">bispectra</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+    <span class="n">uv1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;u1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">uv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;u2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">uv3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;u3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">bi</span> <span class="o">=</span> <span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;bispec&#39;</span><span class="p">]</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;sigmab&#39;</span><span class="p">]</span>
+    
+    <span class="n">A3</span> <span class="o">=</span> <span class="p">(</span><span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
+          <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv2</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
+          <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv3</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+         <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">bi</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A3</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">chisqdata_cphase</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;return the closure phases, sigmas, and fourier matrices for and observation, prior, mask</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">clphasearr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+    <span class="n">uv1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;u1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">uv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;u2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">uv3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;u3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">]</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;sigmacp&#39;</span><span class="p">]</span>
+    
+    <span class="n">A3</span> <span class="o">=</span> <span class="p">(</span><span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
+          <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv2</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
+          <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv3</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+         <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A3</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">chisqdata_camp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">clamparr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+    <span class="n">uv1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">uv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">uv3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">uv4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">]</span>
+
+    <span class="n">A4</span> <span class="o">=</span> <span class="p">(</span><span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
+          <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv2</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
+          <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv3</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
+          <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv4</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+         <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A4</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">plot_i</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">nit</span><span class="p">,</span> <span class="n">chi2_1</span><span class="p">,</span> <span class="n">chi2_2</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot the total intensity image at each iteration</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">0.00001</span><span class="p">)</span>    
+    <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;afmhot&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">)</span>     
+    <span class="n">xticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">yticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">xticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">yticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Relative RA ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Relative Dec ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;step: </span><span class="si">%i</span><span class="s2">  $\chi^2_1$: </span><span class="si">%f</span><span class="s2">  $\chi^2_2$: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nit</span><span class="p">,</span> <span class="n">chi2_1</span><span class="p">,</span> <span class="n">chi2_2</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="c1">#plt.draw()</span>
+
+    <span class="k">if</span> <span class="n">ipynb</span><span class="p">:</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">clear_output</span><span class="p">()</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">())</span>
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Restoring Functions</span>
+<span class="c1">##################################################################################################</span>
+<span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">frac_i</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">frac_pol</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Apply a hard threshold</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+
+    <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
+
+    <span class="n">thresh</span> <span class="o">=</span> <span class="n">frac_i</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
+    <span class="n">lowval</span> <span class="o">=</span> <span class="n">thresh</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">imvec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">thresh</span><span class="p">:</span> 
+            <span class="n">imvec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">lowval</span>
+
+    <span class="n">imvec</span> <span class="o">=</span> <span class="n">flux</span><span class="o">*</span><span class="n">imvec</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="n">image</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">image</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> 
+                   <span class="n">image</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+<span class="k">def</span> <span class="nf">blur_circ</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">fwhm_i</span><span class="p">,</span> <span class="n">fwhm_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Apply a circular gaussian filter to the I image.</span>
+<span class="sd">       fwhm is in radians</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+    
+    <span class="c1"># Blur Stokes I</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">fwhm_i</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="p">)))</span>
+    <span class="n">sigmap</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">/</span> <span class="n">image</span><span class="o">.</span><span class="n">psize</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">filt</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="p">(</span><span class="n">sigmap</span><span class="p">,</span> <span class="n">sigmap</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+   
+    <span class="c1"># Blur Stokes Q and U</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fwhm_pol</span><span class="p">:</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">fwhm_pol</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span><span class="p">)))</span>
+        <span class="n">sigmap</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">/</span> <span class="n">image</span><span class="o">.</span><span class="n">psize</span>
+        <span class="n">imq</span> <span class="o">=</span> <span class="n">filt</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="n">image</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="p">(</span><span class="n">sigmap</span><span class="p">,</span> <span class="n">sigmap</span><span class="p">))</span>
+        <span class="n">imu</span> <span class="o">=</span> <span class="n">filt</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="n">image</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="p">(</span><span class="n">sigmap</span><span class="p">,</span> <span class="n">sigmap</span><span class="p">))</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">imq</span><span class="p">,</span> <span class="n">imu</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">out</span>
+          
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Andrew Chael.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
