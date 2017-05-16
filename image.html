@@ -1,0 +1,692 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Image &mdash; ehtim 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="ehtim 1.0.0 documentation" href="index.html"/>
+        <link rel="next" title="Array" href="array.html"/>
+        <link rel="prev" title="eht-imaging" href="includeme.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> ehtim
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="includeme.html">eht-imaging</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibration.html">Self Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Comparison Plots</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ehtim</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Image</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/image.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-image"></span><div class="section" id="image">
+<span id="id1"></span><h1>Image<a class="headerlink" href="#image" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.image"></span><dl class="class">
+<dt id="ehtim.image.Image">
+<em class="property">class </em><code class="descclassname">ehtim.image.</code><code class="descname">Image</code><span class="sig-paren">(</span><em>image</em>, <em>psize</em>, <em>ra</em>, <em>dec</em>, <em>rf=230000000000.0</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em>, <em>source='SgrA'</em>, <em>mjd=51544</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image" title="Permalink to this definition">¶</a></dt>
+<dd><p>A polarimetric image (in units of Jy/pixel).</p>
+<dl class="attribute">
+<dt id="ehtim.image.Image.pulse">
+<code class="descname">pulse</code><a class="headerlink" href="#ehtim.image.Image.pulse" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>function</em> &#8211; The function convolved with the pixel values for continuous image.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.psize">
+<code class="descname">psize</code><a class="headerlink" href="#ehtim.image.Image.psize" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The pixel dimension in radians</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.xdim">
+<code class="descname">xdim</code><a class="headerlink" href="#ehtim.image.Image.xdim" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> &#8211; The number of pixels along the x dimension</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.ydim">
+<code class="descname">ydim</code><a class="headerlink" href="#ehtim.image.Image.ydim" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> &#8211; The number of pixels along the y dimension</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.mjd">
+<code class="descname">mjd</code><a class="headerlink" href="#ehtim.image.Image.mjd" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> &#8211; The integer MJD of the image</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.source">
+<code class="descname">source</code><a class="headerlink" href="#ehtim.image.Image.source" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> &#8211; The astrophysical source name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.ra">
+<code class="descname">ra</code><a class="headerlink" href="#ehtim.image.Image.ra" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The source Right Ascension in fractional hours</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.dec">
+<code class="descname">dec</code><a class="headerlink" href="#ehtim.image.Image.dec" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The source declination in fractional degrees</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.rf">
+<code class="descname">rf</code><a class="headerlink" href="#ehtim.image.Image.rf" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The image frequency in Hz</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.imvec">
+<code class="descname">imvec</code><a class="headerlink" href="#ehtim.image.Image.imvec" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> &#8211; The vector of stokes I values in Jy/pixel (len xdim*ydim)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.qvec">
+<code class="descname">qvec</code><a class="headerlink" href="#ehtim.image.Image.qvec" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> &#8211; The vector of stokes Q values in Jy/pixel (len xdim*ydim)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.uvec">
+<code class="descname">uvec</code><a class="headerlink" href="#ehtim.image.Image.uvec" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> &#8211; The vector of stokes U values in Jy/pixel (len xdim*ydim)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.vvec">
+<code class="descname">vvec</code><a class="headerlink" href="#ehtim.image.Image.vvec" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>array</em> &#8211; The vector of stokes V values in Jy/pixel (len xdim*ydim)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_const_m">
+<code class="descname">add_const_m</code><span class="sig-paren">(</span><em>mag</em>, <em>angle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_const_m"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_const_m" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a constant fractional linear polarization to image, where angle is in radians.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_crescent">
+<code class="descname">add_crescent</code><span class="sig-paren">(</span><em>flux</em>, <em>Rp</em>, <em>Rn</em>, <em>a</em>, <em>b</em>, <em>x=0</em>, <em>y=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_crescent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_crescent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a crescent to an image; see Kamruddin &amp; Dexter (2013).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the total flux contained in the crescent in Jy</li>
+<li><strong>Rp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the larger radius in radians</li>
+<li><strong>Rn</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the smaller radius in radians</li>
+<li><strong>a</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the relative x offset of smaller disk in radians</li>
+<li><strong>b</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the relative y offset of smaller disk in radians</li>
+<li><strong>x</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the center x coordinate of the larger disk in radians</li>
+<li><strong>y</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the center y coordinate of the larger disk in radians</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an image object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_flat">
+<code class="descname">add_flat</code><span class="sig-paren">(</span><em>flux</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_flat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_flat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a flat background flux to the Stokes I image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_gauss">
+<code class="descname">add_gauss</code><span class="sig-paren">(</span><em>flux</em>, <em>beamparams</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_gauss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a gaussian to an image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the total flux contained in the Gaussian in Jy</li>
+<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an image object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_pol">
+<code class="descname">add_pol</code><span class="sig-paren">(</span><em>qimage</em>, <em>uimage</em>, <em>vimage</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_pol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_pol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add Stokes Q, U, and V images.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_qu">
+<code class="descname">add_qu</code><span class="sig-paren">(</span><em>qimage</em>, <em>uimage</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_qu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_qu" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add Stokes Q and U images.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_tophat">
+<code class="descname">add_tophat</code><span class="sig-paren">(</span><em>flux</em>, <em>radius</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_tophat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_tophat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add centered tophat flux to the Stokes I image inside a given radius.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_v">
+<code class="descname">add_v</code><span class="sig-paren">(</span><em>vimage</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_v"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_v" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add Stokes V image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.blur_circ">
+<code class="descname">blur_circ</code><span class="sig-paren">(</span><em>fwhm_i</em>, <em>fwhm_pol=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.blur_circ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.blur_circ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a circular gaussian filter to the image, with FWHM in radians.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.blur_gauss">
+<code class="descname">blur_gauss</code><span class="sig-paren">(</span><em>beamparams</em>, <em>frac=1.0</em>, <em>frac_pol=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.blur_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.blur_gauss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Blur image with a Gaussian beam defined by beamparams [fwhm_max, fwhm_min, theta] in radians.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a copy of the image object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.display">
+<code class="descname">display</code><span class="sig-paren">(</span><em>cfun='afmhot'</em>, <em>nvec=20</em>, <em>pcut=0.01</em>, <em>plotp=False</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the image in a pyplot window.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.flip_chi">
+<code class="descname">flip_chi</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.flip_chi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.flip_chi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flip between the different conventions for measuring the EVPA (East of North vs up from x axis).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.fovx">
+<code class="descname">fovx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fovx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fovx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the image fov in x direction in radians.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.fovy">
+<code class="descname">fovy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fovy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fovy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the image fov in x direction in radians.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.im_pad">
+<code class="descname">im_pad</code><span class="sig-paren">(</span><em>fovx</em>, <em>fovy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.im_pad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.im_pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pad an image to new fovx by fovy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.imarr">
+<code class="descname">imarr</code><span class="sig-paren">(</span><em>stokes='I'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.imarr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.imarr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the 2D image array of a given Stokes parameter.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.observe">
+<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ft='direct'</em>, <em>pad_frac=0.5</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate baselines from an array object and observe the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>array</strong> (<a class="reference internal" href="array.html#ehtim.array.Array" title="ehtim.array.Array"><em>Array</em></a>) &#8211; an array object containing sites with which to generate baselines</li>
+<li><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the scan integration time in seconds</li>
+<li><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the uniform cadence between scans in seconds</li>
+<li><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the start time of the observation in hours</li>
+<li><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the end time of the observation in hours</li>
+<li><strong>bw</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the observing bandwidth in Hz</li>
+<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; the mjd of the observation, if different from the image mjd</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; how to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+<li><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; station minimum elevation in degrees</li>
+<li><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; station maximum elevation in degrees</li>
+<li><strong>ft</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>pad_frac</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; zero pad the image so that pad_frac*shortest baseline is captured in FFT</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
+<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
+<li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station gains</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added to data points</li>
+<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</li>
+<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</li>
+<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</li>
+<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</li>
+<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
+<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
+<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains and opacities</li>
+<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an observation object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.observe_same">
+<code class="descname">observe_same</code><span class="sig-paren">(</span><em>obsin</em>, <em>ft='direct'</em>, <em>pad_frac=0.5</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gain_offset=0.1</em>, <em>gainp=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observe the image on the same baselines as an existing observation object and add noise.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obsin</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled</li>
+<li><strong>ft</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>pad_frac</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; zero pad the image so that pad_frac*shortest baseline is captured in FFT</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
+<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
+<li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station gains</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added to data points</li>
+<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</li>
+<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</li>
+<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</li>
+<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</li>
+<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
+<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
+<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains and opacities</li>
+<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an observation object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.observe_same_nonoise">
+<code class="descname">observe_same_nonoise</code><span class="sig-paren">(</span><em>obs</em>, <em>sgrscat=False</em>, <em>ft='direct'</em>, <em>pad_frac=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Observe the image on the same baselines as an existing observation object without adding noise.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled</li>
+<li><strong>ft</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>pad_frac</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; zero pad the image so that pad_frac*shortest baseline is captured in FFT</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an observation object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.observe_vex">
+<code class="descname">observe_vex</code><span class="sig-paren">(</span><em>vex</em>, <em>source</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_vex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate baselines from a vex file and observes the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>vex</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex" title="ehtim.vex.Vex"><em>Vex</em></a>) &#8211; an vex object containing sites and scan information</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
+<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
+<li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station gains</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added to data points</li>
+<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</li>
+<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</li>
+<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</li>
+<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</li>
+<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
+<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
+<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains and opacities</li>
+<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an observation object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.resample_square">
+<code class="descname">resample_square</code><span class="sig-paren">(</span><em>xdim_new</em>, <em>ker_size=5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.resample_square"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.resample_square" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resample the image to the new (square) dimensions xdim_new by xdim_new.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.save_fits">
+<code class="descname">save_fits</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.save_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.save_fits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save image data to a fits file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.save_txt">
+<code class="descname">save_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.save_txt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save image data to text file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.sourcevec">
+<code class="descname">sourcevec</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.sourcevec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.sourcevec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the source position vector in geocentric coordinates at 0h GMST.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.threshold">
+<code class="descname">threshold</code><span class="sig-paren">(</span><em>frac_i=1e-05</em>, <em>frac_pol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a hard threshold to the image.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.total_flux">
+<code class="descname">total_flux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.total_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.total_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the total flux of the Stokes I image in Jy.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.image.load_fits">
+<code class="descclassname">ehtim.image.</code><code class="descname">load_fits</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#load_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.load_fits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in an image from a FITS file and create an Image object.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.image.load_txt">
+<code class="descclassname">ehtim.image.</code><code class="descname">load_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.load_txt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in an image from a text file and create an Image object, with the same format as output from Image.save_txt().</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.image.make_square">
+<code class="descclassname">ehtim.image.</code><code class="descname">make_square</code><span class="sig-paren">(</span><em>obs</em>, <em>npix</em>, <em>fov</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#make_square"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.make_square" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make an empty square image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; an obsdata object with the image metadata</li>
+<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; the pixel size of each axis</li>
+<li><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the field of view of each axis in radians</li>
+<li><strong>pulse</strong> (<em>function</em>) &#8211; the function convolved with the pixel values for continuous image</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an image object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="array.html" class="btn btn-neutral float-right" title="Array" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="includeme.html" class="btn btn-neutral" title="eht-imaging" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Andrew Chael.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
