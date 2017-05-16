@@ -18,20 +18,27 @@ from ehtim.observing.obs_helpers import *
 ##################################################################################################
 
 class Obsdata(object):
-    """A VLBI observation of visibility amplitudes and phases. 
+    """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
     
        Attributes:
-        source: the source name
-        ra: the source right ascension (frac. hours)
-        dec: the source declination (frac. degrees)
-        mjd: the observation start date 
-        tstart: the observation start time (UTC, hr.)
-        tstop: the observation end time (UTC, hr.)
-        rf: the observing frequency (Hz)
-        bw: the observing bandwidth (Hz)
-        ampcal: amplitudes calibrated T/F
-        phasecal: phases calibrated T/F
-        data: recarray with the data (time, t1, t2, tint, u, v, vis, qvis, uvis, vvis, sigma, qsigma, usigma, vsigma)
+           source (str): The source name
+           ra (float): The source Right Ascension in fractional hours
+           dec (float): The source declination in fractional degrees
+           mjd (int): The integer MJD of the observation 
+           tstart (float): The start time of the observation in hours
+           tstop (float): The end time of the observation in hours
+           rf (float): The observation frequency in Hz
+           bw (float): The observation bandwidth in Hz
+           ampcal (bool): True if amplitudes calibrated
+           phasecal (bool): True if phases calibrated 
+           opacitycal (bool): True if time-dependent opacities correctly accounted for in sigmas
+           frcal (bool): True if feed rotation calibrated out of visibilities
+           dcal (bool): True if D terms calibrated out of visibilities
+           timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC' 
+
+           tarr (numpy.recarray): The array of telescope data with datatype DTARR 
+           tkey (dict): A dictionary of rows in the tarr for each site name 
+           data (numpy.recarray): the basic data with datatype DTPOL
     """
     
     def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC'):
@@ -102,14 +109,14 @@ class Obsdata(object):
             self.tstop += 24.0
   
     def copy(self):
-        """Copy the observation object
+        """Copy the observation object.
         """
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, 
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal)
         return newobs
         
     def data_conj(self):
-        """Return a data array of same format as self.data but including all conjugate baselines
+        """Return a data array of same format as self.data but including all conjugate baselines.
         """
         
         data = np.empty(2*len(self.data), dtype=DTPOL)        
@@ -134,7 +141,7 @@ class Obsdata(object):
         return data
 
     def tlist(self, conj=False):
-        """Return partitioned data in a list of equal time observations
+        """Return the data in a list of equal time observation datatables.
         """
         
         if conj: 
@@ -150,7 +157,7 @@ class Obsdata(object):
         return np.array(datalist)
   
     def split_obs(self):
-        """Split single observation into multiple observation files, one per scan
+        """Split single observation into multiple observation files, one per scan.
         """
 
         print "Splitting Observation File into " + str(len(self.tlist())) + " scans"
@@ -164,7 +171,7 @@ class Obsdata(object):
         return splitlist   
            
     def unpack_bl(self, site1, site2, in_fields, ang_unit='deg'):
-        """Unpack the data over time on the selected baseline
+        """Unpack the data for the given fields in_fields over time on the selected baseline site1-site2.
         """
 
         # If we only specify one field
@@ -187,6 +194,9 @@ class Obsdata(object):
         return np.array(allout)            
     
     def unpack(self, fields, conj=False, ang_unit='deg', mode='all'):
+        """Return a recarray of all the data for the given fields extracted from the dtable.
+           If conj=True, will also return conjugate baselines.
+        """
         
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")
@@ -210,8 +220,8 @@ class Obsdata(object):
         return np.array(allout)
     
     def unpack_dat(self, data, fields, conj=False, ang_unit='deg'):
-        """Return a recarray of all the data for the given fields from the data table
-           If conj=True, will return conjugate baselines
+        """Return a recarray of data for the given fields extracted from the datatable 'data'.
+           If conj=True, will also return conjugate baselines.
         """
        
         if ang_unit=='deg': angle=DEGREE
@@ -318,20 +328,26 @@ class Obsdata(object):
         return allout
     
     def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GMST)
+        """Return the source position vector in geocentric coordinates at 0h GMST.
         """
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
         
     def res(self):
-        """Return the nominal resolution of the observation in radian
+        """Return the nominal resolution (1/longest baseline) of the observation in radians.
         """
         return 1.0/np.max(self.unpack('uvdist')['uvdist'])
         
     def bispectra(self, vtype='vis', mode='time', count='min'):
-        """Return all independent equal time bispectrum values
-           Independent triangles are chosen to contain the minimum sefd station in the scan
-           Set count='max' to return all bispectrum values
-           Get Q, U, P bispectra by changing vtype
+        """Return a recarray of the equal time bispectra.
+           
+           Args: 
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
+               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+
+           Returns:
+               numpy.recarry: A recarray of the bispectra values with datatype DTBIS
+           
         """
 
         if not mode in ('time', 'all'):
@@ -440,11 +456,19 @@ class Obsdata(object):
    
         
     def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg'):
-        """Return all independent equal time closure phase values
-           Independent triangles are chosen to contain the minimum sefd station in the scan
-           Set count='max' to return all closure phases
-        """
+        """Return a recarray of the equal time closure phases.
+           
+           Args: 
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
+               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+               ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
 
+           Returns:
+               numpy.recarry: A recarray of the closure phases with datatype DTPHASE
+           
+        """
+     
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")  
         if not count in ('max', 'min'):
@@ -478,7 +502,7 @@ class Obsdata(object):
         return np.array(outlist)    
 
     def unique_c_phases(self):
-        """Return all unique closure phase triangles
+        """Return an array of all unique closure phase triangles.
         """
         biarr = self.bispectra(mode="all", count="min")
         catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
@@ -487,10 +511,18 @@ class Obsdata(object):
         return uniqueclosure
          
     def c_amplitudes(self, vtype='vis', mode='time', count='min'):
-        """Return equal time closure amplitudes
-           Set count='max' to return all closure amplitudes up to inverses
-        """ 
-        
+        """Return a recarray of the equal time closure amplitudes.
+           
+           Args: 
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+
+           Returns:
+               numpy.recarry: A recarray of the closure amplitudes with datatype DTCAMP
+           
+        """
+     
         if not mode in ('time','all'):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
@@ -639,9 +671,17 @@ class Obsdata(object):
         
         return np.array(outlist)
 
-    def log_c_amplitudes(self, cov=True, vtype='vis', mode='time', count='min'):
-        """Return equal time log closure amplitudes
-           Set count='max' to return all closure amplitudes up to inverses
+    def log_c_amplitudes(self, vtype='vis', mode='time', count='min'):
+        """Return a recarray of the equal time log closure amplitudes.
+           
+           Args: 
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+
+           Returns:
+               numpy.recarry: A recarray of the log closure amplitudes with datatype DTCAMP
+           
         """
      
         if not mode in ('time','all'):
@@ -652,7 +692,6 @@ class Obsdata(object):
             raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
                     
         tlist = self.tlist(conj=True) 
-        covs = []
         outlist = []
         cas = []
         for tdata in tlist:
@@ -801,9 +840,17 @@ class Obsdata(object):
 
     
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
-        """Return a square Image object of the observation dirty beam
-           fov is in radian
+        """Make an image observation dirty beam.
+           
+           Args:
+               npix (int): The pixel size of the square output image. 
+               fov (float): The field of view of the square output image in radians.
+               pulse (function): The function convolved with the pixel values for continuous image. 
+
+           Returns:
+               Image: an Image object with the dirty beam.
         """
+
 
         # !AC TODO add different types of beam weighting
         pdim = fov/npix
@@ -825,9 +872,17 @@ class Obsdata(object):
         return ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
         
     def cleanbeam(self, npix, fov, pulse=PULSE_DEFAULT):
-        """Return a square Image object of the observation fitted (clean) beam
-           fov is in radian
+        """Make an image of observation clean beam.
+           
+           Args:
+               npix (int): The pixel size of the square output image. 
+               fov (float): The field of view of the square output image in radians.
+               pulse (function): The function convolved with the pixel values for continuous image. 
+
+           Returns:
+               Image: an Image object with the clean beam.
         """
+
         # !AC TODO include other beam weightings
         im = ehtim.image.make_square(self, npix, fov, pulse=pulse)
         beamparams = self.fit_beam()
@@ -836,10 +891,11 @@ class Obsdata(object):
         
     def fit_beam(self):
         """Fit a gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).
-           All params are in radian and theta is measured E of N.
-           Fit the quadratic expansion of the Gaussian (normalized to 1 at the peak) 
-           to the expansion of dirty beam with the same normalization
-        """    
+
+           Returns:
+               tuple: a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.
+        """
+
         # !AC TODO include other beam weightings
         # Define the sum of squares function that compares the quadratic expansion of the dirty image
         # with the quadratic expansion of an elliptical gaussian
@@ -880,8 +936,15 @@ class Obsdata(object):
         return np.array((fwhm_maj, fwhm_min, theta))
 
     def dirtyimage(self, npix, fov, pulse=PULSE_DEFAULT):
-        """Return a square Image object of the observation dirty image
-           fov is in radian
+        """Make the observation dirty image (direct Fourier transform).
+           
+           Args:
+               npix (int): The pixel size of the square output image. 
+               fov (float): The field of view of the square output image in radians.
+               pulse (function): The function convolved with the pixel values for continuous image. 
+
+           Returns:
+               Image: an Image object with dirty image.
         """
 
         # !AC TODO add different types of beam weighting  
@@ -936,8 +999,10 @@ class Obsdata(object):
         return out
 
     def deblur(self):
-        """Deblur the observation obs by dividing with the Sgr A* scattering kernel.
-           Returns a new observation.
+        """Deblur the observation obs by dividing by the Sgr A* scattering kernel.
+
+           Returns:
+               Obsdata: a new deblurred observation object.
         """
         
         # make a copy of observation data
@@ -980,8 +1045,7 @@ class Obsdata(object):
         return obsdeblur
 
     def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
-        """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes
-           TODO bispectra/closure phase?
+        """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.
         """
         vis = self.data['vis']
         u = self.data['u']
@@ -1005,8 +1069,8 @@ class Obsdata(object):
         return res.x
     
     def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg'):
-        """Make a scatter plot of 2 real observation fields with errors
-           If conj==True, display conjugate baselines
+        """Make a scatter plot of 2 real observation fields with errors.
+           If conj==True, display conjugate baselines.
         """
         
         # Determine if fields are valid
@@ -1067,7 +1131,7 @@ class Obsdata(object):
         return x
                         
     def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
-        """Plot a field over time on a baseline
+        """Plot a field over time on a baseline site1-site2. 
         """
                 
         if ang_unit=='deg': angle=DEGREE
@@ -1108,10 +1172,10 @@ class Obsdata(object):
                 
                 
     def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
-        """Plot closure phase over time on a triangle
+        """Plot closure phase over time on a triangle (1-2-3). 
         """
                 
-        if ang_unit=='deg': angle=DEGREE
+        if ang_unit=='deg': angle=DEGREE 
         else: angle = 1.0
         
         # Get closure phases (maximal set)
@@ -1164,8 +1228,7 @@ class Obsdata(object):
         return x
         
     def plot_camp(self, site1, site2, site3, site4, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
-        """Plot closure amplitude over time on a quadrange
-           (1-2)(3-4)/(1-4)(2-3)
+        """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
         """
         quad = (site1, site2, site3, site4)
         b1 = set((site1, site2))
@@ -1225,26 +1288,24 @@ class Obsdata(object):
             return x
                 	        
     def save_txt(self, fname):
-        """Save visibility data to a text file"""
+        """Save visibility data to a text file."""
 
         ehtim.io.save.save_obs_txt(self,fname)
         return
     
     #!AC TODO how can we save dterm and field rotation arrays to uvfits?
     def save_uvfits(self, fname):
-        """Save visibility data to uvfits
-           Needs template.UVP file
+        """Save visibility data to uvfits. 
         """
         ehtim.io.save.save_obs_uvfits(self,fname)
         return
     
     def save_oifits(self, fname, flux=1.0):
-        """ Save visibility data to oifits
-            Polarization data is NOT saved
-            Antenna diameter currently incorrect and the exact times are not correct in the datetime object
-            Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function 
+        """ Save visibility data to oifits. Polarization data is NOT saved.
         """
-
+        #Antenna diameter currently incorrect and the exact times are not correct in the datetime object
+        #Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function 
+        
         ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
         return
 
@@ -1253,7 +1314,7 @@ class Obsdata(object):
 ##################################################################################################
 
 def merge_obs(obs_List):
-    """Merge a list of observations into a single observation file
+    """Merge a list of observations into a single observation file.
     """
 
     if (len(set([obs.ra for obs in obs_List])) > 1 or 
@@ -1275,14 +1336,22 @@ def merge_obs(obs_List):
     return mergeobs
 
 def load_txt(fname):
+    """Read an observation from a text file and return an Obsdata object, with the same format as output from Obsdata.savedata().
+    """
     return ehtim.io.load.load_obs_txt(fname)
 
 def load_uvfits(fname, flipbl=False):
+    """Load observation data from a uvfits file.
+    """
     return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl)
 
 def load_oifits(fname, flux=1.0):
+    """Load data from an oifits file. Does NOT currently support polarization.
+    """
     return ehtim.io.load.load_obs_oifits(fname, flux=flux)
 
 def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
+    """Read an observation from a maps text file and return an Obsdata object.
+    """
     return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile, src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
 

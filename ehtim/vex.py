@@ -1,3 +1,5 @@
+# Hotaka Shiokawa - 2017
+
 import numpy as np
 
 import ehtim.array
@@ -6,9 +8,15 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 class Vex(object):
-    """Read in .vex files. and function to observe them
+    """Read in observing schedule data from .vex files.
        Assumes there is only 1 MODE in vex file
-       Hotaka Shiokawa - 2017
+       
+       Attributes:
+           filename (str): The .vex filename. 
+           source (str): The source name.
+           metalist (list): The observation information.
+           sched (list): The schedule information.
+           array (Array): an Array object of sites.
     """
 
     def __init__(self, filename):

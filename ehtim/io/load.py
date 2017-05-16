@@ -447,7 +447,6 @@ def load_obs_txt(filename):
 
 def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object
-       text file has the same format as output from Obsdata.savedata()
     """
     # Read telescope parameters from the array file
     tdata = np.loadtxt(arrfile, dtype=str)

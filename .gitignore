@@ -3,6 +3,7 @@
 vex_files/*
 /#*
 docs/_build/*
+docs/build/
 local/*
 *test*
 imagingChallenge*

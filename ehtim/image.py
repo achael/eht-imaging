@@ -15,19 +15,22 @@ from ehtim.observing.obs_helpers import *
 #Image object
 ###########################################################################################################################################
 class Image(object):
-    """A radio frequency image array (in Jy/pixel).
+    """A polarimetric image (in units of Jy/pixel).
     
        Attributes:
-    	pulse: The function convolved with pixel value dirac comb for continuous image rep. (function from pulses.py)
-        psize: The pixel dimension in radians (float)
-        xdim: The number of pixels along the x dimension (int)
-        ydim: The number of pixels along the y dimension (int)
-        ra: The source Right Ascension (frac hours)
-        dec: The source Declination (frac degrees)
-        rf: The radio frequency (Hz)
-        imvec: The xdim*ydim vector of jy/pixel values (array)
-        source: The astrophysical source name (string)
-    	mjd: The mjd of the image 
+           pulse (function): The function convolved with the pixel values for continuous image. 
+           psize (float): The pixel dimension in radians
+           xdim (int): The number of pixels along the x dimension
+           ydim (int): The number of pixels along the y dimension
+           mjd (int): The integer MJD of the image 
+           source (str): The astrophysical source name
+           ra (float): The source Right Ascension in fractional hours
+           dec (float): The source declination in fractional degrees
+           rf (float): The image frequency in Hz
+           imvec (array): The vector of stokes I values in Jy/pixel (len xdim*ydim)
+           qvec (array): The vector of stokes Q values in Jy/pixel (len xdim*ydim)
+           uvec (array): The vector of stokes U values in Jy/pixel (len xdim*ydim)
+           vvec (array): The vector of stokes V values in Jy/pixel (len xdim*ydim)
     """
     
     def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT):
@@ -51,7 +54,7 @@ class Image(object):
         self.vvec = []
         
     def add_qu(self, qimage, uimage):
-        """Add Q and U images
+        """Add Stokes Q and U images.
         """
         
         if len(qimage.shape) != len(uimage.shape):
@@ -62,20 +65,20 @@ class Image(object):
         self.uvec = uimage.flatten()
     
     def add_v(self, vimage):
-        """Add V image
+        """Add Stokes V image.
         """
         if vimage.shape != (self.ydim, self.xdim):
             raise Exception("V image shape incompatible with I image!") 
         self.vvec = vimage.flatten()
     
     def add_pol(self, qimage, uimage, vimage):
-        """Add Q, U, V images
+        """Add Stokes Q, U, and V images.
         """
         self.add_qu(qimage, uimage)
         self.add_v(vimage)
         
     def copy(self):
-        """Copy the image object
+        """Return a copy of the image object.
         """
         newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         if len(self.qvec):
@@ -83,12 +86,12 @@ class Image(object):
         return newim
 
     def sourcevec(self):
-        """Returns the source position vector in geocentric coordinates (at 0h GMST)
+        """Return the source position vector in geocentric coordinates at 0h GMST.
         """
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
 
     def imarr(self, stokes="I"):
-        """Returns the image 2D array of type stokes
+        """Return the 2D image array of a given Stokes parameter.
         """
 
         imarr = np.array([])
@@ -99,32 +102,37 @@ class Image(object):
         return imarr
 
     def fovx(self):
-        """Returns the image fov in x direction
+        """Return the image fov in x direction in radians.
         """
         return self.psize * self.xdim
 
     def fovy(self):
-        """Returns the image fov in x direction
+        """Returns the image fov in x direction in radians.
         """
         return self.psize * self.ydim
 
     def total_flux(self):
-        """Return the total flux of the image
+        """Return the total flux of the Stokes I image in Jy. 
         """
         return np.sum(self.imvec)
 
-
-                
     def flip_chi(self):
-        """Change between different conventions for measuring position angle (East of North vs up from x axis)
+        """Flip between the different conventions for measuring the EVPA (East of North vs up from x axis).
         """
         self.qvec = - self.qvec
         return
         
     def observe_same_nonoise(self, obs, sgrscat=False, ft="direct", pad_frac=0.5):
-        """Observe the image on the same baselines as an existing observation object
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-           Does NOT add noise
+        """Observe the image on the same baselines as an existing observation object without adding noise. 
+
+           Args:
+               obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
+               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+
+           Returns:
+               Obsdata: an observation object
         """
 
         data = simobs.observe_image_nonoise(self, obs, sgrscat=sgrscat, ft=ft, pad_frac=pad_frac)
@@ -133,17 +141,35 @@ class Image(object):
                                              obs.tarr, source=self.source, mjd=obs.mjd)
         return obs_no_noise 
           
-    def observe_same(self, obsin, ft='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True, 
-                                opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
-                                tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
-                                jones=False, inv_jones=False):
+    def observe_same(self, obsin, ft='direct', pad_frac=0.5, 
+                           sgrscat=False, add_th_noise=True, 
+                           opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
+                           jones=False, inv_jones=False,
+                           tau=TAUDEF, gain_offset=GAINPDEF, gainp=GAINPDEF, dtermp=DTERMPDEF):
                                                                   
-        """Observe the image on the same baselines as an existing observation object
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-           Does NOT add noise
-           
-           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
-           for each telescope site. 
+        """Observe the image on the same baselines as an existing observation object and add noise. 
+
+           Args:
+               obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
+               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               ampcal (bool): if False, time-dependent gaussian errors are added to station gains
+               phasecal (bool): if False, time-dependent station-based random phases are added to data points
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data 
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
+               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains and opacities
+               dtermp (float): the fractional std. dev. of the random error on the D-terms
+
+           Returns:
+               Obsdata: an observation object
+
         """
 
         obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ft=ft, pad_frac=pad_frac)    
@@ -187,24 +213,47 @@ class Image(object):
                                              #these are always set to True after inverse jones cal
         return obs
         
-    def observe(self, array, tint, tadv, tstart, tstop, bw, 
-                      mjd=None, timetype='UTC', elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
+    def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, timetype='UTC', 
+                      elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
                       ft='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True, 
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
-                      tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
-                      jones=False, inv_jones=False):
-                
-        """Observe the image with an array object to produce an obsdata object.
-	       tstart and tstop should be hrs in UTC.
-           tint and tadv should be seconds.
-           tau is the estimated optical depth. This can be a single number or a dictionary giving one tau per site
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel at the appropriate frequency
-           
-           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
-           for each telescope site. This can only be done currently if jones=False. 
-           If gain_offset is a single value than it is the standard deviation 
-           of a randomly selected gain offset. 
-	    """
+                      jones=False, inv_jones=False,
+                      tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
+
+        """Generate baselines from an array object and observe the image. 
+
+           Args:
+               array (Array): an array object containing sites with which to generate baselines
+               tint (float): the scan integration time in seconds
+               tadv (float): the uniform cadence between scans in seconds
+               tstart (float): the start time of the observation in hours
+               tstop (float): the end time of the observation in hours
+               bw (float): the observing bandwidth in Hz
+               mjd (int): the mjd of the observation, if different from the image mjd
+               timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC' 
+               elevmin (float): station minimum elevation in degrees
+               elevmax (float): station maximum elevation in degrees
+               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               ampcal (bool): if False, time-dependent gaussian errors are added to station gains
+               phasecal (bool): if False, time-dependent station-based random phases are added to data points
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data 
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
+               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains and opacities
+               dtermp (float): the fractional std. dev. of the random error on the D-terms
+
+           Returns:
+               Obsdata: an observation object
+
+        """
+
         
         # Generate empty observation
         print "Generating empty observation file . . . "
@@ -222,12 +271,33 @@ class Image(object):
         
         return obs
 
-    def observe_vex(vex, source, sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
-                    tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
-                    jones=False, inv_jones=False, dcal=True):
-        """Generates an observation corresponding to a given vex object
-           vex is a vex object
-           source is the source string identifier in the vex object, e.g., 'SGRA'
+    def observe_vex(self, vex, source, 
+                          sgrscat=False, add_th_noise=True, 
+                          opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                          jones=False, inv_jones=False,
+                          tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
+
+        """Generate baselines from a vex file and observes the image. 
+
+           Args:
+               vex (Vex): an vex object containing sites and scan information
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               ampcal (bool): if False, time-dependent gaussian errors are added to station gains
+               phasecal (bool): if False, time-dependent station-based random phases are added to data points
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data 
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
+               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains and opacities
+               dtermp (float): the fractional std. dev. of the random error on the D-terms
+
+           Returns:
+               Obsdata: an observation object
+
         """
 
         obs_List=[]
@@ -245,7 +315,7 @@ class Image(object):
         return eht.obsdata.merge_obs(obs_List)
            
     def resample_square(self, xdim_new, ker_size=5):
-        """Return a new image object that is resampled to the new dimensions xdim_new x xdim_new
+        """Resample the image to the new (square) dimensions xdim_new by xdim_new.
         """
         
         im = self
@@ -310,7 +380,7 @@ class Image(object):
         return outim
 
     def im_pad(self, fovx, fovy):
-        """Pad an image to new fov
+        """Pad an image to new fovx by fovy. 
         """ 
 
         im = self
@@ -337,7 +407,7 @@ class Image(object):
 
 
     def add_flat(self, flux):
-        """Add flat background flux to an image
+        """Add a flat background flux to the Stokes I image.
         """ 
         
         im = self
@@ -346,7 +416,7 @@ class Image(object):
         return out
 
     def add_tophat(self, flux, radius):
-        """Add tophat flux to an image
+        """Add centered tophat flux to the Stokes I image inside a given radius.
         """
      
         im = self
@@ -366,10 +436,14 @@ class Image(object):
         out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd) 
         return out
 
-    def     npix = int(npix)make_add_gauss(self, flux, beamparams):
-        """Add a gaussian to an image
-           beamparams is [fwhm_maj, fwhm_min, theta, x, y], all in rad
-           theta is the orientation angle measured E of N
+    def add_gauss(self, flux, beamparams):
+        """Add a gaussian to an image.
+
+           Args:
+               flux (float): the total flux contained in the Gaussian in Jy
+               beamparams (list): the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians
+           Returns:
+               Image: an image object
         """ 
         
         im = self
@@ -400,15 +474,20 @@ class Image(object):
         return out
 
     def add_crescent(self, flux, Rp, Rn, a, b, x=0, y=0):
-        """Add a crescent to an image; see Kamruddin & Dexter (2013)
-           all parameters in rad
-           Rp is larger radius
-           Rn is smaller radius
-           a is relative x offset of smaller disk
-           b is relative y offset of smaller disk
-           x,y are center coordinates of the larger disk
+        """Add a crescent to an image; see Kamruddin & Dexter (2013).
+
+           Args:
+               flux (float): the total flux contained in the crescent in Jy
+               Rp (float): the larger radius in radians
+               Rn (float): the smaller radius in radians
+               a (float): the relative x offset of smaller disk in radians
+               b (float): the relative y offset of smaller disk in radians
+               x (float): the center x coordinate of the larger disk in radians
+               y (float): the center y coordinate of the larger disk in radians
+           Returns:
+               Image: an image object
         """ 
-        
+
         im = self
         xfov = im.xdim * im.psize
         yfov = im.ydim * im.psize    
@@ -432,8 +511,7 @@ class Image(object):
         return out
 
     def add_const_m(self, mag, angle):
-        """Add a constant fractional linear polarization to image
-           angle is in radians
+        """Add a constant fractional linear polarization to image, where angle is in radians.
         """ 
         im = self
         if not (0 < mag < 1):
@@ -447,8 +525,7 @@ class Image(object):
         return out
         
     def blur_gauss(self, beamparams, frac=1., frac_pol=0):
-        """Blur image with a Gaussian beam defined by beamparams
-           beamparams is [FWHMmaj, FWHMmin, theta], all in radian
+        """Blur image with a Gaussian beam defined by beamparams [fwhm_max, fwhm_min, theta] in radians.
         """
         
         image = self
@@ -510,9 +587,9 @@ class Image(object):
         return out  
 
     def blur_circ(self, fwhm_i, fwhm_pol=0):
-        """Apply a circular gaussian filter to the I image
-           fwhm is in radians
+        """Apply a circular gaussian filter to the image, with FWHM in radians.
         """ 
+
         image = self
         # Blur Stokes I
         sigma = fwhm_i / (2. * np.sqrt(2. * np.log(2.)))
@@ -531,7 +608,7 @@ class Image(object):
         return out
 
     def threshold(self, frac_i=1.e-5, frac_pol=1.e-3):
-        """Apply a hard threshold
+        """Apply a hard threshold to the image.
         """ 
 
         image=self
@@ -553,7 +630,7 @@ class Image(object):
 
           
     def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin',gamma=0.5):
-        """Display the image
+        """Display the image in a pyplot window.
         """
 
         # TODO Display circular polarization 
@@ -641,24 +718,32 @@ class Image(object):
         return 
 
     def save_txt(self, fname):
-        """Save image data to text file
+        """Save image data to text file.
         """
         
         ehtim.io.save.save_im_txt(self, fname)
         return
 
     def save_fits(self, fname):
+        """Save image data to a fits file.
+        """
         ehtim.io.save.save_im_fits(self, fname)
         return
 
 ###########################################################################################################################################
 #Image creation functions
 ###########################################################################################################################################
-def make_square(obs, npix, fov,pulse=PULSE_DEFAULT):
-    """Make an empty prior image
-       obs is an observation object
-       fov is in radians
-    """ 
+def make_square(obs, npix, fov, pulse=PULSE_DEFAULT):
+    """Make an empty square image.
+
+       Args:
+           obs (Obsdata): an obsdata object with the image metadata
+           npix (int): the pixel size of each axis
+           fov (float): the field of view of each axis in radians
+           pulse (function): the function convolved with the pixel values for continuous image 
+       Returns:
+           Image: an image object
+    """
 
     pdim = fov/float(npix)
     npix = int(npix)
@@ -666,8 +751,14 @@ def make_square(obs, npix, fov,pulse=PULSE_DEFAULT):
     return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd, pulse=pulse)
 
 def load_txt(fname):
+    """Read in an image from a text file and create an Image object, with the same format as output from Image.save_txt().
+    """
+
     return ehtim.io.load.load_im_txt(fname)
 
 def load_fits(fname):
+    """Read in an image from a FITS file and create an Image object.
+    """
+
     return ehtim.io.load.load_im_fits(fname)
         

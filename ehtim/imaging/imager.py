@@ -129,25 +129,34 @@ def imager(Obsdata, InitIm, Prior, flux,
    
     """Run a general interferometric imager.
        
-       Obsdata is an Obsdata object, and Prior and InitIm are Image objects with matching dimensions.
-       flux is the total flux of the output image
-       d1, d2 are data terms: options are 'vis', 'bs', 'amp', 'cphase', 'camp'
-       s1, s2 are regularizers: options are 'simple', 'gs', 'tv', 'l1', 'patch'
-       alpha_d1, alpha_d2 control data term weighting
-       alpha_s1, alpha_s2 control regularizer weighting
-       alpha_flux, alpha_cm control weighting for total flux and center of mass constraints
-       
-       clipfloor sets the level above which prior image pixels are varied
-       datamin determines if the full or linearized energy is used
-       grads=True sets if analytic or numerical gradients are used
-       logim=True controls Uses I = exp(I') change of variables.
+       Args:
+           Obsdata (Obsdata): The Obsdata object with VLBI data
+           Prior (Image): The Image object with the prior image 
+           InitIm (Image): The Image object with the initial image for the minimization
+           flux (float): The total flux of the output image in Jy
+           d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp'
+           d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp'
+           s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'l1', 'patch'
+           s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'l1', 'patch'
+           alpha_d1 (float): The first data term weighting
+           alpha_d2 (float): The second data term weighting
+           alpha_s1 (float): The first regularizer term weighting
+           alpha_s2 (float): The second regularizer term weighting
+           alpha_flux (float): The weighting for the total flux constraint 
+           alpha_cm (float): The weighting for the center of mass constraint
+           
+           clipfloor (float): The Jy/pixel level above which prior image pixels are varied
+           datamin (str): If 'lin', linearized energy is used (currently only compatible with CHIRP)
+           grads (bool): If True, analytic gradients are used
+           logim (bool): If True, uses I = exp(I') change of variables
 
-       maxit controls the number of iterations
-       stop is the convergence criterion
-       show_updates=True displays the progress of the minimizer
-       ipynb=False adjusts the plotting for the ipython notebook 
+           maxit (int): Maximum number of minimizer iterations
+           stop (float): The convergence criterion
+           show_updates (bool): If True, displays the progress of the minimizer
+           ipynb (bool): If True, adjusts the plotting for the ipython/jupyter notebook 
 
-       Returns Image object.
+       Returns:
+           Image: Image object with result
     """
     
     # Make sure data and regularizer options are ok    
@@ -826,7 +835,7 @@ def threshold(image, frac_i=1.e-5, frac_pol=1.e-3):
     return out
 
 def blur_circ(image, fwhm_i, fwhm_pol=0):
-    """Apply a circular gaussian filter to the I image
+    """Apply a circular gaussian filter to the I image.
        fwhm is in radians
     """ 
     

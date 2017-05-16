@@ -13,7 +13,8 @@ COLORLIST = ['b','m','g','c','y','k','r']
 # Plotters: Compare Observations
 ##################################################################################################          
 def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST):
-    """Plot data from multiple observations on the same axes"""
+    """Plot data from multiple observations on the same axes.
+    """
     
     try: len(obslist) 
     except TypeError: obslist = [obslist]
@@ -31,7 +32,8 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
     return axis
           
 def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=False, show=True, clist=COLORLIST):
-    """Plot data from multiple observations vs time on a single baseline on the same axes"""
+    """Plot data from multiple observations vs time on a single baseline on the same axes.
+    """
      
     try: len(obslist) 
     except TypeError: obslist = [obslist]
@@ -50,7 +52,8 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=Fals
     
     
 def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, clist=COLORLIST):
-    """Plot closure phase on a triangle vs time from multiple observations on the same axes"""
+    """Plot closure phase on a triangle vs time from multiple observations on the same axes.
+    """
     
     try: len(obslist) 
     except TypeError: obslist = [obslist]
@@ -69,7 +72,8 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
           
           
 def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=COLORLIST):
-    """Plot closure amplitude on a triangle vs time from multiple observations on the same axes"""
+    """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
+    """
     
     try: len(obslist) 
     except TypeError: obslist = [obslist]
@@ -90,7 +94,8 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
 # Plotters: Compare Observations to Image
 ##################################################################################################          
 def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST):
-    """Plot data from observations compared to ground truth from an image on the same axes"""
+    """Plot data from observations compared to ground truth from an image on the same axes.
+    """
     
     try: len(obslist) 
     except TypeError: obslist = [obslist]
@@ -113,7 +118,8 @@ def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex
     return axis
           
 def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST):
-    """Plot data vs time on a single baseline compared to ground truth from an image on the same axes"""
+    """Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
+    """
     
     try: len(obslist) 
    
@@ -138,7 +144,8 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
     
     
 def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST):
-    """Plot closure phase on a triangle compared to ground truth from an image on the same axes"""
+    """Plot closure phase on a triangle compared to ground truth from an image on the same axes.
+    """
     
     try: len(obslist) 
     except TypeError: obslist = [obslist]
@@ -162,7 +169,8 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=Fals
           
           
 def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST):
-    """Plot closure amplitude on a quadrangle compared to ground truth from an image on the same axes"""
+    """Plot closure amplitude on a quadrangle compared to ground truth from an image on the same axes.
+    """
     
     try: len(obslist) 
     except TypeError: obslist = [obslist]

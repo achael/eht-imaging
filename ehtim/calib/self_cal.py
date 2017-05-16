@@ -6,7 +6,8 @@ import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
 
 def self_cal(obs, im, method="both", show_solution=False):
-    """Self-calibrate a dataset to a fixed image""" 
+    """Self-calibrate a dataset to a fixed image.
+    """ 
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
 
@@ -31,7 +32,8 @@ def self_cal(obs, im, method="both", show_solution=False):
     return obs_cal
 
 def self_cal_scan(scan, im, method="both", show_solution=False):
-    """Self-calibrate a scan"""
+    """Self-calibrate a scan to a fixed  image.
+    """
 
     # calculating image true visibs (beware no scattering here..)
     uv = np.hstack((scan['u'].reshape(-1,1), scan['v'].reshape(-1,1)))

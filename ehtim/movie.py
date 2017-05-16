@@ -10,21 +10,24 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 class Movie(object):
-    """A list of image arrays (in Jy/pixel).
+    """A polarimetric movie (in units of Jy/pixel).
     
-    Attributes:
-    	pulse: The function convolved with pixel value dirac comb for continuous image rep. (function from pulses.py)
-    	framedur: The frame duration (sec)
-        psize: The pixel dimension in radians (float)
-        xdim: The number of pixels along the x dimension (int)
-        ydim: The number of pixels along the y dimension (int)
-        ra: The source Right Ascension (frac hours)
-        dec: The source Declination (frac degrees)
-        rf: The radio frequency (Hz)
-        imvec: The xdim*ydim vector of jy/pixel values (array)
-        source: The astrophysical source name (string)
-    	mjd: The starting integer mjd of the image 
-        start_hr: Fractional start hour of the movie [default = -1.0, meaning it is inherited from the observation]
+       Attributes:
+           pulse (function): The function convolved with the pixel values for continuous image
+    	   framedur (float): The frame duration in seconds
+           psize (float): The pixel dimension in radians
+           xdim (int): The number of pixels along the x dimension
+           ydim (int): The number of pixels along the y dimension
+           mjd (int): The integer MJD of the image 
+           start_hr (float): The start UTC hour of the observation (default = -1.0, meaning it is inherited from the observation)
+           source (str): The astrophysical source name
+           ra (float): The source Right Ascension in fractional hours
+           dec (float): The source declination in fractional degrees
+           rf (float): The image frequency in Hz
+           frames (list): The list of frame vectors of stokes I values in Jy/pixel (each of len xdim*ydim)
+           qframes (list): The list of frame vectors of stokes Q values in Jy/pixel (each of len xdim*ydim)
+           uframes (list): The list of frame vectors of stokes U values in Jy/pixel (each of len xdim*ydim)
+           vframes (list): The list of frame vectors of stokes V values in Jy/pixel (each of len xdim*ydim)
     """
     
     def __init__(self, movie, framedur, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, start_hr=0.0):
@@ -51,7 +54,7 @@ class Movie(object):
         self.vframes = []
 
     def add_qu(self, qmovie, umovie):
-        """Add Q and U movies.
+        """Add Stokes Q and U movies.
         """
         
         if not(len(qmovie) == len(umovie) == len(self.frames)):
@@ -72,7 +75,7 @@ class Movie(object):
         return
 
     def add_v(self, vmovie):
-        """Add V movie
+        """Add Stokes V movie.
         """
         if not(len(vmovie) == len(self.frames)):
             raise Exception("V movie must have same length as I movie!")
@@ -87,7 +90,8 @@ class Movie(object):
         return
 
     def copy(self):
-        """Copy the Movie object"""
+        """Return a copy of the Movie object.
+        """
         new = Movie([imvec.reshape(self.ydim,self.xdim) for imvec in self.frames], 
                      self.framedur, self.psize, self.ra, self.dec, rf=self.rf, 
                      source=self.source, mjd=self.mjd, start_hr=self.start_hr, pulse=self.pulse)
@@ -99,36 +103,60 @@ class Movie(object):
         return new
         
     def flip_chi(self):
-        """Change between different conventions for measuring position angle (East of North vs up from x axis).
+        """Flip between the different conventions for measuring position angle (East of North vs up from x axis).
         """
         self.qframes = [-qvec for qvec in self.qframes]
         return
            
-    def observe_same_nonoise(self, obs, sgrscat=False, repeat=False):
-        """Observe the movie on the same baselines as an existing observation object
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-           Does NOT add noise
+    def observe_same_nonoise(self, obs, ft="direct", pad_frac=0.5,  repeat=False, sgrscat=False):
+        """Observe the movie on the same baselines as an existing observation object without adding noise. 
+
+           Args:
+               obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
+               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               repeat (bool): if True, repeat the movie to fill up the observation interval
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+ 
+           Returns:
+               Obsdata: an observation object
         """
 
-        obsdata = simobs.observe_movie_nonoise(self, obs, sgrscat=sgrscat, repeat=repeat)
+        obsdata = simobs.observe_movie_nonoise(self, obs, ft="direct", pad_frac=0.5, sgrscat=sgrscat, repeat=repeat)
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata,
                                              obs.tarr, source=self.source, mjd=np.floor(obs.mjd))
         return obs_no_noise
     
-    def observe_same(self, obsin, ft='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True, 
-                                opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
-                                tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
-                                jones=False, inv_jones=False, repeat=False):
-        
-        """Observe the movie on the same baselines as an existing observation object
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-           Does NOT add noise
-           
-           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
-           for each telescope site. This can only be done currently if jones=False. 
-           If gain_offset is a single value than it is the standard deviation 
-           of a randomly selected gain offset. 
+    def observe_same(self, obsin, ft='direct', pad_frac=0.5,  repeat=False,
+                           sgrscat=False, add_th_noise=True, 
+                           opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
+                           jones=False, inv_jones=False,
+                           tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
+        """Observe the image on the same baselines as an existing observation object and add noise. 
+
+           Args:
+               obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
+               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               repeat (bool): if True, repeat the movie to fill up the observation interval
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               ampcal (bool): if False, time-dependent gaussian errors are added to station gains
+               phasecal (bool): if False, time-dependent station-based random phases are added to data points
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data 
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
+               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains and opacities
+               dtermp (float): the fractional std. dev. of the random error on the D-terms
+
+           Returns:
+               Obsdata: an observation object
+
         """
 
         print "Producing clean visibilities from movie . . . "
@@ -172,25 +200,48 @@ class Movie(object):
                                              opacitycal=True, dcal=True, frcal=True) 
                                              #these are always set to True after inverse jones call
         return obs
-        
-    def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, 
-                      sgrscat=False, add_th_noise=True, tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, opacitycal=True, ampcal=True, phasecal=True,
-                      jones=False, inv_jones=False, dcal=True, dtermp=DTERMPDEF, frcal=True, timetype='UTC',
-                      repeat=False):
 
-        """Observe the movie with an array object to produce an obsdata object.
-	       tstart and tstop should be hrs in UTC.
-           tint and tadv should be seconds.
-           tau is the estimated optical depth. This can be a single number or a dictionary giving one tau per site
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel at the appropriate frequency
-           
-           gain_offset can be optionally set as a dictionary that specifies the percentage offset 
-           for each telescope site. This can only be done currently if jones=False. 
-           If gain_offset is a single value than it is the standard deviation 
-           of a randomly selected gain offset. 
+    def observe(self, array, tint, tadv, tstart, tstop, bw, repeat=False,
+                      mjd=None, timetype='UTC', elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
+                      ft='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True, 
+                      opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                      jones=False, inv_jones=False,
+                      tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
 
-           repeat=True will repeat the movie if necessary to fill the observation time
-	    """
+        """Generate baselines from an array object and observe the movie. 
+
+           Args:
+               array (Array): an array object containing sites with which to generate baselines
+               tint (float): the scan integration time in seconds
+               tadv (float): the uniform cadence between scans in seconds
+               tstart (float): the start time of the observation in hours
+               tstop (float): the end time of the observation in hours
+               bw (float): the observing bandwidth in Hz
+               repeat (bool): if True, repeat the movie to fill up the observation interval
+               mjd (int): the mjd of the observation, if different from the image mjd
+               timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC' 
+               elevmin (float): station minimum elevation in degrees
+               elevmax (float): station maximum elevation in degrees
+               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               ampcal (bool): if False, time-dependent gaussian errors are added to station gains
+               phasecal (bool): if False, time-dependent station-based random phases are added to data points
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data 
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
+               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains and opacities
+               dtermp (float): the fractional std. dev. of the random error on the D-terms
+
+           Returns:
+               Obsdata: an observation object
+
+        """
         
         # Generate empty observation
         print "Generating empty observation file . . . "
@@ -207,14 +258,37 @@ class Movie(object):
         
         return obs
                  
-    def observe_vex(vex, source, synchronize_start = True, t_int = 0.0, sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
-                    tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF,
-                    jones=False, inv_jones=False, dcal=True):
-        """Generates an observation corresponding to a given vex objectS
-           vex is a vex object
-           source is the source string identifier in the vex object, e.g., 'SGRA'
-           synchronize_start is a flag that determines whether the start of the movie should be defined to be the start of the observations
-           t_int overrides the vex scans to produce visibilities for each t_int seconds
+    def observe_vex(self, vex, source, synchronize_start=True, t_int=0.0, 
+                          sgrscat=False, add_th_noise=True, 
+                          opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                          jones=False, inv_jones=False,
+                          tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
+
+        """Generate baselines from a vex file and observes the movie. 
+
+           Args:
+               vex (Vex): an vex object containing sites and scan information
+               source (str): the source string identifier in the vex object, e.g., 'SGRA'
+               synchronize_start (bool): if True, the start of the movie will be defined to be the start of the observations
+               t_int (float): if not zero, overrides the vex scans to produce visibilities for each t_int seconds
+
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               ampcal (bool): if False, time-dependent gaussian errors are added to station gains
+               phasecal (bool): if False, time-dependent station-based random phases are added to data points
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data 
+               tau (float): the base opacity at all sites, or a dict giving one opacity per site
+               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains and opacities
+               dtermp (float): the fractional std. dev. of the random error on the D-terms
+
+           Returns:
+               Obsdata: an observation object
+
         """
 
         obs_List=[]
@@ -267,7 +341,7 @@ class Movie(object):
                                     jones=jones, inv_jones=inv_jones, dcal=dcal, dtermp=dtermp, frcal=frcal,
                                     repeat=False)      
     def save_txt(self, fname):
-        """Save movie data to text files"""
+        """Save the Movie data to text files with basename fname and filenames basename + 00001, etc. """
         
         ehtim.io.ioutils.save_mov_txt(self, fname)
         return
@@ -277,5 +351,16 @@ class Movie(object):
 ##################################################################################################
 
 def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
+    """Read in a movie from text files and create a Movie object.
+       
+       Args:
+           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
+           nframes (int): The total number of frames
+           framedur (float): The frame duration (default = -1, corresponding to framedur taken from file headers)
+           pulse (function): The function convolved with the pixel values for continuous image
+
+       Returns:
+           Movie: a Movie object
+    """
     return load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse)
 
