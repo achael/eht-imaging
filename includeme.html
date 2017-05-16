@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>eht-imaging &mdash; ehtim 1.0.0 documentation</title>
+  <title>ehtim (eht-imaging) &mdash; ehtim 1.0.0 documentation</title>
   
 
   
@@ -35,9 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ehtim 1.0.0 documentation" href="index.html"/>
-        <link rel="next" title="Image" href="image.html"/>
-        <link rel="prev" title="ehtim (eht-imaging)" href="index.html"/> 
+    <link rel="top" title="ehtim 1.0.0 documentation" href="index.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -91,15 +89,7 @@
             
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">eht-imaging</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#polmem">PolMEM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#chirp">CHIRP</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
-</ul>
-</li>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array.html">Array</a></li>
 <li class="toctree-l1"><a class="reference internal" href="obsdata.html">Obsdata</a></li>
@@ -152,7 +142,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>eht-imaging</li>
+      <li>ehtim (eht-imaging)</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -171,27 +161,27 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="eht-imaging">
-<h1>eht-imaging<a class="headerlink" href="#eht-imaging" title="Permalink to this headline">¶</a></h1>
-<p>Python modules for simulating and manipulating VLBI data and producing images with Maximum Entropy methods. This version is an early release so please submit a pull request or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;cfa&#46;harvard&#46;edu">achael<span>&#64;</span>cfa<span>&#46;</span>harvard<span>&#46;</span>edu</a> if you have trouble or
-need help for your application.</p>
+  <div class="section" id="ehtim-eht-imaging">
+<h1>ehtim (eht-imaging)<a class="headerlink" href="#ehtim-eht-imaging" title="Permalink to this headline">¶</a></h1>
+<p>Python modules for simulating and manipulating VLBI data and producing images with Maximum Entropy methods. This version is an early release so please submit a pull request or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;cfa&#46;harvard&#46;edu">achael<span>&#64;</span>cfa<span>&#46;</span>harvard<span>&#46;</span>edu</a> if you have trouble or need help for your application.</p>
+<p>The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the <code class="docutils literal"><span class="pre">Image</span></code>, <code class="docutils literal"><span class="pre">Array</span></code>, <code class="docutils literal"><span class="pre">Obsdata</span></code>. <code class="docutils literal"><span class="pre">Movie</span></code> and <code class="docutils literal"><span class="pre">Vex</span></code> provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. <code class="docutils literal"><span class="pre">imager</span></code> is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.</p>
+<p>Note that this is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.</p>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>To install the ehtim library run
-pyton setup.py &#8211;install</p>
+<p>Download the latest version from the <a class="reference external" href="https://github.com/achael/eht-imaging">GitHub repository</a>
+, change to the main directory and run:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>python setup.py install
+</pre></div>
+</div>
+<p>You will need working installations of <a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>, <a class="reference external" href="http://www.scipy.org/">scipy</a>, and <a class="reference external" href="http://www.astropy.org/">astropy</a>.</p>
 </div>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
-<dl class="docutils">
-<dt>Documentation is in progress, but here are some ways to learn to use the code:</dt>
-<dd><ol class="first last arabic simple">
-<li>the file example.py has a series of sample commands to load an image and array, generate data, and produce an image.</li>
-<li>Slides from the EHT2016 data generation and imaging workshop <a class="reference external" href="https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0">https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0</a> contain a tutorial on generating data with the vlbiimaging website (<a class="reference external" href="http://vlbiimaging.csail.mit.edu">http://vlbiimaging.csail.mit.edu</a>), loading into the library, and producing an image. Note that this presentation used</li>
-</ol>
-</dd>
-</dl>
-<p>a previous version of the code &#8211; function names and prefixes need to be updated</p>
-<p>Below is a non-exhaustive list of the imaging applications included in eht-imaging:https://arxiv.org/abs/1605.06156</p>
+<p>The <a class="reference external" href="https://achael.github.io/eht-imaging">documentation</a> is in progress, but here are some ways to learn to use the code:</p>
+<ul class="simple">
+<li>The file example.py has a series of sample commands to load an image and array, generate data, and produce an image.</li>
+<li><a class="reference external" href="https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0">Slides</a> from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the vlbi imaging <a class="reference external" href="http://vlbiimaging.csail.mit.edu">website</a>, loading into the library, and producing an image. Note that this presentation used a previous version of the code &#8211; function names and prefixes will need to be updated.</li>
+</ul>
 </div>
 <div class="section" id="polmem">
 <h2>PolMEM<a class="headerlink" href="#polmem" title="Permalink to this headline">¶</a></h2>
@@ -201,15 +191,15 @@ pyton setup.py &#8211;install</p>
 <div class="section" id="chirp">
 <h2>CHIRP<a class="headerlink" href="#chirp" title="Permalink to this headline">¶</a></h2>
 <p>Python code to produce intensity images using patch-prior regularizers. These methods are described in detail in the following paper:</p>
-<p>CVPR Paper: <a class="reference external" href="http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html">http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html</a></p>
-<p>Detailed derivations and additional results can be found in the accompanying supplemental material:</p>
-<p>Supplemental Material: <a class="reference external" href="http://vlbiimaging.csail.mit.edu/static/papers/CHIRPsupp.pdf">http://vlbiimaging.csail.mit.edu/static/papers/CHIRPsupp.pdf</a></p>
+<p><a class="reference external" href="http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html">CVPR Paper</a></p>
+<p>Detailed derivations and additional results can be found in the accompanying <a class="reference external" href="http://vlbiimaging.csail.mit.edu/static/papers/CHIRPsupp.pdf">supplemental material</a></p>
 <p>Please email <a class="reference external" href="mailto:klbouman&#37;&#52;&#48;mit&#46;edu">klbouman<span>&#64;</span>mit<span>&#46;</span>edu</a> if you have trouble or need help for your application.</p>
 </div>
 <div class="section" id="acknowledgements">
 <h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
-<p>The oifits_new.py code used for writing/reading oifits files is a slightly modified version of Paul Boley&#8217;s package at <a class="reference external" href="http://astro.ins.urfu.ru/pages/~pboley/oifits/">http://astro.ins.urfu.ru/pages/~pboley/oifits/</a> The oifits read/write functionality is still being tested and may not work with all versions of python or astropy.io.fits.</p>
-<p>The jdcal.py module is from Prasanth Nair <a class="reference external" href="http://github.com/phn/jdcal">http://github.com/phn/jdcal</a>.</p>
+<p>The oifits_new code used for reading/writing .oifits files is a slightly modified version of Paul Boley&#8217;s package at <a class="reference external" href="http://astro.ins.urfu.ru/pages/~pboley/oifits">http://astro.ins.urfu.ru/pages/~pboley/oifits</a>. The oifits read/write functionality is still being tested and may not work with all versions of python or astropy.io.fits.</p>
+<p>The jdcal.py module is from Prasanth Nair at <a class="reference external" href="http://github.com/phn/jdcal">http://github.com/phn/jdcal</a>.</p>
+<p>The documentation is styled after <a class="reference external" href="https://github.com/dfm">dfm&#8217;s projects</a> and the documentation for <a class="reference external" href="https://github.com/krosenfeld/scatterbrane">scatterbrane</a></p>
 </div>
 </div>
 
@@ -220,15 +210,6 @@ pyton setup.py &#8211;install</p>
            </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="image.html" class="btn btn-neutral float-right" title="Image" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="index.html" class="btn btn-neutral" title="ehtim (eht-imaging)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>

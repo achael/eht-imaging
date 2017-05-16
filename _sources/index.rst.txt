@@ -33,7 +33,6 @@ Documentation
    :maxdepth: 3
    :caption: Contents:
    
-   includeme
    image
    array
    obsdata
