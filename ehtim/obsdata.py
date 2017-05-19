@@ -280,7 +280,7 @@ class Obsdata(object):
                 ty = 'c16'
             
             else: raise Exception("%s is not valid field \n" % field + 
-                                  "valid field values are " + string.join(FIELDS)) 
+                                  "valid field values are " + ' '.join(FIELDS)) 
 
             # Elevation and Parallactic Angles
             if field in ["el1","el2","hr_ang1","hr_ang2","par_ang1","par_ang2"]:
@@ -1081,7 +1081,7 @@ class Obsdata(object):
         
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
-            raise Exception("valid fields are " + string.join(FIELDS))
+            raise Exception("valid fields are " + ' '.join(FIELDS))
                               
         # Unpack x and y axis data
         data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit)
@@ -1145,7 +1145,7 @@ class Obsdata(object):
         
         # Determine if fields are valid
         if field not in FIELDS:
-            raise Exception("valid fields are " + string.join(FIELDS))
+            raise Exception("valid fields are " + ' '.join(FIELDS))
         
         plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit)
         if not rangex: 

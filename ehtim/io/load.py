@@ -51,7 +51,7 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
         
         # Read the header
         file = open(filename)
-        src = string.join(file.readline().split()[2:])
+        src = ' '.join(file.readline().split()[2:])
         ra = file.readline().split()
         ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
         dec = file.readline().split()
@@ -122,7 +122,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
     
     # Read the header
     file = open(filename)
-    src = string.join(file.readline().split()[2:])
+    src = ' '.join(file.readline().split()[2:])
     ra = file.readline().split()
     ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
     dec = file.readline().split()
@@ -348,7 +348,7 @@ def load_obs_txt(filename):
     
     # Read the header parameters
     file = open(filename)
-    src = string.join(file.readline().split()[2:])
+    src = ' '.join(file.readline().split()[2:])
     ra = file.readline().split()
     ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
     dec = file.readline().split()

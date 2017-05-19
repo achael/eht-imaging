@@ -172,10 +172,10 @@ def imager(Obsdata, InitIm, Prior, flux,
         raise Exception("Must have at least one regularizer term!")
     
     if (not ((d1 in DATATERMS) or d1==False)) or (not ((d2 in DATATERMS) or d2==False)):
-        raise Exception("Invalid data term: valid data terms are: " + string.join(DATATERMS))
+        raise Exception("Invalid data term: valid data terms are: " + ' '.join(DATATERMS))
     
     if (not ((s1 in REGULARIZERS) or s1==False)) or (not ((s2 in REGULARIZERS) or s2==False)):
-        raise Exception("Invalid regularizer: valid regularizers are: " + string.join(REGULARIZERS))
+        raise Exception("Invalid regularizer: valid regularizers are: " + ' '.join(REGULARIZERS))
     
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
         raise Exception("Initial image does not match dimensions of the prior image!")
