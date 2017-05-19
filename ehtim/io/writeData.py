@@ -1,7 +1,6 @@
 from __future__ import division
 from __future__ import print_function
 from builtins import range
-from past.utils import old_div
 
 import numpy as np
 import numpy as np
@@ -26,10 +25,10 @@ def writeOIFITS(filename, RA, DEC, frequency, bandWidth, intTime,
 	data.target = np.append(data.target, ehtim.io.oifits.OI_TARGET(name, RA, DEC, veltyp='LSR') )
     
 	#calulate wavelength and bandpass
-	wavelength = old_div(speedoflight,frequency);
-	bandlow = old_div(speedoflight,(frequency+(0.5*bandWidth) ));
-	bandhigh = old_div(speedoflight,(frequency-(0.5*bandWidth) ));
-	bandpass = bandhigh-bandlow;
+	wavelength = speedoflight/frequency
+	bandlow    = speedoflight/(frequency+(0.5*bandWidth))
+	bandhigh   = speedoflight/(frequency-(0.5*bandWidth))
+	bandpass   = bandhigh-bandlow
     
     # put in the wavelength information - only using a single frequency
 	data.wavelength['WAVELENGTH_NAME'] = ehtim.io.oifits.OI_WAVELENGTH(wavelength, eff_band=bandpass)
