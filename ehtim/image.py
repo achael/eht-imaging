@@ -3,7 +3,6 @@ from __future__ import print_function
 from builtins import str
 from builtins import range
 from builtins import object
-from past.utils import old_div
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -314,7 +313,7 @@ class Image(object):
             subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
 
             obs = self.observe(subarray, vex.sched[i_scan]['scan'][0]['scan_sec'], 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'], 
-                                       vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + old_div(vex.sched[i_scan]['scan'][0]['scan_sec'],3600.0), 
+                                       vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0, 
                                        vex.bw_hz, mjd=vex.sched[i_scan]['mjd_floor'],
                                        elevmin=.01, elevmax=89.99)    
             obs_List.append(obs)
@@ -333,21 +332,21 @@ class Image(object):
         
         ydim_new = xdim_new
         fov = im.xdim * im.psize
-        psize_new = old_div(fov, xdim_new)
-        ij = np.array([[[i*im.psize + old_div((im.psize*im.xdim),2.0) - old_div(im.psize,2.0), j*im.psize + old_div((im.psize*im.ydim),2.0) - old_div(im.psize,2.0)]
+        psize_new = fov/xdim_new
+        ij = np.array([[[i*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0, j*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0]
                         for i in np.arange(0, -im.xdim, -1)] 
                         for j in np.arange(0, -im.ydim, -1)]).reshape((im.xdim*im.ydim, 2))
         def im_new(x,y):
             mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
             return np.sum([im.imvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
         
-        out = np.array([[im_new(x*psize_new + old_div((psize_new*xdim_new),2.0) - old_div(psize_new,2.0), y*psize_new + old_div((psize_new*ydim_new),2.0) - old_div(psize_new,2.0))
+        out = np.array([[im_new(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
                           for x in np.arange(0, -xdim_new, -1)] 
                           for y in np.arange(0, -ydim_new, -1)] )                     
 
                           
         # Normalize
-        scaling = old_div(np.sum(im.imvec), np.sum(out))
+        scaling = np.sum(im.imvec)/np.sum(out)
         out *= scaling
         outim = Image(out, psize_new, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
         
@@ -362,10 +361,10 @@ class Image(object):
                         ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
                 return np.sum([im.uvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
             
-            outq = np.array([[im_new_q(x*psize_new + old_div((psize_new*xdim_new),2.0) - old_div(psize_new,2.0), y*psize_new + old_div((psize_new*ydim_new),2.0) - old_div(psize_new,2.0))
+            outq = np.array([[im_new_q(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
                           for x in np.arange(0, -xdim_new, -1)] 
                           for y in np.arange(0, -ydim_new, -1)] ) 
-            outu = np.array([[im_new_u(x*psize_new + old_div((psize_new*xdim_new),2.0) - old_div(psize_new,2.0), y*psize_new + old_div((psize_new*ydim_new),2.0) - old_div(psize_new,2.0))
+            outu = np.array([[im_new_u(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
                           for x in np.arange(0, -xdim_new, -1)] 
                           for y in np.arange(0, -ydim_new, -1)] )
             outq *= scaling
@@ -378,7 +377,7 @@ class Image(object):
                         ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
                 return np.sum([im.vvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
             
-            outv = np.array([[im_new_v(x*psize_new + old_div((psize_new*xdim_new),2.0) - old_div(psize_new,2.0), y*psize_new + old_div((psize_new*ydim_new),2.0) - old_div(psize_new,2.0))
+            outv = np.array([[im_new_v(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
                           for x in np.arange(0, -xdim_new, -1)] 
                           for y in np.arange(0, -ydim_new, -1)] ) 
             outv *= scaling
@@ -418,7 +417,7 @@ class Image(object):
         """ 
         
         im = self
-        imout = (im.imvec + (old_div(flux,float(len(im.imvec)))) * np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
+        imout = (im.imvec + (flux/float(len(im.imvec))) * np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
         out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse) 
         return out
 
@@ -430,8 +429,8 @@ class Image(object):
         xfov = im.xdim * im.psize
         yfov = im.ydim * im.psize
         
-        xlist = np.arange(0,-im.xdim,-1)*im.psize + old_div((im.psize*im.xdim),2.0) - old_div(im.psize,2.0)
-        ylist = np.arange(0,-im.ydim,-1)*im.psize + old_div((im.psize*im.ydim),2.0) - old_div(im.psize,2.0)
+        xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+        ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
 
         hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else EP
                           for i in xlist] 
@@ -460,17 +459,17 @@ class Image(object):
         except IndexError:
         	x=y=0.0
         	 
-        sigma_maj = old_div(beamparams[0], (2. * np.sqrt(2. * np.log(2.)))) 
-        sigma_min = old_div(beamparams[1], (2. * np.sqrt(2. * np.log(2.))))
+        sigma_maj = beamparams[0]/(2. * np.sqrt(2. * np.log(2.)))
+        sigma_min = beamparams[1]/(2. * np.sqrt(2. * np.log(2.)))
         cth = np.cos(beamparams[2])
         sth = np.sin(beamparams[2])
         
         xfov = im.xdim * im.psize
         yfov = im.ydim * im.psize    
-        xlist = np.arange(0,-im.xdim,-1)*im.psize + old_div((im.psize*im.xdim),2.0) - old_div(im.psize,2.0)
-        ylist = np.arange(0,-im.ydim,-1)*im.psize + old_div((im.psize*im.ydim),2.0) - old_div(im.psize,2.0)
+        xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+        ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
         
-        gauss = np.array([[np.exp(old_div(-((j-y)*cth + (i-x)*sth)**2,(2*sigma_maj**2)) - old_div(((i-x)*cth - (j-y)*sth)**2,(2.*sigma_min**2)))
+        gauss = np.array([[np.exp(-((j-y)*cth + (i-x)*sth)**2/(2*sigma_maj**2) - ((i-x)*cth - (j-y)*sth)**2/(2.*sigma_min**2))
                           for i in xlist] 
                           for j in ylist]) 
       
@@ -498,8 +497,8 @@ class Image(object):
         im = self
         xfov = im.xdim * im.psize
         yfov = im.ydim * im.psize    
-        xlist = np.arange(0,-im.xdim,-1)*im.psize + old_div((im.psize*im.xdim),2.0) - old_div(im.psize,2.0)
-        ylist = np.arange(0,-im.ydim,-1)*im.psize + old_div((im.psize*im.ydim),2.0) - old_div(im.psize,2.0)
+        xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+        ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
         
         def mask(x2, y2):
             if (x2-a)**2 + (y2-b)**2 > Rn**2 and x2**2 + y2**2 < Rp**2:
@@ -544,8 +543,8 @@ class Image(object):
             vim = (image.vvec).reshape(image.ydim, image.xdim)
         xfov = image.xdim * image.psize
         yfov = image.ydim * image.psize
-        xlist = np.arange(0,-image.xdim,-1)*image.psize + old_div((image.psize*image.xdim),2.0) - old_div(image.psize,2.0)
-        ylist = np.arange(0,-image.ydim,-1)*image.psize + old_div((image.psize*image.ydim),2.0) - old_div(image.psize,2.0)        
+        xlist = np.arange(0,-image.xdim,-1)*image.psize + (image.psize*image.xdim)/2.0 - image.psize/2.0
+        ylist = np.arange(0,-image.ydim,-1)*image.psize + (image.psize*image.ydim)/2.0 - image.psize/2.0
 
         if beamparams[0] > 0.0:
             sigma_maj = frac * beamparams[0] / (2. * np.sqrt(2. * np.log(2.))) 
@@ -553,12 +552,12 @@ class Image(object):
             cth = np.cos(beamparams[2])
             sth = np.sin(beamparams[2])
 
-            gauss = np.array([[np.exp(old_div(-(j*cth + i*sth)**2,(2*sigma_maj**2)) - old_div((i*cth - j*sth)**2,(2.*sigma_min**2)))
+            gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
                                       for i in xlist] 
                                       for j in ylist])
 
             gauss = gauss[0:image.ydim, 0:image.xdim]
-            gauss = old_div(gauss, np.sum(gauss)) # normalize to 1
+            gauss = gauss/np.sum(gauss) # normalize to 1
 
             # Convolve
             im = scipy.signal.fftconvolve(gauss, im, mode='same')
@@ -571,13 +570,13 @@ class Image(object):
             sigma_min = frac_pol * beamparams[1] / (2. * np.sqrt(2. * np.log(2.))) 
             cth = np.cos(beamparams[2])
             sth = np.sin(beamparams[2])
-            gauss = np.array([[np.exp(old_div(-(j*cth + i*sth)**2,(2*sigma_maj**2)) - old_div((i*cth - j*sth)**2,(2.*sigma_min**2)))
+            gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*sigma_maj**2) - (i*cth - j*sth)**2/(2.*sigma_min**2))
                                       for i in xlist] 
                                       for j in ylist])
             
 
             gauss = gauss[0:image.ydim, 0:image.xdim]
-            gauss = old_div(gauss, np.sum(gauss)) # normalize to 1        
+            gauss = gauss/np.sum(gauss) # normalize to 1        
             
             # Convolve
             qim = scipy.signal.fftconvolve(gauss, qim, mode='same')
@@ -599,15 +598,15 @@ class Image(object):
 
         image = self
         # Blur Stokes I
-        sigma = old_div(fwhm_i, (2. * np.sqrt(2. * np.log(2.))))
-        sigmap = old_div(sigma, image.psize)
+        sigma = fwhm_i/(2. * np.sqrt(2. * np.log(2.)))
+        sigmap = sigma/image.psize
         im = filt.gaussian_filter(image.imvec.reshape(image.ydim, image.xdim), (sigmap, sigmap))
         out = Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
        
         # Blur Stokes Q and U
         if len(image.qvec) and fwhm_pol:
-            sigma = old_div(fwhm_pol, (2. * np.sqrt(2. * np.log(2.))))
-            sigmap = old_div(sigma, image.psize)
+            sigma = fwhm_pol/(2. * np.sqrt(2. * np.log(2.)))
+            sigmap = sigma/image.psize
             imq = filt.gaussian_filter(image.qvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
             imu = filt.gaussian_filter(image.uvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
             out.add_qu(imq, imu)
@@ -661,18 +660,18 @@ class Image(object):
             unit = '(Jy/pixel)^gamma'    
                    
         if len(self.qvec) and plotp:
-            thin = old_div(self.xdim,nvec) 
+            thin = self.xdim/nvec
             mask = (self.imvec).reshape(self.ydim, self.xdim) > pcut * np.max(self.imvec)
             mask2 = mask[::thin, ::thin]
             x = (np.array([[i for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
             y = (np.array([[j for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
-            a = (-np.sin(old_div(np.angle(self.qvec+1j*self.uvec),2)).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
-            b = (np.cos(old_div(np.angle(self.qvec+1j*self.uvec),2)).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
+            a = (-np.sin(np.angle(self.qvec+1j*self.uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
+            b = ( np.cos(np.angle(self.qvec+1j*self.uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
 
-            m = (old_div(np.abs(self.qvec + 1j*self.uvec),self.imvec)).reshape(self.ydim, self.xdim)
+            m = (np.abs(self.qvec + 1j*self.uvec)/self.imvec).reshape(self.ydim, self.xdim)
             m[-mask] = 0
             
-            plt.suptitle('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, old_div(self.rf,1e9)), fontsize=20)
+            plt.suptitle('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
             
             # Stokes I plot
             plt.subplot(121)
@@ -680,10 +679,10 @@ class Image(object):
             plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=old_div(1.0,thin))
+                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=old_div(1.1,thin))
+                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
 
             xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
             yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
@@ -699,10 +698,10 @@ class Image(object):
             plt.colorbar(im, fraction=0.046, pad=0.04, label='|m|')
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=old_div(1.0,thin))
+                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=old_div(1.1,thin))
+                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
             plt.xticks(xticks[0], xticks[1])
             plt.yticks(yticks[0], yticks[1])
             plt.xlabel('Relative RA ($\mu$as)')
@@ -711,7 +710,7 @@ class Image(object):
         
         else:
             plt.subplot(111)    
-            plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, old_div(self.rf,1e9)), fontsize=20)
+            plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
             im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
             plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
             xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
@@ -752,7 +751,7 @@ def make_square(obs, npix, fov, pulse=PULSE_DEFAULT):
            Image: an image object
     """
 
-    pdim = old_div(fov,float(npix))
+    pdim = fov/float(npix)
     npix = int(npix)
     im = np.zeros((npix,npix))
     return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd, pulse=pulse)
