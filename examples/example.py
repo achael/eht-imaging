@@ -3,13 +3,13 @@
 
 # Note: must import ehtim outside the ehtim directory
 # either in parent eht-imaging directory or after installing with setuptools
+
 import numpy as np
-import ehtim
-from ehtim.imaging.imager import imager
+import ehtim as eh
 
 # Load the image and the array
-im = ehtim.image.load_txt('models/avery_sgra_eofn.txt')
-eht = ehtim.array.load_txt('arrays/EHT2017.txt')
+im = eh.image.load_txt('models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('arrays/EHT2017.txt')
 
 # Look at the image
 im.display()
@@ -29,7 +29,7 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
                  sgrscat=False, ampcal=True, phasecal=False)
 
 # You can deblur the visibilities by dividing by the scattering kernel if necessary
-#obs = vb.deblur(obs)
+obs = obs.deblur(obs)
 
 # These are some simple plots you can check
 obs.plotall('u','v', conj=True) # uv coverage
@@ -62,33 +62,33 @@ obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 npix = 100
 fov = 1*im.fovx()
 zbl = im.total_flux() # total flux
-prior_fwhm = 200*ehtim.RADPERUAS # Gaussian size in microarcssec
-emptyprior = ehtim.image.make_square(obs, npix, fov)
+prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
+emptyprior = eh.image.make_square(obs, npix, fov)
 flatprior = emptyprior.add_flat(zbl)
 gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with amplitudes and closure phases
 flux = zbl
-out =  imager(obs, gaussprior, gaussprior, flux, 
-              d1='bs', s1='simple', 
-              alpha_s1=1, alpha_d1=100, 
-              alpha_flux=100, alpha_cm=50,
-              maxit=100)
+out =  eh.imager.imager(obs, gaussprior, gaussprior, flux, 
+                        d1='bs', s1='simple', 
+                        alpha_s1=1, alpha_d1=100, 
+                        alpha_flux=100, alpha_cm=50,
+                        maxit=100)
  
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
-out =  imager(obs, out, out, flux, 
-              d1='bs', s1='tv', 
-              alpha_s1=1, alpha_d1=50, 
-              alpha_flux=100, alpha_cm=50,
-              maxit=100)
+out =  eh.imager.imager(obs, out, out, flux, 
+                        d1='bs', s1='tv', 
+                        alpha_s1=1, alpha_d1=50, 
+                        alpha_flux=100, alpha_cm=50,
+                        maxit=100)
 
 out = out.blur_circ(res/2.)
-out =  imager(obs, out, out, flux, 
-              d1='bs', s1='tv', 
-              alpha_s1=1, alpha_d1=10, 
-              alpha_flux=100, alpha_cm=50,
-              maxit=100)
+out =  eh.imager.imager(obs, out, out, flux, 
+                        d1='bs', s1='tv', 
+                        alpha_s1=1, alpha_d1=10, 
+                        alpha_flux=100, alpha_cm=50,
+                        maxit=100)
 
 
 
@@ -96,16 +96,16 @@ out =  imager(obs, out, out, flux,
 obs_sc = sc.self_cal(obs, out)
 
 out_sc = out.blur_circ(res)
-out_sc =  imager(obs_sc, out_sc, out_sc, flux, 
-              d1='vis', s1='simple', 
-              alpha_s1=1, alpha_d1=100, 
-              alpha_flux=100, alpha_cm=50,
-              maxit=50)
+out_sc = eh.imager.imager(obs_sc, out_sc, out_sc, flux, 
+                          d1='vis', s1='simple', 
+                          alpha_s1=1, alpha_d1=100, 
+                          alpha_flux=100, alpha_cm=50,
+                          maxit=50)
 
 
 # Compare the visibility amplitudes to the data
 out = out_sc
-vbp.plotall_obs_im_compare(obs, out,'uvdist','amp', clist=['b','m'],conj=True)
+eh.comp_plots.plotall_obs_im_compare(obs, out,'uvdist','amp', clist=['b','m'],conj=True)
 
 # Blur the final image with 1/2 the clean beam
 outblur = out.blur_gauss(beamparams, 0.5)
