@@ -12,7 +12,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 from builtins import range
-from past.utils import old_div
 
 import string
 import time
@@ -62,9 +61,9 @@ def sampler(uv, griddata, psize, order=3):
         raise Exception("griddata should be a square array!")
 
     npix = griddata.shape[0]
-    vu2= np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-    du = old_div(1.,(npix*psize))
-    vu2 = (old_div(vu2, du) + 0.5*npix).T
+    vu2  = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    du   = 1.0/(npix*psize)
+    vu2  = (vu2/du + 0.5*npix).T
 
     datare = nd.map_coordinates(np.real(vis_im), vu2, order=order)
     dataim = nd.map_coordinates(np.imag(vis_im), vu2, order=order)
@@ -85,9 +84,9 @@ def gridder(uv, data, npix, psize, conv_func="pillbox", p_rad=1.):
     if not (conv_func in ['pillbox','gaussian']):
         raise Exception("conv_func must be either 'pillbox' or 'gaussian'")
 
-    vu2= np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-    du = old_div(1.,(npix*psize))
-    vu2 = (old_div(vu2, du) + 0.5*npix)
+    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    du  = 1.0/(npix*psize)
+    vu2 = (vu2/du + 0.5*npix)
 
     datagrid = np.zeros((npad, npad)).astype('c16')
     for k in range(len(data)):
@@ -109,12 +108,12 @@ def gridder(uv, data, npix, psize, conv_func="pillbox", p_rad=1.):
     return datagrid
 
 ##################################################################################################
-# Constants
+# Constants; TODO: no need to keep them?
 ##################################################################################################
 C = 299792458.0 
-DEGREE = old_div(np.pi,180.)
-RADPERAS = old_div(DEGREE,3600.)
-RADPERUAS = old_div(RADPERAS,1e6)
+DEGREE = np.pi/180.0
+RADPERAS = DEGREE/3600.0
+RADPERUAS = RADPERAS/1e6
 NHIST = 100 # number of steps to store for hessian approx
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp']
@@ -183,8 +182,8 @@ def imager(Obsdata, InitIm, Prior, flux,
 
     # Catch scale and dimension problems
     imsize = np.max([Prior.xdim, Prior.ydim]) * Prior.psize
-    uvmax = old_div(1.,Prior.psize)
-    uvmin = old_div(1.,imsize)
+    uvmax = 1.0/Prior.psize
+    uvmin = 1.0/imsize
     uvdists = Obsdata.unpack('uvdist')['uvdist']
     maxbl = np.max(uvdists)
     minbl = np.max(uvdists[uvdists > 0])
@@ -209,8 +208,8 @@ def imager(Obsdata, InitIm, Prior, flux,
     (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2)
 
     # Coordinate matrix for center-of-mass constraint
-    coord = Prior.psize * np.array([[[x,y] for x in np.arange(old_div(Prior.xdim,2),old_div(-Prior.xdim,2),-1)]
-                                           for y in np.arange(old_div(Prior.ydim,2),old_div(-Prior.ydim,2),-1)])
+    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim//2,-Prior.xdim//2,-1)]
+                                           for y in np.arange(Prior.ydim//2,-Prior.ydim//2,-1)])
     coord = coord.reshape(Prior.ydim*Prior.xdim, 2)        
     coord = coord[embed_mask]
 
@@ -263,7 +262,7 @@ def imager(Obsdata, InitIm, Prior, flux,
     def flux_constraint(imvec):
         #norm = flux**2
         norm = 1        
-        return old_div((np.sum(imvec) - flux)**2, norm)
+        return (np.sum(imvec) - flux)**2/norm
 
     def flux_constraint_grad(imvec):
         #norm = flux**2
@@ -273,7 +272,7 @@ def imager(Obsdata, InitIm, Prior, flux,
     def cm_constraint(imvec):
         #norm = flux**2 * Prior.psize**2
         norm = 1        
-        return old_div((np.sum(imvec*coord[:,0])**2 + np.sum(imvec*coord[:,1])**2), norm)
+        return (np.sum(imvec*coord[:,0])**2 + np.sum(imvec*coord[:,1])**2)/norm
 
     def cm_constraint_grad(imvec):
         #norm = flux**2 * Prior.psize**2
@@ -426,14 +425,14 @@ def chisq_vis(imvec, Amatrix, vis, sigma):
     """Visibility chi-squared"""
  
     samples = np.dot(Amatrix, imvec)
-    return old_div(np.sum(np.abs(old_div((samples-vis),sigma))**2), (2*len(vis)))
+    return np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
     
 def chisqgrad_vis(imvec, Amatrix, vis, sigma):
     """The gradient of the visibility chi-squared"""
 
     samples = np.dot(Amatrix, imvec)
-    wdiff = old_div((vis - samples), (sigma**2)) 
-    out = old_div(-np.real(np.dot(Amatrix.conj().T, wdiff)), len(vis))
+    wdiff = (vis - samples)/(sigma**2)
+    out = -np.real(np.dot(Amatrix.conj().T, wdiff))/len(vis)
     return out
 
 #Visibility Amplitudes chi-squared
@@ -441,7 +440,7 @@ def chisq_amp(imvec, A, amp, sigma):
     """Visibility Amplitudes (normalized) chi-squared"""
     
     amp_samples = np.abs(np.dot(A, imvec))
-    return old_div(np.sum(np.abs(old_div((amp - amp_samples),sigma))**2), (len(amp)))
+    return np.sum(np.abs((amp - amp_samples)/sigma)**2)/len(amp)
 
 def chisqgrad_amp(imvec, A, amp, sigma):
     """The gradient of the amplitude chi-squared"""
@@ -450,7 +449,7 @@ def chisqgrad_amp(imvec, A, amp, sigma):
     amp_samples = np.abs(i1)
     
     pp = ((amp - amp_samples) * amp_samples) / (sigma**2) / i1
-    out = (old_div(-2.0,len(amp))) * np.real(np.dot(pp, A))
+    out = (-2.0/len(amp)) * np.real(np.dot(pp, A))
     return out
 
 # Bispectrum chi-squared
@@ -458,17 +457,17 @@ def chisq_bs(imvec, Amatrices, bis, sigma):
     """Bispectrum chi-squared"""
     
     bisamples = np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) * np.dot(Amatrices[2], imvec)
-    return old_div(np.sum(np.abs(old_div((bis - bisamples),sigma))**2), (2.*len(bis)))
+    return np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
     
 def chisqgrad_bs(imvec, Amatrices, bis, sigma):
     """The gradient of the bispectrum chi-squared"""
     
     bisamples = np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) * np.dot(Amatrices[2], imvec)
-    wdiff = old_div(((bis - bisamples).conj()), (sigma**2))
+    wdiff = ((bis - bisamples).conj())/(sigma**2)
     pt1 = wdiff * np.dot(Amatrices[1],imvec) * np.dot(Amatrices[2],imvec)
     pt2 = wdiff * np.dot(Amatrices[0],imvec) * np.dot(Amatrices[2],imvec)
     pt3 = wdiff * np.dot(Amatrices[0],imvec) * np.dot(Amatrices[1],imvec)
-    out = old_div(-np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2])), len(bis))
+    out = -np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))/len(bis)
     return out
 
 #Closure phases chi-squared
@@ -477,7 +476,7 @@ def chisq_cphase(imvec, Amatrices, clphase, sigma):
     clphase = clphase * DEGREE
     sigma = sigma * DEGREE
     clphase_samples = np.angle(np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) * np.dot(Amatrices[2], imvec))
-    return (old_div(2.0,len(clphase))) * np.sum(old_div((1.0 - np.cos(clphase-clphase_samples)), (sigma**2)))
+    return (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples))/(sigma**2))
 
 
 def chisqgrad_cphase(imvec, Amatrices, clphase, sigma):
@@ -490,11 +489,11 @@ def chisqgrad_cphase(imvec, Amatrices, clphase, sigma):
     i3 = np.dot(Amatrices[2], imvec)
     clphase_samples = np.angle(i1 * i2 * i3)
     
-    pref = old_div(np.sin(clphase - clphase_samples), (sigma**2))
-    pt1 = old_div(pref, i1)
-    pt2 = old_div(pref, i2)
-    pt3 = old_div(pref, i3)
-    out = -(old_div(2.0,len(clphase))) * np.imag(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))
+    pref = np.sin(clphase - clphase_samples)/(sigma**2)
+    pt1  = pref/i1
+    pt2  = pref/i2
+    pt3  = pref/i3
+    out  = -(2.0/len(clphase)) * np.imag(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))
     return out
  
 #def chisqgrad_cphase_2(imvec, Amatrices, clphase, sigma):
@@ -515,7 +514,7 @@ def chisq_camp(imvec, Amatrices, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared"""
     
     clamp_samples = np.abs(np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) / (np.dot(Amatrices[2], imvec) * np.dot(Amatrices[3], imvec)))
-    return old_div(np.sum(np.abs(old_div((clamp - clamp_samples),sigma))**2), (len(clamp)))
+    return np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
 
 def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
     """The gradient of the closure amplitude chi-squared"""    
@@ -524,14 +523,14 @@ def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
     i2 = np.dot(Amatrices[1], imvec)
     i3 = np.dot(Amatrices[2], imvec)
     i4 = np.dot(Amatrices[3], imvec)
-    clamp_samples = np.abs(old_div((i1 * i2), (i3 * i4)))
+    clamp_samples = np.abs((i1 * i2)/(i3 * i4))
     
-    pp = old_div(((clamp - clamp_samples) * clamp_samples), (sigma**2))
-    pt1 = old_div(pp, i1)
-    pt2 = old_div(pp, i2)
-    pt3 = old_div(-pp, i3)
-    pt4 = old_div(-pp, i4)
-    out = (old_div(-2.0,len(clamp))) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    pp = ((clamp - clamp_samples) * clamp_samples)/(sigma**2)
+    pt1 =  pp/i1
+    pt2 =  pp/i2
+    pt3 = -pp/i3
+    pt4 = -pp/i4
+    out = (-2.0/len(clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
     return out
 
 
@@ -584,35 +583,35 @@ def ssimple(imvec, priorvec, flux):
     """
     norm = flux
     norm = 1
-    return old_div(-np.sum(imvec*np.log(old_div(imvec,priorvec))), norm)
+    return -np.sum(imvec*np.log(imvec/priorvec))/norm
 
 def ssimplegrad(imvec, priorvec, flux):
     """Simple entropy gradient
     """
     norm = flux
     norm =1
-    return old_div((-np.log(old_div(imvec,priorvec)) - 1), norm)
+    return (-np.log(imvec/priorvec) - 1)/norm
     
 def sl1(imvec, priorvec, flux):
     """L1 norm regularizer
     """
     norm = flux
     norm = 1    
-    return old_div(-np.sum(np.abs(imvec - priorvec)),norm)
+    return -np.sum(np.abs(imvec - priorvec))/norm
 
 def sl1grad(imvec, priorvec, flux):
     """L1 norm gradient
     """
     norm = flux
     norm = 1    
-    return old_div(-np.sign(imvec - priorvec),norm)
+    return -np.sign(imvec - priorvec)/norm
     
 def sgs(imvec, priorvec, flux):
     """Gull-skilling entropy
     """
     norm = flux
     norm =1    
-    return old_div(np.sum(imvec - priorvec - imvec*np.log(old_div(imvec,priorvec))),norm)
+    return np.sum(imvec - priorvec - imvec*np.log(imvec/priorvec))/norm
 
 
 def sgsgrad(imvec, priorvec, flux):
@@ -620,7 +619,7 @@ def sgsgrad(imvec, priorvec, flux):
     """  
     norm = flux
     norm = 1
-    return old_div(-np.log(old_div(imvec,priorvec)),norm)
+    return -np.log(imvec/priorvec)/norm
 
 
 def stv(imvec, nx, ny, flux):
@@ -633,7 +632,7 @@ def stv(imvec, nx, ny, flux):
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
     out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2))
-    return old_div(out,norm)
+    return out/norm
 
 def stvgrad(imvec, nx, ny, flux):
     """Total variation gradient
@@ -649,11 +648,11 @@ def stvgrad(imvec, nx, ny, flux):
     im_r1l2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     im_l1r2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
     
-    g1 = old_div((2*im - im_l1 - im_l2), np.sqrt((im_l1 - im)**2 + (im_l2 - im)**2))
-    g2 = old_div((im - im_r1), np.sqrt((im_r1 - im)**2 + (im_r1l2 - im_r1)**2))
-    g3 = old_div((im - im_r2), np.sqrt((im_r2 - im)**2 + (im_l1r2 - im_r2)**2))
+    g1 = (2*im - im_l1 - im_l2)/np.sqrt((im_l1 - im)**2 + (im_l2 - im)**2)
+    g2 = (im - im_r1)/np.sqrt((im_r1 - im)**2 + (im_r1l2 - im_r1)**2)
+    g3 = (im - im_r2)/np.sqrt((im_r2 - im)**2 + (im_l1r2 - im_r2)**2)
     out= -(g1 + g2 + g3).flatten()
-    return old_div(out,norm)
+    return out/norm
     
 def spatch(imvec, priorvec, flux):
     """Patch prior regularizer
@@ -661,7 +660,7 @@ def spatch(imvec, priorvec, flux):
     norm = flux**2
     norm = 1    
     out = -0.5*np.sum( ( imvec - priorvec) ** 2)
-    return old_div(out,norm)
+    return out/norm
 
 def spatchgrad(imvec, priorvec, flux):
     """Patch prior gradient
@@ -669,7 +668,7 @@ def spatchgrad(imvec, priorvec, flux):
     norm = flux**2
     norm = 1    
     out = -(imvec  - priorvec)
-    return old_div(out,norm)
+    return out/norm
    
 ##################################################################################################
 # Misc Functions
@@ -846,15 +845,15 @@ def blur_circ(image, fwhm_i, fwhm_pol=0):
     """ 
     
     # Blur Stokes I
-    sigma = old_div(fwhm_i, (2. * np.sqrt(2. * np.log(2.))))
-    sigmap = old_div(sigma, image.psize)
+    sigma = fwhm_i/(2. * np.sqrt(2. * np.log(2.)))
+    sigmap = sigma/image.psize
     im = filt.gaussian_filter(image.imvec.reshape(image.ydim, image.xdim), (sigmap, sigmap))
     out = image.Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
    
     # Blur Stokes Q and U
     if len(image.qvec) and fwhm_pol:
-        sigma = old_div(fwhm_pol, (2. * np.sqrt(2. * np.log(2.))))
-        sigmap = old_div(sigma, image.psize)
+        sigma = fwhm_pol/(2. * np.sqrt(2. * np.log(2.)))
+        sigmap = sigma/image.psize
         imq = filt.gaussian_filter(image.qvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
         imu = filt.gaussian_filter(image.uvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
         out.add_qu(imq, imu)
