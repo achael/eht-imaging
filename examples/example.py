@@ -5,7 +5,6 @@
 # either in parent eht-imaging directory or after installing with setuptools
 from __future__ import division
 from __future__ import print_function
-from past.utils import old_div
 
 import numpy as np
 import ehtim
@@ -87,7 +86,7 @@ out =  imager(obs, out, out, flux,
               alpha_flux=100, alpha_cm=50,
               maxit=100)
 
-out = out.blur_circ(old_div(res,2.))
+out = out.blur_circ(res/2.0)
 out =  imager(obs, out, out, flux, 
               d1='bs', s1='tv', 
               alpha_s1=1, alpha_d1=10, 
