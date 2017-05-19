@@ -1,7 +1,6 @@
 from __future__ import division
-from past.utils import old_div
-import numpy as np
 
+import numpy as np
 import ehtim.image as image
 
 from ehtim.const_def import *
@@ -49,7 +48,7 @@ def linearizedSol_bs(Obsdata, currImage, Prior, alpha=100, beta=100, reg="patch"
 def computeLinTerms_bi(x0, A3, bispec, sigs, nPixels, alpha=100, reg="patch"):
 
 
-    sigmaR = sigmaI = old_div(1,(sigs**2))
+    sigmaR = sigmaI = 1.0/(sigs**2)
 	
     rA = np.real(A3); 
     iA = np.imag(A3); 
