@@ -12,7 +12,6 @@
 from __future__ import division
 from builtins import map
 from builtins import range
-from past.utils import old_div
 
 from matplotlib import pyplot as plt
 import ehtim.image as image
@@ -39,7 +38,7 @@ def patchPrior(im, beta, patchPriorFile='naturalPrior.mat', patchSize=8 ):
     if not all(counts[0][0] == item for item in np.reshape(counts, (-1)) ):
          raise TypeError("The counts are not the same for every pixel in the image")
 
-    I1 = old_div(I1,counts[0][0])
+    I1 = I1/counts[0][0]
     out = image.Image(I1, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
     
     return (out, counts[0][0])
@@ -52,9 +51,9 @@ def cleanImage(image, beta, nmodels, covs, mixweights, means, patchSize=8):
 
     # adjust the dynamic range of image to be in the range 0 to 1
     minCleanI = min( np.reshape(cleanIPad, (-1)) )
-    cleanIPad =  cleanIPad - minCleanI
+    cleanIPad = cleanIPad - minCleanI
     maxCleanI = max( np.reshape(cleanIPad, (-1)) )
-    cleanIPad = old_div(cleanIPad,maxCleanI);
+    cleanIPad = cleanIPad / maxCleanI;
 
     # extract all overlapping patches from the image
     Z = im2col(np.transpose(cleanIPad), patchSize)
@@ -74,7 +73,7 @@ def cleanImage(image, beta, nmodels, covs, mixweights, means, patchSize=8):
     counts =  np.transpose( np.bincount( np.array(list(map(int, np.reshape(temp, (-1)) ))), weights=np.reshape(np.ones(cleanZ.shape), (-1))) )
 
     # normalize and put back in the original scale
-    I1 = old_div(I1,counts);
+    I1 = I1/counts;
     I1 = (I1*maxCleanI) + minCleanI;
     I1 = I1*counts;
 
@@ -144,7 +143,7 @@ def loggausspdf2(X, sigma):
 
     q = np.sum( ( np.dot( np.linalg.inv(np.transpose(R)) , X ) )**2 , 0);  # quadratic term (M distance)
     c = d*np.log(2*np.pi)+2*np.sum(np.log( np.diagonal(R) ), 0);   # normalization constant
-    y = old_div(-(c+q),2);
+    y = -(c+q)/2.0;
 
     return y
 
