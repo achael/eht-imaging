@@ -834,7 +834,7 @@
 <span class="c1"># Misc Functions</span>
 <span class="c1">##################################################################################################</span>
 <span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;embeds a 1d image array into the size of boolean embed mask</span>
+    <span class="sd">&quot;&quot;&quot;Embeds a 1d image array into the size of boolean embed mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
     <span class="n">out</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">))</span>
@@ -850,7 +850,7 @@
     <span class="k">return</span> <span class="n">out</span>
 
 <span class="k">def</span> <span class="nf">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the data, sigma, and matrices for the appropriate dtype</span>
+    <span class="sd">&quot;&quot;&quot;Return the data, sigma, and matrices for the appropriate dtype</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>
@@ -874,7 +874,7 @@
     <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">chisqdata_vis</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the visibilities, sigmas, and fourier matrix for and observation, prior, mask</span>
+    <span class="sd">&quot;&quot;&quot;Return the visibilities, sigmas, and fourier matrix for and observation, prior, mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">data_arr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
@@ -886,7 +886,7 @@
     <span class="k">return</span> <span class="p">(</span><span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask</span>
+    <span class="sd">&quot;&quot;&quot;Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ampdata</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
@@ -919,7 +919,7 @@
     <span class="k">return</span> <span class="p">(</span><span class="n">bi</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A3</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">chisqdata_cphase</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;return the closure phases, sigmas, and fourier matrices for and observation, prior, mask</span>
+    <span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, and fourier matrices for and observation, prior, mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">clphasearr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>

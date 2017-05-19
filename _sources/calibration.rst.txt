@@ -5,7 +5,7 @@
 Self Calibration
 ================
 
-.. automodule:: ehtim.calib.self_cal
+.. automodule:: ehtim.calibrating.self_cal
     :members:
 
 
