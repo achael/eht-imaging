@@ -66,7 +66,6 @@ from __future__ import division
 from __future__ import print_function
 from builtins import str
 from builtins import object
-from past.utils import old_div
 
 import numpy as np
 from numpy import double, bool, ma
@@ -128,7 +127,7 @@ class _angpoint(float):
             negative = False
         degrees = np.floor(angle)
         minutes = np.floor((angle - degrees)*60.0)
-        seconds = (angle - degrees - old_div(minutes,60.0))*3600.0
+        seconds = (angle - degrees - minutes/60.0)*3600.0
         try:
             if negative:
                 return "-%02d:%02d:%05.2f"%(degrees,minutes,seconds)
@@ -144,7 +143,7 @@ class _angpoint(float):
 
         hours = np.floor(angle)
         minutes = np.floor((angle - hours)*60.0)
-        seconds = (angle - hours - old_div(minutes,60.0))*3600.0
+        seconds = (angle - hours - minutes/60.0)*3600.0
         try:
             return "%02d:%02d:%05.2f"%(hours,minutes,seconds)
         except TypeError:
@@ -305,7 +304,7 @@ class OI_VIS(object):
             baselinename = ' (' + self.station[0].sta_name + self.station[1].sta_name + ')'
         else:
             baselinename = ''
-        return '%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V> = %4.2g'%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.visamp), _plurals(len(self.visamp)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(old_div(self.ucoord, self.vcoord)) * 180.0 / np.pi % 180.0, meanvis)
+        return '%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V> = %4.2g'%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.visamp), _plurals(len(self.visamp)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord/self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
 
     def info(self):
         print(str(self))
@@ -371,7 +370,7 @@ class OI_VIS2(object):
             baselinename = ' (' + self.station[0].sta_name + self.station[1].sta_name + ')'
         else:
             baselinename = ''
-        return "%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V^2> = %4.2g"%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.vis2data), _plurals(len(self.vis2data)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(old_div(self.ucoord, self.vcoord)) * 180.0 / np.pi % 180.0, meanvis)
+        return "%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V^2> = %4.2g"%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.vis2data), _plurals(len(self.vis2data)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord/self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
 
     def info(self):
         print(str(self))
@@ -514,11 +513,11 @@ class OI_ARRAY(object):
     def __getattr__(self, attrname):
         if attrname == 'latitude':
             radius = np.sqrt((self.arrxyz**2).sum())
-            return _angpoint(np.arcsin(old_div(self.arrxyz[2],radius))*180.0/np.pi)
+            return _angpoint(np.arcsin(self.arrxyz[2]/radius)*180.0/np.pi)
         elif attrname == 'longitude':
             radius = np.sqrt((self.arrxyz**2).sum())
             xylen = np.sqrt(self.arrxyz[0]**2+self.arrxyz[1]**2)
-            return _angpoint(np.arcsin(old_div(self.arrxyz[1],xylen))*180.0/np.pi)
+            return _angpoint(np.arcsin(self.arrxyz[1]/xylen)*180.0/np.pi)
         elif attrname == 'altitude':
             radius = np.sqrt((self.arrxyz**2).sum())
             return radius - 6378100.0  
