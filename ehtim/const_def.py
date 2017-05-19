@@ -1,5 +1,6 @@
 from __future__ import division
 from past.utils import old_div
+
 from ehtim.observing.pulses import *
 
 EP = 1.0e-15

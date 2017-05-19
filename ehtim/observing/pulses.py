@@ -1,11 +1,12 @@
-from __future__ import division
 #pulses.py
 #07/10/16
 #All of the real & fourier space representations of the restoring pulses we are using
 #If dom="I", we are in real space, if dom="F" we are in Fourier space
 #pdim is in radian, Coordinates in real space are in radian, coordinates in Fourier space are in ANGULAR. spatial freq. 
 
+from __future__ import division
 from past.utils import old_div
+
 import math
 
 def deltaPulse2D(x, y, pdim, dom='F'):

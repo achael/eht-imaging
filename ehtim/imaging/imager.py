@@ -1,6 +1,3 @@
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
 # imager_dft.py
 # Andrew Chael, 3/11/2017
 # General imager for total intensity VLBI data
@@ -11,8 +8,12 @@ from __future__ import absolute_import
 # debias closure amplitudes
 # closure amplitude and phase covariance
 
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 from builtins import range
 from past.utils import old_div
+
 import string
 import time
 import numpy as np

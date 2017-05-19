@@ -2,6 +2,7 @@ from __future__ import division
 from __future__ import print_function
 from builtins import range
 from past.utils import old_div
+
 import numpy as np
 import string
 import astropy.io.fits as fits

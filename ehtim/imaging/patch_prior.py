@@ -1,4 +1,3 @@
-from __future__ import division
 # patch_prior.py
 #
 # Create a "prior" image for vlbi imaging by cleaning the input image.
@@ -10,10 +9,11 @@ from __future__ import division
 # Code Author: Katie Bouman
 # Date: June 1, 2016
 
-
+from __future__ import division
 from builtins import map
 from builtins import range
 from past.utils import old_div
+
 from matplotlib import pyplot as plt
 import ehtim.image as image
 import scipy.io

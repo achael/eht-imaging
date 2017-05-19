@@ -1,11 +1,12 @@
-from __future__ import division
-from __future__ import print_function
 # Note: this is an example sequence of commands to run in ipython
 # The matplotlib windows may not open/close properly if you run this directly as a script
 
 # Note: must import ehtim outside the ehtim directory
 # either in parent eht-imaging directory or after installing with setuptools
+from __future__ import division
+from __future__ import print_function
 from past.utils import old_div
+
 import numpy as np
 import ehtim
 from ehtim.imaging.imager import imager
