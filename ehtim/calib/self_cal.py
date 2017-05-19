@@ -1,3 +1,6 @@
+from __future__ import division
+from __future__ import print_function
+from past.utils import old_div
 import numpy as np
 import scipy.optimize as opt
 import sys
@@ -45,12 +48,12 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     tkey = {b:a for a,b in enumerate(sites)}
     tidx1 = [tkey[row['t1']] for row in scan]
     tidx2 = [tkey[row['t2']] for row in scan]
-    sigma_inv = 1. / scan['sigma']
+    sigma_inv = old_div(1., scan['sigma'])
 
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
         if method=="phase":
-            g = g/np.abs(g)
+            g = old_div(g,np.abs(g))
         if method=="amp":
             g = np.abs(g)
 
@@ -65,14 +68,14 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     g_fit = res.x.view(np.complex128)
 
     if method=="phase":
-        g_fit = g_fit/np.abs(g_fit)
+        g_fit = old_div(g_fit,np.abs(g_fit))
     if method=="amp":
         g_fit = np.abs(g_fit)
 
     gij_inv = (g_fit[tidx1] * g_fit[tidx2].conj())**(-1)
 
     if show_solution == True:
-        print np.abs(gij_inv)
+        print(np.abs(gij_inv))
     
     scan['vis'] = gij_inv * scan['vis']
     scan['qvis'] = gij_inv * scan['qvis']

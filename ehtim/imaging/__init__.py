@@ -6,7 +6,8 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
+from __future__ import absolute_import
 
-import imager
+from . import imager
 
 from ehtim.const_def import *

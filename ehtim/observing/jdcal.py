@@ -40,6 +40,8 @@ inspired by the IAU SOFA C library.
 """
 from __future__ import division
 from __future__ import print_function
+from builtins import zip
+from builtins import range
 import math
 
 __version__ = "1.0.1"

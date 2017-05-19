@@ -1,6 +1,7 @@
 # Andrew Chael, 10/15/2016
 # Make data plots with multiple observations, etc.
 
+from builtins import range
 import numpy as np
 import matplotlib.pyplot as plt
 

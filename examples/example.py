@@ -1,8 +1,11 @@
+from __future__ import division
+from __future__ import print_function
 # Note: this is an example sequence of commands to run in ipython
 # The matplotlib windows may not open/close properly if you run this directly as a script
 
 # Note: must import ehtim outside the ehtim directory
 # either in parent eht-imaging directory or after installing with setuptools
+from past.utils import old_div
 import numpy as np
 import ehtim
 from ehtim.imaging.imager import imager
@@ -51,8 +54,8 @@ cbeam.display()
 # Resolution
 beamparams = obs.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
 res = obs.res() # nominal array resolution, 1/longest baseline
-print "Clean beam parameters: " , beamparams 
-print "Nominal Resolution: " ,res
+print("Clean beam parameters: " , beamparams) 
+print("Nominal Resolution: " ,res)
 
 # Export the visibility data to uvfits/text
 obs.save_txt('obs.txt') # exports a text file with the visibilities
@@ -83,7 +86,7 @@ out =  imager(obs, out, out, flux,
               alpha_flux=100, alpha_cm=50,
               maxit=100)
 
-out = out.blur_circ(res/2.)
+out = out.blur_circ(old_div(res,2.))
 out =  imager(obs, out, out, flux, 
               d1='bs', s1='tv', 
               alpha_s1=1, alpha_d1=10, 

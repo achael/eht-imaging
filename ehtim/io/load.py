@@ -1,3 +1,8 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import numpy as np
 import string
 import astropy.io.fits as fits
@@ -41,16 +46,16 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
     qlist = []
     ulist = []
 
-    for i in xrange(nframes):
+    for i in range(nframes):
         filename = basename + "%05d" % i
         
         # Read the header
         file = open(filename)
         src = string.join(file.readline().split()[2:])
         ra = file.readline().split()
-        ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
+        ra = float(ra[2]) + old_div(float(ra[4]),60.) + old_div(float(ra[6]),3600.)
         dec = file.readline().split()
-        dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
+        dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + old_div(float(dec[4]),60.) + old_div(float(dec[6]),3600.))
         mjd_frac = float(file.readline().split()[2])
         mjd = np.floor(mjd_frac)
         hour = (mjd_frac - mjd)*24.0
@@ -98,10 +103,10 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
     out_mov = ehtim.movie.Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, start_hr=hour0, pulse=pulse)
     
     if len(qlist):
-        print 'Loaded Stokes I, Q, and U movies'
+        print('Loaded Stokes I, Q, and U movies')
         out_mov.add_qu(qlist, ulist)
     else:
-        print 'Loaded Stokes I movie only'
+        print('Loaded Stokes I movie only')
     
     return out_mov
 
@@ -119,9 +124,9 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
     file = open(filename)
     src = string.join(file.readline().split()[2:])
     ra = file.readline().split()
-    ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
+    ra = float(ra[2]) + old_div(float(ra[4]),60.) + old_div(float(ra[6]),3600.)
     dec = file.readline().split()
-    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
+    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + old_div(float(dec[4]),60.) + old_div(float(dec[6]),3600.))
     mjd = int(float(file.readline().split()[2]))
     rf = float(file.readline().split()[2]) * 1e9
     xdim = file.readline().split()
@@ -151,17 +156,17 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
         uimage = datatable[:,4].reshape(ydim_p, xdim_p)    
     
     if np.any((qimage != 0) + (uimage != 0)) and np.any((vimage != 0)):
-        print 'Loaded Stokes I, Q, U, and V Images'
+        print('Loaded Stokes I, Q, U, and V Images')
         outim.add_qu(qimage, uimage)
         outim.add_v(vimage)
     elif np.any((vimage != 0)):
-        print 'Loaded Stokes I and V Images'
+        print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
     elif np.any((qimage != 0) + (uimage != 0)):   
-        print 'Loaded Stokes I, Q, and U Images'
+        print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)     
     else:
-        print 'Loaded Stokes I Image Only'
+        print('Loaded Stokes I Image Only')
     
     return outim
 
@@ -191,13 +196,13 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     dim_p = header['NAXIS2']
     psize_y = np.abs(header['CDELT2']) * pscl
     
-    if 'MJD' in header.keys(): mjd = header['MJD']
+    if 'MJD' in list(header.keys()): mjd = header['MJD']
     else: mjd = 0.0 
     
-    if 'FREQ' in header.keys(): rf = header['FREQ']
+    if 'FREQ' in list(header.keys()): rf = header['FREQ']
     else: rf = 0.0
     
-    if 'OBJECT' in header.keys(): src = header['OBJECT']
+    if 'OBJECT' in list(header.keys()): src = header['OBJECT']
     else: src = ''
     
     # Get the image and create the object
@@ -207,10 +212,10 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     
     # normalize the flux
     normalizer = 1.0;
-    if 'BUNIT' in header.keys():
+    if 'BUNIT' in list(header.keys()):
         if header['BUNIT'] == 'JY/BEAM':
             beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
-            normalizer = (header['CDELT2'])**2 / beamarea
+            normalizer = old_div((header['CDELT2'])**2, beamarea)
     image *= normalizer
             
     # make image object            
@@ -224,25 +229,25 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
         try: data = data.reshape((data.shape[-2],data.shape[-1]))
         except IndexError: continue
         
-        if 'STOKES' in header.keys() and header['STOKES'] == 'Q':
+        if 'STOKES' in list(header.keys()) and header['STOKES'] == 'Q':
             qimage = normalizer*data[::-1,:] # flip y-axis!
-        if 'STOKES' in header.keys() and header['STOKES'] == 'U':
+        if 'STOKES' in list(header.keys()) and header['STOKES'] == 'U':
             uimage = normalizer*data[::-1,:] # flip y-axis!
-        if 'STOKES' in header.keys() and header['STOKES'] == 'V':
+        if 'STOKES' in list(header.keys()) and header['STOKES'] == 'V':
             vimage = normalizer*data[::-1,:] # flip y-axis!
     
     if qimage.shape == uimage.shape == vimage.shape == image.shape:
-        print 'Loaded Stokes I, Q, U, and V Images'
+        print('Loaded Stokes I, Q, U, and V Images')
         outim.add_qu(qimage, uimage)
         outim.add_v(vimage)
     elif vimage.shape == image.shape:
-        print 'Loaded Stokes I and V Images'
+        print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
     elif qimage.shape == uimage.shape == image.shape:   
-        print 'Loaded Stokes I, Q, and U Images'
+        print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)     
     else:
-        print 'Loaded Stokes I Image Only'
+        print('Loaded Stokes I Image Only')
                             
     return outim
 
@@ -266,21 +271,21 @@ def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAU
     header = hdulist[0].header
     data = hdulist[0].data
 
-    if 'NAXIS1' in header.keys(): xdim_p = header['NAXIS1']
+    if 'NAXIS1' in list(header.keys()): xdim_p = header['NAXIS1']
     else: xdim_p = data.shape[-2]
 
-    if 'CDELT1' in header.keys(): 
+    if 'CDELT1' in list(header.keys()): 
         psize_x = np.abs(header['CDELT1']) * pscl
     else: 
-        psize_x = (float(fov) / data.shape[-2]) * pscl
+        psize_x = (old_div(float(fov), data.shape[-2])) * pscl
         if fov==-1:
-            print 'WARNING: Must provide a field of view for the image'
+            print('WARNING: Must provide a field of view for the image')
 
     normalizer = 1.0; 
-    if 'BUNIT' in header.keys():
+    if 'BUNIT' in list(header.keys()):
         if header['BUNIT'] == 'JY/BEAM':
             beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
-            normalizer = (header['CDELT2'])**2 / beamarea
+            normalizer = old_div((header['CDELT2'])**2, beamarea)
 
     data = data.reshape((data.shape[-2],data.shape[-1]))
 
@@ -288,7 +293,7 @@ def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAU
     image = np.rot90(image, k=timesrot90)
     outim = ehtim.image.Image(image*normalizer, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
     
-    print 'Loaded Stokes I image only'
+    print('Loaded Stokes I image only')
     return outim
         
 ##################################################################################################
@@ -326,7 +331,7 @@ def load_array_txt(filename, ephemdir='./ephemeris'):
             ephempath = path  + ephemdir + '/' + sitename #!AC TODO ephempath shouldn't always start with path
             try: 
                 edata[sitename] = np.loadtxt(ephempath, dtype=str, comments='#', delimiter='/')
-                print 'loaded spacecraft ephemeris %s' % ephempath
+                print('loaded spacecraft ephemeris %s' % ephempath)
             except IOError: 
                 raise Exception ('no ephemeris file %s !' % ephempath)
 
@@ -345,9 +350,9 @@ def load_obs_txt(filename):
     file = open(filename)
     src = string.join(file.readline().split()[2:])
     ra = file.readline().split()
-    ra = float(ra[2]) + float(ra[4])/60. + float(ra[6])/3600.
+    ra = float(ra[2]) + old_div(float(ra[4]),60.) + old_div(float(ra[6]),3600.)
     dec = file.readline().split()
-    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60. + float(dec[6])/3600.)
+    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + old_div(float(dec[4]),60.) + old_div(float(dec[6]),3600.))
     mjd = float(file.readline().split()[2])
     rf = float(file.readline().split()[2]) * 1e9
     bw = float(file.readline().split()[2]) * 1e9
@@ -462,10 +467,10 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
             continue
         elif line[0] == 'FOV_center_RA':
             x = line[2].split(':')
-            ra = float(x[0]) + float(x[1])/60. + float(x[2])/3600.
+            ra = float(x[0]) + old_div(float(x[1]),60.) + old_div(float(x[2]),3600.)
         elif line[0] == 'FOV_center_Dec':
             x = line[2].split(':')
-            dec = np.sign(float(x[0])) * (abs(float(x[0])) + float(x[1])/60. + float(x[2])/3600.)
+            dec = np.sign(float(x[0])) * (abs(float(x[0])) + old_div(float(x[1]),60.) + old_div(float(x[2]),3600.))
         elif line[0] == 'Corr_int_time':
             tint = float(line[2])
         elif line[0] == 'Corr_chan_bw':  #!AC TODO what if multiple channels?
@@ -486,7 +491,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
         line = line.split()
         if not (line[0] in ['UV', 'Scan','\n']):
             time = line[0].split(':')
-            time = float(time[2]) + float(time[3])/60. + float(time[4])/3600.
+            time = float(time[2]) + old_div(float(time[3]),60.) + old_div(float(time[4]),3600.)
             u = float(line[1]) * 1000
             v = float(line[2]) * 1000
             bl = line[4].split('-')
@@ -555,7 +560,7 @@ def load_obs_uvfits(filename, flipbl=False):
         sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
         sefdl = np.real(hdulist['AIPS AN'].data['SEFD']) #!AC TODO add sefdl to uvfits?
     except KeyError:
-        print "Warning! no SEFD data in UVfits file"
+        print("Warning! no SEFD data in UVfits file")
         sefdr = np.zeros(len(tnames))
         sefdl = np.zeros(len(tnames))
     
@@ -608,7 +613,7 @@ def load_obs_uvfits(filename, flipbl=False):
     tints = data['INTTIM'][mask]
     
     # Sites - add names
-    t1 = data['BASELINE'][mask].astype(int)/256
+    t1 = old_div(data['BASELINE'][mask].astype(int),256)
     t2 = data['BASELINE'][mask].astype(int) - t1*256
     t1 = t1 - 1
     t2 = t2 - 1
@@ -643,10 +648,10 @@ def load_obs_uvfits(filename, flipbl=False):
     ll = data['DATA'][:,0,0,0,0,1,0][mask] + 1j*data['DATA'][:,0,0,0,0,1,1][mask]
     rl = data['DATA'][:,0,0,0,0,2,0][mask] + 1j*data['DATA'][:,0,0,0,0,2,1][mask]
     lr = data['DATA'][:,0,0,0,0,3,0][mask] + 1j*data['DATA'][:,0,0,0,0,3,1][mask]
-    rrsig = 1/np.sqrt(rrweight[mask])
-    llsig = 1/np.sqrt(llweight[mask])
-    rlsig = 1/np.sqrt(rlweight[mask])
-    lrsig = 1/np.sqrt(lrweight[mask])
+    rrsig = old_div(1,np.sqrt(rrweight[mask]))
+    llsig = old_div(1,np.sqrt(llweight[mask]))
+    rlsig = old_div(1,np.sqrt(rlweight[mask]))
+    lrsig = old_div(1,np.sqrt(lrweight[mask]))
     
     # Form stokes parameters
     ivis = 0.5 * (rr + ll)
@@ -665,7 +670,7 @@ def load_obs_uvfits(filename, flipbl=False):
     
     # Make a datatable
     datatable = []
-    for i in xrange(len(times)):
+    for i in range(len(times)):
         datatable.append(np.array
                          ((
                            times[i], tints[i], 
@@ -686,7 +691,7 @@ def load_obs_oifits(filename, flux=1.0):
        Does NOT currently support polarization
     """
     
-    print 'Warning: load_obs_oifits does NOT currently support polarimetric data!' 
+    print('Warning: load_obs_oifits does NOT currently support polarimetric data!') 
     
     # open oifits file and get visibilities
     oidata=ehtim.io.oifits.open(filename)
@@ -698,28 +703,28 @@ def load_obs_oifits(filename, flux=1.0):
     dec = oidata.target[0].decep0.angle
     
     # get annena info
-    nAntennas = len(oidata.array[oidata.array.keys()[0]].station)
-    sites = np.array([oidata.array[oidata.array.keys()[0]].station[i].sta_name for i in range(nAntennas)])
-    arrayX = oidata.array[oidata.array.keys()[0]].arrxyz[0]
-    arrayY = oidata.array[oidata.array.keys()[0]].arrxyz[1]
-    arrayZ = oidata.array[oidata.array.keys()[0]].arrxyz[2]
-    x = np.array([arrayX + oidata.array[oidata.array.keys()[0]].station[i].staxyz[0] for i in range(nAntennas)])
-    y = np.array([arrayY + oidata.array[oidata.array.keys()[0]].station[i].staxyz[1] for i in range(nAntennas)])
-    z = np.array([arrayZ + oidata.array[oidata.array.keys()[0]].station[i].staxyz[2] for i in range(nAntennas)])
+    nAntennas = len(oidata.array[list(oidata.array.keys())[0]].station)
+    sites = np.array([oidata.array[list(oidata.array.keys())[0]].station[i].sta_name for i in range(nAntennas)])
+    arrayX = oidata.array[list(oidata.array.keys())[0]].arrxyz[0]
+    arrayY = oidata.array[list(oidata.array.keys())[0]].arrxyz[1]
+    arrayZ = oidata.array[list(oidata.array.keys())[0]].arrxyz[2]
+    x = np.array([arrayX + oidata.array[list(oidata.array.keys())[0]].station[i].staxyz[0] for i in range(nAntennas)])
+    y = np.array([arrayY + oidata.array[list(oidata.array.keys())[0]].station[i].staxyz[1] for i in range(nAntennas)])
+    z = np.array([arrayZ + oidata.array[list(oidata.array.keys())[0]].station[i].staxyz[2] for i in range(nAntennas)])
     
     # get wavelength and corresponding frequencies
-    wavelength = oidata.wavelength[oidata.wavelength.keys()[0]].eff_wave
+    wavelength = oidata.wavelength[list(oidata.wavelength.keys())[0]].eff_wave
     nWavelengths = wavelength.shape[0]
-    bandpass = oidata.wavelength[oidata.wavelength.keys()[0]].eff_band
-    frequency = C/wavelength
+    bandpass = oidata.wavelength[list(oidata.wavelength.keys())[0]].eff_band
+    frequency = old_div(C,wavelength)
     
     # !AC TODO: this result seems wrong...
     bw = np.mean(2*(np.sqrt( bandpass**2*frequency**2 + C**2) - C)/bandpass)
     rf = np.mean(frequency)
     
     # get the u-v point for each visibility
-    u = np.array([vis_data[i].ucoord/wavelength for i in range(len(vis_data))])
-    v = np.array([vis_data[i].vcoord/wavelength for i in range(len(vis_data))])
+    u = np.array([old_div(vis_data[i].ucoord,wavelength) for i in range(len(vis_data))])
+    v = np.array([old_div(vis_data[i].vcoord,wavelength) for i in range(len(vis_data))])
     
     # get visibility info - currently the phase error is not being used properly
     amp = np.array([vis_data[i]._visamp for i in range(len(vis_data))])
@@ -729,7 +734,7 @@ def load_obs_oifits(filename, flux=1.0):
     timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]) #convert to single number
     
     #return timeobs
-    time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple()))/(60.0*60.0) 
+    time = np.transpose(np.tile(np.array([old_div((ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple())),(60.0*60.0)) 
                                         for i in range(len(timeobs))]), [nWavelengths, 1]))
     
     # integration time

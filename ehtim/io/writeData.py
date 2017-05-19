@@ -1,4 +1,8 @@
+from __future__ import division
+from __future__ import print_function
 
+from builtins import range
+from past.utils import old_div
 import numpy as np
 import numpy as np
 from numpy import pi, cos, sin
@@ -22,9 +26,9 @@ def writeOIFITS(filename, RA, DEC, frequency, bandWidth, intTime,
 	data.target = np.append(data.target, ehtim.io.oifits.OI_TARGET(name, RA, DEC, veltyp='LSR') )
     
 	#calulate wavelength and bandpass
-	wavelength = speedoflight/frequency;
-	bandlow = speedoflight/(frequency+(0.5*bandWidth) );
-	bandhigh = speedoflight/(frequency-(0.5*bandWidth) );
+	wavelength = old_div(speedoflight,frequency);
+	bandlow = old_div(speedoflight,(frequency+(0.5*bandWidth) ));
+	bandhigh = old_div(speedoflight,(frequency-(0.5*bandWidth) ));
 	bandpass = bandhigh-bandlow;
     
     # put in the wavelength information - only using a single frequency
@@ -36,8 +40,8 @@ def writeOIFITS(filename, RA, DEC, frequency, bandWidth, intTime,
 		stations.append( (antennaNames[i], antennaNames[i], i+1, antennaDiam[i], [antennaX[i], antennaY[i], antennaZ[i]]) )
 	data.array['ARRAY_NAME'] = ehtim.io.oifits.OI_ARRAY('GEOCENTRIC', [0, 0, 0], stations); 
 
-	print 'Warning: set cflux and cfluxerr = False because otherwise problems were being generated...are they the total flux density?'
-	print 'Warning: are there any true flags?'
+	print('Warning: set cflux and cfluxerr = False because otherwise problems were being generated...are they the total flux density?')
+	print('Warning: are there any true flags?')
 	
 	# put in the visibility information - note this does not include phase errors!
 	for i in range(0, len(u)):
@@ -62,7 +66,7 @@ def writeOIFITS(filename, RA, DEC, frequency, bandWidth, intTime,
 
 def arrayUnion(array, union):
     for item in array:
-        if not (item in union.keys()):
+        if not (item in list(union.keys())):
             union[item] = len(union)+1
     return union
 

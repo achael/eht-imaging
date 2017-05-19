@@ -1,3 +1,8 @@
+from __future__ import division
+from builtins import str
+from builtins import map
+from builtins import range
+from past.utils import old_div
 import astropy.time as at
 import numpy as np
 
@@ -12,8 +17,8 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
        theta is the orientation angle measured E of N
     """
 
-    sigma_maj = beamparams[0] / (2*np.sqrt(2*np.log(2))) 
-    sigma_min = beamparams[1] / (2*np.sqrt(2*np.log(2)))
+    sigma_maj = old_div(beamparams[0], (2*np.sqrt(2*np.log(2)))) 
+    sigma_min = old_div(beamparams[1], (2*np.sqrt(2*np.log(2))))
     theta = -beamparams[2] # theta needs to be negative in this convention!
     #try: 
     #	x=beamparams[3]
@@ -27,7 +32,7 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
     m = np.array([[a, c], [c, b]])
     
-    uv = np.array([[u[i],v[i]] for i in xrange(len(u))])
+    uv = np.array([[u[i],v[i]] for i in range(len(u))])
     x2 = np.array([np.dot(uvi,np.dot(m,uvi)) for uvi in uv])   
     #x2 = np.dot(uv, np.dot(m, uv.T))
     g = np.exp(-2 * np.pi**2 * x2)
@@ -41,7 +46,7 @@ def sgra_kernel_uv(rf, u, v):
        Values from Bower et al.
     """
     
-    lcm = (C/rf) * 100 # in cm
+    lcm = (old_div(C,rf)) * 100 # in cm
     sigma_maj = FWHM_MAJ * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     sigma_min = FWHM_MIN * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     theta = -POS_ANG * DEGREE # theta needs to be negative in this convention!
@@ -66,7 +71,7 @@ def sgra_kernel_params(rf):
        Values from Bower et al.
     """
     
-    lcm = (C/rf) * 100 # in cm
+    lcm = (old_div(C,rf)) * 100 # in cm
     fwhm_maj_rf = FWHM_MAJ * (lcm**2)  * RADPERUAS
     fwhm_min_rf = FWHM_MIN * (lcm**2)  * RADPERUAS
     theta = POS_ANG * DEGREE
@@ -82,13 +87,13 @@ def blnoise(sefd1, sefd2, tint, bw):
     
     #!AC TODO Is the factor of sqrt(2) correct? 
     #noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
-    noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
+    noise = old_div(np.sqrt(sefd1*sefd2/(bw*tint)),0.88)
     return noise
 
 def merr(sigma, qsigma, usigma, I, m):
     """Return the error in mbreve real and imaginary parts"""
 
-    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/ (np.abs(I) ** 2))
+    err = np.sqrt(old_div((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2), (np.abs(I) ** 2)))
     # old formula assumes all sigmas the same
     #err = sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2))     
     return err
@@ -114,11 +119,11 @@ def image_centroid(im):
     """Return the image centroid (in radians)
     """
 
-    xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
-    ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
+    xlist = np.arange(0,-im.xdim,-1)*im.psize + old_div((im.psize*im.xdim),2.0) - old_div(im.psize,2.0)
+    ylist = np.arange(0,-im.ydim,-1)*im.psize + old_div((im.psize*im.ydim),2.0) - old_div(im.psize,2.0)
 
-    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im.imvec)/np.sum(im.imvec)
-    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec)/np.sum(im.imvec)
+    x0 = old_div(np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im.imvec),np.sum(im.imvec))
+    y0 = old_div(np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec),np.sum(im.imvec))
 
     return np.array([x0, y0])
 
@@ -130,10 +135,10 @@ def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT):
 
     # !AC TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
     # Coordinate matrix for COM constraint
-    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
-    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
-    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
+    xlist = np.arange(0,-xdim,-1)*pdim + old_div((pdim*xdim),2.0) - old_div(pdim,2.0)
+    ylist = np.arange(0,-ydim,-1)*pdim + old_div((pdim*ydim),2.0) - old_div(pdim,2.0)
+    x0 = old_div(np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im),np.sum(im))
+    y0 = old_div(np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im),np.sum(im))
 
     #Now shift the lists
     xlist = xlist - x0
@@ -148,8 +153,8 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT, mask=[]):
        that extracts spatial frequencies of the uv points in uvlist.
     """
 
-    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
+    xlist = np.arange(0,-xdim,-1)*pdim + old_div((pdim*xdim),2.0) - old_div(pdim,2.0)
+    ylist = np.arange(0,-ydim,-1)*pdim + old_div((pdim*ydim),2.0) - old_div(pdim,2.0)
 
     # original sign convention
     #ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
@@ -173,9 +178,9 @@ def ticks(axisdim, psize, nticks=8):
     nticks = int(nticks)
     if not axisdim % 2: axisdim += 1
     if nticks % 2: nticks -= 1
-    tickspacing = float((axisdim-1))/nticks
+    tickspacing = old_div(float((axisdim-1)),nticks)
     ticklocs = np.arange(0, axisdim+1, tickspacing)
-    ticklabels= np.around(psize * np.arange((axisdim-1)/2., -(axisdim)/2., -tickspacing), decimals=1)
+    ticklabels= np.around(psize * np.arange(old_div((axisdim-1),2.), old_div(-(axisdim),2.), -tickspacing), decimals=1)
     return (ticklocs, ticklabels)
 
 def power_of_two(target):
@@ -183,7 +188,7 @@ def power_of_two(target):
     """
     cur = 1
     if target > 1:
-        for i in xrange(0, int(target)):
+        for i in range(0, int(target)):
             if (cur >= target):
                 return cur
             else: cur *= 2
@@ -253,7 +258,7 @@ def rastring(ra):
     """
     h = int(ra)
     m = int((ra-h)*60.)
-    s = (ra-h-m/60.)*3600.
+    s = (ra-h-old_div(m,60.))*3600.
     out = "%2i h %2i m %2.4f s" % (h,m,s)
     return out 
 
@@ -263,7 +268,7 @@ def decstring(dec):
     
     deg = int(dec)
     m = int((abs(dec)-abs(deg))*60.)
-    s = (abs(dec)-abs(deg)-m/60.)*3600.
+    s = (abs(dec)-abs(deg)-old_div(m,60.))*3600.
     out = "%2i deg %2i m %2.4f s" % (deg,m,s)
     return out
 
@@ -274,7 +279,7 @@ def gmtstring(gmt):
     if gmt > 24.0: gmt = gmt-24.0
     h = int(gmt)
     m = int((gmt-h)*60.)
-    s = (gmt-h-m/60.)*3600.
+    s = (gmt-h-old_div(m,60.))*3600.
     out = "%02i:%02i:%2.4f" % (h,m,s)
     return out 
 
@@ -283,7 +288,7 @@ def utc_to_gmst(utc, mjd):
     """
 
     mjd=int(mjd) #MJD should always be an integer, but was float in older versions of the code
-    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc') 
+    time_obj = at.Time(old_div(utc,24.0) + np.floor(mjd), format='mjd', scale='utc') 
     time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
     return time_sidereal
     
@@ -294,20 +299,20 @@ def earthrot(vecs, thetas):
     if len(vecs.shape)==1: 
         vecs = np.array([vecs])
     if np.isscalar(thetas):
-        thetas = np.array([thetas for i in xrange(len(vecs))])
+        thetas = np.array([thetas for i in range(len(vecs))])
 
     # equal numbers of sites and angles
     if len(thetas) == len(vecs):
         rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i]) 
-                       for i in xrange(len(vecs))])
+                       for i in range(len(vecs))])
     # only one rotation angle, many sites
     elif len(thetas) == 1:
         rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]),-np.sin(thetas[0]),0),(np.sin(thetas[0]),np.cos(thetas[0]),0),(0,0,1))), vecs[i]) 
-                       for i in xrange(len(vecs))])
+                       for i in range(len(vecs))])
     # only one site, many angles
     elif len(vecs) == 1:
         rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[0]) 
-                       for i in xrange(len(thetas))]) 
+                       for i in range(len(thetas))]) 
     else:
         raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")
                                             
@@ -331,7 +336,7 @@ def elevcut(obsvecs, sourcevec, elevmin=ELEV_LOW, elevmax=ELEV_HIGH):
     """Return True if a source is observable by a telescope vector
     """
     
-    angles = elev(obsvecs, sourcevec)/DEGREE
+    angles = old_div(elev(obsvecs, sourcevec),DEGREE)
     
     return (angles > elevmin) * (angles < elevmax)
 

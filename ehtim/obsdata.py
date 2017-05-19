@@ -1,3 +1,9 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import string
 import numpy as np
 import numpy.lib.recfunctions as rec
@@ -160,7 +166,7 @@ class Obsdata(object):
         """Split single observation into multiple observation files, one per scan.
         """
 
-        print "Splitting Observation File into " + str(len(self.tlist())) + " scans"
+        print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
 
         #Note that the tarr of the output includes all sites, even those that don't participate in the scan
         splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, source=self.source,
@@ -269,7 +275,7 @@ class Obsdata(object):
                 sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
                 ty = 'c16'
             elif field in ["m","mamp","mphase","msnr","msigma","msigma_phase"]: 
-                out = (data['qvis'] + 1j * data['uvis']) / data['vis']
+                out = old_div((data['qvis'] + 1j * data['uvis']), data['vis'])
                 sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
                 ty = 'c16'
             
@@ -290,14 +296,14 @@ class Obsdata(object):
                 hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], self.ra*HOUR)
 
                 if field in ["el1","el2"]:
-                    out=el_angle/angle
+                    out=old_div(el_angle,angle)
                     ty = 'f8'
                 if field in ["hr_ang1","hr_ang2"]:
-                    out = hr_angles/angle
+                    out = old_div(hr_angles,angle)
                     ty = 'f8'
                 if field in ["par_ang1","par_ang2"]:
                     par_ang = par_angle(hr_angles, latlon[:,0], self.dec*DEGREE)
-                    out = par_ang/angle
+                    out = old_div(par_ang,angle)
                     ty = 'f8'
                                 
             # Get arg/amps/snr
@@ -305,7 +311,7 @@ class Obsdata(object):
                 out = np.abs(out)
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase"]: 
-                out = np.angle(out)/angle
+                out = old_div(np.angle(out),angle)
                 ty = 'f8'
             elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma"]:
                 out = np.abs(sig)
@@ -314,7 +320,7 @@ class Obsdata(object):
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'                                                
             elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr"]:
-                out = np.abs(out)/np.abs(sig)
+                out = old_div(np.abs(out),np.abs(sig))
                 ty = 'f8'
                                             
             # Reshape and stack with other fields
@@ -335,7 +341,7 @@ class Obsdata(object):
     def res(self):
         """Return the nominal resolution (1/longest baseline) of the observation in radians.
         """
-        return 1.0/np.max(self.unpack('uvdist')['uvdist'])
+        return old_div(1.0,np.max(self.unpack('uvdist')['uvdist']))
         
     def bispectra(self, vtype='vis', mode='time', count='min'):
         """Return a recarray of the equal time bispectra.
@@ -430,9 +436,9 @@ class Obsdata(object):
                     var3 = l3['qsigma']**2 + l3['usigma']**2                                                                                                     
                 
                 bi = p1*p2*p3
-                bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +  
-                                             var2/np.abs(p2)**2 + 
-                                             var3/np.abs(p3)**2)
+                bisig = np.abs(bi) * np.sqrt(old_div(var1,np.abs(p1)**2) +  
+                                             old_div(var2,np.abs(p2)**2) + 
+                                             old_div(var3,np.abs(p3)**2))
                 #Katie's 2nd + 3rd order corrections - see CHIRP supplement
                 bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +  
                                            var1*var3*np.abs(p2)**2 +  
@@ -490,7 +496,7 @@ class Obsdata(object):
                 if len(bi) == 0: continue
                 bi.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
                 bi['sigmacp'] = np.real(bi['sigmacp']/np.abs(bi['cphase'])/angle)
-                bi['cphase'] = np.real((np.angle(bi['cphase'])/angle))
+                bi['cphase'] = np.real((old_div(np.angle(bi['cphase']),angle)))
                 cps.append(bi.astype(np.dtype(DTCPHASE)))
             if mode == 'time' and len(cps) > 0:
                 outlist.append(np.array(cps))
@@ -551,9 +557,9 @@ class Obsdata(object):
                 ref = sites[0]
                 
                 # Loop over other sites >=3 and form minimal closure amplitude set
-                for i in xrange(3, len(sites)):
+                for i in range(3, len(sites)):
                     blue1 = l_dict[ref, sites[i]] #!!
-                    for j in xrange(1, i):
+                    for j in range(1, i):
                         if j == i-1: k = 1
                         else: k = j+1
                         
@@ -589,11 +595,11 @@ class Obsdata(object):
                             p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
                             p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
                                                    
-                        camp = np.abs((p1*p2)/(p3*p4))
-                        camperr = camp * np.sqrt(var1/np.abs(p1)**2 +  
-                                                 var2/np.abs(p2)**2 + 
-                                                 var3/np.abs(p3)**2 +
-                                                 var4/np.abs(p4)**2)
+                        camp = np.abs(old_div((p1*p2),(p3*p4)))
+                        camperr = camp * np.sqrt(old_div(var1,np.abs(p1)**2) +  
+                                                 old_div(var2,np.abs(p2)**2) + 
+                                                 old_div(var3,np.abs(p3)**2) +
+                                                 old_div(var4,np.abs(p4)**2))
                                         
                         # Add the closure amplitudes to the equal-time list  
                         # Our site convention is (12)(34)/(14)(23)       
@@ -647,11 +653,11 @@ class Obsdata(object):
                             p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
                             p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
                                                    
-                        camp = np.abs((p1*p2)/(p3*p4))
-                        camperr = camp * np.sqrt(var1/np.abs(p1)**2 +  
-                                                 var2/np.abs(p2)**2 + 
-                                                 var3/np.abs(p3)**2 +
-                                                 var4/np.abs(p4)**2)
+                        camp = np.abs(old_div((p1*p2),(p3*p4)))
+                        camperr = camp * np.sqrt(old_div(var1,np.abs(p1)**2) +  
+                                                 old_div(var2,np.abs(p2)**2) + 
+                                                 old_div(var3,np.abs(p3)**2) +
+                                                 old_div(var4,np.abs(p4)**2))
                                         
                                         
                         # Add the closure amplitudes to the equal-time list         
@@ -712,9 +718,9 @@ class Obsdata(object):
                 ref = sites[0]
                 
                 # Loop over other sites >=3 and form minimal closure amplitude set
-                for i in xrange(3, len(sites)):
+                for i in range(3, len(sites)):
                     blue1 = l_dict[ref, sites[i]] #!!
-                    for j in xrange(1, i):
+                    for j in range(1, i):
                         if j == i-1: k = 1
                         else: k = j+1
                         
@@ -753,10 +759,10 @@ class Obsdata(object):
                         
                         logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
 
-                        logcamperr = np.sqrt(var1/np.abs(p1)**2 +  
-                                             var2/np.abs(p2)**2 + 
-                                             var3/np.abs(p3)**2 +
-                                             var4/np.abs(p4)**2)
+                        logcamperr = np.sqrt(old_div(var1,np.abs(p1)**2) +  
+                                             old_div(var2,np.abs(p2)**2) + 
+                                             old_div(var3,np.abs(p3)**2) +
+                                             old_div(var4,np.abs(p4)**2))
                                         
                         # Add the closure amplitudes to the equal-time list  
                         # Our site convention is (12)+(34)-(14)-(23)       
@@ -814,10 +820,10 @@ class Obsdata(object):
                         
                         logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
 
-                        logcamperr = np.sqrt(var1/np.abs(p1)**2 +  
-                                             var2/np.abs(p2)**2 + 
-                                             var3/np.abs(p3)**2 +
-                                             var4/np.abs(p4)**2)
+                        logcamperr = np.sqrt(old_div(var1,np.abs(p1)**2) +  
+                                             old_div(var2,np.abs(p2)**2) + 
+                                             old_div(var3,np.abs(p3)**2) +
+                                             old_div(var4,np.abs(p4)**2))
                                         
                         # Add the closure amplitudes to the equal-time list  
                         # Our site convention is (12)+(34)-(14)-(23)       
@@ -853,11 +859,11 @@ class Obsdata(object):
 
 
         # !AC TODO add different types of beam weighting
-        pdim = fov/npix
+        pdim = old_div(fov,npix)
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
         
-        xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
+        xlist = np.arange(0,-npix,-1)*pdim + old_div((pdim*npix),2.0) - old_div(pdim,2.0)
         
         im = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
                   for i in xlist] 
@@ -866,7 +872,7 @@ class Obsdata(object):
         im = im[0:npix, 0:npix]
         
         # Normalize to a total beam power of 1
-        im = im/np.sum(im)
+        im = old_div(im,np.sum(im))
         
         src = self.source + "_DB"
         return ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
@@ -902,9 +908,9 @@ class Obsdata(object):
         def fit_chisq(beamparams, db_coeff):
             
             (fwhm_maj2, fwhm_min2, theta) = beamparams
-            a = 4 * np.log(2) * (np.cos(theta)**2/fwhm_min2 + np.sin(theta)**2/fwhm_maj2)
-            b = 4 * np.log(2) * (np.cos(theta)**2/fwhm_maj2 + np.sin(theta)**2/fwhm_min2)
-            c = 8 * np.log(2) * np.cos(theta) * np.sin(theta) * (1/fwhm_maj2 - 1/fwhm_min2)
+            a = 4 * np.log(2) * (old_div(np.cos(theta)**2,fwhm_min2) + old_div(np.sin(theta)**2,fwhm_maj2))
+            b = 4 * np.log(2) * (old_div(np.cos(theta)**2,fwhm_maj2) + old_div(np.sin(theta)**2,fwhm_min2))
+            c = 8 * np.log(2) * np.cos(theta) * np.sin(theta) * (old_div(1,fwhm_maj2) - old_div(1,fwhm_min2))
             gauss_coeff = np.array((a,b,c))
             
             chisq = np.sum((np.array(db_coeff) - gauss_coeff)**2)
@@ -931,7 +937,7 @@ class Obsdata(object):
         else:
             fwhm_maj = 1e-10*np.sqrt(params.x[1])
             fwhm_min = 1e-10*np.sqrt(params.x[0])
-            theta = np.mod(params.x[2] + np.pi/2, np.pi)
+            theta = np.mod(params.x[2] + old_div(np.pi,2), np.pi)
 
         return np.array((fwhm_maj, fwhm_min, theta))
 
@@ -948,7 +954,7 @@ class Obsdata(object):
         """
 
         # !AC TODO add different types of beam weighting  
-        pdim = fov/npix
+        pdim = old_div(fov,npix)
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
         vis = self.unpack('vis')['vis']
@@ -956,7 +962,7 @@ class Obsdata(object):
         uvis = self.unpack('uvis')['uvis']
         vvis = self.unpack('vvis')['vvis']
         
-        xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
+        xlist = np.arange(0,-npix,-1)*pdim + old_div((pdim*npix),2.0) - old_div(pdim,2.0)
 
         # Take the DTFTS
         # Shouldn't need to real about conjugate baselines b/c unpack does not return them
@@ -982,10 +988,10 @@ class Obsdata(object):
                   for j in xlist])   
         
         # Normalization   
-        im = im/np.sum(dim)
-        qim = qim/np.sum(dim)
-        uim = uim/np.sum(dim)
-        vim = vim/np.sum(dim)
+        im = old_div(im,np.sum(dim))
+        qim = old_div(qim,np.sum(dim))
+        uim = old_div(uim,np.sum(dim))
+        vim = old_div(vim,np.sum(dim))
         
         im = im[0:npix, 0:npix]
         qim = qim[0:npix, 0:npix]
@@ -1022,14 +1028,14 @@ class Obsdata(object):
         # divide visibilities by the scattering kernel
         for i in range(len(vis)):
             ker = sgra_kernel_uv(self.rf, u[i], v[i])
-            vis[i] = vis[i] / ker
-            qvis[i] = qvis[i] / ker
-            uvis[i] = uvis[i] / ker
-            vvis[i] = vvis[i] / ker
-            sigma[i] = sigma[i] / ker
-            qsigma[i] = qsigma[i] / ker
-            usigma[i] = usigma[i] / ker
-            vsigma[i] = vsigma[i] / ker
+            vis[i] = old_div(vis[i], ker)
+            qvis[i] = old_div(qvis[i], ker)
+            uvis[i] = old_div(uvis[i], ker)
+            vvis[i] = old_div(vvis[i], ker)
+            sigma[i] = old_div(sigma[i], ker)
+            qsigma[i] = old_div(qsigma[i], ker)
+            usigma[i] = old_div(usigma[i], ker)
+            vsigma[i] = old_div(vsigma[i], ker)
                                 
         datatable['vis'] = vis
         datatable['qvis'] = qvis
@@ -1056,12 +1062,12 @@ class Obsdata(object):
         if fittype=='amp':
             def errfunc(p):
             	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
-            	err = np.sum((np.abs(vis)-np.abs(vismodel))**2/sig**2)
+            	err = np.sum(old_div((np.abs(vis)-np.abs(vismodel))**2,sig**2))
             	return err
         else:
             def errfunc(p):
             	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
-            	err = np.sum(np.abs(vis-vismodel)**2/sig**2)
+            	err = np.sum(old_div(np.abs(vis-vismodel)**2,sig**2))
             	return err
         
         optdict = {'maxiter':5000} # minimizer params
@@ -1094,11 +1100,11 @@ class Obsdata(object):
         
         # Debias amplitudes if appropriate:
         if field1 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
-            print "De-biasing amplitudes for plot x values!"
+            print("De-biasing amplitudes for plot x values!")
             data[field1] = amp_debias(data[field1], sigx)
         
         if field2 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
-            print "De-biasing amplitudes for plot y values!"
+            print("De-biasing amplitudes for plot y values!")
             data[field2] = amp_debias(data[field2], sigy)
            
         # Data ranges
@@ -1196,7 +1202,7 @@ class Obsdata(object):
         plotdata = np.array(plotdata)
         
         if len(plotdata) == 0: 
-            print "No closure phases on this triangle!"
+            print("No closure phases on this triangle!")
             return
         
         # Data ranges
@@ -1247,13 +1253,13 @@ class Obsdata(object):
                     if (b1 in num) and (r1 in denom):
                         plotdata.append([obs['time'], obs['camp'], obs['sigmaca']])
                     elif (r1 in num) and (b1 in denom):
-                        plotdata.append([obs['time'], 1./obs['camp'], obs['sigmaca']/(obs['camp']**2)])
+                        plotdata.append([obs['time'], old_div(1.,obs['camp']), old_div(obs['sigmaca'],(obs['camp']**2))])
                     continue
                 
                     
         plotdata = np.array(plotdata)
         if len(plotdata) == 0: 
-            print "No closure amplitudes on this quadrangle!"
+            print("No closure amplitudes on this quadrangle!")
             return
 
         # Data ranges

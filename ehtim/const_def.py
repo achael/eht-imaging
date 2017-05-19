@@ -1,10 +1,12 @@
+from __future__ import division
+from past.utils import old_div
 from ehtim.observing.pulses import *
 
 EP = 1.0e-15
 C = 299792458.0
-DEGREE = 3.141592653589/180.
-HOUR = (180./12.)*DEGREE
-RADPERAS = DEGREE/3600
+DEGREE = old_div(3.141592653589,180.)
+HOUR = (old_div(180.,12.))*DEGREE
+RADPERAS = old_div(DEGREE,3600)
 RADPERUAS = RADPERAS*1.e-6
 
 # Default Parameters

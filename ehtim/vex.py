@@ -1,5 +1,10 @@
+from __future__ import division
+from __future__ import print_function
 # Hotaka Shiokawa - 2017
 
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import numpy as np
 
 import ehtim.array
@@ -43,7 +48,7 @@ class Vex(object):
                 metalist.append(temp)
                 temp = [raw[j]]
             else:
-                print 'Something is wrong.'
+                print('Something is wrong.')
         metalist.append(temp) # don't forget to add the final one
         self.metalist = metalist
 
@@ -84,7 +89,7 @@ class Vex(object):
 
                 line = FREQ[i]
                 if line[0:3]=="def":
-		    if nfreq>0: print "Not implemented yet."
+		    if nfreq>0: print("Not implemented yet.")
 		    nfreq += 1
 		    indef=True
 
@@ -190,7 +195,7 @@ class Vex(object):
         for i in range(len(self.metalist)):
             if sname in self.metalist[i][0]:
                 return self.metalist[i]
-        print 'No sector named %s'%sname
+        print('No sector named %s'%sname)
         return False
 
     # Function to get a value of 'vname' in a line which has format of
@@ -218,7 +223,7 @@ class Vex(object):
         for i in range(len(sites)):
             if sites[i].split()[0]==station:
                 return float(re.findall("[-+]?\d+[\.]?\d*",sites[i])[3])
-        print 'No station named %s'%station
+        print('No station named %s'%station)
         return 10000. # some arbitrary value
 
     # Function to find MJD (int!) and hour in UT from vex format,
@@ -228,5 +233,5 @@ class Vex(object):
         year = int(time[0])
         date = int(time[1])
         mjd = jdcal.gcal2jd(year,1,1)[1]+date-1
-        hour = int(time[2]) + float(time[3])/60. + float(time[4])/60./60.
+        hour = int(time[2]) + old_div(float(time[3]),60.) + float(time[4])/60./60.
         return mjd,hour

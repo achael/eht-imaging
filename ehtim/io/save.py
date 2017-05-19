@@ -1,3 +1,7 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import range
+from past.utils import old_div
 import numpy as np
 import string
 import astropy.io.fits as fits
@@ -18,13 +22,13 @@ def save_mov_txt(mov, fname):
     """Save movie data to text files"""
     
     # Coordinate values
-    pdimas = mov.psize/RADPERAS
+    pdimas = old_div(mov.psize,RADPERAS)
     xs = np.array([[j for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
-    xs = pdimas * (xs[::-1] - mov.xdim/2.0)
+    xs = pdimas * (xs[::-1] - old_div(mov.xdim,2.0))
     ys = np.array([[i for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
-    ys = pdimas * (ys[::-1] - mov.xdim/2.0)
+    ys = pdimas * (ys[::-1] - old_div(mov.xdim,2.0))
     
-    for i in xrange(len(mov.frames)):
+    for i in range(len(mov.frames)):
         fname_frame = fname + "%05d" % i
         # Data
         if len(mov.qframes):
@@ -42,8 +46,8 @@ def save_mov_txt(mov, fname):
         # Header
         head = ("SRC: %s \n" % mov.source +
                     "RA: " + rastring(mov.ra) + "\n" + "DEC: " + decstring(mov.dec) + "\n" +
-                    "MJD: %i \n" % (float(mov.mjd) + mov.start_hr/24.0 + i*mov.framedur/86400.0) + 
-                    "RF: %.4f GHz \n" % (mov.rf/1e9) + 
+                    "MJD: %i \n" % (float(mov.mjd) + old_div(mov.start_hr,24.0) + i*mov.framedur/86400.0) + 
+                    "RF: %.4f GHz \n" % (old_div(mov.rf,1e9)) + 
                     "FOVX: %i pix %f as \n" % (mov.xdim, pdimas * mov.xdim) +
                     "FOVY: %i pix %f as \n" % (mov.ydim, pdimas * mov.ydim) +
                     "------------------------------------\n" + hf)
@@ -62,11 +66,11 @@ def save_im_txt(im, fname):
     """
 
     # Coordinate values
-    pdimas = im.psize/RADPERAS
+    pdimas = old_div(im.psize,RADPERAS)
     xs = np.array([[j for j in range(im.xdim)] for i in range(im.ydim)]).reshape(im.xdim*im.ydim,1)
-    xs = pdimas * (xs[::-1] - im.xdim/2.0)
+    xs = pdimas * (xs[::-1] - old_div(im.xdim,2.0))
     ys = np.array([[i for j in range(im.xdim)] for i in range(im.ydim)]).reshape(im.xdim*im.ydim,1)
-    ys = pdimas * (ys[::-1] - im.xdim/2.0)
+    ys = pdimas * (ys[::-1] - old_div(im.xdim,2.0))
     
     # If V values but no Q/U values, make Q/U zero  
     if len(im.vvec) and not len(im.qvec): 
@@ -100,7 +104,7 @@ def save_im_txt(im, fname):
     head = ("SRC: %s \n" % im.source +
                 "RA: " + rastring(im.ra) + "\n" + "DEC: " + decstring(im.dec) + "\n" +
                 "MJD: %i \n" % im.mjd + 
-                "RF: %.4f GHz \n" % (im.rf/1e9) + 
+                "RF: %.4f GHz \n" % (old_div(im.rf,1e9)) + 
                 "FOVX: %i pix %f as \n" % (im.xdim, pdimas * im.xdim) +
                 "FOVY: %i pix %f as \n" % (im.ydim, pdimas * im.ydim) +
                 "------------------------------------\n" + hf)
@@ -118,8 +122,8 @@ def save_im_fits(im, fname):
     header['OBJECT'] = im.source
     header['CTYPE1'] = 'RA---SIN'
     header['CTYPE2'] = 'DEC--SIN'
-    header['CDELT1'] = -im.psize/DEGREE
-    header['CDELT2'] = im.psize/DEGREE
+    header['CDELT1'] = old_div(-im.psize,DEGREE)
+    header['CDELT2'] = old_div(im.psize,DEGREE)
     header['OBSRA'] = im.ra * 180/12.
     header['OBSDEC'] = im.dec
     header['FREQ'] = im.rf
@@ -190,8 +194,8 @@ def save_obs_txt(obs, fname):
     head = ("SRC: %s \n" % obs.source +
                 "RA: " + rastring(obs.ra) + "\n" + "DEC: " + decstring(obs.dec) + "\n" +
                 "MJD: %i \n" % obs.mjd + 
-                "RF: %.4f GHz \n" % (obs.rf/1e9) + 
-                "BW: %.4f GHz \n" % (obs.bw/1e9) +
+                "RF: %.4f GHz \n" % (old_div(obs.rf,1e9)) + 
+                "BW: %.4f GHz \n" % (old_div(obs.bw,1e9)) +
                 "PHASECAL: %i \n" % obs.phasecal + 
                 "AMPCAL: %i \n" % obs.ampcal +
                 "OPACITYCAL: %i \n" % obs.opacitycal +                    
@@ -337,13 +341,13 @@ def save_obs_uvfits(obs, fname):
     header['CRPIX7'] = 1.e0
     header['CROTA7'] = 0.e0
     header['PTYPE1'] = 'UU---SIN'
-    header['PSCAL1'] = 1/obs.rf
+    header['PSCAL1'] = old_div(1,obs.rf)
     header['PZERO1'] = 0.e0
     header['PTYPE2'] = 'VV---SIN'
-    header['PSCAL2'] = 1/obs.rf
+    header['PSCAL2'] = old_div(1,obs.rf)
     header['PZERO2'] = 0.e0
     header['PTYPE3'] = 'WW---SIN'
-    header['PSCAL3'] = 1/obs.rf
+    header['PSCAL3'] = old_div(1,obs.rf)
     header['PZERO3'] = 0.e0
     header['PTYPE4'] = 'BASELINE'
     header['PSCAL4'] = 1.e0
@@ -372,7 +376,7 @@ def save_obs_uvfits(obs, fname):
     #jds = (obs.mjd + 2400000.5) * np.ones(len(obsdata))
     #fractimes = (obsdata['time'] / 24.0) 
     jds = (2400000.5 + obs.mjd) * np.ones(len(obsdata))
-    fractimes = (obsdata['time'] / 24.0) 
+    fractimes = (old_div(obsdata['time'], 24.0)) 
     #jds = jds + fractimes
     #fractimes = np.zeros(len(obsdata))        
     tints = obsdata['tint']
@@ -396,10 +400,10 @@ def save_obs_uvfits(obs, fname):
     rl = obsdata['qvis'] + 1j*obsdata['uvis']
     lr = obsdata['qvis'] - 1j*obsdata['uvis']
     
-    weightrr = 1 / (obsdata['sigma']**2 + obsdata['vsigma']**2)
-    weightll = 1 / (obsdata['sigma']**2 + obsdata['vsigma']**2)
-    weightrl = 1 / (obsdata['qsigma']**2 + obsdata['usigma']**2)
-    weightlr = 1 / (obsdata['qsigma']**2 + obsdata['usigma']**2)
+    weightrr = old_div(1, (obsdata['sigma']**2 + obsdata['vsigma']**2))
+    weightll = old_div(1, (obsdata['sigma']**2 + obsdata['vsigma']**2))
+    weightrl = old_div(1, (obsdata['qsigma']**2 + obsdata['usigma']**2))
+    weightlr = old_div(1, (obsdata['qsigma']**2 + obsdata['usigma']**2))
                             
     # Data array
     outdat = np.zeros((ndat, 1, 1, 1, 1, 4, 3))
@@ -470,7 +474,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
     """
 
     #TODO: Add polarization to oifits??
-    print 'Warning: save_oifits does NOT save polarimetric visibility data!'
+    print('Warning: save_oifits does NOT save polarimetric visibility data!')
     
     # Normalizing by the total flux passed in - note this is changing the data inside the obs structure
     obs.data['vis'] /= flux
@@ -517,7 +521,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
     t3amp = np.abs(bi);
     t3phi = np.angle(bi, deg=1)
     t3amperr = biarr['sigmab']
-    t3phierr = 180.0/np.pi * (1/t3amp) * t3amperr;
+    t3phierr = 180.0/np.pi * (old_div(1,t3amp)) * t3amperr;
     uClosure = np.transpose(np.array([np.array(biarr['u1']), np.array(biarr['u2'])]));
     vClosure = np.transpose(np.array([np.array(biarr['v1']), np.array(biarr['v2'])]));
     
