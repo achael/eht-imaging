@@ -4,7 +4,6 @@ from __future__ import division
 from __future__ import print_function
 from builtins import range
 from builtins import object
-from past.utils import old_div
 
 import numpy as np
 
@@ -234,5 +233,5 @@ class Vex(object):
         year = int(time[0])
         date = int(time[1])
         mjd = jdcal.gcal2jd(year,1,1)[1]+date-1
-        hour = int(time[2]) + old_div(float(time[3]),60.) + float(time[4])/60./60.
+        hour = int(time[2]) + float(time[3])/60. + float(time[4])/60./60.
         return mjd,hour
