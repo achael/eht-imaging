@@ -2,7 +2,6 @@ from __future__ import division
 from __future__ import print_function
 from builtins import str
 from builtins import range
-from past.utils import old_div
 
 import numpy as np
 import string
@@ -54,9 +53,9 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
         file = open(filename)
         src = string.join(file.readline().split()[2:])
         ra = file.readline().split()
-        ra = float(ra[2]) + old_div(float(ra[4]),60.) + old_div(float(ra[6]),3600.)
+        ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
         dec = file.readline().split()
-        dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + old_div(float(dec[4]),60.) + old_div(float(dec[6]),3600.))
+        dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
         mjd_frac = float(file.readline().split()[2])
         mjd = np.floor(mjd_frac)
         hour = (mjd_frac - mjd)*24.0
@@ -125,9 +124,9 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
     file = open(filename)
     src = string.join(file.readline().split()[2:])
     ra = file.readline().split()
-    ra = float(ra[2]) + old_div(float(ra[4]),60.) + old_div(float(ra[6]),3600.)
+    ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
     dec = file.readline().split()
-    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + old_div(float(dec[4]),60.) + old_div(float(dec[6]),3600.))
+    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
     mjd = int(float(file.readline().split()[2]))
     rf = float(file.readline().split()[2]) * 1e9
     xdim = file.readline().split()
@@ -216,7 +215,7 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     if 'BUNIT' in list(header.keys()):
         if header['BUNIT'] == 'JY/BEAM':
             beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
-            normalizer = old_div((header['CDELT2'])**2, beamarea)
+            normalizer = (header['CDELT2'])**2/beamarea
     image *= normalizer
             
     # make image object            
@@ -278,7 +277,7 @@ def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAU
     if 'CDELT1' in list(header.keys()): 
         psize_x = np.abs(header['CDELT1']) * pscl
     else: 
-        psize_x = (old_div(float(fov), data.shape[-2])) * pscl
+        psize_x = (float(fov)/data.shape[-2]) * pscl
         if fov==-1:
             print('WARNING: Must provide a field of view for the image')
 
@@ -286,7 +285,7 @@ def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAU
     if 'BUNIT' in list(header.keys()):
         if header['BUNIT'] == 'JY/BEAM':
             beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
-            normalizer = old_div((header['CDELT2'])**2, beamarea)
+            normalizer = (header['CDELT2'])**2/beamarea
 
     data = data.reshape((data.shape[-2],data.shape[-1]))
 
@@ -351,9 +350,9 @@ def load_obs_txt(filename):
     file = open(filename)
     src = string.join(file.readline().split()[2:])
     ra = file.readline().split()
-    ra = float(ra[2]) + old_div(float(ra[4]),60.) + old_div(float(ra[6]),3600.)
+    ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
     dec = file.readline().split()
-    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + old_div(float(dec[4]),60.) + old_div(float(dec[6]),3600.))
+    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
     mjd = float(file.readline().split()[2])
     rf = float(file.readline().split()[2]) * 1e9
     bw = float(file.readline().split()[2]) * 1e9
@@ -468,10 +467,10 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
             continue
         elif line[0] == 'FOV_center_RA':
             x = line[2].split(':')
-            ra = float(x[0]) + old_div(float(x[1]),60.) + old_div(float(x[2]),3600.)
+            ra = float(x[0]) + float(x[1])/60.0 + float(x[2])/3600.0
         elif line[0] == 'FOV_center_Dec':
             x = line[2].split(':')
-            dec = np.sign(float(x[0])) * (abs(float(x[0])) + old_div(float(x[1]),60.) + old_div(float(x[2]),3600.))
+            dec = np.sign(float(x[0])) * (abs(float(x[0])) + float(x[1])/60.0 + float(x[2])/3600.0)
         elif line[0] == 'Corr_int_time':
             tint = float(line[2])
         elif line[0] == 'Corr_chan_bw':  #!AC TODO what if multiple channels?
@@ -492,7 +491,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
         line = line.split()
         if not (line[0] in ['UV', 'Scan','\n']):
             time = line[0].split(':')
-            time = float(time[2]) + old_div(float(time[3]),60.) + old_div(float(time[4]),3600.)
+            time = float(time[2]) + float(time[3])/60.0 + float(time[4])/3600.0
             u = float(line[1]) * 1000
             v = float(line[2]) * 1000
             bl = line[4].split('-')
@@ -649,10 +648,10 @@ def load_obs_uvfits(filename, flipbl=False):
     ll = data['DATA'][:,0,0,0,0,1,0][mask] + 1j*data['DATA'][:,0,0,0,0,1,1][mask]
     rl = data['DATA'][:,0,0,0,0,2,0][mask] + 1j*data['DATA'][:,0,0,0,0,2,1][mask]
     lr = data['DATA'][:,0,0,0,0,3,0][mask] + 1j*data['DATA'][:,0,0,0,0,3,1][mask]
-    rrsig = old_div(1,np.sqrt(rrweight[mask]))
-    llsig = old_div(1,np.sqrt(llweight[mask]))
-    rlsig = old_div(1,np.sqrt(rlweight[mask]))
-    lrsig = old_div(1,np.sqrt(lrweight[mask]))
+    rrsig = 1.0/np.sqrt(rrweight[mask])
+    llsig = 1.0/np.sqrt(llweight[mask])
+    rlsig = 1.0/np.sqrt(rlweight[mask])
+    lrsig = 1.0/np.sqrt(lrweight[mask])
     
     # Form stokes parameters
     ivis = 0.5 * (rr + ll)
@@ -717,15 +716,15 @@ def load_obs_oifits(filename, flux=1.0):
     wavelength = oidata.wavelength[list(oidata.wavelength.keys())[0]].eff_wave
     nWavelengths = wavelength.shape[0]
     bandpass = oidata.wavelength[list(oidata.wavelength.keys())[0]].eff_band
-    frequency = old_div(C,wavelength)
+    frequency = C/wavelength
     
     # !AC TODO: this result seems wrong...
     bw = np.mean(2*(np.sqrt( bandpass**2*frequency**2 + C**2) - C)/bandpass)
     rf = np.mean(frequency)
     
     # get the u-v point for each visibility
-    u = np.array([old_div(vis_data[i].ucoord,wavelength) for i in range(len(vis_data))])
-    v = np.array([old_div(vis_data[i].vcoord,wavelength) for i in range(len(vis_data))])
+    u = np.array([vis_data[i].ucoord/wavelength for i in range(len(vis_data))])
+    v = np.array([vis_data[i].vcoord/wavelength for i in range(len(vis_data))])
     
     # get visibility info - currently the phase error is not being used properly
     amp = np.array([vis_data[i]._visamp for i in range(len(vis_data))])
@@ -735,7 +734,7 @@ def load_obs_oifits(filename, flux=1.0):
     timeobs = np.array([vis_data[i].timeobs for i in range(len(vis_data))]) #convert to single number
     
     #return timeobs
-    time = np.transpose(np.tile(np.array([old_div((ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple())),(60.0*60.0)) 
+    time = np.transpose(np.tile(np.array([(ttime.mktime((timeobs[i] + datetime.timedelta(days=1)).timetuple()))/(60.0*60.0)
                                         for i in range(len(timeobs))]), [nWavelengths, 1]))
     
     # integration time
