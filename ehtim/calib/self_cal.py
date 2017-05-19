@@ -1,6 +1,5 @@
 from __future__ import division
 from __future__ import print_function
-from past.utils import old_div
 
 import numpy as np
 import scipy.optimize as opt
@@ -49,12 +48,12 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     tkey = {b:a for a,b in enumerate(sites)}
     tidx1 = [tkey[row['t1']] for row in scan]
     tidx2 = [tkey[row['t2']] for row in scan]
-    sigma_inv = old_div(1., scan['sigma'])
+    sigma_inv = 1.0/scan['sigma']
 
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
         if method=="phase":
-            g = old_div(g,np.abs(g))
+            g = g/np.abs(g) # TODO: use np.sign()?
         if method=="amp":
             g = np.abs(g)
 
@@ -69,7 +68,7 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     g_fit = res.x.view(np.complex128)
 
     if method=="phase":
-        g_fit = old_div(g_fit,np.abs(g_fit))
+        g_fit = g_fit/np.abs(g_fit) # TODO: use np.sign()?
     if method=="amp":
         g_fit = np.abs(g_fit)
 
