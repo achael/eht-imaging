@@ -613,7 +613,7 @@ def load_obs_uvfits(filename, flipbl=False):
     tints = data['INTTIM'][mask]
     
     # Sites - add names
-    t1 = old_div(data['BASELINE'][mask].astype(int),256)
+    t1 = data['BASELINE'][mask].astype(int)//256
     t2 = data['BASELINE'][mask].astype(int) - t1*256
     t1 = t1 - 1
     t2 = t2 - 1
