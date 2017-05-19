@@ -3,7 +3,6 @@ from __future__ import print_function
 from builtins import str
 from builtins import range
 from builtins import object
-from past.utils import old_div
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -305,7 +304,7 @@ class Movie(object):
             movie.mjd = vex.sched[0]['mjd_floor']
             movie.start_hr = vex.sched[0]['start_hr']
 
-        movie_start = float(movie.mjd) + old_div(movie.start_hr,24.0)
+        movie_start = float(movie.mjd) + movie.start_hr/24.0
         movie_end   = movie_start + len(movie.frames)*movie.framedur/24.0/3600.0
 
         print("Movie MJD Range: ",movie_start,movie_end)
@@ -324,7 +323,7 @@ class Movie(object):
                 print(t_int)
                 #vex.sched[i_scan]['scan'][0]['scan_sec']
 
-            vex_scan_start_mjd = float(vex.sched[i_scan]['mjd_floor']) + old_div(vex.sched[i_scan]['start_hr'],24.0)
+            vex_scan_start_mjd = float(vex.sched[i_scan]['mjd_floor']) + vex.sched[i_scan]['start_hr']/24.0
             vex_scan_stop_mjd  = vex_scan_start_mjd + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0/24.0
 
             print("Scan MJD Range: ",vex_scan_start_mjd,vex_scan_stop_mjd)
@@ -333,7 +332,7 @@ class Movie(object):
                 continue
 
             obs = subarray.obsdata(movie.ra, movie.dec, movie.rf, vex.bw_hz, t_int, t_int, 
-                                       vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + old_div(vex.sched[i_scan]['scan'][0]['scan_sec'],3600.0) - EP, 
+                                       vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0 - EP, 
                                        mjd=vex.sched[i_scan]['mjd_floor'],
                                        elevmin=.01, elevmax=89.99, timetype='UTC')   
             obs_List.append(obs)
