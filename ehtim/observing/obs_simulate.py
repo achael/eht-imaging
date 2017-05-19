@@ -294,8 +294,8 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ft="direct", pad_frac=0.5, re
         # Check for agreement in coordinates and frequency 
         if (mov.ra!= obs.ra) or (mov.dec != obs.dec):
             raise Exception("Image coordinates are not the same as observation coordinates!")
-	    if (mov.rf != obs.rf):
-	        raise Exception("Image frequency is not the same as observation frequency!")
+            if (mov.rf != obs.rf):
+                raise Exception("Image frequency is not the same as observation frequency!")
         
         mjdstart = float(mov.mjd) + float(old_div(mov.start_hr,24.0))
         mjdend = mjdstart + old_div((len(mov.frames)*mov.framedur), 86400.0) 

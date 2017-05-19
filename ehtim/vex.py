@@ -87,20 +87,20 @@ class Vex(object):
         nfreq = 0
         for i in range(len(FREQ)):
 
-                line = FREQ[i]
-                if line[0:3]=="def":
-		    if nfreq>0: print("Not implemented yet.")
-		    nfreq += 1
-		    indef=True
+            line = FREQ[i]
+            if line[0:3]=="def":
+                if nfreq>0: print("Not implemented yet.")
+                nfreq += 1
+                indef=True
 
-                if indef:
-                    idx = line.find('chan_def')
-                    if idx>=0 and line[0]!='*':
-                         chan_def = re.findall("[-+]?\d+[\.]?\d*",line)
-                         self.freq = float(chan_def[0])*1.e6
-                         self.bw_hz = float(chan_def[1])*1.e6
+            if indef:
+                idx = line.find('chan_def')
+                if idx>=0 and line[0]!='*':
+                    chan_def = re.findall("[-+]?\d+[\.]?\d*",line)
+                    self.freq = float(chan_def[0])*1.e6
+                    self.bw_hz = float(chan_def[1])*1.e6
 
-                    if line[0:6]=="enddef": indef=False
+                if line[0:6]=="enddef": indef=False
 
 
         # SITE ==========================================================
@@ -156,8 +156,8 @@ class Vex(object):
             if line[0:4]=="scan":
                 inscan=True
                 temp={}
-		temp['scan']={}
-		cnt = 0
+                temp['scan']={}
+                cnt = 0
  
             if inscan:
                 ret = self.get_variable("start",line)

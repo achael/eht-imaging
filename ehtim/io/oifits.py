@@ -488,8 +488,8 @@ class OI_ARRAY(object):
         #self.station = stations; 
         self.station = np.empty(0)
         for station in stations:
-			tel_name, sta_name, sta_index, diameter, staxyz = station
-			self.station = np.append(self.station, OI_STATION(tel_name=tel_name, sta_name=sta_name, diameter=diameter, staxyz=staxyz))
+            tel_name, sta_name, sta_index, diameter, staxyz = station
+            self.station = np.append(self.station, OI_STATION(tel_name=tel_name, sta_name=sta_name, diameter=diameter, staxyz=staxyz))
 
     def __eq__(self, other):
 
