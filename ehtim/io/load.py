@@ -303,7 +303,12 @@ def load_array_txt(filename, ephemdir='./ephemeris'):
     """Read an array from a text file and return an Array object
        Sites with x=y=z=0 are spacecraft - 2TLE ephemeris loaded from ephemdir
     """
+
+    # Ugly hack to make the code python 2-3 compatible
+    def flt(s):
+        return float(eval(s))
     
+    # TODO: avoid all of these hacks by a better use of loadtxt?
     tdata = np.loadtxt(filename,dtype=str,comments='#')
     path = os.path.dirname(filename)
 
@@ -315,12 +320,12 @@ def load_array_txt(filename, ephemdir='./ephemeris'):
                         "DR_RE   DR_IM   DL_RE    DL_IM )") 
 
     elif tdata.shape[1] == 5:                    
-    	tdataout = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[4]),0.0, 0.0, 0.0, 0.0, 0.0),
+    	tdataout = [np.array((x[0],flt(x[1]),flt(x[2]),flt(x[3]),flt(x[4]),flt(x[4]),0.0, 0.0, 0.0, 0.0, 0.0),
                            dtype=DTARR) for x in tdata]
     elif tdata.shape[1] == 13:                            
-    	tdataout = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[4]),float(x[5]),
-                           float(x[9])+1j*float(x[10]), float(x[11])+1j*float(x[12]), 
-                           float(x[6]), float(x[7]), float(x[8])), 
+    	tdataout = [np.array((x[0],flt(x[1]),flt(x[2]),flt(x[3]),flt(x[4]),flt(x[5]),
+                           flt(x[9])+1j*flt(x[10]), flt(x[11])+1j*flt(x[12]), 
+                           flt(x[6]), flt(x[7]), flt(x[8])), 
                            dtype=DTARR) for x in tdata]                           
 
     tdataout = np.array(tdataout)
