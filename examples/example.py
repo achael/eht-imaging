@@ -3,9 +3,14 @@
 
 # Note: must import ehtim outside the ehtim directory
 # either in parent eht-imaging directory or after installing with setuptools
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 import ehtim
 from ehtim.imaging.imager import imager
+from ehtim.calib          import self_cal   as sc
+from ehtim.plotting       import comp_plots as vbp
 
 # Load the image and the array
 im = ehtim.image.load_txt('models/avery_sgra_eofn.txt')
@@ -51,8 +56,8 @@ cbeam.display()
 # Resolution
 beamparams = obs.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
 res = obs.res() # nominal array resolution, 1/longest baseline
-print "Clean beam parameters: " , beamparams 
-print "Nominal Resolution: " ,res
+print("Clean beam parameters: " , beamparams) 
+print("Nominal Resolution: " ,res)
 
 # Export the visibility data to uvfits/text
 obs.save_txt('obs.txt') # exports a text file with the visibilities
@@ -83,7 +88,7 @@ out =  imager(obs, out, out, flux,
               alpha_flux=100, alpha_cm=50,
               maxit=100)
 
-out = out.blur_circ(res/2.)
+out = out.blur_circ(res/2.0)
 out =  imager(obs, out, out, flux, 
               d1='bs', s1='tv', 
               alpha_s1=1, alpha_d1=10, 
