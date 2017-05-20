@@ -9,6 +9,8 @@ from __future__ import print_function
 import numpy as np
 import ehtim
 from ehtim.imaging.imager import imager
+from ehtim.calib          import self_cal   as sc
+from ehtim.plotting       import comp_plots as vbp
 
 # Load the image and the array
 im = ehtim.image.load_txt('models/avery_sgra_eofn.txt')
