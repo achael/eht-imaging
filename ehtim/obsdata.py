@@ -182,7 +182,7 @@ class Obsdata(object):
 
         # If we only specify one field
         fields=['time']
-        if type(in_fields) == str: fields.append(in_fields)
+        if isinstance(in_fields, basestring): fields.append(in_fields)
         else: 
             for i in range(len(in_fields)): fields.append(in_fields[i])
             
@@ -208,7 +208,7 @@ class Obsdata(object):
             raise Exception("possible options for mode are 'time' and 'all'")
                     
         # If we only specify one field
-        if type(fields) == str: fields = [fields]
+        if isinstance(fields, basestring): fields = [fields]
         
         if mode=='all':    
             if conj:
