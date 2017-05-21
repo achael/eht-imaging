@@ -193,7 +193,7 @@ class Obsdata(object):
         tlist = self.tlist(conj=True)
         for scan in tlist:
             for obs in scan:
-                if (obs['t1'], obs['t2']) == (site1, site2):
+                if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
                     obs = np.array([obs])
                     out = self.unpack_dat(obs, fields, ang_unit=ang_unit)             
                     allout.append(out)
