@@ -7,6 +7,7 @@
 
 """
 
-import imager
+#import imager
 
+from .imager import *
 from ehtim.const_def import *

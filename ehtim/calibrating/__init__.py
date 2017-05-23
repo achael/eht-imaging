@@ -7,6 +7,6 @@
 
 """
 
-import ehtim.calib.self_cal
+import ehtim.calibrating.self_cal
 
 from ehtim.const_def import *

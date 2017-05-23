@@ -6,7 +6,7 @@
 ehtim (eht-imaging)
 ===================
 
-Python modules for simulating and manipulating VLBI data and producing images with Maximum Entropy methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or need help for your application.
+Python modules for simulating and manipulating VLBI data and producing images with regularized gradient descent methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or need help for your application.
 
 The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the :class:`Image`, :class:`Array`, and :class:`Obsdata`. :class:`Movie` and :class:`Vex` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. ``imager`` is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.  
 
@@ -30,9 +30,9 @@ Documentation
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
-   
+
    image
    array
    obsdata
