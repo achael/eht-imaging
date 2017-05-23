@@ -6,7 +6,6 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
+from . import load
 
-import ehtim.io.load
-
-from ehtim.const_def import *
+from ..const_def import *

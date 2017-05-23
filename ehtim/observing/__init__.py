@@ -6,8 +6,7 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
-
-import ehtim.observing.pulses
-import ehtim.observing.jdcal
-import ehtim.observing.obs_helpers
-import ehtim.observing.obs_simulate
+from . import pulses
+from . import jdcal
+from . import obs_helpers
+from . import obs_simulate

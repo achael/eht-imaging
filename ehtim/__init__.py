@@ -6,21 +6,14 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
-import ehtim.obsdata
-import ehtim.array
-import ehtim.movie
-import ehtim.image
-import ehtim.vex
+from . import obsdata
+from . import array
+from . import movie
+from . import image
+from . import vex
 
-from ehtim.imaging import imager
-from ehtim.calibrating import self_cal
-from ehtim.plotting import comp_plots
+from .imaging     import imager
+from .calibrating import self_cal
+from .plotting    import comp_plots
 
-from ehtim.const_def import *
-
-
-
-
-
-
-
+from .const_def import *

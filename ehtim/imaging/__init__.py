@@ -6,7 +6,6 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
-from __future__ import absolute_import
-
 from .imager import *
-from ehtim.const_def import *
+
+from ..const_def import *
