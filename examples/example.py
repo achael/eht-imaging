@@ -32,7 +32,7 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
                  sgrscat=False, ampcal=True, phasecal=False)
 
 # You can deblur the visibilities by dividing by the scattering kernel if necessary
-obs = obs.deblur(obs)
+obs = obs.deblur()
 
 # These are some simple plots you can check
 obs.plotall('u','v', conj=True) # uv coverage
@@ -72,26 +72,26 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with amplitudes and closure phases
 flux = zbl
-out =  eh.imager.imager(obs, gaussprior, gaussprior, flux, 
-                        d1='bs', s1='simple', 
-                        alpha_s1=1, alpha_d1=100, 
-                        alpha_flux=100, alpha_cm=50,
-                        maxit=100)
+out  = eh.imager(obs, gaussprior, gaussprior, flux, 
+                 d1='bs', s1='simple', 
+                 alpha_s1=1, alpha_d1=100, 
+                 alpha_flux=100, alpha_cm=50,
+                 maxit=100)
  
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
-out =  eh.imager.imager(obs, out, out, flux, 
-                        d1='bs', s1='tv', 
-                        alpha_s1=1, alpha_d1=50, 
-                        alpha_flux=100, alpha_cm=50,
-                        maxit=100)
+out = eh.imager(obs, out, out, flux, 
+                d1='bs', s1='tv', 
+                alpha_s1=1, alpha_d1=50, 
+                alpha_flux=100, alpha_cm=50,
+                maxit=100)
 
 out = out.blur_circ(res/2.0)
-out =  eh.imager.imager(obs, out, out, flux, 
-                        d1='bs', s1='tv', 
-                        alpha_s1=1, alpha_d1=10, 
-                        alpha_flux=100, alpha_cm=50,
-                        maxit=100)
+out = eh.imager(obs, out, out, flux, 
+                d1='bs', s1='tv', 
+                alpha_s1=1, alpha_d1=10, 
+                alpha_flux=100, alpha_cm=50,
+                maxit=100)
 
 
 
@@ -99,11 +99,11 @@ out =  eh.imager.imager(obs, out, out, flux,
 obs_sc = sc.self_cal(obs, out)
 
 out_sc = out.blur_circ(res)
-out_sc = eh.imager.imager(obs_sc, out_sc, out_sc, flux, 
-                          d1='vis', s1='simple', 
-                          alpha_s1=1, alpha_d1=100, 
-                          alpha_flux=100, alpha_cm=50,
-                          maxit=50)
+out_sc = eh.imager(obs_sc, out_sc, out_sc, flux, 
+                   d1='vis', s1='simple', 
+                   alpha_s1=1, alpha_d1=100, 
+                   alpha_flux=100, alpha_cm=50,
+                   maxit=50)
 
 
 # Compare the visibility amplitudes to the data
