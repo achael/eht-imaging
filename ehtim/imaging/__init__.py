@@ -8,6 +8,5 @@
 """
 from __future__ import absolute_import
 
-from . import imager
-
+from .imager import *
 from ehtim.const_def import *

@@ -12,6 +12,10 @@ import ehtim.movie
 import ehtim.image
 import ehtim.vex
 
+from ehtim.imaging import imager
+from ehtim.calibrating import self_cal
+from ehtim.plotting import comp_plots
+
 from ehtim.const_def import *
 
 

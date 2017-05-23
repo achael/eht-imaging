@@ -674,7 +674,7 @@ def spatchgrad(imvec, priorvec, flux):
 # Misc Functions
 ##################################################################################################
 def embed(im, mask, clipfloor=0., randomfloor=False):
-    """embeds a 1d image array into the size of boolean embed mask
+    """Embeds a 1d image array into the size of boolean embed mask
     """
     j=0
     out=np.zeros(len(mask))
@@ -690,7 +690,7 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
     return out
 
 def chisqdata(Obsdata, Prior, mask, dtype):
-    """return the data, sigma, and matrices for the appropriate dtype
+    """Return the data, sigma, and matrices for the appropriate dtype
     """
     
     if dtype == 'vis':
@@ -714,7 +714,7 @@ def chisqdata(Obsdata, Prior, mask, dtype):
     return (data, sigma, A)
 
 def chisqdata_vis(Obsdata, Prior, mask):
-    """return the visibilities, sigmas, and fourier matrix for and observation, prior, mask
+    """Return the visibilities, sigmas, and fourier matrix for and observation, prior, mask
     """
     
     data_arr = Obsdata.unpack(['u','v','vis','sigma'])
@@ -726,7 +726,7 @@ def chisqdata_vis(Obsdata, Prior, mask):
     return (vis, sigma, A)
 
 def chisqdata_amp(Obsdata, Prior, mask):
-    """return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
+    """Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
     """
 
     ampdata = Obsdata.unpack(['u','v','amp','sigma'])
@@ -759,7 +759,7 @@ def chisqdata_bs(Obsdata, Prior, mask):
     return (bi, sigma, A3)
 
 def chisqdata_cphase(Obsdata, Prior, mask):
-    """return the closure phases, sigmas, and fourier matrices for and observation, prior, mask
+    """Return the closure phases, sigmas, and fourier matrices for and observation, prior, mask
     """
 
     clphasearr = Obsdata.c_phases(mode="all", count="min")
