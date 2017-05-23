@@ -654,7 +654,7 @@ class Image(object):
             unit = '(Jy/pixel)^gamma'    
                    
         if len(self.qvec) and plotp:
-            thin = self.xdim/nvec 
+            thin = int(self.xdim/nvec)
             mask = (self.imvec).reshape(self.ydim, self.xdim) > pcut * np.max(self.imvec)
             mask2 = mask[::thin, ::thin]
             x = (np.array([[i for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
