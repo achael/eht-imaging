@@ -97,16 +97,17 @@ class ScatteringModel:
         return self.observer_screen_distance/self.source_screen_distance
 
     def Q(self, qx, qy):
-    """Computes the power spectrum of the scattering model at a wavenumber {qx,qy} (in 1/cm).
-       The power spectrum is part of what defines the scattering model (along with Dphi).
-       Q(qx,qy) is independent of the observing wavelength.
+        """Computes the power spectrum of the scattering model at a wavenumber {qx,qy} (in 1/cm).
+        The power spectrum is part of what defines the scattering model (along with Dphi).
+        Q(qx,qy) is independent of the observing wavelength.
 
-       Args:            
+        Args:            
             qx (float): x coordinate of the wavenumber in 1/cm. 
             qy (float): y coordinate of the wavenumber in 1/cm. 
-       Returns:
+        Returns:
             (float): The power spectrum Q(qx,qy)
         """
+        
         if qx == 0.0 and qy == 0.0:
             return 0.0
 
@@ -124,17 +125,17 @@ class ScatteringModel:
             return 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * scipy.special.gamma(1.0 + self.scatt_alpha/2.0)/scipy.special.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0)**(-(self.scatt_alpha+2.0)/2.0) 
 
     def Dphi(self, x, y, wavelength_cm):  
-    """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm). 
-       The phase structure function is part of what defines the scattering model (along with Q).
-       Generically, the phase structure function must be proportional to wavelength^2 because of the cold plasma dispersion law
+        """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm). 
+           The phase structure function is part of what defines the scattering model (along with Q).
+           Generically, the phase structure function must be proportional to wavelength^2 because of the cold plasma dispersion law
 
-       Args:            
-            x (float): x coordinate of the displacement (toward East) in cm. 
-            y (float): y coordinate of the displacement (toward North) in cm. 
-            wavelength_cm (float): observing wavelength in cm
-       Returns:
-            (float): The phase structure function (dimensionless; radians^2)
-        """
+           Args:            
+                x (float): x coordinate of the displacement (toward East) in cm. 
+                y (float): y coordinate of the displacement (toward North) in cm. 
+                wavelength_cm (float): observing wavelength in cm
+           Returns:
+                (float): The phase structure function (dimensionless; radians^2)
+            """
 
         #Phase structure function; generically, this must be proportional to wavelength^2 because of the cold plasma dispersion law
         #All units in cm
@@ -149,16 +150,16 @@ class ScatteringModel:
 
 
     def sqrtQ_Matrix(self, Reference_Image, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0):
-    """Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.
+        """Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.
 
-       Args:
-            Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.
-            Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-            Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
-            t_hr (float): The current time of the scattering in hours.
-       Returns:
-           sqrtQ (2D complex ndarray): The square root of the power spectrum of the screen with an additional phase for rotation of the screen. 
-        """
+           Args:
+                Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
+                t_hr (float): The current time of the scattering in hours.
+           Returns:
+               sqrtQ (2D complex ndarray): The square root of the power spectrum of the screen with an additional phase for rotation of the screen. 
+            """
 
         #Derived parameters   
         FOV = Reference_Image.psize * Reference_Image.xdim * self.observer_screen_distance #Field of view, in cm, at the scattering screen
@@ -185,15 +186,15 @@ class ScatteringModel:
         return sqrtQ
 
     def Ensemble_Average_Kernel(self, Reference_Image, wavelength_cm = None):    
-    """The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image
+        """The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image
 
-       Args:
-            Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.
-            wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the Reference image. 
+           Args:
+                Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.
+                wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the Reference image. 
 
-       Returns:
-           ker (2D ndarray): The ensemble-average scattering kernel in the image domain.
-        """
+           Returns:
+               ker (2D ndarray): The ensemble-average scattering kernel in the image domain.
+            """
 
         if wavelength_cm == None:
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
@@ -206,30 +207,30 @@ class ScatteringModel:
         return ker
 
     def Ensemble_Average_Kernel_Visibility(self, u, v, wavelength_cm):    
-    """The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate
+        """The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate
 
-       Args:
-            u (float): u baseline coordinate (dimensionless)
-            v (float): v baseline coordinate (dimensionless)
-            wavelength_cm (float): The observing wavelength for the scattering kernel in cm.
+           Args:
+                u (float): u baseline coordinate (dimensionless)
+                v (float): v baseline coordinate (dimensionless)
+                wavelength_cm (float): The observing wavelength for the scattering kernel in cm.
 
-       Returns:
-           float: The ensemble-average kernel at the specified {u,v} point and observing wavelength.
-        """
+           Returns:
+               float: The ensemble-average kernel at the specified {u,v} point and observing wavelength.
+            """
 
         return np.exp(-0.5*self.Dphi(u*wavelength_cm/(1.0+self.Mag()), v*wavelength_cm/(1.0+self.Mag()), wavelength_cm))
 
     def Ensemble_Average_Blur(self, im, wavelength_cm = None, ker = None):
-    """Blurs an input Image with the ensemble-average scattering kernel. 
+        """Blurs an input Image with the ensemble-average scattering kernel. 
 
-       Args:
-            im (Image): The unscattered image.
-            wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the input image.
-            ker (2D ndarray): The user can optionally pass a pre-computed ensemble-average blurring kernel.  
+           Args:
+                im (Image): The unscattered image.
+                wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the input image.
+                ker (2D ndarray): The user can optionally pass a pre-computed ensemble-average blurring kernel.  
 
-       Returns:
-           out (Image): The ensemble-average scattered image.
-        """
+           Returns:
+               out (Image): The ensemble-average scattered image.
+            """
         
         # Inputs an unscattered image and an ensemble-average blurring kernel (2D array); returns the ensemble-average image
         # The pre-computed kernel can optionally be specified (ker)
@@ -253,14 +254,14 @@ class ScatteringModel:
         return out  
 
     def Deblur_obs(self, obs):
-    """Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.
+        """Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.
 
-       Args:
-            obs (Obsdata): The observervation data (including scattering).
+           Args:
+                obs (Obsdata): The observervation data (including scattering).
 
-       Returns:
-           obsdeblur (Obsdata): The deblurred observation. 
-        """
+           Returns:
+               obsdeblur (Obsdata): The deblurred observation. 
+            """
         
         # make a copy of observation data
         datatable = (obs.copy()).data
@@ -302,24 +303,24 @@ class ScatteringModel:
         return obsdeblur        
 
     def MakePhaseScreen(self, EpsilonScreen, Reference_Image, obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, sqrtQ_init=None):
-    """Create a refractive phase screen from standardized Fourier components (the EpsilonScreen). 
-       All lengths should be specified in centimeters
-       If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image
-       Note: an odd image dimension is required!
+        """Create a refractive phase screen from standardized Fourier components (the EpsilonScreen). 
+           All lengths should be specified in centimeters
+           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image
+           Note: an odd image dimension is required!
 
-       Args:
-            EpsilonScreen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
-            Reference_Image (Image): The reference image. 
-            obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.
-            Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-            Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
-            t_hr (float): The current time of the scattering in hours.
-            ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
-            sqrtQ_init (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
+           Args:
+                EpsilonScreen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
+                Reference_Image (Image): The reference image. 
+                obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
+                t_hr (float): The current time of the scattering in hours.
+                ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
+                sqrtQ_init (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
 
-       Returns:
-           phi_Image (Image): The phase screen.
-        """
+           Returns:
+               phi_Image (Image): The phase screen.
+            """
 
         #Observing wavelength
         if obs_frequency_Hz == 0.0:
@@ -367,27 +368,27 @@ class ScatteringModel:
         return phi_Image
 
     def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=True, DisplayImage=False, Force_Positivity=False): 
-    """Scatter an image using the specified epsilon screen. 
-       All lengths should be specified in centimeters
-       If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
-       Note: an odd image dimension is required!
+        """Scatter an image using the specified epsilon screen. 
+           All lengths should be specified in centimeters
+           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
+           Note: an odd image dimension is required!
 
-       Args:
-            Unscattered_Image (Image): The unscattered image. 
-            Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
-            obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.
-            Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-            Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
-            t_hr (float): The current time of the scattering in hours.
-            ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
-            sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
-            Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
-            Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. 
-            Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
+           Args:
+                Unscattered_Image (Image): The unscattered image. 
+                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
+                obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
+                t_hr (float): The current time of the scattering in hours.
+                ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
+                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
+                Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
+                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. 
+                Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
 
-       Returns:
-           AI_Image (Image): The scattered image.
-        """
+           Returns:
+               AI_Image (Image): The scattered image.
+            """
 
         #Observing wavelength
         if obs_frequency_Hz == 0.0:
@@ -487,29 +488,29 @@ class ScatteringModel:
         return AI_Image
 
     def Scatter_Movie(self, Unscattered_Movie, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=None, N_frames = None, sqrtQ=None, Linearized_Approximation=True, Force_Positivity=False,Return_Image_List=False): 
-    """Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image
-       If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified
-       If scattering a static image, the total number of frames must be specified (N_frames)
-       All lengths should be specified in centimeters
-       If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Movie
-       Note: an odd image dimension is required!
+        """Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image
+           If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified
+           If scattering a static image, the total number of frames must be specified (N_frames)
+           All lengths should be specified in centimeters
+           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Movie
+           Note: an odd image dimension is required!
 
-       Args:
-            Unscattered_Movie: This can be a movie object, an image list, or a static image
-            Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
-            obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Movie.
-            Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-            Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
-            framedur_sec (float): Duration of each frame, in seconds. Only needed if Unscattered_Movie is not a movie object. 
-            N_frames (int): Total number of frames. Only needed if Unscattered_Movie is a static image object. 
-            sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
-            Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
-            Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. 
-            Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
+           Args:
+                Unscattered_Movie: This can be a movie object, an image list, or a static image
+                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
+                obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Movie.
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
+                framedur_sec (float): Duration of each frame, in seconds. Only needed if Unscattered_Movie is not a movie object. 
+                N_frames (int): Total number of frames. Only needed if Unscattered_Movie is a static image object. 
+                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
+                Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
+                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. 
+                Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
 
-       Returns:
-           Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List. 
-        """
+           Returns:
+               Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List. 
+            """
 
         if type(Unscattered_Movie) != movie.Movie and framedur_sec == None:
             print "If scattering a list of images of static image, the framedur must be specified!"
