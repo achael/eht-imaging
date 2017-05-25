@@ -1,0 +1,965 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ehtim.scattering.stochastic_optics &mdash; ehtim 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="ehtim 0.0.1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> ehtim
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../imager.html">Stokes I Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../calibration.html">Self Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plotting.html">Comparison Plots</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ehtim</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>ehtim.scattering.stochastic_optics</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ehtim.scattering.stochastic_optics</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Michael Johnson, 2/15/2017</span>
+<span class="c1"># See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.signal</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">IPython</span> <span class="k">import</span> <span class="n">display</span>
+
+<span class="kn">import</span> <span class="nn">ehtim.image</span> <span class="k">as</span> <span class="nn">image</span>
+<span class="kn">import</span> <span class="nn">ehtim.movie</span> <span class="k">as</span> <span class="nn">movie</span>
+<span class="kn">import</span> <span class="nn">ehtim.obsdata</span> <span class="k">as</span> <span class="nn">obsdata</span>
+<span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span> <span class="c1">#Note: C is m/s rather than cm/s. </span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">cmath</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># The class ScatteringModel encompasses a generic scattering model, determined by the power spectrum Q and phase structure function Dphi</span>
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="ScatteringModel"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel">[docs]</a><span class="k">class</span> <span class="nc">ScatteringModel</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A scattering model based on a thin-screen approximation. </span>
+<span class="sd">       Models include:</span>
+<span class="sd">           &#39;simple&#39;: This scattering model is motivated by observations of Sgr A*.</span>
+<span class="sd">                     It gives a Gaussian at long wavelengths that matches the model defined </span>
+<span class="sd">                     by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm </span>
+<span class="sd">                     with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds </span>
+<span class="sd">                     at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,</span>
+<span class="sd">                     if the reference wavelength is short enough to be beyond the lambda^2 regime!</span>
+<span class="sd">                     This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths</span>
+<span class="sd">                     Note: This model *requires* a finite inner scale</span>
+<span class="sd">           &#39;power-law&#39;: This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale. </span>
+<span class="sd">            The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm. </span>
+<span class="sd">            The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov</span>
+<span class="sd">    </span>
+<span class="sd">       Attributes:</span>
+<span class="sd">           model (string): The type of scattering model (determined by the power spectrum of phase fluctuations). </span>
+<span class="sd">           POS_ANG (float): The position angle of the major axis of the scattering.</span>
+<span class="sd">           observer_screen_distance (float): The distance from the observer to the scattering screen in cm. </span>
+<span class="sd">           source_screen_distance (float): The distance from the source to the scattering screen in cm. </span>
+<span class="sd">           wavelength_reference (float): The reference wavelength for the scattering model in cm. </span>
+<span class="sd">           r_in (float): The inner scale of the scattering screen</span>
+<span class="sd">           r_out (float): The outer scale of the scattering screen</span>
+<span class="sd">           scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3). </span>
+<span class="sd">           rF (function): The Fresnel scale of the scattering screen at the specific wavelength.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="n">scatt_alpha</span> <span class="o">=</span> <span class="mf">5.0</span><span class="o">/</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">observer_screen_distance</span> <span class="o">=</span> <span class="mf">8.023</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="mi">21</span><span class="p">,</span> <span class="n">source_screen_distance</span> <span class="o">=</span> <span class="mf">1.790</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="mi">22</span><span class="p">,</span> <span class="n">theta_maj_mas_ref</span> <span class="o">=</span> <span class="mf">1.309</span><span class="p">,</span> <span class="n">theta_min_mas_ref</span> <span class="o">=</span> <span class="mf">0.64</span><span class="p">,</span> <span class="n">POS_ANG</span> <span class="o">=</span> <span class="mi">78</span><span class="p">,</span> <span class="n">wavelength_reference_cm</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">r_in</span> <span class="o">=</span> <span class="mi">10000</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="mi">5</span><span class="p">,</span> <span class="n">r_out</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">20</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">POS_ANG</span> <span class="o">=</span> <span class="n">POS_ANG</span> <span class="c1">#Major axis position angle [degrees, east of north]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span> <span class="o">=</span> <span class="n">observer_screen_distance</span> <span class="c1">#cm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_screen_distance</span>   <span class="o">=</span> <span class="n">source_screen_distance</span>   <span class="c1">#cm</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">observer_screen_distance</span><span class="o">/</span><span class="n">source_screen_distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wavelength_reference</span> <span class="o">=</span> <span class="n">wavelength_reference_cm</span> <span class="c1">#Reference wavelength [cm]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_in</span>    <span class="o">=</span> <span class="n">r_in</span> <span class="c1">#inner scale [cm]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_out</span>   <span class="o">=</span> <span class="n">r_out</span>     <span class="c1">#outer scale [cm]  </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span> <span class="o">=</span> <span class="n">scatt_alpha</span>
+
+        <span class="k">if</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;simple&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">r_in</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="s2">&quot;Error! The &#39;simple&#39; scattering model requires a finite inner scale.&quot;</span>
+            <span class="c1">#Now, we need to solve for the effective parameters accounting for an inner scale</span>
+            <span class="c1">#By default, we will match the fitted Gaussian kernel as the wavelength goes to infinity</span>
+            <span class="n">axial_ratio</span> <span class="o">=</span> <span class="n">theta_min_mas_ref</span><span class="o">/</span><span class="n">theta_maj_mas_ref</span>  <span class="c1">#axial ratio of the scattering disk at long wavelengths (minor/major size &lt; 1)</span>
+            <span class="c1">#self.C_scatt = (1.20488e-15*axial_ratio*self.r_in**(2.0 - self.scatt_alpha)*self.wavelength_reference**2)/self.scatt_alpha          </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">C_scatt</span> <span class="o">=</span> <span class="mf">4.76299e-18</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">M</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="n">r_in</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">-</span> <span class="n">scatt_alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">theta_maj_mas_ref</span> <span class="o">*</span> <span class="n">theta_min_mas_ref</span><span class="o">/</span><span class="p">(</span><span class="n">scatt_alpha</span> <span class="o">*</span> <span class="n">wavelength_reference_cm</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">4.</span><span class="p">))</span>
+            <span class="c1">#Note: the prefactor is exactly equal to 1/209952000000000000        </span>
+            <span class="n">geometric_mean</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r_in</span><span class="o">**</span><span class="p">(</span><span class="mf">2.0</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">C_scatt</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span>  <span class="o">=</span> <span class="n">geometric_mean</span><span class="o">*</span><span class="n">axial_ratio</span><span class="o">**</span><span class="mf">0.5</span> <span class="c1">#Phase coherence length at the reference wavelength [cm]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span>  <span class="o">=</span> <span class="n">geometric_mean</span><span class="o">/</span><span class="n">axial_ratio</span><span class="o">**</span><span class="mf">0.5</span> <span class="c1">#Phase coherence length at the reference wavelength [cm]  </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Qprefactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">C_scatt</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="c1"># This accounts for the effects of a finite inner scale</span>
+        <span class="k">elif</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;power-law&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span>  <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">wavelength_reference_cm</span><span class="o">/</span><span class="p">(</span><span class="n">theta_maj_mas_ref</span><span class="o">/</span><span class="mf">1000.0</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span> <span class="c1">#Phase coherence length at the reference wavelength [cm]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span>  <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.0</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">wavelength_reference_cm</span><span class="o">/</span><span class="p">(</span><span class="n">theta_min_mas_ref</span><span class="o">/</span><span class="mf">1000.0</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span><span class="p">)</span> <span class="c1">#Phase coherence length at the reference wavelength [cm]  </span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s2">&quot;Scattering Model Not Recognized!&quot;</span>
+            <span class="k">return</span>
+
+<div class="viewcode-block" id="ScatteringModel.rF"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.rF">[docs]</a>    <span class="k">def</span> <span class="nf">rF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wavelength</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].    </span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               wavelength (float): The desired wavelength [cm]</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               rF (float): The Fresnel scale [cm]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_screen_distance</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_screen_distance</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="p">)</span><span class="o">*</span><span class="n">wavelength</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">**</span><span class="mf">0.5</span>   </div>
+
+<div class="viewcode-block" id="ScatteringModel.Mag"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Mag">[docs]</a>    <span class="k">def</span> <span class="nf">Mag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the effective magnification the scattering screen: (observer-screen distance)/(source-screen distance).</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               M (float): The effective magnification of the scattering screen. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">source_screen_distance</span></div>
+
+<div class="viewcode-block" id="ScatteringModel.Q"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Q">[docs]</a>    <span class="k">def</span> <span class="nf">Q</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qx</span><span class="p">,</span> <span class="n">qy</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Computes the power spectrum of the scattering model at a wavenumber {qx,qy} (in 1/cm).</span>
+<span class="sd">        The power spectrum is part of what defines the scattering model (along with Dphi).</span>
+<span class="sd">        Q(qx,qy) is independent of the observing wavelength.</span>
+
+<span class="sd">        Args:            </span>
+<span class="sd">            qx (float): x coordinate of the wavenumber in 1/cm. </span>
+<span class="sd">            qy (float): y coordinate of the wavenumber in 1/cm. </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            (float): The power spectrum Q(qx,qy)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">qx</span> <span class="o">==</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="n">qy</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+        <span class="n">wavelengthbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wavelength_reference</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="n">qmin</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r_out</span>
+        <span class="n">qmax</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r_in</span>
+        <span class="c1">#rotate qx and qy as needed</span>
+        <span class="n">PA</span> <span class="o">=</span> <span class="p">(</span><span class="mi">90</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">POS_ANG</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span>
+        <span class="n">qx_rot</span> <span class="o">=</span>  <span class="n">qx</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span> <span class="o">+</span> <span class="n">qy</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span>
+        <span class="n">qy_rot</span> <span class="o">=</span> <span class="o">-</span><span class="n">qx</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span> <span class="o">+</span> <span class="n">qy</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;simple&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Qprefactor</span> <span class="o">*</span> <span class="mf">2.0</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span><span class="o">*</span><span class="n">wavelengthbar</span><span class="o">**-</span><span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">**-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">*</span><span class="n">qx_rot</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="p">)</span><span class="o">*</span><span class="n">qy_rot</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">+</span> <span class="n">qmin</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">+</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">qx_rot</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">+</span> <span class="n">qy_rot</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="n">qmax</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;power-law&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">2.0</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">gamma</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span><span class="o">*</span><span class="n">wavelengthbar</span><span class="o">**-</span><span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">**-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">*</span><span class="n">qx_rot</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="p">)</span><span class="o">*</span><span class="n">qy_rot</span><span class="o">**</span><span class="mf">2.0</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">+</span><span class="mf">2.0</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> </div>
+
+<div class="viewcode-block" id="ScatteringModel.Dphi"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Dphi">[docs]</a>    <span class="k">def</span> <span class="nf">Dphi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">wavelength_cm</span><span class="p">):</span>  
+        <span class="sd">&quot;&quot;&quot;Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm). </span>
+<span class="sd">           The phase structure function is part of what defines the scattering model (along with Q).</span>
+<span class="sd">           Generically, the phase structure function must be proportional to wavelength^2 because of the cold plasma dispersion law</span>
+
+<span class="sd">           Args:            </span>
+<span class="sd">                x (float): x coordinate of the displacement (toward East) in cm. </span>
+<span class="sd">                y (float): y coordinate of the displacement (toward North) in cm. </span>
+<span class="sd">                wavelength_cm (float): observing wavelength in cm</span>
+<span class="sd">           Returns:</span>
+<span class="sd">                (float): The phase structure function (dimensionless; radians^2)</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="c1">#Phase structure function; generically, this must be proportional to wavelength^2 because of the cold plasma dispersion law</span>
+        <span class="c1">#All units in cm</span>
+        <span class="n">PA</span> <span class="o">=</span> <span class="p">(</span><span class="mf">90.</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">POS_ANG</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.0</span> 
+        <span class="n">x_rot</span> <span class="o">=</span>  <span class="n">x</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span>
+        <span class="n">y_rot</span> <span class="o">=</span> <span class="o">-</span><span class="n">x</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;simple&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">wavelength_cm</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">wavelength_reference</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">C_scatt</span><span class="o">*</span><span class="p">(((</span><span class="n">x_rot</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y_rot</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_in</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span> <span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_in</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;power-law&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">wavelength_cm</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">wavelength_reference</span><span class="p">)</span><span class="o">**</span><span class="mf">2.0</span><span class="o">*</span><span class="p">((</span><span class="n">x_rot</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_maj</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y_rot</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">r0_min</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scatt_alpha</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ScatteringModel.sqrtQ_Matrix"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.sqrtQ_Matrix">[docs]</a>    <span class="k">def</span> <span class="nf">sqrtQ_Matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.</span>
+<span class="sd">                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. </span>
+<span class="sd">                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. </span>
+<span class="sd">                t_hr (float): The current time of the scattering in hours.</span>
+<span class="sd">           Returns:</span>
+<span class="sd">               sqrtQ (2D complex ndarray): The square root of the power spectrum of the screen with an additional phase for rotation of the screen. </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="c1">#Derived parameters   </span>
+        <span class="n">FOV</span> <span class="o">=</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span> <span class="c1">#Field of view, in cm, at the scattering screen</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">xdim</span>
+
+        <span class="n">sqrtQ</span> <span class="o">=</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span> <span class="c1">#just to get the dimensions correct; this needs to be initialized as a complex array because of potential phase from a shifted screen</span>
+        <span class="n">dq</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">FOV</span> <span class="c1">#this is the spacing in wavenumber</span>
+
+        <span class="n">screen_x_offset_pixels</span> <span class="o">=</span> <span class="p">(</span><span class="n">Vx_km_per_s</span> <span class="o">*</span> <span class="mf">1.e5</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_hr</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
+        <span class="n">screen_y_offset_pixels</span> <span class="o">=</span> <span class="p">(</span><span class="n">Vy_km_per_s</span> <span class="o">*</span> <span class="mf">1.e5</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_hr</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+                <span class="n">s2</span> <span class="o">=</span> <span class="n">s</span>
+                <span class="n">t2</span> <span class="o">=</span> <span class="n">t</span>
+                <span class="k">if</span> <span class="n">s2</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="n">s2</span> <span class="o">=</span> <span class="n">s2</span> <span class="o">-</span> <span class="n">N</span>
+                <span class="k">if</span> <span class="n">t2</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="n">t2</span> <span class="o">=</span> <span class="n">t2</span> <span class="o">-</span> <span class="n">N</span> 
+
+                <span class="n">sqrtQ</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Q</span><span class="p">(</span><span class="n">dq</span><span class="o">*</span><span class="n">s2</span><span class="p">,</span> <span class="n">dq</span><span class="o">*</span><span class="n">t2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span> 
+                <span class="n">sqrtQ</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">s</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">s2</span><span class="p">)</span><span class="o">*</span><span class="n">screen_x_offset_pixels</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">t2</span><span class="p">)</span><span class="o">*</span><span class="n">screen_y_offset_pixels</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">))</span> <span class="c1">#The exponential term rotates the screen (after a Fourier transform to the image domain). Note that it uses {s2,t2}, which is important to get the conjugation symmetry correct. </span>
+              
+        <span class="n">sqrtQ</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="c1">#A DC offset doesn&#39;t affect scattering</span>
+        <span class="k">return</span> <span class="n">sqrtQ</span></div>
+
+<div class="viewcode-block" id="ScatteringModel.Ensemble_Average_Kernel"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel">[docs]</a>    <span class="k">def</span> <span class="nf">Ensemble_Average_Kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="p">,</span> <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>    
+        <span class="sd">&quot;&quot;&quot;The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.</span>
+<span class="sd">                wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the Reference image. </span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               ker (2D ndarray): The ensemble-average scattering kernel in the image domain.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">wavelength_cm</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">Reference_Image</span><span class="o">.</span><span class="n">rf</span><span class="o">*</span><span class="mf">100.0</span> <span class="c1">#Observing wavelength [cm]</span>
+
+        <span class="n">uvlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftfreq</span><span class="p">(</span><span class="n">Reference_Image</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span><span class="o">/</span><span class="n">Reference_Image</span><span class="o">.</span><span class="n">psize</span>
+
+        <span class="n">ker_uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="bp">self</span><span class="o">.</span><span class="n">Ensemble_Average_Kernel_Visibility</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">wavelength_cm</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">uvlist</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">uvlist</span><span class="p">])</span> 
+        <span class="n">ker</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">ker_uv</span><span class="p">)))</span>
+        <span class="n">ker</span> <span class="o">=</span> <span class="n">ker</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ker</span><span class="p">)</span> <span class="c1"># normalize to 1</span>
+        <span class="k">return</span> <span class="n">ker</span></div>
+
+<div class="viewcode-block" id="ScatteringModel.Ensemble_Average_Kernel_Visibility"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Kernel_Visibility">[docs]</a>    <span class="k">def</span> <span class="nf">Ensemble_Average_Kernel_Visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">wavelength_cm</span><span class="p">):</span>    
+        <span class="sd">&quot;&quot;&quot;The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                u (float): u baseline coordinate (dimensionless)</span>
+<span class="sd">                v (float): v baseline coordinate (dimensionless)</span>
+<span class="sd">                wavelength_cm (float): The observing wavelength for the scattering kernel in cm.</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               float: The ensemble-average kernel at the specified {u,v} point and observing wavelength.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Dphi</span><span class="p">(</span><span class="n">u</span><span class="o">*</span><span class="n">wavelength_cm</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">Mag</span><span class="p">()),</span> <span class="n">v</span><span class="o">*</span><span class="n">wavelength_cm</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">Mag</span><span class="p">()),</span> <span class="n">wavelength_cm</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ScatteringModel.Ensemble_Average_Blur"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Ensemble_Average_Blur">[docs]</a>    <span class="k">def</span> <span class="nf">Ensemble_Average_Blur</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ker</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Blurs an input Image with the ensemble-average scattering kernel. </span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                im (Image): The unscattered image.</span>
+<span class="sd">                wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the input image.</span>
+<span class="sd">                ker (2D ndarray): The user can optionally pass a pre-computed ensemble-average blurring kernel.  </span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               out (Image): The ensemble-average scattered image.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        
+        <span class="c1"># Inputs an unscattered image and an ensemble-average blurring kernel (2D array); returns the ensemble-average image</span>
+        <span class="c1"># The pre-computed kernel can optionally be specified (ker)</span>
+
+        <span class="k">if</span> <span class="n">wavelength_cm</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">im</span><span class="o">.</span><span class="n">rf</span><span class="o">*</span><span class="mf">100.0</span> <span class="c1">#Observing wavelength [cm]</span>
+
+        <span class="k">if</span> <span class="n">ker</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ensemble_Average_Kernel</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">wavelength_cm</span><span class="p">)</span>
+
+        <span class="n">Iim</span> <span class="o">=</span> <span class="n">Wrapped_Convolve</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">ker</span><span class="p">)</span>           
+        <span class="n">out</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">Iim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">C</span><span class="o">/</span><span class="p">(</span><span class="n">wavelength_cm</span><span class="o">/</span><span class="mf">100.0</span><span class="p">),</span> <span class="n">source</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>                        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
+            <span class="n">Qim</span> <span class="o">=</span> <span class="n">Wrapped_Convolve</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">ker</span><span class="p">)</span>     
+            <span class="n">Uim</span> <span class="o">=</span> <span class="n">Wrapped_Convolve</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">ker</span><span class="p">)</span>               
+            <span class="n">out</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">Qim</span><span class="p">,</span> <span class="n">Uim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
+            <span class="n">Vim</span> <span class="o">=</span> <span class="n">Wrapped_Convolve</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">ker</span><span class="p">)</span>                  
+            <span class="n">out</span><span class="o">.</span><span class="n">add_v</span><span class="p">(</span><span class="n">Vim</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out</span>  </div>
+
+<div class="viewcode-block" id="ScatteringModel.Deblur_obs"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs">[docs]</a>    <span class="k">def</span> <span class="nf">Deblur_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                obs (Obsdata): The observervation data (including scattering).</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               obsdeblur (Obsdata): The deblurred observation. </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        
+        <span class="c1"># make a copy of observation data</span>
+        <span class="n">datatable</span> <span class="o">=</span> <span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="n">vis</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
+        <span class="n">qvis</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;qvis&#39;</span><span class="p">]</span>
+        <span class="n">uvis</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;uvis&#39;</span><span class="p">]</span>
+        <span class="n">vvis</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">]</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
+        <span class="n">qsigma</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;qsigma&#39;</span><span class="p">]</span>
+        <span class="n">usigma</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;usigma&#39;</span><span class="p">]</span>
+        <span class="n">vsigma</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;vsigma&#39;</span><span class="p">]</span>            
+        <span class="n">u</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span>
+        
+        <span class="c1"># divide visibilities by the scattering kernel</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vis</span><span class="p">)):</span>
+            <span class="n">ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ensemble_Average_Kernel_Visibility</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="o">*</span><span class="mf">100.0</span><span class="p">)</span>
+            <span class="n">vis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">vis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+            <span class="n">qvis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">qvis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+            <span class="n">uvis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">uvis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+            <span class="n">vvis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">vvis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+            <span class="n">sigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+            <span class="n">qsigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">qsigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+            <span class="n">usigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">usigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+            <span class="n">vsigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">vsigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ker</span>
+                                
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vis</span>
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;qvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">qvis</span>
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;uvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uvis</span>
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vvis</span>
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma</span>
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;qsigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">qsigma</span>
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;usigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">usigma</span>
+        <span class="n">datatable</span><span class="p">[</span><span class="s1">&#39;vsigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vsigma</span>    
+        
+        <span class="n">obsdeblur</span> <span class="o">=</span> <span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">datatable</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> 
+                            <span class="n">ampcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">frcal</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obsdeblur</span>        </div>
+
+<div class="viewcode-block" id="ScatteringModel.MakePhaseScreen"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.MakePhaseScreen">[docs]</a>    <span class="k">def</span> <span class="nf">MakePhaseScreen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">EpsilonScreen</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sqrtQ_init</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a refractive phase screen from standardized Fourier components (the EpsilonScreen). </span>
+<span class="sd">           All lengths should be specified in centimeters</span>
+<span class="sd">           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image</span>
+<span class="sd">           Note: an odd image dimension is required!</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                EpsilonScreen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. </span>
+<span class="sd">                Reference_Image (Image): The reference image. </span>
+<span class="sd">                obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.</span>
+<span class="sd">                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. </span>
+<span class="sd">                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. </span>
+<span class="sd">                t_hr (float): The current time of the scattering in hours.</span>
+<span class="sd">                ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.</span>
+<span class="sd">                sqrtQ_init (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. </span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               phi_Image (Image): The phase screen.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="c1">#Observing wavelength</span>
+        <span class="k">if</span> <span class="n">obs_frequency_Hz</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">rf</span>
+
+        <span class="n">wavelength</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">obs_frequency_Hz</span><span class="o">*</span><span class="mf">100.0</span> <span class="c1">#Observing wavelength [cm]</span>
+        <span class="n">wavelengthbar</span> <span class="o">=</span> <span class="n">wavelength</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="c1">#lambda/(2pi) [cm]</span>
+
+        <span class="c1">#Derived parameters   </span>
+        <span class="n">FOV</span> <span class="o">=</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span> <span class="c1">#Field of view, in cm, at the scattering screen</span>
+        <span class="n">rF</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rF</span><span class="p">(</span><span class="n">wavelength</span><span class="p">)</span> 
+        <span class="n">Nx</span> <span class="o">=</span> <span class="n">EpsilonScreen</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">Ny</span> <span class="o">=</span> <span class="n">EpsilonScreen</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">Nx</span><span class="o">%</span><span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s2">&quot;The image dimension should really be odd...&quot;</span>
+
+        <span class="c1">#Now we&#39;ll calculate the power spectrum for each pixel in Fourier space</span>
+        <span class="n">screen_x_offset_pixels</span> <span class="o">=</span> <span class="p">(</span><span class="n">Vx_km_per_s</span><span class="o">*</span><span class="mf">1.e5</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_hr</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">Nx</span><span class="p">))</span>
+        <span class="n">screen_y_offset_pixels</span> <span class="o">=</span> <span class="p">(</span><span class="n">Vy_km_per_s</span><span class="o">*</span><span class="mf">1.e5</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_hr</span><span class="o">*</span><span class="mf">3600.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">Nx</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">sqrtQ_init</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sqrtQ</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sqrtQ_Matrix</span><span class="p">(</span><span class="n">Reference_Image</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="n">Vy_km_per_s</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="n">t_hr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#If a matrix for sqrtQ_init is passed, we still need to potentially rotate it</span>
+           
+            <span class="k">if</span> <span class="n">screen_x_offset_pixels</span> <span class="o">!=</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">screen_y_offset_pixels</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">sqrtQ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">sqrtQ_init</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Nx</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Ny</span><span class="p">):</span>
+                        <span class="n">s2</span> <span class="o">=</span> <span class="n">s</span>
+                        <span class="n">t2</span> <span class="o">=</span> <span class="n">t</span>
+                        <span class="k">if</span> <span class="n">s2</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">Nx</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
+                            <span class="n">s2</span> <span class="o">=</span> <span class="n">s2</span> <span class="o">-</span> <span class="n">Nx</span>
+                        <span class="k">if</span> <span class="n">t2</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">Ny</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
+                            <span class="n">t2</span> <span class="o">=</span> <span class="n">t2</span> <span class="o">-</span> <span class="n">Ny</span> 
+                        <span class="n">sqrtQ</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="n">s</span><span class="p">]</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">s2</span><span class="p">)</span><span class="o">*</span><span class="n">screen_x_offset_pixels</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">t2</span><span class="p">)</span><span class="o">*</span><span class="n">screen_y_offset_pixels</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">Nx</span><span class="p">))</span> <span class="c1">#The exponential term rotates the screen (after a Fourier transform to the image domain). Note that it uses {s2,t2}, which is important to get the conjugation symmetry correct. </span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sqrtQ</span> <span class="o">=</span> <span class="n">sqrtQ_init</span>
+
+        <span class="c1">#Now calculate the phase screen</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">wavelengthbar</span><span class="o">/</span><span class="n">FOV</span><span class="o">*</span><span class="n">EpsilonScreen</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">EpsilonScreen</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">sqrtQ</span><span class="o">*</span><span class="n">EpsilonScreen</span><span class="p">))</span>                      
+        <span class="n">phi_Image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">phi</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">Reference_Image</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">Reference_Image</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">Reference_Image</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">Reference_Image</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">phi_Image</span></div>
+
+<div class="viewcode-block" id="ScatteringModel.Scatter"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter">[docs]</a>    <span class="k">def</span> <span class="nf">Scatter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Unscattered_Image</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ea_ker</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">DisplayImage</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Scatter an image using the specified epsilon screen. </span>
+<span class="sd">           All lengths should be specified in centimeters</span>
+<span class="sd">           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image</span>
+<span class="sd">           Note: an odd image dimension is required!</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                Unscattered_Image (Image): The unscattered image. </span>
+<span class="sd">                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. </span>
+<span class="sd">                obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.</span>
+<span class="sd">                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. </span>
+<span class="sd">                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. </span>
+<span class="sd">                t_hr (float): The current time of the scattering in hours.</span>
+<span class="sd">                ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.</span>
+<span class="sd">                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. </span>
+<span class="sd">                Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson &amp; Narayan 2016). If False, uses Eq. 9 of that paper.</span>
+<span class="sd">                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. </span>
+<span class="sd">                Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               AI_Image (Image): The scattered image.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="c1">#Observing wavelength</span>
+        <span class="k">if</span> <span class="n">obs_frequency_Hz</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">rf</span>
+
+        <span class="n">wavelength</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="n">obs_frequency_Hz</span><span class="o">*</span><span class="mf">100.0</span> <span class="c1">#Observing wavelength [cm]</span>
+        <span class="n">wavelengthbar</span> <span class="o">=</span> <span class="n">wavelength</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="c1">#lambda/(2pi) [cm]</span>
+
+        <span class="c1">#Derived parameters   </span>
+        <span class="n">FOV</span> <span class="o">=</span> <span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span> <span class="c1">#Field of view, in cm, at the scattering screen</span>
+        <span class="n">rF</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rF</span><span class="p">(</span><span class="n">wavelength</span><span class="p">)</span>
+        <span class="n">Nx</span> <span class="o">=</span> <span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">xdim</span>
+        <span class="n">Ny</span> <span class="o">=</span> <span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">ydim</span>
+
+        <span class="k">if</span> <span class="n">Nx</span><span class="o">%</span><span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s2">&quot;The image dimension should really be odd...&quot;</span>
+
+        <span class="c1">#First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel    </span>
+        <span class="n">EA_Image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ensemble_Average_Blur</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="p">,</span> <span class="n">wavelength</span><span class="p">,</span> <span class="n">ker</span> <span class="o">=</span> <span class="n">ea_ker</span><span class="p">)</span>
+
+        <span class="c1"># If no epsilon screen is specified, then generate a random realization</span>
+        <span class="k">if</span> <span class="n">Epsilon_Screen</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">Epsilon_Screen</span> <span class="o">=</span> <span class="n">MakeEpsilonScreen</span><span class="p">(</span><span class="n">Nx</span><span class="p">,</span> <span class="n">Ny</span><span class="p">)</span>
+
+        <span class="c1">#We&#39;ll now calculate the phase screen.       </span>
+        <span class="n">phi_Image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MakePhaseScreen</span><span class="p">(</span><span class="n">Epsilon_Screen</span><span class="p">,</span> <span class="n">Unscattered_Image</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="n">Vy_km_per_s</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="n">t_hr</span><span class="p">,</span> <span class="n">sqrtQ_init</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">)</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">phi_Image</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span>
+
+        <span class="c1">#Next, we need the gradient of the ensemble-average image</span>
+        <span class="n">phi_Gradient</span> <span class="o">=</span> <span class="n">Wrapped_Gradient</span><span class="p">(</span><span class="n">phi</span><span class="o">/</span><span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="n">Nx</span><span class="p">))</span>    
+        <span class="c1">#The gradient signs don&#39;t actually matter, but let&#39;s make them match intuition (i.e., right to left, bottom to top)</span>
+        <span class="n">phi_Gradient_x</span> <span class="o">=</span> <span class="o">-</span><span class="n">phi_Gradient</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">phi_Gradient_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">phi_Gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">Linearized_Approximation</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="c1">#Use Equation 10 of Johnson &amp; Narayan (2016)</span>
+            <span class="c1">#Calculate the gradient of the ensemble-average image</span>
+            <span class="n">EA_Gradient</span> <span class="o">=</span> <span class="n">Wrapped_Gradient</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="o">/</span><span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="n">Nx</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>    
+            <span class="c1">#The gradient signs don&#39;t actually matter, but let&#39;s make them match intuition (i.e., right to left, bottom to top)</span>
+            <span class="n">EA_Gradient_x</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">EA_Gradient_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1">#Now we can patch together the average image</span>
+            <span class="n">AI</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span> <span class="o">+</span> <span class="n">rF</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span> <span class="n">EA_Gradient_x</span><span class="o">*</span><span class="n">phi_Gradient_x</span> <span class="o">+</span> <span class="n">EA_Gradient_y</span><span class="o">*</span><span class="n">phi_Gradient_y</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
+                    <span class="c1"># Scatter the Q image</span>
+                    <span class="n">EA_Gradient</span> <span class="o">=</span> <span class="n">Wrapped_Gradient</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">qvec</span><span class="o">/</span><span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="n">Nx</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span> 
+                    <span class="n">EA_Gradient_x</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">EA_Gradient_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">AI_Q</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span> <span class="o">+</span> <span class="n">rF</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span> <span class="n">EA_Gradient_x</span><span class="o">*</span><span class="n">phi_Gradient_x</span> <span class="o">+</span> <span class="n">EA_Gradient_y</span><span class="o">*</span><span class="n">phi_Gradient_y</span> <span class="p">)</span>
+                    <span class="c1"># Scatter the U image</span>
+                    <span class="n">EA_Gradient</span> <span class="o">=</span> <span class="n">Wrapped_Gradient</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">uvec</span><span class="o">/</span><span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="n">Nx</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span> 
+                    <span class="n">EA_Gradient_x</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">EA_Gradient_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">AI_U</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span> <span class="o">+</span> <span class="n">rF</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span> <span class="n">EA_Gradient_x</span><span class="o">*</span><span class="n">phi_Gradient_x</span> <span class="o">+</span> <span class="n">EA_Gradient_y</span><span class="o">*</span><span class="n">phi_Gradient_y</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
+                    <span class="c1"># Scatter the V image</span>
+                    <span class="n">EA_Gradient</span> <span class="o">=</span> <span class="n">Wrapped_Gradient</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">vvec</span><span class="o">/</span><span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="n">Nx</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span> 
+                    <span class="n">EA_Gradient_x</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">EA_Gradient_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">EA_Gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">AI_V</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span> <span class="o">+</span> <span class="n">rF</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">*</span> <span class="p">(</span> <span class="n">EA_Gradient_x</span><span class="o">*</span><span class="n">phi_Gradient_x</span> <span class="o">+</span> <span class="n">EA_Gradient_y</span><span class="o">*</span><span class="n">phi_Gradient_y</span> <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1">#Use Equation 9 of Johnson &amp; Narayan (2016)</span>
+            <span class="n">EA_im</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span>
+            <span class="n">AI</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
+                <span class="n">AI_Q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">))</span>
+                <span class="n">AI_U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">))</span>
+                <span class="n">EA_im_Q</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span>
+                <span class="n">EA_im_U</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
+                <span class="n">AI_V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">))</span>
+                <span class="n">EA_im_V</span> <span class="o">=</span> <span class="p">(</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">vvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Ny</span><span class="p">,</span><span class="n">Nx</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">rx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nx</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">ry</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Ny</span><span class="p">):</span>
+                    <span class="c1"># Annoyingly, the signs here must be negative to match the other approximation. I&#39;m not sure which is correct, but it really shouldn&#39;t matter anyway because -phi has the same power spectrum as phi. However, getting the *relative* sign for the x- and y-directions correct is important. </span>
+                    <span class="n">rxp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">rx</span> <span class="o">-</span> <span class="n">rF</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">phi_Gradient_x</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span><span class="n">rx</span><span class="p">]</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="o">/</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">psize</span><span class="p">))</span><span class="o">%</span><span class="n">Nx</span>
+                    <span class="n">ryp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">ry</span> <span class="o">-</span> <span class="n">rF</span><span class="o">**</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">phi_Gradient_y</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span><span class="n">rx</span><span class="p">]</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">observer_screen_distance</span><span class="o">/</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">psize</span><span class="p">))</span><span class="o">%</span><span class="n">Ny</span>
+                    <span class="n">AI</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span><span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="n">EA_im</span><span class="p">[</span><span class="n">ryp</span><span class="p">,</span><span class="n">rxp</span><span class="p">]</span>   
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>  
+                        <span class="n">AI_Q</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span><span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="n">EA_im_Q</span><span class="p">[</span><span class="n">ryp</span><span class="p">,</span><span class="n">rxp</span><span class="p">]</span>          
+                        <span class="n">AI_U</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span><span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="n">EA_im_U</span><span class="p">[</span><span class="n">ryp</span><span class="p">,</span><span class="n">rxp</span><span class="p">]</span>      
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span> 
+                        <span class="n">AI_V</span><span class="p">[</span><span class="n">ry</span><span class="p">,</span><span class="n">rx</span><span class="p">]</span> <span class="o">=</span> <span class="n">EA_im_V</span><span class="p">[</span><span class="n">ryp</span><span class="p">,</span><span class="n">rxp</span><span class="p">]</span>
+
+        <span class="c1">#Optional: eliminate negative flux</span>
+        <span class="k">if</span> <span class="n">Force_Positivity</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> 
+           <span class="n">AI</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">AI</span><span class="p">)</span>
+
+        <span class="c1">#Make it into a proper image format</span>
+        <span class="n">AI_Image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">AI</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span> 
+            <span class="n">AI_Image</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">AI_Q</span><span class="p">,</span> <span class="n">AI_U</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
+            <span class="n">AI_Image</span><span class="o">.</span><span class="n">add_v</span><span class="p">(</span><span class="n">AI_V</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">DisplayImage</span><span class="p">:</span>
+            <span class="n">plot_scatt</span><span class="p">(</span><span class="n">Unscattered_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">,</span> <span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">,</span> <span class="n">AI_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">,</span> <span class="n">phi_Image</span><span class="o">.</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Unscattered_Image</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">AI_Image</span></div>
+
+<div class="viewcode-block" id="ScatteringModel.Scatter_Movie"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel.Scatter_Movie">[docs]</a>    <span class="k">def</span> <span class="nf">Scatter_Movie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Unscattered_Movie</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([]),</span> <span class="n">obs_frequency_Hz</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">Vx_km_per_s</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">Vy_km_per_s</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">framedur_sec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">N_frames</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">Return_Image_List</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image</span>
+<span class="sd">           If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified</span>
+<span class="sd">           If scattering a static image, the total number of frames must be specified (N_frames)</span>
+<span class="sd">           All lengths should be specified in centimeters</span>
+<span class="sd">           If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Movie</span>
+<span class="sd">           Note: an odd image dimension is required!</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                Unscattered_Movie: This can be a movie object, an image list, or a static image</span>
+<span class="sd">                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. </span>
+<span class="sd">                obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Movie.</span>
+<span class="sd">                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. </span>
+<span class="sd">                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. </span>
+<span class="sd">                framedur_sec (float): Duration of each frame, in seconds. Only needed if Unscattered_Movie is not a movie object. </span>
+<span class="sd">                N_frames (int): Total number of frames. Only needed if Unscattered_Movie is a static image object. </span>
+<span class="sd">                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. </span>
+<span class="sd">                Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson &amp; Narayan 2016). If False, uses Eq. 9 of that paper.</span>
+<span class="sd">                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. </span>
+<span class="sd">                Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List. </span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">!=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span> <span class="ow">and</span> <span class="n">framedur_sec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s2">&quot;If scattering a list of images of static image, the framedur must be specified!&quot;</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span> <span class="ow">and</span> <span class="n">N_frames</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span> <span class="s2">&quot;If scattering a static image, the total number of frames must be specified (N_frames)!&quot;</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">framedur_sec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">framedur_sec</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">framedur</span>   
+
+        <span class="nb">print</span> <span class="s2">&quot;Frame Duration (seconds):&quot;</span><span class="p">,</span><span class="n">framedur_sec</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">:</span> 
+            <span class="n">N</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">xdim</span>
+            <span class="n">N_frames</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span>
+            <span class="n">psize</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">psize</span>
+            <span class="n">ra</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">ra</span>
+            <span class="n">dec</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">dec</span>
+            <span class="n">rf</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">rf</span>
+            <span class="n">pulse</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">pulse</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">source</span>
+            <span class="n">mjd</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">mjd</span>
+            <span class="n">start_hr</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">start_hr</span>
+            <span class="n">has_pol</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">qframes</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">xdim</span>
+            <span class="n">N_frames</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span>
+            <span class="n">psize</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">psize</span>
+            <span class="n">ra</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ra</span>
+            <span class="n">dec</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dec</span>
+            <span class="n">rf</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">rf</span>
+            <span class="n">pulse</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pulse</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">source</span>
+            <span class="n">mjd</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span>
+            <span class="n">start_hr</span><span class="o">=</span><span class="mf">0.0</span>
+            <span class="n">has_pol</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">xdim</span>
+            <span class="n">psize</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">psize</span>
+            <span class="n">ra</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">ra</span>
+            <span class="n">dec</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">dec</span>
+            <span class="n">rf</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">rf</span>
+            <span class="n">pulse</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">pulse</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">source</span>
+            <span class="n">mjd</span><span class="o">=</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">mjd</span>
+            <span class="n">start_hr</span><span class="o">=</span><span class="mf">0.0</span>
+            <span class="n">has_pol</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">)),</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">pulse</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Unscattered_Movie</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Unscattered_Movie</span>
+
+        <span class="c1">#If it isn&#39;t specified, calculate the matrix sqrtQ for efficiency </span>
+        <span class="k">if</span> <span class="n">sqrtQ</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sqrtQ</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sqrtQ_Matrix</span><span class="p">(</span><span class="n">get_frame</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+        <span class="c1"># If no epsilon screen is specified, then generate a random realization</span>
+        <span class="k">if</span> <span class="n">Epsilon_Screen</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">Epsilon_Screen</span> <span class="o">=</span> <span class="n">MakeEpsilonScreen</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
+
+        <span class="n">scattered_im_List</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">Epsilon_Screen</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">obs_frequency_Hz</span><span class="p">,</span> <span class="n">Vx_km_per_s</span> <span class="o">=</span> <span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span> <span class="o">=</span> <span class="n">Vy_km_per_s</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="n">framedur_sec</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">*</span><span class="n">j</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="n">Linearized_Approximation</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="n">Force_Positivity</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="n">Return_Image_List</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">scattered_im_List</span>
+
+        <span class="n">Scattered_Movie</span> <span class="o">=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">(</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">],</span> <span class="n">framedur</span> <span class="o">=</span> <span class="n">framedur_sec</span><span class="p">,</span> <span class="n">psize</span> <span class="o">=</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span> <span class="o">=</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="o">=</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">rf</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="n">start_hr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">has_pol</span><span class="p">:</span>
+            <span class="n">Scattered_Movie_Q</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">]</span>
+            <span class="n">Scattered_Movie_U</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">]</span>
+            <span class="n">Scattered_Movie</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">Scattered_Movie_Q</span><span class="p">,</span> <span class="n">Scattered_Movie_U</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Scattered_Movie</span></div></div>
+        
+<span class="c1">################################################################################</span>
+<span class="c1"># These are helper functions </span>
+<span class="c1">################################################################################</span>
+
+<span class="k">def</span> <span class="nf">Wrapped_Convolve</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span><span class="n">ker</span><span class="p">):</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">scipy</span><span class="o">.</span><span class="n">signal</span><span class="o">.</span><span class="n">fftconvolve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">sig</span><span class="p">,((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)),</span> <span class="s1">&#39;wrap&#39;</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">ker</span><span class="p">,((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)),</span> <span class="s1">&#39;constant&#39;</span><span class="p">),</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)[</span><span class="n">N</span><span class="p">:(</span><span class="mi">2</span><span class="o">*</span><span class="n">N</span><span class="p">),</span><span class="n">N</span><span class="p">:(</span><span class="mi">2</span><span class="o">*</span><span class="n">N</span><span class="p">)]</span>
+
+<span class="k">def</span> <span class="nf">Wrapped_Gradient</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">M</span><span class="p">,((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="s1">&#39;wrap&#39;</span><span class="p">))</span>
+    <span class="n">Gx</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">Gy</span> <span class="o">=</span> <span class="n">G</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">Gx</span><span class="p">,</span> <span class="n">Gy</span><span class="p">)</span>
+    
+<span class="k">def</span> <span class="nf">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">EpsilonList</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+    <span class="n">epsilon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex</span><span class="p">)</span>
+    <span class="c1">#There are (N^2-1)/2 real elements followed by (N^2-1)/2 complex elements</span>
+
+    <span class="c1">#The first (N-1)/2 are the top row</span>
+    <span class="n">N_re</span> <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">epsilon</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">EpsilonList</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">EpsilonList</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">N_re</span><span class="p">]</span>
+        <span class="n">epsilon</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">N</span><span class="o">-</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">epsilon</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">])</span>
+        <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+
+    <span class="c1">#The next N(N-1)/2 are filling the next N rows</span>
+    <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+            <span class="n">epsilon</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">EpsilonList</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">EpsilonList</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">N_re</span><span class="p">]</span>
+
+            <span class="n">x2</span> <span class="o">=</span> <span class="n">N</span> <span class="o">-</span> <span class="n">x</span>
+            <span class="n">y2</span> <span class="o">=</span> <span class="n">N</span> <span class="o">-</span> <span class="n">y</span>
+            <span class="k">if</span> <span class="n">x2</span> <span class="o">==</span> <span class="n">N</span><span class="p">:</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">y2</span> <span class="o">==</span> <span class="n">N</span><span class="p">:</span>
+                <span class="n">y2</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="n">epsilon</span><span class="p">[</span><span class="n">y2</span><span class="p">][</span><span class="n">x2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">epsilon</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">])</span>
+            <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span>    
+
+    <span class="k">return</span> <span class="n">epsilon</span>
+
+<div class="viewcode-block" id="MakeEpsilonScreen"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.MakeEpsilonScreen">[docs]</a><span class="k">def</span> <span class="nf">MakeEpsilonScreen</span><span class="p">(</span><span class="n">Nx</span><span class="p">,</span> <span class="n">Ny</span><span class="p">,</span> <span class="n">rngseed</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a standardized Fourier representation of a scattering screen</span>
+<span class="sd">       </span>
+<span class="sd">       Args:</span>
+<span class="sd">           Nx (int): Number of pixels in the x direction</span>
+<span class="sd">           Ny (int): Number of pixels in the y direction</span>
+<span class="sd">           rngseed (int): Seed for the random number generator</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           epsilon: A 2D numpy ndarray. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">rngseed</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span> <span class="n">rngseed</span> <span class="p">)</span>
+
+    <span class="n">epsilon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">Nx</span><span class="p">,</span><span class="n">Ny</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">Nx</span><span class="p">,</span><span class="n">Ny</span><span class="p">))</span>
+    <span class="n">epsilon</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="c1">#Now let&#39;s ensure that it has the necessary conjugation symmetry</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">Nx</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">epsilon</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">epsilon</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">Nx</span><span class="o">-</span><span class="n">x</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">((</span><span class="n">Ny</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">Ny</span><span class="p">):</span>
+            <span class="n">x2</span> <span class="o">=</span> <span class="n">Nx</span> <span class="o">-</span> <span class="n">x</span>
+            <span class="n">y2</span> <span class="o">=</span> <span class="n">Ny</span> <span class="o">-</span> <span class="n">y</span>
+            <span class="k">if</span> <span class="n">x2</span> <span class="o">==</span> <span class="n">Nx</span><span class="p">:</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">y2</span> <span class="o">==</span> <span class="n">Ny</span><span class="p">:</span>
+                <span class="n">y2</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">epsilon</span><span class="p">[</span><span class="n">y</span><span class="p">][</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">epsilon</span><span class="p">[</span><span class="n">y2</span><span class="p">][</span><span class="n">x2</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">epsilon</span></div>
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Plotting Functions</span>
+<span class="c1">##################################################################################################</span>
+
+<span class="k">def</span> <span class="nf">plot_scatt</span><span class="p">(</span><span class="n">im_unscatt</span><span class="p">,</span> <span class="n">im_ea</span><span class="p">,</span> <span class="n">im_scatt</span><span class="p">,</span> <span class="n">im_phase</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">nit</span><span class="p">,</span> <span class="n">chi2</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>    
+    <span class="c1"># Get vectors and ratio from current image</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">)]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)])</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">j</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">)]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)])</span>
+    
+    <span class="c1"># Create figure and title</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ion</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">chi2</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;step: </span><span class="si">%i</span><span class="s2">  $\chi^2$: </span><span class="si">%f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nit</span><span class="p">,</span> <span class="n">chi2</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        
+    <span class="c1"># Unscattered Image</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">141</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im_unscatt</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;afmhot&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">xticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">yticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">xticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">yticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Relative RA ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Relative Dec ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Unscattered&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># Ensemble Average</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">142</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im_ea</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;afmhot&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">xticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">yticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">xticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">yticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Relative RA ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Relative Dec ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Ensemble Average&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Scattered</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">143</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im_scatt</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;afmhot&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">xticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">yticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">xticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">yticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Relative RA ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Relative Dec ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Average Image&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># Phase</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">144</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im_phase</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;afmhot&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">)</span>
+    <span class="n">xticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">yticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">xticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">yticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Relative RA ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Relative Dec ($\mu$as)&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Phase Screen&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Display</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ipynb</span><span class="p">:</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">clear_output</span><span class="p">()</span>
+        <span class="n">display</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">())</span>  
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Andrew Chael.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
