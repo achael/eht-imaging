@@ -5,6 +5,6 @@
 Stokes I Imager
 ===============
 
-.. autofunction:: ehtim.imaging.imager.imager
+.. autofunction:: ehtim.imaging.imager_utils.imager_func
 
 
