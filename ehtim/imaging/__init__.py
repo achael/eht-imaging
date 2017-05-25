@@ -8,6 +8,6 @@
 """
 
 #import imager
+#from .imager_utils import *
 
-from .imager import *
 from ehtim.const_def import *

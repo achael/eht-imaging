@@ -11,8 +11,9 @@ import ehtim.array
 import ehtim.movie
 import ehtim.image
 import ehtim.vex
+import ehtim.imager
 
-from ehtim.imaging import imager
+from ehtim.imaging.imager_utils import imager_func
 from ehtim.calibrating import self_cal
 from ehtim.plotting import comp_plots
 

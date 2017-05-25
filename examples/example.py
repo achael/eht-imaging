@@ -72,7 +72,7 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with amplitudes and closure phases
 flux = zbl
-out  = eh.imager(obs, gaussprior, gaussprior, flux, 
+out  = eh.imager_func(obs, gaussprior, gaussprior, flux, 
                  d1='bs', s1='simple', 
                  alpha_s1=1, alpha_d1=100, 
                  alpha_flux=100, alpha_cm=50,
@@ -80,14 +80,14 @@ out  = eh.imager(obs, gaussprior, gaussprior, flux,
  
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
-out = eh.imager(obs, out, out, flux, 
+out = eh.imager_func(obs, out, out, flux, 
                 d1='bs', s1='tv', 
                 alpha_s1=1, alpha_d1=50, 
                 alpha_flux=100, alpha_cm=50,
                 maxit=100)
 
 out = out.blur_circ(res/2.0)
-out = eh.imager(obs, out, out, flux, 
+out = eh.imager_func(obs, out, out, flux, 
                 d1='bs', s1='tv', 
                 alpha_s1=1, alpha_d1=10, 
                 alpha_flux=100, alpha_cm=50,
@@ -99,7 +99,7 @@ out = eh.imager(obs, out, out, flux,
 obs_sc = sc.self_cal(obs, out)
 
 out_sc = out.blur_circ(res)
-out_sc = eh.imager(obs_sc, out_sc, out_sc, flux, 
+out_sc = eh.imager_func(obs_sc, out_sc, out_sc, flux, 
                    d1='vis', s1='simple', 
                    alpha_s1=1, alpha_d1=100, 
                    alpha_flux=100, alpha_cm=50,

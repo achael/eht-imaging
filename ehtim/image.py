@@ -52,7 +52,7 @@ class Image(object):
         self.qvec = []
         self.uvec = []
         self.vvec = []
-        
+    
     def add_qu(self, qimage, uimage):
         """Add Stokes Q and U images.
         """
