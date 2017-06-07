@@ -457,7 +457,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
     """
     # Read telescope parameters from the array file
     tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
-    tdata = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[-1])), dtype=DTARR) for x in tdata]
+    tdata = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[-1]), 0., 0., 0., 0., 0.), dtype=DTARR) for x in tdata]
     tdata = np.array(tdata)
 
     # Read parameters from the obs_spec
@@ -557,7 +557,7 @@ def load_obs_uvfits(filename, flipbl=False):
     # Load the array data
     tnames = hdulist['AIPS AN'].data['ANNAME']
     tnums = hdulist['AIPS AN'].data['NOSTA'] - 1
-    xyz = hdulist['AIPS AN'].data['STABXYZ']
+    xyz = np.real(hdulist['AIPS AN'].data['STABXYZ'])
     try:
         sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
         sefdl = np.real(hdulist['AIPS AN'].data['SEFD']) #!AC TODO add sefdl to uvfits?
@@ -566,18 +566,19 @@ def load_obs_uvfits(filename, flipbl=False):
         sefdr = np.zeros(len(tnames))
         sefdl = np.zeros(len(tnames))
     
-    #!AC TODO - get the *real* values of these telescope parameters
+    #!AC TODO - get the *actual* values of these telescope parameters
     fr_par = np.zeros(len(tnames))
     fr_el = np.zeros(len(tnames))
     fr_off = np.zeros(len(tnames))
     dr = np.zeros(len(tnames)) + 1j*np.zeros(len(tnames))
     dl = np.zeros(len(tnames)) + 1j*np.zeros(len(tnames))
         
-    tarr = [np.array((tnames[i], xyz[i][0], xyz[i][1], xyz[i][2], 
-            sefdr[i], sefdl[i], fr_par[i], fr_el[i], fr_off[i],
-            dr[i], dl[i]),
+    tarr = [np.array((
+            tnames[i], xyz[i][0], xyz[i][1], xyz[i][2], 
+            sefdr[i], sefdl[i], dr[i], dl[i],
+            fr_par[i], fr_el[i], fr_off[i]),
             dtype=DTARR) for i in range(len(tnames))]
-            
+
     tarr = np.array(tarr)
     
     # Various header parameters
@@ -789,8 +790,8 @@ def load_obs_oifits(filename, flux=1.0):
                          ], dtype=DTPOL)
 
     tarr = np.array([(sites[i], x[i], y[i], z[i], 
-                       sefdr[i], sefdl[i], fr_par[i], fr_el[i], fr_off[i],
-                       dr[i], dl[i]
+                      sefdr[i], sefdl[i], dr[i], dl[i],
+                      fr_par[i], fr_el[i], fr_off[i], 
                      ) for i in range(nAntennas)
                     ], dtype=DTARR)
     

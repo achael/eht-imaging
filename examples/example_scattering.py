@@ -39,6 +39,7 @@ im_scatt_ea.display()
 movie_frames = sm.Scatter_Movie(im, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=3600.0, N_frames = 24*7, Return_Image_List=True) 
 flux_timeseries = [ np.sum(i.imvec) for i in movie_frames ]
 import matplotlib.pyplot as plt
+plt.close()
 plt.clf
 plt.plot(flux_timeseries)
 plt.axhline(y=np.sum(im.imvec),c="red",linewidth=1,zorder=0)
