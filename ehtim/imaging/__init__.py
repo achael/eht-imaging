@@ -6,6 +6,4 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
-from .imager import *
-
 from ..const_def import *

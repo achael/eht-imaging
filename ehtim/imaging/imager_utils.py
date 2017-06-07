@@ -124,7 +124,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 ##################################################################################################
 # Total Intensity Imager
 ##################################################################################################
-def imager(Obsdata, InitIm, Prior, flux,
+def imager_func(Obsdata, InitIm, Prior, flux,
            d1='vis', d2=False, s1='simple', s2=False,
            alpha_s1=1, alpha_s2=1,
            alpha_d1=100, alpha_d2=100, 
