@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import time
 
 import ehtim.observing.pulses 
+import ehtim.scattering as so
 
 from ehtim.imaging.imager_utils import *
 from ehtim.const_def import *
@@ -22,7 +23,7 @@ class Imager(object):
     """A general interferometric imager.
     """
     
-    def __init__(self, obsdata, init_im, prior_im=None,  flux=None, clipfloor=0., maxit=50, transform='log', data_term={'vis':100}, reg_term={'simple':1}):
+    def __init__(self, obsdata, init_im, prior_im=None,  flux=None, clipfloor=0., maxit=50, transform='log', data_term={'vis':100}, reg_term={'simple':1}, scattering_model=None, alpha_phi=1e4):
         
         self.logstr = ""
         self._obs_list = []
@@ -53,6 +54,15 @@ class Imager(object):
             self.flux_next = self.prior_next.total_flux()
         else:
             self.flux_next = flux
+
+        # Parameters related to scattering
+        self.scattering_model = scattering_model
+        self._sqrtQ = None
+        self._ea_ker = None
+        self._ea_ker_gradient_x = None
+        self._ea_ker_gradient_y = None
+        self._alpha_phi_list = []
+        self.alpha_phi_next = alpha_phi
 
         self.clipfloor_next = clipfloor
         self.maxit_next = maxit
@@ -113,21 +123,21 @@ class Imager(object):
         if self.nruns == 0:
             return
 
-        if len(self.reg_term_next) != len(self.reg_term_last()): 
+        if len(self.reg_term_next) != len(self.reg_terms_last()): 
             self._change_imgr_params = True
             return
 
-        if len(self.dat_term_next) != len(self.dat_term_last()): 
+        if len(self.dat_term_next) != len(self.dat_terms_last()): 
             self._change_imgr_params = True
             return
 
         for term in sorted(self.dat_term_next.keys()):
-            if term not in list(self.dat_term_last().keys()):
+            if term not in self.dat_terms_last().keys():
                 self._change_imgr_params = True
                 return
 
         for term in sorted(self.reg_term_next.keys()):
-            if term not in list(self.reg_term_last().keys()):
+            if term not in self.reg_terms_last().keys():
                 self._change_imgr_params = True
                 return
         
@@ -233,6 +243,27 @@ class Imager(object):
 
         return
 
+    def init_imager_scattering(self):
+        if self.scattering_model == None:
+            self.scattering_model = so.ScatteringModel()
+
+        # First some preliminary definitions
+        wavelength = C/self.obs_next.rf*100.0 #Observing wavelength [cm] 
+        wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
+        N = self.prior_next.xdim
+        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance #Field of view, in cm, at the scattering screen
+        
+
+        # The ensemble-average convolution kernel and its gradients
+        self._ea_ker = self.scattering_model.Ensemble_Average_Kernel(self.prior_next, wavelength_cm = wavelength)
+        ea_ker_gradient = so.Wrapped_Gradient(self._ea_ker/(FOV/N))    
+        self._ea_ker_gradient_x = -ea_ker_gradient[1]
+        self._ea_ker_gradient_y = -ea_ker_gradient[0]
+
+        # The power spectrum (note: rotation is not currently implemented; the gradients would need to be modified slightly)
+        self._sqrtQ = np.real(self.scattering_model.sqrtQ_Matrix(self.prior_next,t_hr=0.0))        
+
+
     def make_chisq_dict(self, imvec):
         chi2_dict = {}
         for dname in sorted(self.dat_term_next.keys()):
@@ -268,7 +299,7 @@ class Imager(object):
                 reg /= norm
 
             elif regname == 'cm':
-                #norm = flux**2 * Prior.psize**2
+                #norm = flux**2 * self.prior_next.psize**2
                 norm = 1        
                 reg = (np.sum(imvec*self._coord_matrix[:,0])**2 + 
                        np.sum(imvec*self._coord_matrix[:,1])**2)
@@ -294,7 +325,7 @@ class Imager(object):
                 reg /= norm
 
             elif regname == 'cm':
-                #norm = flux**2 * Prior.psize**2
+                #norm = flux**2 * self.prior_next.psize**2
                 norm = 1        
                 reg = 2*(np.sum(imvec*self._coord_matrix[:,0])*self._coord_matrix[:,0] + 
                          np.sum(imvec*self._coord_matrix[:,1])*self._coord_matrix[:,1])
@@ -325,6 +356,35 @@ class Imager(object):
 
         return datterm + regterm
 
+    def objfunc_scattering(self, minvec):
+        N = self.prior_next.xdim
+
+        imvec       = minvec[:N**2]
+        EpsilonList = minvec[N**2:] 
+        if self.transform_next == 'log': 
+            imvec = np.exp(imvec)
+
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
+        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ).imvec #the scattered image vector
+
+        # Calculate the chi^2 using the scattered image
+        datterm = 0.
+        chi2_term_dict = self.make_chisq_dict(scatt_im)            
+        for dname in sorted(self.dat_term_next.keys()):
+            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+
+        # Calculate the entropy using the unscattered image
+        regterm = 0
+        reg_term_dict = self.make_reg_dict(imvec)  
+        for regname in sorted(self.reg_term_next.keys()):
+            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+
+        # Scattering screen regularization term
+        chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)    
+        regterm_scattering = self.alpha_phi_next * (chisq_epsilon - 1.0)  
+
+        return datterm + regterm + regterm_scattering
+
     def objgrad(self, imvec):
         if self.transform_next == 'log': 
             imvec = np.exp(imvec)
@@ -346,6 +406,108 @@ class Imager(object):
             grad *= imvec
 
         return grad
+
+    def objgrad_scattering(self, minvec):
+        wavelength = C/self.obs_next.rf*100.0 #Observing wavelength [cm] 
+        wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
+        N = self.prior_next.xdim
+        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance #Field of view, in cm, at the scattering screen
+        rF = self.scattering_model.rF(wavelength)
+
+        imvec       = minvec[:N**2]
+        EpsilonList = minvec[N**2:] 
+        if self.transform_next == 'log': 
+            imvec = np.exp(imvec)
+         
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
+        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ).imvec #the scattered image vector
+
+        EA_Image = self.scattering_model.Ensemble_Average_Blur(IM, ker = self._ea_ker)
+        EA_Gradient = so.Wrapped_Gradient((EA_Image.imvec/(FOV/N)).reshape(N, N))    
+        #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
+        EA_Gradient_x = -EA_Gradient[1]
+        EA_Gradient_y = -EA_Gradient[0]
+
+        Epsilon_Screen = so.MakeEpsilonScreenFromList(EpsilonList, N)
+        phi = self.scattering_model.MakePhaseScreen(Epsilon_Screen, IM, obs_frequency_Hz=self.obs_next.rf,sqrtQ_init=self._sqrtQ).imvec.reshape((N, N))    
+        phi_Gradient = so.Wrapped_Gradient(phi/(FOV/N))    
+        phi_Gradient_x = -phi_Gradient[1]
+        phi_Gradient_y = -phi_Gradient[0]
+
+        #Entropy gradient; wrt unscattered image so unchanged by scattering
+        regterm = 0
+        reg_term_dict = self.make_reggrad_dict(imvec)    
+        for regname in sorted(self.reg_term_next.keys()):
+            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+
+        # Chi^2 gradient wrt the unscattered image
+        # First, the chi^2 gradient wrt to the scattered image
+        datterm = 0.
+        chi2_term_dict = self.make_chisqgrad_dict(scatt_im)            
+        for dname in sorted(self.dat_term_next.keys()):
+            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+        dchisq_dIa = datterm.reshape((N,N))
+        # Now the chain rule factor to get the chi^2 gradient wrt the unscattered image
+        gx = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten() 
+        gy = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_y[::-1,::-1], phi_Gradient_y * (dchisq_dIa))).flatten()
+        chisq_grad_im = so.Wrapped_Convolve(self._ea_ker[::-1,::-1], (dchisq_dIa)).flatten() + gx + gy
+
+        # Gradient of the data chi^2 wrt to the epsilon screen
+        #Preliminary Definitions
+        chisq_grad_epsilon = np.zeros(N**2-1)
+        i_grad = 0
+        ell_mat = np.zeros((N,N))
+        m_mat   = np.zeros((N,N))
+        for ell in range(0, N):
+            for m in range(0, N):
+                ell_mat[ell,m] = ell
+                m_mat[ell,m] = m
+
+        #Real part; top row
+        for t in range(1, (N+1)/2):
+            s=0
+            grad_term = so.Wrapped_Gradient(wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))            
+            grad_term_x = -grad_term[1]
+            grad_term_y = -grad_term[0]
+            chisq_grad_epsilon[i_grad] = np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )        
+            i_grad = i_grad + 1    
+
+        #Real part; remainder
+        for s in range(1,(N+1)/2):
+            for t in range(N):
+                grad_term = so.Wrapped_Gradient(wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))            
+                grad_term_x = -grad_term[1]
+                grad_term_y = -grad_term[0]
+                chisq_grad_epsilon[i_grad] = np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )
+                i_grad = i_grad + 1    
+
+        #Imaginary part; top row
+        for t in range(1, (N+1)/2):
+            s=0
+            grad_term = so.Wrapped_Gradient(-wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))            
+            grad_term_x = -grad_term[1]
+            grad_term_y = -grad_term[0]
+            chisq_grad_epsilon[i_grad] = np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )
+            i_grad = i_grad + 1    
+
+        #Imaginary part; remainder
+        for s in range(1,(N+1)/2):
+            for t in range(N):
+                grad_term = so.Wrapped_Gradient(-wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))            
+                grad_term_x = -grad_term[1]
+                grad_term_y = -grad_term[0]
+                chisq_grad_epsilon[i_grad] = np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )
+                i_grad = i_grad + 1    
+
+        # Gradient of the chi^2 regularization term for the epsilon screen
+        chisq_epsilon_grad = self.alpha_phi_next * 2.0*EpsilonList/((N*N-1)/2.0) 
+
+        # chain rule term for change of variables        
+        if self.transform_next == 'log': 
+            regterm       *= imvec
+            chisq_grad_im *= imvec
+
+        return np.concatenate(((regterm + chisq_grad_im),(chisq_grad_epsilon + chisq_epsilon_grad))) 
 
     def plotcur(self, imvec):
         if self._show_updates:
@@ -371,6 +533,46 @@ class Imager(object):
             plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, ipynb=False)
             
             print(outstr)
+        self._nit += 1
+
+    def plotcur_scattering(self, minvec):
+        if self._show_updates:
+            N = self.prior_next.xdim
+
+            imvec       = minvec[:N**2]
+            EpsilonList = minvec[N**2:] 
+            if self.transform_next == 'log': 
+                imvec = np.exp(imvec)
+
+            IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
+            scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ).imvec #the scattered image vector
+
+            # Calculate the chi^2 using the scattered image
+            datterm = 0.
+            chi2_term_dict = self.make_chisq_dict(scatt_im)            
+            for dname in sorted(self.dat_term_next.keys()):
+                datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+
+            # Calculate the entropy using the unscattered image
+            regterm = 0
+            reg_term_dict = self.make_reg_dict(imvec)  
+            for regname in sorted(self.reg_term_next.keys()):
+                regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+
+            # Scattering screen regularization term
+            chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)    
+            regterm_scattering = self.alpha_phi_next * (chisq_epsilon - 1.0)  
+
+            outstr = "i: %d " % self._nit    
+
+            for dname in sorted(self.dat_term_next.keys()):
+                outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname])
+            for regname in sorted(self.reg_term_next.keys()):
+                outstr += "%s : %0.2f " % (regname, reg_term_dict[regname])
+            outstr += "Epsilon chi^2 : %0.2f " % (chisq_epsilon)
+            outstr += "Max |Epsilon| : %0.2f " % (max(abs(EpsilonList)))
+            print(outstr)
+
         self._nit += 1
 
     def make_image_I(self, grads=True, show_updates=True):
@@ -431,6 +633,90 @@ class Imager(object):
         # Return Image object
         return outim
 
+    def make_image_I_stochastic_optics(self, grads=True, show_updates=True):
+        """Reconstructs an image of total flux density using the stochastic optics scattering mitigation technique.
+           Uses the scattering model of the imager. If none has been specified, it will default to a standard model for Sgr A*.
+           Returns the estimated unscattered image.
+
+           Args:
+                grads (bool): Flag for whether or not to use analytic gradients.
+                show_updates (bool): Flag for whether or not to show updates for each step of convergence.
+           Returns:
+               out (Image): The estimated *unscattered* image.
+        """
+
+        N = self.prior_next.xdim
+
+        # Checks and initialize
+        self.check_params()
+        self.check_limits()
+        self.init_imager_I()
+        self.init_imager_scattering()
+
+        # Generate the initial image+screen vector. By default, the screen is re-initialized to zero each time.
+        if self.transform_next == 'log': 
+            xinit = np.log(self._ninit_I)
+        else: 
+            xinit = self._ninit_I     
+
+        xinit = np.concatenate((xinit,np.zeros(N**2-1)))
+        print(xinit)
+        print(xinit.shape)
+        print(np.exp(xinit))
+
+        self._nit = 0
+
+        # Print stats
+        if show_updates: 
+            self._show_updates=True
+        else: 
+            self._show_updates=False
+
+        self.plotcur_scattering(xinit)
+        
+        # Minimize
+        optdict = {'maxiter':self.maxit_next, 'ftol':STOP, 'maxcor':NHIST}
+        tstart = time.time()
+        if grads:
+            res = opt.minimize(self.objfunc_scattering, xinit, method='L-BFGS-B', jac=self.objgrad_scattering, 
+                               options=optdict, callback=self.plotcur_scattering)
+        else:
+            res = opt.minimize(self.objfunc_scattering, xinit, method='L-BFGS-B', 
+                               options=optdict, callback=self.plotcur_scattering)
+        tstop = time.time()
+
+        # Format output
+        out = res.x[:N**2]
+        if self.transform_next == 'log': out = np.exp(out)
+        if np.any(np.invert(self._embed_mask)): 
+            raise Exception("Embedding is not currently implemented!")
+            out = embed(out, self._embed_mask)
+     
+        outim = image.Image(out.reshape(N, N), 
+                            self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, 
+                            rf=self.prior_next.rf, source=self.prior_next.source, 
+                            mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
+       
+        # Preserving image complex polarization fractions
+        if len(self.prior_next.qvec):
+            qvec = self.prior_next.qvec * out / self.prior_next.imvec
+            uvec = self.prior_next.uvec * out / self.prior_next.imvec
+            outim.add_qu(qvec.reshape(N, N), 
+                         uvec.reshape(N, N))
+       
+        # Print stats
+        print("time: %f s" % (tstop - tstart))
+        print("J: %f" % res.fun)
+        print(res.message)
+        
+        # Append to history
+        logstr = str(self.nruns) + ": make_image_I_stochastic_optics()" 
+        self._append_image_history(outim, logstr)
+        self.nruns += 1
+
+        # Return Image object
+        return outim
+
     def _append_image_history(self, outim, logstr):
         self.logstr += (logstr + "\n")
         self._obs_list.append(self.obs_next)
@@ -442,6 +728,7 @@ class Imager(object):
         self._transform_list.append(self.transform_next)
         self._reg_term_list.append(self.reg_term_next)
         self._dat_term_list.append(self.dat_term_next)
+        self._alpha_phi_list.append(self.alpha_phi_next)
 
         self._out_list.append(outim)
         return

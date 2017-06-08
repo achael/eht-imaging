@@ -1,8 +1,13 @@
+from __future__ import print_function
 # Michael Johnson, 2/15/2017
 # See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
 
+from builtins import range
+from builtins import object
 import numpy as np
 import scipy.signal
+import scipy.special as sps
+
 import matplotlib.pyplot as plt
 from IPython import display
 
@@ -19,7 +24,7 @@ import cmath
 # The class ScatteringModel encompasses a generic scattering model, determined by the power spectrum Q and phase structure function Dphi
 ################################################################################
 
-class ScatteringModel:
+class ScatteringModel(object):
     """A scattering model based on a thin-screen approximation. 
        Models include:
            'simple': This scattering model is motivated by observations of Sgr A*.
@@ -59,7 +64,7 @@ class ScatteringModel:
 
         if model == 'simple':
             if r_in == 0.0:
-                print "Error! The 'simple' scattering model requires a finite inner scale."
+                print("Error! The 'simple' scattering model requires a finite inner scale.")
             #Now, we need to solve for the effective parameters accounting for an inner scale
             #By default, we will match the fitted Gaussian kernel as the wavelength goes to infinity
             axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
@@ -73,8 +78,31 @@ class ScatteringModel:
         elif model == 'power-law':
             self.r0_maj  = (2.0*np.log(2.0))**0.5/np.pi * wavelength_reference_cm/(theta_maj_mas_ref/1000.0/3600.0*np.pi/180.0) #Phase coherence length at the reference wavelength [cm]
             self.r0_min  = (2.0*np.log(2.0))**0.5/np.pi * wavelength_reference_cm/(theta_min_mas_ref/1000.0/3600.0*np.pi/180.0) #Phase coherence length at the reference wavelength [cm]  
+        elif model == 'amph_von_Misses':     
+            axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
+            self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
+            #Note: the prefactor is exactly equal to 1/209952000000000000        
+            geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
+            self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
+            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]     
+            self.r_in_p = 1.0/(sps.gamma(0.5 - self.scatt_alpha/2.0)*sps.gamma(1.0 + self.scatt_alpha)) * ((2.0**(self.scatt_alpha + 4.0) * np.pi)/(1.0 + np.cos(np.pi * self.scatt_alpha)))**0.5 * self.r_in
+            A = theta_maj_mas_ref/theta_min_mas_ref
+            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution 
+            self.zeta   = 1.0 - 2.0*sps.i1(self.kzeta)/(self.kzeta * sps.i0(self.kzeta))
+        elif model == 'boxcar':     
+            axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
+            self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
+            #Note: the prefactor is exactly equal to 1/209952000000000000        
+            geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
+            self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
+            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]     
+            self.r_in_p = 1.0/(sps.gamma(0.5 - self.scatt_alpha/2.0)*sps.gamma(1.0 + self.scatt_alpha)) * ((2.0**(self.scatt_alpha + 4.0) * np.pi)/(1.0 + np.cos(np.pi * self.scatt_alpha)))**0.5 * self.r_in
+            A = theta_maj_mas_ref/theta_min_mas_ref
+            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution 
+            self.kzeta_3 =  0.02987 + 0.28626*A # This is an approximate solution
+            self.zeta    = 1.0 - 2.0*sps.i1(self.kzeta)/(self.kzeta * sps.i0(self.kzeta))
         else:
-            print "Scattering Model Not Recognized!"
+            print("Scattering Model Not Recognized!")
             return
 
     def rF(self, wavelength):
@@ -117,12 +145,24 @@ class ScatteringModel:
         #rotate qx and qy as needed
         PA = (90 - self.POS_ANG) * np.pi/180.0
         qx_rot =  qx*np.cos(PA) + qy*np.sin(PA)
-        qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)
+        qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)        
 
         if self.model == 'simple':
-            return self.Qprefactor * 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * scipy.special.gamma(1.0 + self.scatt_alpha/2.0)/scipy.special.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0 + qmin**2.0)**(-(self.scatt_alpha+2.0)/2.0) * np.exp(-((qx_rot**2.0 + qy_rot**2.0)/qmax**2.0)**0.5)
+            return self.Qprefactor * 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0 + qmin**2.0)**(-(self.scatt_alpha+2.0)/2.0) * np.exp(-((qx_rot**2.0 + qy_rot**2.0)/qmax**2.0)**0.5)
         elif self.model == 'power-law':
-            return 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * scipy.special.gamma(1.0 + self.scatt_alpha/2.0)/scipy.special.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0)**(-(self.scatt_alpha+2.0)/2.0) 
+            return 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0)**(-(self.scatt_alpha+2.0)/2.0) 
+        elif self.model == 'amph_von_Misses':
+            q = (qx_rot**2 + qy_rot**2)**0.5
+            q_phi = math.atan2(qy_rot, qx_rot)
+            return (8.0*np.pi)/((1.0+self.zeta)*sps.i0(self.kzeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0)) * np.exp(-(q*self.r_in)**2) * np.cosh(self.kzeta*np.cos( q_phi ))
+        elif self.model == 'boxcar':
+            q = (qx_rot**2 + qy_rot**2)**0.5
+            q_phi = math.atan2(qy_rot, qx_rot)
+            
+            if 1.0/(2.0*self.kzeta_3) < q_phi % np.pi < np.pi - 1.0/(2.0*self.kzeta_3):
+                return 0.0
+            else: 
+                return (16.0*np.pi**2)/((1.0+self.zeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0))
 
     def Dphi(self, x, y, wavelength_cm):  
         """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm). 
@@ -140,14 +180,22 @@ class ScatteringModel:
         #Phase structure function; generically, this must be proportional to wavelength^2 because of the cold plasma dispersion law
         #All units in cm
         PA = (90. - self.POS_ANG) * np.pi/180.0 
-        x_rot =  x*np.cos(PA) + y*np.sin(PA)
-        y_rot = -x*np.sin(PA) + y*np.cos(PA)
+        x_rot =  x*np.cos(PA) + y*np.sin(PA) #along the major axis
+        y_rot = -x*np.sin(PA) + y*np.cos(PA) #along the minor axis
 
         if self.model == 'simple':
             return (wavelength_cm/self.wavelength_reference)**2.0*self.C_scatt*(((x_rot/self.r0_maj)**2 + (y_rot/self.r0_min)**2 + self.r_in**2/(self.r0_maj*self.r0_min) )**(self.scatt_alpha/2.0)*(self.r0_maj*self.r0_min)**(self.scatt_alpha/2.0) - self.r_in**self.scatt_alpha)
         elif self.model == 'power-law':
             return (wavelength_cm/self.wavelength_reference)**2.0*((x_rot/self.r0_maj)**2 + (y_rot/self.r0_min)**2)**(self.scatt_alpha/2.0)
-
+        elif self.model == 'amph_von_Misses':
+            r     = (x_rot**2 + y_rot**2)**0.5
+            phi   = math.atan2(y_rot, x_rot)
+            return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
+        elif self.model == 'boxcar':
+            print('Using amph_von_Misses for now...')
+            r     = (x_rot**2 + y_rot**2)**0.5
+            phi   = math.atan2(y_rot, x_rot)
+            return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
 
     def sqrtQ_Matrix(self, Reference_Image, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0):
         """Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.
@@ -336,7 +384,7 @@ class ScatteringModel:
         Ny = EpsilonScreen.shape[0]
 
         if Nx%2 == 0:
-            print "The image dimension should really be odd..."
+            print("The image dimension should really be odd...")
 
         #Now we'll calculate the power spectrum for each pixel in Fourier space
         screen_x_offset_pixels = (Vx_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
@@ -404,7 +452,7 @@ class ScatteringModel:
         Ny = Unscattered_Image.ydim
 
         if Nx%2 == 0:
-            print "The image dimension should really be odd..."
+            print("The image dimension should really be odd...")
 
         #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel    
         EA_Image = self.Ensemble_Average_Blur(Unscattered_Image, wavelength, ker = ea_ker)
@@ -513,17 +561,17 @@ class ScatteringModel:
             """
 
         if type(Unscattered_Movie) != movie.Movie and framedur_sec == None:
-            print "If scattering a list of images of static image, the framedur must be specified!"
+            print("If scattering a list of images of static image, the framedur must be specified!")
             return
 
         if type(Unscattered_Movie) == image.Image and N_frames == None:
-            print "If scattering a static image, the total number of frames must be specified (N_frames)!"
+            print("If scattering a static image, the total number of frames must be specified (N_frames)!")
             return
 
         if framedur_sec == None:
             framedur_sec = Unscattered_Movie.framedur   
 
-        print "Frame Duration (seconds):",framedur_sec
+        print("Frame Duration (seconds):",framedur_sec)
 
         if type(Unscattered_Movie) == movie.Movie: 
             N = Unscattered_Movie.xdim
@@ -610,15 +658,15 @@ def MakeEpsilonScreenFromList(EpsilonList, N):
     #There are (N^2-1)/2 real elements followed by (N^2-1)/2 complex elements
 
     #The first (N-1)/2 are the top row
-    N_re = (N*N-1)/2
+    N_re = (N*N-1)//2 # FIXME: check logic if N is even
     i = 0
-    for x in range(1,(N+1)/2):
+    for x in range(1,(N+1)//2): # FIXME: check logic if N is even
         epsilon[0][x] = EpsilonList[i] + 1j * EpsilonList[i+N_re]
         epsilon[0][N-x] = np.conjugate(epsilon[0][x])
         i=i+1
 
     #The next N(N-1)/2 are filling the next N rows
-    for y in range(1,(N+1)/2):
+    for y in range(1,(N+1)//2): # FIXME: check logic if N is even
         for x in range(N):
             epsilon[y][x] = EpsilonList[i] + 1j * EpsilonList[i+N_re]
 
@@ -654,9 +702,9 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
 
     #Now let's ensure that it has the necessary conjugation symmetry
     for x in range(Nx):
-        if x > (Nx-1)/2:
+        if x > (Nx-1)//2: # FIXME: check logic if N is even
             epsilon[0][x] = np.conjugate(epsilon[0][Nx-x])
-        for y in range((Ny-1)/2, Ny):
+        for y in range((Ny-1)//2, Ny): # FIXME: check logic if N is even
             x2 = Nx - x
             y2 = Ny - y
             if x2 == Nx:
