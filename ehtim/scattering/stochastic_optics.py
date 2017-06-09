@@ -161,7 +161,7 @@ class ScatteringModel(object):
             q_phi = np.arctan2(qy_rot, qx_rot)
 
             Q = (16.0*np.pi**2)/((1.0+self.zeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0))
-            Q[(1.0/(2.0*self.kzeta_3) < (q_phi % np.pi)) and ((q_phi % np.pi) < np.pi - 1.0/(2.0*self.kzeta_3))] = 0.0
+            Q[(1.0/(2.0*self.kzeta_3) < (q_phi % np.pi)) & ((q_phi % np.pi) < np.pi - 1.0/(2.0*self.kzeta_3))] = 0.0
 
             return Q
 
