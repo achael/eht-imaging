@@ -16,18 +16,18 @@ from ehtim.observing.obs_helpers import *
 
 ##################################################################################################
 # Movie IO
-##################################################################################################  
+##################################################################################################
 
 def save_mov_txt(mov, fname):
     """Save movie data to text files"""
-    
+
     # Coordinate values
     pdimas = mov.psize/RADPERAS
     xs = np.array([[j for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
     xs = pdimas * (xs[::-1] - mov.xdim/2.0)
     ys = np.array([[i for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
     ys = pdimas * (ys[::-1] - mov.xdim/2.0)
-    
+
     for i in range(len(mov.frames)):
         fname_frame = fname + "%05d" % i
         # Data
@@ -42,25 +42,25 @@ def save_mov_txt(mov, fname):
             outdata = np.hstack((xs, ys, (mov.frames[i]).reshape(mov.xdim*mov.ydim, 1)))
             hf = "x (as)     y (as)       I (Jy/pixel)"
             fmts = "%10.10f %10.10f %10.10f"
- 
+
         # Header
         head = ("SRC: %s \n" % mov.source +
                     "RA: " + rastring(mov.ra) + "\n" + "DEC: " + decstring(mov.dec) + "\n" +
-                    "MJD: %i \n" % (float(mov.mjd) + mov.start_hr/24.0 + i*mov.framedur/86400.0) + 
-                    "RF: %.4f GHz \n" % (mov.rf/1e9) + 
+                    "MJD: %i \n" % (float(mov.mjd) + mov.start_hr/24.0 + i*mov.framedur/86400.0) +
+                    "RF: %.4f GHz \n" % (mov.rf/1e9) +
                     "FOVX: %i pix %f as \n" % (mov.xdim, pdimas * mov.xdim) +
                     "FOVY: %i pix %f as \n" % (mov.ydim, pdimas * mov.ydim) +
                     "------------------------------------\n" + hf)
-         
+
         # Save
         np.savetxt(fname_frame, outdata, header=head, fmt=fmts)
-        
+
         return
 
 
 ##################################################################################################
 # Image IO
-##################################################################################################  
+##################################################################################################
 def save_im_txt(im, fname):
     """Save image data to text file
     """
@@ -71,22 +71,22 @@ def save_im_txt(im, fname):
     xs = pdimas * (xs[::-1] - im.xdim/2.0)
     ys = np.array([[i for j in range(im.xdim)] for i in range(im.ydim)]).reshape(im.xdim*im.ydim,1)
     ys = pdimas * (ys[::-1] - im.xdim/2.0)
-    
-    # If V values but no Q/U values, make Q/U zero  
-    if len(im.vvec) and not len(im.qvec): 
+
+    # If V values but no Q/U values, make Q/U zero
+    if len(im.vvec) and not len(im.qvec):
         im.qvec = 0*im.vvec
         im.uvec = 0*im.vvec
-        
-    # Format Data            
+
+    # Format Data
     if len(im.qvec) and len(im.vvec):
         outdata = np.hstack((xs, ys, (im.imvec).reshape(im.xdim*im.ydim, 1),
                                      (im.qvec).reshape(im.xdim*im.ydim, 1),
-                                     (im.uvec).reshape(im.xdim*im.ydim, 1), 
+                                     (im.uvec).reshape(im.xdim*im.ydim, 1),
                                      (im.vvec).reshape(im.xdim*im.ydim, 1)))
         hf = "x (as)     y (as)       I (Jy/pixel)  Q (Jy/pixel)  U (Jy/pixel)  V (Jy/pixel)"
 
         fmts = "%10.10f %10.10f %10.10f %10.10f %10.10f %10.10f"
-        
+
     elif len(im.qvec):
         outdata = np.hstack((xs, ys, (im.imvec).reshape(im.xdim*im.ydim, 1),
                                      (im.qvec).reshape(im.xdim*im.ydim, 1),
@@ -94,29 +94,29 @@ def save_im_txt(im, fname):
         hf = "x (as)     y (as)       I (Jy/pixel)  Q (Jy/pixel)  U (Jy/pixel)"
 
         fmts = "%10.10f %10.10f %10.10f %10.10f %10.10f"
-        
+
     else:
         outdata = np.hstack((xs, ys, (im.imvec).reshape(im.xdim*im.ydim, 1)))
         hf = "x (as)     y (as)       I (Jy/pixel)"
         fmts = "%10.10f %10.10f %10.10f"
- 
+
     # Header
     head = ("SRC: %s \n" % im.source +
                 "RA: " + rastring(im.ra) + "\n" + "DEC: " + decstring(im.dec) + "\n" +
-                "MJD: %i \n" % im.mjd + 
-                "RF: %.4f GHz \n" % (im.rf/1e9) + 
+                "MJD: %i \n" % im.mjd +
+                "RF: %.4f GHz \n" % (im.rf/1e9) +
                 "FOVX: %i pix %f as \n" % (im.xdim, pdimas * im.xdim) +
                 "FOVY: %i pix %f as \n" % (im.ydim, pdimas * im.ydim) +
                 "------------------------------------\n" + hf)
-     
+
     # Save
-    np.savetxt(fname, outdata, header=head, fmt=fmts)    
+    np.savetxt(fname, outdata, header=head, fmt=fmts)
     return
 
 def save_im_fits(im, fname):
     """Save image data to FITS file
     """
-            
+
     # Create header and fill in some values
     header = fits.Header()
     header['OBJECT'] = im.source
@@ -131,7 +131,7 @@ def save_im_fits(im, fname):
     header['TELESCOP'] = 'VLBI'
     header['BUNIT'] = 'JY/PIXEL'
     header['STOKES'] = 'I'
-    
+
     # Create the fits image
     image = np.reshape(im.imvec,(im.ydim,im.xdim))[::-1,:] #flip y axis!
     hdu = fits.PrimaryHDU(image, header=header)
@@ -143,24 +143,24 @@ def save_im_fits(im, fname):
         hduq = fits.ImageHDU(qimage, name='Q', header=header)
         header['STOKES'] = 'U'
         hduu = fits.ImageHDU(uimage, name='U', header=header)
-        hdulist = [hdu, hduq, hduu]       
-    if len(im.vvec): 
-        vimage = np.reshape(im.vvec,(im.xdim,im.ydim))[::-1,:]            
+        hdulist = [hdu, hduq, hduu]
+    if len(im.vvec):
+        vimage = np.reshape(im.vvec,(im.xdim,im.ydim))[::-1,:]
         header['STOKES'] = 'V'
         hduv = fits.ImageHDU(vimage, name='V', header=header)
-        hdulist.append(hduv)     
-    
+        hdulist.append(hduv)
+
     hdulist = fits.HDUList(hdulist)
-  
-    # Save fits 
+
+    # Save fits
     hdulist.writeto(fname, overwrite=True)
-    
+
     return
-        
+
 ##################################################################################################
 # Array IO
-##################################################################################################  
-  
+##################################################################################################
+
 def save_array_txt(arr, fname):
     """Save the array data in a text file
     """
@@ -169,8 +169,8 @@ def save_array_txt(arr, fname):
                 "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  "+
                 "DR_RE    DR_IM    DL_RE    DL_IM   \n")
     for scope in range(len(arr.tarr)):
-        dat = (arr.tarr[scope]['site'], 
-               arr.tarr[scope]['x'], arr.tarr[scope]['y'], arr.tarr[scope]['z'], 
+        dat = (arr.tarr[scope]['site'],
+               arr.tarr[scope]['x'], arr.tarr[scope]['y'], arr.tarr[scope]['z'],
                arr.tarr[scope]['sefdr'], arr.tarr[scope]['sefdl'],
                arr.tarr[scope]['fr_par'], arr.tarr[scope]['fr_elev'], arr.tarr[scope]['fr_off'],
                arr.tarr[scope]['dr'].real, arr.tarr[scope]['dr'].imag, arr.tarr[scope]['dl'].real, arr.tarr[scope]['dl'].imag
@@ -179,12 +179,12 @@ def save_array_txt(arr, fname):
     f = open(fname,'w')
     f.write(out)
     f.close()
-    return     
-       
+    return
+
 
 ##################################################################################################
 # Observation IO
-##################################################################################################  
+##################################################################################################
 def save_obs_txt(obs, fname):
 
     # Get the necessary data and the header
@@ -193,27 +193,27 @@ def save_obs_txt(obs, fname):
                            'sigma', 'qsigma', 'usigma', 'vsigma'])
     head = ("SRC: %s \n" % obs.source +
                 "RA: " + rastring(obs.ra) + "\n" + "DEC: " + decstring(obs.dec) + "\n" +
-                "MJD: %i \n" % obs.mjd + 
-                "RF: %.4f GHz \n" % (obs.rf/1e9) + 
+                "MJD: %i \n" % obs.mjd +
+                "RF: %.4f GHz \n" % (obs.rf/1e9) +
                 "BW: %.4f GHz \n" % (obs.bw/1e9) +
-                "PHASECAL: %i \n" % obs.phasecal + 
+                "PHASECAL: %i \n" % obs.phasecal +
                 "AMPCAL: %i \n" % obs.ampcal +
-                "OPACITYCAL: %i \n" % obs.opacitycal +                    
-                "DCAL: %i \n" % obs.dcal + 
-                "FRCAL: %i \n" % obs.frcal +  
+                "OPACITYCAL: %i \n" % obs.opacitycal +
+                "DCAL: %i \n" % obs.dcal +
+                "FRCAL: %i \n" % obs.frcal +
                 "----------------------------------------------------------------------"+
                 "------------------------------------------------------------------\n" +
                 "Site       X(m)             Y(m)             Z(m)           "+
                 "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  "+
                 "DR_RE    DR_IM    DL_RE    DL_IM   \n"
             )
-    
+
     for i in range(len(obs.tarr)):
-        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % (obs.tarr[i]['site'], 
-                                                                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'], 
+        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % (obs.tarr[i]['site'],
+                                                                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
                                                                   obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
                                                                   obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
-                                                                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag, 
+                                                                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
                                                                   (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
                                                                  ))
 
@@ -224,7 +224,7 @@ def save_obs_txt(obs, fname):
             "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   Vamp (Jy)    Vphase(d)   "+
             "Isigma (Jy)   Qsigma (Jy)   Usigma (Jy)   Vsigma (Jy)"
             )
-      
+
     # Format and save the data
     fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %16.4f %16.4f    "+
            "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f %10.4f    "+
@@ -244,20 +244,20 @@ def save_obs_uvfits(obs, fname):
 
     ########################################################################
     # Antenna table
-    
+
     # Load the array data
     tarr = obs.tarr
     tnames = tarr['site']
     tnums = np.arange(1, len(tarr)+1)
     xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in np.arange(len(tarr))])
     sefd = tarr['sefdr']
-    
+
     nsta = len(tnames)
     col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
     col2 = fits.Column(name='STABXYZ', format='3D', unit='METERS', array=xyz)
     col3 = fits.Column(name='NOSTA', format='1J', array=tnums)
     colfin = fits.Column(name='SEFD', format='1D', array=sefd)
-    
+
     #!AC TODO these antenna fields+header are questionable - look into them
 
     col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
@@ -269,8 +269,8 @@ def save_obs_uvfits(obs, fname):
     col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES', array=(90.*np.ones(nsta)))
     col11 = fits.Column(name='POLCALB', format='3E', array=np.zeros((nsta,3)))
     col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
-    
-    #Antenna Header params - do I need to change more of these?? 
+
+    #Antenna Header params - do I need to change more of these??
     #head = fits.Header()
     head = hdulist['AIPS AN'].header
     head['EXTNAME'] = 'AIPS AN'
@@ -285,7 +285,7 @@ def save_obs_uvfits(obs, fname):
     head['FREQ']= obs.rf
     head['FREQID'] = 1
 
-    head['ARRNAM'] = 'ALMA'     #!AC TODO Can we change this field? 
+    head['ARRNAM'] = 'ALMA'     #!AC TODO Can we change this field?
     head['XYZHAND'] = 'RIGHT'
     head['ARRAYX'] = 0.e0
     head['ARRAYY'] = 0.e0
@@ -313,7 +313,7 @@ def save_obs_uvfits(obs, fname):
     header['BUNIT'] = 'JY'
     header['VELREF'] = 3        # !AC TODO ??
     header['ALTRPIX'] = 1.e0
-    header['TELESCOP'] = 'ALMA' # !AC TODO Can we change this field?  
+    header['TELESCOP'] = 'ALMA' # !AC TODO Can we change this field?
     header['INSTRUME'] = 'ALMA'
     header['CTYPE2'] = 'COMPLEX'
     header['CRVAL2'] = 1.e0
@@ -367,44 +367,44 @@ def save_obs_uvfits(obs, fname):
     header['PTYPE9'] = 'TAU2'
     header['PSCAL9'] = 1.e0
     header['PZERO9'] = 0.e0
-            
+
     # Get data
     obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
     ndat = len(obsdata['time'])
-    
+
     # times and tints
     #jds = (obs.mjd + 2400000.5) * np.ones(len(obsdata))
-    #fractimes = (obsdata['time'] / 24.0) 
+    #fractimes = (obsdata['time'] / 24.0)
     jds = (2400000.5 + obs.mjd) * np.ones(len(obsdata))
     fractimes = (obsdata['time']/24.0)
     #jds = jds + fractimes
-    #fractimes = np.zeros(len(obsdata))        
+    #fractimes = np.zeros(len(obsdata))
     tints = obsdata['tint']
 
-    # Baselines            
+    # Baselines
     t1 = [obs.tkey[scope] + 1 for scope in obsdata['t1']]
     t2 = [obs.tkey[scope] + 1 for scope in obsdata['t2']]
     bl = 256*np.array(t1) + np.array(t2)
-       
+
     # opacities
     tau1 = obsdata['tau1']
     tau2 = obsdata['tau2']
-    
+
     # uv are in lightseconds
     u = obsdata['u']
     v = obsdata['v']
-    
+
     # rr, ll, lr, rl, weights
     rr = obsdata['vis'] + obsdata['vvis']
     ll = obsdata['vis'] - obsdata['vvis']
     rl = obsdata['qvis'] + 1j*obsdata['uvis']
     lr = obsdata['qvis'] - 1j*obsdata['uvis']
-    
+
     weightrr = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
     weightll = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
     weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
     weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
-                            
+
     # Data array
     outdat = np.zeros((ndat, 1, 1, 1, 1, 4, 3))
     outdat[:,0,0,0,0,0,0] = np.real(rr)
@@ -419,16 +419,16 @@ def save_obs_uvfits(obs, fname):
     outdat[:,0,0,0,0,3,0] = np.real(lr)
     outdat[:,0,0,0,0,3,1] = np.imag(lr)
     outdat[:,0,0,0,0,3,2] = weightlr
-    
+
     # Save data
-    
+
     pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
             'INTTIM', 'TAU1', 'TAU2']
     x = fits.GroupData(outdat, parnames=pars,
         pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints,tau1,tau2],
         bitpix=-32)
 
-            
+
     hdulist[0].data = x
     hdulist[0].header = header
 
@@ -452,34 +452,34 @@ def save_obs_uvfits(obs, fname):
 
     # create table
     tbhdu = fits.BinTableHDU.from_columns(cols)
-    
+
     # add header information
     tbhdu.header.append(("NO_IF", nif, "Number IFs"))
     tbhdu.header.append(("EXTNAME","AIPS FQ"))
     hdulist.append(tbhdu)
-     
+
     # Write final HDUList to file
     hdulist.writeto(fname, overwrite=True)
-            
+
     return
 
 
-  
+
 
 def save_obs_oifits(obs, fname, flux=1.0):
     """ Save visibility data to oifits
         Polarization data is NOT saved
         Antenna diameter currently incorrect and the exact times are not correct in the datetime object
-        Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function 
+        Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function
     """
 
     #TODO: Add polarization to oifits??
     print('Warning: save_oifits does NOT save polarimetric visibility data!')
-    
+
     # Normalizing by the total flux passed in - note this is changing the data inside the obs structure
     obs.data['vis'] /= flux
     obs.data['sigma'] /= flux
-    
+
     data = obs.unpack(['u','v','amp','phase', 'sigma', 'time', 't1', 't2', 'tint'])
     biarr = obs.bispectra(mode="all", count="min")
 
@@ -491,7 +491,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
     antennaZ = obs.tarr['z']
     #antennaDiam = -np.ones(antennaX.shape) #todo: this is incorrect and there is just a dummy variable here
     antennaDiam = sefd # replace antennaDiam with SEFD for radio observtions
-    
+
     # create dictionary
     union = {};
     union = ehtim.io.writeData.arrayUnion(antennaNames, union)
@@ -507,15 +507,15 @@ def save_obs_oifits(obs, fname, flux=1.0):
     viserror = data['sigma']
     u = data['u']
     v = data['v']
-    
+
     # convert antenna name strings to number identifiers
     ant1 = ehtim.io.writeData.convertStrings(data['t1'], union)
     ant2 = ehtim.io.writeData.convertStrings(data['t2'], union)
-    
+
     # convert times to datetime objects
     time = data['time']
     dttime = np.array([datetime.datetime.utcfromtimestamp(x*60*60) for x in time]); #TODO: these do not correspond to the acutal times
-    
+
     # get the bispectrum information
     bi = biarr['bispec']
     t3amp = np.abs(bi);
@@ -524,7 +524,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
     t3phierr = 180.0/np.pi * (1.0/t3amp) * t3amperr;
     uClosure = np.transpose(np.array([np.array(biarr['u1']), np.array(biarr['u2'])]));
     vClosure = np.transpose(np.array([np.array(biarr['v1']), np.array(biarr['v2'])]));
-    
+
     # convert times to datetime objects
     timeClosure = biarr['time']
     dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x) for x in timeClosure]); #TODO: these do not correspond to the acutal times
@@ -536,12 +536,12 @@ def save_obs_oifits(obs, fname, flux=1.0):
     antOrder = np.transpose(np.array([biarr_ant1, biarr_ant2, biarr_ant3]))
 
     # todo: check that putting the negatives on the phase and t3phi is correct
-    ehtim.io.writeData.writeOIFITS(fname, obs.ra, obs.dec, obs.rf, obs.bw, intTime, amp, viserror, phase, viserror, u, v, ant1, ant2, dttime, 
+    ehtim.io.writeData.writeOIFITS(fname, obs.ra, obs.dec, obs.rf, obs.bw, intTime, amp, viserror, phase, viserror, u, v, ant1, ant2, dttime,
                           t3amp, t3amperr, t3phi, t3phierr, uClosure, vClosure, antOrder, dttimeClosure, antennaNames, antennaDiam, antennaX, antennaY, antennaZ)
 
     # Un-Normalizing by the total flux passed in - note this is changing the data inside the obs structure back to what it originally was
     obs.data['vis'] *= flux
     obs.data['sigma'] *= flux
-    
+
     return
 

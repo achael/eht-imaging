@@ -40,7 +40,7 @@ def patchPrior(im, beta, patchPriorFile='naturalPrior.mat', patchSize=8 ):
 
     I1 = I1/counts[0][0]
     out = image.Image(I1, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
-    
+
     return (out, counts[0][0])
 
 def cleanImage(image, beta, nmodels, covs, mixweights, means, patchSize=8):
@@ -87,7 +87,7 @@ def cleanImage(image, beta, nmodels, covs, mixweights, means, patchSize=8):
     # reshape
     I1 = np.transpose(np.reshape( I1, (image.shape[1], image.shape[0])));
     counts = np.transpose(np.reshape( counts, (image.shape[1], image.shape[0])));
-               
+
     return I1, counts
 
 def im2col(im, patchSize):
@@ -101,7 +101,7 @@ def im2col(im, patchSize):
     # Get offsetted indices across the height and width of input array
     offset_idx = np.arange(row_extent)[:,None]*N + np.arange(col_extent)
     # Get all actual indices & index into input array for final output
-    Z = np.take (im,start_idx.ravel()[:,None] + offset_idx.ravel()) 
+    Z = np.take (im,start_idx.ravel()[:,None] + offset_idx.ravel())
     return Z
 
 

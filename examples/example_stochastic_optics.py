@@ -22,7 +22,7 @@ sm = so.ScatteringModel()
 scatt = sm.Scatter(im,ep,DisplayImage=True)
 
 # Observe the average image
-eht = eh.array.load_txt('arrays/VLBA_86GHz.txt') # Load the observing array 
+eht = eh.array.load_txt('arrays/VLBA_86GHz.txt') # Load the observing array
 #observing parameters:
 tint_sec = 60
 tadv_sec = 600

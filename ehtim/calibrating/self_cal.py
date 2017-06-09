@@ -10,7 +10,7 @@ from ehtim.observing.obs_helpers import *
 
 def self_cal(obs, im, method="both", show_solution=False):
     """Self-calibrate a dataset to a fixed image.
-    """ 
+    """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
 
@@ -20,7 +20,7 @@ def self_cal(obs, im, method="both", show_solution=False):
     i = 0
     for scan in scans:
         i += 1
-        if not show_solution: 
+        if not show_solution:
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
         scan_cal = self_cal_scan(scan, im, method=method, show_solution=show_solution)
@@ -30,7 +30,7 @@ def self_cal(obs, im, method="both", show_solution=False):
         else:
             data_cal = scan_cal
 
-    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, source=obs.source, 
+    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, source=obs.source,
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
@@ -44,7 +44,7 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     V = np.dot(A, im.imvec)
 
     sites = list(set(scan['t1']).union(set(scan['t2'])))
-    
+
     tkey = {b:a for a,b in enumerate(sites)}
     tidx1 = [tkey[row['t1']] for row in scan]
     tidx2 = [tkey[row['t2']] for row in scan]
@@ -76,10 +76,10 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
 
     if show_solution == True:
         print(np.abs(gij_inv))
-    
+
     scan['vis'] = gij_inv * scan['vis']
     scan['qvis'] = gij_inv * scan['qvis']
     scan['uvis'] = gij_inv * scan['uvis']
-    scan['sigma'] = np.abs(gij_inv) * scan['sigma'] 
+    scan['sigma'] = np.abs(gij_inv) * scan['sigma']
 
     return scan

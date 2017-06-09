@@ -60,7 +60,7 @@ triple products, etc.  See the notes on the individual classes for a
 list of all the "hidden" attributes.
 
 For further information, contact Paul Boley (boley@mpia-hd.mpg.de).
-   
+
 """
 from __future__ import division
 from __future__ import print_function
@@ -114,7 +114,7 @@ class _angpoint(float):
         return self.angle == other.angle
 
     def __ne__(self, other):
-        return not self.__eq__(other)    
+        return not self.__eq__(other)
 
     def asdms(self):
         """Return the value as a string in dms format,
@@ -174,7 +174,7 @@ class OI_TARGET(object):
     def __eq__(self, other):
 
         if type(self) != type(other): return False
-        
+
         return not (
             (self.target    != other.target)    or
             (self.raep0     != other.raep0)     or
@@ -192,7 +192,7 @@ class OI_TARGET(object):
             (self.parallax  != other.parallax)  or
             (self.para_err  != other.para_err)  or
             (self.spectyp   != other.spectyp))
-            
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -213,7 +213,7 @@ class OI_WAVELENGTH(object):
     def __eq__(self, other):
 
         if type(self) != type(other): return False
-            
+
         return not (
             (not _array_eq(self.eff_wave, other.eff_wave)) or
             (not _array_eq(self.eff_band, other.eff_band)))
@@ -235,7 +235,7 @@ class OI_VIS(object):
 
     visamp, visamperr, visphi, visphierr, flag;
     and possibly cflux, cfluxerr.
-   
+
     """
 
     def __init__(self, timeobs, int_time, visamp, visamperr, visphi, visphierr, flag, ucoord,
@@ -261,7 +261,7 @@ class OI_VIS(object):
     def __eq__(self, other):
 
         if type(self) != type(other): return False
-        
+
         return not (
             (self.timeobs    != other.timeobs)    or
             (self.array      != other.array)      or
@@ -277,7 +277,7 @@ class OI_VIS(object):
             (not _array_eq(self.visphi, other.visphi)) or
             (not _array_eq(self.visphierr, other.visphierr)) or
             (not _array_eq(self.flag, other.flag)))
-        
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -315,7 +315,7 @@ class OI_VIS2(object):
     To access the data, use the following hidden attributes:
 
     vis2data, vis2err
-   
+
     """
     def __init__(self, timeobs, int_time, vis2data, vis2err, flag, ucoord, vcoord, wavelength,
                  target, array=None, station=(None, None)):
@@ -348,7 +348,7 @@ class OI_VIS2(object):
             (not _array_eq(self.vis2data, other.vis2data)) or
             (not _array_eq(self.vis2err, other.vis2err)) or
             (not _array_eq(self.flag, other.flag)))
-        
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -382,7 +382,7 @@ class OI_T3(object):
     To access the data, use the following hidden attributes:
 
     t3amp, t3amperr, t3phi, t3phierr
-   
+
     """
 
     def __init__(self, timeobs, int_time, t3amp, t3amperr, t3phi, t3phierr, flag, u1coord,
@@ -424,7 +424,7 @@ class OI_T3(object):
             (not _array_eq(self.t3phi, other.t3phi)) or
             (not _array_eq(self.t3phierr, other.t3phierr)) or
             (not _array_eq(self.flag, other.flag)))
-        
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -484,7 +484,7 @@ class OI_ARRAY(object):
     def __init__(self, frame, arrxyz, stations=()):
         self.frame = frame
         self.arrxyz = arrxyz
-        #self.station = stations; 
+        #self.station = stations;
         self.station = np.empty(0)
         for station in stations:
             tel_name, sta_name, sta_index, diameter, staxyz = station
@@ -499,7 +499,7 @@ class OI_ARRAY(object):
             (not _array_eq(self.arrxyz, other.arrxyz)))
 
         if not equal: return False
-        
+
         # If position appears to be the same, check that the stations
         # (and ordering) are also the same
         if (self.station != other.station).any():
@@ -520,7 +520,7 @@ class OI_ARRAY(object):
             return _angpoint(np.arcsin(self.arrxyz[1]/xylen)*180.0/np.pi)
         elif attrname == 'altitude':
             radius = np.sqrt((self.arrxyz**2).sum())
-            return radius - 6378100.0  
+            return radius - 6378100.0
         else:
             raise AttributeError(attrname)
 
@@ -534,7 +534,7 @@ class OI_ARRAY(object):
         if verbose >= 1:
             for station in self.station:
                 print("   %s"%str(station))
-        
+
     def get_station_by_name(self, name):
 
         for station in self.station:
@@ -544,7 +544,7 @@ class OI_ARRAY(object):
         raise LookupError('No such station %s'%name)
 
 class oifits(object):
-    
+
     def __init__(self):
 
         self.wavelength = {}
@@ -564,7 +564,7 @@ class oifits(object):
         if self.isconsistent() == False or other.isconsistent() == False:
             print('oifits objects are not consistent, bailing.')
             return
-        
+
         new = copy.deepcopy(self)
         if len(other.wavelength):
             wavelengthmap = {}
@@ -673,9 +673,9 @@ class oifits(object):
                     newt3.station[1] = stationmap[id(t3.station[1])]
                     newt3.station[2] = stationmap[id(t3.station[2])]
                 new.t3 = np.append(new.t3, newt3)
-        
+
         return(new)
-        
+
 
     def __eq__(self, other):
 
@@ -718,7 +718,7 @@ class oifits(object):
         for vis2 in self.vis2:
             nwave = len(vis2.wavelength.eff_band)
             if (len(vis2.vis2data) != nwave) or (len(vis2.vis2err) != nwave) or (len(vis2.flag) != nwave):
-                errors.append("Data size mismatch for visibility^2 measurement 0x%x (wavelength table has a length of %d)"%(id(vis), nwave))                                  
+                errors.append("Data size mismatch for visibility^2 measurement 0x%x (wavelength table has a length of %d)"%(id(vis), nwave))
         for t3 in self.t3:
             nwave = len(t3.wavelength.eff_band)
             if (len(t3.t3amp) != nwave) or (len(t3.t3amperr) != nwave) or (len(t3.t3phi) != nwave) or (len(t3.t3phierr) != nwave) or (len(t3.flag) != nwave):
@@ -788,7 +788,7 @@ class oifits(object):
             if t3.target not in self.target:
                 print('A closure phase measurement (0x%x) refers to a target which is not inside the main oifits object.'%id(t3))
                 return False
-                    
+
         return True
 
     def info(self, recursive=True, verbose=0):
@@ -974,7 +974,7 @@ class oifits(object):
             hdu.header.update('ARRAYY', array.arrxyz[1], comment='Array center y coordinate (m)')
             hdu.header.update('ARRAYZ', array.arrxyz[2], comment='Array center z coordinate (m)')
             hdulist.append(hdu)
-                        
+
         if self.vis.size:
             # The tables are grouped by ARRNAME and INSNAME -- all
             # observations which have the same ARRNAME and INSNAME are
@@ -1044,7 +1044,7 @@ class oifits(object):
             for key in list(tables.keys()):
                 data = tables[key]
                 nwave = self.wavelength[key[1]].eff_wave.size
-                
+
                 hdu = pyfits.new_table(pyfits.ColDefs([
                     pyfits.Column(name='TARGET_ID', format='1I', array=data['target_id']),
                     pyfits.Column(name='TIME', format='1D', unit='SECONDS', array=data['time']),
@@ -1223,11 +1223,11 @@ class oifits(object):
 
 def open(filename, quiet=False):
     """Open an OIFITS file."""
-    
+
     newobj = oifits()
     targetmap = {}
     sta_indices = {}
-    
+
     if not quiet:
         print("Opening %s"%filename)
     hdulist = pyfits.open(filename)
@@ -1259,7 +1259,7 @@ def open(filename, quiet=False):
             # Save the sta_index for each array, as we will need it
             # later to match measurements to stations
             sta_indices[arrname] = data.field('sta_index')
-            
+
     # Then get any science measurements
     for hdu in hdulist:
         header = hdu.header
@@ -1353,7 +1353,7 @@ def open(filename, quiet=False):
                                                        flag=flag, u1coord=u1coord, v1coord=v1coord, u2coord=u2coord,
                                                        v2coord=v2coord, wavelength=wavelength, target=target,
                                                        array=array, station=station))
-                    
+
     hdulist.close()
     if not quiet:
         newobj.info(recursive=False)
