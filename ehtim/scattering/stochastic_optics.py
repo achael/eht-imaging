@@ -281,7 +281,7 @@ class ScatteringModel(object):
         if wavelength_cm == None:
             wavelength_cm = C/im.rf*100.0 #Observing wavelength [cm]
 
-        if ker == None:
+        if ker is None:
             ker = self.Ensemble_Average_Kernel(im, wavelength_cm)
 
         Iim = Wrapped_Convolve((im.imvec).reshape(im.ydim, im.xdim), ker)
@@ -385,7 +385,7 @@ class ScatteringModel(object):
         screen_x_offset_pixels = (Vx_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
         screen_y_offset_pixels = (Vy_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
 
-        if sqrtQ_init == None:
+        if sqrtQ_init is None:
             sqrtQ = self.sqrtQ_Matrix(Reference_Image, Vx_km_per_s=Vx_km_per_s, Vy_km_per_s=Vy_km_per_s, t_hr=t_hr)
         else:
             #If a matrix for sqrtQ_init is passed, we still need to potentially rotate it
@@ -607,7 +607,7 @@ class ScatteringModel(object):
                 return Unscattered_Movie
 
         #If it isn't specified, calculate the matrix sqrtQ for efficiency
-        if sqrtQ == None:
+        if sqrtQ is None:
             sqrtQ = self.sqrtQ_Matrix(get_frame(0))
 
         # If no epsilon screen is specified, then generate a random realization
