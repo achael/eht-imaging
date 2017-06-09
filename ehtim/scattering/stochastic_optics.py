@@ -247,7 +247,7 @@ class ScatteringModel(object):
         if wavelength_cm == None:
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
 
-        uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize
+        uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize # assume square kernel.  FIXME: create ulist and vlist, and construct u_grid and v_grid with the correct dimension
         u_grid = np.repeat(np.reshape(uvlist, (1, Reference_Image.xdim)), Reference_Image.xdim, axis=0)
         v_grid = np.repeat(np.reshape(uvlist, (Reference_Image.xdim, 1)), Reference_Image.xdim, axis=1)
         ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm)
