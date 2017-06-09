@@ -136,8 +136,9 @@ class ScatteringModel(object):
             (float): The power spectrum Q(qx,qy)
         """
 
-        if qx == 0.0 and qy == 0.0:
-            return 0.0
+        # This will be enforced externally
+        # if qx == 0.0 and qy == 0.0:
+        #     return 0.0
 
         wavelengthbar = self.wavelength_reference/(2.0*np.pi)
         qmin = 2.0*np.pi/self.r_out
@@ -212,25 +213,16 @@ class ScatteringModel(object):
         #Derived parameters
         FOV = Reference_Image.psize * Reference_Image.xdim * self.observer_screen_distance #Field of view, in cm, at the scattering screen
         N = Reference_Image.xdim
-
-        sqrtQ = 1j*np.zeros((N,N)) #just to get the dimensions correct; this needs to be initialized as a complex array because of potential phase from a shifted screen
         dq = 2.0*np.pi/FOV #this is the spacing in wavenumber
-
         screen_x_offset_pixels = (Vx_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
         screen_y_offset_pixels = (Vy_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
-        for s in range(0, N):
-            for t in range(0, N):
-                s2 = s
-                t2 = t
-                if s2 > (N-1)/2:
-                    s2 = s2 - N
-                if t2 > (N-1)/2:
-                    t2 = t2 - N
 
-                sqrtQ[t][s] = self.Q(dq*s2, dq*t2)**0.5
-                sqrtQ[t][s] *= np.exp(2.0*np.pi*1j*(float(s2)*screen_x_offset_pixels + float(t2)*screen_y_offset_pixels)/float(N)) #The exponential term rotates the screen (after a Fourier transform to the image domain). Note that it uses {s2,t2}, which is important to get the conjugation symmetry correct.
-
+        s = np.repeat(np.reshape(np.fft.fftfreq(N, d=1.0/N), (1, N)), N, axis=0)
+        t = np.repeat(np.reshape(np.fft.fftfreq(N, d=1.0/N), (N, 1)), N, axis=1)
+        sqrtQ = np.sqrt(self.Q(dq*s, dq*t)) * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
+                                                                   t*screen_y_offset_pixels)/float(N))
         sqrtQ[0][0] = 0.0 #A DC offset doesn't affect scattering
+
         return sqrtQ
 
     def Ensemble_Average_Kernel(self, Reference_Image, wavelength_cm = None):
