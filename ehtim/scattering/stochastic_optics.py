@@ -153,11 +153,11 @@ class ScatteringModel(object):
             return 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0)**(-(self.scatt_alpha+2.0)/2.0)
         elif self.model == 'amph_von_Misses':
             q = (qx_rot**2 + qy_rot**2)**0.5
-            q_phi = math.atan2(qy_rot, qx_rot)
+            q_phi = np.arctan2(qy_rot, qx_rot)
             return (8.0*np.pi)/((1.0+self.zeta)*sps.i0(self.kzeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0)) * np.exp(-(q*self.r_in)**2) * np.cosh(self.kzeta*np.cos( q_phi ))
         elif self.model == 'boxcar':
             q = (qx_rot**2 + qy_rot**2)**0.5
-            q_phi = math.atan2(qy_rot, qx_rot)
+            q_phi = np.arctan2(qy_rot, qx_rot)
 
             if 1.0/(2.0*self.kzeta_3) < q_phi % np.pi < np.pi - 1.0/(2.0*self.kzeta_3):
                 return 0.0
@@ -189,12 +189,12 @@ class ScatteringModel(object):
             return (wavelength_cm/self.wavelength_reference)**2.0*((x_rot/self.r0_maj)**2 + (y_rot/self.r0_min)**2)**(self.scatt_alpha/2.0)
         elif self.model == 'amph_von_Misses':
             r     = (x_rot**2 + y_rot**2)**0.5
-            phi   = math.atan2(y_rot, x_rot)
+            phi   = np.arctan2(y_rot, x_rot)
             return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
         elif self.model == 'boxcar':
             print('Using amph_von_Misses for now...')
             r     = (x_rot**2 + y_rot**2)**0.5
-            phi   = math.atan2(y_rot, x_rot)
+            phi   = np.arctan2(y_rot, x_rot)
             return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
 
     def sqrtQ_Matrix(self, Reference_Image, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0):
@@ -779,4 +779,3 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     if ipynb:
         display.clear_output()
         display.display(plt.gcf())
-
