@@ -392,8 +392,8 @@ class ScatteringModel(object):
             if screen_x_offset_pixels != 0.0 or screen_y_offset_pixels != 0.0:
                 s = np.repeat(np.reshape(np.fft.fftfreq(Nx, d=1.0/Nx), (1, Nx)), Ny, axis=0)
                 t = np.repeat(np.reshape(np.fft.fftfreq(Ny, d=1.0/Ny), (Ny, 1)), Nx, axis=1)
-                sqrtQ = sqrtQ_init * np.exp(2.0*np.pi*1j*(float(s)*screen_x_offset_pixels +
-                                                          float(t)*screen_y_offset_pixels)/float(Nx))
+                sqrtQ = sqrtQ_init * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
+                                                          t*screen_y_offset_pixels)/float(Nx))
             else:
                 sqrtQ = sqrtQ_init
 
