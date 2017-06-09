@@ -1,4 +1,3 @@
-
 # Michael Johnson, 2/15/2017
 # See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
 
@@ -161,10 +160,10 @@ class ScatteringModel(object):
             q = (qx_rot**2 + qy_rot**2)**0.5
             q_phi = np.arctan2(qy_rot, qx_rot)
 
-            if 1.0/(2.0*self.kzeta_3) < q_phi % np.pi < np.pi - 1.0/(2.0*self.kzeta_3):
-                return 0.0
-            else:
-                return (16.0*np.pi**2)/((1.0+self.zeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0))
+            Q = (16.0*np.pi**2)/((1.0+self.zeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0))
+            Q[(1.0/(2.0*self.kzeta_3) < (q_phi % np.pi)) and ((q_phi % np.pi) < np.pi - 1.0/(2.0*self.kzeta_3))] = 0.0
+
+            return Q
 
     def Dphi(self, x, y, wavelength_cm):
         """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm).
