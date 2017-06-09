@@ -1,3 +1,4 @@
+
 # Michael Johnson, 2/15/2017
 # See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
 
@@ -390,16 +391,10 @@ class ScatteringModel(object):
             #If a matrix for sqrtQ_init is passed, we still need to potentially rotate it
 
             if screen_x_offset_pixels != 0.0 or screen_y_offset_pixels != 0.0:
-                sqrtQ = np.copy(sqrtQ_init)
-                for s in range(0, Nx):
-                    for t in range(0, Ny):
-                        s2 = s
-                        t2 = t
-                        if s2 > (Nx-1)/2:
-                            s2 = s2 - Nx
-                        if t2 > (Ny-1)/2:
-                            t2 = t2 - Ny
-                        sqrtQ[t][s] *= np.exp(2.0*np.pi*1j*(float(s2)*screen_x_offset_pixels + float(t2)*screen_y_offset_pixels)/float(Nx)) #The exponential term rotates the screen (after a Fourier transform to the image domain). Note that it uses {s2,t2}, which is important to get the conjugation symmetry correct.
+                s = np.repeat(np.reshape(np.fft.fftfreq(Nx, d=1.0/Nx), (1, Nx)), Ny, axis=0)
+                t = np.repeat(np.reshape(np.fft.fftfreq(Ny, d=1.0/Ny), (Ny, 1)), Nx, axis=1)
+                sqrtQ = sqrtQ_init * np.exp(2.0*np.pi*1j*(float(s)*screen_x_offset_pixels +
+                                                          float(t)*screen_y_offset_pixels)/float(Nx))
             else:
                 sqrtQ = sqrtQ_init
 
