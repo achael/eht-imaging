@@ -248,8 +248,10 @@ class ScatteringModel(object):
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
 
         uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize
+        u_grid = np.repeat(np.reshape(uvlist, (1, Reference_Image.xdim)), Reference_Image.xdim, axis=0)
+        v_grid = np.repeat(np.reshape(uvlist, (Reference_Image.xdim, 1)), Reference_Image.xdim, axis=1)
+        ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm)
 
-        ker_uv = np.array([[self.Ensemble_Average_Kernel_Visibility(u, v, wavelength_cm) for u in uvlist] for v in uvlist])
         ker = np.real(np.fft.fftshift(np.fft.fft2(ker_uv)))
         ker = ker / np.sum(ker) # normalize to 1
         return ker
