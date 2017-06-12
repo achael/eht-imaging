@@ -228,9 +228,13 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
         visim = nd.map_coordinates(np.imag(vis_im), uv2)
         vis = visre + 1j*visim
 
-        #extra phase to match centroid convention -- right?
+        # Extra phase to match centroid convention -- right?
         phase = np.exp(-1j*np.pi*im.psize*(uv[:,0]+uv[:,1]))
         vis = vis * phase
+
+        # Multiply by the pulse function
+        pulsefac = np.array([im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv])
+        vis = vis*pulsefac
 
         if len(im.qvec):
             qarr = im.qvec.reshape(im.ydim, im.xdim)
