@@ -317,7 +317,7 @@ class Imager(object):
             if regname == 'flux':
                 #norm = flux**2
                 norm = 1        
-                reg = 2*(np.sum(imvec) - flux)
+                reg = 2*(np.sum(imvec) - self.flux_next)
                 reg /= norm
 
             elif regname == 'cm':

@@ -294,7 +294,7 @@ def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAU
 ##################################################################################################
 # Array IO
 ##################################################################################################  
-def load_array_txt(filename, ephemdir='./ephemeris'):
+def load_array_txt(filename, ephemdir='ephemeris'):
     """Read an array from a text file and return an Array object
        Sites with x=y=z=0 are spacecraft - 2TLE ephemeris loaded from ephemdir
     """
@@ -323,7 +323,7 @@ def load_array_txt(filename, ephemdir='./ephemeris'):
     for line in tdataout:
         if np.all(np.array([line['x'],line['y'],line['z']]) == (0.,0.,0.)):
             sitename = str(line['site'])
-            ephempath = path  + ephemdir + '/' + sitename #!AC TODO ephempath shouldn't always start with path
+            ephempath = path  + '/' + ephemdir + '/' + sitename #!AC TODO ephempath shouldn't always start with path
             try: 
                 edata[sitename] = np.loadtxt(ephempath, dtype=str, comments='#', delimiter='/')
                 print 'loaded spacecraft ephemeris %s' % ephempath
@@ -573,7 +573,7 @@ def load_obs_uvfits(filename, flipbl=False):
             dtype=DTARR) for i in range(len(tnames))]
 
     tarr = np.array(tarr)
-    
+
     # Various header parameters
     ra = header['OBSRA'] * 12./180.
     dec = header['OBSDEC']   
@@ -585,12 +585,41 @@ def load_obs_uvfits(filename, flipbl=False):
     
     
     # Mask to screen bad data
-    rrweight = data['DATA'][:,0,0,0,0,0,2]
-    llweight = data['DATA'][:,0,0,0,0,1,2]
-    rlweight = data['DATA'][:,0,0,0,0,2,2]
-    lrweight = data['DATA'][:,0,0,0,0,3,2]
-    mask = (rrweight > 0) * (llweight > 0) * (rlweight > 0) * (lrweight > 0)
-    
+    # Reducing to single frequency 
+
+    #TODO CHECK THESE DECISIONS CAREFULLY!!!!
+    rrweight = data['DATA'][:,0,0,0,:,0,2]
+    llweight = data['DATA'][:,0,0,0,:,1,2]
+    rlweight = data['DATA'][:,0,0,0,:,2,2]
+    lrweight = data['DATA'][:,0,0,0,:,3,2]
+
+    rrmask = (rrweight > 0.)
+    llmask = (llweight > 0.)
+    rlmask = (rlweight > 0.)
+    lrmask = (lrweight > 0.)
+
+    # average weights
+    # replace weights with zeros so they don't mess up the average
+    rrweight[~rrmask] = 0. 
+    llweight[~llmask] = 0.
+    rlweight[~rlmask] = 0.
+    lrweight[~lrmask] = 0.
+
+    rrmask = np.any(rrmask,axis=1)
+    llmask = np.any(llmask,axis=1)
+    rlmask = np.any(rlmask,axis=1)
+    lrmask = np.any(lrmask,axis=1)
+
+    mask = rrmask + llmask
+
+    rrweight = np.mean(rrweight,axis=1)[mask]
+    llweight = np.mean(llweight,axis=1)[mask]
+    rlweight = np.mean(rlweight,axis=1)[mask]
+    lrweight = np.mean(lrweight,axis=1)[mask]
+
+    if not np.any(mask):
+        raise Exception("No unflagged RR or LL data in uvfits file!")
+
     # Obs Times
     jds = data['DATE'][mask].astype('d') + data['_DATE'][mask].astype('d')
     mjd = int(np.min(jds)-2400000.5)
@@ -640,24 +669,58 @@ def load_obs_uvfits(filename, flipbl=False):
                 raise Exception("Cant figure out column label for UV coords")
                     
     # Get vis data
-    rr = data['DATA'][:,0,0,0,0,0,0][mask] + 1j*data['DATA'][:,0,0,0,0,0,1][mask]
-    ll = data['DATA'][:,0,0,0,0,1,0][mask] + 1j*data['DATA'][:,0,0,0,0,1,1][mask]
-    rl = data['DATA'][:,0,0,0,0,2,0][mask] + 1j*data['DATA'][:,0,0,0,0,2,1][mask]
-    lr = data['DATA'][:,0,0,0,0,3,0][mask] + 1j*data['DATA'][:,0,0,0,0,3,1][mask]
-    rrsig = 1/np.sqrt(rrweight[mask])
-    llsig = 1/np.sqrt(llweight[mask])
-    rlsig = 1/np.sqrt(rlweight[mask])
-    lrsig = 1/np.sqrt(lrweight[mask])
+    #TODO: coherent average ok?
+    rr = np.mean(data['DATA'][:,0,0,0,:,0,0][mask] + 1j*data['DATA'][:,0,0,0,:,0,1][mask], axis=1)
+    ll = np.mean(data['DATA'][:,0,0,0,:,1,0][mask] + 1j*data['DATA'][:,0,0,0,:,1,1][mask], axis=1)
+    rl = np.mean(data['DATA'][:,0,0,0,:,2,0][mask] + 1j*data['DATA'][:,0,0,0,:,2,1][mask], axis=1)
+    lr = np.mean(data['DATA'][:,0,0,0,:,3,0][mask] + 1j*data['DATA'][:,0,0,0,:,3,1][mask], axis=1)
+
+    # zero out data with zero error
+    rrweight[rrweight==0] = EP
+    llweight[llweight==0] = EP
+    rlweight[rlweight==0] = EP
+    lrweight[lrweight==0] = EP
+
+    rrsig = 1/np.sqrt(rrweight)
+    llsig = 1/np.sqrt(llweight)
+    rlsig = 1/np.sqrt(rlweight)
+    lrsig = 1/np.sqrt(lrweight)
     
+    # zero polarization points without data
+
     # Form stokes parameters
+    # look at these mask choices!!
+    llmask = llmask[mask]
+    rrmask = rrmask[mask]
+    rlmask = rlmask[mask]
+    lrmask = lrmask[mask]
+    qumask = (rlmask + lrmask)
+    vmask = (rrmask * llmask)
+
     ivis = 0.5 * (rr + ll)
+    ivis[~llmask] = rr[~llmask]
+    ivis[~rrmask] = ll[~rrmask]
+
+    vvis = 0.5 * (rr - ll)
+    vvis[~vmask] = 0.
+
     qvis = 0.5 * (rl + lr)
     uvis = 0.5j * (lr - rl)
-    vvis = 0.5 * (rr - ll)
+    qvis[~qumask] = 0.
+    uvis[~qumask] = 0.
+
     sigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
-    qsigma = 0.5* np.sqrt(rlsig**2 + lrsig**2)
-    usigma = qsigma
+    sigma[~llmask] = llsig[~llmask]
+    sigma[~rrmask] = rrsig[~rrmask]
+
     vsigma = sigma
+    vsigma[~vmask] = 0.
+
+    qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
+    usigma = qsigma
+    qsigma[~qumask] = 0.
+    usigma[~qumask] = 0.
+    
    
     # Reverse sign of baselines for correct imaging?
     if flipbl:

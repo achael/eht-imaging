@@ -75,8 +75,8 @@ class Array(object):
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw, 
                                             tint, tadv, tstart, tstop, 
-                                            mjd=MJD_DEFAULT, tau=TAUDEF, 
-                                            elevmin=ELEV_LOW, elevmax=ELEV_HIGH, 
+                                            mjd=mjd, tau=tau, 
+                                            elevmin=elevmin, elevmax=elevmax, 
                                             timetype='UTC')
 
         obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, obsarr, self.tarr, 
@@ -100,7 +100,7 @@ class Array(object):
 ###########################################################################################################################################
 #Array creation functions
 ###########################################################################################################################################
-def load_txt(fname, ephemdir='./ephemeris'):
+def load_txt(fname, ephemdir='ephemeris'):
     """Read an array from a text file and return an Array object.
        Sites with x=y=z=0 are spacecraft, and 2TLE ephemerides are loaded from ephemdir.
     """
