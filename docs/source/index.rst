@@ -41,6 +41,7 @@ Documentation
    imager
    calibration
    plotting
+   scattering
 
 
 Documentation is in progress, but here are some ways to learn to use the code: 

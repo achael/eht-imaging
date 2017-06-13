@@ -127,27 +127,6 @@ def image_centroid(im):
 
     return np.array([x0, y0])
 
-def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT):
-    """Return a DFT matrix for the xdim*ydim image with pixel width pdim
-       that extracts spatial frequencies of the uv points in uvlist.
-       in this version, it puts the image centroid at the origin
-    """
-
-    # !AC TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
-    # Coordinate matrix for COM constraint
-    xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
-    ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
-    x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
-    y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
-
-    #Now shift the lists
-    xlist = xlist - x0
-    ylist = ylist - y0
-
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
-    ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
-    return ftmatrices
-
 def ftmatrix(pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT, mask=[]):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
        that extracts spatial frequencies of the uv points in uvlist.

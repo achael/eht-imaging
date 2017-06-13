@@ -9,6 +9,7 @@ from __future__ import print_function
 import numpy as np
 import ehtim as eh
 from   ehtim.calibrating import self_cal as sc
+from   ehtim.plotting import self_cal as sc
 
 # Load the image and the array
 im = eh.image.load_txt('models/avery_sgra_eofn.txt')
@@ -32,7 +33,7 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
                  sgrscat=False, ampcal=True, phasecal=False)
 
 # You can deblur the visibilities by dividing by the scattering kernel if necessary
-obs = obs.deblur()
+#obs = obs.deblur()
 
 # These are some simple plots you can check
 obs.plotall('u','v', conj=True) # uv coverage
@@ -73,10 +74,10 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 # Image total flux with amplitudes and closure phases
 flux = zbl
 out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
-                 d1='bs', s1='simple',
-                 alpha_s1=1, alpha_d1=100,
-                 alpha_flux=100, alpha_cm=50,
-                 maxit=100)
+                      d1='bs', s1='simple',
+                      alpha_s1=1, alpha_d1=100,
+                      alpha_flux=100, alpha_cm=50,
+                      maxit=100)
 
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
@@ -92,8 +93,6 @@ out = eh.imager_func(obs, out, out, flux,
                 alpha_s1=1, alpha_d1=10,
                 alpha_flux=100, alpha_cm=50,
                 maxit=100)
-
-
 
 # Self - calibrate and image with vis amplitudes
 obs_sc = sc.self_cal(obs, out)
@@ -113,7 +112,6 @@ eh.comp_plots.plotall_obs_im_compare(obs, out,'uvdist','amp', clist=['b','m'],co
 # Blur the final image with 1/2 the clean beam
 outblur = out.blur_gauss(beamparams, 0.5)
 out.display()
-
 
 # Save the images
 outname = "test"

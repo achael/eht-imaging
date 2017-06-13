@@ -57,52 +57,60 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
         print("Time Type Not Recognized! Assuming UTC!")
         times_sidereal = utc_to_gmst(times, mjd)
 
+    #print mjd
+    #print np.min(times_sidereal), np.max(times_sidereal)
     # Generate uv points at all times
     outlist = []
     for k in range(len(times)):
         time = times[k]
+        fracmjd = np.floor(mjd) + time/24.
+        dto = (at.Time(fracmjd, format='mjd')).datetime
         time_sidereal = times_sidereal[k]
         theta = np.mod((time_sidereal-ra)*HOUR, 2*np.pi)
         blpairs = []
+
         for i1 in range(len(array.tarr)):
             for i2 in range(len(array.tarr)):
                 coord1 = np.array((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z']))
                 coord2 = np.array((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z']))
                 site2 =  array.tarr[i2]['site']
                 site1 =  array.tarr[i1]['site']
-                # use spacecraft ephemeris
 
+                # use spacecraft ephemeris so get position of site 1
                 if np.all(coord1 == (0.,0.,0.)):
-                    #if site2 != 'ALMA': continue
+                    if timetype=='GMST':
+                        raise Exception("Spacecraft ephemeris only work with UTC!")
                     sat = ephem.readtle(array.ephem[site1][0],array.ephem[site1][1],array.ephem[site1][2])
                     sat.compute(dto) # often complains if ephemeris out of date!
                     elev = sat.elevation
-                    lat = sat.sublat /DEGREE
-                    lon = sat.sublong/DEGREE
-                    # pyephem doesn't use ellipsoid earth model
+                    lat = sat.sublat / DEGREE
+                    lon = sat.sublong / DEGREE
+                    # pyephem doesn't use an ellipsoid earth model!
                     coord1 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
                     coord1 = np.array((coord1.x.value, coord1.y.value, coord1.z.value))
 
-                # use spacecraft ephemeris
-                if np.all(coord1 == (0.,0.,0.)):
-                    #if site1 != 'ALMA': continue
+                # use spacecraft ephemeris to get position of site 2
+                if np.all(coord2 == (0.,0.,0.)):
+                    if timetype=='GMST':
+                        raise Exception("Spacecraft ephemeris only work with UTC!")
                     sat = ephem.readtle(array.ephem[site2][0],array.ephem[site2][1],array.ephem[site2][2])
                     sat.compute(dto) # often complains if ephemeris out of date!
                     elev = sat.elevation
-                    lat = sat.sublat /DEGREE
-                    lon = sat.sublong/DEGREE
-                    # pyephem doesn't use ellipsoid earth model
+                    lat = sat.sublat  / DEGREE
+                    lon = sat.sublong / DEGREE
+                    # pyephem doesn't use an ellipsoid earth model!
                     coord2 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
                     coord2 = np.array((coord2.x.value, coord2.y.value, coord2.z.value))
 
+                # rotate the station coordinates
                 coord1 = earthrot(coord1, theta)
                 coord2 = earthrot(coord2, theta)
 
                 if (i1!=i2 and
                     i1 < i2 and # This is the right condition for uvfits save order
                     not ((i2, i1) in blpairs) and # This cuts out the conjugate baselines
-                    elevcut(earthrot(coord1, theta), sourcevec, elevmin, elevmax)[0] and
-                    elevcut(earthrot(coord2, theta), sourcevec, elevmin, elevmax)[0]
+                    elevcut(coord1, sourcevec, elevmin=elevmin, elevmax=elevmax)[0] and
+                    elevcut(coord2, sourcevec, elevmin=elevmin, elevmax=elevmax)[0]
                    ):
 
                     # Optical Depth
@@ -131,8 +139,8 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
                               array.tarr[i2]['site'], # Station 2
                               tau1, # Station 1 optical depth
                               tau2, # Station 1 optical depth
-                              np.dot(earthrot(coord1 - coord2, theta)/l, projU), # u (lambda)
-                              np.dot(earthrot(coord1 - coord2, theta)/l, projV), # v (lambda)
+                              np.dot((coord1 - coord2)/l, projU), # u (lambda)
+                              np.dot((coord1 - coord2)/l, projV), # v (lambda)
                               0.0, # I Visibility (Jy)
                               0.0, # Q Visibility
                               0.0, # U Visibility
@@ -225,9 +233,13 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
         visim = nd.map_coordinates(np.imag(vis_im), uv2)
         vis = visre + 1j*visim
 
-        #extra phase to match centroid convention -- right?
+        # Extra phase to match centroid convention -- right?
         phase = np.exp(-1j*np.pi*im.psize*(uv[:,0]+uv[:,1]))
         vis = vis * phase
+
+        # Multiply by the pulse function
+        pulsefac = np.array([im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv])
+        vis = vis*pulsefac
 
         if len(im.qvec):
             qarr = im.qvec.reshape(im.ydim, im.xdim)
