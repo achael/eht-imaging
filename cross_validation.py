@@ -25,7 +25,7 @@ def chisq(im, obs): #need to generalize this to other data products
     A = vb.ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
     return mx.chisq(im.imvec, A, data['vis'], data['sigma'])
 
-def plot_im_List_Set(im_List_List, cv_chi2_matrix, alpha_matrix, plot_log_amplitude=False, ipynb=False):
+def plot_im_List_Set(im_List_List, cv_chi2_matrix, alpha_matrix, plot_log_amplitude=False, plot_dynamic_range=1000.0, ipynb=False):
     plt.ion()
     plt.clf()
 
@@ -40,7 +40,7 @@ def plot_im_List_Set(im_List_List, cv_chi2_matrix, alpha_matrix, plot_log_amplit
         if plot_log_amplitude == False:
             plt.imshow(im.imvec.reshape(im.ydim,im.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')     
         else:
-            plt.imshow(np.log(im.imvec.reshape(im.ydim,im.xdim)), cmap=plt.get_cmap('afmhot'), interpolation='gaussian') 
+            plt.imshow(np.log(im.imvec.reshape(im.ydim,im.xdim) + np.max(im.imvec)/plot_dynamic_range), cmap=plt.get_cmap('afmhot'), interpolation='gaussian') 
         plt.xticks([])
         plt.yticks([])        
         
@@ -49,7 +49,6 @@ def plot_im_List_Set(im_List_List, cv_chi2_matrix, alpha_matrix, plot_log_amplit
             plt.xlabel("alpha: %0.3g" % (alpha_matrix[i]))
             plt.ylabel('')
         else:
-            #plt.title("alpha1: %0.3f, alpha2: %0.3f, Test chi^2: %0.3f" % (alpha_matrix[0][(i-i%xnum)/xnum],alpha_matrix[1][i%xnum],cv_chi2_matrix[(i-i%xnum)/xnum][i%xnum]))
             plt.title("Test chi^2: %0.3f" % (cv_chi2_matrix[(i-i%xnum)/xnum][i%xnum]))
             if i%xnum == 0:
                 plt.ylabel("alpha_s1: %0.3f" % (alpha_matrix[0][(i-i%xnum)/xnum]))

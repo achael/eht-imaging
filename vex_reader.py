@@ -7,6 +7,7 @@ import numpy as np
 import re
 import jdcal
 import movie_utils as mu
+import os
 
 def movie_observe_vex(movie, vex, source, synchronize_start = True, t_int = 0.0, sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
                 tau=vb.TAUDEF, gainp=vb.GAINPDEF, gain_offset=vb.GAINPDEF, dtermp=vb.DTERMPDEF,
