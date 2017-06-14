@@ -236,6 +236,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
         pulsefac = np.array([im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv])
         vis = vis*pulsefac
 
+        # FT of polarimetric quantities
         if len(im.qvec):
             qarr = im.qvec.reshape(im.ydim, im.xdim)
             qarr = np.pad(qarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
@@ -248,10 +249,12 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
             qvisre = nd.map_coordinates(np.real(qvis_im), uv2)
             qvisim = nd.map_coordinates(np.imag(qvis_im), uv2)
             qvis = phase*(qvisre + 1j*qvisim)
+            qvis = qvis*pulsefac        
 
             uvisre = nd.map_coordinates(np.real(uvis_im), uv2)
             uvisim = nd.map_coordinates(np.imag(uvis_im), uv2)
             uvis = phase*(uvisre + 1j*uvisim)
+            uvis = uvis*pulsefac
 
         if len(im.vvec):
             varr = im.vvec.reshape(im.ydim, im.xdim)
@@ -261,7 +264,8 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
 
             vvisre = nd.map_coordinates(np.real(vvis_im), uv2)
             vvisim = nd.map_coordinates(np.imag(vvis_im), uv2)
-            vvis = phase*(vvisre + 1j*qvisim)
+            vvis = phase*(vvisre + 1j*vvisim)
+            vvis = vvis*pulsefac
 
     #visibilities from DFT
     else:

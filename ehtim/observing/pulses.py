@@ -45,7 +45,7 @@ def trianglePulse_I(x, pdim):
 def trianglePulse_F(omega, pdim): 
 	if (omega == 0):
 		return 1.0
-	else: 
+	else:
 		return (4.0/(pdim**2 * omega**2)) * ( math.sin (( pdim * omega )/2.0) )**2 
 		
 		
