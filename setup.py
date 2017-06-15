@@ -16,6 +16,6 @@ if __name__ == "__main__":
         license = "MIT",
         keywords = "imaging astronomy EHT polarimetry",
         url = "https://github.com/achael/eht-imaging",
-        packages = ["ehtim","ehtim.observing","ehtim.plotting","ehtim.io","ehtim.imaging","ehtim.calib"],
-        long_description=read('README.md'),
+        packages = ["ehtim","ehtim.calibrating","ehtim.plotting","ehtim.imaging","ehtim.observing","ehtim.io","ehtim.scattering"],
+        long_description=read('README.rst'),
     )
