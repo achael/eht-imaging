@@ -115,7 +115,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
        Text file should have the same format as output from Image.save_txt()
        Make sure the header has exactly the same form!
     """
-    
+
     # Read the header
     file = open(filename)
     src = string.join(file.readline().split()[2:])
