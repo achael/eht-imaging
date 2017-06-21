@@ -473,9 +473,6 @@ def save_obs_uvfits(obs, fname):
             
     return
 
-
-  
-
 def save_obs_oifits(obs, fname, flux=1.0):
     """ Save visibility data to oifits
         Polarization data is NOT saved
