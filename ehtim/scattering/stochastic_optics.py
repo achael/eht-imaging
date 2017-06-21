@@ -412,7 +412,7 @@ class ScatteringModel:
 
         return phi_Image
 
-    def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=True, DisplayImage=False, Force_Positivity=False): 
+    def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=False, DisplayImage=False, Force_Positivity=False): 
         """Scatter an image using the specified epsilon screen. 
            All lengths should be specified in centimeters
            If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
@@ -532,7 +532,7 @@ class ScatteringModel:
 
         return AI_Image
 
-    def Scatter_Movie(self, Unscattered_Movie, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=None, N_frames = None, sqrtQ=None, Linearized_Approximation=True, Force_Positivity=False,Return_Image_List=False): 
+    def Scatter_Movie(self, Unscattered_Movie, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=None, N_frames = None, sqrtQ=None, Linearized_Approximation=False, Force_Positivity=False,Return_Image_List=False): 
         """Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image
            If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified
            If scattering a static image, the total number of frames must be specified (N_frames)
