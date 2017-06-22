@@ -5,6 +5,8 @@
 #pdim is in radian, Coordinates in real space are in radian, coordinates in Fourier space are in ANGULAR. spatial freq. 
 
 import math
+import numpy as np
+import scipy.special as spec
 
 def deltaPulse2D(x, y, pdim, dom='F'):
 	if dom=='I':
@@ -62,3 +64,62 @@ def trianglePulse_F(omega, pdim):
 # 		    (24.0/omega_delta**4)*math.cos(omega_delta)*(math.cos(omega_delta) - 1.0) )
 # 		    
 # 	return coeff / pdim # TODO : CHECK IF YOU DIVIDE BY PDIM FOR CLUBIC SPLINE PULSE
+
+#def circPulse2D(x, y, pdim, dom='F'):
+#        rm = 0.5*pdim #max radius of the disk
+#	if dom=='I':
+#            if x**2 + y**2 <= rm**2: 
+#                return 1./np.pi/rm**2
+#            else: return 0.	
+#	elif dom=='F': 
+#		return 2.*spec.j1(rm*np.sqrt(x**2 + y**2))/np.sqrt(x**2 + y**2)/rm**2
+
+def GaussPulse2D(x, y, pdim, dom='F'):
+        sigma = pdim/3.  #Gaussian SD (sigma) vs pixelwidth (pdim)      
+        a = 1./2./sigma/sigma
+	if dom=='I':
+		return (a/np.pi)*np.exp(-a*(x**2 + y**2))
+	
+	elif dom=='F': 
+		return np.exp(-(x**2 + y**2)/4./a)
+
+
+def cubicPulse2D(x, y, pdim, dom='F'):
+    if dom=='I':
+        return cubicPulse_I(x,pdim) * cubicPulse_I(y,pdim)
+  
+    elif dom=='F':
+        return cubicPulse_F(x, pdim)*cubicPulse_F(y, pdim)
+  
+def cubicPulse_I(x, pdim):
+    if abs(x) < pdim: return (1.5*(abs(x)/pdim)**3 - 2.5*(x/pdim)**2 +1.)/pdim
+    elif  abs(abs(x)-1.5*pdim) <= 0.5*pdim: return (-0.5*(abs(x)/pdim)**3 + 2.5*(x/pdim)**2 - 4.*(abs(x)/pdim) +2.)/pdim
+    else: return 0.
+  
+def cubicPulse_F(omega, pdim):
+    if (omega == 0):
+        return 1.0
+    else:
+        return 2.*((3./omega/pdim)*math.sin(omega*pdim/2.)-math.cos(omega*pdim/2.))*((2./omega/pdim)*math.sin(omega*pdim/2.))**3
+
+
+
+def sincPulse2D(x, y, pdim, dom='F'):
+    if dom=='I':
+        return sincPulse_I(x,pdim) * sincPulse_I(y,pdim)
+  
+    elif dom=='F':
+        return sincPulse_F(x, pdim) * sincPulse_F(y, pdim)
+  
+def sincPulse_I(x, pdim):
+    if (x == 0):
+        return 1./pdim
+    else: return (1./pdim)*math.sin(np.pi*x/pdim)/(np.pi*x/pdim)
+
+def sincPulse_F(omega, pdim):
+    if (abs(omega) < np.pi/pdim):
+        return 1.0
+    else:
+        return 0.
+
+
