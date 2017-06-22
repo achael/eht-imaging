@@ -9,21 +9,13 @@ Note that this is a pre-release of ehtim.  If you have a problem please submit a
 
 Installation
 ------------
-Download the latest version from the `GitHub repository <https://github.com/achael/eht-imaging>`_
-, change to the main directory and run:
+Download the latest version from the `GitHub repository <https://github.com/achael/eht-imaging>`_, change to the main directory and run:
 
 .. code-block:: bash
 
     pip install .
 
-It should install the depended libraries
-    `astropy <http://www.astropy.org/>`_,
-    `ephem <http://pypi.python.org/pypi/pyephem/>`_,
-    `future <http://pypi.python.org/pypi/future>`_,
-    `matplotlib <http://www.matplotlib.org/>`_,
-    `numpy <http://www.numpy.org/>`_,
-    `scipy <http://www.scipy.org/>`_
-automatically.
+It should install the depended libraries `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `matplotlib <http://www.matplotlib.org/>`_, `numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_ automatically.
 
 Documentation
 -------------
@@ -57,4 +49,3 @@ The oifits_new code used for reading/writing .oifits files is a slightly modifie
 The jdcal.py module is from Prasanth Nair at `<http://github.com/phn/jdcal>`_.
 
 The documentation is styled after `dfm's projects <https://github.com/dfm>`_ and the documentation for `scatterbrane <https://github.com/krosenfeld/scatterbrane>`_
-
