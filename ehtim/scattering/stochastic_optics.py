@@ -217,8 +217,7 @@ class ScatteringModel(object):
         screen_x_offset_pixels = (Vx_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
         screen_y_offset_pixels = (Vy_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
 
-        s = np.repeat(np.reshape(np.fft.fftfreq(N, d=1.0/N), (1, N)), N, axis=0)
-        t = np.repeat(np.reshape(np.fft.fftfreq(N, d=1.0/N), (N, 1)), N, axis=1)
+        s, t = np.meshgrid(np.fft.fftfreq(N, d=1.0/N), np.fft.fftfreq(N, d=1.0/N))
         sqrtQ = np.sqrt(self.Q(dq*s, dq*t)) * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
                                                                    t*screen_y_offset_pixels)/float(N))
         sqrtQ[0][0] = 0.0 #A DC offset doesn't affect scattering
@@ -240,8 +239,7 @@ class ScatteringModel(object):
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
 
         uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize # assume square kernel.  FIXME: create ulist and vlist, and construct u_grid and v_grid with the correct dimension
-        u_grid = np.repeat(np.reshape(uvlist, (1, Reference_Image.xdim)), Reference_Image.xdim, axis=0)
-        v_grid = np.repeat(np.reshape(uvlist, (Reference_Image.xdim, 1)), Reference_Image.xdim, axis=1)
+        u_grid, v_grid = np.meshgrid(uvlist, uvlist)
         ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm)
 
         ker = np.real(np.fft.fftshift(np.fft.fft2(ker_uv)))
@@ -390,8 +388,7 @@ class ScatteringModel(object):
             #If a matrix for sqrtQ_init is passed, we still need to potentially rotate it
 
             if screen_x_offset_pixels != 0.0 or screen_y_offset_pixels != 0.0:
-                s = np.repeat(np.reshape(np.fft.fftfreq(Nx, d=1.0/Nx), (1, Nx)), Ny, axis=0)
-                t = np.repeat(np.reshape(np.fft.fftfreq(Ny, d=1.0/Ny), (Ny, 1)), Nx, axis=1)
+                s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0/Nx), np.fft.fftfreq(Ny, d=1.0/Ny))
                 sqrtQ = sqrtQ_init * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
                                                           t*screen_y_offset_pixels)/float(Nx))
             else:
