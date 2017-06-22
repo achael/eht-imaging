@@ -77,7 +77,7 @@ class Array(object):
                                             tint, tadv, tstart, tstop, 
                                             mjd=mjd, tau=tau, 
                                             elevmin=elevmin, elevmax=elevmax, 
-                                            timetype='UTC')
+                                            timetype=timetype)
 
         obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, obsarr, self.tarr, 
                                     source=str(ra) + ":" + str(dec), 
