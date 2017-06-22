@@ -64,10 +64,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         if vtype=='uvis': sigmatype='usigma'
         if vtype=='vvis': sigmatype='vsigma'
         
-        sig1 = blue1[sigmatype]**2
-        sig2 = blue2[sigmatype]**2
-        sig3 = red1[sigmatype]**2
-        sig4 = red2[sigmatype]**2
+        sig1 = blue1[sigmatype]
+        sig2 = blue2[sigmatype]
+        sig3 = red1[sigmatype]
+        sig4 = red2[sigmatype]
         
         p1 = amp_debias(blue1[vtype], sig1)
         p2 = amp_debias(blue2[vtype], sig2)
@@ -100,7 +100,7 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 
     elif ctype=='logcamp':
         camp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4))
-        camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
+        camperr = np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
 
         # Debias
         if debias:
