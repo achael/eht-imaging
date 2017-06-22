@@ -26,7 +26,7 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False, axis=axis, color=clist[i])
+        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False, axis=axis, color=clist[i%len(clist)])
 
     if show:
         plt.show(block=False)
