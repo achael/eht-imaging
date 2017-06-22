@@ -240,72 +240,17 @@ def save_obs_uvfits(obs, fname):
 
     # Open template UVFITS
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    hdulist = fits.open(dir_path+'/template.UVP')
+    #hdulist = fits.open(dir_path+'/template.UVP')
 
-    ########################################################################
-    # Antenna table
-
-    # Load the array data
-    tarr = obs.tarr
-    tnames = tarr['site']
-    tnums = np.arange(1, len(tarr)+1)
-    xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in np.arange(len(tarr))])
-    sefd = tarr['sefdr']
-
-    nsta = len(tnames)
-    col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
-    col2 = fits.Column(name='STABXYZ', format='3D', unit='METERS', array=xyz)
-    col3 = fits.Column(name='NOSTA', format='1J', array=tnums)
-    colfin = fits.Column(name='SEFD', format='1D', array=sefd)
-
-    #!AC TODO these antenna fields+header are questionable - look into them
-
-    col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
-    col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
-    col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['R' for i in range(nsta)], dtype='|S1'))
-    col7 = fits.Column(name='POLAA', format='1E', unit='DEGREES', array=np.zeros(nsta))
-    col8 = fits.Column(name='POLCALA', format='3E', array=np.zeros((nsta,3)))
-    col9 = fits.Column(name='POLTYB', format='1A', array=np.array(['L' for i in range(nsta)], dtype='|S1'))
-    col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES', array=(90.*np.ones(nsta)))
-    col11 = fits.Column(name='POLCALB', format='3E', array=np.zeros((nsta,3)))
-    col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
-
-    #Antenna Header params - do I need to change more of these??
-    #head = fits.Header()
-    head = hdulist['AIPS AN'].header
-    head['EXTNAME'] = 'AIPS AN'
-    head['EXTVER'] = 1
-    head['RDATE'] = '2000-01-01T00:00:00.0'
-    head['GSTIA0'] = 114.38389781355     # !AC TODO ?? for jan 1 2000
-    head['UT1UTC'] = 0.e0
-    head['DATUTC'] = 0.e0
-    head['TIMESYS'] = 'UTC'
-    head['DEGPDY'] = 360.9856
-
-    head['FREQ']= obs.rf
-    head['FREQID'] = 1
-
-    head['ARRNAM'] = 'ALMA'     #!AC TODO Can we change this field?
-    head['XYZHAND'] = 'RIGHT'
-    head['ARRAYX'] = 0.e0
-    head['ARRAYY'] = 0.e0
-    head['ARRAYZ'] = 0.e0
-    head['POLARX'] = 0.e0
-    head['POLARY'] = 0.e0
-
-    head['NUMORB'] = 0
-    head['NO_IF'] = 1
-    head['NOPCAL'] = 0            #!AC changed from 1
-    head['POLTYPE'] = 'APPROX'
-
-    tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
-    hdulist['AIPS AN'] = tbhdu
+    hdulist_new = fits.HDUList()
+    hdulist_new.append(fits.GroupsHDU())
 
     ########################################################################
     # Data table
     # Data header (based on the BU format)
     #header = fits.Header()
-    header = hdulist[0].header
+    #header = hdulist[0].header
+    header = hdulist_new['PRIMARY'].header
     header['OBSRA'] = obs.ra * 180./12.
     header['OBSDEC'] = obs.dec
     header['OBJECT'] = obs.source
@@ -428,9 +373,76 @@ def save_obs_uvfits(obs, fname):
         pardata=[u, v, np.zeros(ndat), bl, jds, fractimes, tints,tau1,tau2],
         bitpix=-32)
 
+    #hdulist[0].data = x
+    #hdulist[0].header = header
+    hdulist_new['PRIMARY'].data = x
+    hdulist_new['PRIMARY'].header = header # TODO necessary, or is it a pointer?
 
-    hdulist[0].data = x
-    hdulist[0].header = header
+    ########################################################################
+    # Antenna table
+
+    # Load the array data
+    tarr = obs.tarr
+    tnames = tarr['site']
+    tnums = np.arange(1, len(tarr)+1)
+    xyz = np.array([[tarr[i]['x'],tarr[i]['y'],tarr[i]['z']] for i in np.arange(len(tarr))])
+    sefd = tarr['sefdr']
+
+    nsta = len(tnames)
+    col1 = fits.Column(name='ANNAME', format='8A', array=tnames)
+    col2 = fits.Column(name='STABXYZ', format='3D', unit='METERS', array=xyz)
+    col3 = fits.Column(name='NOSTA', format='1J', array=tnums)
+    colfin = fits.Column(name='SEFD', format='1D', array=sefd)
+
+    #!AC TODO these antenna fields+header are questionable - look into them
+
+    col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
+    col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
+    col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['R' for i in range(nsta)], dtype='|S1'))
+    col7 = fits.Column(name='POLAA', format='1E', unit='DEGREES', array=np.zeros(nsta))
+    col8 = fits.Column(name='POLCALA', format='3E', array=np.zeros((nsta,3)))
+    col9 = fits.Column(name='POLTYB', format='1A', array=np.array(['L' for i in range(nsta)], dtype='|S1'))
+    col10 = fits.Column(name='POLAB', format='1E', unit='DEGREES', array=(90.*np.ones(nsta)))
+    col11 = fits.Column(name='POLCALB', format='3E', array=np.zeros((nsta,3)))
+    col25= fits.Column(name='ORBPARM', format='1E', array=np.zeros(0))
+
+    #Antenna Header params - do I need to change more of these??
+    #head = fits.Header()
+    tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN')
+    hdulist_new.append(tbhdu)
+
+    #head = hdulist['AIPS AN'].header
+    head = hdulist_new['AIPS AN'].header
+
+    head['EXTNAME'] = 'AIPS AN'
+    head['EXTVER'] = 1
+    head['RDATE'] = '2000-01-01T00:00:00.0'
+    head['GSTIA0'] = 114.38389781355     # !AC TODO ?? for jan 1 2000
+    head['UT1UTC'] = 0.e0
+    head['DATUTC'] = 0.e0
+    head['TIMESYS'] = 'UTC'
+    head['DEGPDY'] = 360.9856
+
+    head['FREQ']= obs.rf
+    head['FREQID'] = 1
+
+    head['ARRNAM'] = 'ALMA'     #!AC TODO Can we change this field?
+    head['XYZHAND'] = 'RIGHT'
+    head['ARRAYX'] = 0.e0
+    head['ARRAYY'] = 0.e0
+    head['ARRAYZ'] = 0.e0
+    head['POLARX'] = 0.e0
+    head['POLARY'] = 0.e0
+
+    head['NUMORB'] = 0
+    head['NO_IF'] = 1
+    head['NOPCAL'] = 0            #!AC changed from 1
+    head['POLTYPE'] = 'APPROX'
+
+    hdulist_new['AIPS AN'].header = head # TODO necessary, or is it a pointer?
+
+    #tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
+    #hdulist['AIPS AN'] = tbhdu
 
     ##################################################################################
     # AIPS FQ TABLE -- Thanks to Kazu
@@ -456,15 +468,14 @@ def save_obs_uvfits(obs, fname):
     # add header information
     tbhdu.header.append(("NO_IF", nif, "Number IFs"))
     tbhdu.header.append(("EXTNAME","AIPS FQ"))
-    hdulist.append(tbhdu)
+    #hdulist.append(tbhdu)
+    hdulist_new.append(tbhdu)
 
     # Write final HDUList to file
-    hdulist.writeto(fname, overwrite=True)
+    #hdulist.writeto(fname, overwrite=True)
+    hdulist_new.writeto(fname, overwrite=True)
 
     return
-
-
-
 
 def save_obs_oifits(obs, fname, flux=1.0):
     """ Save visibility data to oifits
@@ -544,4 +555,3 @@ def save_obs_oifits(obs, fname, flux=1.0):
     obs.data['sigma'] *= flux
 
     return
-

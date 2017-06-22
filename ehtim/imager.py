@@ -365,7 +365,7 @@ class Imager(object):
             imvec = np.exp(imvec)
 
         IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
-        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ).imvec #the scattered image vector
+        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec #the scattered image vector
 
         # Calculate the chi^2 using the scattered image
         datterm = 0.
@@ -420,7 +420,7 @@ class Imager(object):
             imvec = np.exp(imvec)
 
         IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
-        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ).imvec #the scattered image vector
+        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec #the scattered image vector
 
         EA_Image = self.scattering_model.Ensemble_Average_Blur(IM, ker = self._ea_ker)
         EA_Gradient = so.Wrapped_Gradient((EA_Image.imvec/(FOV/N)).reshape(N, N))
@@ -545,7 +545,7 @@ class Imager(object):
                 imvec = np.exp(imvec)
 
             IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
-            scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ).imvec #the scattered image vector
+            scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec #the scattered image vector
 
             # Calculate the chi^2 using the scattered image
             datterm = 0.

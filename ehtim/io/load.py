@@ -8,6 +8,7 @@ import string
 import astropy.io.fits as fits
 import datetime
 import os
+import copy
 
 import ehtim.obsdata
 import ehtim.image
@@ -582,13 +583,26 @@ def load_obs_uvfits(filename, flipbl=False):
     tarr = np.array(tarr)
 
     # Various header parameters
-    ra = header['OBSRA'] * 12./180.
-    dec = header['OBSDEC']
+    try:
+        ra = header['OBSRA'] * 12./180.
+        dec = header['OBSDEC']
+    except KeyError:
+        if header['CTYPE6'] == 'RA':
+            ra = header['CRVAL6'] * 12./180.
+        else: raise Exception('Cannot find RA!')
+        if header['CTYPE7'] == 'DEC':
+            dec = header['CRVAL7']
+        else: raise Exception('Cannot find DEC!')
+
     src = header['OBJECT']
+    rf = hdulist['AIPS AN'].header['FREQ']
+
     if header['CTYPE4'] == 'FREQ':
-        rf = header['CRVAL4']
-        bw = header['CDELT4']
-    else: raise Exception('Cannot find observing frequency!')
+        ch1_freq = header['CRVAL4']
+        ch_bw = header['CDELT4']
+        nchan = header['NAXIS4']
+        bw = ch_bw * nchan
+    else: raise Exception('Cannot find observing frequencies!')
 
 
     # Mask to screen bad data
@@ -600,46 +614,31 @@ def load_obs_uvfits(filename, flipbl=False):
     rlweight = data['DATA'][:,0,0,0,:,2,2]
     lrweight = data['DATA'][:,0,0,0,:,3,2]
 
-    rrmask = (rrweight > 0.)
-    llmask = (llweight > 0.)
-    rlmask = (rlweight > 0.)
-    lrmask = (lrweight > 0.)
+    #TODO less than or equal to?
+    rrmask_2d = (rrweight > 0.)
+    llmask_2d = (llweight > 0.)
+    rlmask_2d = (rlweight > 0.)
+    lrmask_2d = (lrweight > 0.)
 
-    # average weights
-    # replace weights with zeros so they don't mess up the average
-    rrweight[~rrmask] = 0.
-    llweight[~llmask] = 0.
-    rlweight[~rlmask] = 0.
-    lrweight[~lrmask] = 0.
+    # if there is any unmasked data in the frequency column, use it
+    rrmask = np.any(rrmask_2d, axis=1)
+    llmask = np.any(llmask_2d, axis=1)
+    rlmask = np.any(rlmask_2d, axis=1)
+    lrmask = np.any(lrmask_2d, axis=1)
 
-    rrmask = np.any(rrmask,axis=1)
-    llmask = np.any(llmask,axis=1)
-    rlmask = np.any(rlmask,axis=1)
-    lrmask = np.any(lrmask,axis=1)
-
+    # Total intensity mask
+    # TODO or or and here? - what if we have only 1 of rr, ll?
     mask = rrmask + llmask
-
-    rrweight = np.mean(rrweight,axis=1)[mask]
-    llweight = np.mean(llweight,axis=1)[mask]
-    rlweight = np.mean(rlweight,axis=1)[mask]
-    lrweight = np.mean(lrweight,axis=1)[mask]
 
     if not np.any(mask):
         raise Exception("No unflagged RR or LL data in uvfits file!")
+    if np.any(~(rrmask*llmask)):
+        print("Warning: removing flagged data present!")
 
     # Obs Times
     jds = data['DATE'][mask].astype('d') + data['_DATE'][mask].astype('d')
     mjd = int(np.min(jds)-2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
-
-    # old time conversion
-    #jds = data['DATE'][mask]
-    #mjd = int(jdtomjd(np.min(jds)))
-    #print len(set(data['DATE']))
-    #if len(set(data['DATE'])) > 2:
-    #    times = np.array([mjdtogmt(jdtomjd(jd)) for jd in jds])
-    #else:
-    #    times = data['_DATE'][mask] * 24.0
 
     # Integration times
     tints = data['INTTIM'][mask]
@@ -653,7 +652,7 @@ def load_obs_uvfits(filename, flipbl=False):
     t1 = np.array([tarr[i]['site'] for i in t1])
     t2 = np.array([tarr[i]['site'] for i in t2])
 
-    # Opacities (not in BU files)
+    # Opacities (not in standard files)
     try:
         tau1 = data['TAU1'][mask]
         tau2 = data['TAU2'][mask]
@@ -675,59 +674,107 @@ def load_obs_uvfits(filename, flipbl=False):
             except KeyError:
                 raise Exception("Cant figure out column label for UV coords")
 
-    # Get vis data
+    # Get and average visibility data
+    # replace masked vis with nans so they don't mess up the average
     #TODO: coherent average ok?
-    rr = np.mean(data['DATA'][:,0,0,0,:,0,0][mask] + 1j*data['DATA'][:,0,0,0,:,0,1][mask], axis=1)
-    ll = np.mean(data['DATA'][:,0,0,0,:,1,0][mask] + 1j*data['DATA'][:,0,0,0,:,1,1][mask], axis=1)
-    rl = np.mean(data['DATA'][:,0,0,0,:,2,0][mask] + 1j*data['DATA'][:,0,0,0,:,2,1][mask], axis=1)
-    lr = np.mean(data['DATA'][:,0,0,0,:,3,0][mask] + 1j*data['DATA'][:,0,0,0,:,3,1][mask], axis=1)
+    #TODO 2d or 1d mask
+    rr_2d = data['DATA'][:,0,0,0,:,0,0] + 1j*data['DATA'][:,0,0,0,:,0,1]
+    ll_2d = data['DATA'][:,0,0,0,:,1,0] + 1j*data['DATA'][:,0,0,0,:,1,1]
+    rl_2d = data['DATA'][:,0,0,0,:,2,0] + 1j*data['DATA'][:,0,0,0,:,2,1]
+    lr_2d = data['DATA'][:,0,0,0,:,3,0] + 1j*data['DATA'][:,0,0,0,:,3,1]
 
-    # zero out data with zero error
-    rrweight[rrweight==0] = EP
-    llweight[llweight==0] = EP
-    rlweight[rlweight==0] = EP
-    lrweight[lrweight==0] = EP
+    rr_2d[~rrmask_2d] = np.nan
+    ll_2d[~llmask_2d] = np.nan
+    rl_2d[~rlmask_2d] = np.nan
+    lr_2d[~lrmask_2d] = np.nan
 
-    rrsig = 1/np.sqrt(rrweight)
-    llsig = 1/np.sqrt(llweight)
-    rlsig = 1/np.sqrt(rlweight)
-    lrsig = 1/np.sqrt(lrweight)
+    rr = np.nanmean(rr_2d, axis=1)[mask]
+    ll = np.nanmean(ll_2d, axis=1)[mask]
+    rl = np.nanmean(rl_2d, axis=1)[mask]
+    lr = np.nanmean(lr_2d, axis=1)[mask]
 
-    # zero polarization points without data
+    #rr = np.mean(data['DATA'][:,0,0,0,:,0,0][mask] + 1j*data['DATA'][:,0,0,0,:,0,1][mask], axis=1)
+    #ll = np.mean(data['DATA'][:,0,0,0,:,1,0][mask] + 1j*data['DATA'][:,0,0,0,:,1,1][mask], axis=1)
+    #rl = np.mean(data['DATA'][:,0,0,0,:,2,0][mask] + 1j*data['DATA'][:,0,0,0,:,2,1][mask], axis=1)
+    #lr = np.mean(data['DATA'][:,0,0,0,:,3,0][mask] + 1j*data['DATA'][:,0,0,0,:,3,1][mask], axis=1)
 
-    # Form stokes parameters
+    # average weights
+    # variances are mean / N , or sum / N^2
+    # replace masked weights with nans so they don't mess up the average
+    rrweight[~rrmask_2d] = np.nan
+    llweight[~llmask_2d] = np.nan
+    rlweight[~rlmask_2d] = np.nan
+    lrweight[~lrmask_2d] = np.nan
+
+    nsig_rr = np.sum(rrmask_2d, axis=1).astype(float)
+    nsig_rr[~rrmask] = np.nan
+    rrsig = np.sqrt(np.nansum(1./rrweight, axis=1)) / nsig_rr
+    rrsig = rrsig[mask]
+
+    nsig_ll = np.sum(llmask_2d, axis=1).astype(float)
+    nsig_ll[~llmask] = np.nan
+    llsig = np.sqrt(np.nansum(1./llweight, axis=1)) / nsig_ll
+    llsig = llsig[mask]
+
+    nsig_rl = np.sum(rlmask_2d, axis=1).astype(float)
+    nsig_rl[~rlmask] = np.nan
+    rlsig = np.sqrt(np.nansum(1./rlweight, axis=1)) / nsig_rl
+    rlsig = rlsig[mask]
+
+    nsig_lr = np.sum(lrmask_2d, axis=1).astype(float)
+    nsig_lr[~lrmask] = np.nan
+    lrsig = np.sqrt(np.nansum(1./lrweight, axis=1)) / nsig_lr
+    lrsig = lrsig[mask]
+
+    # make sigmas from weights
+    # zero out weights with zero error
+    #rrweight[rrweight==0] = EP
+    #llweight[llweight==0] = EP
+    #rlweight[rlweight==0] = EP
+    #lrweight[lrweight==0] = EP
+
+    #rrsig = np.sqrt(rrweight)
+    #llsig = 1/np.sqrt(llweight)
+    #rlsig = 1/np.sqrt(rlweight)
+    #lrsig = 1/np.sqrt(lrweight)
+
+    # Form stokes parameters from data
     # look at these mask choices!!
-    llmask = llmask[mask]
-    rrmask = rrmask[mask]
-    rlmask = rlmask[mask]
-    lrmask = lrmask[mask]
-    qumask = (rlmask + lrmask)
-    vmask = (rrmask * llmask)
+    rrmask_dsize = rrmask[mask]
+    llmask_dsize = llmask[mask]
+    rlmask_dsize = rlmask[mask]
+    lrmask_dsize = lrmask[mask]
 
+    qumask_dsize = (rlmask_dsize * lrmask_dsize) # must have both RL & LR data to get Q, U
+    vmask_dsize  = (rrmask_dsize * llmask_dsize) # must have both RR & LL data to get V
+
+    # Stokes I
     ivis = 0.5 * (rr + ll)
-    ivis[~llmask] = rr[~llmask]
-    ivis[~rrmask] = ll[~rrmask]
+    ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
+    ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
 
+    isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
+    isigma[~llmask_dsize] = rrsig[~llmask_dsize]
+    isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
+
+    # TODO what should the polarization  sigmas be if no data?
+    # Stokes V
     vvis = 0.5 * (rr - ll)
-    vvis[~vmask] = 0.
+    vvis[~vmask_dsize] = 0.
 
+    vsigma = copy.deepcopy(isigma) #ARGH POINTERS
+    vsigma[~vmask_dsize] = 0.
+
+    # Stokes Q,U
     qvis = 0.5 * (rl + lr)
     uvis = 0.5j * (lr - rl)
-    qvis[~qumask] = 0.
-    uvis[~qumask] = 0.
-
-    sigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
-    sigma[~llmask] = llsig[~llmask]
-    sigma[~rrmask] = rrsig[~rrmask]
-
-    vsigma = sigma
-    vsigma[~vmask] = 0.
+    qvis[~qumask_dsize] = 0.
+    uvis[~qumask_dsize] = 0.
 
     qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
     usigma = qsigma
-    qsigma[~qumask] = 0.
-    usigma[~qumask] = 0.
-
+    qsigma[~qumask_dsize] = 0.
+    usigma[~qumask_dsize] = 0.
 
     # Reverse sign of baselines for correct imaging?
     if flipbl:
@@ -743,9 +790,10 @@ def load_obs_uvfits(filename, flipbl=False):
                            t1[i], t2[i], tau1[i], tau2[i],
                            u[i], v[i],
                            ivis[i], qvis[i], uvis[i], vvis[i],
-                           sigma[i], qsigma[i], usigma[i], vsigma[i],
+                           isigma[i], qsigma[i], usigma[i], vsigma[i]
                            ), dtype=DTPOL
                          ))
+
     datatable = np.array(datatable)
 
     #!AC TODO get calibration flags from uvfits?
@@ -861,5 +909,3 @@ def load_obs_oifits(filename, flux=1.0):
     # return object
 
     return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0])
-
-
