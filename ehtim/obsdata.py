@@ -176,7 +176,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def unpack_bl(self, site1, site2, in_fields, ang_unit='deg'):
+    def unpack_bl(self, site1, site2, in_fields, ang_unit='deg', debias=False):
         """Unpack the data for the given fields in_fields over time on the selected baseline site1-site2.
         """
 
@@ -195,13 +195,15 @@ class Obsdata(object):
             for obs in scan:
                 if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
                     obs = np.array([obs])
-                    out = self.unpack_dat(obs, fields, ang_unit=ang_unit)
+                    out = self.unpack_dat(obs, fields, ang_unit=ang_unit, debias=debias)
                     allout.append(out)
         return np.array(allout)
 
-    def unpack(self, fields, conj=False, ang_unit='deg', mode='all'):
+    def unpack(self, fields, conj=False, ang_unit='deg', mode='all', debias=False):
         """Return a recarray of all the data for the given fields extracted from the dtable.
            If conj=True, will also return conjugate baselines.
+           ang_unit can be 'deg' or 'radian'
+           debias=True will debias visibility amplitudes
         """
 
         if not mode in ('time', 'all'):
@@ -215,19 +217,22 @@ class Obsdata(object):
                 data = self.data_conj()
             else:
                 data = self.data
-            allout=self.unpack_dat(data, fields, ang_unit=ang_unit)
+            allout=self.unpack_dat(data, fields, ang_unit=ang_unit, debias=debias)
+
         elif mode=='time':
             allout=[]
             tlist = self.tlist(conj=True)
             for scan in tlist:
-                out=self.unpack_dat(scan, fields, ang_unit=ang_unit)
+                out=self.unpack_dat(scan, fields, ang_unit=ang_unit, debias=debias)
                 allout.append(out)
 
         return np.array(allout)
 
-    def unpack_dat(self, data, fields, conj=False, ang_unit='deg'):
+    def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False):
         """Return a recarray of data for the given fields extracted from the datatable 'data'.
            If conj=True, will also return conjugate baselines.
+           ang_unit can be 'deg' or 'radian'
+           debias=True will debias visibility amplitudes
         """
 
         if ang_unit=='deg': angle=DEGREE
@@ -309,6 +314,12 @@ class Obsdata(object):
             # Get arg/amps/snr
             if field in ["amp", "qamp", "uamp","vamp","pamp","mamp"]:
                 out = np.abs(out)
+
+                # !AC debias here?
+                if debias:
+                    print("Debiasing amplitudes in unpack!")
+                    out = amp_debias(out, sig)
+
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase"]:
                 out = np.angle(out)/angle
@@ -377,6 +388,8 @@ class Obsdata(object):
                 l_dict[(dat['t1'], dat['t2'])] = dat
 
             # Determine the triangles in the time step
+
+            # Minimal Set
             if count == 'min':
                 # If we want a minimal set, choose triangles with the minimum sefd reference
                 # Unless there is no sefd data, in which case choose the northernmost
@@ -390,8 +403,9 @@ class Obsdata(object):
                 # Find all triangles that contain the ref
                 tris = list(it.combinations(sites,2))
                 tris = [(ref, t[0], t[1]) for t in tris]
+
+            # Maximal  Set - find all triangles
             elif count == 'max':
-                # Find all triangles
                 tris = list(it.combinations(sites,3))
 
             # Generate bispectra for each triangle
@@ -410,56 +424,32 @@ class Obsdata(object):
                 except KeyError:
                     continue
 
-                # Choose the appropriate polarization and compute the bs and err
-                if vtype in ["vis", "qvis", "uvis","vvis"]:
-                    if vtype=='vis':  sigmatype='sigma'
-                    if vtype=='qvis': sigmatype='qsigma'
-                    if vtype=='uvis': sigmatype='usigma'
-                    if vtype=='vvis': sigmatype='vsigma'
-
-                    p1 = l1[vtype]
-                    p2 = l2[vtype]
-                    p3 = l3[vtype]
-
-                    var1 = l1[sigmatype]**2
-                    var2 = l2[sigmatype]**2
-                    var3 = l3[sigmatype]**2
-
-                elif vtype == "pvis":
-                    p1 = l1['qvis'] + 1j*l2['uvis']
-                    p2 = l2['qvis'] + 1j*l2['uvis']
-                    p3 = l3['qvis'] + 1j*l3['uvis']
-                    bi = p1 * p2 * p3
-
-                    var1 = l1['qsigma']**2 + l1['usigma']**2
-                    var2 = l2['qsigma']**2 + l2['usigma']**2
-                    var3 = l3['qsigma']**2 + l3['usigma']**2
-
-                bi = p1*p2*p3
-                bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +
-                                             var2/np.abs(p2)**2 +
-                                             var3/np.abs(p3)**2)
-                #Katie's 2nd + 3rd order corrections - see CHIRP supplement
-                bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
-                                           var1*var3*np.abs(p2)**2 +
-                                           var2*var3*np.abs(p1)**2 +
-                                           var1*var2*var3)
+                (bi, bisig) = make_bispectrum(l1,l2,l3,vtype)
 
                 # Append to the equal-time list
                 bis.append(np.array((time, tri[0], tri[1], tri[2],
                                      l1['u'], l1['v'], l2['u'], l2['v'], l3['u'], l3['v'],
                                      bi, bisig), dtype=DTBIS))
 
-            # Append equal time bispectra to outlist
+            # Append to outlist
             if mode=='time' and len(bis) > 0:
                 outlist.append(np.array(bis))
                 bis = []
 
-        if mode=='all':
-            outlist = np.array(bis)
+            elif mode=='all':
+                outlist = np.array(bis)
 
         return np.array(outlist)
 
+    def unique_c_phases(self):
+        """Return an array of all unique closure phase triangles.
+        """
+
+        biarr = self.bispectra(mode="all", count="min")
+        catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
+        uniqueclosure = np.vstack({tuple(row) for row in catsites.T})
+
+        return uniqueclosure
 
     def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg'):
         """Return a recarray of the equal time closure phases.
@@ -472,7 +462,6 @@ class Obsdata(object):
 
            Returns:
                numpy.recarry: A recarray of the closure phases with datatype DTPHASE
-
         """
 
         if not mode in ('time', 'all'):
@@ -504,25 +493,17 @@ class Obsdata(object):
 
         if mode == 'all':
             outlist = np.array(cps)
-
         return np.array(outlist)
 
-    def unique_c_phases(self):
-        """Return an array of all unique closure phase triangles.
-        """
-        biarr = self.bispectra(mode="all", count="min")
-        catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
-        uniqueclosure = np.vstack({tuple(row) for row in catsites.T})
-
-        return uniqueclosure
-
-    def c_amplitudes(self, vtype='vis', mode='time', count='min'):
+    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True):
         """Return a recarray of the equal time closure amplitudes.
 
            Args:
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
                mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
 
            Returns:
                numpy.recarry: A recarray of the closure amplitudes with datatype DTCAMP
@@ -535,7 +516,10 @@ class Obsdata(object):
             raise Exception("possible options for count are 'max' and 'min'")
         if not vtype in ('vis','qvis','uvis','vvis','pvis'):
             raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
+        if not (ctype in ['camp', 'logcamp']):
+            raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
 
+        # Get data sorted by time
         tlist = self.tlist(conj=True)
         outlist = []
         cas = []
@@ -545,11 +529,12 @@ class Obsdata(object):
             if len(sites) < 4:
                 continue
 
-            # Create a dictionary of baselines at the current time incl. conjugates;
+            # Create a dictionary of baseline data at the current time including conjugates;
             l_dict = {}
             for dat in tdata:
                 l_dict[(dat['t1'], dat['t2'])] = dat
 
+            # Minimal set
             if count == 'min':
                 # If we want a minimal set, choose the minimum sefd reference
                 # !AC TODO this should probably be an sefdr + sefdl average
@@ -558,60 +543,28 @@ class Obsdata(object):
 
                 # Loop over other sites >=3 and form minimal closure amplitude set
                 for i in range(3, len(sites)):
-                    if (ref, sites[i]) not in l_dict:
+                    if (ref, sites[i]) not in l_dict.keys():
                         continue
 
-                    blue1 = l_dict[ref, sites[i]] #!! (MJ: This causes a KeyError in some cases, probably with flagged data or something)
+                    blue1 = l_dict[ref, sites[i]] # MJ: This causes a KeyError in some cases, probably with flagged data or something
                     for j in range(1, i):
                         if j == i-1: k = 1
                         else: k = j+1
 
-                        if (sites[i], sites[j]) not in l_dict: # MJ: I tried joining these into a single if statement using or without success... no idea why...
+                        if (sites[i], sites[j]) not in l_dict.keys(): # MJ: I tried joining these into a single if statement using or without success... no idea why...
                             continue
 
-                        if (ref, sites[k]) not in l_dict:
+                        if (ref, sites[k]) not in l_dict.keys():
                             continue
 
-                        if (sites[j], sites[k]) not in l_dict:
+                        if (sites[j], sites[k]) not in l_dict.keys():
                             continue
 
                         red1 = l_dict[sites[i], sites[j]]
                         red2 = l_dict[ref, sites[k]]
                         blue2 = l_dict[sites[j], sites[k]]
-
                         # Compute the closure amplitude and the error
-                        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
-
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
-
-                            p1 = amp_debias(blue1[vtype], np.sqrt(var1))
-                            p2 = amp_debias(blue2[vtype], np.sqrt(var2))
-                            p3 = amp_debias(red1[vtype], np.sqrt(var3))
-                            p4 = amp_debias(red2[vtype], np.sqrt(var4))
-
-                        elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
-
-                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], np.sqrt(var1))
-                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], np.sqrt(var2))
-                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
-                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
-
-                        camp = np.abs((p1*p2)/(p3*p4))
-                        camperr = camp * np.sqrt(var1/np.abs(p1)**2 +
-                                                 var2/np.abs(p2)**2 +
-                                                 var3/np.abs(p3)**2 +
-                                                 var4/np.abs(p4)**2)
+                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
 
                         # Add the closure amplitudes to the equal-time list
                         # Our site convention is (12)(34)/(14)(23)
@@ -622,7 +575,7 @@ class Obsdata(object):
                                              camp, camperr),
                                              dtype=DTCAMP))
 
-            # !AC TODO Find a different way to do min/max sets so we don't have to duplicate code here?
+            # Maximal Set
             elif count == 'max':
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
@@ -638,41 +591,10 @@ class Obsdata(object):
                         red2 = l_dict[quad[1], quad[2]]
 
                         # Compute the closure amplitude and the error
-                        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
-
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
-
-                            p1 = amp_debias(blue1[vtype], np.sqrt(var1))
-                            p2 = amp_debias(blue2[vtype], np.sqrt(var2))
-                            p3 = amp_debias(red1[vtype], np.sqrt(var3))
-                            p4 = amp_debias(red2[vtype], np.sqrt(var4))
-
-                        elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
-
-                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], np.sqrt(var1))
-                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], np.sqrt(var2))
-                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
-                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
-
-                        camp = np.abs((p1*p2)/(p3*p4))
-                        camperr = camp * np.sqrt(var1/np.abs(p1)**2 +
-                                                 var2/np.abs(p2)**2 +
-                                                 var3/np.abs(p3)**2 +
-                                                 var4/np.abs(p4)**2)
-
+                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
 
                         # Add the closure amplitudes to the equal-time list
+                        # Our site convention is (12)(34)/(14)(23)
                         cas.append(np.array((time,
                                              quad[0], quad[1], quad[2], quad[3],
                                              blue1['u'], blue1['v'], blue2['u'], blue2['v'],
@@ -684,178 +606,11 @@ class Obsdata(object):
             if mode=='time':
                 outlist.append(np.array(cas))
                 cas = []
+
             elif mode=='all':
                 outlist = np.array(cas)
 
         return np.array(outlist)
-
-    def log_c_amplitudes(self, vtype='vis', mode='time', count='min'):
-        """Return a recarray of the equal time log closure amplitudes.
-
-           Args:
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
-               mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
-               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
-
-           Returns:
-               numpy.recarry: A recarray of the log closure amplitudes with datatype DTCAMP
-
-        """
-
-        if not mode in ('time','all'):
-            raise Exception("possible options for mode are 'time' and 'all'")
-        if not count in ('max', 'min'):
-            raise Exception("possible options for count are 'max' and 'min'")
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
-
-        tlist = self.tlist(conj=True)
-        outlist = []
-        cas = []
-        for tdata in tlist:
-            time = tdata[0]['time']
-            sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
-            if len(sites) < 4:
-                continue
-
-            # Create a dictionary of baselines at the current time incl. conjugates;
-            l_dict = {}
-            for dat in tdata:
-                l_dict[(dat['t1'], dat['t2'])] = dat
-
-            if count == 'min':
-                # If we want a minimal set, choose the minimum sefd reference
-                # !AC this should probably be an sefdr + sefdl average
-                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-                ref = sites[0]
-
-                # Loop over other sites >=3 and form minimal closure amplitude set
-                for i in range(3, len(sites)):
-                    blue1 = l_dict[ref, sites[i]] #!!
-                    for j in range(1, i):
-                        if j == i-1: k = 1
-                        else: k = j+1
-
-                        red1 = l_dict[sites[i], sites[j]]
-                        red2 = l_dict[ref, sites[k]]
-                        blue2 = l_dict[sites[j], sites[k]]
-
-                        # Compute the closure amplitude and the error
-                        if vtype in ["vis", "qvis", "uvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
-
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
-
-                            p1 = amp_debias(blue1[vtype], np.sqrt(var1)) #!AC TODO debias or not in the closure amplitude?
-                            p2 = amp_debias(blue2[vtype], np.sqrt(var2))
-                            p3 = amp_debias(red1[vtype], np.sqrt(var3))
-                            p4 = amp_debias(red2[vtype], np.sqrt(var4))
-
-                        elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
-
-                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], np.sqrt(var1))
-                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], np.sqrt(var2))
-                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], np.sqrt(var3))
-                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], np.sqrt(var4))
-
-
-                        logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
-
-                        logcamperr = np.sqrt(var1/np.abs(p1)**2 +
-                                             var2/np.abs(p2)**2 +
-                                             var3/np.abs(p3)**2 +
-                                             var4/np.abs(p4)**2)
-
-                        # Add the closure amplitudes to the equal-time list
-                        # Our site convention is (12)+(34)-(14)-(23)
-                        cas.append(np.array((time,
-                                             ref, sites[i], sites[j], sites[k],
-                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                             red1['u'], red1['v'], red2['u'], red2['v'],
-                                             logcamp, logcamperr),
-                                             dtype=DTCAMP))
-
-
-            #!AC TODO find a better way to loop over min/max sets so we don't need to duplicate so much code?
-            elif count == 'max':
-                # Find all quadrangles
-                quadsets = list(it.combinations(sites,4))
-                for q in quadsets:
-                    # Loop over 3 closure amplitudes
-                    # Our site convention is (12)(34)/(14)(23)
-                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
-
-                        # Blue is numerator, red is denominator
-                        blue1 = l_dict[quad[0], quad[1]]
-                        blue2 = l_dict[quad[2], quad[3]]
-                        red1 = l_dict[quad[0], quad[3]]
-                        red2 = l_dict[quad[1], quad[2]]
-
-                        # Compute the closure amplitude and the error
-                        if vtype in ["vis", "qvis", "uvis"]:
-                            if vtype=='vis':  sigmatype='sigma'
-                            if vtype=='qvis': sigmatype='qsigma'
-                            if vtype=='uvis': sigmatype='usigma'
-                            if vtype=='vvis': sigmatype='vsigma'
-
-                            var1 = blue1[sigmatype]**2
-                            var2 = blue2[sigmatype]**2
-                            var3 = red1[sigmatype]**2
-                            var4 = red2[sigmatype]**2
-
-                            p1 = amp_debias(blue1[vtype], e1)
-                            p2 = amp_debias(blue2[vtype], e2)
-                            p3 = amp_debias(red1[vtype], e3)
-                            p4 = amp_debias(red2[vtype], e4)
-
-                        elif vtype == "pvis":
-                            var1 = blue1['qsigma']**2 + blue1['usigma']**2
-                            var2 = blue2['qsigma']**2 + blue2['usigma']**2
-                            var3 = red1['qsigma']**2 + red1['usigma']**2
-                            var4 = red2['qsigma']**2 + red2['usigma']**2
-
-                            p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], e1)
-                            p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], e2)
-                            p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], e3)
-                            p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], e4)
-
-
-                        logcamp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4));
-
-                        logcamperr = np.sqrt(var1/np.abs(p1)**2 +
-                                             var2/np.abs(p2)**2 +
-                                             var3/np.abs(p3)**2 +
-                                             var4/np.abs(p4)**2)
-
-                        # Add the closure amplitudes to the equal-time list
-                        # Our site convention is (12)+(34)-(14)-(23)
-                        cas.append(np.array((time,
-                                             ref, sites[i], sites[j], sites[k],
-                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                             red1['u'], red1['v'], red2['u'], red2['v'],
-                                             logcamp, logcamperr),
-                                             dtype=DTCAMP))
-
-
-            # Append all equal time closure amps to outlist
-            if mode=='time':
-                outlist.append(np.array(cas))
-                cas = []
-            elif mode=='all':
-                outlist = np.array(cas)
-
-        return np.array(outlist)
-
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
         """Make an image observation dirty beam.
@@ -1086,7 +841,7 @@ class Obsdata(object):
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
         return res.x
 
-    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg'):
+    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg', debias=True):
         """Make a scatter plot of 2 real observation fields with errors.
            If conj==True, display conjugate baselines.
         """
@@ -1096,7 +851,7 @@ class Obsdata(object):
             raise Exception("valid fields are " + ' '.join(FIELDS))
 
         # Unpack x and y axis data
-        data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit)
+        data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)
 
         # X error bars
         if sigtype(field1):
@@ -1111,13 +866,14 @@ class Obsdata(object):
             sigy = None
 
         # Debias amplitudes if appropriate:
-        if field1 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
-            print("De-biasing amplitudes for plot x values!")
-            data[field1] = amp_debias(data[field1], sigx)
+        # !AC TODO - now debiasing done in unpack -- ok?
+        #if field1 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
+        #    print "De-biasing amplitudes for plot x values!"
+        #    data[field1] = amp_debias(data[field1], sigx)
 
-        if field2 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
-            print("De-biasing amplitudes for plot y values!")
-            data[field2] = amp_debias(data[field2], sigy)
+        #if field2 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
+        #    print "De-biasing amplitudes for plot y values!"
+        #    data[field2] = amp_debias(data[field2], sigy)
 
         # Data ranges
         if not rangex:
@@ -1148,7 +904,7 @@ class Obsdata(object):
             plt.show(block=False)
         return x
 
-    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
+    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', debias=True):
         """Plot a field over time on a baseline site1-site2.
         """
 
@@ -1157,9 +913,9 @@ class Obsdata(object):
 
         # Determine if fields are valid
         if field not in FIELDS:
-            raise Exception("valid fields are " + ' '.join(FIELDS))
+            raise Exception("valid fields are " + string.join(FIELDS))
 
-        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit)
+        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias)
         if not rangex:
             rangex = [self.tstart,self.tstop]
         if not rangey:
@@ -1173,7 +929,7 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and sigtype(field)!=False:
-            errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit)
+            errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0], yerr=errdata[sigtype(field)][:,0], fmt='b.', color=color)
         else:
             x.plot(plotdata['time'][:,0], plotdata[field][:,0],'b.', color=color)
@@ -1245,7 +1001,8 @@ class Obsdata(object):
             plt.show(block=False)
         return x
 
-    def plot_camp(self, site1, site2, site3, site4, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
+    def plot_camp(self, site1, site2, site3, site4, vtype='vis',ctype='camp', debias=True,
+                        ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
         """
         quad = (site1, site2, site3, site4)
@@ -1253,7 +1010,7 @@ class Obsdata(object):
         r1 = set((site1, site4))
 
         # Get the closure amplitudes
-        camps = self.c_amplitudes(mode='time', count='max', vtype='vis')
+        camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias)
         plotdata = []
         for entry in camps:
             for obs in entry:
@@ -1296,7 +1053,10 @@ class Obsdata(object):
         x.set_xlim(rangex)
         x.set_ylim(rangey)
         x.set_xlabel('GMT (h)')
-        x.set_ylabel('Closure Amplitude')
+        if ctype=='camp':
+            x.set_ylabel('Closure Amplitude')
+        elif ctype=='logcamp':
+            x.set_ylabel('Log Closure Amplitude')
         x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
                                                            site1,site4,site2,site3))
         if show:

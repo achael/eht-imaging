@@ -254,7 +254,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
             qvisre = nd.map_coordinates(np.real(qvis_im), uv2)
             qvisim = nd.map_coordinates(np.imag(qvis_im), uv2)
             qvis = phase*(qvisre + 1j*qvisim)
-            qvis = qvis*pulsefac        
+            qvis = qvis*pulsefac
 
             uvisre = nd.map_coordinates(np.real(uvis_im), uv2)
             uvisim = nd.map_coordinates(np.imag(uvis_im), uv2)
