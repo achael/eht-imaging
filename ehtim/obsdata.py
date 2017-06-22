@@ -552,11 +552,23 @@ class Obsdata(object):
                 
                 # Loop over other sites >=3 and form minimal closure amplitude set
                 for i in xrange(3, len(sites)):
-                    blue1 = l_dict[ref, sites[i]] #!!
+                    if (ref, sites[i]) not in l_dict: 
+                        continue
+
+                    blue1 = l_dict[ref, sites[i]] #!! (MJ: This causes a KeyError in some cases, probably with flagged data or something)
                     for j in xrange(1, i):
                         if j == i-1: k = 1
                         else: k = j+1
                         
+                        if (sites[i], sites[j]) not in l_dict: # MJ: I tried joining these into a single if statement using or without success... no idea why...
+                            continue
+
+                        if (ref, sites[k]) not in l_dict:
+                            continue
+
+                        if (sites[j], sites[k]) not in l_dict:
+                            continue
+
                         red1 = l_dict[sites[i], sites[j]]
                         red2 = l_dict[ref, sites[k]]
                         blue2 = l_dict[sites[j], sites[k]] 
@@ -614,7 +626,7 @@ class Obsdata(object):
                     for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]): 
                         
                         # Blue is numerator, red is denominator
-                        blue1 = l_dict[quad[0], quad[1]]
+                        blue1 = l_dict[quad[0], quad[1]] #MJ: Need to add checks here
                         blue2 = l_dict[quad[2], quad[3]]
                         red1 = l_dict[quad[0], quad[3]]
                         red2 = l_dict[quad[1], quad[2]]
