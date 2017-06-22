@@ -6,6 +6,142 @@ from ehtim.const_def import *
 ##################################################################################################
 # Other Functions
 ##################################################################################################
+def make_bispectrum(l1, l2, l3,vtype):
+    """make a list of bispectra and errors
+       l1,l2,l3 are full datatables of visibility entries
+       vtype is visibility type
+    """
+    # Choose the appropriate polarization and compute the bs and err
+    if vtype in ["vis", "qvis", "uvis","vvis"]:
+        if vtype=='vis':  sigmatype='sigma'
+        if vtype=='qvis': sigmatype='qsigma'
+        if vtype=='uvis': sigmatype='usigma'
+        if vtype=='vvis': sigmatype='vsigma'
+        
+        p1 = l1[vtype]
+        p2 = l2[vtype]
+        p3 = l3[vtype]
+        
+        var1 = l1[sigmatype]**2 
+        var2 = l2[sigmatype]**2                                                        
+        var3 = l3[sigmatype]**2                                                        
+                                                                                                                                          
+    elif vtype == "pvis":
+        p1 = l1['qvis'] + 1j*l2['uvis']
+        p2 = l2['qvis'] + 1j*l2['uvis']
+        p3 = l3['qvis'] + 1j*l3['uvis']
+        bi = p1 * p2 * p3
+        
+        var1 = l1['qsigma']**2 + l1['usigma']**2
+        var2 = l2['qsigma']**2 + l2['usigma']**2
+        var3 = l3['qsigma']**2 + l3['usigma']**2                                                                                                     
+    
+    bi = p1*p2*p3
+    bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +  
+                                 var2/np.abs(p2)**2 + 
+                                 var3/np.abs(p3)**2)
+    # Katie's 2nd + 3rd order corrections - see CHIRP supplement
+    bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +  
+                               var1*var3*np.abs(p2)**2 +  
+                               var2*var3*np.abs(p1)**2 +  
+                               var1*var2*var3) 
+    return (bi, bisig)  
+                                                            
+def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='amp', debias=True):
+    """make a list of closure amplitudes and errors
+       red1 and red2 are full datatables of numerator entries
+       blue1 and blue2 are full datatables denominator entries
+       vtype is the  visibility type
+       we always debias the individual amplitudes
+       debias controls if we debias the closure amplitude at the end
+    """
+    if not (ctype in ['amp', 'log']):
+        raise Exception("closure amplitude type must be 'amp' or 'log'!")
+ 
+    if vtype in ["vis", "qvis", "uvis", "vvis"]:
+        if vtype=='vis':  sigmatype='sigma'
+        if vtype=='qvis': sigmatype='qsigma'
+        if vtype=='uvis': sigmatype='usigma'
+        if vtype=='vvis': sigmatype='vsigma'
+        
+        sig1 = blue1[sigmatype]**2
+        sig2 = blue2[sigmatype]**2
+        sig3 = red1[sigmatype]**2
+        sig4 = red2[sigmatype]**2
+        
+        p1 = amp_debias(blue1[vtype], sig1)
+        p2 = amp_debias(blue2[vtype], sig2)
+        p3 = amp_debias(red1[vtype], sig3)
+        p4 = amp_debias(red2[vtype], sig4)
+                                                         
+    elif vtype == "pvis":
+        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
+
+        p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], sig1)
+        p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], sig2)
+        p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], sig3)
+        p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], sig4)
+    
+    snr1 = p1/sig1
+    snr2 = p2/sig2
+    snr3 = p3/sig3
+    snr4 = p4/sig4
+
+    if ctype=='amp':                           
+        camp = np.abs((p1*p2)/(p3*p4))
+        camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
+
+        # Debias
+        if debias:
+            camp = camp_debias(camp, snr3, snr4)
+
+    elif ctype=='log':
+        camp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4))
+        camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
+
+        # Debias
+        if debias:
+            camp = log_camp_debias(camp, snr1, snr2, snr3, snr4)
+
+    return (camp, camperr)
+
+def amp_debias(amp, sigma):
+    """Return debiased visibility amplitudes
+    """
+    
+    # !AC TODO: what to do if deb2 < 0? Currently we DONT debias these
+    # Because we need nonzero amplitudes to form  meaningful closure amplitudes
+
+    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
+
+    if type(deb2) == float or type(deb2)==np.float64:
+        if deb2 < 0.0: return np.abs(amp)
+        else: return np.sqrt(deb2)
+    else:
+        lowsnr = deb2 < 0.0
+        deb2[lowsnr] = np.abs(amp[lowsnr])**2
+        return np.sqrt(deb2)
+
+def camp_debias(camp, snr3, snr4):
+    """Debias closure amplitudes
+       snr3 and snr4 are snr of visibility amplitudes # 3 and 4.
+    """
+    camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
+
+    return camp_debias
+
+def log_camp_debias(log_camp, snr1, snr2, snr3, snr4):
+    """Debias log closure amplitudes
+       The snrs are the snr of visibility amplitudes
+    """
+
+    log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
+    
+    return log_camp_debias
+
 def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     """Return the value of the Gaussian FT with 
        beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
@@ -82,7 +218,9 @@ def blnoise(sefd1, sefd2, tint, bw):
     
     #!AC TODO Is the factor of sqrt(2) correct? 
     #noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+
     noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
+
     return noise
 
 def merr(sigma, qsigma, usigma, I, m):
@@ -190,20 +328,6 @@ def paritycompare(perm1, perm2):
     if not (transCount % 2): return 1
     else: return  -1
 
-def amp_debias(vis, sigma):
-    """Return debiased visibility amplitudes
-    """
-    
-    # !AC TODO: what to do if deb2 < 0? Currently we do nothing
-    deb2 = np.abs(vis)**2 - np.abs(sigma)**2
-    if type(deb2) == float or type(deb2)==np.float64:
-        if deb2 < 0.0: return np.abs(vis)
-        else: return np.sqrt(deb2)
-    else:
-        lowsnr = deb2 < 0.0
-        deb2[lowsnr] = np.abs(vis[lowsnr])**2
-        return np.sqrt(deb2)
-        
 def sigtype(datatype):
     """Return the type of noise corresponding to the data type
     """

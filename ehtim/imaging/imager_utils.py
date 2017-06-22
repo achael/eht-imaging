@@ -111,7 +111,7 @@ RADPERAS = DEGREE/3600.
 RADPERUAS = RADPERAS/1e6
 NHIST = 100 # number of steps to store for hessian approx
 
-DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp']
+DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
 REGULARIZERS = ['gs', 'tv', 'l1', 'patch', 'simple']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
@@ -134,8 +134,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            Prior (Image): The Image object with the prior image 
            InitIm (Image): The Image object with the initial image for the minimization
            flux (float): The total flux of the output image in Jy
-           d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp'
-           d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp'
+           d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
            s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'l1', 'patch'
            s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'l1', 'patch'
            alpha_d1 (float): The first data term weighting
@@ -387,6 +387,9 @@ def chisq(imvec, A, data, sigma, dtype):
     elif dtype == 'camp':
         chisq = chisq_camp(imvec, A, data, sigma)
 
+    elif dtype == 'logcamp':
+        chisq = chisq_logcamp(imvec, A, data, sigma)
+
     else:
         chisq = 1.
 
@@ -409,6 +412,9 @@ def chisqgrad(imvec, A, data, sigma, dtype):
 
     elif dtype == 'camp':
         chisqgrad = chisqgrad_camp(imvec, A, data, sigma)
+
+    elif dtype == 'logcamp':
+        chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
 
     else:
         chisqgrad = np.zeros(len(imvec))
@@ -528,6 +534,34 @@ def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
     out = (-2.0/len(clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
     return out
 
+#Log Closure Amplitudes chi-squared
+def chisq_logcamp(imvec, Amatrices, log_clamp, sigma):
+    """Closure Amplitudes (normalized) chi-squared"""
+    
+    a1 = np.abs(np.dot(Amatrices[0], imvec))
+    a2 = np.abs(np.dot(Amatrices[1], imvec))
+    a3 = np.abs(np.dot(Amatrices[2], imvec))
+    a4 = np.abs(np.dot(Amatrices[3], imvec))
+    samples = np.log(a1) + np.log(a2) - np.log(a3) - np.log(a4)
+
+    return np.sum(np.abs((log_clamp - samples)/sigma)**2) / (len(log_clamp))
+
+def chisqgrad_logcamp(imvec, Amatrices, log_clamp, sigma):
+    """The gradient of the closure amplitude chi-squared"""    
+    
+    i1 = np.dot(Amatrices[0], imvec)
+    i2 = np.dot(Amatrices[1], imvec)
+    i3 = np.dot(Amatrices[2], imvec)
+    i4 = np.dot(Amatrices[3], imvec)
+    log_clamp_samples = np.log(np.abs(i1)) + np.log(np.abs(i2)) - np.log(np.abs(i3)) - np.log(np.abs(i4))
+
+    pp = (log_clamp - log_clamp_samples) / (sigma**2)
+    pt1 = pp / i1
+    pt2 = pp / i2
+    pt3 = -pp / i3
+    pt4 = -pp / i4
+    out = (-2.0/len(log_clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    return out
 
 ##################################################################################################
 # Entropy and Gradient Functions
@@ -703,6 +737,9 @@ def chisqdata(Obsdata, Prior, mask, dtype):
     elif dtype == 'camp':
         (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask)
 
+    elif dtype == 'logcamp':
+        (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask)
+
     else:
         (data, sigma, A) = (False, False, False)
 
@@ -724,14 +761,15 @@ def chisqdata_amp(Obsdata, Prior, mask):
     """Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
     """
 
-    ampdata = Obsdata.unpack(['u','v','amp','sigma'])
+    ampdata = Obsdata.unpack(['u','v','amp','sigma'], debias=True)
     uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))
     amp = ampdata['amp']
     sigma = ampdata['sigma']
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
     
-    # Debias the amplitudes
-    amp = amp_debias(amp, sigma)
+    # Debias the amplitudes 
+    # !AC now done in unpack!
+    #amp = amp_debias(amp, sigma)
     
     return (amp, sigma, A)
 
@@ -774,7 +812,27 @@ def chisqdata_camp(Obsdata, Prior, mask):
     """Return the closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
     """
 
-    clamparr = Obsdata.c_amplitudes(mode="all", count="min")
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='amp', debias=True)
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
+
+    A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
+          ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
+          ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask),
+          ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv4, pulse=Prior.pulse, mask=mask)
+         )
+
+    return (clamp, sigma, A4)
+
+def chisqdata_logcamp(Obsdata, Prior, mask):
+    """Return the log closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
+    """
+
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='log', debias=True)
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
     uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
