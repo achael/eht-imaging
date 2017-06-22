@@ -812,7 +812,7 @@ def chisqdata_camp(Obsdata, Prior, mask):
     """Return the closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
     """
 
-    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='amp', debias=True)
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=True)
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
     uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
@@ -832,7 +832,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask):
     """Return the log closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
     """
 
-    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='log', debias=True)
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=True)
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
     uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))

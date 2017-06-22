@@ -490,12 +490,12 @@ class Obsdata(object):
 
         return np.array(outlist)    
          
-    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='amp', debias=True):
+    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True):
         """Return a recarray of the equal time closure amplitudes.
            
            Args: 
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
-               ctype (str): The closure amplitude type ('amp' or 'log')
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
                mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
@@ -511,8 +511,8 @@ class Obsdata(object):
             raise Exception("possible options for count are 'max' and 'min'")  
         if not vtype in ('vis','qvis','uvis','vvis','pvis'):
             raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
-        if not (ctype in ['amp', 'log']):
-            raise Exception("closure amplitude type must be 'amp' or 'log'!")
+        if not (ctype in ['camp', 'logcamp']):
+            raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
 
         # Get data sorted by time
         tlist = self.tlist(conj=True) 
@@ -996,7 +996,7 @@ class Obsdata(object):
             plt.show(block=False)    
         return x
         
-    def plot_camp(self, site1, site2, site3, site4, vtype='vis',ctype='amp', debias=True, 
+    def plot_camp(self, site1, site2, site3, site4, vtype='vis',ctype='camp', debias=True, 
                         ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
         """
@@ -1048,9 +1048,9 @@ class Obsdata(object):
         x.set_xlim(rangex)
         x.set_ylim(rangey)
         x.set_xlabel('GMT (h)')
-        if ctype=='amp':
+        if ctype=='camp':
             x.set_ylabel('Closure Amplitude')
-        elif ctype=='log':
+        elif ctype=='logcamp':
             x.set_ylabel('Log Closure Amplitude')
         x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
                                                            site1,site4,site2,site3))

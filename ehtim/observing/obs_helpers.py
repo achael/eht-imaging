@@ -47,7 +47,7 @@ def make_bispectrum(l1, l2, l3,vtype):
                                var1*var2*var3) 
     return (bi, bisig)  
                                                             
-def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='amp', debias=True):
+def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True):
     """make a list of closure amplitudes and errors
        red1 and red2 are full datatables of numerator entries
        blue1 and blue2 are full datatables denominator entries
@@ -55,8 +55,8 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='amp', debias=
        we always debias the individual amplitudes
        debias controls if we debias the closure amplitude at the end
     """
-    if not (ctype in ['amp', 'log']):
-        raise Exception("closure amplitude type must be 'amp' or 'log'!")
+    if not (ctype in ['camp', 'logcamp']):
+        raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
  
     if vtype in ["vis", "qvis", "uvis", "vvis"]:
         if vtype=='vis':  sigmatype='sigma'
@@ -90,7 +90,7 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='amp', debias=
     snr3 = p3/sig3
     snr4 = p4/sig4
 
-    if ctype=='amp':                           
+    if ctype=='camp':                           
         camp = np.abs((p1*p2)/(p3*p4))
         camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
 
@@ -98,13 +98,13 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='amp', debias=
         if debias:
             camp = camp_debias(camp, snr3, snr4)
 
-    elif ctype=='log':
+    elif ctype=='logcamp':
         camp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4))
         camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
 
         # Debias
         if debias:
-            camp = log_camp_debias(camp, snr1, snr2, snr3, snr4)
+            camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
 
     return (camp, camperr)
 
@@ -133,7 +133,7 @@ def camp_debias(camp, snr3, snr4):
 
     return camp_debias
 
-def log_camp_debias(log_camp, snr1, snr2, snr3, snr4):
+def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
     """Debias log closure amplitudes
        The snrs are the snr of visibility amplitudes
     """
