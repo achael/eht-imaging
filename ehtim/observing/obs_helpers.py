@@ -328,6 +328,24 @@ def paritycompare(perm1, perm2):
     if not (transCount % 2): return 1
     else: return  -1
 
+def amp_debias(vis, sigma):
+    """Return debiased visibility amplitudes
+    """
+    
+    # !AC TODO: what to do if deb2 < 0? Currently we do nothing
+    deb2 = np.abs(vis)**2 - np.abs(sigma)**2
+
+    # alternative with no low-snr option: np.abs(np.abs(vis)**2 - np.abs(sigma)**2)**0.5*(np.abs(vis) > np.abs(sigma))
+
+    if type(deb2) == float or type(deb2)==np.float64:
+        if deb2 < 0.0: return np.abs(vis)
+        else: return np.sqrt(deb2)
+    else:
+        lowsnr = deb2 < 0.0
+        deb2[lowsnr] = np.abs(vis[lowsnr])**2
+        return np.sqrt(deb2)
+        
+
 def sigtype(datatype):
     """Return the type of noise corresponding to the data type
     """
