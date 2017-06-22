@@ -16,8 +16,14 @@ Download the latest version from the `GitHub repository <https://github.com/acha
 
     pip install .
 
-You will need working installations of `numpy <http://www.numpy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `scipy <http://www.scipy.org/>`_, and `astropy <http://www.astropy.org/>`_.
-
+It should install the depended libraries
+    `astropy <http://www.astropy.org/>`_,
+    `ephem <http://pypi.python.org/pypi/pyephem/>`_,
+    `future <http://pypi.python.org/pypi/future>`_,
+    `matplotlib <http://www.matplotlib.org/>`_,
+    `numpy <http://www.numpy.org/>`_,
+    `scipy <http://www.scipy.org/>`_
+automatically.
 
 Documentation
 -------------
