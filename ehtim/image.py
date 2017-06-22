@@ -629,7 +629,7 @@ class Image(object):
 
 
           
-    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin',gamma=0.5):
+    def display(self, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, interp='gaussian', scale='lin',gamma=0.5, dynamic_range=1.e3, export_pdf=""):
         """Display the image in a pyplot window.
         """
 
@@ -640,13 +640,13 @@ class Image(object):
         else:
             interp = 'nearest'
             
-        plt.figure()
+        f = plt.figure()
         plt.clf()
         
         imarr = (self.imvec).reshape(self.ydim, self.xdim)
         unit = 'Jy/pixel'
         if scale=='log':
-            imarr = np.log(imarr)
+            imarr = np.log(imarr + np.max(imarr)/dynamic_range)
             unit = 'log(Jy/pixel)'
         
         if scale=='gamma':
@@ -715,6 +715,10 @@ class Image(object):
             plt.ylabel('Relative Dec ($\mu$as)')   
         
         plt.show(block=False)
+
+        if export_pdf != "":
+            f.savefig(export_pdf, bbox_inches='tight')
+
         return 
 
     def save_txt(self, fname):
