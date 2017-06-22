@@ -196,6 +196,9 @@ def amp_debias(vis, sigma):
     
     # !AC TODO: what to do if deb2 < 0? Currently we do nothing
     deb2 = np.abs(vis)**2 - np.abs(sigma)**2
+
+    # alternative with no low-snr option: np.abs(np.abs(vis)**2 - np.abs(sigma)**2)**0.5*(np.abs(vis) > np.abs(sigma))
+
     if type(deb2) == float or type(deb2)==np.float64:
         if deb2 < 0.0: return np.abs(vis)
         else: return np.sqrt(deb2)
