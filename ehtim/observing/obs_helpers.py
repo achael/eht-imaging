@@ -328,7 +328,6 @@ def paritycompare(perm1, perm2):
     if not (transCount % 2): return 1
     else: return  -1
 
-<<<<<<< HEAD
 def amp_debias(vis, sigma):
     """Return debiased visibility amplitudes
     """
@@ -346,8 +345,7 @@ def amp_debias(vis, sigma):
         deb2[lowsnr] = np.abs(vis[lowsnr])**2
         return np.sqrt(deb2)
         
-=======
->>>>>>> e3103203102c0db926b606195ae9bc0aca83cc7e
+
 def sigtype(datatype):
     """Return the type of noise corresponding to the data type
     """
