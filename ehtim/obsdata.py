@@ -931,7 +931,7 @@ class Obsdata(object):
             
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel('hr')
+        x.set_xlabel(self.timetype + ' (hr)')
         x.set_ylabel(field)
         x.set_title('%s - %s'%(site1,site2))
         
@@ -989,7 +989,7 @@ class Obsdata(object):
             
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel('GMT (h)')
+        x.set_xlabel(self.timetype + ' (h)')
         x.set_ylabel('Closure Phase (deg)')
         x.set_title('%s - %s - %s' % (site1,site2,site3))
         if show:
@@ -1047,7 +1047,7 @@ class Obsdata(object):
             
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel('GMT (h)')
+        x.set_xlabel(self.timetype + ' (h)')
         if ctype=='camp':
             x.set_ylabel('Closure Amplitude')
         elif ctype=='logcamp':
