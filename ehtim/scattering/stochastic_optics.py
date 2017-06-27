@@ -1,6 +1,9 @@
 # Michael Johnson, 2/15/2017
 # See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module
 
+from __future__ import print_function
+from builtins import range
+from builtins import object
 import numpy as np
 import scipy.signal
 import scipy.special as sps
@@ -12,7 +15,7 @@ import ehtim.image as image
 import ehtim.movie as movie
 import ehtim.obsdata as obsdata
 from ehtim.observing.obs_helpers import *
-from ehtim.const_def import * #Note: C is m/s rather than cm/s. 
+from ehtim.const_def import * #Note: C is m/s rather than cm/s.
 
 import math
 import cmath
@@ -21,30 +24,30 @@ import cmath
 # The class ScatteringModel encompasses a generic scattering model, determined by the power spectrum Q and phase structure function Dphi
 ################################################################################
 
-class ScatteringModel:
-    """A scattering model based on a thin-screen approximation. 
+class ScatteringModel(object):
+    """A scattering model based on a thin-screen approximation.
        Models include:
            'simple': This scattering model is motivated by observations of Sgr A*.
-                     It gives a Gaussian at long wavelengths that matches the model defined 
-                     by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm 
-                     with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds 
+                     It gives a Gaussian at long wavelengths that matches the model defined
+                     by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
+                     with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
                      at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
                      if the reference wavelength is short enough to be beyond the lambda^2 regime!
                      This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
                      Note: This model *requires* a finite inner scale
-           'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale. 
-            The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm. 
+           'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
+            The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
             The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov
-    
+
        Attributes:
-           model (string): The type of scattering model (determined by the power spectrum of phase fluctuations). 
+           model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).
            POS_ANG (float): The position angle of the major axis of the scattering.
-           observer_screen_distance (float): The distance from the observer to the scattering screen in cm. 
-           source_screen_distance (float): The distance from the source to the scattering screen in cm. 
-           wavelength_reference (float): The reference wavelength for the scattering model in cm. 
+           observer_screen_distance (float): The distance from the observer to the scattering screen in cm.
+           source_screen_distance (float): The distance from the source to the scattering screen in cm.
+           wavelength_reference (float): The reference wavelength for the scattering model in cm.
            r_in (float): The inner scale of the scattering screen
            r_out (float): The outer scale of the scattering screen
-           scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3). 
+           scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3).
            rF (function): The Fresnel scale of the scattering screen at the specific wavelength.
     """
 
@@ -56,54 +59,54 @@ class ScatteringModel:
         M = observer_screen_distance/source_screen_distance
         self.wavelength_reference = wavelength_reference_cm #Reference wavelength [cm]
         self.r_in    = r_in #inner scale [cm]
-        self.r_out   = r_out     #outer scale [cm]  
+        self.r_out   = r_out     #outer scale [cm]
         self.scatt_alpha = scatt_alpha
 
         if model == 'simple':
             if r_in == 0.0:
-                print "Error! The 'simple' scattering model requires a finite inner scale."
+                print("Error! The 'simple' scattering model requires a finite inner scale.")
             #Now, we need to solve for the effective parameters accounting for an inner scale
             #By default, we will match the fitted Gaussian kernel as the wavelength goes to infinity
             axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
-            #self.C_scatt = (1.20488e-15*axial_ratio*self.r_in**(2.0 - self.scatt_alpha)*self.wavelength_reference**2)/self.scatt_alpha          
+            #self.C_scatt = (1.20488e-15*axial_ratio*self.r_in**(2.0 - self.scatt_alpha)*self.wavelength_reference**2)/self.scatt_alpha
             self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
-            #Note: the prefactor is exactly equal to 1/209952000000000000        
+            #Note: the prefactor is exactly equal to 1/209952000000000000
             geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
             self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]  
+            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
             self.Qprefactor = self.C_scatt*(self.r0_maj*self.r0_min)**(self.scatt_alpha/2.0) # This accounts for the effects of a finite inner scale
         elif model == 'power-law':
             self.r0_maj  = (2.0*np.log(2.0))**0.5/np.pi * wavelength_reference_cm/(theta_maj_mas_ref/1000.0/3600.0*np.pi/180.0) #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = (2.0*np.log(2.0))**0.5/np.pi * wavelength_reference_cm/(theta_min_mas_ref/1000.0/3600.0*np.pi/180.0) #Phase coherence length at the reference wavelength [cm]  
-        elif model == 'amph_von_Misses':     
+            self.r0_min  = (2.0*np.log(2.0))**0.5/np.pi * wavelength_reference_cm/(theta_min_mas_ref/1000.0/3600.0*np.pi/180.0) #Phase coherence length at the reference wavelength [cm]
+        elif model == 'amph_von_Misses':
             axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
             self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
-            #Note: the prefactor is exactly equal to 1/209952000000000000        
+            #Note: the prefactor is exactly equal to 1/209952000000000000
             geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
             self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]     
+            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
             self.r_in_p = 1.0/(sps.gamma(0.5 - self.scatt_alpha/2.0)*sps.gamma(1.0 + self.scatt_alpha)) * ((2.0**(self.scatt_alpha + 4.0) * np.pi)/(1.0 + np.cos(np.pi * self.scatt_alpha)))**0.5 * self.r_in
             A = theta_maj_mas_ref/theta_min_mas_ref
-            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution 
+            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution
             self.zeta   = 1.0 - 2.0*sps.i1(self.kzeta)/(self.kzeta * sps.i0(self.kzeta))
-        elif model == 'boxcar':     
+        elif model == 'boxcar':
             axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
             self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
-            #Note: the prefactor is exactly equal to 1/209952000000000000        
+            #Note: the prefactor is exactly equal to 1/209952000000000000
             geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
             self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]     
+            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
             self.r_in_p = 1.0/(sps.gamma(0.5 - self.scatt_alpha/2.0)*sps.gamma(1.0 + self.scatt_alpha)) * ((2.0**(self.scatt_alpha + 4.0) * np.pi)/(1.0 + np.cos(np.pi * self.scatt_alpha)))**0.5 * self.r_in
             A = theta_maj_mas_ref/theta_min_mas_ref
-            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution 
+            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution
             self.kzeta_3 =  0.02987 + 0.28626*A # This is an approximate solution
             self.zeta    = 1.0 - 2.0*sps.i1(self.kzeta)/(self.kzeta * sps.i0(self.kzeta))
         else:
-            print "Scattering Model Not Recognized!"
+            print("Scattering Model Not Recognized!")
             return
 
     def rF(self, wavelength):
-        """Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].    
+        """Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].
 
            Args:
                wavelength (float): The desired wavelength [cm]
@@ -111,13 +114,13 @@ class ScatteringModel:
            Returns:
                rF (float): The Fresnel scale [cm]
         """
-        return (self.source_screen_distance*self.observer_screen_distance/(self.source_screen_distance + self.observer_screen_distance)*wavelength/(2.0*np.pi))**0.5   
+        return (self.source_screen_distance*self.observer_screen_distance/(self.source_screen_distance + self.observer_screen_distance)*wavelength/(2.0*np.pi))**0.5
 
     def Mag(self):
         """Returns the effective magnification the scattering screen: (observer-screen distance)/(source-screen distance).
 
            Returns:
-               M (float): The effective magnification of the scattering screen. 
+               M (float): The effective magnification of the scattering screen.
         """
         return self.observer_screen_distance/self.source_screen_distance
 
@@ -126,15 +129,16 @@ class ScatteringModel:
         The power spectrum is part of what defines the scattering model (along with Dphi).
         Q(qx,qy) is independent of the observing wavelength.
 
-        Args:            
-            qx (float): x coordinate of the wavenumber in 1/cm. 
-            qy (float): y coordinate of the wavenumber in 1/cm. 
+        Args:
+            qx (float): x coordinate of the wavenumber in 1/cm.
+            qy (float): y coordinate of the wavenumber in 1/cm.
         Returns:
             (float): The power spectrum Q(qx,qy)
         """
-        
-        if qx == 0.0 and qy == 0.0:
-            return 0.0
+
+        # This will be enforced externally
+        # if qx == 0.0 and qy == 0.0:
+        #     return 0.0
 
         wavelengthbar = self.wavelength_reference/(2.0*np.pi)
         qmin = 2.0*np.pi/self.r_out
@@ -142,33 +146,33 @@ class ScatteringModel:
         #rotate qx and qy as needed
         PA = (90 - self.POS_ANG) * np.pi/180.0
         qx_rot =  qx*np.cos(PA) + qy*np.sin(PA)
-        qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)        
+        qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)
 
         if self.model == 'simple':
             return self.Qprefactor * 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0 + qmin**2.0)**(-(self.scatt_alpha+2.0)/2.0) * np.exp(-((qx_rot**2.0 + qy_rot**2.0)/qmax**2.0)**0.5)
         elif self.model == 'power-law':
-            return 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0)**(-(self.scatt_alpha+2.0)/2.0) 
+            return 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0)**(-(self.scatt_alpha+2.0)/2.0)
         elif self.model == 'amph_von_Misses':
             q = (qx_rot**2 + qy_rot**2)**0.5
-            q_phi = math.atan2(qy_rot, qx_rot)
+            q_phi = np.arctan2(qy_rot, qx_rot)
             return (8.0*np.pi)/((1.0+self.zeta)*sps.i0(self.kzeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0)) * np.exp(-(q*self.r_in)**2) * np.cosh(self.kzeta*np.cos( q_phi ))
         elif self.model == 'boxcar':
             q = (qx_rot**2 + qy_rot**2)**0.5
-            q_phi = math.atan2(qy_rot, qx_rot)
-            
-            if 1.0/(2.0*self.kzeta_3) < q_phi % np.pi < np.pi - 1.0/(2.0*self.kzeta_3):
-                return 0.0
-            else: 
-                return (16.0*np.pi**2)/((1.0+self.zeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0))
+            q_phi = np.arctan2(qy_rot, qx_rot)
 
-    def Dphi(self, x, y, wavelength_cm):  
-        """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm). 
+            Q = (16.0*np.pi**2)/((1.0+self.zeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0))
+            Q[(1.0/(2.0*self.kzeta_3) < (q_phi % np.pi)) & ((q_phi % np.pi) < np.pi - 1.0/(2.0*self.kzeta_3))] = 0.0
+
+            return Q
+
+    def Dphi(self, x, y, wavelength_cm):
+        """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm).
            The phase structure function is part of what defines the scattering model (along with Q).
            Generically, the phase structure function must be proportional to wavelength^2 because of the cold plasma dispersion law
 
-           Args:            
-                x (float): x coordinate of the displacement (toward East) in cm. 
-                y (float): y coordinate of the displacement (toward North) in cm. 
+           Args:
+                x (float): x coordinate of the displacement (toward East) in cm.
+                y (float): y coordinate of the displacement (toward North) in cm.
                 wavelength_cm (float): observing wavelength in cm
            Returns:
                 (float): The phase structure function (dimensionless; radians^2)
@@ -176,7 +180,7 @@ class ScatteringModel:
 
         #Phase structure function; generically, this must be proportional to wavelength^2 because of the cold plasma dispersion law
         #All units in cm
-        PA = (90. - self.POS_ANG) * np.pi/180.0 
+        PA = (90. - self.POS_ANG) * np.pi/180.0
         x_rot =  x*np.cos(PA) + y*np.sin(PA) #along the major axis
         y_rot = -x*np.sin(PA) + y*np.cos(PA) #along the minor axis
 
@@ -186,12 +190,12 @@ class ScatteringModel:
             return (wavelength_cm/self.wavelength_reference)**2.0*((x_rot/self.r0_maj)**2 + (y_rot/self.r0_min)**2)**(self.scatt_alpha/2.0)
         elif self.model == 'amph_von_Misses':
             r     = (x_rot**2 + y_rot**2)**0.5
-            phi   = math.atan2(y_rot, x_rot)
+            phi   = np.arctan2(y_rot, x_rot)
             return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
         elif self.model == 'boxcar':
-            print 'Using amph_von_Misses for now...'
+            print('Using amph_von_Misses for now...')
             r     = (x_rot**2 + y_rot**2)**0.5
-            phi   = math.atan2(y_rot, x_rot)
+            phi   = np.arctan2(y_rot, x_rot)
             return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
 
     def sqrtQ_Matrix(self, Reference_Image, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0):
@@ -199,43 +203,33 @@ class ScatteringModel:
 
            Args:
                 Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.
-                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s.
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s.
                 t_hr (float): The current time of the scattering in hours.
            Returns:
-               sqrtQ (2D complex ndarray): The square root of the power spectrum of the screen with an additional phase for rotation of the screen. 
+               sqrtQ (2D complex ndarray): The square root of the power spectrum of the screen with an additional phase for rotation of the screen.
             """
 
-        #Derived parameters   
+        #Derived parameters
         FOV = Reference_Image.psize * Reference_Image.xdim * self.observer_screen_distance #Field of view, in cm, at the scattering screen
         N = Reference_Image.xdim
-
-        sqrtQ = 1j*np.zeros((N,N)) #just to get the dimensions correct; this needs to be initialized as a complex array because of potential phase from a shifted screen
         dq = 2.0*np.pi/FOV #this is the spacing in wavenumber
-
         screen_x_offset_pixels = (Vx_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
         screen_y_offset_pixels = (Vy_km_per_s * 1.e5) * (t_hr*3600.0) / (FOV/float(N))
-        for s in range(0, N):
-            for t in range(0, N):
-                s2 = s
-                t2 = t
-                if s2 > (N-1)/2:
-                    s2 = s2 - N
-                if t2 > (N-1)/2:
-                    t2 = t2 - N 
 
-                sqrtQ[t][s] = self.Q(dq*s2, dq*t2)**0.5 
-                sqrtQ[t][s] *= np.exp(2.0*np.pi*1j*(float(s2)*screen_x_offset_pixels + float(t2)*screen_y_offset_pixels)/float(N)) #The exponential term rotates the screen (after a Fourier transform to the image domain). Note that it uses {s2,t2}, which is important to get the conjugation symmetry correct. 
-              
+        s, t = np.meshgrid(np.fft.fftfreq(N, d=1.0/N), np.fft.fftfreq(N, d=1.0/N))
+        sqrtQ = np.sqrt(self.Q(dq*s, dq*t)) * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
+                                                                   t*screen_y_offset_pixels)/float(N))
         sqrtQ[0][0] = 0.0 #A DC offset doesn't affect scattering
+
         return sqrtQ
 
-    def Ensemble_Average_Kernel(self, Reference_Image, wavelength_cm = None):    
+    def Ensemble_Average_Kernel(self, Reference_Image, wavelength_cm = None):
         """The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image
 
            Args:
                 Reference_Image (Image): Reference image to determine image and pixel dimensions and wavelength.
-                wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the Reference image. 
+                wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the Reference image.
 
            Returns:
                ker (2D ndarray): The ensemble-average scattering kernel in the image domain.
@@ -244,14 +238,15 @@ class ScatteringModel:
         if wavelength_cm == None:
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
 
-        uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize
+        uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize # assume square kernel.  FIXME: create ulist and vlist, and construct u_grid and v_grid with the correct dimension
+        u_grid, v_grid = np.meshgrid(uvlist, uvlist)
+        ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm)
 
-        ker_uv = np.array([[self.Ensemble_Average_Kernel_Visibility(u, v, wavelength_cm) for u in uvlist] for v in uvlist]) 
         ker = np.real(np.fft.fftshift(np.fft.fft2(ker_uv)))
         ker = ker / np.sum(ker) # normalize to 1
         return ker
 
-    def Ensemble_Average_Kernel_Visibility(self, u, v, wavelength_cm):    
+    def Ensemble_Average_Kernel_Visibility(self, u, v, wavelength_cm):
         """The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate
 
            Args:
@@ -266,37 +261,37 @@ class ScatteringModel:
         return np.exp(-0.5*self.Dphi(u*wavelength_cm/(1.0+self.Mag()), v*wavelength_cm/(1.0+self.Mag()), wavelength_cm))
 
     def Ensemble_Average_Blur(self, im, wavelength_cm = None, ker = None):
-        """Blurs an input Image with the ensemble-average scattering kernel. 
+        """Blurs an input Image with the ensemble-average scattering kernel.
 
            Args:
                 im (Image): The unscattered image.
                 wavelength_cm (float): The observing wavelength for the scattering kernel in cm. If unspecified, this will default to the wavelength of the input image.
-                ker (2D ndarray): The user can optionally pass a pre-computed ensemble-average blurring kernel.  
+                ker (2D ndarray): The user can optionally pass a pre-computed ensemble-average blurring kernel.
 
            Returns:
                out (Image): The ensemble-average scattered image.
             """
-        
+
         # Inputs an unscattered image and an ensemble-average blurring kernel (2D array); returns the ensemble-average image
         # The pre-computed kernel can optionally be specified (ker)
 
         if wavelength_cm == None:
             wavelength_cm = C/im.rf*100.0 #Observing wavelength [cm]
 
-        if ker == None:
+        if ker is None:
             ker = self.Ensemble_Average_Kernel(im, wavelength_cm)
 
-        Iim = Wrapped_Convolve((im.imvec).reshape(im.ydim, im.xdim), ker)           
-        out = image.Image(Iim, im.psize, im.ra, im.dec, rf=C/(wavelength_cm/100.0), source=im.source, mjd=im.mjd, pulse=im.pulse)                        
+        Iim = Wrapped_Convolve((im.imvec).reshape(im.ydim, im.xdim), ker)
+        out = image.Image(Iim, im.psize, im.ra, im.dec, rf=C/(wavelength_cm/100.0), source=im.source, mjd=im.mjd, pulse=im.pulse)
         if len(im.qvec):
-            Qim = Wrapped_Convolve((im.qvec).reshape(im.ydim, im.xdim), ker)     
-            Uim = Wrapped_Convolve((im.uvec).reshape(im.ydim, im.xdim), ker)               
+            Qim = Wrapped_Convolve((im.qvec).reshape(im.ydim, im.xdim), ker)
+            Uim = Wrapped_Convolve((im.uvec).reshape(im.ydim, im.xdim), ker)
             out.add_qu(Qim, Uim)
         if len(im.vvec):
-            Vim = Wrapped_Convolve((im.vvec).reshape(im.ydim, im.xdim), ker)                  
+            Vim = Wrapped_Convolve((im.vvec).reshape(im.ydim, im.xdim), ker)
             out.add_v(Vim)
 
-        return out  
+        return out
 
     def Deblur_obs(self, obs):
         """Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.
@@ -305,9 +300,9 @@ class ScatteringModel:
                 obs (Obsdata): The observervation data (including scattering).
 
            Returns:
-               obsdeblur (Obsdata): The deblurred observation. 
+               obsdeblur (Obsdata): The deblurred observation.
             """
-        
+
         # make a copy of observation data
         datatable = (obs.copy()).data
 
@@ -318,10 +313,10 @@ class ScatteringModel:
         sigma = datatable['sigma']
         qsigma = datatable['qsigma']
         usigma = datatable['usigma']
-        vsigma = datatable['vsigma']            
+        vsigma = datatable['vsigma']
         u = datatable['u']
         v = datatable['v']
-        
+
         # divide visibilities by the scattering kernel
         for i in range(len(vis)):
             ker = self.Ensemble_Average_Kernel_Visibility(u[i], v[i], wavelength_cm = C/obs.rf*100.0)
@@ -333,7 +328,7 @@ class ScatteringModel:
             qsigma[i] = qsigma[i] / ker
             usigma[i] = usigma[i] / ker
             vsigma[i] = vsigma[i] / ker
-                                
+
         datatable['vis'] = vis
         datatable['qvis'] = qvis
         datatable['uvis'] = uvis
@@ -341,27 +336,27 @@ class ScatteringModel:
         datatable['sigma'] = sigma
         datatable['qsigma'] = qsigma
         datatable['usigma'] = usigma
-        datatable['vsigma'] = vsigma    
-        
-        obsdeblur = obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr, source=obs.source, mjd=obs.mjd, 
+        datatable['vsigma'] = vsigma
+
+        obsdeblur = obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, datatable, obs.tarr, source=obs.source, mjd=obs.mjd,
                             ampcal=obs.ampcal, phasecal=obs.phasecal, opacitycal=obs.opacitycal, dcal=obs.dcal, frcal=obs.frcal)
-        return obsdeblur        
+        return obsdeblur
 
     def MakePhaseScreen(self, EpsilonScreen, Reference_Image, obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, sqrtQ_init=None):
-        """Create a refractive phase screen from standardized Fourier components (the EpsilonScreen). 
+        """Create a refractive phase screen from standardized Fourier components (the EpsilonScreen).
            All lengths should be specified in centimeters
            If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Reference_Image
            Note: an odd image dimension is required!
 
            Args:
-                EpsilonScreen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
-                Reference_Image (Image): The reference image. 
+                EpsilonScreen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated.
+                Reference_Image (Image): The reference image.
                 obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.
-                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s.
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s.
                 t_hr (float): The current time of the scattering in hours.
                 ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
-                sqrtQ_init (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
+                sqrtQ_init (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum.
 
            Returns:
                phi_Image (Image): The phase screen.
@@ -374,61 +369,54 @@ class ScatteringModel:
         wavelength = C/obs_frequency_Hz*100.0 #Observing wavelength [cm]
         wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
 
-        #Derived parameters   
+        #Derived parameters
         FOV = Reference_Image.psize * Reference_Image.xdim * self.observer_screen_distance #Field of view, in cm, at the scattering screen
-        rF  = self.rF(wavelength) 
+        rF  = self.rF(wavelength)
         Nx = EpsilonScreen.shape[1]
         Ny = EpsilonScreen.shape[0]
 
         if Nx%2 == 0:
-            print "The image dimension should really be odd..."
+            print("The image dimension should really be odd...")
 
         #Now we'll calculate the power spectrum for each pixel in Fourier space
         screen_x_offset_pixels = (Vx_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
         screen_y_offset_pixels = (Vy_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
 
-        if sqrtQ_init == None:
+        if sqrtQ_init is None:
             sqrtQ = self.sqrtQ_Matrix(Reference_Image, Vx_km_per_s=Vx_km_per_s, Vy_km_per_s=Vy_km_per_s, t_hr=t_hr)
         else:
             #If a matrix for sqrtQ_init is passed, we still need to potentially rotate it
-           
+
             if screen_x_offset_pixels != 0.0 or screen_y_offset_pixels != 0.0:
-                sqrtQ = np.copy(sqrtQ_init)
-                for s in range(0, Nx):
-                    for t in range(0, Ny):
-                        s2 = s
-                        t2 = t
-                        if s2 > (Nx-1)/2:
-                            s2 = s2 - Nx
-                        if t2 > (Ny-1)/2:
-                            t2 = t2 - Ny 
-                        sqrtQ[t][s] *= np.exp(2.0*np.pi*1j*(float(s2)*screen_x_offset_pixels + float(t2)*screen_y_offset_pixels)/float(Nx)) #The exponential term rotates the screen (after a Fourier transform to the image domain). Note that it uses {s2,t2}, which is important to get the conjugation symmetry correct. 
+                s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0/Nx), np.fft.fftfreq(Ny, d=1.0/Ny))
+                sqrtQ = sqrtQ_init * np.exp(2.0*np.pi*1j*(s*screen_x_offset_pixels +
+                                                          t*screen_y_offset_pixels)/float(Nx))
             else:
                 sqrtQ = sqrtQ_init
 
         #Now calculate the phase screen
-        phi = np.real(wavelengthbar/FOV*EpsilonScreen.shape[0]*EpsilonScreen.shape[1]*np.fft.ifft2(sqrtQ*EpsilonScreen))                      
+        phi = np.real(wavelengthbar/FOV*EpsilonScreen.shape[0]*EpsilonScreen.shape[1]*np.fft.ifft2(sqrtQ*EpsilonScreen))
         phi_Image = image.Image(phi, Reference_Image.psize, Reference_Image.ra, Reference_Image.dec, rf=Reference_Image.rf, source=Reference_Image.source, mjd=Reference_Image.mjd)
 
         return phi_Image
 
-    def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=False, DisplayImage=False, Force_Positivity=False): 
-        """Scatter an image using the specified epsilon screen. 
+    def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=False, DisplayImage=False, Force_Positivity=False):
+        """Scatter an image using the specified epsilon screen.
            All lengths should be specified in centimeters
            If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
            Note: an odd image dimension is required!
 
            Args:
-                Unscattered_Image (Image): The unscattered image. 
-                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
+                Unscattered_Image (Image): The unscattered image.
+                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated.
                 obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Image.
-                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s.
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s.
                 t_hr (float): The current time of the scattering in hours.
                 ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
-                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
+                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum.
                 Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
-                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. 
+                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation.
                 Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
 
            Returns:
@@ -442,35 +430,35 @@ class ScatteringModel:
         wavelength = C/obs_frequency_Hz*100.0 #Observing wavelength [cm]
         wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
 
-        #Derived parameters   
+        #Derived parameters
         FOV = Unscattered_Image.psize * Unscattered_Image.xdim * self.observer_screen_distance #Field of view, in cm, at the scattering screen
         rF  = self.rF(wavelength)
         Nx = Unscattered_Image.xdim
         Ny = Unscattered_Image.ydim
 
         if Nx%2 == 0:
-            print "The image dimension should really be odd..."
+            print("The image dimension should really be odd...")
 
-        #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel    
+        #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel
         EA_Image = self.Ensemble_Average_Blur(Unscattered_Image, wavelength, ker = ea_ker)
 
         # If no epsilon screen is specified, then generate a random realization
         if Epsilon_Screen.shape[0] == 0:
             Epsilon_Screen = MakeEpsilonScreen(Nx, Ny)
 
-        #We'll now calculate the phase screen.       
+        #We'll now calculate the phase screen.
         phi_Image = self.MakePhaseScreen(Epsilon_Screen, Unscattered_Image, obs_frequency_Hz, Vx_km_per_s=Vx_km_per_s, Vy_km_per_s=Vy_km_per_s, t_hr=t_hr, sqrtQ_init=sqrtQ)
         phi = phi_Image.imvec.reshape(Ny,Nx)
 
         #Next, we need the gradient of the ensemble-average image
-        phi_Gradient = Wrapped_Gradient(phi/(FOV/Nx))    
+        phi_Gradient = Wrapped_Gradient(phi/(FOV/Nx))
         #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
         phi_Gradient_x = -phi_Gradient[1]
         phi_Gradient_y = -phi_Gradient[0]
 
         if Linearized_Approximation == True: #Use Equation 10 of Johnson & Narayan (2016)
             #Calculate the gradient of the ensemble-average image
-            EA_Gradient = Wrapped_Gradient((EA_Image.imvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))    
+            EA_Gradient = Wrapped_Gradient((EA_Image.imvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))
             #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
             EA_Gradient_x = -EA_Gradient[1]
             EA_Gradient_y = -EA_Gradient[0]
@@ -478,18 +466,18 @@ class ScatteringModel:
             AI = (EA_Image.imvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
             if len(Unscattered_Image.qvec):
                     # Scatter the Q image
-                    EA_Gradient = Wrapped_Gradient((EA_Image.qvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim)) 
+                    EA_Gradient = Wrapped_Gradient((EA_Image.qvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))
                     EA_Gradient_x = -EA_Gradient[1]
                     EA_Gradient_y = -EA_Gradient[0]
                     AI_Q = (EA_Image.qvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
                     # Scatter the U image
-                    EA_Gradient = Wrapped_Gradient((EA_Image.uvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim)) 
+                    EA_Gradient = Wrapped_Gradient((EA_Image.uvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))
                     EA_Gradient_x = -EA_Gradient[1]
                     EA_Gradient_y = -EA_Gradient[0]
                     AI_U = (EA_Image.uvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
             if len(Unscattered_Image.vvec):
                     # Scatter the V image
-                    EA_Gradient = Wrapped_Gradient((EA_Image.vvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim)) 
+                    EA_Gradient = Wrapped_Gradient((EA_Image.vvec/(FOV/Nx)).reshape(EA_Image.ydim, EA_Image.xdim))
                     EA_Gradient_x = -EA_Gradient[1]
                     EA_Gradient_y = -EA_Gradient[0]
                     AI_V = (EA_Image.vvec).reshape(Ny,Nx) + rF**2.0 * ( EA_Gradient_x*phi_Gradient_x + EA_Gradient_y*phi_Gradient_y )
@@ -506,23 +494,23 @@ class ScatteringModel:
                 EA_im_V = (EA_Image.vvec).reshape(Ny,Nx)
             for rx in range(Nx):
                 for ry in range(Ny):
-                    # Annoyingly, the signs here must be negative to match the other approximation. I'm not sure which is correct, but it really shouldn't matter anyway because -phi has the same power spectrum as phi. However, getting the *relative* sign for the x- and y-directions correct is important. 
+                    # Annoyingly, the signs here must be negative to match the other approximation. I'm not sure which is correct, but it really shouldn't matter anyway because -phi has the same power spectrum as phi. However, getting the *relative* sign for the x- and y-directions correct is important.
                     rxp = int(np.round(rx - rF**2.0 * phi_Gradient_x[ry,rx]/self.observer_screen_distance/Unscattered_Image.psize))%Nx
                     ryp = int(np.round(ry - rF**2.0 * phi_Gradient_y[ry,rx]/self.observer_screen_distance/Unscattered_Image.psize))%Ny
-                    AI[ry,rx] = EA_im[ryp,rxp]   
-                    if len(Unscattered_Image.qvec):  
-                        AI_Q[ry,rx] = EA_im_Q[ryp,rxp]          
-                        AI_U[ry,rx] = EA_im_U[ryp,rxp]      
-                    if len(Unscattered_Image.vvec): 
+                    AI[ry,rx] = EA_im[ryp,rxp]
+                    if len(Unscattered_Image.qvec):
+                        AI_Q[ry,rx] = EA_im_Q[ryp,rxp]
+                        AI_U[ry,rx] = EA_im_U[ryp,rxp]
+                    if len(Unscattered_Image.vvec):
                         AI_V[ry,rx] = EA_im_V[ryp,rxp]
 
         #Optional: eliminate negative flux
-        if Force_Positivity == True: 
+        if Force_Positivity == True:
            AI = abs(AI)
 
         #Make it into a proper image format
         AI_Image = image.Image(AI, EA_Image.psize, EA_Image.ra, EA_Image.dec, rf=EA_Image.rf, source=EA_Image.source, mjd=EA_Image.mjd)
-        if len(Unscattered_Image.qvec): 
+        if len(Unscattered_Image.qvec):
             AI_Image.add_qu(AI_Q, AI_U)
         if len(Unscattered_Image.vvec):
             AI_Image.add_v(AI_V)
@@ -532,7 +520,7 @@ class ScatteringModel:
 
         return AI_Image
 
-    def Scatter_Movie(self, Unscattered_Movie, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=None, N_frames = None, sqrtQ=None, Linearized_Approximation=False, Force_Positivity=False,Return_Image_List=False): 
+    def Scatter_Movie(self, Unscattered_Movie, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=None, N_frames = None, sqrtQ=None, Linearized_Approximation=False, Force_Positivity=False,Return_Image_List=False):
         """Scatter a movie using the specified epsilon screen. The movie can either be a movie object, an image list, or a static image
            If scattering a list of images or static image, the frame duration in seconds (framedur_sec) must be specified
            If scattering a static image, the total number of frames must be specified (N_frames)
@@ -542,35 +530,35 @@ class ScatteringModel:
 
            Args:
                 Unscattered_Movie: This can be a movie object, an image list, or a static image
-                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated. 
+                Epsilon_Screen (2D ndarray): Optionally, the scattering screen can be specified. If none is given, a random one will be generated.
                 obs_frequency_Hz (float): The observing frequency, in Hz. By default, it will be taken to be equal to the frequency of the Unscattered_Movie.
-                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s. 
-                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s. 
-                framedur_sec (float): Duration of each frame, in seconds. Only needed if Unscattered_Movie is not a movie object. 
-                N_frames (int): Total number of frames. Only needed if Unscattered_Movie is a static image object. 
-                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum. 
+                Vx_km_per_s (float): Velocity of the scattering screen in the x direction (toward East) in km/s.
+                Vy_km_per_s (float): Velocity of the scattering screen in the y direction (toward North) in km/s.
+                framedur_sec (float): Duration of each frame, in seconds. Only needed if Unscattered_Movie is not a movie object.
+                N_frames (int): Total number of frames. Only needed if Unscattered_Movie is a static image object.
+                sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum.
                 Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
-                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation. 
+                Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation.
                 Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
 
            Returns:
-               Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List. 
+               Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List.
             """
 
         if type(Unscattered_Movie) != movie.Movie and framedur_sec == None:
-            print "If scattering a list of images of static image, the framedur must be specified!"
+            print("If scattering a list of images of static image, the framedur must be specified!")
             return
 
         if type(Unscattered_Movie) == image.Image and N_frames == None:
-            print "If scattering a static image, the total number of frames must be specified (N_frames)!"
+            print("If scattering a static image, the total number of frames must be specified (N_frames)!")
             return
 
         if framedur_sec == None:
-            framedur_sec = Unscattered_Movie.framedur   
+            framedur_sec = Unscattered_Movie.framedur
 
-        print "Frame Duration (seconds):",framedur_sec
+        print("Frame Duration (seconds):",framedur_sec)
 
-        if type(Unscattered_Movie) == movie.Movie: 
+        if type(Unscattered_Movie) == movie.Movie:
             N = Unscattered_Movie.xdim
             N_frames = len(Unscattered_Movie.frames)
             psize = Unscattered_Movie.psize
@@ -614,8 +602,8 @@ class ScatteringModel:
             else:
                 return Unscattered_Movie
 
-        #If it isn't specified, calculate the matrix sqrtQ for efficiency 
-        if sqrtQ == None:
+        #If it isn't specified, calculate the matrix sqrtQ for efficiency
+        if sqrtQ is None:
             sqrtQ = self.sqrtQ_Matrix(get_frame(0))
 
         # If no epsilon screen is specified, then generate a random realization
@@ -635,9 +623,9 @@ class ScatteringModel:
             Scattered_Movie.add_qu(Scattered_Movie_Q, Scattered_Movie_U)
 
         return Scattered_Movie
-        
+
 ################################################################################
-# These are helper functions 
+# These are helper functions
 ################################################################################
 
 def Wrapped_Convolve(sig,ker):
@@ -649,21 +637,21 @@ def Wrapped_Gradient(M):
     Gx = G[0][1:-1,1:-1]
     Gy = G[1][1:-1,1:-1]
     return (Gx, Gy)
-    
+
 def MakeEpsilonScreenFromList(EpsilonList, N):
     epsilon = np.zeros((N,N),dtype=np.complex)
     #There are (N^2-1)/2 real elements followed by (N^2-1)/2 complex elements
 
     #The first (N-1)/2 are the top row
-    N_re = (N*N-1)/2
+    N_re = (N*N-1)//2 # FIXME: check logic if N is even
     i = 0
-    for x in range(1,(N+1)/2):
+    for x in range(1,(N+1)//2): # FIXME: check logic if N is even
         epsilon[0][x] = EpsilonList[i] + 1j * EpsilonList[i+N_re]
         epsilon[0][N-x] = np.conjugate(epsilon[0][x])
         i=i+1
 
     #The next N(N-1)/2 are filling the next N rows
-    for y in range(1,(N+1)/2):
+    for y in range(1,(N+1)//2): # FIXME: check logic if N is even
         for x in range(N):
             epsilon[y][x] = EpsilonList[i] + 1j * EpsilonList[i+N_re]
 
@@ -675,20 +663,20 @@ def MakeEpsilonScreenFromList(EpsilonList, N):
                 y2 = 0
 
             epsilon[y2][x2] = np.conjugate(epsilon[y][x])
-            i=i+1    
+            i=i+1
 
     return epsilon
 
 def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
     """Create a standardized Fourier representation of a scattering screen
-       
+
        Args:
            Nx (int): Number of pixels in the x direction
            Ny (int): Number of pixels in the y direction
            rngseed (int): Seed for the random number generator
 
        Returns:
-           epsilon: A 2D numpy ndarray. 
+           epsilon: A 2D numpy ndarray.
     """
 
     if rngseed != 0:
@@ -699,9 +687,9 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
 
     #Now let's ensure that it has the necessary conjugation symmetry
     for x in range(Nx):
-        if x > (Nx-1)/2:
+        if x > (Nx-1)//2: # FIXME: check logic if N is even
             epsilon[0][x] = np.conjugate(epsilon[0][Nx-x])
-        for y in range((Ny-1)/2, Ny):
+        for y in range((Ny-1)//2, Ny): # FIXME: check logic if N is even
             x2 = Nx - x
             y2 = Ny - y
             if x2 == Nx:
@@ -716,17 +704,17 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
 # Plotting Functions
 ##################################################################################################
 
-def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=False):    
+def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=False):
     # Get vectors and ratio from current image
     x = np.array([[i for i in range(Prior.xdim)] for j in range(Prior.ydim)])
     y = np.array([[j for i in range(Prior.xdim)] for j in range(Prior.ydim)])
-    
+
     # Create figure and title
     plt.ion()
     plt.clf()
     if chi2 > 0.0:
         plt.suptitle("step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
-        
+
     # Unscattered Image
     plt.subplot(141)
     plt.imshow(im_unscatt.reshape(Prior.ydim, Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian', vmin=0)
@@ -737,7 +725,7 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
     plt.title('Unscattered')
-    
+
     # Ensemble Average
     plt.subplot(142)
     plt.imshow(im_ea.reshape(Prior.ydim, Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian', vmin=0)
@@ -759,7 +747,7 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
     plt.title('Average Image')
-    
+
     # Phase
     plt.subplot(144)
     plt.imshow(im_phase.reshape(Prior.ydim, Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
@@ -775,5 +763,4 @@ def plot_scatt(im_unscatt, im_ea, im_scatt, im_phase, Prior, nit, chi2, ipynb=Fa
     plt.draw()
     if ipynb:
         display.clear_output()
-        display.display(plt.gcf())  
-
+        display.display(plt.gcf())

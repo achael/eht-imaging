@@ -9,7 +9,7 @@ from __future__ import print_function
 import numpy as np
 import ehtim as eh
 from   ehtim.calibrating import self_cal as sc
-from   ehtim.plotting import self_cal as sc
+#from  ehtim.plotting import self_cal as sc
 
 # Load the image and the array
 im = eh.image.load_txt('models/avery_sgra_eofn.txt')
@@ -29,7 +29,7 @@ tadv_sec = 600
 tstart_hr = 0
 tstop_hr = 24
 bw_hz = 4e9
-obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, 
+obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
                  sgrscat=False, ampcal=True, phasecal=False)
 
 # You can deblur the visibilities by dividing by the scattering kernel if necessary
@@ -55,7 +55,7 @@ cbeam.display()
 # Resolution
 beamparams = obs.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
 res = obs.res() # nominal array resolution, 1/longest baseline
-print("Clean beam parameters: " , beamparams) 
+print("Clean beam parameters: " , beamparams)
 print("Nominal Resolution: " ,res)
 
 # Export the visibility data to uvfits/text
@@ -73,24 +73,24 @@ gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
 # Image total flux with amplitudes and closure phases
 flux = zbl
-out  = eh.imager_func(obs, gaussprior, gaussprior, flux, 
-                      d1='bs', s1='simple', 
-                      alpha_s1=1, alpha_d1=100, 
+out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
+                      d1='bs', s1='simple',
+                      alpha_s1=1, alpha_d1=100,
                       alpha_flux=100, alpha_cm=50,
                       maxit=100)
- 
+
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
-out = eh.imager_func(obs, out, out, flux, 
-                d1='bs', s1='tv', 
-                alpha_s1=1, alpha_d1=50, 
+out = eh.imager_func(obs, out, out, flux,
+                d1='bs', s1='tv',
+                alpha_s1=1, alpha_d1=50,
                 alpha_flux=100, alpha_cm=50,
                 maxit=100)
 
 out = out.blur_circ(res/2.0)
-out = eh.imager_func(obs, out, out, flux, 
-                d1='bs', s1='tv', 
-                alpha_s1=1, alpha_d1=10, 
+out = eh.imager_func(obs, out, out, flux,
+                d1='bs', s1='tv',
+                alpha_s1=1, alpha_d1=10,
                 alpha_flux=100, alpha_cm=50,
                 maxit=100)
 
@@ -98,9 +98,9 @@ out = eh.imager_func(obs, out, out, flux,
 obs_sc = sc.self_cal(obs, out)
 
 out_sc = out.blur_circ(res)
-out_sc = eh.imager_func(obs_sc, out_sc, out_sc, flux, 
-                   d1='vis', s1='simple', 
-                   alpha_s1=1, alpha_d1=100, 
+out_sc = eh.imager_func(obs_sc, out_sc, out_sc, flux,
+                   d1='vis', s1='simple',
+                   alpha_s1=1, alpha_d1=100,
                    alpha_flux=100, alpha_cm=50,
                    maxit=50)
 

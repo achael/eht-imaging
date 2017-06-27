@@ -6,6 +6,6 @@
 .. moduleauthor:: Michael Johnson (mjohnson@cfa.harvard.edu)
 
 """
-
 from .stochastic_optics import *
-from ehtim.const_def import *
+
+from ..const_def import *

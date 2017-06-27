@@ -36,7 +36,7 @@ im_scatt_ea.imvec = np.mean([i.imvec for i in im_scatt_List],axis=0)
 im_scatt_ea.display()
 
 # Plot a time series of the total flux density of the scattered image over time. One point per hour for a week.
-movie_frames = sm.Scatter_Movie(im, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=3600.0, N_frames = 24*7, Return_Image_List=True) 
+movie_frames = sm.Scatter_Movie(im, Vx_km_per_s=50.0, Vy_km_per_s=0.0, framedur_sec=3600.0, N_frames = 24*7, Return_Image_List=True)
 flux_timeseries = [ np.sum(i.imvec) for i in movie_frames ]
 import matplotlib.pyplot as plt
 plt.close()

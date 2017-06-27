@@ -6,8 +6,4 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
-
-#import imager
-#from .imager_utils import *
-
-from ehtim.const_def import *
+from ..const_def import *

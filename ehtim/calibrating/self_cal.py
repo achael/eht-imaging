@@ -1,3 +1,6 @@
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 import scipy.optimize as opt
 import sys
@@ -7,7 +10,7 @@ from ehtim.observing.obs_helpers import *
 
 def norm_zbl(obs, flux=1.):
     """Normalize scans to zero baseline
-    """ 
+    """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
 
@@ -18,9 +21,9 @@ def norm_zbl(obs, flux=1.):
     for scan in scans:
         i += 1
         uvdist = np.sqrt(scan['u']**2 + scan['v']**2)
-        print np.min(uvdist)/1.e4
+        print(np.min(uvdist)/1.e4)
         scan_zbl = np.abs(scan['vis'][np.argmin(uvdist)])
-        
+
         scan['vis'] = scan['vis']/scan_zbl
         scan['sigma'] = scan['sigma']/scan_zbl
         scan['qvis'] = scan['qvis']/scan_zbl
@@ -35,14 +38,14 @@ def norm_zbl(obs, flux=1.):
         else:
             data_norm = scan
 
-    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_norm, obs.tarr, source=obs.source, 
+    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_norm, obs.tarr, source=obs.source,
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
 
 def self_cal(obs, im, method="both", show_solution=False):
     """Self-calibrate a dataset to a fixed image.
-    """ 
+    """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
 
@@ -52,7 +55,7 @@ def self_cal(obs, im, method="both", show_solution=False):
     i = 0
     for scan in scans:
         i += 1
-        if not show_solution: 
+        if not show_solution:
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
         scan_cal = self_cal_scan(scan, im, method=method, show_solution=show_solution)
@@ -62,7 +65,7 @@ def self_cal(obs, im, method="both", show_solution=False):
         else:
             data_cal = scan_cal
 
-    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, source=obs.source, 
+    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, source=obs.source,
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
@@ -76,16 +79,16 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     V = np.dot(A, im.imvec)
 
     sites = list(set(scan['t1']).union(set(scan['t2'])))
-    
+
     tkey = {b:a for a,b in enumerate(sites)}
     tidx1 = [tkey[row['t1']] for row in scan]
     tidx2 = [tkey[row['t2']] for row in scan]
-    sigma_inv = 1. / scan['sigma']
+    sigma_inv = 1.0/scan['sigma']
 
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
         if method=="phase":
-            g = g/np.abs(g)
+            g = g/np.abs(g) # TODO: use np.sign()?
         if method=="amp":
             g = np.abs(g)
 
@@ -100,18 +103,18 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     g_fit = res.x.view(np.complex128)
 
     if method=="phase":
-        g_fit = g_fit/np.abs(g_fit)
+        g_fit = g_fit/np.abs(g_fit) # TODO: use np.sign()?
     if method=="amp":
         g_fit = np.abs(g_fit)
 
     gij_inv = (g_fit[tidx1] * g_fit[tidx2].conj())**(-1)
 
     if show_solution == True:
-        print np.abs(gij_inv)
-    
+        print(np.abs(gij_inv))
+
     scan['vis'] = gij_inv * scan['vis']
     scan['qvis'] = gij_inv * scan['qvis']
     scan['uvis'] = gij_inv * scan['uvis']
-    scan['sigma'] = np.abs(gij_inv) * scan['sigma'] 
+    scan['sigma'] = np.abs(gij_inv) * scan['sigma']
 
     return scan

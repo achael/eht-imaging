@@ -1,3 +1,8 @@
+from __future__ import division
+from builtins import str
+from builtins import map
+from builtins import range
+
 import astropy.time as at
 import numpy as np
 
@@ -17,36 +22,36 @@ def make_bispectrum(l1, l2, l3,vtype):
         if vtype=='qvis': sigmatype='qsigma'
         if vtype=='uvis': sigmatype='usigma'
         if vtype=='vvis': sigmatype='vsigma'
-        
+
         p1 = l1[vtype]
         p2 = l2[vtype]
         p3 = l3[vtype]
-        
-        var1 = l1[sigmatype]**2 
-        var2 = l2[sigmatype]**2                                                        
-        var3 = l3[sigmatype]**2                                                        
-                                                                                                                                          
+
+        var1 = l1[sigmatype]**2
+        var2 = l2[sigmatype]**2
+        var3 = l3[sigmatype]**2
+
     elif vtype == "pvis":
         p1 = l1['qvis'] + 1j*l2['uvis']
         p2 = l2['qvis'] + 1j*l2['uvis']
         p3 = l3['qvis'] + 1j*l3['uvis']
         bi = p1 * p2 * p3
-        
+
         var1 = l1['qsigma']**2 + l1['usigma']**2
         var2 = l2['qsigma']**2 + l2['usigma']**2
-        var3 = l3['qsigma']**2 + l3['usigma']**2                                                                                                     
-    
+        var3 = l3['qsigma']**2 + l3['usigma']**2
+
     bi = p1*p2*p3
-    bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +  
-                                 var2/np.abs(p2)**2 + 
+    bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +
+                                 var2/np.abs(p2)**2 +
                                  var3/np.abs(p3)**2)
     # Katie's 2nd + 3rd order corrections - see CHIRP supplement
-    bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +  
-                               var1*var3*np.abs(p2)**2 +  
-                               var2*var3*np.abs(p1)**2 +  
-                               var1*var2*var3) 
-    return (bi, bisig)  
-                                                            
+    bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
+                               var1*var3*np.abs(p2)**2 +
+                               var2*var3*np.abs(p1)**2 +
+                               var1*var2*var3)
+    return (bi, bisig)
+
 def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True):
     """make a list of closure amplitudes and errors
        red1 and red2 are full datatables of numerator entries
@@ -57,23 +62,23 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
     """
     if not (ctype in ['camp', 'logcamp']):
         raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
- 
+
     if vtype in ["vis", "qvis", "uvis", "vvis"]:
         if vtype=='vis':  sigmatype='sigma'
         if vtype=='qvis': sigmatype='qsigma'
         if vtype=='uvis': sigmatype='usigma'
         if vtype=='vvis': sigmatype='vsigma'
-        
+
         sig1 = blue1[sigmatype]
         sig2 = blue2[sigmatype]
         sig3 = red1[sigmatype]
         sig4 = red2[sigmatype]
-        
+
         p1 = amp_debias(blue1[vtype], sig1)
         p2 = amp_debias(blue2[vtype], sig2)
         p3 = amp_debias(red1[vtype], sig3)
         p4 = amp_debias(red2[vtype], sig4)
-                                                         
+
     elif vtype == "pvis":
         sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
         sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
@@ -84,13 +89,13 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], sig2)
         p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], sig3)
         p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], sig4)
-    
+
     snr1 = p1/sig1
     snr2 = p2/sig2
     snr3 = p3/sig3
     snr4 = p4/sig4
 
-    if ctype=='camp':                           
+    if ctype=='camp':
         camp = np.abs((p1*p2)/(p3*p4))
         camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
 
@@ -111,7 +116,7 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 def amp_debias(amp, sigma):
     """Return debiased visibility amplitudes
     """
-    
+
     # !AC TODO: what to do if deb2 < 0? Currently we DONT debias these
     # Because we need nonzero amplitudes to form  meaningful closure amplitudes
 
@@ -139,84 +144,84 @@ def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
     """
 
     log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
-    
+
     return log_camp_debias
 
 def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
-    """Return the value of the Gaussian FT with 
+    """Return the value of the Gaussian FT with
        beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
        theta is the orientation angle measured E of N
     """
 
-    sigma_maj = beamparams[0] / (2*np.sqrt(2*np.log(2))) 
-    sigma_min = beamparams[1] / (2*np.sqrt(2*np.log(2)))
+    sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
+    sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
     theta = -beamparams[2] # theta needs to be negative in this convention!
-    #try: 
+    #try:
     #	x=beamparams[3]
-    #	y=beamparams[4] 
+    #	y=beamparams[4]
     #except IndexError:
     #	x=y=0.0
-        
+
     # Covariance matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
     b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
     c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
     m = np.array([[a, c], [c, b]])
-    
-    uv = np.array([[u[i],v[i]] for i in xrange(len(u))])
-    x2 = np.array([np.dot(uvi,np.dot(m,uvi)) for uvi in uv])   
+
+    uv = np.array([[u[i],v[i]] for i in range(len(u))])
+    x2 = np.array([np.dot(uvi,np.dot(m,uvi)) for uvi in uv])
     #x2 = np.dot(uv, np.dot(m, uv.T))
     g = np.exp(-2 * np.pi**2 * x2)
     p = np.exp(-2j * np.pi * (u*x + v*y))
 
     return flux * g * p
-     
+
 def sgra_kernel_uv(rf, u, v):
-    """Return the value of the Sgr A* scattering kernel at a given u,v pt (in lambda), 
+    """Return the value of the Sgr A* scattering kernel at a given u,v pt (in lambda),
        at a given frequency rf (in Hz).
        Values from Bower et al.
     """
-    
+
     lcm = (C/rf) * 100 # in cm
     sigma_maj = FWHM_MAJ * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     sigma_min = FWHM_MIN * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     theta = -POS_ANG * DEGREE # theta needs to be negative in this convention!
-    
+
     #bp = [fwhm_maj, fwhm_min, theta]
     #g = gauss_uv(u, v, 1., bp, x=0., y=0.)
-    
+
     # Covariance matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
     b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
     c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
     m = np.array([[a, c], [c, b]])
     uv = np.array([u,v])
-    
+
     x2 = np.dot(uv, np.dot(m, uv))
     g = np.exp(-2 * np.pi**2 * x2)
-    
+
     return g
 
 def sgra_kernel_params(rf):
     """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse at a given frequency
        Values from Bower et al.
     """
-    
+
     lcm = (C/rf) * 100 # in cm
     fwhm_maj_rf = FWHM_MAJ * (lcm**2)  * RADPERUAS
     fwhm_min_rf = FWHM_MIN * (lcm**2)  * RADPERUAS
     theta = POS_ANG * DEGREE
-    
+
     return np.array([fwhm_maj_rf, fwhm_min_rf, theta])
 
 
 def blnoise(sefd1, sefd2, tint, bw):
-    """Determine the standard deviation of Gaussian thermal noise on a baseline 
+    """Determine the standard deviation of Gaussian thermal noise on a baseline
        This is the noise on the rr/ll/rl/lr correlation, not the stokes parameter
        2-bit quantization is responsible for the 0.88 factor
     """
-    
-    #!AC TODO Is the factor of sqrt(2) correct? 
+
+    #!AC TODO Is the factor of sqrt(2) correct?
     #noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
 
     noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
@@ -226,9 +231,9 @@ def blnoise(sefd1, sefd2, tint, bw):
 def merr(sigma, qsigma, usigma, I, m):
     """Return the error in mbreve real and imaginary parts"""
 
-    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/ (np.abs(I) ** 2))
+    err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/(np.abs(I) ** 2))
     # old formula assumes all sigmas the same
-    #err = sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2))     
+    #err = sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2))
     return err
 
 def cerror(sigma):
@@ -259,7 +264,7 @@ def image_centroid(im):
     y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im.imvec)/np.sum(im.imvec)
 
     return np.array([x0, y0])
-      
+
 def ftmatrix(pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT, mask=[]):
     """Return a DFT matrix for the xdim*ydim image with pixel width pdim
        that extracts spatial frequencies of the uv points in uvlist.
@@ -270,29 +275,29 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT, mask=[]):
 
     # original sign convention
     #ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
-    
+
     # changed the sign convention to agree with BU data (Jan 2017)
     ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
-    
+
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
 
     if len(mask):
         ftmatrices = ftmatrices[:,mask]
-        
+
     return ftmatrices
 
 def ticks(axisdim, psize, nticks=8):
     """Return a list of ticklocs and ticklabels
        psize should be in desired units
     """
-    
+
     axisdim = int(axisdim)
     nticks = int(nticks)
     if not axisdim % 2: axisdim += 1
     if nticks % 2: nticks -= 1
     tickspacing = float((axisdim-1))/nticks
     ticklocs = np.arange(0, axisdim+1, tickspacing)
-    ticklabels= np.around(psize * np.arange((axisdim-1)/2., -(axisdim)/2., -tickspacing), decimals=1)
+    ticklabels= np.around(psize * np.arange((axisdim-1)/2.0, -(axisdim)/2.0, -tickspacing), decimals=1)
     return (ticklocs, ticklabels)
 
 def power_of_two(target):
@@ -300,7 +305,7 @@ def power_of_two(target):
     """
     cur = 1
     if target > 1:
-        for i in xrange(0, int(target)):
+        for i in range(0, int(target)):
             if (cur >= target):
                 return cur
             else: cur *= 2
@@ -313,7 +318,7 @@ def paritycompare(perm1, perm2):
        Assume both lists are equal length and with same elements
        Copied from: http://stackoverflow.com/questions/1503072/how-to-check-if-permutations-have-equal-parity
     """
-    
+
     perm2 = list(perm2)
     perm2_map = dict((v, i) for i,v in enumerate(perm2))
     transCount=0
@@ -324,14 +329,14 @@ def paritycompare(perm1, perm2):
             perm2[loc], perm2[sloc] = p1, p2
             perm2_map[p1], perm2_map[p2] = sloc, loc
             transCount += 1
-    
+
     if not (transCount % 2): return 1
     else: return  -1
 
 def amp_debias(vis, sigma):
     """Return debiased visibility amplitudes
     """
-    
+
     # !AC TODO: what to do if deb2 < 0? Currently we do nothing
     deb2 = np.abs(vis)**2 - np.abs(sigma)**2
 
@@ -344,18 +349,18 @@ def amp_debias(vis, sigma):
         lowsnr = deb2 < 0.0
         deb2[lowsnr] = np.abs(vis[lowsnr])**2
         return np.sqrt(deb2)
-        
+
 
 def sigtype(datatype):
     """Return the type of noise corresponding to the data type
     """
-    
+
     datatype = str(datatype)
     if datatype in ['vis', 'amp']: sigmatype='sigma'
     elif datatype in ['qvis', 'qamp']: sigmatype='qsigma'
     elif datatype in ['uvis', 'uamp']: sigmatype='usigma'
     elif datatype in ['vvis', 'vamp']: sigmatype='vsigma'
-    elif datatype in ['pvis', 'pamp']: sigmatype='psigma'                
+    elif datatype in ['pvis', 'pamp']: sigmatype='psigma'
     elif datatype in ['pvis', 'pamp']: sigmatype='psigma'
     elif datatype in ['m', 'mamp']: sigmatype='msigma'
     elif datatype in ['phase']: sigmatype='sigma_phase'
@@ -365,10 +370,10 @@ def sigtype(datatype):
     elif datatype in ['pphase']: sigmatype='psigma_phase'
     elif datatype in ['mphase']: sigmatype='msigma_phase'
     else: sigmatype = False
-    
-    return sigmatype                                    
-    
-           
+
+    return sigmatype
+
+
 def rastring(ra):
     """Convert a ra in fractional hours to formatted string
     """
@@ -376,12 +381,12 @@ def rastring(ra):
     m = int((ra-h)*60.)
     s = (ra-h-m/60.)*3600.
     out = "%2i h %2i m %2.4f s" % (h,m,s)
-    return out 
+    return out
 
 def decstring(dec):
     """Convert a dec in fractional degrees to formatted string
     """
-    
+
     deg = int(dec)
     m = int((abs(dec)-abs(deg))*60.)
     s = (abs(dec)-abs(deg)-m/60.)*3600.
@@ -391,47 +396,47 @@ def decstring(dec):
 def gmtstring(gmt):
     """Convert a gmt in fractional hours to formatted string
     """
-    
+
     if gmt > 24.0: gmt = gmt-24.0
     h = int(gmt)
     m = int((gmt-h)*60.)
     s = (gmt-h-m/60.)*3600.
     out = "%02i:%02i:%2.4f" % (h,m,s)
-    return out 
+    return out
 
-def utc_to_gmst(utc, mjd): 
+def utc_to_gmst(utc, mjd):
     """Convert utc times in hours to gmst using astropy
     """
 
     mjd=int(mjd) #MJD should always be an integer, but was float in older versions of the code
-    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc') 
+    time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
     time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
     return time_sidereal
-    
+
 def earthrot(vecs, thetas):
     """Rotate a vector / array of vectors about the z-direction by theta / array of thetas (radian)
     """
 
-    if len(vecs.shape)==1: 
+    if len(vecs.shape)==1:
         vecs = np.array([vecs])
     if np.isscalar(thetas):
-        thetas = np.array([thetas for i in xrange(len(vecs))])
+        thetas = np.array([thetas for i in range(len(vecs))])
 
     # equal numbers of sites and angles
     if len(thetas) == len(vecs):
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i]) 
-                       for i in xrange(len(vecs))])
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i])
+                       for i in range(len(vecs))])
     # only one rotation angle, many sites
     elif len(thetas) == 1:
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]),-np.sin(thetas[0]),0),(np.sin(thetas[0]),np.cos(thetas[0]),0),(0,0,1))), vecs[i]) 
-                       for i in xrange(len(vecs))])
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]),-np.sin(thetas[0]),0),(np.sin(thetas[0]),np.cos(thetas[0]),0),(0,0,1))), vecs[i])
+                       for i in range(len(vecs))])
     # only one site, many angles
     elif len(vecs) == 1:
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[0]) 
-                       for i in xrange(len(thetas))]) 
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[0])
+                       for i in range(len(thetas))])
     else:
         raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")
-                                            
+
     #if rotvec.shape[0]==1: rotvec = rotvec[0]
     return rotvec
 
@@ -439,7 +444,7 @@ def elev(obsvecs, sourcevec):
     """Return the elevation of a source with respect to an observer/observers in radians
        obsvec can be an array of vectors but sourcevec can ONLY be a single vector
     """
-       
+
     if len(obsvecs.shape)==1:
         obsvecs=np.array([obsvecs])
 
@@ -447,13 +452,13 @@ def elev(obsvecs, sourcevec):
     el = 0.5*np.pi - np.arccos(anglebtw)
 
     return el
-        
+
 def elevcut(obsvecs, sourcevec, elevmin=ELEV_LOW, elevmax=ELEV_HIGH):
     """Return True if a source is observable by a telescope vector
     """
-    
+
     angles = elev(obsvecs, sourcevec)/DEGREE
-    
+
     return (angles > elevmin) * (angles < elevmax)
 
 def hr_angle(gst, lon, ra):
@@ -464,24 +469,24 @@ def hr_angle(gst, lon, ra):
 
     hr_angle = np.mod(gst + lon - ra, 2*np.pi)
     return hr_angle
-    
+
 def par_angle(hr_angle, lat, dec):
-    """Compute the parallactic angle for a source at hr_angle and dec for an observer with latitude lat. 
+    """Compute the parallactic angle for a source at hr_angle and dec for an observer with latitude lat.
        All angles in radian
     """
-       
+
     num = np.sin(hr_angle)*np.cos(lat)
     denom = np.sin(lat)*np.cos(dec) - np.cos(lat)*np.sin(dec)*np.cos(hr_angle)
-    
+
     return np.arctan2(num, denom)
 
-def xyz_2_latlong(obsvecs): 
-    """Compute the (geocentric) latitude and longitude of a site at geocentric position x,y,z 
+def xyz_2_latlong(obsvecs):
+    """Compute the (geocentric) latitude and longitude of a site at geocentric position x,y,z
        The output is in radians
     """
 
     if len(obsvecs.shape)==1:
-        obsvecs=np.array([obsvecs])        
+        obsvecs=np.array([obsvecs])
     out = []
     for obsvec in obsvecs:
         x = obsvec[0]
@@ -490,7 +495,7 @@ def xyz_2_latlong(obsvecs):
         lon = np.array(np.arctan2(y,x))
         lat = np.array(np.arctan2(z, np.sqrt(x**2+y**2)))
         out.append([lat,lon])
-        
+
     out = np.array(out)
 
     #if out.shape[0]==1: out = out[0]

@@ -6,7 +6,6 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
+from . import self_cal
 
-import ehtim.calibrating.self_cal
-
-from ehtim.const_def import *
+from ..const_def import *

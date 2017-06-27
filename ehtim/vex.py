@@ -1,5 +1,10 @@
 # Hotaka Shiokawa - 2017
 
+from __future__ import division
+from __future__ import print_function
+from builtins import range
+from builtins import object
+
 import numpy as np
 
 import ehtim.array
@@ -10,9 +15,9 @@ from ehtim.observing.obs_helpers import *
 class Vex(object):
     """Read in observing schedule data from .vex files.
        Assumes there is only 1 MODE in vex file
-       
+
        Attributes:
-           filename (str): The .vex filename. 
+           filename (str): The .vex filename.
            source (str): The source name.
            metalist (list): The observation information.
            sched (list): The schedule information.
@@ -24,7 +29,7 @@ class Vex(object):
         f = open(filename)
         raw = f.readlines()
         f.close()
-        
+
         self.filename = filename
 
         # Divide 'raw' data into sectors of '$' marks
@@ -43,7 +48,7 @@ class Vex(object):
                 metalist.append(temp)
                 temp = [raw[j]]
             else:
-                print 'Something is wrong.'
+                print('Something is wrong.')
         metalist.append(temp) # don't forget to add the final one
         self.metalist = metalist
 
@@ -53,13 +58,13 @@ class Vex(object):
         SOURCE = self.get_sector('SOURCE')
         source = []
         indef = False
- 
+
         for i in range(len(SOURCE)):
- 
+
             line = SOURCE[i]
             if line[0:3]=="def":
                 indef=True
- 
+
             if indef:
                 ret = self.get_variable("source_name",line)
                 if len(ret)>0: source_name = ret
@@ -69,33 +74,33 @@ class Vex(object):
                 if len(ret)>0: dec = ret
                 ret = self.get_variable("ref_coord_frame",line)
                 if len(ret)>0: ref_coord_frame = ret
- 
+
                 if line[0:6]=="enddef":
                     source.append({'source':source_name,'ra':ra,'dec':dec,'ref_coord_frame':ref_coord_frame})
                     indef=False
- 
+
         self.source = source
-        
+
         # FREQ ==========================================================
         FREQ = self.get_sector('FREQ')
         indef = False
         nfreq = 0
         for i in range(len(FREQ)):
 
-                line = FREQ[i]
-                if line[0:3]=="def":
-		    if nfreq>0: print "Not implemented yet."
-		    nfreq += 1
-		    indef=True
+            line = FREQ[i]
+            if line[0:3]=="def":
+                if nfreq>0: print("Not implemented yet.")
+                nfreq += 1
+                indef=True
 
-                if indef:
-                    idx = line.find('chan_def')
-                    if idx>=0 and line[0]!='*':
-                         chan_def = re.findall("[-+]?\d+[\.]?\d*",line)
-                         self.freq = float(chan_def[0])*1.e6
-                         self.bw_hz = float(chan_def[1])*1.e6
+            if indef:
+                idx = line.find('chan_def')
+                if idx>=0 and line[0]!='*':
+                    chan_def = re.findall("[-+]?\d+[\.]?\d*",line)
+                    self.freq = float(chan_def[0])*1.e6
+                    self.bw_hz = float(chan_def[1])*1.e6
 
-                    if line[0:6]=="enddef": indef=False
+                if line[0:6]=="enddef": indef=False
 
 
         # SITE ==========================================================
@@ -105,33 +110,33 @@ class Vex(object):
         indef = False
 
         for i in range(len(SITE)):
- 
+
             line = SITE[i]
             if line[0:3]=="def": indef=True
- 
+
             if indef:
                 # get site_name and SEFD
                 ret = self.get_variable("site_name",line)
                 if len(ret)>0:
                     site_name = ret
                     SEFD = self.get_SEFD(site_name)
- 
+
                 # making dictionary of site_ID:site_name
                 ret = self.get_variable("site_ID",line)
                 if len(ret)>0:
                     site_ID_dict[ret] = site_name
- 
+
                 # get site_position
                 ret = self.get_variable("site_position",line)
                 if len(ret)>0:
                     site_position = re.findall("[-+]?\d+[\.]?\d*",line)
- 
+
                 # same format as Andrew's array tables
                 if line[0:6]=="enddef":
                     sites.append([site_name,site_position[0],site_position[1],site_position[2],SEFD])
                     indef=False
 
- 
+
         # Construct Array() object of Andrew's format
         # mimic the function "load_array(filename)"
         # TODO this does not store d-term and pol cal. information!
@@ -145,16 +150,16 @@ class Vex(object):
         SCHED = self.get_sector('SCHED')
         sched = []
         inscan = False
- 
+
         for i in range(len(SCHED)):
- 
+
             line = SCHED[i]
             if line[0:4]=="scan":
                 inscan=True
                 temp={}
-		temp['scan']={}
-		cnt = 0
- 
+                temp['scan']={}
+                cnt = 0
+
             if inscan:
                 ret = self.get_variable("start",line)
                 if len(ret)>0:
@@ -164,10 +169,10 @@ class Vex(object):
 
                 ret = self.get_variable("mode",line)
                 if len(ret)>0: temp['mode'] = ret
- 
+
                 ret = self.get_variable("source",line)
                 if len(ret)>0: temp['source'] = ret
- 
+
                 ret = self.get_variable("station",line)
                 if len(ret)>0:
                     site_ID = ret
@@ -178,12 +183,12 @@ class Vex(object):
                     d_size = float(sdur[2]) # data size(?) in GB
                     temp['scan'][cnt] = {'site':site_name,'scan_sec_start':s_st,'scan_sec':s_en,'data_size':d_size}
                     cnt +=1
- 
+
                 if line[0:7]=="endscan":
                     sched.append(temp)
                     inscan=False
 
-        self.sched = sched 
+        self.sched = sched
 
 
     # Function to obtain a desired sector from 'metalist'
@@ -191,7 +196,7 @@ class Vex(object):
         for i in range(len(self.metalist)):
             if sname in self.metalist[i][0]:
                 return self.metalist[i]
-        print 'No sector named %s'%sname
+        print('No sector named %s'%sname)
         return False
 
     # Function to get a value of 'vname' in a line which has format of
@@ -219,7 +224,7 @@ class Vex(object):
         for i in range(len(sites)):
             if sites[i].split()[0]==station:
                 return float(re.findall("[-+]?\d+[\.]?\d*",sites[i])[3])
-        print 'No station named %s'%station
+        print('No station named %s'%station)
         return 10000. # some arbitrary value
 
     # Function to find MJD (int!) and hour in UT from vex format,

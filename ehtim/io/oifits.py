@@ -60,8 +60,12 @@ triple products, etc.  See the notes on the individual classes for a
 list of all the "hidden" attributes.
 
 For further information, contact Paul Boley (boley@mpia-hd.mpg.de).
-   
+
 """
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import object
 
 import numpy as np
 from numpy import double, bool, ma
@@ -110,7 +114,7 @@ class _angpoint(float):
         return self.angle == other.angle
 
     def __ne__(self, other):
-        return not self.__eq__(other)    
+        return not self.__eq__(other)
 
     def asdms(self):
         """Return the value as a string in dms format,
@@ -145,7 +149,7 @@ class _angpoint(float):
         except TypeError:
             return self.__repr__()
 
-class OI_TARGET:
+class OI_TARGET(object):
 
     def __init__(self, target, raep0, decep0, equinox=2000.0, ra_err=0.0, dec_err=0.0,
                  sysvel=0.0, veltyp='TOPCENT', veldef='OPTICAL', pmra=0.0, pmdec=0.0,
@@ -170,7 +174,7 @@ class OI_TARGET:
     def __eq__(self, other):
 
         if type(self) != type(other): return False
-        
+
         return not (
             (self.target    != other.target)    or
             (self.raep0     != other.raep0)     or
@@ -188,7 +192,7 @@ class OI_TARGET:
             (self.parallax  != other.parallax)  or
             (self.para_err  != other.para_err)  or
             (self.spectyp   != other.spectyp))
-            
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -196,9 +200,9 @@ class OI_TARGET:
         return "%s: %s %s (%g)"%(self.target, self.raep0.ashms(), self.decep0.asdms(), self.equinox)
 
     def info(self):
-        print str(self)
+        print(str(self))
 
-class OI_WAVELENGTH:
+class OI_WAVELENGTH(object):
 
     def __init__(self, eff_wave, eff_band=None):
         self.eff_wave = np.array(eff_wave, dtype=double).reshape(-1)
@@ -209,7 +213,7 @@ class OI_WAVELENGTH:
     def __eq__(self, other):
 
         if type(self) != type(other): return False
-            
+
         return not (
             (not _array_eq(self.eff_wave, other.eff_wave)) or
             (not _array_eq(self.eff_band, other.eff_band)))
@@ -221,17 +225,17 @@ class OI_WAVELENGTH:
         return "%d wavelength%s (%.3g-%.3g um)"%(len(self.eff_wave), _plurals(len(self.eff_wave)), 1e6*np.min(self.eff_wave),1e6*np.max(self.eff_wave))
 
     def info(self):
-        print str(self)
+        print(str(self))
 
 
-class OI_VIS:
+class OI_VIS(object):
     """
     Class for storing visibility amplitude and differential phase data.
     To access the data, use the following hidden attributes:
 
     visamp, visamperr, visphi, visphierr, flag;
     and possibly cflux, cfluxerr.
-   
+
     """
 
     def __init__(self, timeobs, int_time, visamp, visamperr, visphi, visphierr, flag, ucoord,
@@ -257,7 +261,7 @@ class OI_VIS:
     def __eq__(self, other):
 
         if type(self) != type(other): return False
-        
+
         return not (
             (self.timeobs    != other.timeobs)    or
             (self.array      != other.array)      or
@@ -273,7 +277,7 @@ class OI_VIS:
             (not _array_eq(self.visphi, other.visphi)) or
             (not _array_eq(self.visphierr, other.visphierr)) or
             (not _array_eq(self.flag, other.flag)))
-        
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -286,7 +290,7 @@ class OI_VIS:
             else:
                 return None
         else:
-            raise AttributeError, attrname
+            raise AttributeError(attrname)
 
     def __setattr__(self, attrname, value):
         if attrname in ('visamp', 'visamperr', 'visphi', 'visphierr', 'cflux', 'cfluxerr'):
@@ -300,18 +304,18 @@ class OI_VIS:
             baselinename = ' (' + self.station[0].sta_name + self.station[1].sta_name + ')'
         else:
             baselinename = ''
-        return '%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V> = %4.2g'%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.visamp), _plurals(len(self.visamp)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord / self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
+        return '%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V> = %4.2g'%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.visamp), _plurals(len(self.visamp)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord/self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
 
     def info(self):
-        print str(self)
+        print(str(self))
 
-class OI_VIS2:
+class OI_VIS2(object):
     """
     Class for storing squared visibility amplitude data.
     To access the data, use the following hidden attributes:
 
     vis2data, vis2err
-   
+
     """
     def __init__(self, timeobs, int_time, vis2data, vis2err, flag, ucoord, vcoord, wavelength,
                  target, array=None, station=(None, None)):
@@ -344,7 +348,7 @@ class OI_VIS2:
             (not _array_eq(self.vis2data, other.vis2data)) or
             (not _array_eq(self.vis2err, other.vis2err)) or
             (not _array_eq(self.flag, other.flag)))
-        
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -352,7 +356,7 @@ class OI_VIS2:
         if attrname in ('vis2data', 'vis2err'):
             return ma.masked_array(self.__dict__['_' + attrname], mask=self.flag)
         else:
-            raise AttributeError, attrname
+            raise AttributeError(attrname)
 
     def __setattr__(self, attrname, value):
         if attrname in ('vis2data', 'vis2err'):
@@ -366,19 +370,19 @@ class OI_VIS2:
             baselinename = ' (' + self.station[0].sta_name + self.station[1].sta_name + ')'
         else:
             baselinename = ''
-        return "%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V^2> = %4.2g"%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.vis2data), _plurals(len(self.vis2data)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord / self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
+        return "%s %s%s: %d point%s (%d masked), B = %5.1f m, PA = %5.1f deg, <V^2> = %4.2g"%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.vis2data), _plurals(len(self.vis2data)), np.sum(self.flag), np.sqrt(self.ucoord**2 + self.vcoord**2), np.arctan(self.ucoord/self.vcoord) * 180.0 / np.pi % 180.0, meanvis)
 
     def info(self):
-        print str(self)
+        print(str(self))
 
 
-class OI_T3:
+class OI_T3(object):
     """
     Class for storing triple product and closure phase data.
     To access the data, use the following hidden attributes:
 
     t3amp, t3amperr, t3phi, t3phierr
-   
+
     """
 
     def __init__(self, timeobs, int_time, t3amp, t3amperr, t3phi, t3phierr, flag, u1coord,
@@ -420,7 +424,7 @@ class OI_T3:
             (not _array_eq(self.t3phi, other.t3phi)) or
             (not _array_eq(self.t3phierr, other.t3phierr)) or
             (not _array_eq(self.flag, other.flag)))
-        
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -428,7 +432,7 @@ class OI_T3:
         if attrname in ('t3amp', 't3amperr', 't3phi', 't3phierr'):
             return ma.masked_array(self.__dict__['_' + attrname], mask=self.flag)
         else:
-            raise AttributeError, attrname
+            raise AttributeError(attrname)
 
     def __setattr__(self, attrname, value):
         if attrname in ('vis2data', 'vis2err'):
@@ -445,9 +449,9 @@ class OI_T3:
         return "%s %s%s: %d point%s (%d masked), B = %5.1fm, %5.1fm, <T3> = %4.2g"%(self.target.target, self.timeobs.strftime('%F %T'), baselinename, len(self.t3amp), _plurals(len(self.t3amp)), np.sum(self.flag), np.sqrt(self.u1coord**2 + self.v1coord**2), np.sqrt(self.u2coord**2 + self.v2coord**2), meant3)
 
     def info(self):
-        print str(self)
+        print(str(self))
 
-class OI_STATION:
+class OI_STATION(object):
     """ This class corresponds to a single row (i.e. single
     station/telescope) of an OI_ARRAY table."""
 
@@ -473,18 +477,18 @@ class OI_STATION:
     def __repr__(self):
         return '%s/%s (%g m)'%(self.sta_name, self.tel_name, self.diameter)
 
-class OI_ARRAY:
+class OI_ARRAY(object):
     """Contains all the data for a single OI_ARRAY table.  Note the
     hidden convenience attributes latitude, longitude, and altitude."""
 
     def __init__(self, frame, arrxyz, stations=()):
         self.frame = frame
         self.arrxyz = arrxyz
-        #self.station = stations; 
+        #self.station = stations;
         self.station = np.empty(0)
         for station in stations:
-			tel_name, sta_name, sta_index, diameter, staxyz = station
-			self.station = np.append(self.station, OI_STATION(tel_name=tel_name, sta_name=sta_name, diameter=diameter, staxyz=staxyz))
+            tel_name, sta_name, sta_index, diameter, staxyz = station
+            self.station = np.append(self.station, OI_STATION(tel_name=tel_name, sta_name=sta_name, diameter=diameter, staxyz=staxyz))
 
     def __eq__(self, other):
 
@@ -495,7 +499,7 @@ class OI_ARRAY:
             (not _array_eq(self.arrxyz, other.arrxyz)))
 
         if not equal: return False
-        
+
         # If position appears to be the same, check that the stations
         # (and ordering) are also the same
         if (self.station != other.station).any():
@@ -516,9 +520,9 @@ class OI_ARRAY:
             return _angpoint(np.arcsin(self.arrxyz[1]/xylen)*180.0/np.pi)
         elif attrname == 'altitude':
             radius = np.sqrt((self.arrxyz**2).sum())
-            return radius - 6378100.0  
+            return radius - 6378100.0
         else:
-            raise AttributeError, attrname
+            raise AttributeError(attrname)
 
     def __repr__(self):
         return '%s %s %g m, %d station%s'%(self.latitude.asdms(), self.longitude.asdms(), self.altitude, len(self.station), _plurals(len(self.station)))
@@ -526,11 +530,11 @@ class OI_ARRAY:
     def info(self, verbose=0):
         """Print the array's center coordinates.  If verbosity >= 1,
         print information about each station."""
-        print str(self)
+        print(str(self))
         if verbose >= 1:
             for station in self.station:
-                print "   %s"%str(station)
-        
+                print("   %s"%str(station))
+
     def get_station_by_name(self, name):
 
         for station in self.station:
@@ -539,8 +543,8 @@ class OI_ARRAY:
 
         raise LookupError('No such station %s'%name)
 
-class oifits:
-    
+class oifits(object):
+
     def __init__(self):
 
         self.wavelength = {}
@@ -558,14 +562,14 @@ class oifits:
         oifits.matchstationbyname)"""
         # Don't do anything if the two oifits objects are not CONSISTENT!
         if self.isconsistent() == False or other.isconsistent() == False:
-            print 'oifits objects are not consistent, bailing.'
+            print('oifits objects are not consistent, bailing.')
             return
-        
+
         new = copy.deepcopy(self)
         if len(other.wavelength):
             wavelengthmap = {}
-            for key in other.wavelength.keys():
-                if key not in new.wavelength.keys():
+            for key in list(other.wavelength.keys()):
+                if key not in list(new.wavelength.keys()):
                     new.wavelength[key] = copy.deepcopy(other.wavelength[key])
                 elif new.wavelength[key] != other.wavelength[key]:
                     raise ValueError('Wavelength tables have the same key but differing contents.')
@@ -582,12 +586,12 @@ class oifits:
                         targetmap[id(otarget)] = ntarget
                         break
                     elif ntarget.target == otarget.target:
-                        print 'Found a target with a matching name, but some differences in the target specification.  Creating a new target.  Set oifits.matchtargetbyname to True to override this behavior.'
+                        print('Found a target with a matching name, but some differences in the target specification.  Creating a new target.  Set oifits.matchtargetbyname to True to override this behavior.')
                 # If 'id(otarget)' is not in targetmap, then this is a new
                 # target and should be added to the array of targets
-                if id(otarget) not in targetmap.keys():
+                if id(otarget) not in list(targetmap.keys()):
                     try:
-                        newkey = new.target.keys()[-1]+1
+                        newkey = list(new.target.keys())[-1]+1
                     except:
                         newkey = 1
                     target = copy.deepcopy(otarget)
@@ -597,9 +601,9 @@ class oifits:
         if len(other.array):
             stationmap = {}
             arraymap = {}
-            for key, otharray in other.array.iteritems():
+            for key, otharray in other.array.items():
                 arraymap[id(otharray)] = key
-                if key not in new.array.keys():
+                if key not in list(new.array.keys()):
                     new.array[key] = copy.deepcopy(other.array[key])
                 # If arrays have the same name but seem to differ, try
                 # to combine the two (by including the union of both
@@ -617,7 +621,7 @@ class oifits:
                     # If 'id(othsta)' is not in the stationmap
                     # dictionary, then this is a new station and
                     # should be added to the current array
-                    if id(othsta) not in stationmap.keys():
+                    if id(othsta) not in list(stationmap.keys()):
                         newsta = copy.deepcopy(othsta)
                         new.array[key].station = np.append(new.array[key].station, newsta)
                         stationmap[id(othsta)] = newsta
@@ -669,9 +673,9 @@ class oifits:
                     newt3.station[1] = stationmap[id(t3.station[1])]
                     newt3.station[2] = stationmap[id(t3.station[2])]
                 new.t3 = np.append(new.t3, newt3)
-        
+
         return(new)
-        
+
 
     def __eq__(self, other):
 
@@ -702,7 +706,7 @@ class oifits:
         if not self.wavelength:
             errors.append('No OI_WAVELENGTH data')
         else:
-            for wavelength in self.wavelength.values():
+            for wavelength in list(self.wavelength.values()):
                 if len(wavelength.eff_wave) != len(wavelength.eff_band):
                     errors.append("eff_wave and eff_band are of different lengths for wavelength table '%s'"%key)
         if (self.vis.size + self.vis2.size + self.t3.size == 0):
@@ -714,20 +718,20 @@ class oifits:
         for vis2 in self.vis2:
             nwave = len(vis2.wavelength.eff_band)
             if (len(vis2.vis2data) != nwave) or (len(vis2.vis2err) != nwave) or (len(vis2.flag) != nwave):
-                errors.append("Data size mismatch for visibility^2 measurement 0x%x (wavelength table has a length of %d)"%(id(vis), nwave))                                  
+                errors.append("Data size mismatch for visibility^2 measurement 0x%x (wavelength table has a length of %d)"%(id(vis), nwave))
         for t3 in self.t3:
             nwave = len(t3.wavelength.eff_band)
             if (len(t3.t3amp) != nwave) or (len(t3.t3amperr) != nwave) or (len(t3.t3phi) != nwave) or (len(t3.t3phierr) != nwave) or (len(t3.flag) != nwave):
                 errors.append("Data size mismatch for visibility measurement 0x%x (wavelength table has a length of %d)"%(id(vis), nwave))
 
         if warnings:
-            print "*** %d warning%s:"%(len(warnings), _plurals(len(warnings)))
+            print("*** %d warning%s:"%(len(warnings), _plurals(len(warnings))))
             for warning in warnings:
-                print '  ' + warning
+                print('  ' + warning)
         if errors:
-            print "*** %d ERROR%s:"%(len(errors), _plurals(len(errors)).upper())
+            print("*** %d ERROR%s:"%(len(errors), _plurals(len(errors)).upper()))
             for error in errors:
-                print '  ' + error
+                print('  ' + error)
 
         return not (len(warnings) or len(errors))
 
@@ -740,51 +744,51 @@ class oifits:
         by isvalid()."""
 
         for vis in self.vis:
-            if vis.array and (vis.array not in self.array.values()):
-                print 'A visibility measurement (0x%x) refers to an array which is not inside the main oifits object.'%id(vis)
+            if vis.array and (vis.array not in list(self.array.values())):
+                print('A visibility measurement (0x%x) refers to an array which is not inside the main oifits object.'%id(vis))
                 return False
             if ((vis.station[0] and (vis.station[0] not in vis.array.station)) or
                 (vis.station[1] and (vis.station[1] not in vis.array.station))):
-                print 'A visibility measurement (0x%x) refers to a station which is not inside the main oifits object.'%id(vis)
+                print('A visibility measurement (0x%x) refers to a station which is not inside the main oifits object.'%id(vis))
                 return False
-            if vis.wavelength not in self.wavelength.values():
-                print 'A visibility measurement (0x%x) refers to a wavelength table which is not inside the main oifits object.'%id(vis)
+            if vis.wavelength not in list(self.wavelength.values()):
+                print('A visibility measurement (0x%x) refers to a wavelength table which is not inside the main oifits object.'%id(vis))
                 return False
             if vis.target not in self.target:
-                print 'A visibility measurement (0x%x) refers to a target which is not inside the main oifits object.'%id(vis)
+                print('A visibility measurement (0x%x) refers to a target which is not inside the main oifits object.'%id(vis))
                 return False
 
         for vis2 in self.vis2:
-            if vis2.array and (vis2.array not in self.array.values()):
-                print 'A visibility^2 measurement (0x%x) refers to an array which is not inside the main oifits object.'%id(vis2)
+            if vis2.array and (vis2.array not in list(self.array.values())):
+                print('A visibility^2 measurement (0x%x) refers to an array which is not inside the main oifits object.'%id(vis2))
                 return False
             if ((vis2.station[0] and (vis2.station[0] not in vis2.array.station)) or
                 (vis2.station[1] and (vis2.station[1] not in vis2.array.station))):
-                print 'A visibility^2 measurement (0x%x) refers to a station which is not inside the main oifits object.'%id(vis)
+                print('A visibility^2 measurement (0x%x) refers to a station which is not inside the main oifits object.'%id(vis))
                 return False
-            if vis2.wavelength not in self.wavelength.values():
-                print 'A visibility^2 measurement (0x%x) refers to a wavelength table which is not inside the main oifits object.'%id(vis2)
+            if vis2.wavelength not in list(self.wavelength.values()):
+                print('A visibility^2 measurement (0x%x) refers to a wavelength table which is not inside the main oifits object.'%id(vis2))
                 return False
             if vis2.target not in self.target:
-                print 'A visibility^2 measurement (0x%x) refers to a target which is not inside the main oifits object.'%id(vis2)
+                print('A visibility^2 measurement (0x%x) refers to a target which is not inside the main oifits object.'%id(vis2))
                 return False
 
         for t3 in self.t3:
-            if t3.array and (t3.array not in self.array.values()):
-                print 'A closure phase measurement (0x%x) refers to an array which is not inside the main oifits object.'%id(t3)
+            if t3.array and (t3.array not in list(self.array.values())):
+                print('A closure phase measurement (0x%x) refers to an array which is not inside the main oifits object.'%id(t3))
                 return False
             if ((t3.station[0] and (t3.station[0] not in t3.array.station)) or
                 (t3.station[1] and (t3.station[1] not in t3.array.station)) or
                 (t3.station[2] and (t3.station[2] not in t3.array.station))):
-                print 'A closure phase measurement (0x%x) refers to a station which is not inside the main oifits object.'%id(t3)
+                print('A closure phase measurement (0x%x) refers to a station which is not inside the main oifits object.'%id(t3))
                 return False
-            if t3.wavelength not in self.wavelength.values():
-                print 'A closure phase measurement (0x%x) refers to a wavelength table which is not inside the main oifits object.'%id(t3)
+            if t3.wavelength not in list(self.wavelength.values()):
+                print('A closure phase measurement (0x%x) refers to a wavelength table which is not inside the main oifits object.'%id(t3))
                 return False
             if t3.target not in self.target:
-                print 'A closure phase measurement (0x%x) refers to a target which is not inside the main oifits object.'%id(t3)
+                print('A closure phase measurement (0x%x) refers to a target which is not inside the main oifits object.'%id(t3))
                 return False
-                    
+
         return True
 
     def info(self, recursive=True, verbose=0):
@@ -796,64 +800,64 @@ class oifits:
         if self.wavelength:
             wavelengths = 0
             if recursive:
-                print "===================================================================="
-                print "SUMMARY OF WAVELENGTH TABLES"
-                print "===================================================================="
-            for key in self.wavelength.keys():
+                print("====================================================================")
+                print("SUMMARY OF WAVELENGTH TABLES")
+                print("====================================================================")
+            for key in list(self.wavelength.keys()):
                 wavelengths += len(self.wavelength[key].eff_wave)
-                if recursive: print "'%s': %s"%(key, str(self.wavelength[key]))
-            print "%d wavelength table%s with %d wavelength%s in total"%(len(self.wavelength), _plurals(len(self.wavelength)), wavelengths, _plurals(wavelengths))
+                if recursive: print("'%s': %s"%(key, str(self.wavelength[key])))
+            print("%d wavelength table%s with %d wavelength%s in total"%(len(self.wavelength), _plurals(len(self.wavelength)), wavelengths, _plurals(wavelengths)))
         if self.target.size:
             if recursive:
-                print "===================================================================="
-                print "SUMMARY OF TARGET TABLES"
-                print "===================================================================="
+                print("====================================================================")
+                print("SUMMARY OF TARGET TABLES")
+                print("====================================================================")
                 for target in self.target:
                     target.info()
-            print "%d target%s"%(len(self.target), _plurals(len(self.target)))
+            print("%d target%s"%(len(self.target), _plurals(len(self.target))))
         if self.array:
             stations = 0
             if recursive:
-                print "===================================================================="
-                print "SUMMARY OF ARRAY TABLES"
-                print "===================================================================="
-            for key in self.array.keys():
+                print("====================================================================")
+                print("SUMMARY OF ARRAY TABLES")
+                print("====================================================================")
+            for key in list(self.array.keys()):
                 if recursive:
-                    print key + ':'
+                    print(key + ':')
                     self.array[key].info(verbose=verbose)
                 stations += len(self.array[key].station)
-            print "%d array%s with %d station%s"%(len(self.array), _plurals(len(self.array)), stations, _plurals(stations))
+            print("%d array%s with %d station%s"%(len(self.array), _plurals(len(self.array)), stations, _plurals(stations)))
         if self.vis.size:
             if recursive:
-                print "===================================================================="
-                print "SUMMARY OF VISIBILITY MEASUREMENTS"
-                print "===================================================================="
+                print("====================================================================")
+                print("SUMMARY OF VISIBILITY MEASUREMENTS")
+                print("====================================================================")
                 for vis in self.vis:
                     vis.info()
-            print "%d visibility measurement%s"%(len(self.vis), _plurals(len(self.vis)))
+            print("%d visibility measurement%s"%(len(self.vis), _plurals(len(self.vis))))
         if self.vis2.size:
             if recursive:
-                print "===================================================================="
-                print "SUMMARY OF VISIBILITY^2 MEASUREMENTS"
-                print "===================================================================="
+                print("====================================================================")
+                print("SUMMARY OF VISIBILITY^2 MEASUREMENTS")
+                print("====================================================================")
                 for vis2 in self.vis2:
                     vis2.info()
-            print "%d visibility^2 measurement%s"%(len(self.vis2), _plurals(len(self.vis2)))
+            print("%d visibility^2 measurement%s"%(len(self.vis2), _plurals(len(self.vis2))))
         if self.t3.size:
             if recursive:
-                print "===================================================================="
-                print "SUMMARY OF T3 MEASUREMENTS"
-                print "===================================================================="
+                print("====================================================================")
+                print("SUMMARY OF T3 MEASUREMENTS")
+                print("====================================================================")
                 for t3 in self.t3:
                     t3.info()
-            print "%d closure phase measurement%s"%(len(self.t3), _plurals(len(self.t3)))
+            print("%d closure phase measurement%s"%(len(self.t3), _plurals(len(self.t3))))
 
     def save(self, filename):
         """Write the contents of the oifits object to a file in OIFITS
         format."""
 
         if not self.isconsistent():
-            print 'oifits object is not consistent, refusing to go further'
+            print('oifits object is not consistent, refusing to go further')
             return
 
         hdulist = pyfits.HDUList()
@@ -864,7 +868,7 @@ class oifits:
 
         wavelengthmap = {}
         hdulist.append(hdu)
-        for insname, wavelength in self.wavelength.iteritems():
+        for insname, wavelength in self.wavelength.items():
             wavelengthmap[id(wavelength)] = insname
             hdu = pyfits.new_table(pyfits.ColDefs((
                 pyfits.Column(name='EFF_WAVE', format='1E', unit='METERS', array=wavelength.eff_wave),
@@ -940,7 +944,7 @@ class oifits:
 
         arraymap = {}
         stationmap = {}
-        for arrname, array in self.array.iteritems():
+        for arrname, array in self.array.items():
             arraymap[id(array)] = arrname
             tel_name = []
             sta_name = []
@@ -970,7 +974,7 @@ class oifits:
             hdu.header.update('ARRAYY', array.arrxyz[1], comment='Array center y coordinate (m)')
             hdu.header.update('ARRAYZ', array.arrxyz[2], comment='Array center z coordinate (m)')
             hdulist.append(hdu)
-                        
+
         if self.vis.size:
             # The tables are grouped by ARRNAME and INSNAME -- all
             # observations which have the same ARRNAME and INSNAME are
@@ -982,7 +986,7 @@ class oifits:
                     key = (arraymap[id(vis.array)], wavelengthmap[id(vis.wavelength)])
                 else:
                     key = (None, wavelengthmap[id(vis.wavelength)])
-                if key in tables.keys():
+                if key in list(tables.keys()):
                     data = tables[key]
                 else:
                     data = tables[key] = {'target_id':[], 'time':[], 'mjd':[], 'int_time':[],
@@ -1037,10 +1041,10 @@ class oifits:
                     data['sta_index'].append([stationmap[id(vis.station[0])], stationmap[id(vis.station[1])]])
                 else:
                     data['sta_index'].append([-1, -1])
-            for key in tables.keys():
+            for key in list(tables.keys()):
                 data = tables[key]
                 nwave = self.wavelength[key[1]].eff_wave.size
-                
+
                 hdu = pyfits.new_table(pyfits.ColDefs([
                     pyfits.Column(name='TARGET_ID', format='1I', array=data['target_id']),
                     pyfits.Column(name='TIME', format='1D', unit='SECONDS', array=data['time']),
@@ -1078,7 +1082,7 @@ class oifits:
                     key = (arraymap[id(vis.array)], wavelengthmap[id(vis.wavelength)])
                 else:
                     key = (None, wavelengthmap[id(vis.wavelength)])
-                if key in tables.keys():
+                if key in list(tables.keys()):
                     data = tables[key]
                 else:
                     data = tables[key] = {'target_id':[], 'time':[], 'mjd':[], 'int_time':[],
@@ -1108,7 +1112,7 @@ class oifits:
                     data['sta_index'].append([stationmap[id(vis.station[0])], stationmap[id(vis.station[1])]])
                 else:
                     data['sta_index'].append([-1, -1])
-            for key in tables.keys():
+            for key in list(tables.keys()):
                 data = tables[key]
                 nwave = self.wavelength[key[1]].eff_wave.size
 
@@ -1144,7 +1148,7 @@ class oifits:
                     key = (arraymap[id(t3.array)], wavelengthmap[id(t3.wavelength)])
                 else:
                     key = (None, wavelengthmap[id(t3.wavelength)])
-                if key in tables.keys():
+                if key in list(tables.keys()):
                     data = tables[key]
                 else:
                     data = tables[key] = {'target_id':[], 'time':[], 'mjd':[], 'int_time':[],
@@ -1181,7 +1185,7 @@ class oifits:
                     data['sta_index'].append([stationmap[id(t3.station[0])], stationmap[id(t3.station[1])], stationmap[id(t3.station[2])]])
                 else:
                     data['sta_index'].append([-1, -1, -1])
-            for key in tables.keys():
+            for key in list(tables.keys()):
                 data = tables[key]
                 nwave = self.wavelength[key[1]].eff_wave.size
 
@@ -1219,13 +1223,13 @@ class oifits:
 
 def open(filename, quiet=False):
     """Open an OIFITS file."""
-    
+
     newobj = oifits()
     targetmap = {}
     sta_indices = {}
-    
+
     if not quiet:
-        print "Opening %s"%filename
+        print("Opening %s"%filename)
     hdulist = pyfits.open(filename)
     # First get all the OI_TARGET, OI_WAVELENGTH and OI_ARRAY tables
     for hdu in hdulist:
@@ -1255,13 +1259,13 @@ def open(filename, quiet=False):
             # Save the sta_index for each array, as we will need it
             # later to match measurements to stations
             sta_indices[arrname] = data.field('sta_index')
-            
+
     # Then get any science measurements
     for hdu in hdulist:
         header = hdu.header
         data = hdu.data
         if hdu.name in ('OI_VIS', 'OI_VIS2', 'OI_T3'):
-            if 'ARRNAME' in header.keys():
+            if 'ARRNAME' in list(header.keys()):
                 arrname = header['ARRNAME']
             else:
                 arrname = None
@@ -1349,7 +1353,7 @@ def open(filename, quiet=False):
                                                        flag=flag, u1coord=u1coord, v1coord=v1coord, u2coord=u2coord,
                                                        v2coord=v2coord, wavelength=wavelength, target=target,
                                                        array=array, station=station))
-                    
+
     hdulist.close()
     if not quiet:
         newobj.info(recursive=False)

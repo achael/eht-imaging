@@ -6,7 +6,6 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
+from . import comp_plots
 
-import ehtim.plotting.comp_plots
-
-from ehtim.const_def import *
+from ..const_def import *
