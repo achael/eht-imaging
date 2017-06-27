@@ -4223,7 +4223,7 @@ def ticks(axisdim, psize, nticks=8):
     if not axisdim % 2: axisdim += 1
     if nticks % 2: nticks -= 1
     tickspacing = float((axisdim-1))/nticks
-    ticklocs = np.arange(0, axisdim+1, tickspacing)
+    ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
     ticklabels= np.around(psize * np.arange((axisdim-1)/2., -(axisdim)/2., -tickspacing), decimals=1)
     return (ticklocs, ticklabels)
                                      
