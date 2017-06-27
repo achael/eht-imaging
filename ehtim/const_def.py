@@ -69,5 +69,9 @@ FIELDS = ['time','tint','u','v','uvdist',
           'sigma_phase','qsigma_phase','usigma_phase','vsigma_phase',
           'psigma_phase','msigma_phase',
           'pvis','pamp','pphase','psnr',
-          'm','mamp','mphase','msnr']
+          'm','mamp','mphase','msnr'
+          'rrvis','rramp','rrphase','rrsnr','rrsigma','rrsigma_phase',
+          'llvis','llamp','llphase','llsnr','llsigma','llsigma_phase'
+          'rlvis','rlamp','rlphase','rlsnr','rlsigma','rlsigma_phase'
+          'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase']
 

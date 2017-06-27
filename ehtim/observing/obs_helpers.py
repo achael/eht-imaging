@@ -31,7 +31,34 @@ def make_bispectrum(l1, l2, l3,vtype):
         var2 = l2[sigmatype]**2
         var3 = l3[sigmatype]**2
 
-    elif vtype == "pvis":
+    elif vtype == "rrvis":
+        p1 = l1['vis'] + l1['vvis']
+        p2 = l2['vis'] + l2['vvis']
+        p3 = l3['vis'] + l3['vvis']
+        
+        var1 = l1['sigma']**2 + l1['vsigma']**2
+        var2 = l2['sigma']**2 + l2['vsigma']**2
+        var3 = l3['sigma']**2 + l3['vsigma']**2
+
+    elif vtype == "llvis":
+        p1 = l1['vis'] - l1['vvis']
+        p2 = l2['vis'] - l2['vvis']
+        p3 = l3['vis'] - l3['vvis']
+        
+        var1 = l1['sigma']**2 + l1['vsigma']**2
+        var2 = l2['sigma']**2 + l2['vsigma']**2
+        var3 = l3['sigma']**2 + l3['vsigma']**2
+
+    elif vtype == "lrvis":
+        p1 = l1['vis'] - 1j*l1['vvis']
+        p2 = l2['vis'] - 1j*l2['vvis']
+        p3 = l3['vis'] - 1j*l3['vvis']
+        
+        var1 = l1['qsigma']**2 + l1['usigma']**2
+        var2 = l2['qsigma']**2 + l2['usigma']**2
+        var3 = l3['qsigma']**2 + l3['usigma']**2
+
+    elif vtype in ["pvis","rlvis"]:
         p1 = l1['qvis'] + 1j*l2['uvis']
         p2 = l2['qvis'] + 1j*l2['uvis']
         p3 = l3['qvis'] + 1j*l3['uvis']
@@ -79,7 +106,40 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         p3 = amp_debias(red1[vtype], sig3)
         p4 = amp_debias(red2[vtype], sig4)
 
-    elif vtype == "pvis":
+    elif vtype == "rrvis":
+        sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
+        sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
+        sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
+        sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
+
+        p1 = amp_debias(blue1['vis'] + blue1['vvis'], sig1)
+        p2 = amp_debias(blue2['vis'] + blue2['vvis'], sig2)
+        p3 = amp_debias(red1['vis'] + red1['vvis'], sig3)
+        p4 = amp_debias(red2['vis'] + red2['vvis'], sig4)
+
+    elif vtype == "llvis":
+        sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
+        sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
+        sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
+        sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
+
+        p1 = amp_debias(blue1['vis'] - blue1['vvis'], sig1)
+        p2 = amp_debias(blue2['vis'] - blue2['vvis'], sig2)
+        p3 = amp_debias(red1['vis'] - red1['vvis'], sig3)
+        p4 = amp_debias(red2['vis'] - red2['vvis'], sig4)
+
+    elif vtype == "lrvis":
+        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
+
+        p1 = amp_debias(blue1['qvis'] - 1j*blue1['uvis'], sig1)
+        p2 = amp_debias(blue2['qvis'] - 1j*blue2['uvis'], sig2)
+        p3 = amp_debias(red1['qvis'] - 1j*red1['uvis'], sig3)
+        p4 = amp_debias(red2['qvis'] - 1j*red2['uvis'], sig4)
+
+    elif vtype in ["pvis","rlvis"]:
         sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
         sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
         sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
@@ -296,7 +356,7 @@ def ticks(axisdim, psize, nticks=8):
     if not axisdim % 2: axisdim += 1
     if nticks % 2: nticks -= 1
     tickspacing = float((axisdim-1))/nticks
-    ticklocs = np.arange(0, axisdim+1, tickspacing)
+    ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
     ticklabels= np.around(psize * np.arange((axisdim-1)/2.0, -(axisdim)/2.0, -tickspacing), decimals=1)
     return (ticklocs, ticklabels)
 
@@ -362,6 +422,10 @@ def sigtype(datatype):
     elif datatype in ['vvis', 'vamp']: sigmatype='vsigma'
     elif datatype in ['pvis', 'pamp']: sigmatype='psigma'
     elif datatype in ['pvis', 'pamp']: sigmatype='psigma'
+    elif datatype in ['rrvis', 'rramp']: sigmatype='rrsigma'
+    elif datatype in ['llvis', 'llamp']: sigmatype='llsigma'
+    elif datatype in ['rlvis', 'rlamp']: sigmatype='rlsigma'
+    elif datatype in ['lrvis', 'lramp']: sigmatype='lrsigma'
     elif datatype in ['m', 'mamp']: sigmatype='msigma'
     elif datatype in ['phase']: sigmatype='sigma_phase'
     elif datatype in ['qphase']: sigmatype='qsigma_phase'
@@ -369,6 +433,11 @@ def sigtype(datatype):
     elif datatype in ['vphase']: sigmatype='vsigma_phase'
     elif datatype in ['pphase']: sigmatype='psigma_phase'
     elif datatype in ['mphase']: sigmatype='msigma_phase'
+    elif datatype in ['rrphase']: sigmatype='rrsigma_phase'
+    elif datatype in ['llphase']: sigmatype='llsigma_phase'
+    elif datatype in ['rlphase']: sigmatype='rlsigma_phase'
+    elif datatype in ['lrphase']: sigmatype='lrsigma_phase'
+
     else: sigmatype = False
 
     return sigmatype

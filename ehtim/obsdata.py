@@ -283,6 +283,22 @@ class Obsdata(object):
                 out = (data['qvis'] + 1j * data['uvis'])/data['vis']
                 sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
                 ty = 'c16'
+            elif field in ["rrvis", "rramp", "rrphase", "rrsnr", "rrsigma", "rrsigma_phase"]:
+                out = data['vis'] + data['vvis']
+                sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
+                ty = 'c16'
+            elif field in ["llvis", "llamp", "llphase", "llsnr", "llsigma", "llsigma_phase"]:
+                out = data['vis'] - data['vvis']
+                sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
+                ty = 'c16'
+            elif field in ["rlvis", "rlamp", "rlphase", "rlsnr", "rlsigma", "rlsigma_phase"]:
+                out = data['qvis'] + 1j*data['uvis']
+                sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
+                ty = 'c16'
+            elif field in ["lrvis", "lramp", "lrphase", "lrsnr", "lrsigma", "lrsigma_phase"]:
+                out = data['qvis'] - 1j*data['uvis']
+                sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
+                ty = 'c16'
 
             else: raise Exception("%s is not valid field \n" % field +
                                   "valid field values are " + ' '.join(FIELDS))
@@ -312,7 +328,7 @@ class Obsdata(object):
                     ty  = 'f8'
 
             # Get arg/amps/snr
-            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp"]:
+            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]:
                 out = np.abs(out)
 
                 # !AC debias here?
@@ -321,16 +337,17 @@ class Obsdata(object):
                     out = amp_debias(out, sig)
 
                 ty = 'f8'
-            elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase"]:
+            elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase","rrphase","llphase","lrphase","rlphase"]:
                 out = np.angle(out)/angle
                 ty = 'f8'
-            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma"]:
+            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma","rrsigma","llsigma","rlsigma","lrsigma"]:
                 out = np.abs(sig)
                 ty = 'f8'
-            elif field in ["sigma_phase","qsigma_phase","usigma_phase","vsigma_phase","psigma_phase","msigma_phase"]:
+            elif field in ["sigma_phase","qsigma_phase","usigma_phase","vsigma_phase","psigma_phase","msigma_phase",
+                           "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]:
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'
-            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr"]:
+            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr","rrsnr","llsnr","rlsnr","lrsnr"]:
                 out = np.abs(out)/np.abs(sig)
                 ty = 'f8'
 
@@ -371,8 +388,8 @@ class Obsdata(object):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('min', 'max'):
             raise Exception("possible options for count are 'min' and 'max'")
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
 
         # Generate the time-sorted data with conjugate baselines
         tlist = self.tlist(conj=True)
@@ -468,8 +485,8 @@ class Obsdata(object):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
 
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
@@ -514,8 +531,8 @@ class Obsdata(object):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")
-        if not vtype in ('vis','qvis','uvis','vvis','pvis'):
-            raise Exception("possible options for vtype are 'vis','qvis','uvis','vvis','pvis'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if not (ctype in ['camp', 'logcamp']):
             raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
 
@@ -927,7 +944,7 @@ class Obsdata(object):
         else:
             fig = plt.figure()
             x = fig.add_subplot(1,1,1)
-
+        
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0], yerr=errdata[sigtype(field)][:,0], fmt='b.', color=color)
