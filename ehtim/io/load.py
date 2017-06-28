@@ -750,8 +750,6 @@ def load_obs_uvfits(filename, flipbl=False):
 
     # Stokes I
     ivis = 0.5 * (rr + ll)
-    #ivis = rr
-    #print ('load RR')
     ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
     ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
 

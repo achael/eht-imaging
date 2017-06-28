@@ -4,7 +4,7 @@ from builtins import str
 from builtins import range
 from builtins import object
 
-import string
+import string, copy
 import numpy as np
 import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
@@ -371,263 +371,6 @@ class Obsdata(object):
         """
         return 1.0/np.max(self.unpack('uvdist')['uvdist'])
 
-    def bispectra(self, vtype='vis', mode='time', count='min'):
-        """Return a recarray of the equal time bispectra.
-
-           Args:
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
-               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
-               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
-
-           Returns:
-               numpy.recarry: A recarray of the bispectra values with datatype DTBIS
-
-        """
-
-        if not mode in ('time', 'all'):
-            raise Exception("possible options for mode are 'time' and 'all'")
-        if not count in ('min', 'max'):
-            raise Exception("possible options for count are 'min' and 'max'")
-        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
-
-        # Generate the time-sorted data with conjugate baselines
-        tlist = self.tlist(conj=True)
-        outlist = []
-        bis = []
-        for tdata in tlist:
-            time = tdata[0]['time']
-            sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
-
-            # Create a dictionary of baselines at the current time incl. conjugates;
-            l_dict = {}
-            for dat in tdata:
-                l_dict[(dat['t1'], dat['t2'])] = dat
-
-            # Determine the triangles in the time step
-
-            # Minimal Set
-            if count == 'min':
-                # If we want a minimal set, choose triangles with the minimum sefd reference
-                # Unless there is no sefd data, in which case choose the northernmost
-                # !AC TODO This should probably be an sefdr + sefdl average
-                if len(set(self.tarr['sefdr'])) > 1:
-                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-                else:
-                    ref = sites[np.argmax([self.tarr[self.tkey[site]]['z'] for site in sites])]
-                sites.remove(ref)
-
-                # Find all triangles that contain the ref
-                tris = list(it.combinations(sites,2))
-                tris = [(ref, t[0], t[1]) for t in tris]
-
-            # Maximal  Set - find all triangles
-            elif count == 'max':
-                tris = list(it.combinations(sites,3))
-
-            # Generate bispectra for each triangle
-            for tri in tris:
-                # The ordering is north-south
-                a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
-                a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
-                a2 = 3 - a1 - a3
-                tri = (tri[a1], tri[a2], tri[a3])
-
-                # Select triangle entries in the data dictionary
-                try:
-                    l1 = l_dict[(tri[0], tri[1])]
-                    l2 = l_dict[(tri[1],tri[2])]
-                    l3 = l_dict[(tri[2], tri[0])]
-                except KeyError:
-                    continue
-
-                (bi, bisig) = make_bispectrum(l1,l2,l3,vtype)
-
-                # Append to the equal-time list
-                bis.append(np.array((time, tri[0], tri[1], tri[2],
-                                     l1['u'], l1['v'], l2['u'], l2['v'], l3['u'], l3['v'],
-                                     bi, bisig), dtype=DTBIS))
-
-            # Append to outlist
-            if mode=='time' and len(bis) > 0:
-                outlist.append(np.array(bis))
-                bis = []
-
-            elif mode=='all':
-                outlist = np.array(bis)
-
-        return np.array(outlist)
-
-    def unique_c_phases(self):
-        """Return an array of all unique closure phase triangles.
-        """
-
-        biarr = self.bispectra(mode="all", count="min")
-        catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
-        uniqueclosure = np.vstack({tuple(row) for row in catsites.T})
-
-        return uniqueclosure
-
-    def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg'):
-        """Return a recarray of the equal time closure phases.
-
-           Args:
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
-               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
-               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
-               ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
-
-           Returns:
-               numpy.recarry: A recarray of the closure phases with datatype DTPHASE
-        """
-
-        if not mode in ('time', 'all'):
-            raise Exception("possible options for mode are 'time' and 'all'")
-        if not count in ('max', 'min'):
-            raise Exception("possible options for count are 'max' and 'min'")
-        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
-
-        if ang_unit=='deg': angle=DEGREE
-        else: angle = 1.0
-
-        # Get the bispectra data
-        bispecs = self.bispectra(vtype=vtype, mode='time', count=count)
-
-        # Reformat into a closure phase list/array
-        outlist = []
-        cps = []
-        for bis in bispecs:
-            for bi in bis:
-                if len(bi) == 0: continue
-                bi.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
-                bi['sigmacp'] = np.real(bi['sigmacp']/np.abs(bi['cphase'])/angle)
-                bi['cphase'] = np.real((np.angle(bi['cphase'])/angle))
-                cps.append(bi.astype(np.dtype(DTCPHASE)))
-            if mode == 'time' and len(cps) > 0:
-                outlist.append(np.array(cps))
-                cps = []
-
-        if mode == 'all':
-            outlist = np.array(cps)
-        return np.array(outlist)
-
-    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True):
-        """Return a recarray of the equal time closure amplitudes.
-
-           Args:
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
-               ctype (str): The closure amplitude type ('camp' or 'logcamp')
-               mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
-               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
-               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
-
-           Returns:
-               numpy.recarry: A recarray of the closure amplitudes with datatype DTCAMP
-
-        """
-
-        if not mode in ('time','all'):
-            raise Exception("possible options for mode are 'time' and 'all'")
-        if not count in ('max', 'min'):
-            raise Exception("possible options for count are 'max' and 'min'")
-        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
-        if not (ctype in ['camp', 'logcamp']):
-            raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
-
-        # Get data sorted by time
-        tlist = self.tlist(conj=True)
-        outlist = []
-        cas = []
-        for tdata in tlist:
-            time = tdata[0]['time']
-            sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
-            if len(sites) < 4:
-                continue
-
-            # Create a dictionary of baseline data at the current time including conjugates;
-            l_dict = {}
-            for dat in tdata:
-                l_dict[(dat['t1'], dat['t2'])] = dat
-
-            # Minimal set
-            if count == 'min':
-                # If we want a minimal set, choose the minimum sefd reference
-                # !AC TODO this should probably be an sefdr + sefdl average
-                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-                ref = sites[0]
-
-                # Loop over other sites >=3 and form minimal closure amplitude set
-                for i in range(3, len(sites)):
-                    if (ref, sites[i]) not in l_dict.keys():
-                        continue
-
-                    blue1 = l_dict[ref, sites[i]] # MJ: This causes a KeyError in some cases, probably with flagged data or something
-                    for j in range(1, i):
-                        if j == i-1: k = 1
-                        else: k = j+1
-
-                        if (sites[i], sites[j]) not in l_dict.keys(): # MJ: I tried joining these into a single if statement using or without success... no idea why...
-                            continue
-
-                        if (ref, sites[k]) not in l_dict.keys():
-                            continue
-
-                        if (sites[j], sites[k]) not in l_dict.keys():
-                            continue
-
-                        red1 = l_dict[sites[i], sites[j]]
-                        red2 = l_dict[ref, sites[k]]
-                        blue2 = l_dict[sites[j], sites[k]]
-                        # Compute the closure amplitude and the error
-                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
-
-                        # Add the closure amplitudes to the equal-time list
-                        # Our site convention is (12)(34)/(14)(23)
-                        cas.append(np.array((time,
-                                             ref, sites[i], sites[j], sites[k],
-                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                             red1['u'], red1['v'], red2['u'], red2['v'],
-                                             camp, camperr),
-                                             dtype=DTCAMP))
-
-            # Maximal Set
-            elif count == 'max':
-                # Find all quadrangles
-                quadsets = list(it.combinations(sites,4))
-                for q in quadsets:
-                    # Loop over 3 closure amplitudes
-                    # Our site convention is (12)(34)/(14)(23)
-                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
-
-                        # Blue is numerator, red is denominator
-                        blue1 = l_dict[quad[0], quad[1]] #MJ: Need to add checks here
-                        blue2 = l_dict[quad[2], quad[3]]
-                        red1 = l_dict[quad[0], quad[3]]
-                        red2 = l_dict[quad[1], quad[2]]
-
-                        # Compute the closure amplitude and the error
-                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
-
-                        # Add the closure amplitudes to the equal-time list
-                        # Our site convention is (12)(34)/(14)(23)
-                        cas.append(np.array((time,
-                                             quad[0], quad[1], quad[2], quad[3],
-                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                             red1['u'], red1['v'], red2['u'], red2['v'],
-                                             camp, camperr),
-                                             dtype=DTCAMP))
-
-            # Append all equal time closure amps to outlist
-            if mode=='time':
-                outlist.append(np.array(cas))
-                cas = []
-
-            elif mode=='all':
-                outlist = np.array(cas)
-
-        return np.array(outlist)
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
         """Make an image observation dirty beam.
@@ -857,6 +600,385 @@ class Obsdata(object):
         optdict = {'maxiter':5000} # minimizer params
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
         return res.x
+    def bispectra(self, vtype='vis', mode='time', count='min'):
+        """Return a recarray of the equal time bispectra.
+
+           Args:
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
+               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+
+           Returns:
+               numpy.recarry: A recarray of the bispectra values with datatype DTBIS
+
+        """
+
+        if not mode in ('time', 'all'):
+            raise Exception("possible options for mode are 'time' and 'all'")
+        if not count in ('min', 'max'):
+            raise Exception("possible options for count are 'min' and 'max'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+
+        # Generate the time-sorted data with conjugate baselines
+        tlist = self.tlist(conj=True)
+        outlist = []
+        bis = []
+        for tdata in tlist:
+            time = tdata[0]['time']
+            sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
+
+            # Create a dictionary of baselines at the current time incl. conjugates;
+            l_dict = {}
+            for dat in tdata:
+                l_dict[(dat['t1'], dat['t2'])] = dat
+
+            # Determine the triangles in the time step
+
+            # Minimal Set
+            if count == 'min':
+                # If we want a minimal set, choose triangles with the minimum sefd reference
+                # Unless there is no sefd data, in which case choose the northernmost
+                # !AC TODO This should probably be an sefdr + sefdl average
+                if len(set(self.tarr['sefdr'])) > 1:
+                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+                else:
+                    ref = sites[np.argmax([self.tarr[self.tkey[site]]['z'] for site in sites])]
+                sites.remove(ref)
+
+                # Find all triangles that contain the ref
+                tris = list(it.combinations(sites,2))
+                tris = [(ref, t[0], t[1]) for t in tris]
+
+            # Maximal  Set - find all triangles
+            elif count == 'max':
+                tris = list(it.combinations(sites,3))
+
+            # Generate bispectra for each triangle
+            for tri in tris:
+                # The ordering is north-south
+                a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
+                a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
+                a2 = 3 - a1 - a3
+                tri = (tri[a1], tri[a2], tri[a3])
+
+                # Select triangle entries in the data dictionary
+                try:
+                    l1 = l_dict[(tri[0], tri[1])]
+                    l2 = l_dict[(tri[1],tri[2])]
+                    l3 = l_dict[(tri[2], tri[0])]
+                except KeyError:
+                    continue
+
+                (bi, bisig) = make_bispectrum(l1,l2,l3,vtype)
+
+                # Append to the equal-time list
+                bis.append(np.array((time, tri[0], tri[1], tri[2],
+                                     l1['u'], l1['v'], l2['u'], l2['v'], l3['u'], l3['v'],
+                                     bi, bisig), dtype=DTBIS))
+
+            # Append to outlist
+            if mode=='time' and len(bis) > 0:
+                outlist.append(np.array(bis))
+                bis = []
+
+            elif mode=='all':
+                outlist = np.array(bis)
+
+        return np.array(outlist)
+
+    def unique_c_phases(self):
+        """Return an array of all unique closure phase triangles.
+        """
+
+        biarr = self.bispectra(mode="all", count="min")
+        catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
+        uniqueclosure = np.vstack({tuple(row) for row in catsites.T})
+
+        return uniqueclosure
+
+    def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg'):
+        """Return a recarray of the equal time closure phases.
+
+           Args:
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
+               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+               ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
+
+           Returns:
+               numpy.recarry: A recarray of the closure phases with datatype DTPHASE
+        """
+
+        if not mode in ('time', 'all'):
+            raise Exception("possible options for mode are 'time' and 'all'")
+        if not count in ('max', 'min'):
+            raise Exception("possible options for count are 'max' and 'min'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+
+        if ang_unit=='deg': angle=DEGREE
+        else: angle = 1.0
+
+        # Get the bispectra data
+        bispecs = self.bispectra(vtype=vtype, mode='time', count=count)
+
+        # Reformat into a closure phase list/array
+        outlist = []
+        cps = []
+        for bis in bispecs:
+            for bi in bis:
+                if len(bi) == 0: continue
+                bi.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
+                bi['sigmacp'] = np.real(bi['sigmacp']/np.abs(bi['cphase'])/angle)
+                bi['cphase'] = np.real((np.angle(bi['cphase'])/angle))
+                cps.append(bi.astype(np.dtype(DTCPHASE)))
+            if mode == 'time' and len(cps) > 0:
+                outlist.append(np.array(cps))
+                cps = []
+
+        if mode == 'all':
+            outlist = np.array(cps)
+        return np.array(outlist)
+
+    def bispectra_tri(self, site1, site2, site3, vtype='vis'):
+        """Return closure phase over time on a triangle (1-2-3)."""
+        # Get closure phases (maximal set)
+        bs = self.bispectra(mode='time', count='max', vtype=vtype)
+
+        # Get requested closure phases over time
+        tri = (site1, site2, site3)
+        outdata = []
+        for entry in bs:
+            for obs in entry:
+                obstri = (obs['t1'],obs['t2'],obs['t3'])
+                if set(obstri) == set(tri):
+                    # Flip the sign of the closure phase if necessary
+                    parity = paritycompare(tri, obstri)
+
+                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA??  
+                    if parity==-1:
+                        obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
+                        t2 = copy.deepcopy(obs['t2'])
+                        u2 = copy.deepcopy(obs['u2'])
+                        v2 = copy.deepcopy(obs['v2'])
+
+                        obs['t2'] = obs['t3']
+                        obs['u2'] = obs['u3']
+                        obs['v2'] = obs['v3']
+
+                        obs['t3'] = t2
+                        obs['u3'] = u2
+                        obs['v3'] = v2
+
+                    outdata.append(np.array(obs, dtype=DTBIS))
+                    continue
+        return np.array(outdata)
+
+
+    def cphase_tri(self, site1, site2, site3, vtype='vis'):
+        """Return closure phase over time on a triangle (1-2-3)."""
+        # Get closure phases (maximal set)
+        cphases = self.c_phases(mode='time', count='max', vtype=vtype)
+
+        # Get requested closure phases over time
+        tri = (site1, site2, site3)
+        outdata = []
+        for entry in cphases:
+            for obs in entry:
+                obstri = (obs['t1'],obs['t2'],obs['t3'])
+                if set(obstri) == set(tri):
+                    # Flip the sign of the closure phase if necessary
+                    parity = paritycompare(tri, obstri)
+
+                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
+                    obs['cphase']*=parity
+
+                    if parity==-1:
+                        t2 = copy.deepcopy(obs['t2'])
+                        u2 = copy.deepcopy(obs['u2'])
+                        v2 = copy.deepcopy(obs['v2'])
+
+                        obs['t2'] = obs['t3']
+                        obs['u2'] = obs['u3']
+                        obs['v2'] = obs['v3']
+
+                        obs['t3'] = t2
+                        obs['u3'] = u2
+                        obs['v3'] = v2
+
+                    outdata.append(np.array(obs, dtype=DTCPHASE))
+                    continue
+        return np.array(outdata)
+
+    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True):
+        """Return a recarray of the equal time closure amplitudes.
+
+           Args:
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+
+           Returns:
+               numpy.recarry: A recarray of the closure amplitudes with datatype DTCAMP
+
+        """
+
+        if not mode in ('time','all'):
+            raise Exception("possible options for mode are 'time' and 'all'")
+        if not count in ('max', 'min'):
+            raise Exception("possible options for count are 'max' and 'min'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if not (ctype in ['camp', 'logcamp']):
+            raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
+
+        # Get data sorted by time
+        tlist = self.tlist(conj=True)
+        outlist = []
+        cas = []
+        for tdata in tlist:
+            time = tdata[0]['time']
+            sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
+            if len(sites) < 4:
+                continue
+
+            # Create a dictionary of baseline data at the current time including conjugates;
+            l_dict = {}
+            for dat in tdata:
+                l_dict[(dat['t1'], dat['t2'])] = dat
+
+            # Minimal set
+            if count == 'min':
+                # If we want a minimal set, choose the minimum sefd reference
+                # !AC TODO this should probably be an sefdr + sefdl average
+                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+                ref = sites[0]
+
+                # Loop over other sites >=3 and form minimal closure amplitude set
+                for i in range(3, len(sites)):
+                    if (ref, sites[i]) not in l_dict.keys():
+                        continue
+
+                    blue1 = l_dict[ref, sites[i]] # MJ: This causes a KeyError in some cases, probably with flagged data or something
+                    for j in range(1, i):
+                        if j == i-1: k = 1
+                        else: k = j+1
+
+                        if (sites[i], sites[j]) not in l_dict.keys(): # MJ: I tried joining these into a single if statement using or without success... no idea why...
+                            continue
+
+                        if (ref, sites[k]) not in l_dict.keys():
+                            continue
+
+                        if (sites[j], sites[k]) not in l_dict.keys():
+                            continue
+
+                        red1 = l_dict[sites[i], sites[j]]
+                        red2 = l_dict[ref, sites[k]]
+                        blue2 = l_dict[sites[j], sites[k]]
+                        # Compute the closure amplitude and the error
+                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
+
+                        # Add the closure amplitudes to the equal-time list
+                        # Our site convention is (12)(34)/(14)(23)
+                        cas.append(np.array((time,
+                                             ref, sites[i], sites[j], sites[k],
+                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+                                             red1['u'], red1['v'], red2['u'], red2['v'],
+                                             camp, camperr),
+                                             dtype=DTCAMP))
+
+            # Maximal Set
+            elif count == 'max':
+                # Find all quadrangles
+                quadsets = list(it.combinations(sites,4))
+                for q in quadsets:
+                    # Loop over 3 closure amplitudes
+                    # Our site convention is (12)(34)/(14)(23)
+                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
+
+                        # Blue is numerator, red is denominator
+                        blue1 = l_dict[quad[0], quad[1]] #MJ: Need to add checks here
+                        blue2 = l_dict[quad[2], quad[3]]
+                        red1 = l_dict[quad[0], quad[3]]
+                        red2 = l_dict[quad[1], quad[2]]
+
+                        # Compute the closure amplitude and the error
+                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
+
+                        # Add the closure amplitudes to the equal-time list
+                        # Our site convention is (12)(34)/(14)(23)
+                        cas.append(np.array((time,
+                                             quad[0], quad[1], quad[2], quad[3],
+                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+                                             red1['u'], red1['v'], red2['u'], red2['v'],
+                                             camp, camperr),
+                                             dtype=DTCAMP))
+
+            # Append all equal time closure amps to outlist
+            if mode=='time':
+                outlist.append(np.array(cas))
+                cas = []
+
+            elif mode=='all':
+                outlist = np.array(cas)
+
+        return np.array(outlist)
+
+    def camp_quad(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True):
+        """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3)."""
+        
+        quad = (site1, site2, site3, site4)
+        b1 = set((site1, site2))
+        r1 = set((site1, site4))
+
+        # Get the closure amplitudes
+        outdata = []
+        camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias)
+        for entry in camps:
+            for obs in entry:
+                obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
+                if set(quad) == set(obsquad):
+                    num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
+                    denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+                    if (r1 in num) and (b1 in denom):
+
+                        t2 = copy.deepcopy(obs['t2'])
+                        u2 = copy.deepcopy(obs['u2'])
+                        v2 = copy.deepcopy(obs['v2'])
+
+                        t3 = copy.deepcopy(obs['t3'])
+                        u3 = copy.deepcopy(obs['u3'])
+                        v3 = copy.deepcopy(obs['v3'])
+
+                        obs['t2'] = obs['t4']
+                        obs['u2'] = obs['u4']
+                        obs['v2'] = obs['v4']
+
+                        obs['t3'] = t2
+                        obs['u3'] = u2
+                        obs['v3'] = v2
+
+                        obs['t4'] = t3
+                        obs['u4'] = u3
+                        obs['v4'] = v3
+
+                        if ctype=='logcamp':
+                            #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
+                            obs['camp'] = -obs['camp']
+                        elif ctype=='camp':
+                            #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
+                            obs['camp'] = 1./obs['camp']
+                            obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
+
+                    outdata.append(np.array(obs, dtype=DTCAMP))
+                    continue
+
+        return np.array(outdata)
+
 
     def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg', debias=True):
         """Make a scatter plot of 2 real observation fields with errors.
@@ -960,31 +1082,85 @@ class Obsdata(object):
         if show:
             plt.show(block=False)
         return x
+    def bs_tri(self, site1, site2, site3, vtype='vis'):
+        """Return closure phase over time on a triangle (1-2-3)."""
+        # Get closure phases (maximal set)
+        bs = self.bispectra(mode='time', count='max', vtype=vtype)
+
+        # Get requested closure phases over time
+        tri = (site1, site2, site3)
+        outdata = []
+        for entry in bs:
+            for obs in entry:
+                obstri = (obs['t1'],obs['t2'],obs['t3'])
+                if set(obstri) == set(tri):
+                    # Flip the sign of the closure phase if necessary
+                    parity = paritycompare(tri, obstri)
+
+                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA??  
+                    if parity==-1:
+                        obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
+                        t2 = copy.deepcopy(obs['t2'])
+                        u2 = copy.deepcopy(obs['u2'])
+                        v2 = copy.deepcopy(obs['v2'])
+
+                        obs['t2'] = obs['t3']
+                        obs['u2'] = obs['u3']
+                        obs['v2'] = obs['v3']
+
+                        obs['t3'] = t2
+                        obs['u3'] = u2
+                        obs['v3'] = v2
+
+                    outdata.append(np.array(obs, dtype=DTBIS))
+                    continue
+        return np.array(outdata)
 
 
-    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
-        """Plot closure phase over time on a triangle (1-2-3).
-        """
-
-        if ang_unit=='deg': angle=DEGREE
-        else: angle = 1.0
-
+    def cphase_tri(self, site1, site2, site3, vtype='vis'):
+        """Return closure phase over time on a triangle (1-2-3)."""
         # Get closure phases (maximal set)
         cphases = self.c_phases(mode='time', count='max', vtype=vtype)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
-        plotdata = []
+        outdata = []
         for entry in cphases:
             for obs in entry:
                 obstri = (obs['t1'],obs['t2'],obs['t3'])
                 if set(obstri) == set(tri):
                     # Flip the sign of the closure phase if necessary
                     parity = paritycompare(tri, obstri)
-                    plotdata.append([obs['time'], parity*obs['cphase'], obs['sigmacp']])
-                    continue
 
-        plotdata = np.array(plotdata)
+                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
+                    obs['cphase']*=parity
+
+                    if parity==-1:
+                        t2 = copy.deepcopy(obs['t2'])
+                        u2 = copy.deepcopy(obs['u2'])
+                        v2 = copy.deepcopy(obs['v2'])
+
+                        obs['t2'] = obs['t3']
+                        obs['u2'] = obs['u3']
+                        obs['v2'] = obs['v3']
+
+                        obs['t3'] = t2
+                        obs['u3'] = u2
+                        obs['v3'] = v2
+
+                    outdata.append(np.array(obs, dtype=DTCPHASE))
+                    continue
+        return np.array(outdata)
+    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
+        """Plot closure phase over time on a triangle (1-2-3).
+        """
+
+        if ang_unit=='deg': angle=1.0
+        else: angle = eh.DEGREE
+
+        # Get closure phases (maximal set)
+        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype)
+        plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         if len(plotdata) == 0:
             print("No closure phases on this triangle!")
@@ -1018,32 +1194,35 @@ class Obsdata(object):
             plt.show(block=False)
         return x
 
-    def plot_camp(self, site1, site2, site3, site4, vtype='vis',ctype='camp', debias=True,
+    def plot_camp(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True,
                         ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
         """
-        quad = (site1, site2, site3, site4)
-        b1 = set((site1, site2))
-        r1 = set((site1, site4))
+        #quad = (site1, site2, site3, site4)
+        #b1 = set((site1, site2))
+        #r1 = set((site1, site4))
 
         # Get the closure amplitudes
-        camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias)
-        plotdata = []
-        for entry in camps:
-            for obs in entry:
-                obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
-                if set(quad) == set(obsquad):
-                    num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
-                    denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+        #camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias)
+        #plotdata = []
+        #for entry in camps:
+        #    for obs in entry:
+        #        obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
+        #        if set(quad) == set(obsquad):
+        #            num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
+        #            denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
 
-                    if (b1 in num) and (r1 in denom):
-                        plotdata.append([obs['time'], obs['camp'], obs['sigmaca']])
-                    elif (r1 in num) and (b1 in denom):
-                        plotdata.append([obs['time'], 1.0/obs['camp'], obs['sigmaca']/(obs['camp']**2)])
-                    continue
+        #             if (b1 in num) and (r1 in denom):
+        #                 plotdata.append([obs['time'], obs['camp'], obs['sigmaca']])
+        #             elif (r1 in num) and (b1 in denom):
+        #                 plotdata.append([obs['time'], 1.0/obs['camp'], obs['sigmaca']/(obs['camp']**2)])
+        #             continue
 
-
+        # Get closure phases (maximal set)
+        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, debias=debias)
+        plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
+        
         if len(plotdata) == 0:
             print("No closure amplitudes on this quadrangle!")
             return
