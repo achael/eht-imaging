@@ -24,7 +24,7 @@ im.display()
 # bw_hz is the  bandwidth in Hz
 # sgrscat=True blurs the visibilities with the Sgr A* scattering kernel for the appropriate image frequency
 # ampcal and phasecal determine if gain variations and phase errors are included
-tint_sec = 60
+tint_sec = 5
 tadv_sec = 600
 tstart_hr = 0
 tstop_hr = 24
@@ -63,10 +63,10 @@ obs.save_txt('obs.txt') # exports a text file with the visibilities
 obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 
 # Generate an image prior
-npix = 32
+npix = 100
 fov = 1*im.fovx()
 zbl = im.total_flux() # total flux
-prior_fwhm = 60*eh.RADPERUAS # Gaussian size in microarcssec
+prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
 emptyprior = eh.image.make_square(obs, npix, fov)
 flatprior = emptyprior.add_flat(zbl)
 gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))

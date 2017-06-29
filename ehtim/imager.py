@@ -17,7 +17,7 @@ NHIST = 100 # number of steps to store for hessian approx
 STOP = 1e-10 # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'l1', 'patch', 'simple', 'flux','cm']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm']
 
 class Imager(object):
     """A general interferometric imager.

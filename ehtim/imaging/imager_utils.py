@@ -117,7 +117,7 @@ RADPERUAS = RADPERAS/1e6
 NHIST = 100 # number of steps to store for hessian approx
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'l1', 'patch', 'simple']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -141,8 +141,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            flux (float): The total flux of the output image in Jy
            d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
            d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
-           s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'l1', 'patch'
-           s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'l1', 'patch'
+           s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'tv2', 'l1', 'patch'
+           s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch'
            alpha_d1 (float): The first data term weighting
            alpha_d2 (float): The second data term weighting
            alpha_s1 (float): The first regularizer term weighting
@@ -586,6 +586,10 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv(imvec, xdim, ydim, flux)
+    elif stype == "tv2":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        s = -stv2(imvec, xdim, ydim, flux)
     else:
         s = 0
 
@@ -606,6 +610,10 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stvgrad(imvec, xdim, ydim, flux)[mask]
+    elif stype == "tv2":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        s = -stv2grad(imvec, xdim, ydim, flux)[mask]
     else:
         s = np.zeros(len(imvec))
 
@@ -615,35 +623,35 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
 def ssimple(imvec, priorvec, flux):
     """Simple entropy
     """
-    norm = flux
+    #norm = flux
     norm = 1
     return -np.sum(imvec*np.log(imvec/priorvec))/norm
 
 def ssimplegrad(imvec, priorvec, flux):
     """Simple entropy gradient
     """
-    norm = flux
+    #norm = flux
     norm =1
     return (-np.log(imvec/priorvec) - 1)/norm
 
 def sl1(imvec, priorvec, flux):
     """L1 norm regularizer
     """
-    norm = flux
+    #norm = flux
     norm = 1
     return -np.sum(np.abs(imvec - priorvec))/norm
 
 def sl1grad(imvec, priorvec, flux):
     """L1 norm gradient
     """
-    norm = flux
+    #norm = flux
     norm = 1
     return -np.sign(imvec - priorvec)/norm
 
 def sgs(imvec, priorvec, flux):
     """Gull-skilling entropy
     """
-    norm = flux
+    #norm = flux
     norm =1
     return np.sum(imvec - priorvec - imvec*np.log(imvec/priorvec))/norm
 
@@ -651,7 +659,7 @@ def sgs(imvec, priorvec, flux):
 def sgsgrad(imvec, priorvec, flux):
     """Gull-Skilling gradient
     """
-    norm = flux
+    #norm = flux
     norm = 1
     return -np.log(imvec/priorvec)/norm
 
@@ -659,7 +667,7 @@ def sgsgrad(imvec, priorvec, flux):
 def stv(imvec, nx, ny, flux):
     """Total variation regularizer
     """
-    norm = flux
+    #norm = flux
     norm = 1
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -671,7 +679,7 @@ def stv(imvec, nx, ny, flux):
 def stvgrad(imvec, nx, ny, flux):
     """Total variation gradient
     """
-    norm = flux
+    #norm = flux
     norm = 1
     im = imvec.reshape(ny,nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -688,10 +696,42 @@ def stvgrad(imvec, nx, ny, flux):
     out= -(g1 + g2 + g3).flatten()
     return out/norm
 
+def stv2(imvec, nx, ny, flux):
+    """Squared Total variation regularizer
+    """
+    #norm = flux
+    norm = 1
+    im = imvec.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    out = -np.sum(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
+    return out/norm
+
+def stv2grad(imvec, nx, ny, flux):
+    """Squared Total variation gradient
+    """
+    #norm = flux
+    norm = 1
+    im = imvec.reshape(ny,nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1l2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+
+    g1 = (2*im - im_l1 - im_l2)
+    g2 = (im - im_r1)
+    g3 = (im - im_r2)
+    out= -2*(g1 + g2 + g3).flatten()
+    return out/norm
+
 def spatch(imvec, priorvec, flux):
     """Patch prior regularizer
     """
-    norm = flux**2
+    #norm = flux**2
     norm = 1
     out = -0.5*np.sum( ( imvec - priorvec) ** 2)
     return out/norm
@@ -699,7 +739,7 @@ def spatch(imvec, priorvec, flux):
 def spatchgrad(imvec, priorvec, flux):
     """Patch prior gradient
     """
-    norm = flux**2
+    #norm = flux**2
     norm = 1
     out = -(imvec  - priorvec)
     return out/norm
