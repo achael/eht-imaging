@@ -116,6 +116,24 @@ def main():
     du = 1./(npad*im.psize)
     vu2 = (vu2 / du + 0.5*npad)
 
+    visgrid = np.zeros((npad, npad)).astype('c16')
+    pradius = 2
+    for k in xrange(len(vlist)):
+        point = vu2[k]
+        vispoint = visdata[k]
+
+        vumin = np.ceil(point - pradius).astype(int)
+        vumax = np.floor(point + pradius).astype(int)
+
+        #print vumin, vumax
+        for i in np.arange(vumin[0], vumax[0]+1):
+            for j in np.arange(vumin[1], vumax[1]+1):
+                #visgrid[i,j] += conv_func_pill(j-point[1], i-point[0],1.) * vispoint
+                #visgrid[i,j] += conv_func_gauss(j-point[1], i-point[0],pradius) * vispoint
+                visgrid[i,j] += conv_func_sphere(j-point[1], i-point[0],pradius,0) * vispoint
+     
+        
+
 def conv_func_pill(x,y): 
     if abs(x) < 0.5 and abs(y) < 0.5: 
         out = 1.
@@ -133,24 +151,6 @@ def conv_func_sphere(x,y,p,m):
     psiy = abs(1-etay**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etay)[0]
     
     return psix*psiy
-
-visgrid = np.zeros((npad, npad)).astype('c16')
-pradius = 2
-for k in xrange(len(vlist)):
-    point = vu2[k]
-    vispoint = visdata[k]
-
-    vumin = np.ceil(point - pradius).astype(int)
-    vumax = np.floor(point + pradius).astype(int)
-
-    #print vumin, vumax
-    for i in np.arange(vumin[0], vumax[0]+1):
-        for j in np.arange(vumin[1], vumax[1]+1):
-            #visgrid[i,j] += conv_func_pill(j-point[1], i-point[0],1.) * vispoint
-            #visgrid[i,j] += conv_func_gauss(j-point[1], i-point[0],pradius) * vispoint
-            visgrid[i,j] += conv_func_sphere(j-point[1], i-point[0],pradius,0) * vispoint
-     
-        
 
 
 def conv_func_pill(x,y): 
