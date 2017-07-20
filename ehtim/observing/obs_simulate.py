@@ -206,7 +206,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1)
         # Pad image
         #npad = int(np.ceil(pad_frac*1./(im.psize*umin)))
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))
-        npad = power_of_two(npad)
+        npad = power_of_two(npad) #TODO good in all cases??
 
         padvalx1 = padvalx2 = int(np.floor((npad - im.xdim)/2.0))
         if im.xdim % 2:
@@ -227,20 +227,23 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1)
         uv2 = (uv2/du + 0.5*npad).T
 
         # FFT for visibilities
+        # TODO can we get rid of the fftshifts?
         vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
 
         # Sample the visibilities
+        # default is cubic spline interpolation
         visre = nd.map_coordinates(np.real(vis_im), uv2)
         visim = nd.map_coordinates(np.imag(vis_im), uv2)
         vis = visre + 1j*visim
 
-        # Extra phase to match centroid convention -- right?
-        phase = np.exp(-1j*np.pi*im.psize*(uv[:,0]+uv[:,1]))
+        # Extra phase to match centroid convention -- right??
+        phase = np.exp(-1j*np.pi*im.psize*(uv[:,0] + uv[:,1]))
         vis = vis * phase
 
         # Multiply by the pulse function
+        # TODO make faster?
         pulsefac = np.array([im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv])
-        vis = vis*pulsefac
+        vis = vis * pulsefac
 
         # FT of polarimetric quantities
         if len(im.qvec):
