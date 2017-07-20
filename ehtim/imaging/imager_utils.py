@@ -178,6 +178,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 # Total Intensity Imager
 ##################################################################################################
 def imager_func(Obsdata, InitIm, Prior, flux,
+           ttype='direct', fft_pad_frac=1,
            d1='vis', d2=False, s1='simple', s2=False,
            alpha_s1=1, alpha_s2=1,
            alpha_d1=100, alpha_d2=100,
@@ -216,6 +217,10 @@ def imager_func(Obsdata, InitIm, Prior, flux,
        Returns:
            Image: Image object with result
     """
+
+    print ("Imaging observation with %s Fourier transform" % ttype)
+    print ("Data terms: %s , %s" %  (d1,d2))
+    print ("Regularizer terms: %s, %s\n" % (s1,s2))
 
     # Make sure data and regularizer options are ok
     if not d1 and not d2:
@@ -257,8 +262,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     ninit = (flux * InitIm.imvec / np.sum((InitIm.imvec)[embed_mask]))[embed_mask]
 
     # Get data and fourier matrices for the data terms
-    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1)
-    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2)
+    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, ttype=ttype, fft_pad_frac=fft_pad_frac)
+    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, ttype=ttype, fft_pad_frac=fft_pad_frac)
 
     # Coordinate matrix for center-of-mass constraint
     coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim//2,-Prior.xdim//2,-1)]
@@ -279,23 +284,23 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     # Define the chi^2 and chi^2 gradient
     def chisq1(imvec):
-        return chisq(imvec, A1, data1, sigma1, d1)
+        return chisq(imvec, A1, data1, sigma1, d1, ttype=ttype)
 
     def chisq1grad(imvec):
         if d1=='bs' and datamin=='lin':
             c = 2.0/(2.0*len(sigma1)) * np.dot(Alin1.T, np.dot(Alin1, imvec) - blin1)
         else:
-            c = chisqgrad(imvec, A1, data1, sigma1, d1)
+            c = chisqgrad(imvec, A1, data1, sigma1, d1, ttype=ttype)
         return c
 
     def chisq2(imvec):
-        return chisq(imvec, A2, data2, sigma2, d2)
+        return chisq(imvec, A2, data2, sigma2, d2, ttype=ttype)
 
     def chisq2grad(imvec):
-        if d1=='bs' and datamin=='lin':
+        if d2=='bs' and datamin=='lin':
             c = 2.0/(2.0*len(sigma2)) * np.dot(Alin2.T, np.dot(Alin2, imvec) - blin2)
         else:
-            c = chisqgrad(imvec, A2, data2, sigma2, d2)
+            c = chisqgrad(imvec, A2, data2, sigma2, d2, ttype=ttype)
         return c
 
     # Define the regularizer and regularizer gradient
@@ -385,6 +390,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     print("Initial Chi^2_1: %f Chi^2_2: %f" % (chisq1(ninit), chisq2(ninit)))
     print("Total Pixel #: ",(len(Prior.imvec)))
     print("Clipped Pixel #: ",(len(ninit)))
+    print()
     plotcur(xinit)
 
     # Minimize
@@ -427,74 +433,87 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 # Chi-squared and Gradient Functions
 ##################################################################################################
 
-def chisq(imvec, A, data, sigma, dtype):
+def chisq(imvec, A, data, sigma, dtype, ttype='direct'):
     """return the chi^2 for the appropriate dtype"""
 
-    if dtype == 'vis':
-        chisq = chisq_vis(imvec, A, data, sigma)
+    chisq = 1 
+    if ttype == 'direct':
+        if dtype == 'vis':
+            chisq = chisq_vis(imvec, A, data, sigma)
 
-    elif dtype == 'amp':
-        chisq = chisq_amp(imvec, A, data, sigma)
+        elif dtype == 'amp':
+            chisq = chisq_amp(imvec, A, data, sigma)
 
-    elif dtype == 'bs':
-        chisq = chisq_bs(imvec, A, data, sigma)
+        elif dtype == 'bs':
+            chisq = chisq_bs(imvec, A, data, sigma)
 
-    elif dtype == 'cphase':
-        chisq = chisq_cphase(imvec, A, data, sigma)
+        elif dtype == 'cphase':
+            chisq = chisq_cphase(imvec, A, data, sigma)
 
-    elif dtype == 'camp':
-        chisq = chisq_camp(imvec, A, data, sigma)
+        elif dtype == 'camp':
+            chisq = chisq_camp(imvec, A, data, sigma)
 
-    elif dtype == 'logcamp':
-        chisq = chisq_logcamp(imvec, A, data, sigma)
+        elif dtype == 'logcamp':
+            chisq = chisq_logcamp(imvec, A, data, sigma)
+    
+    elif ttype== 'fast':
 
-    else:
-        chisq = 1.
+        if dtype == 'vis':
+            im_info =  A[0]
+            vis_arr = fft_imvec(imvec, im_info)
+            chisq = chisq_vis_fft(vis_arr, A, data, sigma)
 
     return chisq
 
-def chisqgrad(imvec, A, data, sigma, dtype):
+def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct'):
     """return the chi^2 gradient for the appropriate dtype"""
 
-    if dtype == 'vis':
-        chisqgrad = chisqgrad_vis(imvec, A, data, sigma)
+    chisqgrad = np.zeros(len(imvec))
+    if ttype == 'direct':
+        if dtype == 'vis':
+            chisqgrad = chisqgrad_vis(imvec, A, data, sigma)
 
-    elif dtype == 'amp':
-        chisqgrad = chisqgrad_amp(imvec, A, data, sigma)
+        elif dtype == 'amp':
+            chisqgrad = chisqgrad_amp(imvec, A, data, sigma)
 
-    elif dtype == 'bs':
-        chisqgrad = chisqgrad_bs(imvec, A, data, sigma)
+        elif dtype == 'bs':
+            chisqgrad = chisqgrad_bs(imvec, A, data, sigma)
 
-    elif dtype == 'cphase':
-        chisqgrad = chisqgrad_cphase(imvec, A, data, sigma)
+        elif dtype == 'cphase':
+            chisqgrad = chisqgrad_cphase(imvec, A, data, sigma)
 
-    elif dtype == 'camp':
-        chisqgrad = chisqgrad_camp(imvec, A, data, sigma)
+        elif dtype == 'camp':
+            chisqgrad = chisqgrad_camp(imvec, A, data, sigma)
 
-    elif dtype == 'logcamp':
-        chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
+        elif dtype == 'logcamp':
+            chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
 
-    else:
-        chisqgrad = np.zeros(len(imvec))
+    elif ttype== 'fast':
+        if dtype == 'vis':
+            im_info =  A[0]
+            vis_arr = fft_imvec(imvec, im_info)
+            chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma)
 
     return chisqgrad
 
 # Visibility phase and amplitude chi-squared
 #PIN
 #vis_arr = fft_imvec(imvec, im_info)
-def chisq_vis_fft(vis_arr, im_info, uv, vis, sigma, order=3):
+def chisq_vis_fft(vis_arr, A, vis, sigma, order=3):
     """Visibility chi-squared from fft"""
     #im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
 
+    im_info, uv = A # to maintain compatibility with chisq()
 
     samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
 
     return np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
 
 #NOT COMPLETE
-def chisqgrad_vis_fft(vis_arr, im_info, uv, vis, sigma, order=3):
+def chisqgrad_vis_fft(vis_arr, A, vis, sigma, order=3):
     """The gradient of the visibility chi-squared from fft"""
 
+    im_info, uv = A # to maintain compatibility with chisq()
     (xdim, ydim, npad, psize, pulse) = im_info
 
     samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
@@ -515,11 +534,8 @@ def chisqgrad_vis_fft(vis_arr, im_info, uv, vis, sigma, order=3):
     #print (np.abs(np.array((np.max(wdiff_arr), np.min(wdiff_arr), np.mean(wdiff_arr)))))
 
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
-    grad_arr = -np.real(grad_arr)/len(vis)
 
-    #print (np.max(grad_arr), np.min(grad_arr), np.mean(grad_arr))
-
-    # unpad    
+    # unpad  the array  
     padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
     if xdim % 2:
         padvalx2 += 1
@@ -527,12 +543,9 @@ def chisqgrad_vis_fft(vis_arr, im_info, uv, vis, sigma, order=3):
     if ydim % 2:
         padvaly2 += 1
 
-    out = grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten() # TODO or is x<-->y??
+    out = -np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten())/len(vis) # TODO or is x<-->y??
+
     return out
-
-    #out = -np.real(grad_arr.flatten())/len(vis)
-    #return out
-
 
 def chisq_vis(imvec, Amatrix, vis, sigma):
     """Visibility chi-squared"""
@@ -871,30 +884,34 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
 
     return out
 
-def chisqdata(Obsdata, Prior, mask, dtype):
+def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', fft_pad_frac=1):
     """Return the data, sigma, and matrices for the appropriate dtype
     """
 
-    if dtype == 'vis':
-        (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask)
+    (data, sigma, A) = (False, False, False)
 
-    elif dtype == 'amp':
-        (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask)
+    if ttype=='direct':
+        if dtype == 'vis':
+            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask)
 
-    elif dtype == 'bs':
-        (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask)
+        elif dtype == 'amp':
+            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask)
 
-    elif dtype == 'cphase':
-        (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask)
+        elif dtype == 'bs':
+            (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask)
 
-    elif dtype == 'camp':
-        (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask)
+        elif dtype == 'cphase':
+            (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask)
 
-    elif dtype == 'logcamp':
-        (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask)
+        elif dtype == 'camp':
+            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask)
 
-    else:
-        (data, sigma, A) = (False, False, False)
+        elif dtype == 'logcamp':
+            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask)
+
+    elif ttype=='fast':
+        if dtype=='vis':
+            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, mask, fft_pad_frac=fft_pad_frac)
 
     return (data, sigma, A)
 
@@ -920,11 +937,12 @@ def chisqdata_vis_fft(Obsdata, Prior, mask, fft_pad_frac=1):
     sigma = data_arr['sigma']
 
     npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+
     im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
-    #A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
+    A = (im_info, uv) # to maintain compatibility with chisq() wrapper
 
-    return (vis, sigma, uv, im_info)
+    return (vis, sigma, A)
 
 def chisqdata_amp(Obsdata, Prior, mask):
     """Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
