@@ -48,28 +48,76 @@ def conv_func_spheroidal(x,y,p,m):
 
     return psix*psiy
 
-def sampler(uv, griddata, psize, order=3):
+#im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
+def fft_imvec(imvec, im_info, uv, order=3):
     """
-    Samples griddata sampled at uv points in a npix x npix grid
-    psize is the image domain pixel size of the corresponding real space image
+    Returns fft of imvec sampled at uv points
+    im_info = (xdim, ydim, npad, psize, pulse) = im_info
     order is the order of the spline interpolation
-    the griddata should already be rotated so u,v = 0,0 is in the center
-    to agree with dft result another phase shift may be required
     """
 
-    if griddata.shape[0] != griddata.shape[0]:
-        raise Exception("griddata should be a square array!")
+    # Pad image    
+    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+    if xdim % 2:
+        padvalx2 += 1
+    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+    if ydim % 2:
+        padvaly2 += 1
 
-    npix = griddata.shape[0]
-    vu2  = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-    du   = 1.0/(npix*psize)
-    vu2  = (vu2/du + 0.5*npix).T
+    imarr = imvec.reshape(ydim, xdim)
+    imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+    npad = imarr.shape[0]
+    if imarr.shape[0]!=imarr.shape[1]:
+        raise Exception("FFT padding did not return a square image!")
 
-    datare = nd.map_coordinates(np.real(vis_im), vu2, order=order)
-    dataim = nd.map_coordinates(np.imag(vis_im), vu2, order=order)
-    data = visdatare + 1j*visdataim
+    # Scaled uv points
+    du = 1.0/(npad*psize)
+    uv2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    uv2 = (uv2/du + 0.5*npad).T
 
-    return data
+    # FFT for visibilities
+    # TODO can we get rid of the fftshifts?
+    vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
+
+    # Sample the visibilities
+    # default is cubic spline interpolation
+    visre = nd.map_coordinates(np.real(vis_im), uv2, order=order)
+    visim = nd.map_coordinates(np.imag(vis_im), uv2, order=order)
+    vis = visre + 1j*visim
+
+    # Extra phase to match centroid convention -- right??
+    phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
+    vis = vis * phase
+
+    # Multiply by the pulse function
+    # TODO make faster?
+    pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
+    vis = vis * pulsefac
+
+    return vis
+
+#def sampler(uv, griddata, psize, order=3):
+#    """
+#    Samples griddata (e.g. an image) at uv points in a npix x npix grid
+#    psize is the image domain pixel size of the corresponding real space image
+#    order is the order of the spline interpolation
+#    the griddata should already be rotated so u,v = 0,0 is in the center
+#    to agree with dft result another phase shift may be required!
+#    """
+#
+#    if griddata.shape[0] != griddata.shape[0]:
+#        raise Exception("griddata should be a square array!")
+#
+#    npix = griddata.shape[0]
+#    vu2  = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+#    du   = 1.0/(npix*psize)
+#   vu2  = (vu2/du + 0.5*npix).T
+#
+#    datare = nd.map_coordinates(np.real(vis_im), vu2, order=order)
+#    dataim = nd.map_coordinates(np.imag(vis_im), vu2, order=order)
+#    data = visdatare + 1j*visdataim
+#
+#    return data
 
 def gridder(uv, data, npix, psize, conv_func="pillbox", p_rad=1.):
     """
@@ -427,6 +475,27 @@ def chisqgrad(imvec, A, data, sigma, dtype):
     return chisqgrad
 
 # Visibility phase and amplitude chi-squared
+#PIN
+def chisq_vis_fft(imvec, im_info, uv, vis, sigma, order=3):
+    """Visibility chi-squared from fft"""
+    #im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
+
+    samples = fft_imvec(imvec, im_info, uv, order=order):
+
+    return np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
+
+#NOT COMPLETE
+def chisqgrad_vis_fft(imvec, Amatrix, vis, sigma):
+    """The gradient of the visibility chi-squared from fft"""
+
+    samples = fft_imvec(imvec, im_info, uv, order=order):
+    wdiff = (vis - samples)/(sigma**2)
+    
+    
+    #out = -np.real(np.dot(Amatrix.conj().T, wdiff))/len(vis)
+    return out
+
+
 def chisq_vis(imvec, Amatrix, vis, sigma):
     """Visibility chi-squared"""
 
