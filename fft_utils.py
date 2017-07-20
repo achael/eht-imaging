@@ -10,7 +10,7 @@ import scipy.special
 def main():
     im = vb.load_im_txt('./models/avery_m87_2_eofn.txt')
     eht = vb.load_array('./arrays/EHT2017_rusen.txt')
-    obsd = eht.obsdata(im.ra, im.dec, 230.e9, 4.e9, 60., 600, 0., 24.)
+    obsd = eht.obsdata(im.ra, im.dec, 230.e9, 4.e9, 6., 6., 0., 24.)
 
     umin = np.min(obsd.unpack('uvdist')['uvdist'])
     umax = np.min(obsd.unpack('uvdist')['uvdist'])
@@ -118,7 +118,7 @@ def main():
 
     visgrid = np.zeros((npad, npad)).astype('c16')
     pradius = 2
-    for k in xrange(len(vlist)):
+    for k in xrange(len(vu2)):
         point = vu2[k]
         vispoint = visdata[k]
 
@@ -132,7 +132,7 @@ def main():
                 #visgrid[i,j] += conv_func_gauss(j-point[1], i-point[0],pradius) * vispoint
                 visgrid[i,j] += conv_func_sphere(j-point[1], i-point[0],pradius,0) * vispoint
      
-        
+    return (obs, obs2, obs3)   
 
 def conv_func_pill(x,y): 
     if abs(x) < 0.5 and abs(y) < 0.5: 
