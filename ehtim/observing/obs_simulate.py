@@ -164,7 +164,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
 # Observe w/o noise
 ##################################################################################################
 
-def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
+def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1):
     """Observe the image on the same baselines as an existing observation object
        if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
        Does NOT add noise
@@ -204,7 +204,8 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", pad_frac=0.5):
     if ft=="fast":
 
         # Pad image
-        npad = int(np.ceil(pad_frac*1./(im.psize*umin)))
+        #npad = int(np.ceil(pad_frac*1./(im.psize*umin)))
+        npad = fft_pad_factor * np.max((im.xdim, im.ydim))
         npad = power_of_two(npad)
 
         padvalx1 = padvalx2 = int(np.floor((npad - im.xdim)/2.0))

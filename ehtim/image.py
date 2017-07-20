@@ -128,26 +128,26 @@ class Image(object):
         self.qvec = - self.qvec
         return
 
-    def observe_same_nonoise(self, obs, sgrscat=False, ft="direct", pad_frac=0.5):
+    def observe_same_nonoise(self, obs, sgrscat=False, ft="direct", fft_pad_factor=1):
         """Observe the image on the same baselines as an existing observation object without adding noise.
 
            Args:
                obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
                ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
-               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
            Returns:
                Obsdata: an observation object
         """
 
-        data = simobs.observe_image_nonoise(self, obs, sgrscat=sgrscat, ft=ft, pad_frac=pad_frac)
+        data = simobs.observe_image_nonoise(self, obs, sgrscat=sgrscat, ft=ft, fft_pad_factor=fft_pad_factor)
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, data,
                                              obs.tarr, source=self.source, mjd=obs.mjd)
         return obs_no_noise
 
-    def observe_same(self, obsin, ft='direct', pad_frac=0.5,
+    def observe_same(self, obsin, ft='direct', fft_pad_factor=1,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
                            jones=False, inv_jones=False,
@@ -158,7 +158,7 @@ class Image(object):
            Args:
                obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
                ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
-               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
                opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
@@ -178,7 +178,7 @@ class Image(object):
 
         """
 
-        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ft=ft, pad_frac=pad_frac)
+        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ft=ft, fft_pad_factor=fft_pad_factor)
 
         # Jones Matrix Corruption & Calibration
         if jones:
@@ -221,7 +221,7 @@ class Image(object):
 
     def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, timetype='UTC',
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ft='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True,
+                      ft='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
@@ -240,7 +240,7 @@ class Image(object):
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
-               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
                opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
@@ -270,7 +270,7 @@ class Image(object):
                             tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax)
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, ft=ft, pad_frac=pad_frac, sgrscat=sgrscat, add_th_noise=add_th_noise,
+        obs = self.observe_same(obs, ft=ft, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
                                      gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,
                                      jones=jones, inv_jones=inv_jones,)
