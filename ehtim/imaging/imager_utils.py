@@ -120,7 +120,8 @@ def sampler(griddata, im_info, uvset, sample_type="vis", order=3):
         return dataset[0]
     if sample_type=="bis":
         return dataset[0]*dataset[1]*dataset[2]
-
+    if sample_type=="camp":
+        return np.abs((dataset[0]*dataset[1])/(dataset[2]*dataset[3]))
 
 def gridder(data, im_info, uv, conv_func="pillbox", p_rad=1.):
     """
@@ -437,6 +438,9 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct'):
     """return the chi^2 for the appropriate dtype"""
 
     chisq = 1 
+    if not dtype in DATATERMS:
+        return chisq
+
     if ttype == 'direct':
         if dtype == 'vis':
             chisq = chisq_vis(imvec, A, data, sigma)
@@ -457,11 +461,19 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct'):
             chisq = chisq_logcamp(imvec, A, data, sigma)
     
     elif ttype== 'fast':
-
-        if dtype == 'vis':
-            im_info =  A[0]
-            vis_arr = fft_imvec(imvec, im_info)
+        vis_arr = fft_imvec(imvec, A[0])
+        if dtype == 'vis':            
             chisq = chisq_vis_fft(vis_arr, A, data, sigma)
+        elif dtype == 'amp':            
+            chisq = chisq_amp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'bs':            
+            chisq = chisq_bs_fft(vis_arr, A, data, sigma)
+        elif dtype == 'cphase':            
+            chisq = chisq_cphase_fft(vis_arr, A, data, sigma)
+        elif dtype == 'camp':            
+            chisq = chisq_camp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'logcamp':            
+            chisq = chisq_logcamp_fft(vis_arr, A, data, sigma)
 
     return chisq
 
@@ -469,6 +481,9 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct'):
     """return the chi^2 gradient for the appropriate dtype"""
 
     chisqgrad = np.zeros(len(imvec))
+    if not dtype in DATATERMS:
+        return chisqgrad
+
     if ttype == 'direct':
         if dtype == 'vis':
             chisqgrad = chisqgrad_vis(imvec, A, data, sigma)
@@ -489,21 +504,26 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct'):
             chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
 
     elif ttype== 'fast':
-        if dtype == 'vis':
-            im_info =  A[0]
-            vis_arr = fft_imvec(imvec, im_info)
+        vis_arr = fft_imvec(imvec, A[0])
+        if dtype == 'vis':                        
             chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma)
+        elif dtype == 'amp':            
+            chisqgrad = chisqgrad_amp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'bs':            
+            chisqgrad = chisqgrad_bs_fft(vis_arr, A, data, sigma)
+        elif dtype == 'cphase':            
+            chisqgrad = chisqgrad_cphase_fft(vis_arr, A, data, sigma)
+        elif dtype == 'camp':            
+            chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'logcamp':            
+            chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma)
 
     return chisqgrad
 
 # Visibility phase and amplitude chi-squared
-#PIN
-#vis_arr = fft_imvec(imvec, im_info)
 def chisq_vis_fft(vis_arr, A, vis, sigma, order=3):
     """Visibility chi-squared from fft"""
-    #im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
-
-    im_info, uv = A # to maintain compatibility with chisq()
+    im_info, uv = A # to maintain compatibility with chisq(), im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
 
     samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
 
@@ -512,30 +532,11 @@ def chisq_vis_fft(vis_arr, A, vis, sigma, order=3):
 #NOT COMPLETE
 def chisqgrad_vis_fft(vis_arr, A, vis, sigma, order=3):
     """The gradient of the visibility chi-squared from fft"""
-
     im_info, uv = A # to maintain compatibility with chisq()
     (xdim, ydim, npad, psize, pulse) = im_info
-
-    samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
-    wdiff_vec = (vis - samples)/(sigma**2)
-
-    #print (np.abs(np.array((np.max(wdiff_vec), np.min(wdiff_vec), np.mean(wdiff_vec)))))
-
     phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
-    wdiff_vec = wdiff_vec * phase.conj()
-
-    # Multiply by the pulse function
-    # TODO make faster?
     pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
-    wdiff_vec = wdiff_vec * pulsefac.conj()
-
-    wdiff_arr = gridder(wdiff_vec, im_info, uv, conv_func="pillbox", p_rad=1.)
-    
-    #print (np.abs(np.array((np.max(wdiff_arr), np.min(wdiff_arr), np.mean(wdiff_arr)))))
-
-    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
-
-    # unpad  the array  
+    # parameters to unpad the array  
     padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
     if xdim % 2:
         padvalx2 += 1
@@ -543,9 +544,249 @@ def chisqgrad_vis_fft(vis_arr, A, vis, sigma, order=3):
     if ydim % 2:
         padvaly2 += 1
 
-    out = -np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten())/len(vis) # TODO or is x<-->y??
+    samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
+    wdiff_vec = -1.0/len(vis)*(vis - samples)/(sigma**2)
+
+    # Setup and perform the inverse FFT
+    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func="pillbox", p_rad=1.)    
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
+    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten())/len(vis) # TODO or is x<-->y??
 
     return out
+
+def chisq_amp_fft(vis_arr, A, amp, sigma, order=3):
+    """Visibility amplitude chi-squared from fft"""
+    im_info, uv = A # to maintain compatibility with chisq(), im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
+
+    amp_samples = np.abs(sampler(vis_arr, im_info, [uv], order=order, sample_type="vis"))
+
+    return np.sum(np.abs((amp_samples-amp)/sigma)**2)/(len(amp))
+
+def chisqgrad_amp_fft(vis_arr, A, amp, sigma, order=3):
+    """The gradient of the amplitude chi-squared"""
+    im_info, uv = A # to maintain compatibility with chisq()
+    (xdim, ydim, npad, psize, pulse) = im_info
+    phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
+    pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
+    # parameters to unpad the array  
+    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+    if xdim % 2:
+        padvalx2 += 1
+    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+    if ydim % 2:
+        padvaly2 += 1
+
+    samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
+    amp_samples = np.abs(samples)
+    wdiff_vec = -2.0/len(amp)*((amp - amp_samples) * amp_samples) / (sigma**2) / samples.conj()
+
+    # Setup and perform the inverse FFT
+    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func="pillbox", p_rad=1.)    
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
+    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+
+    return out
+
+def chisq_bs_fft(vis_arr, A, bis, sigma, order=3):
+    """Bispectrum chi-squared from fft"""
+    im_info, (uv1, uv2, uv3) = A 
+    
+    bisamples = sampler(vis_arr, im_info, [uv1, uv2, uv3], order=order, sample_type="bis")
+
+    return np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
+
+def chisqgrad_bs_fft(vis_arr, A, bis, sigma, order=3):
+    """The gradient of the amplitude chi-squared"""
+    im_info, (uv1, uv2, uv3) = A 
+    (xdim, ydim, npad, psize, pulse) = im_info
+    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
+    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
+    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
+    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
+    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
+    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
+    # parameters to unpad the array  
+    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+    if xdim % 2:
+        padvalx2 += 1
+    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+    if ydim % 2:
+        padvaly2 += 1
+
+    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
+    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
+    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
+    bisamples = v1*v2*v3
+
+    wdiff = -1.0/len(bis)*(bis - bisamples)/(sigma**2)
+
+    pt1 = wdiff * (v2 * v3).conj()
+    pt2 = wdiff * (v1 * v3).conj()
+    pt3 = wdiff * (v1 * v2).conj()
+
+    # Setup and perform the inverse FFT
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3))) * npad * npad
+    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+
+    return out
+
+def chisq_cphase_fft(vis_arr, A, clphase, sigma, order=3):
+    """Closure Phases (normalized) chi-squared from fft"""
+    im_info, (uv1, uv2, uv3) = A
+    clphase = clphase * DEGREE
+    sigma = sigma * DEGREE
+    clphase_samples = np.angle(sampler(vis_arr, im_info, [uv1, uv2, uv3], order=order, sample_type="bis"))
+    return (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples))/(sigma**2))
+
+
+def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma, order=3):
+    """The gradient of the closure phase chi-squared from fft"""
+    """The gradient of the amplitude chi-squared"""
+    im_info, (uv1, uv2, uv3) = A
+    (xdim, ydim, npad, psize, pulse) = im_info
+    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
+    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
+    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
+    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
+    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
+    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
+    # parameters to unpad the array  
+    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+    if xdim % 2:
+        padvalx2 += 1
+    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+    if ydim % 2:
+        padvaly2 += 1
+
+    clphase = clphase * DEGREE
+    sigma = sigma * DEGREE
+
+    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
+    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
+    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
+    clphase_samples = np.angle(v1*v2*v3)
+
+    pref = (2.0/len(clphase)) * np.sin(clphase - clphase_samples)/(sigma**2)
+    pt1  = pref/v1.conj()
+    pt2  = pref/v2.conj()
+    pt3  = pref/v3.conj()
+
+    # Setup and perform the inverse FFT
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3))) * npad * npad
+    out = np.imag(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+
+    return out
+
+def chisq_camp_fft(vis_arr, A, clamp, sigma, order=3):
+    """Closure Amplitudes (normalized) chi-squared from fft"""
+    im_info, (uv1, uv2, uv3, uv4) = A
+
+    clamp_samples = sampler(vis_arr, im_info, [uv1, uv2, uv3, uv4], order=order, sample_type="camp")
+    return np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
+
+def chisqgrad_camp_fft(vis_arr, A, clamp, sigma, order=3):
+    """The gradient of the closure amplitude chi-squared from fft"""
+    im_info, (uv1, uv2, uv3, uv4) = A
+    (xdim, ydim, npad, psize, pulse) = im_info
+    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
+    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
+    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
+    phase4 = np.exp(-1j*np.pi*psize*(uv4[:,0] + uv4[:,1]))
+    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
+    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
+    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
+    pulsefac4 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv4])
+    # parameters to unpad the array  
+    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+    if xdim % 2:
+        padvalx2 += 1
+    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+    if ydim % 2:
+        padvaly2 += 1
+
+    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
+    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
+    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
+    v4 = sampler(vis_arr, im_info, [uv4], order=order, sample_type="vis")
+
+    clamp_samples = np.abs((v1 * v2)/(v3 * v4))
+
+    pp = (-2.0/len(clamp)) * ((clamp - clamp_samples) * clamp_samples)/(sigma**2)
+    pt1 =  pp/v1.conj()
+    pt2 =  pp/v2.conj()
+    pt3 = -pp/v3.conj()
+    pt4 = -pp/v4.conj()
+
+    # Setup and perform the inverse FFT
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func="pillbox", p_rad=1.)    
+
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3 + wdiff_arr4))) * npad * npad
+    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+
+    return out
+
+def chisq_logcamp_fft(vis_arr, A, log_clamp, sigma, order=3):
+    """Closure Amplitudes (normalized) chi-squared from fft"""
+    im_info, (uv1, uv2, uv3, uv4) = A
+
+    samples = np.log(sampler(vis_arr, im_info, [uv1, uv2, uv3, uv4], order=order, sample_type="camp"))
+
+    return np.sum(np.abs((log_clamp - samples)/sigma)**2) / (len(log_clamp))
+
+def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma, order=3):
+    """The gradient of the closure amplitude chi-squared from fft"""
+    im_info, (uv1, uv2, uv3, uv4) = A
+    (xdim, ydim, npad, psize, pulse) = im_info
+    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
+    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
+    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
+    phase4 = np.exp(-1j*np.pi*psize*(uv4[:,0] + uv4[:,1]))
+    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
+    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
+    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
+    pulsefac4 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv4])
+    # parameters to unpad the array  
+    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+    if xdim % 2:
+        padvalx2 += 1
+    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+    if ydim % 2:
+        padvaly2 += 1
+
+    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
+    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
+    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
+    v4 = sampler(vis_arr, im_info, [uv4], order=order, sample_type="vis")
+
+    log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
+
+    pp = (-2.0/len(log_clamp)) * (log_clamp - log_clamp_samples) / (sigma**2)
+    pt1 = pp / v1.conj()
+    pt2 = pp / v2.conj()
+    pt3 = -pp / v3.conj()
+    pt4 = -pp / v4.conj()
+
+    # Setup and perform the inverse FFT
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func="pillbox", p_rad=1.)    
+
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3 + wdiff_arr4))) * npad * npad
+    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+
+    return out
+
+##########
 
 def chisq_vis(imvec, Amatrix, vis, sigma):
     """Visibility chi-squared"""
@@ -911,23 +1152,22 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', fft_pad_frac=1):
 
     elif ttype=='fast':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, mask, fft_pad_frac=fft_pad_frac)
+            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+        elif dtype == 'amp':
+            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+        elif dtype == 'bs':
+            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+        elif dtype == 'cphase':
+            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+        elif dtype == 'camp':
+            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+        elif dtype == 'logcamp':
+            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
 
     return (data, sigma, A)
 
-def chisqdata_vis(Obsdata, Prior, mask):
-    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
-    """
 
-    data_arr = Obsdata.unpack(['u','v','vis','sigma'])
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
-    vis = data_arr['vis']
-    sigma = data_arr['sigma']
-    A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
-
-    return (vis, sigma, A)
-
-def chisqdata_vis_fft(Obsdata, Prior, mask, fft_pad_frac=1):
+def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=1):
     """Return the visibilities, sigmas, uv points, and image info
     """
 
@@ -941,6 +1181,109 @@ def chisqdata_vis_fft(Obsdata, Prior, mask, fft_pad_frac=1):
     im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
     A = (im_info, uv) # to maintain compatibility with chisq() wrapper
+
+    return (vis, sigma, A)
+
+def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=1):
+    """Return the amplitudes, sigmas, uv points, and image info
+    """
+
+    data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=True)
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
+    amp = data_arr['amp']
+    sigma = data_arr['sigma']
+
+    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+
+    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+
+    A = (im_info, uv) # to maintain compatibility with chisq() wrapper
+
+    return (amp, sigma, A)
+
+def chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=1):
+    """Return the bispectra, sigmas, uv points, and image info
+    """
+    biarr = Obsdata.bispectra(mode="all", count="min")
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
+    bi = biarr['bispec']
+    sigma = biarr['sigmab']
+
+    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+
+    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+
+    A = (im_info, [uv1, uv2, uv3]) # to maintain compatibility with chisq() wrapper
+
+    return (bi, sigma, A)
+
+def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=1):
+    """Return the closure phases, sigmas, uv points, and image info
+    """
+    clphasearr = Obsdata.c_phases(mode="all", count="min")
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
+    clphase = clphasearr['cphase']
+    sigma = clphasearr['sigmacp']
+
+    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+
+    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+
+    A = (im_info, [uv1, uv2, uv3]) # to maintain compatibility with chisq() wrapper
+
+    return (clphase, sigma, A)
+
+def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=1):
+    """Return the closure phases, sigmas, uv points, and image info
+    """
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=True)
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
+
+    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+
+    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+
+    A = (im_info, [uv1, uv2, uv3, uv4]) # to maintain compatibility with chisq() wrapper
+
+    return (clamp, sigma, A)
+
+def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=1):
+    """Return the closure phases, sigmas, uv points, and image info
+    """
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=True)
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
+
+    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+
+    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+
+    A = (im_info, [uv1, uv2, uv3, uv4]) # to maintain compatibility with chisq() wrapper
+
+    return (clamp, sigma, A)
+
+def chisqdata_vis(Obsdata, Prior, mask):
+    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
+    """
+
+    data_arr = Obsdata.unpack(['u','v','vis','sigma'])
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
+    vis = data_arr['vis']
+    sigma = data_arr['sigma']
+    A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (vis, sigma, A)
 
