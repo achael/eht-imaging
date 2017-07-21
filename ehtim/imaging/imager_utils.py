@@ -392,8 +392,6 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[],
         elif dtype == 'logcamp':
             chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
 
-                  #PIN    order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
-
     elif ttype== 'fast':
         if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
@@ -1440,33 +1438,59 @@ def gridder(data, im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDE
     vu2 = (vu2/du + 0.5*npad)
 
     datagrid = np.zeros((npad, npad)).astype('c16')
-    for k in range(len(data)):
-        point = vu2[k]
-        vispoint = data[k]
+    coords = np.round(vu2).astype(int)
+    dcoords = vu2 - np.round(vu2).astype(int)
+    norm = np.zeros_like(len(coords))
 
-        vumin = np.ceil(point - p_rad).astype(int)
-        vumax = np.floor(point + p_rad).astype(int)
+    for dy in range(-p_rad, p_rad+1): 
+        for dx in range(-p_rad, p_rad+1):
+            if conv_func == 'gaussian':
+                norm = norm + conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1]) 
+            elif conv_func == 'pillbox':
+                norm = norm + conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1]) 
 
-        norm = 0.0 # Need to normalize the conv_func
-        for i in np.arange(vumin[0], vumax[0]+1):
-            for j in np.arange(vumin[1], vumax[1]+1):
-                
-                if conv_func == 'pillbox':
-                    norm += conv_func_pill(j-point[1], i-point[0])
-
-                elif conv_func == 'gaussian':
-                    norm += conv_func_gauss(j-point[1], i-point[0])
-        
-        for i in np.arange(vumin[0], vumax[0]+1):
-            for j in np.arange(vumin[1], vumax[1]+1):
-                
-                if conv_func == 'pillbox':
-                    datagrid[i,j] += conv_func_pill(j-point[1], i-point[0]) * vispoint / norm
-
-                elif conv_func == 'gaussian':
-                    datagrid[i,j] += conv_func_gauss(j-point[1], i-point[0]) * vispoint / norm
-
+    for dy in range(-p_rad, p_rad+1): 
+        for dx in range(-p_rad, p_rad+1):
+            if conv_func == 'gaussian':
+                weight = conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            elif conv_func == 'pillbox':
+                weight = conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            np.add.at(datagrid, tuple(map(tuple, (coords + [dy, dx]).transpose())), data*weight)
+    
     return datagrid
+
+#    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+#    du  = 1.0/(npad*psize)
+#    vu2 = (vu2/du + 0.5*npad)
+
+#    datagrid = np.zeros((npad, npad)).astype('c16')
+#    for k in range(len(data)):
+#        point = vu2[k]
+#        vispoint = data[k]
+
+#        vumin = np.ceil(point - p_rad).astype(int)
+#        vumax = np.floor(point + p_rad).astype(int)
+
+#        norm = 0.0 # Need to normalize the conv_func
+#        for i in np.arange(vumin[0], vumax[0]+1):
+#            for j in np.arange(vumin[1], vumax[1]+1):
+#                
+#                if conv_func == 'pillbox':
+#                    norm += conv_func_pill(j-point[1], i-point[0])
+
+#                elif conv_func == 'gaussian':
+#                    norm += conv_func_gauss(j-point[1], i-point[0])
+#        
+#        for i in np.arange(vumin[0], vumax[0]+1):
+#            for j in np.arange(vumin[1], vumax[1]+1):
+#                
+#                if conv_func == 'pillbox':
+#                    datagrid[i,j] += conv_func_pill(j-point[1], i-point[0]) * vispoint / norm
+
+#                elif conv_func == 'gaussian':
+#                    datagrid[i,j] += conv_func_gauss(j-point[1], i-point[0]) * vispoint / norm
+
+#    return datagrid
 
 ##################################################################################################
 # Restoring and Plotting Functions
