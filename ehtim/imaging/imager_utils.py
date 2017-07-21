@@ -411,6 +411,9 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None,
             chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
         elif dtype == 'logcamp':            
             chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
+        
+        if np.any(np.invert(mask)):
+            chisqgrad = chisqgrad[mask]
 
     return chisqgrad
 
@@ -471,19 +474,14 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', fft_pad_frac=1):
     if ttype=='direct':
         if dtype == 'vis':
             (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask)
-
         elif dtype == 'amp':
             (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask)
-
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask)
-
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask)
-
         elif dtype == 'camp':
             (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask)
-
         elif dtype == 'logcamp':
             (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask)
 
