@@ -315,7 +315,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 # Wrapper Functions
 ##################################################################################################
 
-def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None, fft_interp=FFT_INTERP_DEFAULT):
+def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[], fft_interp=FFT_INTERP_DEFAULT):
     """return the chi^2 for the appropriate dtype
     """
 
@@ -343,7 +343,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None, fft_interp=FF
             chisq = chisq_logcamp(imvec, A, data, sigma)
     
     elif ttype== 'fast':
-        if np.any(np.invert(mask)):
+        if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         vis_arr = fft_imvec(imvec, A[0])
 
@@ -363,7 +363,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None, fft_interp=FF
 
     return chisq
 
-def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None,
+def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[],
               fft_interp=FFT_INTERP_DEFAULT, grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT):
     
     """return the chi^2 gradient for the appropriate dtype
@@ -395,7 +395,7 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None,
                   #PIN    order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
 
     elif ttype== 'fast':
-        if np.any(np.invert(mask)):
+        if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         vis_arr = fft_imvec(imvec, A[0])
 
@@ -412,7 +412,7 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None,
         elif dtype == 'logcamp':            
             chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
         
-        if np.any(np.invert(mask)):
+        if len(mask)>0 and np.any(np.invert(mask)):
             chisqgrad = chisqgrad[mask]
 
     return chisqgrad

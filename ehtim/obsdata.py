@@ -333,7 +333,7 @@ class Obsdata(object):
 
                 # !AC debias here?
                 if debias:
-                    print("Debiasing amplitudes in unpack!")
+                    #print("Debiasing amplitudes in unpack!")
                     out = amp_debias(out, sig)
 
                 ty = 'f8'
