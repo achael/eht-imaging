@@ -29,6 +29,9 @@ from ehtim.observing.obs_helpers import *
 
 from IPython import display
 
+gridder_p_rad = 2.0
+gridder_conv_func = 'gaussian'
+
 def conv_func_pill(x,y):
     if abs(x) < 0.5 and abs(y) < 0.5:
         out = 1.
@@ -36,7 +39,7 @@ def conv_func_pill(x,y):
         out = 0.
     return out
 
-def conv_func_gauss(x,ys):
+def conv_func_gauss(x,y):
     return np.exp(-(x**2 + y**2))
 
 # There's a bug in my version of the spheroidal function of order 0! - gives nans for eta<1
@@ -151,13 +154,25 @@ def gridder(data, im_info, uv, conv_func="pillbox", p_rad=1.):
         vumax = np.floor(point + p_rad).astype(int)
 
         #print vumin, vumax
+
+        norm = 0.0 # Need to normalize the conf_func
         for i in np.arange(vumin[0], vumax[0]+1):
             for j in np.arange(vumin[1], vumax[1]+1):
+                
                 if conv_func == 'pillbox':
-                    datagrid[i,j] += conv_func_pill(j-point[1], i-point[0]) * vispoint
+                    norm += conv_func_pill(j-point[1], i-point[0])
 
                 elif conv_func == 'gaussian':
-                    datagrid[i,j] += conv_func_gauss(j-point[1], i-point[0]) * vispoint
+                    norm += conv_func_gauss(j-point[1], i-point[0])
+        
+        for i in np.arange(vumin[0], vumax[0]+1):
+            for j in np.arange(vumin[1], vumax[1]+1):
+                
+                if conv_func == 'pillbox':
+                    datagrid[i,j] += conv_func_pill(j-point[1], i-point[0]) * vispoint / norm
+
+                elif conv_func == 'gaussian':
+                    datagrid[i,j] += conv_func_gauss(j-point[1], i-point[0]) * vispoint / norm
 
     return datagrid
 
@@ -548,7 +563,7 @@ def chisqgrad_vis_fft(vis_arr, A, vis, sigma, order=3):
     wdiff_vec = -1.0/len(vis)*(vis - samples)/(sigma**2)
 
     # Setup and perform the inverse FFT
-    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
     out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
 
@@ -581,7 +596,7 @@ def chisqgrad_amp_fft(vis_arr, A, amp, sigma, order=3):
     wdiff_vec = -2.0/len(amp)*((amp - amp_samples) * amp_samples) / (sigma**2) / samples.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
     out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
 
@@ -625,9 +640,9 @@ def chisqgrad_bs_fft(vis_arr, A, bis, sigma, order=3):
     pt3 = wdiff * (v1 * v2).conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3))) * npad * npad
     out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
 
@@ -675,9 +690,9 @@ def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma, order=3):
     pt3  = pref/v3.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3))) * npad * npad
     out = np.imag(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
 
@@ -724,10 +739,10 @@ def chisqgrad_camp_fft(vis_arr, A, clamp, sigma, order=3):
     pt4 = -pp/v4.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
 
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3 + wdiff_arr4))) * npad * npad
     out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
@@ -776,10 +791,10 @@ def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma, order=3):
     pt4 = -pp / v4.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func="pillbox", p_rad=1.)    
-    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func="pillbox", p_rad=1.)    
+    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
+    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func=gridder_conv_func, p_rad=gridder_p_rad)    
 
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3 + wdiff_arr4))) * npad * npad
     out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
