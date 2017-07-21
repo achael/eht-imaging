@@ -550,7 +550,7 @@ def chisqgrad_vis_fft(vis_arr, A, vis, sigma, order=3):
     # Setup and perform the inverse FFT
     wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func="pillbox", p_rad=1.)    
     grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
-    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten())/len(vis) # TODO or is x<-->y??
+    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
 
     return out
 
