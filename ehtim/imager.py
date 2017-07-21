@@ -2,6 +2,7 @@ from __future__ import division
 from __future__ import print_function
 from builtins import str
 from builtins import object
+
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -19,6 +20,9 @@ STOP = 1e-10 # convergence criterion
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm']
 
+###########################################################################################################################################
+#Imager object
+###########################################################################################################################################
 class Imager(object):
     """A general interferometric imager.
     """

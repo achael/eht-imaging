@@ -63,7 +63,7 @@ obs.save_txt('obs.txt') # exports a text file with the visibilities
 obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 
 # Generate an image prior
-npix = 100
+npix = 256
 fov = 1*im.fovx()
 zbl = im.total_flux() # total flux
 prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
