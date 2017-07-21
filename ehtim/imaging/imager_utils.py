@@ -163,25 +163,25 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     # Define the chi^2 and chi^2 gradient
     def chisq1(imvec):
-        return chisq(imvec, A1, data1, sigma1, d1, ttype=ttype, fft_interp=fft_interp)
+        return chisq(imvec, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask, fft_interp=fft_interp)
 
     def chisq1grad(imvec):
         if d1=='bs' and datamin=='lin':
             c = 2.0/(2.0*len(sigma1)) * np.dot(Alin1.T, np.dot(Alin1, imvec) - blin1)
         else:
-            c = chisqgrad(imvec, A1, data1, sigma1, d1, ttype=ttype,
+            c = chisqgrad(imvec, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask,
                                 fft_interp=fft_interp, grid_prad=grid_prad, grid_conv=grid_conv)
         return c
 
     def chisq2(imvec):
-        return chisq(imvec, A2, data2, sigma2, d2, ttype=ttype, fft_interp=fft_interp)
+        return chisq(imvec, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask, fft_interp=fft_interp)
 
 
     def chisq2grad(imvec):
         if d2=='bs' and datamin=='lin':
             c = 2.0/(2.0*len(sigma2)) * np.dot(Alin2.T, np.dot(Alin2, imvec) - blin2)
         else:
-            c = chisqgrad(imvec, A2, data2, sigma2, d2, ttype=ttype,
+            c = chisqgrad(imvec, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask,
                           fft_interp=fft_interp, grid_prad=grid_prad, grid_conv=grid_conv)
         return c
 
@@ -315,7 +315,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 # Wrapper Functions
 ##################################################################################################
 
-def chisq(imvec, A, data, sigma, dtype, ttype='direct', fft_interp=FFT_INTERP_DEFAULT):
+def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None, fft_interp=FFT_INTERP_DEFAULT):
     """return the chi^2 for the appropriate dtype
     """
 
@@ -343,6 +343,10 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', fft_interp=FFT_INTERP_DE
             chisq = chisq_logcamp(imvec, A, data, sigma)
     
     elif ttype== 'fast':
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        vis_arr = fft_imvec(imvec, A[0])
+
         vis_arr = fft_imvec(imvec, A[0])
         if dtype == 'vis':            
             chisq = chisq_vis_fft(vis_arr, A, data, sigma, order=fft_interp)
@@ -359,7 +363,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', fft_interp=FFT_INTERP_DE
 
     return chisq
 
-def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct',
+def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None,
               fft_interp=FFT_INTERP_DEFAULT, grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT):
     
     """return the chi^2 gradient for the appropriate dtype
@@ -391,7 +395,10 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct',
                   #PIN    order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
 
     elif ttype== 'fast':
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
         vis_arr = fft_imvec(imvec, A[0])
+
         if dtype == 'vis':                        
             chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
         elif dtype == 'amp':            
@@ -1338,7 +1345,6 @@ def conv_func_spheroidal(x,y,p,m):
 
     return psix*psiy
 
-#im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
 def fft_imvec(imvec, im_info):
     """
     Returns fft of imvec on  grid
