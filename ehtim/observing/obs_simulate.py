@@ -181,7 +181,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1)
     else:
         raise Exception("ft=%s, options for ft are 'direct' and 'fast'"%ft)
 
-    # Get data (must make a copy!)
+    # Copy data to be safe 
     obsdata = obs.copy().data
 
     # Extract uv data
@@ -463,9 +463,9 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GA
        ra and dec should be in hours / degrees
        Will return a nested dictionary of matrices indexed by the site, then by the time
 
-       gain_offset can be optionally set as a dictionary that specifies the constant percentage offset
-       for each telescope site. If it is a single value than it is the standard deviation
-       of a randomly selected gain offset.
+       gain_offset can be optionally set as a dictionary that specifies the standard deviation 
+       of the time independtent offset drawn for each telescope site. If it is a single value than 
+       the standard deviation of this random  variable is the same for all sites. 
     """
 
     tlist = obs.tlist()
@@ -529,9 +529,9 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GA
             else:
                 goff=gain_offset
 
-            gainR = np.sqrt(np.abs(np.array([1.0 +  0.01*goff + gainp * hashrandn(site, 'gain', time, tproc)
+            gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff)))*(1.0 + gainp * hashrandn(site, 'gain', time, tproc,str(gainp)))
                                      for time in times])))
-            gainL = np.sqrt(np.abs(np.array([1.0 +  0.01*goff + gainp * hashrandn(site, 'gain', time, tproc)
+            gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff)))*(1.0 + gainp * hashrandn(site, 'gain', time, tproc,str(gainp)))
                                      for time in times])))
 
         # Opacity attenuation of amplitude gain
@@ -639,7 +639,7 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         # !AC TODO this assumes all gains 1 - should we put in a fixed gain term?
         gainR = gainL = np.ones(len(times))
 
-        # Amplitude gain
+        # Amplitude gain assumed 1
         gainR = gainL = np.ones(len(times))
 
         #!AC TODO gain_offset not implemented in inverse Jones
@@ -853,9 +853,9 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
        Returns signals & noises scaled by estimated gains, including opacity attenuation.
        Be very careful using outside of Image.observe!
 
-       gain_offset can be optionally set as a dictionary that specifies the constant percentage offset
-       for each telescope site. If it is a single value than it is the standard deviation
-       of a randomly selected gain offset.
+       gain_offset can be optionally set as a dictionary that specifies the standard deviation 
+       of the constant offset for each telescope site. If it is a single value than it is the standard deviation
+       for all sites. 
     """
 
     print("Adding gain + phase errors to data and applying a priori calibration . . . ")
@@ -898,6 +898,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     if not opacitycal:
         sigma_est = sigma_est * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
 
+    #PIN
     # Add gain and opacity fluctuations to the TRUE noise
     sigma_true = sigma_perf
     tproc = str(ttime.time())
@@ -906,13 +907,13 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
         if type(gain_offset) == dict:
             goff1 = gain_offset[sites[i,0]]
             goff2 = gain_offset[sites[i,1]]
-        else: goff1=goff2=gain_offset
+        else: 
+            goff1=goff2=gain_offset
 
-        gain1 = np.abs(np.array([1.0 +  0.01*goff1 + gainp * hashrandn(sites[i,0], 'gain', time[i], tproc)
+        gain1 = np.abs(np.array([(1.0 + goff1 * hashrandn(sites[i,0], 'gain', str(goff1)))*(1.0 + gainp * hashrandn(sites[i,0], 'gain', time[i], tproc, str(gainp)))
                                  for i in range(len(time))]))
-        gain2 = np.abs(np.array([1.0 +  0.01*goff2 + gainp * hashrandn(sites[i,1], 'gain', time[i], tproc)
+        gain2 = np.abs(np.array([(1.0 + goff2 * hashrandn(sites[i,0], 'gain', str(goff1)))*(1.0 + gainp * hashrandn(sites[i,1], 'gain', time[i], tproc, str(gainp)))
                                  for i in range(len(time))]))
-
         sigma_true = sigma_true/np.sqrt(gain1 * gain2)
 
     if not opacitycal:
@@ -934,7 +935,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
         phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i], tproc) for i in range(len(time))])
         phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i], tproc) for i in range(len(time))])
 
-        vis *= np.exp(1j * (phase2-phase1))
+        vis  *= np.exp(1j *  (phase2-phase1))
         qvis *= np.exp(1j * (phase2-phase1))
         uvis *= np.exp(1j * (phase2-phase1))
         vvis *= np.exp(1j * (phase2-phase1))

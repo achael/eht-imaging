@@ -190,18 +190,24 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     header = hdulist[0].header
 
     # Read some header values
-    ra = header['OBSRA']*12/180.
-    dec = header['OBSDEC']
     xdim_p = header['NAXIS1']
     psize_x = np.abs(header['CDELT1']) * pscl
     dim_p = header['NAXIS2']
     psize_y = np.abs(header['CDELT2']) * pscl
 
+    if 'OBSRA' in list(header.keys()): ra = header['OBSRA']*12/180.
+    elif 'CRVAL1' in list(header.keys()): ra = header['CRVAL1']*12/180.
+    else: ra = 0.
+
+    if 'OBSDEC' in list(header.keys()):  dec = header['OBSDEC']
+    elif 'CRVAL2' in list(header.keys()):  dec = header['CRVAL2']
+    else: dec = 0.
+
     if 'MJD' in list(header.keys()): mjd = header['MJD']
-    else: mjd = 0.0
+    else: mjd = 0.
 
     if 'FREQ' in list(header.keys()): rf = header['FREQ']
-    else: rf = 0.0
+    else: rf = 0.
 
     if 'OBJECT' in list(header.keys()): src = header['OBJECT']
     else: src = ''
