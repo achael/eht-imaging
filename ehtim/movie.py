@@ -383,7 +383,7 @@ class Movie(object):
 
         def update_img(n):
             if verbose:
-                print "processing frame {0} of {1}".format(n, len(self.frames)*pad_factor)        
+                print("processing frame {0} of {1}".format(n, len(self.frames)*pad_factor))
             plt_im.set_data(im_data(n))
             return plt_im
 
