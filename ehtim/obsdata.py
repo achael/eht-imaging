@@ -1069,9 +1069,9 @@ class Obsdata(object):
         
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
-            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0], yerr=errdata[sigtype(field)][:,0], fmt='b.', color=color)
+            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0], yerr=errdata[sigtype(field)][:,0], fmt='.', color=color)
         else:
-            x.plot(plotdata['time'][:,0], plotdata[field][:,0],'b.', color=color)
+            x.plot(plotdata['time'][:,0], plotdata[field][:,0],'.', color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -1181,9 +1181,9 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='b.', color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.', color=color)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1],'b.', color=color)
+            x.plot(plotdata[:,0], plotdata[:,1], fmt='.', color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -1242,9 +1242,9 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='b.', color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.', color=color)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1],'b.', color=color)
+            x.plot(plotdata[:,0], plotdata[:,1],'.', color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)

@@ -6,6 +6,9 @@ from builtins import range
 from builtins import object
 
 import numpy as np
+import re
+import os
+import jdcal
 
 import ehtim.array
 
@@ -218,7 +221,7 @@ class Vex(object):
     # For now look for it in Andrew's tables
     # Vex files could have SEFD sector.
     def get_SEFD(self, station):
-        f = open(os.path.dirname(os.path.abspath(__file__)) + "/arrays/SITES.txt")
+        f = open(os.path.dirname(os.path.abspath(__file__)) + "/../arrays/SITES.txt")
         sites = f.readlines()
         f.close()
         for i in range(len(sites)):
