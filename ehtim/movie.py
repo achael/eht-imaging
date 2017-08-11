@@ -365,7 +365,7 @@ class Movie(object):
 
         def im_data(n):
             n_data = (n-n%pad_factor)/pad_factor
-            if plot_log_amplitude == False:
+            if scale == 'linear':
                 return self.frames[n_data].reshape((self.ydim,self.xdim))
             else:
                 return np.log(self.frames[n_data][n_data].reshape((self.ydim,self.xdim)) + maxi/plot_dynamic_range)
