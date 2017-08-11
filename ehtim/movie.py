@@ -352,8 +352,49 @@ class Movie(object):
         ehtim.io.ioutils.save_mov_txt(self, fname)
         return
 
+    def export_mp4(self, out='movie.mp4', fps=10, dpi=120, scale='linear', dynamic_range=1000.0, pad_factor=1, verbose=False):
+        import matplotlib
+        matplotlib.use('agg')
+        import matplotlib.pyplot as plt
+        import matplotlib.animation as animation
+
+        fig = plt.figure()
+        
+        extent = self.psize/RADPERUAS*self.xdim*np.array((1,-1,-1,1)) / 2.
+        maxi = np.max(np.concatenate([im for im in self.frames]))
+
+        def im_data(n):
+            n_data = (n-n%pad_factor)/pad_factor
+            if plot_log_amplitude == False:
+                return self.frames[n_data].reshape((self.ydim,self.xdim))
+            else:
+                return np.log(self.frames[n_data][n_data].reshape((self.ydim,self.xdim)) + maxi/plot_dynamic_range)
+
+        plt_im = plt.imshow(im_data(0), extent=extent, cmap=plt.get_cmap('afmhot'), interpolation='gaussian') 
+        if scale == 'linear':
+            plt_im.set_clim([0,maxi])
+        else:
+            plt_im.set_clim([np.log(maxi/dynamic_range),np.log(maxi)])
+
+        plt.xlabel('Relative RA ($\mu$as)')
+        plt.ylabel('Relative Dec ($\mu$as)')
+        fig.set_size_inches([5,5])
+        plt.tight_layout()
+
+        def update_img(n):
+            if verbose:
+                print "processing frame {0} of {1}".format(n, len(self.frames)*pad_factor)        
+            plt_im.set_data(im_data(n))
+            return plt_im
+
+        ani = animation.FuncAnimation(fig,update_img,len(self.frames)*pad_factor,interval=1e3/fps)
+        writer = animation.writers['ffmpeg'](fps=fps, bitrate=1e6)
+        ani.save(out,writer=writer,dpi=dpi)
+
+
+
 ##################################################################################################
-# Movie creation functions
+# Movie creation and export functions
 ##################################################################################################
 
 def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
@@ -369,4 +410,7 @@ def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
            Movie: a Movie object
     """
     return load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse)
+
+
+
 
