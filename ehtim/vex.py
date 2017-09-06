@@ -15,6 +15,9 @@ import ehtim.array
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+###########################################################################################################################################
+# Vex object
+###########################################################################################################################################
 class Vex(object):
     """Read in observing schedule data from .vex files.
        Assumes there is only 1 MODE in vex file
@@ -196,6 +199,9 @@ class Vex(object):
 
     # Function to obtain a desired sector from 'metalist'
     def get_sector(self, sname):
+        """Obtain a desired sector from 'metalist'. 
+        """
+
         for i in range(len(self.metalist)):
             if sname in self.metalist[i][0]:
                 return self.metalist[i]
@@ -205,6 +211,9 @@ class Vex(object):
     # Function to get a value of 'vname' in a line which has format of
     # 'vname' = value ;(or :)
     def get_variable(self, vname, line):
+        """Function to get a value of 'vname' in a line.
+        """
+
         idx = self.find_variable(vname,line)
         name = ''
         if idx>=0:
@@ -220,6 +229,8 @@ class Vex(object):
     # check if a variable 'vname' exists by itself in a line.
     # returns index of vname[0] in a line, or -1
     def find_variable(self, vname, line):
+        """Function to find a variable 'vname' in a line.
+        """
         idx = line.find(vname)
         if ((idx>0 and line[idx-1]==' ') or idx==0) and line[0]!='*':
             if idx+len(vname)==len(line): return idx
@@ -230,6 +241,8 @@ class Vex(object):
     # For now look for it in Andrew's tables
     # Vex files could have SEFD sector.
     def get_SEFD(self, station):
+        """Find SEFD for a given station.
+        """
         f = open(os.path.dirname(os.path.abspath(__file__)) + "/../arrays/SITES.txt")
         sites = f.readlines()
         f.close()
@@ -242,6 +255,10 @@ class Vex(object):
     # Find the time that any station starts observing the source in MJD.
     # Find the time that the last station stops observing the source in MHD.
     def get_obs_timerange(self, source):
+        """Find the time that any station starts observing the source in MJD,
+           and the time that the last station stops observing the source.
+        """
+
         sched = self.sched
         first = True
         for i_scan in range(len(sched)):
@@ -253,7 +270,7 @@ class Vex(object):
                 Tstop_hr = sched[i_scan]['start_hr'] + sched[i_scan]['scan'][0]['scan_sec']/3600.
                 mjd_e = sched[i_scan]['mjd_floor'] + Tstop_hr/24.
 
-        return mjd_s,mjd_e
+        return mjd_s, mjd_e
 
 
 #=================================================================
@@ -262,6 +279,8 @@ class Vex(object):
 # Function to find MJD (int!) and hour in UT from vex format,
 # e.g, 2016y099d05h00m00s
 def vexdate_to_MJD_hr(vexdate):
+    """Find the integer MJD and UT hour from vex format date. 
+    """
     time = re.findall("[-+]?\d+[\.]?\d*",vexdate)
     year = int(time[0])
     date = int(time[1])

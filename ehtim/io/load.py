@@ -9,6 +9,7 @@ import astropy.io.fits as fits
 import datetime
 import os
 import copy
+import sys
 
 import ehtim.obsdata
 import ehtim.image
@@ -31,86 +32,6 @@ def load_vex(fname):
     """
     return ehtim.vex.Vex(fname)
 
-##################################################################################################
-# Movie IO
-##################################################################################################
-#!AC TODO this needs a lot of work
-#!AC TODO think about how to do the filenames
-def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
-    """Read in a movie from text files and create a Movie object
-       Text files should be filename + 00001, etc.
-       Text files should have the same format as output from Image.save_txt()
-       Make sure the header has exactly the same form!
-    """
-
-    framelist = []
-    qlist = []
-    ulist = []
-
-    for i in range(nframes):
-        filename = basename + "%05d" % i
-
-        # Read the header
-        file = open(filename)
-        src = ' '.join(file.readline().split()[2:])
-        ra = file.readline().split()
-        ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
-        dec = file.readline().split()
-        dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
-        mjd_frac = float(file.readline().split()[2])
-        mjd = np.floor(mjd_frac)
-        hour = (mjd_frac - mjd)*24.0
-        rf = float(file.readline().split()[2]) * 1e9
-        xdim = file.readline().split()
-        xdim_p = int(xdim[2])
-        psize_x = float(xdim[4])*RADPERAS/xdim_p
-        ydim = file.readline().split()
-        ydim_p = int(ydim[2])
-        psize_y = float(ydim[4])*RADPERAS/ydim_p
-        file.close()
-
-        if psize_x != psize_y:
-            raise Exception("Pixel dimensions in x and y are inconsistent!")
-        if i == 0:
-            src0 = src
-            ra0 = ra
-            dec0 = dec
-            mjd0 = mjd
-            hour0 = hour
-            rf0 = rf
-            xdim0 = xdim
-            ydim0 = ydim
-            psize0 = psize_x
-        else:
-            pass
-            #some checks on header consistency
-
-        # Load the data, convert to list format, make object
-        datatable = np.loadtxt(filename, dtype=float)
-        image = datatable[:,2].reshape(ydim_p, xdim_p)
-        framelist.append(image)
-
-        # Look for Stokes Q and U
-        qimage = uimage = np.zeros(image.shape)
-        if datatable.shape[1] == 5:
-            qimage = datatable[:,3].reshape(ydim_p, xdim_p)
-            uimage = datatable[:,4].reshape(ydim_p, xdim_p)
-            qlist.append(qimage)
-            ulist.append(uimage)
-
-    if frame_dur == -1:
-        frame_dur = (hour - hour0)/float(nframes)*3600.0
-
-    out_mov = ehtim.movie.Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, start_hr=hour0, pulse=pulse)
-
-    if len(qlist):
-        print('Loaded Stokes I, Q, and U movies')
-        out_mov.add_qu(qlist, ulist)
-    else:
-        print('Loaded Stokes I movie only')
-
-    return out_mov
-
 
 ##################################################################################################
 # Image IO
@@ -128,7 +49,9 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
     ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
     dec = file.readline().split()
     dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
-    mjd = int(float(file.readline().split()[2]))
+    mjd_float = float(file.readline().split()[2])
+    mjd = int(mjd_float)
+    time = (mjd_float - mjd) * 24
     rf = float(file.readline().split()[2]) * 1e9
     xdim = file.readline().split()
     xdim_p = int(xdim[2])
@@ -144,7 +67,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
     # Load the data, convert to list format, make object
     datatable = np.loadtxt(filename, dtype=float)
     image = datatable[:,2].reshape(ydim_p, xdim_p)
-    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
+    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, time=time, pulse=pulse)
 
     # Look for Stokes Q and U
     qimage = uimage = vimage = np.zeros(image.shape)
@@ -157,17 +80,18 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
         uimage = datatable[:,4].reshape(ydim_p, xdim_p)
 
     if np.any((qimage != 0) + (uimage != 0)) and np.any((vimage != 0)):
-        print('Loaded Stokes I, Q, U, and V Images')
+        #print('Loaded Stokes I, Q, U, and V Images')
         outim.add_qu(qimage, uimage)
         outim.add_v(vimage)
     elif np.any((vimage != 0)):
-        print('Loaded Stokes I and V Images')
+        #print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
     elif np.any((qimage != 0) + (uimage != 0)):
-        print('Loaded Stokes I, Q, and U Images')
+        #print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)
     else:
-        print('Loaded Stokes I Image Only')
+        pass
+        #print('Loaded Stokes I Image Only')
 
     return outim
 
@@ -203,8 +127,10 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     elif 'CRVAL2' in list(header.keys()):  dec = header['CRVAL2']
     else: dec = 0.
 
-    if 'MJD' in list(header.keys()): mjd = header['MJD']
-    else: mjd = 0.
+    if 'MJD' in list(header.keys()): mjd_float = header['MJD']
+    else: mjd_float = 0.
+    mjd = int(mjd_float)
+    time = (mjd_float - mjd) * 24
 
     if 'FREQ' in list(header.keys()): rf = header['FREQ']
     else: rf = 0.
@@ -226,7 +152,7 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     image *= normalizer
 
     # make image object
-    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
+    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, time=time, pulse=pulse)
 
     # Look for Stokes Q and U
     qimage = uimage = vimage = np.array([])
@@ -244,64 +170,162 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
             vimage = normalizer*data[::-1,:] # flip y-axis!
 
     if qimage.shape == uimage.shape == vimage.shape == image.shape:
-        print('Loaded Stokes I, Q, U, and V Images')
+        #print('Loaded Stokes I, Q, U, and V Images')
         outim.add_qu(qimage, uimage)
         outim.add_v(vimage)
     elif vimage.shape == image.shape:
-        print('Loaded Stokes I and V Images')
+        #print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
     elif qimage.shape == uimage.shape == image.shape:
-        print('Loaded Stokes I, Q, and U Images')
+        #print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)
     else:
-        print('Loaded Stokes I Image Only')
+        pass
+        #print('Loaded Stokes I Image Only')
 
     return outim
 
 
-#!AC TODO - Michael...what exactly is this for?
-def load_im_manual_fits(filename, timesrot90=0, punit="deg", fov=-1, ra=RA_DEFAULT, dec=DEC_DEFAULT,
-                        rf=RF_DEFAULT, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT , pulse=PULSE_DEFAULT):
+##################################################################################################
+# Movie IO
+##################################################################################################
+#TODO think more about how to do the filenames
+#def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
+#    """Read in a movie from text files and create a Movie object
+#       Text files should be filename + 00001, etc.
+#       Text files should have the same format as output from Image.save_txt()
+#       Make sure the header has exactly the same form!
+#    """
 
-    # Radian or Degree?
-    if punit=="deg":
-        pscl = DEGREE
-    elif punit=="rad":
-        pscl = 1.0
-    elif punit=="uas":
-        pscl = RADPERUAS
-    elif punit=="mas":
-        pscl = RADPERUAS * 1000.0
+#    framelist = []
+#    qlist = []
+#    ulist = []
+
+#    for i in range(nframes):
+#        filename = basename + "%05d" % i
+
+#        # Read the header
+#        file = open(filename)
+#        src = ' '.join(file.readline().split()[2:])
+#        ra = file.readline().split()
+#        ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
+#        dec = file.readline().split()
+#        dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
+#        mjd_frac = float(file.readline().split()[2])
+#        mjd = np.floor(mjd_frac)
+#        hour = (mjd_frac - mjd)*24.0
+#        rf = float(file.readline().split()[2]) * 1e9
+#        xdim = file.readline().split()
+#        xdim_p = int(xdim[2])
+#        psize_x = float(xdim[4])*RADPERAS/xdim_p
+#        ydim = file.readline().split()
+#        ydim_p = int(ydim[2])
+#        psize_y = float(ydim[4])*RADPERAS/ydim_p
+#        file.close()
+
+#        if psize_x != psize_y:
+#            raise Exception("Pixel dimensions in x and y are inconsistent!")
+#        if i == 0:
+#            src0 = src
+#            ra0 = ra
+#            dec0 = dec
+#            mjd0 = mjd
+#            hour0 = hour
+#            rf0 = rf
+#            xdim0 = xdim
+#            ydim0 = ydim
+#            psize0 = psize_x
+#        else:
+#            pass
+#            #some checks on header consistency
+
+#        # Load the data, convert to list format, make object
+#        datatable = np.loadtxt(filename, dtype=float)
+#        image = datatable[:,2].reshape(ydim_p, xdim_p)
+#        framelist.append(image)
+
+#        # Look for Stokes Q and U
+#        qimage = uimage = np.zeros(image.shape)
+#        if datatable.shape[1] == 5:
+#            qimage = datatable[:,3].reshape(ydim_p, xdim_p)
+#            uimage = datatable[:,4].reshape(ydim_p, xdim_p)
+#            qlist.append(qimage)
+#            ulist.append(uimage)
+
+#    if frame_dur == -1:
+#        frame_dur = (hour - hour0)/float(nframes)*3600.0
+
+#    out_mov = ehtim.movie.Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, start_hr=hour0, pulse=pulse)
+
+#    if len(qlist):
+#        print('Loaded Stokes I, Q, and U movies')
+#        out_mov.add_qu(qlist, ulist)
+#    else:
+#        print('Loaded Stokes I movie only')
+
+#    return out_mov
+
+def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
+    """Read in a movie from text files and create a Movie object
+       Text files should be filename + 00001, etc.
+       Text files should have the same format as output from Image.save_txt()
+       Make sure the header has exactly the same form!
+    """
+
+    imlist = []
+
+    for i in range(nframes):
+        filename = basename + "%05d" % i
+
+        sys.stdout.write('\rReading Movie Image %i/%i...' % (i,nframes))
+        sys.stdout.flush()
+
+        im = load_im_txt(filename, pulse=pulse)
+        imlist.append(im)
+
+        hour = im.time
+        if i == 0:
+            hour0 = im.time
+        else:
+            pass
+
+    if framedur == -1:
+        framedur = ((hour - hour0)/float(nframes))*3600.0
+
+    out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur)
+
+    return out_mov
 
 
-    hdulist = fits.open(filename)
-    header = hdulist[0].header
-    data = hdulist[0].data
+def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
+    """Read in a movie from fits files and create a Movie object
+       Fits files should be filename + 00001, etc.
+    """
 
-    if 'NAXIS1' in list(header.keys()): xdim_p = header['NAXIS1']
-    else: xdim_p = data.shape[-2]
+    imlist = []
 
-    if 'CDELT1' in list(header.keys()):
-        psize_x = np.abs(header['CDELT1']) * pscl
-    else:
-        psize_x = (float(fov)/data.shape[-2]) * pscl
-        if fov==-1:
-            print('WARNING: Must provide a field of view for the image')
+    for i in range(nframes):
+        filename = basename + "%05d" % i
 
-    normalizer = 1.0;
-    if 'BUNIT' in list(header.keys()):
-        if header['BUNIT'] == 'JY/BEAM':
-            beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
-            normalizer = (header['CDELT2'])**2/beamarea
+        sys.stdout.write('\rReading Movie Image %i/%i...' % (i,nframes))
+        sys.stdout.flush()
 
-    data = data.reshape((data.shape[-2],data.shape[-1]))
+        im = load_im_fits(filename, pulse=pulse)
+        imlist.append(im)
 
-    image = data[::-1,:] # flip y-axis!
-    image = np.rot90(image, k=timesrot90)
-    outim = ehtim.image.Image(image*normalizer, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, pulse=pulse)
+        hour = im.time
+        if i == 0:
+            hour0 = im.time
+        else:
+            pass
 
-    print('Loaded Stokes I image only')
-    return outim
+    if framedur == -1:
+        framedur = ((hour - hour0)/float(nframes))*3600.0
+
+    out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur)
+
+    return out_mov
+
 
 ##################################################################################################
 # Array IO
@@ -569,7 +593,7 @@ def load_obs_uvfits(filename, flipbl=False):
         sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
         sefdl = np.real(hdulist['AIPS AN'].data['SEFD']) #!AC TODO add sefdl to uvfits?
     except KeyError:
-        print("Warning! no SEFD data in UVfits file")
+        #print("Warning! no SEFD data in UVfits file")
         sefdr = np.zeros(len(tnames))
         sefdl = np.zeros(len(tnames))
 

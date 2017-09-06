@@ -30,6 +30,7 @@ class Image(object):
            xdim (int): The number of pixels along the x dimension
            ydim (int): The number of pixels along the y dimension
            mjd (int): The integer MJD of the image
+           time (float): The observing time of the image (UTC hours)
            source (str): The astrophysical source name
            ra (float): The source Right Ascension in fractional hours
            dec (float): The source declination in fractional degrees
@@ -40,7 +41,7 @@ class Image(object):
            vvec (array): The vector of stokes V values in Jy/pixel (len xdim*ydim)
     """
 
-    def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT):
+    def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, time=0.):
         """A polarimetric image (in units of Jy/pixel).
 
            Args:
@@ -52,9 +53,10 @@ class Image(object):
                pulse (function): The function convolved with the pixel values for continuous image.
                source (str): The astrophysical source name
                mjd (int): The integer MJD of the image
+               time (float): The observing time of the image (UTC hours)
 
            Returns:
-               image (Image): the Image object    
+               (Image): the Image object    
         """
 
         if len(image.shape) != 2:
@@ -72,6 +74,12 @@ class Image(object):
         self.source = str(source)
         self.mjd = int(mjd)
 
+        if time > 24:
+            self.mjd += int((time - time % 24)/24)
+            self.time = float(time % 24)
+        else:
+            self.time = time
+            
         self.qvec = []
         self.uvec = []
         self.vvec = []
@@ -131,7 +139,7 @@ class Image(object):
            Args:
 
            Returns:
-                vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)
+                (numpy.array): normal vector pointing to source in geocentric coordinates (m)
         """
 
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
@@ -142,7 +150,7 @@ class Image(object):
            Args: 
                stokes (str): "I","Q","U","V" for a given Stokes parameter
            Returns:
-               imarr (numpy.array): 2D image array of dimension (ydim, xdim)
+               (numpy.array): 2D image array of dimension (ydim, xdim)
         """
 
         imarr = np.array([])
@@ -158,7 +166,7 @@ class Image(object):
            Args:
 
            Returns: 
-                fovx (float) : image fov in x direction (radian)
+                (float) : image fov in x direction (radian)
         """
 
         return self.psize * self.xdim
@@ -169,7 +177,7 @@ class Image(object):
            Args:
 
            Returns: 
-                fovy (float) : image fov in y direction (radian)
+                (float) : image fov in y direction (radian)
         """
         return self.psize * self.ydim
 
@@ -178,7 +186,7 @@ class Image(object):
 
            Args:
            Returns: 
-                flux (float) : image total flux (Jy)
+                (float) : image total flux (Jy)
         """
         return np.sum(self.imvec)
 
@@ -198,7 +206,7 @@ class Image(object):
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
            Returns:
-               obs (Obsdata): an observation object with no noise
+               (Obsdata): an observation object with no noise
         """
 
         data = simobs.observe_image_nonoise(self, obs, sgrscat=sgrscat, ft=ft, fft_pad_factor=fft_pad_factor)
@@ -237,7 +245,7 @@ class Image(object):
                dtermp_resid (float): the fractional std. dev. of the random error on the D-terms
 
            Returns:
-               obs (Obsdata): an observation object
+               (Obsdata): an observation object
 
         """
 
@@ -323,7 +331,7 @@ class Image(object):
                dtermp_resid (float): the fractional std. dev. of the random error on the D-terms
 
            Returns:
-               obs (Obsdata): an observation object
+               (Obsdata): an observation object
 
         """
 
@@ -373,7 +381,7 @@ class Image(object):
 
 
            Returns:
-               obs (Obsdata): an observation object
+               (Obsdata): an observation object
 
         """
 
@@ -404,7 +412,7 @@ class Image(object):
                 targetfov  (float): new field of view (radian) 
                 npix  (int): new pixel dimension 
            Returns:
-                im_regrid (Image): resampled image 
+                (Image): resampled image 
         """
         
         fov_x = self.xdim * self.psize
@@ -464,7 +472,7 @@ class Image(object):
              blursmall (bool) : True to blur the unpadded image rather than the large image.
 
          Returns:
-             out (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images
+             (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images
         """
 
         im1 = self.copy()
@@ -610,7 +618,7 @@ class Image(object):
            Args:
                 flux  (float): total flux to add to image
            Returns:
-                im_flat (Image): output image 
+                (Image): output image 
         """
 
         im = self
@@ -625,7 +633,7 @@ class Image(object):
                 flux  (float): total flux to add to image
                 radius  (float): radius of top hat flux in radians
            Returns:
-                im_tophat (Image): output image 
+                (Image): output image 
         """
 
         im = self
@@ -652,7 +660,7 @@ class Image(object):
                flux (float): the total flux contained in the Gaussian in Jy
                beamparams (list): the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians
            Returns:
-                im_gauss (Image): output image 
+                (Image): output image 
         """
 
         im = self
@@ -694,7 +702,7 @@ class Image(object):
                x (float): the center x coordinate of the larger disk in radians
                y (float): the center y coordinate of the larger disk in radians
            Returns:
-               im_cresc (Image): output image 
+               (Image): output image 
         """
 
         im = self
@@ -726,7 +734,7 @@ class Image(object):
                mag (float): constant polarization fraction to add to the image
                angle (float): constant EVPA
            Returns:
-                im_out (Image): output image 
+                (Image): output image 
         """
         im = self
         if not (0 < mag < 1):
@@ -746,7 +754,7 @@ class Image(object):
                frac (float): fractional beam size for Stokes I  blurring
                frac_pol (float): fractional beam size for Stokes Q,U,V  blurring
            Returns:
-               im_out (Image): output image 
+               (Image): output image 
         """
 
         image = self
@@ -814,7 +822,7 @@ class Image(object):
                fwhm_i (float): circular beam size for Stokes I  blurring in  radian
                fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian
            Returns:
-               im_out (Image): output image 
+               (Image): output image 
         """
 
         image = self
@@ -840,7 +848,7 @@ class Image(object):
            Args:
                frac_i (float): Stokes I floor as a fraction of maximum stokes I point
            Returns:
-               im_out (Image): output image 
+               (Image): output image 
         """
 
         image=self
@@ -879,7 +887,7 @@ class Image(object):
                show (bool): Display the plot if true
 
            Returns:
-               fig (matplotlib.figure.Figure): figure object with image
+               (matplotlib.figure.Figure): figure object with image
 
         """
 
@@ -1001,7 +1009,7 @@ def make_square(obs, npix, fov, pulse=PULSE_DEFAULT):
            fov (float): the field of view of each axis in radians
            pulse (function): the function convolved with the pixel values for continuous image
        Returns:
-           empty_image (Image): an image object
+           (Image): an image object
     """
 
     pdim = fov/float(npix)
@@ -1015,7 +1023,7 @@ def load_txt(fname):
        Args:
             fname (str): path to input text file
        Returns: 
-            image (Image): loaded image object
+            (Image): loaded image object
     """
 
     return ehtim.io.load.load_im_txt(fname)
@@ -1026,7 +1034,7 @@ def load_fits(fname):
        Args:
             fname (str): path to input fits file
        Returns: 
-            image (Image): loaded image object
+            (Image): loaded image object
     """
 
     return ehtim.io.load.load_im_fits(fname)

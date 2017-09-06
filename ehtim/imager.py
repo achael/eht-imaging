@@ -81,6 +81,9 @@ class Imager(object):
 
 
     def set_embed(self):
+        """Set embedding matrix.
+        """
+
 
         self._embed_mask = self.prior_next.imvec > self.clipfloor_next
         coord = np.array([[[x,y] for x in np.arange(self.prior_next.xdim//2,-self.prior_next.xdim//2,-1)]
@@ -92,6 +95,8 @@ class Imager(object):
 
 
     def check_params(self):
+        """Check parameter consistency.
+        """
 
         dt_here = False
         dt_type = True
@@ -152,6 +157,8 @@ class Imager(object):
             return
 
     def check_limits(self):
+        """Check image parameter consistency with observation.
+        """
 
         imsize = np.max([self.prior_next.xdim, self.prior_next.ydim]) * self.prior_next.psize
         uvmax = 1.0/self.prior_next.psize
@@ -171,66 +178,89 @@ class Imager(object):
             print("Warning! Specified flux is < 80% of maximum visibility amplitude!")
 
     def reg_terms_last(self):
+        """Return last used regularizer terms.
+        """
+
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._reg_term_list[-1]
 
     def dat_terms_last(self):
+        """Return last used data terms.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._dat_term_list[-1]
 
     def obs_last(self):
+        """Return last used observation.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._obs_list[-1]
 
     def prior_last(self):
+        """Return last used prior image.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._prior_list[-1]
 
     def out_last(self):
+        """Return last result.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._out_list[-1]
 
     def init_last(self):
+        """Return last initial image.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._init_list[-1]
 
     def flux_last(self):
+        """Return last total flux constraint.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._flux_list[-1]
 
     def clipfloor_last(self):
+        """Return last clip floor.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._clipfloor_list[-1]
 
     def maxit_last(self):
+        """Return last max_iterations value.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._maxit_list[-1]
 
     def transform_last(self):
+        """Return last image transfrom used.
+        """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._transform_list[-1]
 
     def init_imager_I(self):
+        """Set up Stokes I imager.
+        """
 
         # embedding, prior & initial image vectors
         self.set_embed()
@@ -248,6 +278,8 @@ class Imager(object):
         return
 
     def init_imager_scattering(self):
+        """Set up scattering imager.
+        """
         if self.scattering_model == None:
             self.scattering_model = so.ScatteringModel()
 
@@ -269,6 +301,8 @@ class Imager(object):
 
 
     def make_chisq_dict(self, imvec):
+        """make dictionary of current chi^2 term values
+        """
         chi2_dict = {}
         for dname in sorted(self.dat_term_next.keys()):
             data = self._data_tuples[dname][0]
@@ -281,6 +315,8 @@ class Imager(object):
         return chi2_dict
 
     def make_chisqgrad_dict(self, imvec):
+        """make dictionary of current chi^2 term gradient values
+        """
         chi2grad_dict = {}
         for dname in sorted(self.dat_term_next.keys()):
             data = self._data_tuples[dname][0]
@@ -293,6 +329,8 @@ class Imager(object):
         return chi2grad_dict
 
     def make_reg_dict(self, imvec):
+        """make dictionary of current regularizer values
+        """
         reg_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
             # incorporate flux and cm into the generic "regularizer"  function!
@@ -319,6 +357,8 @@ class Imager(object):
         return reg_dict
 
     def make_reggrad_dict(self, imvec):
+        """make dictionary of current regularizer gradient values
+        """
         reggrad_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
             # incorporate flux and cm into the generic "regularizer"  function!
@@ -345,6 +385,8 @@ class Imager(object):
         return reggrad_dict
 
     def objfunc(self, imvec):
+        """Current objective function.
+        """
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
@@ -361,6 +403,8 @@ class Imager(object):
         return datterm + regterm
 
     def objfunc_scattering(self, minvec):
+        """Current stochastic optics objective function.
+        """
         N = self.prior_next.xdim
 
         imvec       = minvec[:N**2]
@@ -390,6 +434,8 @@ class Imager(object):
         return datterm + regterm + regterm_scattering
 
     def objgrad(self, imvec):
+        """Current objective function gradient.
+        """
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
@@ -412,6 +458,8 @@ class Imager(object):
         return grad
 
     def objgrad_scattering(self, minvec):
+        """Current stochastic optics objective function gradient
+        """
         wavelength = C/self.obs_next.rf*100.0 #Observing wavelength [cm]
         wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
         N = self.prior_next.xdim
@@ -580,7 +628,8 @@ class Imager(object):
         self._nit += 1
 
     def make_image_I(self, grads=True, show_updates=True):
-
+        """Make Stokes I image using current imager settings.
+        """
         # Checks and initialize
         self.check_params()
         self.check_limits()

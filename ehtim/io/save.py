@@ -15,54 +15,10 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 ##################################################################################################
-# Movie IO
-##################################################################################################
-
-def save_mov_txt(mov, fname):
-    """Save movie data to text files"""
-
-    # Coordinate values
-    pdimas = mov.psize/RADPERAS
-    xs = np.array([[j for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
-    xs = pdimas * (xs[::-1] - mov.xdim/2.0)
-    ys = np.array([[i for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
-    ys = pdimas * (ys[::-1] - mov.xdim/2.0)
-
-    for i in range(len(mov.frames)):
-        fname_frame = fname + "%05d" % i
-        # Data
-        if len(mov.qframes):
-            outdata = np.hstack((xs, ys, (mov.frames[i]).reshape(mov.xdim*mov.ydim, 1),
-                                         (mov.qframes[i]).reshape(mov.xdim*mov.ydim, 1),
-                                         (mov.uframes[i]).reshape(mov.xdim*mov.ydim, 1)))
-            hf = "x (as)     y (as)       I (Jy/pixel)  Q (Jy/pixel)  U (Jy/pixel)"
-
-            fmts = "%10.10f %10.10f %10.10f %10.10f %10.10f"
-        else:
-            outdata = np.hstack((xs, ys, (mov.frames[i]).reshape(mov.xdim*mov.ydim, 1)))
-            hf = "x (as)     y (as)       I (Jy/pixel)"
-            fmts = "%10.10f %10.10f %10.10f"
-
-        # Header
-        head = ("SRC: %s \n" % mov.source +
-                    "RA: " + rastring(mov.ra) + "\n" + "DEC: " + decstring(mov.dec) + "\n" +
-                    "MJD: %i \n" % (float(mov.mjd) + mov.start_hr/24.0 + i*mov.framedur/86400.0) +
-                    "RF: %.4f GHz \n" % (mov.rf/1e9) +
-                    "FOVX: %i pix %f as \n" % (mov.xdim, pdimas * mov.xdim) +
-                    "FOVY: %i pix %f as \n" % (mov.ydim, pdimas * mov.ydim) +
-                    "------------------------------------\n" + hf)
-
-        # Save
-        np.savetxt(fname_frame, outdata, header=head, fmt=fmts)
-
-    return
-
-
-##################################################################################################
 # Image IO
 ##################################################################################################
-def save_im_txt(im, fname):
-    """Save image data to text file
+def save_im_txt(im, fname, mjd=False, time=False):
+    """Save image data to text file.
     """
 
     # Coordinate values
@@ -101,9 +57,13 @@ def save_im_txt(im, fname):
         fmts = "%10.10f %10.10f %10.10f"
 
     # Header
+    if not mjd: mjd = float(im.mjd)
+    if not time: time = im.time
+    mjd += (time/24.)
+
     head = ("SRC: %s \n" % im.source +
                 "RA: " + rastring(im.ra) + "\n" + "DEC: " + decstring(im.dec) + "\n" +
-                "MJD: %i \n" % im.mjd +
+                "MJD: %.6f \n" % (float(mjd)) +  
                 "RF: %.4f GHz \n" % (im.rf/1e9) +
                 "FOVX: %i pix %f as \n" % (im.xdim, pdimas * im.xdim) +
                 "FOVY: %i pix %f as \n" % (im.ydim, pdimas * im.ydim) +
@@ -113,8 +73,8 @@ def save_im_txt(im, fname):
     np.savetxt(fname, outdata, header=head, fmt=fmts)
     return
 
-def save_im_fits(im, fname):
-    """Save image data to FITS file
+def save_im_fits(im, fname, mjd=False, time=False):
+    """Save image data to FITS file.
     """
 
     # Create header and fill in some values
@@ -127,7 +87,12 @@ def save_im_fits(im, fname):
     header['OBSRA'] = im.ra * 180/12.
     header['OBSDEC'] = im.dec
     header['FREQ'] = im.rf
-    header['MJD'] = float(im.mjd)
+
+    if not mjd: mjd = float(im.mjd)
+    if not time: time = im.time
+    mjd += (time/24.)
+
+    header['MJD'] = float(mjd)
     header['TELESCOP'] = 'VLBI'
     header['BUNIT'] = 'JY/PIXEL'
     header['STOKES'] = 'I'
@@ -158,11 +123,78 @@ def save_im_fits(im, fname):
     return
 
 ##################################################################################################
+# Movie IO
+##################################################################################################
+
+def save_mov_fits(mov, fname):
+    """Save movie data to fits files.
+    """
+
+    for i in range(len(mov.frames)):
+        time_frame = mov.start_hr + i*mov.framedur/3600.
+        fname_frame = fname + "%05d" % i
+        frame_im = mov.get_frame(i)
+        save_im_fits(frame_im, fname_frame, mjd=mov.mjd, time=time_frame)
+
+    return
+
+def save_mov_txt(mov, fname):
+    """Save movie data to text files.
+    """
+
+    for i in range(len(mov.frames)):
+        time_frame = mov.start_hr + i*mov.framedur/3600.
+        fname_frame = fname + "%05d" % i
+        frame_im = mov.get_frame(i)
+        save_im_txt(frame_im, fname_frame, mjd=mov.mjd, time=time_frame)
+
+    return
+
+#def save_mov_txt(mov, fname):
+#    """Save movie data to text files.
+#    """
+
+#    # Coordinate values
+#    pdimas = mov.psize/RADPERAS
+#    xs = np.array([[j for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
+#    xs = pdimas * (xs[::-1] - mov.xdim/2.0)
+#    ys = np.array([[i for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
+#    ys = pdimas * (ys[::-1] - mov.xdim/2.0)
+
+#    for i in range(len(mov.frames)):
+#        fname_frame = fname + "%05d" % i
+#        # Data
+#        if len(mov.qframes):
+#            outdata = np.hstack((xs, ys, (mov.frames[i]).reshape(mov.xdim*mov.ydim, 1),
+#                                         (mov.qframes[i]).reshape(mov.xdim*mov.ydim, 1),
+#                                         (mov.uframes[i]).reshape(mov.xdim*mov.ydim, 1)))
+#            hf = "x (as)     y (as)       I (Jy/pixel)  Q (Jy/pixel)  U (Jy/pixel)"
+
+#            fmts = "%10.10f %10.10f %10.10f %10.10f %10.10f"
+#        else:
+#            outdata = np.hstack((xs, ys, (mov.frames[i]).reshape(mov.xdim*mov.ydim, 1)))
+#            hf = "x (as)     y (as)       I (Jy/pixel)"
+#            fmts = "%10.10f %10.10f %10.10f"
+
+#        # Header
+#        head = ("SRC: %s \n" % mov.source +
+#                    "RA: " + rastring(mov.ra) + "\n" + "DEC: " + decstring(mov.dec) + "\n" +
+#                    "MJD: %i \n" % (float(mov.mjd) + mov.start_hr/24.0 + i*mov.framedur/86400.0) +
+#                    "RF: %.4f GHz \n" % (mov.rf/1e9) +
+#                    "FOVX: %i pix %f as \n" % (mov.xdim, pdimas * mov.xdim) +
+#                    "FOVY: %i pix %f as \n" % (mov.ydim, pdimas * mov.ydim) +
+#                    "------------------------------------\n" + hf)
+
+#        # Save
+#        np.savetxt(fname_frame, outdata, header=head, fmt=fmts)
+
+#    return
+##################################################################################################
 # Array IO
 ##################################################################################################
 
 def save_array_txt(arr, fname):
-    """Save the array data in a text file
+    """Save the array data in a text file.
     """
 
     out = ("#Site      X(m)             Y(m)             Z(m)           "+
@@ -186,6 +218,8 @@ def save_array_txt(arr, fname):
 # Observation IO
 ##################################################################################################
 def save_obs_txt(obs, fname):
+    """Save the observation data in a text file.
+    """
 
     # Get the necessary data and the header
     outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
@@ -234,8 +268,7 @@ def save_obs_txt(obs, fname):
 
 
 def save_obs_uvfits(obs, fname):
-    """Save visibility data to uvfits
-       Needs template.UVP file
+    """Save observation data to uvfits.
     """
 
     # Open template UVFITS

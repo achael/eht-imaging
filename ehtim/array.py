@@ -12,7 +12,7 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 ###########################################################################################################################################
-#Array object
+# Array object
 ###########################################################################################################################################
 class Array(object):
     """A VLBI array of telescopes with site locations, SEFDs, and other data.
@@ -44,6 +44,10 @@ class Array(object):
 
     def listbls(self):
         """List all baselines.
+           
+           Args:
+           Returns: 
+                numpy.array : array of baselines
         """
 
         bls = []
@@ -90,6 +94,11 @@ class Array(object):
 
     def make_subarray(self, sites):
         """Make a subarray from the Array object array that only includes the sites listed in sites.
+
+           Args:
+               sites (list) : list of sites in the subarray
+           Returns:
+               Array: an Array object with specified sites and metadata
         """
         all_sites = [t[0] for t in self.tarr]
         mask = np.array([t in sites for t in all_sites])
@@ -97,6 +106,9 @@ class Array(object):
 
     def save_txt(self, fname):
         """Save the array data in a text file.
+
+           Args:
+               fname (str) : path to output array file
         """
         ehtim.io.save.save_array_txt(self,fname)
         return
@@ -105,7 +117,14 @@ class Array(object):
 #Array creation functions
 ###########################################################################################################################################
 def load_txt(fname, ephemdir='ephemeris'):
-    """Read an array from a text file and return an Array object.
-       Sites with x=y=z=0 are spacecraft, and 2TLE ephemerides are loaded from ephemdir.
+    """Read an array from a text file. 
+       Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.
+
+       Args:
+           fname (str) : path to input array file
+           ephemdir (str) : path to directroy with 2TLE ephemerides for spacecraft
+       Returns:
+           Array: an Array object loaded from file
     """
+
     return ehtim.io.load.load_array_txt(fname, ephemdir=ephemdir)

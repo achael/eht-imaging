@@ -7,6 +7,7 @@ from builtins import object
 import numpy as np
 import matplotlib.pyplot as plt
 
+import ehtim.image
 import ehtim.obsdata
 import ehtim.observing.obs_simulate as simobs
 import ehtim.io.save
@@ -305,7 +306,7 @@ class Movie(object):
             movie.start_hr = vex.sched[0]['start_hr']
 
         movie_start = float(movie.mjd) + movie.start_hr/24.0
-        movie_end   = movie_start + len(movie.frames)*movie.framedur/24.0/3600.0
+        movie_end   = movie_start + len(movie.frames)*movie.framedur/86400.
 
         print("Movie MJD Range: ",movie_start,movie_end)
 
@@ -346,14 +347,67 @@ class Movie(object):
                                     ampcal=ampcal, gainp=gainp, phasecal=phasecal, gain_offset=gain_offset,
                                     jones=jones, inv_jones=inv_jones, dcal=dcal, dtermp=dtermp, frcal=frcal,
                                     repeat=False)
+
+    def get_frame(self, frame_num):
+        """Return one movie frame as an image object
+        """
+
+        if frame_num < 0 or frame_num > len(self.frames):
+            raise Exception("Invalid frame number!")
+
+        time = self.start_hr + frame_num * self.framedur*3600
+        im = ehtim.image.Image(self.frames[frame_num].reshape((self.ydim,self.xdim)), self.psize, self.ra, self.dec, self.rf, self.pulse, self.source, self.mjd, time=time)
+        if len(self.qframes) > 0:
+            im.add_qu(self.qframes[frame_num].reshape((self.ydim,self.xdim)), self.uframes[frame_num].reshape((self.ydim,self.xdim)))
+        if len(self.vframes) > 0:
+            im.add_v(self.vframes[frame_num].reshape((self.ydim,self.xdim)))
+
+        return im
+        
+
+    def im_list(self):
+        """Return a list of the movie frames
+        """
+
+        return [self.get_frame(j) for j in range(len(self.frames))]
+
+    def avg_frame(self):
+        """Average the movie frames into a single image
+        """
+        
+        avg_imvec = np.mean(self.frames,axis=0)
+        avg_imarr = avg_imvec.reshape((self.ydim, self.xdim))
+        im = ehtim.image.Image(avg_imarr, self.psize, self.ra, self.dec, self.rf, self.pulse, self.source, self.mjd, time=self.start_hr)
+
+        if len(self.qframes):
+            avg_qvec = np.mean(self.qframes,axis=0)
+            avg_uvec = np.mean(self.uframes,axis=0)
+            avg_qarr = avg_qvec.reshape((self.ydim, self.xdim))
+            avg_uarr = avg_uvec.reshape((self.ydim, self.xdim))
+            im.add_qu(avg_qarr, avg_uarr)
+        if len(self.vframes):
+            avg_vvec = np.mean(self.vframes,axis=0)
+            avg_varr = avg_vvec.reshape((self.ydim, self.xdim))
+            im.add_v(avg_varr)
+        return im
+        
     def save_txt(self, fname):
-        """Save the Movie data to text files with basename fname and filenames basename + 00001, etc. """
+        """Save the Movie data to text files with basename fname and filenames basename + 00001, etc.
+        """
 
         ehtim.io.save.save_mov_txt(self, fname)
         return
 
+    def save_fits(self, fname):
+        """Save the Movie data to fits files with basename fname and filenames basename + 00001, etc.
+        """
+
+        ehtim.io.save.save_mov_fits(self, fname)
+        return
+
     def export_mp4(self, out='movie.mp4', fps=10, dpi=120, interp='gaussian', scale='lin', dynamic_range=1000.0, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1, verbose=False):
-        """Save the Movie to an mp4 file"""
+        """Save the Movie to an mp4 file
+        """
 
         import matplotlib
         matplotlib.use('agg')
@@ -448,29 +502,82 @@ class Movie(object):
         writer = animation.writers['ffmpeg'](fps=fps, bitrate=1e6)
         ani.save(out,writer=writer,dpi=dpi)
 
-    def get_frame(self, frame_num):
-        """Return one movie frame as an image object"""
-        import ehtim.image as image
 
-        if frame_num < 0 or frame_num > len(self.frames):
-            raise Exception("Invalid frame number!")
+##################################################################################################
+# Merge list of image objects from Movie.im_list() into movie object
+##################################################################################################
+def merge_im_list(imlist, framedur=-1):
+    """Merge a list of image objects into a movie object
+    """
+    framelist = []
+    qlist = []
+    ulist = []
+    vlist = []
+    nframes = len(imlist)
 
-        im = image.Image(self.frames[frame_num].reshape((self.ydim,self.xdim)), self.psize, self.ra, self.dec, self.rf, self.pulse, self.source, self.mjd)
-        if len(self.qframes) > 0:
-            im.add_qu(self.qframes[frame_num].reshape((self.ydim,self.xdim)), self.uframes[frame_num].reshape((self.ydim,self.xdim)))
-        if len(self.vframes) > 0:
-            im.add_v(self.vframes[frame_num].reshape((self.ydim,self.xdim)))
+    print ("\nMerging %i frames from MJD %i %.2f hr to MJD %i %.2f hr"%(
+            nframes,imlist[0].mjd,imlist[0].time, imlist[-1].mjd, imlist[-1].time))
+    for i in range(nframes):
+        im = imlist[i]
+        if i==0:
+            psize0 = im.psize
+            xdim0 = im.xdim
+            ydim0 = im.ydim
+            ra0 = im.ra
+            dec0 = im.dec
+            rf0 = im.rf
+            src0 = im.source
+            mjd0 = im.mjd
+            hour0 = im.time
+            pulse = im.pulse
+        else:
+            if (im.psize!=psize0):
+                raise Exception("psize of image %i != psize of image 0!" % i)
+            if (im.xdim!=xdim0):
+                raise Exception("xdim of image %i != xdim of image 0!" % i)
+            if (im.ydim!=ydim0):
+                raise Exception("ydim of image %i != ydim of image 0!" % i)
+            if (im.ra!=ra0):
+                raise Exception("RA of image %i != RA of image 0!" % i)
+            if (im.dec!=dec0):
+                raise Exception("DEC of image %i != DEC of image 0!" % i)
+            if (im.rf!=rf0):
+                raise Exception("rf of image %i != rf of image 0!" % i)
+            if (im.source!=src0):
+                raise Exception("source of image %i != src of image 0!" % i)
+            if (im.mjd < mjd0):
+                raise Exception("mjd of image %i < mjd of image 0!" % i)
 
-        return im
-        
-
-    def im_list(self):
-        """Return a list of the movie frames"""
-        import ehtim.image as image
-
-        return [self.get_frame(j) for j in range(len(self.frames))]
+            hour = im.time
+            if im.mjd > mjd0:
+                hour += 24*(im.mjd - mjd0)
 
 
+        imarr = im.imvec.reshape(ydim0, xdim0)
+        framelist.append(imarr)
+
+        # Look for Stokes Q, U, V
+        qarr = uarr = np.zeros(imarr.shape)
+        if len(im.qvec):
+            qarr = im.qvec(ydim0, xdim0)
+            uarr = im.uvec(ydim0, xdim0)
+            qlist.append(qarr)
+            ulist.append(uarr)
+        if len(im.vvec):
+            varr = im.vvec(ydim0, xdim0)
+            vlist.append(varr)
+
+    if framedur == -1:
+        framedur = ((hour - hour0)/float(nframes))*3600.0
+            
+    mov = Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, start_hr=hour0, pulse=pulse)
+
+    if len(qlist):
+        mov.add_qu(qlist, ulist)
+    if len(vlist):
+        mov.add_v(vlist)
+
+    return mov
 
 ##################################################################################################
 # Movie creation and export functions
@@ -482,13 +589,29 @@ def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
        Args:
            basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
            nframes (int): The total number of frames
-           framedur (float): The frame duration (default = -1, corresponding to framedur taken from file headers)
+           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
 
        Returns:
            Movie: a Movie object
     """
     return ehtim.io.load.load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse)
+
+
+def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
+    """Read in a movie from fits files and create a Movie object.
+
+       Args:
+           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
+           nframes (int): The total number of frames
+           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           pulse (function): The function convolved with the pixel values for continuous image
+
+       Returns:
+           Movie: a Movie object
+    """
+    return ehtim.io.load.load_movie_fits(basename, nframes, framedur=framedur, pulse=pulse)
+
 
 
 

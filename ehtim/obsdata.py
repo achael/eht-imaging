@@ -144,7 +144,7 @@ class Obsdata(object):
            Args:
 
            Returns:
-                obscopy (Obsdata): a copy of the Obsdata object.
+               (Obsdata): a copy of the Obsdata object.
         """
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd,
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal)
@@ -156,7 +156,7 @@ class Obsdata(object):
            Args:
 
            Returns:
-                dataconj (numpy.recarray): a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.
+                (numpy.recarray): a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.
         """
 
         data = np.empty(2*len(self.data), dtype=DTPOL)
@@ -185,7 +185,7 @@ class Obsdata(object):
            Args:
                 conj (bool): True if tlist_out includes conjugate baselines.
            Returns:
-                tlist_out (list): a list of data tables (type DTPOL) containing time-partitioned data
+                (list): a list of data tables (type DTPOL) containing time-partitioned data
         """
 
         if conj:
@@ -206,7 +206,7 @@ class Obsdata(object):
            Args:
                 conj (bool): True if tlist_out includes conjugate baselines.
            Returns:
-                bllist_out (list): a list of data tables (type DTPOL) containing baseline-partitioned data
+                (list): a list of data tables (type DTPOL) containing baseline-partitioned data
         """
         data = self.data
         idx = np.lexsort((data['t2'], data['t1']))
@@ -228,7 +228,7 @@ class Obsdata(object):
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
            Returns:
-                data (numpy.recarray): unpacked numpy array with data in fields requested
+                (numpy.recarray): unpacked numpy array with data in fields requested
         """
 
         # If we only specify one field
@@ -260,7 +260,7 @@ class Obsdata(object):
                 debias (bool): True to debias visibility amplitudes
                 conj (bool): True to include conjugate baselines
            Returns:
-                data (numpy.recarray): unpacked numpy array with data in fields requested
+                (numpy.recarray): unpacked numpy array with data in fields requested
 
         """
 
@@ -305,7 +305,7 @@ class Obsdata(object):
                 debias (bool): True to debias visibility amplitudes
                 conj (bool): True to include conjugate baselines
            Returns:
-                data (numpy.recarray): unpacked numpy array with data in fields requested
+                (numpy.recarray): unpacked numpy array with data in fields requested
 
         """
 
@@ -444,7 +444,7 @@ class Obsdata(object):
            Args:
 
            Returns:
-                vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)
+                (numpy.array): normal vector pointing to source in geocentric coordinates (m)
         """
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
 
@@ -454,7 +454,7 @@ class Obsdata(object):
            Args:
 
            Returns:
-                res (float): normal array resolution in radians
+                (float): normal array resolution in radians
         """
         return 1.0/np.max(self.unpack('uvdist')['uvdist'])
 
@@ -466,7 +466,7 @@ class Obsdata(object):
            Args:
 
            Returns: 
-                obs_list (list): list of single-scan Obsdata objects
+                (list): list of single-scan Obsdata objects
         """
 
         print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
@@ -485,7 +485,7 @@ class Obsdata(object):
            Args:
                 inttime (float): coherent integration time in seconds
            Returns:
-                obs_avg (Obsdata): Obsdata object containing averaged data
+                (Obsdata): Obsdata object containing averaged data
         """
     
         alldata_list = ['vis', 'u', 'v', 
@@ -566,7 +566,7 @@ class Obsdata(object):
                pulse (function): The function convolved with the pixel values for continuous image.
 
            Returns:
-               dirtybeam (Image): an Image object with the dirty beam.
+               (Image): an Image object with the dirty beam.
         """
 
         pdim = fov/npix
@@ -596,7 +596,7 @@ class Obsdata(object):
                pulse (function): The function convolved with the pixel values for continuous image.
 
            Returns:
-               cleanbeam (Image): an Image object with the clean beam.
+               (Image): an Image object with the clean beam.
         """
 
         im = ehtim.image.make_square(self, npix, fov, pulse=pulse)
@@ -608,7 +608,7 @@ class Obsdata(object):
         """Fit a gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).
 
            Returns:
-               beam_params (tuple): a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.
+               (tuple): a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.
         """
 
         # Define the sum of squares function that compares the quadratic expansion of the dirty image
@@ -658,7 +658,7 @@ class Obsdata(object):
                pulse (function): The function convolved with the pixel values for continuous image.
 
            Returns:
-               dirtyimage (Image): an Image object with dirty image.
+               (Image): an Image object with dirty image.
         """
 
         pdim = fov/npix
@@ -717,7 +717,7 @@ class Obsdata(object):
            Args:
  
            Returns:
-               obs_deblur (Obsdata): a new deblurred observation object.
+               (Obsdata): a new deblurred observation object.
         """
 
         # make a copy of observation data
@@ -767,7 +767,7 @@ class Obsdata(object):
                 fitttype (str): "amp" to fit to visibilty amplitudes
                 paramguess (tuble): initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta) 
            Returns:
-               gauss_params: a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
+                (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
         """
 
         vis = self.data['vis']
@@ -800,7 +800,7 @@ class Obsdata(object):
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
 
            Returns:
-               bs_arr (numpy.recarry): A recarray of the bispectra values with datatype DTBIS
+               (numpy.recarry): A recarray of the bispectra values with datatype DTBIS
 
         """
 
@@ -894,7 +894,7 @@ class Obsdata(object):
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
 
            Returns:
-               cphase_arr (numpy.recarry): A recarray of the closure phases with datatype DTPHASE
+               (numpy.recarry): A recarray of the closure phases with datatype DTPHASE
         """
 
         if not mode in ('time', 'all'):
@@ -939,7 +939,7 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
 
            Returns:
-               cphase_arr (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
+               (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
         """
        
         # Get closure phases (maximal set)
@@ -985,7 +985,7 @@ class Obsdata(object):
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
 
            Returns:
-               cphase_arr (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
+               (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
         """
        
         # Get closure phases (maximal set)
@@ -1031,7 +1031,7 @@ class Obsdata(object):
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
 
            Returns:
-               camp_arr (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
+               (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
 
         """
 
@@ -1155,7 +1155,7 @@ class Obsdata(object):
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
 
            Returns:
-               camp_arr (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
+               (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
 
         """
 
@@ -1227,7 +1227,7 @@ class Obsdata(object):
 
 
            Returns:
-               axes (matplotlib.axes.Axes): Axes object with data plot
+               (matplotlib.axes.Axes): Axes object with data plot
 
         """
 
@@ -1301,7 +1301,7 @@ class Obsdata(object):
                ang_unit (str): phase unit 'deg' or 'rad' 
 
            Returns:
-               axes (matplotlib.axes.Axes): Axes object with data plot
+               (matplotlib.axes.Axes): Axes object with data plot
 
         """
 
@@ -1363,7 +1363,7 @@ class Obsdata(object):
 
 
            Returns:
-               axes (matplotlib.axes.Axes): Axes object with data plot
+               (matplotlib.axes.Axes): Axes object with data plot
 
         """
 
@@ -1431,8 +1431,7 @@ class Obsdata(object):
 
 
            Returns:
-               axes (matplotlib.axes.Axes): Axes object with data plot
-
+               (matplotlib.axes.Axes): Axes object with data plot
 
         """
 
@@ -1512,8 +1511,16 @@ class Obsdata(object):
         ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
         return
 
+    # TODO -- this could be redundant with cphase_tri
+    # would need to  change how it's implemented in closure.py
     def get_cphase_curves(self, tris):
-        """Get closure phase over time on all requested triangles"""
+        """Get closure phase cuves over time on all requested triangles
+
+           Args:
+                tris (list): list of station triangles
+           Returns:
+                (list) : list of closure phase recarrays over time
+        """
 
         # Get closure phases (maximal set)
         cphases = self.c_phases(mode='time', count='max')
@@ -1541,10 +1548,18 @@ class Obsdata(object):
 
         return cps
 
+    # TODO -- this could be redundant with cphase_tri
+    # would need to  change how it's implemented in closure.py
     def get_camp_curves(self, quads):
         """Get closure amplitude over time on all requested quadrangeles
            (1-2)(3-4)/(1-4)(2-3)
+
+           Args:
+                quads (list): list of station quadrangles
+           Returns:
+                (list) : list of closure amplitude recarrays over time
         """
+
         # Get the closure amplitudes
         camps = self.c_amplitudes(mode='time', count='max')
 
