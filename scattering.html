@@ -193,13 +193,11 @@
 <dl class="class">
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel">
 <em class="property">class </em><code class="descclassname">ehtim.scattering.stochastic_optics.</code><code class="descname">ScatteringModel</code><span class="sig-paren">(</span><em>model='von_Mises'</em>, <em>scatt_alpha=1.6666666666666667</em>, <em>observer_screen_distance=8.022999999999999e+21</em>, <em>source_screen_distance=1.79e+22</em>, <em>theta_maj_mas_ref=1.309</em>, <em>theta_min_mas_ref=0.64</em>, <em>POS_ANG=78</em>, <em>wavelength_reference_cm=1.0</em>, <em>r_in=1000000000</em>, <em>r_out=100000000000000000000L</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>A scattering model based on a thin-screen approximation.
-&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</p>
-<blockquote>
-<div><dl class="docutils">
+<dd><p>A scattering model based on a thin-screen approximation.</p>
+<dl class="docutils">
 <dt>Models include:</dt>
 <dd><dl class="first last docutils">
-<dt>{&#8216;von_Mises&#8217;, &#8216;boxcar&#8217;, &#8216;dipole&#8217;}: These scattering models are motivated by observations of Sgr A*.</dt>
+<dt>(&#8216;von_Mises&#8217;, &#8216;boxcar&#8217;, &#8216;dipole&#8217;): These scattering models are motivated by observations of Sgr A*.</dt>
 <dd>Each gives a Gaussian at long wavelengths that matches the model defined
 by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
 with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
@@ -213,36 +211,60 @@ The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) 
 </dl>
 </dd>
 </dl>
-</div></blockquote>
-<blockquote>
-<div><p>Models include:</p>
-<p>&#8216;simple&#8217;: This scattering model is motivated by observations of Sgr A*.
-It gives a Gaussian at long wavelengths that matches the model defined
-by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
-with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
-at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
-if the reference wavelength is short enough to be beyond the lambda^2 regime!
-This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
-Note: This model <em>requires</em> a finite inner scale</p>
-<p>&#8216;power-law&#8217;: This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
-The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
-The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov</p>
-</div></blockquote>
-<p>&gt;&gt;&gt;&gt;&gt;&gt;&gt; d74d72fb17c72420d342e8f374e517ae238c7503</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>Attributes:</dt>
-<dd>model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).
-POS_ANG (float): The position angle of the major axis of the scattering.
-observer_screen_distance (float): The distance from the observer to the scattering screen in cm.
-source_screen_distance (float): The distance from the source to the scattering screen in cm.
-wavelength_reference (float): The reference wavelength for the scattering model in cm.
-r_in (float): The inner scale of the scattering screen
-r_out (float): The outer scale of the scattering screen
-scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3).
-rF (function): The Fresnel scale of the scattering screen at the specific wavelength.</dd>
-</dl>
-</div></blockquote>
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.model">
+<code class="descname">model</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.model" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>string</em> &#8211; The type of scattering model (determined by the power spectrum of phase fluctuations).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG">
+<code class="descname">POS_ANG</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The position angle of the major axis of the scattering.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.observer_screen_distance">
+<code class="descname">observer_screen_distance</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.observer_screen_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The distance from the observer to the scattering screen in cm.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.source_screen_distance">
+<code class="descname">source_screen_distance</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.source_screen_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The distance from the source to the scattering screen in cm.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference">
+<code class="descname">wavelength_reference</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The reference wavelength for the scattering model in cm.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.r_in">
+<code class="descname">r_in</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_in" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The inner scale of the scattering screen</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.r_out">
+<code class="descname">r_out</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_out" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The outer scale of the scattering screen</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha">
+<code class="descname">scatt_alpha</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The power-law index of the phase fluctuations (Kolmogorov is 5/3).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.rF">
+<code class="descname">rF</code><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.rF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.rF" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>function</em> &#8211; The Fresnel scale of the scattering screen at the specific wavelength.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs">
 <code class="descname">Deblur_obs</code><span class="sig-paren">(</span><em>obs</em>, <em>use_approximate_form=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.Deblur_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.Deblur_obs" title="Permalink to this definition">¶</a></dt>
@@ -491,8 +513,8 @@ Note: an odd image dimension is required!</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.rF">
-<code class="descname">rF</code><span class="sig-paren">(</span><em>wavelength</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.rF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.rF" title="Permalink to this definition">¶</a></dt>
+<dt>
+<code class="descname">rF</code><span class="sig-paren">(</span><em>wavelength</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel.rF"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

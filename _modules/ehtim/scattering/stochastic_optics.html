@@ -194,36 +194,19 @@
 
 <div class="viewcode-block" id="ScatteringModel"><a class="viewcode-back" href="../../../scattering.html#ehtim.scattering.stochastic_optics.ScatteringModel">[docs]</a><span class="k">class</span> <span class="nc">ScatteringModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A scattering model based on a thin-screen approximation.</span>
-<span class="sd">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span>
+
 <span class="sd">       Models include:</span>
-<span class="sd">           {&#39;von_Mises&#39;, &#39;boxcar&#39;, &#39;dipole&#39;}: These scattering models are motivated by observations of Sgr A*.</span>
-<span class="sd">                     Each gives a Gaussian at long wavelengths that matches the model defined</span>
-<span class="sd">                     by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm</span>
-<span class="sd">                     with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds</span>
-<span class="sd">                     at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,</span>
-<span class="sd">                     if the reference wavelength is short enough to be beyond the lambda^2 regime!</span>
-<span class="sd">                     This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths</span>
-<span class="sd">                     Note: This model *requires* a finite inner scale</span>
+<span class="sd">           (&#39;von_Mises&#39;, &#39;boxcar&#39;, &#39;dipole&#39;): These scattering models are motivated by observations of Sgr A*.</span>
+<span class="sd">            Each gives a Gaussian at long wavelengths that matches the model defined</span>
+<span class="sd">            by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm</span>
+<span class="sd">            with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds</span>
+<span class="sd">            at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,</span>
+<span class="sd">            if the reference wavelength is short enough to be beyond the lambda^2 regime!</span>
+<span class="sd">            This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths</span>
+<span class="sd">            Note: This model *requires* a finite inner scale</span>
 <span class="sd">           &#39;power-law&#39;: This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.</span>
 <span class="sd">            The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.</span>
 <span class="sd">            The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov</span>
-<span class="sd">=======</span>
-<span class="sd">      </span>
-<span class="sd">       Models include: </span>
-<span class="sd">       </span>
-<span class="sd">       &#39;simple&#39;: This scattering model is motivated by observations of Sgr A*.</span>
-<span class="sd">       It gives a Gaussian at long wavelengths that matches the model defined</span>
-<span class="sd">       by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm</span>
-<span class="sd">       with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds</span>
-<span class="sd">       at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,</span>
-<span class="sd">       if the reference wavelength is short enough to be beyond the lambda^2 regime!</span>
-<span class="sd">       This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths</span>
-<span class="sd">       Note: This model *requires* a finite inner scale</span>
-
-<span class="sd">       &#39;power-law&#39;: This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.</span>
-<span class="sd">       The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.</span>
-<span class="sd">       The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov</span>
-<span class="sd">&gt;&gt;&gt;&gt;&gt;&gt;&gt; d74d72fb17c72420d342e8f374e517ae238c7503</span>
 
 <span class="sd">       Attributes:</span>
 <span class="sd">            model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).</span>
