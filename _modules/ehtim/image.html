@@ -596,66 +596,65 @@
             <span class="n">outim</span><span class="o">.</span><span class="n">add_v</span><span class="p">(</span><span class="n">outv</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">outim</span></div>
-<span class="c1">#    def compare_images(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, metric = [&#39;nxcorr&#39;, &#39;nrmse&#39;, &#39;rssd&#39;], blursmall=False):</span>
-<span class="c1">#      &quot;&quot;&quot;Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.</span>
+    
+<div class="viewcode-block" id="Image.compare_images"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.compare_images">[docs]</a>    <span class="k">def</span> <span class="nf">compare_images</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im2</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target_fov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">blur_frac</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">metric</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;nxcorr&#39;</span><span class="p">,</span> <span class="s1">&#39;nrmse&#39;</span><span class="p">,</span> <span class="s1">&#39;rssd&#39;</span><span class="p">],</span> <span class="n">blursmall</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.</span>
 
-<span class="c1">#         Args:</span>
-<span class="c1">#             psize (float): pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes</span>
-<span class="c1">#             target_fov (float): fov of the comparison image (rad). If None it is twice the largest fov of the input images</span>
+<span class="sd">         Args:</span>
+<span class="sd">             psize (float): pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes</span>
+<span class="sd">             target_fov (float): fov of the comparison image (rad). If None it is twice the largest fov of the input images</span>
 
-<span class="c1">#             beamparams (list): the nominal Gaussian beam parameters [fovx, fovy, position angle]</span>
-<span class="c1">#             blur_frac (float): fractional beam to blur each image to before comparison</span>
+<span class="sd">             beamparams (list): the nominal Gaussian beam parameters [fovx, fovy, position angle]</span>
+<span class="sd">             blur_frac (float): fractional beam to blur each image to before comparison</span>
 
-<span class="c1">#             metric (list) : a list of fidelity metrics from [&#39;nxcorr&#39;,&#39;nrmse&#39;,&#39;rssd&#39;]</span>
-<span class="c1">#             blursmall (bool) : True to blur the unpadded image rather than the large image.</span>
+<span class="sd">             metric (list) : a list of fidelity metrics from [&#39;nxcorr&#39;,&#39;nrmse&#39;,&#39;rssd&#39;]</span>
+<span class="sd">             blursmall (bool) : True to blur the unpadded image rather than the large image.</span>
 
-<span class="c1">#         Returns:</span>
-<span class="c1">#             out (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images</span>
+<span class="sd">         Returns:</span>
+<span class="sd">             out (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
-<span class="c1">#      &quot;&quot;&quot;</span>
-<span class="c1">#        im1 = self.copy()</span>
-<span class="c1">#        if target_fov==None:</span>
-<span class="c1">#            max_fov = np.max([im1.xdim * im1.psize, im1.ydim * im1.psize, im2.xdim * im2.psize, im2.ydim * im2.psize])</span>
-<span class="c1">#            target_fov = 2*max_fov</span>
+        <span class="n">im1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">target_fov</span><span class="o">==</span><span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_fov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">im1</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="n">im1</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im1</span><span class="o">.</span><span class="n">ydim</span> <span class="o">*</span> <span class="n">im1</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im2</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="n">im2</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im2</span><span class="o">.</span><span class="n">ydim</span> <span class="o">*</span> <span class="n">im2</span><span class="o">.</span><span class="n">psize</span><span class="p">])</span>
+            <span class="n">target_fov</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">max_fov</span>
+        <span class="k">if</span> <span class="n">psize</span><span class="o">==</span><span class="kc">None</span><span class="p">:</span>
+            <span class="n">psize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">im1</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im2</span><span class="o">.</span><span class="n">psize</span><span class="p">])</span>
 
-<span class="c1">#        if psize==None:</span>
-<span class="c1">#            psize = np.min([im1.psize, im2.psize])</span>
+        <span class="n">npix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span> <span class="n">target_fov</span> <span class="o">/</span> <span class="n">psize</span> <span class="p">)</span>
 
-<span class="c1">#        npix = int( target_fov / psize )</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="p">(</span><span class="n">blur_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">blursmall</span><span class="o">==</span><span class="kc">True</span><span class="p">)</span> <span class="p">):</span>
+            <span class="n">im1</span> <span class="o">=</span> <span class="n">im1</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
+            <span class="n">im2</span> <span class="o">=</span> <span class="n">im2</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
 
-<span class="c1">#        if ( (blur_frac &gt; 0.0) * (blursmall==True) ):</span>
-<span class="c1">#            im1 = im1.blur_gauss(beamparams, blur_frac)</span>
-<span class="c1">#            im2 = im2.blur_gauss(beamparams, blur_frac)</span>
+        <span class="n">im1_pad</span> <span class="o">=</span> <span class="n">im1</span><span class="o">.</span><span class="n">regrid_image</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span> <span class="n">target_fov</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
+        <span class="n">im2_pad</span> <span class="o">=</span> <span class="n">im2</span><span class="o">.</span><span class="n">regrid_image</span><span class="p">(</span><span class="n">im2</span><span class="p">,</span> <span class="n">target_fov</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
 
-<span class="c1">#        im1_pad = im1.regrid_image(im1, target_fov, npix)</span>
-<span class="c1">#        im2_pad = im2.regrid_image(im2, target_fov, npix)</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">blur_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">blursmall</span><span class="o">==</span><span class="kc">False</span><span class="p">)):</span>
+            <span class="n">im1_pad</span> <span class="o">=</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
+            <span class="n">im2_pad</span> <span class="o">=</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">blur_frac</span><span class="p">)</span>
 
-<span class="c1">#        if ((blur_frac &gt; 0.0) * (blursmall==False)):</span>
-<span class="c1">#            im1_pad = im1_pad.blur_gauss(beamparams, blur_frac)</span>
-<span class="c1">#            im2_pad = im2_pad.blur_gauss(beamparams, blur_frac)</span>
+        <span class="n">im1_norm</span> <span class="o">=</span> <span class="p">(</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">im2_norm</span> <span class="o">=</span> <span class="p">(</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
 
-<span class="c1">#        im1_norm = ( im1_pad.imvec.reshape(im1_pad.ydim, im1_pad.xdim) - np.mean(im1_pad.imvec) ) / np.std(im1_pad.imvec)</span>
-<span class="c1">#        im2_norm = ( im2_pad.imvec.reshape(im2_pad.ydim, im2_pad.xdim) - np.mean(im2_pad.imvec) ) / np.std(im2_pad.imvec)</span>
+        <span class="n">fft_im1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span> <span class="n">im1_norm</span> <span class="p">)</span>
+        <span class="n">fft_im2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span> <span class="n">im2_norm</span> <span class="p">)</span>
 
-<span class="c1">#        fft_im1 = np.fft.fft2( im1_norm )</span>
-<span class="c1">#        fft_im2 = np.fft.fft2( im2_norm )</span>
+        <span class="n">xcorr</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span> <span class="n">fft_im1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">fft_im2</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">xcorr</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">xcorr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
-<span class="c1">#        xcorr =  np.real( np.fft.ifft2( fft_im1 * np.conj(fft_im2) ) )</span>
-<span class="c1">#        idx = np.unravel_index(xcorr.argmax(), xcorr.shape)</span>
+        <span class="n">im2_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span>   <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">im2_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">im2_shift</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">im2_shift</span> <span class="o">=</span> <span class="n">eh</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span> <span class="n">im2_shift</span><span class="p">,</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">im2_pad</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">im2_pad</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
-<span class="c1">#        im2_shift = np.roll(im2_pad.imvec.reshape(im2_pad.ydim, im2_pad.xdim),   idx[0], axis=0)</span>
-<span class="c1">#        im2_shift = np.roll(im2_shift, idx[1], axis=1)</span>
-<span class="c1">#        im2_shift = eh.image.Image( im2_shift, im2_pad.psize, im2_pad.ra, im2_pad.dec, rf=im2_pad.rf, source=im2_pad.source, mjd=im2_pad.mjd, pulse=im2_pad.pulse)</span>
-
-<span class="c1">#        error = []</span>
-<span class="c1">#        if &#39;nxcorr&#39; in metric:</span>
-<span class="c1">#            error.append( np.max(xcorr.reshape(-1)) / (im1_pad.xdim * im1_pad.ydim) )</span>
-<span class="c1">#        if &#39;nrmse&#39; in metric:</span>
-<span class="c1">#            error.append( np.sqrt( np.sum( ( (im1_pad.imvec - im2_shift.imvec)**2 * im1_pad.psize**2  ) ) / np.sum( (im1_pad.imvec )**2 * im1_pad.psize**2 ) ) )</span>
-<span class="c1">#        if &#39;rssd&#39; in metric:</span>
-<span class="c1">#            error.append( np.sqrt( np.sum(  (im1_pad.imvec - im2_shift.imvec)**2 ) * im1_pad.psize**2 ) )</span>
-
-<span class="c1">#        return (error, im1_pad, im2_shift)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="s1">&#39;nxcorr&#39;</span> <span class="ow">in</span> <span class="n">metric</span><span class="p">:</span>
+            <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">xcorr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;nrmse&#39;</span> <span class="ow">in</span> <span class="n">metric</span><span class="p">:</span>
+            <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="p">(</span> <span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">im2_shift</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span>  <span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span> <span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;rssd&#39;</span> <span class="ow">in</span> <span class="n">metric</span><span class="p">:</span>
+            <span class="n">error</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>  <span class="p">(</span><span class="n">im1_pad</span><span class="o">.</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">im2_shift</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="o">*</span> <span class="n">im1_pad</span><span class="o">.</span><span class="n">psize</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">im1_pad</span><span class="p">,</span> <span class="n">im2_shift</span><span class="p">)</span></div>
 
 <span class="c1">#    def resample_square(self, xdim_new, ker_size=5):</span>
 <span class="c1">#        &quot;&quot;&quot;Resample the image to new (square) dimensions</span>
