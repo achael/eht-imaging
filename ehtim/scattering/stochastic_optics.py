@@ -26,29 +26,32 @@ import cmath
 
 class ScatteringModel(object):
     """A scattering model based on a thin-screen approximation.
-       Models include:
-           'simple': This scattering model is motivated by observations of Sgr A*.
-                     It gives a Gaussian at long wavelengths that matches the model defined
-                     by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
-                     with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
-                     at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
-                     if the reference wavelength is short enough to be beyond the lambda^2 regime!
-                     This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
-                     Note: This model *requires* a finite inner scale
-           'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
-            The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
-            The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov
+      
+       Models include: 
+       
+       'simple': This scattering model is motivated by observations of Sgr A*.
+       It gives a Gaussian at long wavelengths that matches the model defined
+       by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
+       with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
+       at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
+       if the reference wavelength is short enough to be beyond the lambda^2 regime!
+       This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
+       Note: This model *requires* a finite inner scale
+
+       'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
+       The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
+       The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov
 
        Attributes:
-           model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).
-           POS_ANG (float): The position angle of the major axis of the scattering.
-           observer_screen_distance (float): The distance from the observer to the scattering screen in cm.
-           source_screen_distance (float): The distance from the source to the scattering screen in cm.
-           wavelength_reference (float): The reference wavelength for the scattering model in cm.
-           r_in (float): The inner scale of the scattering screen
-           r_out (float): The outer scale of the scattering screen
-           scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3).
-           rF (function): The Fresnel scale of the scattering screen at the specific wavelength.
+            model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).
+            POS_ANG (float): The position angle of the major axis of the scattering.
+            observer_screen_distance (float): The distance from the observer to the scattering screen in cm.
+            source_screen_distance (float): The distance from the source to the scattering screen in cm.
+            wavelength_reference (float): The reference wavelength for the scattering model in cm.
+            r_in (float): The inner scale of the scattering screen
+            r_out (float): The outer scale of the scattering screen
+            scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3).
+            rF (function): The Fresnel scale of the scattering screen at the specific wavelength.
     """
 
     def __init__(self, model = 'simple', scatt_alpha = 5.0/3.0, observer_screen_distance = 8.023*10**21, source_screen_distance = 1.790*10**22, theta_maj_mas_ref = 1.309, theta_min_mas_ref = 0.64, POS_ANG = 78, wavelength_reference_cm = 1.0, r_in = 10000*10**5, r_out = 10**20):

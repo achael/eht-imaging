@@ -430,10 +430,10 @@ class Image(object):
             outim.add_v(outv)
 
         return outim
-
-
+    
     def compare_images(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, metric = ['nxcorr', 'nrmse', 'rssd'], blursmall=False):
-      """Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences
+        """Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.
+
          Args:
              psize (float): pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes
              target_fov (float): fov of the comparison image (rad). If None it is twice the largest fov of the input images
@@ -446,14 +446,12 @@ class Image(object):
 
          Returns:
              out (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images
+        """
 
-      """
-        
         im1 = self.copy()
         if target_fov==None:
             max_fov = np.max([im1.xdim * im1.psize, im1.ydim * im1.psize, im2.xdim * im2.psize, im2.ydim * im2.psize])
             target_fov = 2*max_fov
-
         if psize==None:
             psize = np.min([im1.psize, im2.psize])
 
@@ -490,7 +488,6 @@ class Image(object):
             error.append( np.sqrt( np.sum( ( (im1_pad.imvec - im2_shift.imvec)**2 * im1_pad.psize**2  ) ) / np.sum( (im1_pad.imvec )**2 * im1_pad.psize**2 ) ) )
         if 'rssd' in metric:
             error.append( np.sqrt( np.sum(  (im1_pad.imvec - im2_shift.imvec)**2 ) * im1_pad.psize**2 ) )
-
         return (error, im1_pad, im2_shift)
 
 #    def resample_square(self, xdim_new, ker_size=5):
