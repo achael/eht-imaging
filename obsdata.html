@@ -275,16 +275,16 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.avg_coherent">
 <code class="descname">avg_coherent</code><span class="sig-paren">(</span><em>inttime</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.avg_coherent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.avg_coherent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Coherently average data along u,v tracs in chunks of length inttime (sec)
-:param inttime: coherent integration time in seconds
-:type inttime: float</p>
+<dd><p>Coherently average data along u,v tracs in chunks of length inttime (sec).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object containing averaged data</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inttime</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; coherent integration time in seconds</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs_avg (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object containing averaged data</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">obs_avg (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -344,16 +344,16 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.bllist">
 <code class="descname">bllist</code><span class="sig-paren">(</span><em>conj=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.bllist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.bllist" title="Permalink to this definition">¶</a></dt>
-<dd><p>Group the data in a list of same baseline datatables.
-:param conj: True if tlist_out includes conjugate baselines.
-:type conj: bool</p>
+<dd><p>Group the data in a list of same baseline datatables.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables (type DTPOL) containing baseline-partitioned data</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True if tlist_out includes conjugate baselines.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">bllist_out (list)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables (type DTPOL) containing baseline-partitioned data</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bllist_out (list)</td>
 </tr>
 </tbody>
 </table>
@@ -469,9 +469,18 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.copy">
 <code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Copy the observation object.
-:returns: a copy of the Obsdata object.
-:rtype: obscopy (Obsdata)</p>
+<dd><p>Copy the observation object.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a copy of the Obsdata object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obscopy (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -504,15 +513,25 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.data_conj">
 <code class="descname">data_conj</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.data_conj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.data_conj" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make a data array including all conjugate baselines.
-:returns: a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.
-:rtype: dataconj (numpy.recarray)</p>
+<dd><p>Make a data array including all conjugate baselines.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dataconj (numpy.recarray)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.deblur">
 <code class="descname">deblur</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.deblur"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.deblur" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deblur the observation obs by dividing by the Sgr A* scattering kernel.</p>
+<p>Args:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -594,20 +613,23 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.fit_gauss">
 <code class="descname">fit_gauss</code><span class="sig-paren">(</span><em>flux=1.0</em>, <em>fittype='amp'</em>, <em>paramguess=(4.848136811094136e-10</em>, <em>4.848136811094136e-10</em>, <em>0.0)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.fit_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.fit_gauss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.
-:param flux: total flux in the fitted gaussian
-:type flux: float
-:param fitttype: &#8220;amp&#8221; to fit to visibilty amplitudes
-:type fitttype: str
-:param paramguess: initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta)
-:type paramguess: tuble</p>
+<dd><p>Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; total flux in the fitted gaussian</li>
+<li><strong>fitttype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8220;amp&#8221; to fit to visibilty amplitudes</li>
+<li><strong>paramguess</strong> (<em>tuble</em>) &#8211; initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta)</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">gauss_params</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">gauss_params</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -698,38 +720,32 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_cphase">
 <code class="descname">plot_cphase</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>ang_unit='deg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_cphase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot closure phase over time on a triangle (1-2-3).
-:param site1: station 1 name
-:type site1: str
-:param site2: station 2 name
-:type site2: str
-:param site3: station 3 name
-:type site3: str
-:param vtype: The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra
-:type vtype: str
-:param ang_unit: phase unit &#8216;deg&#8217; or &#8216;rad&#8217;
-:type ang_unit: str
-:param rangex: [xmin, xmax] x-axis (time) limits
-:type rangex: list
-:param rangey: [ymin, ymax] y-axis (phase) limits
-:type rangey: list
-:param ebar: Plot error bars if True
-:type ebar: bool
-:param debias: If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
-:type debias: bool
-:param show: Display the plot if true
-:type show: bool
-:param axis: add plot to this axis
-:type axis: matplotlib.axes.Axes
-:param color: Color of scatterplot points
-:type color: str</p>
+<dd><p>Plot closure phase over time on a triangle (1-2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Axes object with data plot</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; station 3 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>rangex</strong> (<em>list</em>) &#8211; [xmin, xmax] x-axis (time) limits</li>
+<li><strong>rangey</strong> (<em>list</em>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Color of scatterplot points</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">axes (matplotlib.axes.Axes)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">axes (matplotlib.axes.Axes)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -771,66 +787,113 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.res">
 <code class="descname">res</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.res" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the nominal resolution (1/longest baseline) of the observation in radians.
-:returns: normal array resolution in radians
-:rtype: res (float)</p>
+<dd><p>Return the nominal resolution (1/longest baseline) of the observation in radians.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">normal array resolution in radians</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.obsdata.Obsdata.res" title="ehtim.obsdata.Obsdata.res">res</a> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)">float</a>)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.save_oifits">
 <code class="descname">save_oifits</code><span class="sig-paren">(</span><em>fname</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_oifits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_oifits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save visibility data to oifits. Polarization data is NOT saved.
-:param fname: path to output text file
-:type fname: str
-:param flux: normalization total flux
-:type flux: float</p>
+<dd><p>Save visibility data to oifits. Polarization data is NOT saved.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to output text file</li>
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; normalization total flux</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.save_txt">
 <code class="descname">save_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_txt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save visibility data to a text file.
-:param fname: path to output text file
-:type fname: str</p>
+<dd><p>Save visibility data to a text file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to output text file</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.save_uvfits">
 <code class="descname">save_uvfits</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_uvfits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save visibility data to uvfits file
-:param fname: path to output text file
-:type fname: str</p>
+<dd><p>Save visibility data to uvfits file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to output text file</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.sourcevec">
 <code class="descname">sourcevec</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.sourcevec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.sourcevec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the source position vector in geocentric coordinates at 0h GMST.
-:returns: normal vector pointing to source in geocentric coordinates (m)
-:rtype: vec (numpy.array)</p>
+<dd><p>Return the source position vector in geocentric coordinates at 0h GMST.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">normal vector pointing to source in geocentric coordinates (m)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">vec (numpy.array)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.split_obs">
 <code class="descname">split_obs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.split_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.split_obs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Split single observation into multiple observation files, one per scan.
-:returns: list of single-scan Obsdata objects
-:rtype: obs_list (list)</p>
+<dd><p>Split single observation into multiple observation files, one per scan.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of single-scan Obsdata objects</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs_list (list)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.tlist">
 <code class="descname">tlist</code><span class="sig-paren">(</span><em>conj=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.tlist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.tlist" title="Permalink to this definition">¶</a></dt>
-<dd><p>Group the data in a list of equal time observation datatables.
-:param conj: True if tlist_out includes conjugate baselines.
-:type conj: bool</p>
+<dd><p>Group the data in a list of equal time observation datatables.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables (type DTPOL) containing time-partitioned data</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True if tlist_out includes conjugate baselines.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">tlist_out (list)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables (type DTPOL) containing time-partitioned data</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">tlist_out (list)</td>
 </tr>
 </tbody>
 </table>
@@ -839,24 +902,25 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.unpack">
 <code class="descname">unpack</code><span class="sig-paren">(</span><em>fields</em>, <em>mode='all'</em>, <em>ang_unit='deg'</em>, <em>debias=False</em>, <em>conj=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.unpack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.unpack" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unpack the data for the whole observation
-:param fields: list of unpacked quantities from availalbe quantities in FIELDS
-:type fields: list
-:param mode: &#8216;all&#8217; returns all data in single table, &#8216;time&#8217; groups output by equal time, &#8216;bl&#8217; groups by baseline
-:type mode: str
-:param ang_unit: &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases
-:type ang_unit: str
-:param debias: True to debias visibility amplitudes
-:type debias: bool
-:param conj: True to include conjugate baselines
-:type conj: bool</p>
+<dd><p>Unpack the data for the whole observation .</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">unpacked numpy array with data in fields requested</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fields</strong> (<em>list</em>) &#8211; list of unpacked quantities from availalbe quantities in FIELDS</li>
+<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;all&#8217; returns all data in single table, &#8216;time&#8217; groups output by equal time, &#8216;bl&#8217; groups by baseline</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True to include conjugate baselines</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.obsdata.Obsdata.data" title="ehtim.obsdata.Obsdata.data">data</a> (numpy.recarray)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">unpacked numpy array with data in fields requested</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#ehtim.obsdata.Obsdata.data" title="ehtim.obsdata.Obsdata.data">data</a> (numpy.recarray)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -865,24 +929,25 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.unpack_bl">
 <code class="descname">unpack_bl</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>fields</em>, <em>ang_unit='deg'</em>, <em>debias=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.unpack_bl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.unpack_bl" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unpack the data over time on the selected baseline site1-site2.
-:param site1: First site name
-:type site1: str
-:param site2: Second site name
-:type site2: str
-:param fields: list of unpacked quantities from available quantities in FIELDS
-:type fields: list
-:param ang_unit: &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases
-:type ang_unit: str
-:param debias: True to debias visibility amplitudes
-:type debias: bool</p>
+<dd><p>Unpack the data over time on the selected baseline site1-site2.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">unpacked numpy array with data in fields requested</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; First site name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Second site name</li>
+<li><strong>fields</strong> (<em>list</em>) &#8211; list of unpacked quantities from available quantities in FIELDS</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.obsdata.Obsdata.data" title="ehtim.obsdata.Obsdata.data">data</a> (numpy.recarray)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">unpacked numpy array with data in fields requested</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#ehtim.obsdata.Obsdata.data" title="ehtim.obsdata.Obsdata.data">data</a> (numpy.recarray)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -891,24 +956,25 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.unpack_dat">
 <code class="descname">unpack_dat</code><span class="sig-paren">(</span><em>data</em>, <em>fields</em>, <em>conj=False</em>, <em>ang_unit='deg'</em>, <em>debias=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.unpack_dat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.unpack_dat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unpack the data in a data recarray
-:param data: data recarray of format DTPOL
-:type data: numpy.recarray
-:param fields: list of unpacked quantities from availalbe quantities in FIELDS
-:type fields: list
-:param ang_unit: &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases
-:type ang_unit: str
-:param debias: True to debias visibility amplitudes
-:type debias: bool
-:param conj: True to include conjugate baselines
-:type conj: bool</p>
+<dd><p>Unpack the data in a data recarray.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">unpacked numpy array with data in fields requested</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> (<em>numpy.recarray</em>) &#8211; data recarray of format DTPOL</li>
+<li><strong>fields</strong> (<em>list</em>) &#8211; list of unpacked quantities from availalbe quantities in FIELDS</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True to include conjugate baselines</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.obsdata.Obsdata.data" title="ehtim.obsdata.Obsdata.data">data</a> (numpy.recarray)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">unpacked numpy array with data in fields requested</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#ehtim.obsdata.Obsdata.data" title="ehtim.obsdata.Obsdata.data">data</a> (numpy.recarray)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -919,34 +985,30 @@
 <dl class="function">
 <dt id="ehtim.obsdata.load_maps">
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">load_maps</code><span class="sig-paren">(</span><em>arrfile</em>, <em>obsspec</em>, <em>ifile</em>, <em>qfile=0</em>, <em>ufile=0</em>, <em>vfile=0</em>, <em>src='SgrA'</em>, <em>mjd=51544</em>, <em>ampcal=False</em>, <em>phasecal=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_maps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_maps" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read an observation from a maps text file and return an Obsdata object.
-:param arrfile: path to input array file
-:type arrfile: str
-:param obsspec: path to input obs spec file
-:type obsspec: str
-:param ifile: path to input Stokes I data file
-:type ifile: str
-:param qfile: path to input Stokes Q data file
-:type qfile: str
-:param ufile: path to input Stokes U data file
-:type ufile: str
-:param vfile: path to input Stokes V data file
-:type vfile: str
-:param src: source name
-:type src: str
-:param mjd: integer observation  MJD
-:type mjd: int
-:param ampcal: True if amplitude calibrated
-:type ampcal: bool
-:param phasecal: True if phase calibrated
-:type phasecal: bool</p>
+<dd><p>Read an observation from a maps text file and return an Obsdata object.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>arrfile</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input array file</li>
+<li><strong>obsspec</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input obs spec file</li>
+<li><strong>ifile</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input Stokes I data file</li>
+<li><strong>qfile</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input Stokes Q data file</li>
+<li><strong>ufile</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input Stokes U data file</li>
+<li><strong>vfile</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input Stokes V data file</li>
+<li><strong>src</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; source name</li>
+<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; integer observation  MJD</li>
+<li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True if amplitude calibrated</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True if phase calibrated</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Obsdata object loaded from file</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -955,18 +1017,22 @@
 <dl class="function">
 <dt id="ehtim.obsdata.load_oifits">
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">load_oifits</code><span class="sig-paren">(</span><em>fname</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_oifits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_oifits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load data from an oifits file. Does NOT currently support polarization.
-:param fname: path to input text file
-:type fname: str
-:param flux: normalization total flux
-:type flux: float</p>
+<dd><p>Load data from an oifits file. Does NOT currently support polarization.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input text file</li>
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; normalization total flux</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Obsdata object loaded from file</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -975,16 +1041,16 @@
 <dl class="function">
 <dt id="ehtim.obsdata.load_txt">
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">load_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_txt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read an observation from a text file
-:param fname: path to input text file
-:type fname: str</p>
+<dd><p>Read an observation from a text file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input text file</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -993,18 +1059,22 @@
 <dl class="function">
 <dt id="ehtim.obsdata.load_uvfits">
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">load_uvfits</code><span class="sig-paren">(</span><em>fname</em>, <em>flipbl=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_uvfits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load observation data from a uvfits file.
-:param fname: path to input text file
-:type fname: str
-:param flipbl: flip baseline phases if True.
-:type flipbl: bool</p>
+<dd><p>Load observation data from a uvfits file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input text file</li>
+<li><strong>flipbl</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; flip baseline phases if True.</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Obsdata object loaded from file</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -1013,16 +1083,16 @@
 <dl class="function">
 <dt id="ehtim.obsdata.merge_obs">
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">merge_obs</code><span class="sig-paren">(</span><em>obs_List</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#merge_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.merge_obs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Merge a list of observations into a single observation file.
-:param obs_List: list of split observation Obsdata objects.
-:type obs_List: list</p>
+<dd><p>Merge a list of observations into a single observation file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">merged Obsdata object containing all scans in input list</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>obs_List</strong> (<em>list</em>) &#8211; list of split observation Obsdata objects.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">mergeobs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">merged Obsdata object containing all scans in input list</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">mergeobs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
 </tr>
 </tbody>
 </table>

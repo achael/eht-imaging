@@ -304,16 +304,16 @@
 <dl class="method">
 <dt id="ehtim.image.Image.add_flat">
 <code class="descname">add_flat</code><span class="sig-paren">(</span><em>flux</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_flat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_flat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a flat background flux to the Stokes I image.
-:param flux: total flux to add to image
-:type flux: float</p>
+<dd><p>Add a flat background flux to the Stokes I image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">output image</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; total flux to add to image</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">im_flat (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">output image</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">im_flat (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -346,40 +346,59 @@
 <dl class="method">
 <dt id="ehtim.image.Image.add_pol">
 <code class="descname">add_pol</code><span class="sig-paren">(</span><em>qimage</em>, <em>uimage</em>, <em>vimage</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_pol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_pol" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add all 3 Stokes Q, U, and V images.
-:param qimage: The 2D Stokes Q values in Jy/pixel array
-:type qimage: numpy.array
-:param uimage: The 2D Stokes U values in Jy/pixel array
-:type uimage: numpy.array
-:param vimage: The 2D Stokes U values in Jy/pixel array
-:type vimage: numpy.array</p>
+<dd><p>Add all 3 Stokes Q, U, and V images.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>qimage</strong> (<em>numpy.array</em>) &#8211; The 2D Stokes Q values in Jy/pixel array</li>
+<li><strong>uimage</strong> (<em>numpy.array</em>) &#8211; The 2D Stokes U values in Jy/pixel array</li>
+<li><strong>vimage</strong> (<em>numpy.array</em>) &#8211; The 2D Stokes U values in Jy/pixel array</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.add_qu">
 <code class="descname">add_qu</code><span class="sig-paren">(</span><em>qimage</em>, <em>uimage</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_qu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_qu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add Stokes Q and U image.
-:param qimage: The 2D Stokes Q values in Jy/pixel array
-:type qimage: numpy.array
-:param uimage: The 2D Stokes U values in Jy/pixel array
-:type uimage: numpy.array</p>
+<dd><p>Add Stokes Q and U image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>qimage</strong> (<em>numpy.array</em>) &#8211; The 2D Stokes Q values in Jy/pixel array</li>
+<li><strong>uimage</strong> (<em>numpy.array</em>) &#8211; The 2D Stokes U values in Jy/pixel array</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.add_tophat">
 <code class="descname">add_tophat</code><span class="sig-paren">(</span><em>flux</em>, <em>radius</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_tophat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_tophat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add centered tophat flux to the Stokes I image inside a given radius.
-:param flux: total flux to add to image
-:type flux: float
-:param radius: radius of top hat flux in radians
-:type radius: float</p>
+<dd><p>Add centered tophat flux to the Stokes I image inside a given radius.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">output image</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; total flux to add to image</li>
+<li><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; radius of top hat flux in radians</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">im_tophat (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">output image</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">im_tophat (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -388,26 +407,36 @@
 <dl class="method">
 <dt id="ehtim.image.Image.add_v">
 <code class="descname">add_v</code><span class="sig-paren">(</span><em>vimage</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_v"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_v" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add Stokes V image.
-:param vimage: The 2D Stokes Q values in Jy/pixel array
-:type vimage: numpy.array</p>
+<dd><p>Add Stokes V image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>vimage</strong> (<em>numpy.array</em>) &#8211; The 2D Stokes Q values in Jy/pixel array</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.blur_circ">
 <code class="descname">blur_circ</code><span class="sig-paren">(</span><em>fwhm_i</em>, <em>fwhm_pol=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.blur_circ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.blur_circ" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply a circular gaussian filter to the image, with FWHM in radians.
-:param fwhm_i: circular beam size for Stokes I  blurring in  radian
-:type fwhm_i: float
-:param fwhm_pol: circular beam size for Stokes Q,U,V  blurring in  radian
-:type fwhm_pol: float</p>
+<dd><p>Apply a circular gaussian filter to the image, with FWHM in radians.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">output image</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fwhm_i</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; circular beam size for Stokes I  blurring in  radian</li>
+<li><strong>fwhm_pol</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; circular beam size for Stokes Q,U,V  blurring in  radian</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">im_out (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">output image</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">im_out (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -466,10 +495,18 @@
 <dl class="method">
 <dt id="ehtim.image.Image.copy">
 <code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.copy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a copy of the image object.
-Args:
-:returns: copy of the Image.
-:rtype: newim (Image)</p>
+<dd><p>Return a copy of the image object.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">copy of the Image.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">newim (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -513,34 +550,50 @@ Args:
 <dl class="method">
 <dt id="ehtim.image.Image.fovx">
 <code class="descname">fovx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fovx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fovx" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the image fov in x direction in radians.
-Args:
-:returns: image fov in x direction (radian)
-:rtype: fovx (float)</p>
+<dd><p>Return the image fov in x direction in radians.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">image fov in x direction (radian)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.image.Image.fovx" title="ehtim.image.Image.fovx">fovx</a> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)">float</a>)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.fovy">
 <code class="descname">fovy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fovy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fovy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the image fov in y direction in radians.
-Args:
-:returns: image fov in y direction (radian)
-:rtype: fovy (float)</p>
+<dd><p>Returns the image fov in y direction in radians.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">image fov in y direction (radian)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.image.Image.fovy" title="ehtim.image.Image.fovy">fovy</a> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)">float</a>)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.imarr">
 <code class="descname">imarr</code><span class="sig-paren">(</span><em>stokes='I'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.imarr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.imarr" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the 2D image array of a given Stokes parameter.
-:param stokes: &#8220;I&#8221;,&#8221;Q&#8221;,&#8221;U&#8221;,&#8221;V&#8221; for a given Stokes parameter
-:type stokes: str</p>
+<dd><p>Return the 2D image array of a given Stokes parameter.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">2D image array of dimension (ydim, xdim)</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>stokes</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8220;I&#8221;,&#8221;Q&#8221;,&#8221;U&#8221;,&#8221;V&#8221; for a given Stokes parameter</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.image.Image.imarr" title="ehtim.image.Image.imarr">imarr</a> (numpy.array)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">2D image array of dimension (ydim, xdim)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#ehtim.image.Image.imarr" title="ehtim.image.Image.imarr">imarr</a> (numpy.array)</td>
 </tr>
 </tbody>
 </table>
@@ -702,18 +755,22 @@ Args:
 <dl class="method">
 <dt id="ehtim.image.Image.regrid_image">
 <code class="descname">regrid_image</code><span class="sig-paren">(</span><em>targetfov</em>, <em>npix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.regrid_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.regrid_image" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resample the image to new (square) dimensions
-:param targetfov: new field of view (radian)
-:type targetfov: float
-:param npix: new pixel dimension
-:type npix: int</p>
+<dd><p>Resample the image to new (square) dimensions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">resampled image</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>targetfov</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; new field of view (radian)</li>
+<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; new pixel dimension</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">im_regrid (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">resampled image</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">im_regrid (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -731,34 +788,48 @@ Args:
 <dl class="method">
 <dt id="ehtim.image.Image.save_txt">
 <code class="descname">save_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.save_txt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save image data to text file.
-:param fname: path to output text file
-:type fname: str</p>
+<dd><p>Save image data to text file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to output text file</td>
+</tr>
+</tbody>
+</table>
 <p>Returns:</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.sourcevec">
 <code class="descname">sourcevec</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.sourcevec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.sourcevec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the source position vector in geocentric coordinates at 0h GMST.
-Args:
-:returns: normal vector pointing to source in geocentric coordinates (m)
-:rtype: vec (numpy.array)</p>
+<dd><p>Return the source position vector in geocentric coordinates at 0h GMST.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">normal vector pointing to source in geocentric coordinates (m)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">vec (numpy.array)</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.threshold">
 <code class="descname">threshold</code><span class="sig-paren">(</span><em>frac_i=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.threshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply a hard threshold to the image.
-:param frac_i: Stokes I floor as a fraction of maximum stokes I point
-:type frac_i: float</p>
+<dd><p>Apply a hard threshold to the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">output image</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>frac_i</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; Stokes I floor as a fraction of maximum stokes I point</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">im_out (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">output image</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">im_out (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -767,8 +838,8 @@ Args:
 <dl class="method">
 <dt id="ehtim.image.Image.total_flux">
 <code class="descname">total_flux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.total_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.total_flux" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the total flux of the Stokes I image in Jy.
-Args:
+<dd><p>Return the total flux of the Stokes I image in Jy.</p>
+<p>Args:
 :returns: image total flux (Jy)
 :rtype: flux (float)</p>
 </dd></dl>

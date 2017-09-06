@@ -244,6 +244,7 @@
 
 <div class="viewcode-block" id="Image.add_qu"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_qu">[docs]</a>    <span class="k">def</span> <span class="nf">add_qu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qimage</span><span class="p">,</span> <span class="n">uimage</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add Stokes Q and U image.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">               qimage (numpy.array): The 2D Stokes Q values in Jy/pixel array</span>
 <span class="sd">               uimage (numpy.array): The 2D Stokes U values in Jy/pixel array</span>
@@ -258,6 +259,7 @@
 
 <div class="viewcode-block" id="Image.add_v"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_v">[docs]</a>    <span class="k">def</span> <span class="nf">add_v</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vimage</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add Stokes V image.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">               vimage (numpy.array): The 2D Stokes Q values in Jy/pixel array</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -267,6 +269,7 @@
 
 <div class="viewcode-block" id="Image.add_pol"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_pol">[docs]</a>    <span class="k">def</span> <span class="nf">add_pol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qimage</span><span class="p">,</span> <span class="n">uimage</span><span class="p">,</span> <span class="n">vimage</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add all 3 Stokes Q, U, and V images.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">               qimage (numpy.array): The 2D Stokes Q values in Jy/pixel array</span>
 <span class="sd">               uimage (numpy.array): The 2D Stokes U values in Jy/pixel array</span>
@@ -277,7 +280,9 @@
 
 <div class="viewcode-block" id="Image.copy"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a copy of the image object.</span>
+
 <span class="sd">           Args:</span>
+
 <span class="sd">           Returns: </span>
 <span class="sd">               newim (Image): copy of the Image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -288,7 +293,9 @@
 
 <div class="viewcode-block" id="Image.sourcevec"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.sourcevec">[docs]</a>    <span class="k">def</span> <span class="nf">sourcevec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the source position vector in geocentric coordinates at 0h GMST.</span>
+
 <span class="sd">           Args:</span>
+
 <span class="sd">           Returns:</span>
 <span class="sd">                vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -297,6 +304,7 @@
 
 <div class="viewcode-block" id="Image.imarr"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.imarr">[docs]</a>    <span class="k">def</span> <span class="nf">imarr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stokes</span><span class="o">=</span><span class="s2">&quot;I&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the 2D image array of a given Stokes parameter.</span>
+
 <span class="sd">           Args: </span>
 <span class="sd">               stokes (str): &quot;I&quot;,&quot;Q&quot;,&quot;U&quot;,&quot;V&quot; for a given Stokes parameter</span>
 <span class="sd">           Returns:</span>
@@ -312,7 +320,9 @@
 
 <div class="viewcode-block" id="Image.fovx"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovx">[docs]</a>    <span class="k">def</span> <span class="nf">fovx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the image fov in x direction in radians.</span>
+
 <span class="sd">           Args:</span>
+
 <span class="sd">           Returns: </span>
 <span class="sd">                fovx (float) : image fov in x direction (radian)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -321,7 +331,9 @@
 
 <div class="viewcode-block" id="Image.fovy"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovy">[docs]</a>    <span class="k">def</span> <span class="nf">fovy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the image fov in y direction in radians.</span>
+
 <span class="sd">           Args:</span>
+
 <span class="sd">           Returns: </span>
 <span class="sd">                fovy (float) : image fov in y direction (radian)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -329,6 +341,7 @@
 
 <div class="viewcode-block" id="Image.total_flux"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.total_flux">[docs]</a>    <span class="k">def</span> <span class="nf">total_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the total flux of the Stokes I image in Jy.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">           Returns: </span>
 <span class="sd">                flux (float) : image total flux (Jy)</span>
@@ -551,7 +564,8 @@
         <span class="k">return</span> <span class="n">eht</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">merge_obs</span><span class="p">(</span><span class="n">obs_List</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Image.regrid_image"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.regrid_image">[docs]</a>    <span class="k">def</span> <span class="nf">regrid_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targetfov</span><span class="p">,</span> <span class="n">npix</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Resample the image to new (square) dimensions</span>
+        <span class="sd">&quot;&quot;&quot;Resample the image to new (square) dimensions.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">                targetfov  (float): new field of view (radian) </span>
 <span class="sd">                npix  (int): new pixel dimension </span>
@@ -758,6 +772,7 @@
 
 <div class="viewcode-block" id="Image.add_flat"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_flat">[docs]</a>    <span class="k">def</span> <span class="nf">add_flat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add a flat background flux to the Stokes I image.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">                flux  (float): total flux to add to image</span>
 <span class="sd">           Returns:</span>
@@ -771,6 +786,7 @@
 
 <div class="viewcode-block" id="Image.add_tophat"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.add_tophat">[docs]</a>    <span class="k">def</span> <span class="nf">add_tophat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add centered tophat flux to the Stokes I image inside a given radius.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">                flux  (float): total flux to add to image</span>
 <span class="sd">                radius  (float): radius of top hat flux in radians</span>
@@ -959,6 +975,7 @@
 
 <div class="viewcode-block" id="Image.blur_circ"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.blur_circ">[docs]</a>    <span class="k">def</span> <span class="nf">blur_circ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fwhm_i</span><span class="p">,</span> <span class="n">fwhm_pol</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply a circular gaussian filter to the image, with FWHM in radians.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">               fwhm_i (float): circular beam size for Stokes I  blurring in  radian</span>
 <span class="sd">               fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian</span>
@@ -985,6 +1002,7 @@
 
 <div class="viewcode-block" id="Image.threshold"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.threshold">[docs]</a>    <span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frac_i</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply a hard threshold to the image.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">               frac_i (float): Stokes I floor as a fraction of maximum stokes I point</span>
 <span class="sd">           Returns:</span>
@@ -1119,6 +1137,7 @@
 
 <div class="viewcode-block" id="Image.save_txt"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Save image data to text file.</span>
+
 <span class="sd">           Args:</span>
 <span class="sd">                fname (str): path to output text file</span>
 <span class="sd">           Returns:</span>
