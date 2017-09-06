@@ -246,7 +246,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">init_imager_I</span><span class="p">()</span>
 
 
-    <span class="k">def</span> <span class="nf">set_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.set_embed"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.set_embed">[docs]</a>    <span class="k">def</span> <span class="nf">set_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set embedding matrix.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">clipfloor_next</span>
         <span class="n">coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
@@ -254,10 +257,12 @@
         <span class="n">coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">coord</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_coord_matrix</span> <span class="o">=</span> <span class="n">coord</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
 
-        <span class="k">return</span>
+        <span class="k">return</span></div>
 
 
-    <span class="k">def</span> <span class="nf">check_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.check_params"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.check_params">[docs]</a>    <span class="k">def</span> <span class="nf">check_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check parameter consistency.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">dt_here</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">dt_type</span> <span class="o">=</span> <span class="kc">True</span>
@@ -315,9 +320,11 @@
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_last</span><span class="p">()</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_last</span><span class="p">()</span><span class="o">.</span><span class="n">ydim</span><span class="p">)):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">return</span>
+            <span class="k">return</span></div>
 
-    <span class="k">def</span> <span class="nf">check_limits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.check_limits"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.check_limits">[docs]</a>    <span class="k">def</span> <span class="nf">check_limits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check image parameter consistency with observation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">imsize</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span>
         <span class="n">uvmax</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span>
@@ -334,69 +341,92 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">&gt;</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &gt; 120</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">8</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &lt; 80</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &lt; 80</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">reg_terms_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.reg_terms_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.reg_terms_last">[docs]</a>    <span class="k">def</span> <span class="nf">reg_terms_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last used regularizer terms.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reg_term_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reg_term_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">dat_terms_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.dat_terms_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.dat_terms_last">[docs]</a>    <span class="k">def</span> <span class="nf">dat_terms_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last used data terms.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dat_term_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dat_term_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">obs_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.obs_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.obs_last">[docs]</a>    <span class="k">def</span> <span class="nf">obs_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last used observation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obs_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_obs_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">prior_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.prior_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.prior_last">[docs]</a>    <span class="k">def</span> <span class="nf">prior_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last used prior image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prior_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prior_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">out_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.out_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.out_last">[docs]</a>    <span class="k">def</span> <span class="nf">out_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last result.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_out_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_out_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">init_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.init_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_last">[docs]</a>    <span class="k">def</span> <span class="nf">init_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last initial image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">flux_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.flux_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.flux_last">[docs]</a>    <span class="k">def</span> <span class="nf">flux_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last total flux constraint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flux_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flux_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">clipfloor_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.clipfloor_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.clipfloor_last">[docs]</a>    <span class="k">def</span> <span class="nf">clipfloor_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last clip floor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clipfloor_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clipfloor_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">maxit_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.maxit_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.maxit_last">[docs]</a>    <span class="k">def</span> <span class="nf">maxit_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last max_iterations value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxit_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxit_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">transform_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.transform_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.transform_last">[docs]</a>    <span class="k">def</span> <span class="nf">transform_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last image transfrom used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-    <span class="k">def</span> <span class="nf">init_imager_I</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.init_imager_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_imager_I">[docs]</a>    <span class="k">def</span> <span class="nf">init_imager_I</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set up Stokes I imager.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># embedding, prior &amp; initial image vectors</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_embed</span><span class="p">()</span>
@@ -411,9 +441,11 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tup</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="k">return</span>
+        <span class="k">return</span></div>
 
-    <span class="k">def</span> <span class="nf">init_imager_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.init_imager_scattering"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_imager_scattering">[docs]</a>    <span class="k">def</span> <span class="nf">init_imager_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set up scattering imager.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">ScatteringModel</span><span class="p">()</span>
 
@@ -431,10 +463,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker_gradient_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">ea_ker_gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># The power spectrum (note: rotation is not currently implemented; the gradients would need to be modified slightly)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">sqrtQ_Matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span><span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">sqrtQ_Matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span><span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">))</span></div>
 
 
-    <span class="k">def</span> <span class="nf">make_chisq_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.make_chisq_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_chisq_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_chisq_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;make dictionary of current chi^2 term values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">chi2_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -444,9 +478,11 @@
             <span class="n">chi2</span> <span class="o">=</span> <span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">)</span>
             <span class="n">chi2_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">chi2</span>
 
-        <span class="k">return</span> <span class="n">chi2_dict</span>
+        <span class="k">return</span> <span class="n">chi2_dict</span></div>
 
-    <span class="k">def</span> <span class="nf">make_chisqgrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.make_chisqgrad_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_chisqgrad_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_chisqgrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;make dictionary of current chi^2 term gradient values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">chi2grad_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -456,9 +492,11 @@
             <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">)</span>
             <span class="n">chi2grad_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">chi2grad</span>
 
-        <span class="k">return</span> <span class="n">chi2grad_dict</span>
+        <span class="k">return</span> <span class="n">chi2grad_dict</span></div>
 
-    <span class="k">def</span> <span class="nf">make_reg_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.make_reg_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_reg_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_reg_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;make dictionary of current regularizer values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">reg_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="c1"># incorporate flux and cm into the generic &quot;regularizer&quot;  function!</span>
@@ -482,9 +520,11 @@
                                   <span class="n">regname</span><span class="p">)</span>
             <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
 
-        <span class="k">return</span> <span class="n">reg_dict</span>
+        <span class="k">return</span> <span class="n">reg_dict</span></div>
 
-    <span class="k">def</span> <span class="nf">make_reggrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.make_reggrad_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_reggrad_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_reggrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;make dictionary of current regularizer gradient values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">reggrad_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="c1"># incorporate flux and cm into the generic &quot;regularizer&quot;  function!</span>
@@ -508,9 +548,11 @@
                                       <span class="n">regname</span><span class="p">)</span>
             <span class="n">reggrad_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
 
-        <span class="k">return</span> <span class="n">reggrad_dict</span>
+        <span class="k">return</span> <span class="n">reggrad_dict</span></div>
 
-    <span class="k">def</span> <span class="nf">objfunc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.objfunc"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objfunc">[docs]</a>    <span class="k">def</span> <span class="nf">objfunc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Current objective function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
 
@@ -524,9 +566,11 @@
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="n">regterm</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">*</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span>
+        <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span></div>
 
-    <span class="k">def</span> <span class="nf">objfunc_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.objfunc_scattering"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objfunc_scattering">[docs]</a>    <span class="k">def</span> <span class="nf">objfunc_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Current stochastic optics objective function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span>
 
         <span class="n">imvec</span>       <span class="o">=</span> <span class="n">minvec</span><span class="p">[:</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="p">]</span>
@@ -553,9 +597,11 @@
         <span class="n">chisq_epsilon</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">EpsilonList</span><span class="o">*</span><span class="n">EpsilonList</span><span class="p">)</span><span class="o">/</span><span class="p">((</span><span class="n">N</span><span class="o">*</span><span class="n">N</span><span class="o">-</span><span class="mf">1.0</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span>
         <span class="n">regterm_scattering</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_phi_next</span> <span class="o">*</span> <span class="p">(</span><span class="n">chisq_epsilon</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span> <span class="o">+</span> <span class="n">regterm_scattering</span>
+        <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span> <span class="o">+</span> <span class="n">regterm_scattering</span></div>
 
-    <span class="k">def</span> <span class="nf">objgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.objgrad"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objgrad">[docs]</a>    <span class="k">def</span> <span class="nf">objgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Current objective function gradient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
 
@@ -575,9 +621,11 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
             <span class="n">grad</span> <span class="o">*=</span> <span class="n">imvec</span>
 
-        <span class="k">return</span> <span class="n">grad</span>
+        <span class="k">return</span> <span class="n">grad</span></div>
 
-    <span class="k">def</span> <span class="nf">objgrad_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.objgrad_scattering"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objgrad_scattering">[docs]</a>    <span class="k">def</span> <span class="nf">objgrad_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Current stochastic optics objective function gradient</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">wavelength</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="o">*</span><span class="mf">100.0</span> <span class="c1">#Observing wavelength [cm]</span>
         <span class="n">wavelengthbar</span> <span class="o">=</span> <span class="n">wavelength</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="c1">#lambda/(2pi) [cm]</span>
         <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span>
@@ -677,7 +725,7 @@
             <span class="n">regterm</span>       <span class="o">*=</span> <span class="n">imvec</span>
             <span class="n">chisq_grad_im</span> <span class="o">*=</span> <span class="n">imvec</span>
 
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(((</span><span class="n">regterm</span> <span class="o">+</span> <span class="n">chisq_grad_im</span><span class="p">),(</span><span class="n">chisq_grad_epsilon</span> <span class="o">+</span> <span class="n">chisq_epsilon_grad</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(((</span><span class="n">regterm</span> <span class="o">+</span> <span class="n">chisq_grad_im</span><span class="p">),(</span><span class="n">chisq_grad_epsilon</span> <span class="o">+</span> <span class="n">chisq_epsilon_grad</span><span class="p">)))</span></div>
 
     <span class="k">def</span> <span class="nf">plotcur</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_show_updates</span><span class="p">:</span>
@@ -745,8 +793,9 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">+=</span> <span class="mi">1</span>
 
-    <span class="k">def</span> <span class="nf">make_image_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_updates</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-
+<div class="viewcode-block" id="Imager.make_image_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_updates</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make Stokes I image using current imager settings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Checks and initialize</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span>
@@ -801,7 +850,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">+=</span> <span class="mi">1</span>
 
         <span class="c1"># Return Image object</span>
-        <span class="k">return</span> <span class="n">outim</span>
+        <span class="k">return</span> <span class="n">outim</span></div>
 
 <div class="viewcode-block" id="Imager.make_image_I_stochastic_optics"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I_stochastic_optics">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I_stochastic_optics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_updates</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Reconstructs an image of total flux density using the stochastic optics scattering mitigation technique.</span>
