@@ -273,6 +273,12 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.movie.Movie.avg_frame">
+<code class="descname">avg_frame</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.avg_frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.avg_frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Average the movie frames into a single image</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.movie.Movie.copy">
 <code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a copy of the Movie object.</p>
@@ -456,11 +462,43 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.movie.Movie.save_fits">
+<code class="descname">save_fits</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.save_fits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the Movie data to fits files with basename fname and filenames basename + 00001, etc.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.movie.Movie.save_txt">
 <code class="descname">save_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.save_txt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save the Movie data to text files with basename fname and filenames basename + 00001, etc.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.movie.load_fits">
+<code class="descclassname">ehtim.movie.</code><code class="descname">load_fits</code><span class="sig-paren">(</span><em>basename</em>, <em>nframes</em>, <em>framedur=-1</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#load_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.load_fits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in a movie from fits files and create a Movie object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>basename</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The base name of individual movie frames. Files should have names basename + 00001, etc.</li>
+<li><strong>nframes</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The total number of frames</li>
+<li><strong>framedur</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)</li>
+<li><strong>pulse</strong> (<em>function</em>) &#8211; The function convolved with the pixel values for continuous image</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a Movie object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#ehtim.movie.Movie" title="ehtim.movie.Movie">Movie</a></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -474,7 +512,7 @@
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>basename</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The base name of individual movie frames. Files should have names basename + 00001, etc.</li>
 <li><strong>nframes</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The total number of frames</li>
-<li><strong>framedur</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The frame duration (default = -1, corresponding to framedur taken from file headers)</li>
+<li><strong>framedur</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)</li>
 <li><strong>pulse</strong> (<em>function</em>) &#8211; The function convolved with the pixel values for continuous image</li>
 </ul>
 </td>
@@ -487,6 +525,12 @@
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.movie.merge_im_list">
+<code class="descclassname">ehtim.movie.</code><code class="descname">merge_im_list</code><span class="sig-paren">(</span><em>imlist</em>, <em>framedur=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#merge_im_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.merge_im_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge a list of image objects into a movie object</p>
 </dd></dl>
 
 </div>

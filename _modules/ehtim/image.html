@@ -196,6 +196,7 @@
 <span class="sd">           xdim (int): The number of pixels along the x dimension</span>
 <span class="sd">           ydim (int): The number of pixels along the y dimension</span>
 <span class="sd">           mjd (int): The integer MJD of the image</span>
+<span class="sd">           time (float): The observing time of the image (UTC hours)</span>
 <span class="sd">           source (str): The astrophysical source name</span>
 <span class="sd">           ra (float): The source Right Ascension in fractional hours</span>
 <span class="sd">           dec (float): The source declination in fractional degrees</span>
@@ -206,7 +207,7 @@
 <span class="sd">           vvec (array): The vector of stokes V values in Jy/pixel (len xdim*ydim)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">RF_DEFAULT</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">RF_DEFAULT</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;A polarimetric image (in units of Jy/pixel).</span>
 
 <span class="sd">           Args:</span>
@@ -218,6 +219,7 @@
 <span class="sd">               pulse (function): The function convolved with the pixel values for continuous image.</span>
 <span class="sd">               source (str): The astrophysical source name</span>
 <span class="sd">               mjd (int): The integer MJD of the image</span>
+<span class="sd">               time (float): The observing time of the image (UTC hours)</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (Image): the Image object    </span>
@@ -238,6 +240,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mjd</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="n">time</span> <span class="o">&gt;</span> <span class="mi">24</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">((</span><span class="n">time</span> <span class="o">-</span> <span class="n">time</span> <span class="o">%</span> <span class="mi">24</span><span class="p">)</span><span class="o">/</span><span class="mi">24</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span> <span class="o">%</span> <span class="mi">24</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">time</span>
+            
         <span class="bp">self</span><span class="o">.</span><span class="n">qvec</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">uvec</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vvec</span> <span class="o">=</span> <span class="p">[]</span>

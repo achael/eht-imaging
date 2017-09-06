@@ -168,7 +168,7 @@
 <span id="id1"></span><h1>Image<a class="headerlink" href="#image" title="Permalink to this headline">¶</a></h1>
 <span class="target" id="module-ehtim.image"></span><dl class="class">
 <dt id="ehtim.image.Image">
-<em class="property">class </em><code class="descclassname">ehtim.image.</code><code class="descname">Image</code><span class="sig-paren">(</span><em>image</em>, <em>psize</em>, <em>ra</em>, <em>dec</em>, <em>rf=230000000000.0</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em>, <em>source='SgrA'</em>, <em>mjd=51544</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ehtim.image.</code><code class="descname">Image</code><span class="sig-paren">(</span><em>image</em>, <em>psize</em>, <em>ra</em>, <em>dec</em>, <em>rf=230000000000.0</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>time=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image" title="Permalink to this definition">¶</a></dt>
 <dd><p>A polarimetric image (in units of Jy/pixel).</p>
 <dl class="attribute">
 <dt id="ehtim.image.Image.pulse">
@@ -198,6 +198,12 @@
 <dt id="ehtim.image.Image.mjd">
 <code class="descname">mjd</code><a class="headerlink" href="#ehtim.image.Image.mjd" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>int</em> &#8211; The integer MJD of the image</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.time">
+<code class="descname">time</code><a class="headerlink" href="#ehtim.image.Image.time" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The observing time of the image (UTC hours)</p>
 </dd></dl>
 
 <dl class="attribute">

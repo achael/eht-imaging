@@ -173,6 +173,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
+<span class="kn">import</span> <span class="nn">ehtim.image</span>
 <span class="kn">import</span> <span class="nn">ehtim.obsdata</span>
 <span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span> <span class="k">as</span> <span class="nn">simobs</span>
 <span class="kn">import</span> <span class="nn">ehtim.io.save</span>
@@ -471,7 +472,7 @@
             <span class="n">movie</span><span class="o">.</span><span class="n">start_hr</span> <span class="o">=</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">]</span>
 
         <span class="n">movie_start</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span> <span class="o">+</span> <span class="n">movie</span><span class="o">.</span><span class="n">start_hr</span><span class="o">/</span><span class="mf">24.0</span>
-        <span class="n">movie_end</span>   <span class="o">=</span> <span class="n">movie_start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span><span class="o">*</span><span class="n">movie</span><span class="o">.</span><span class="n">framedur</span><span class="o">/</span><span class="mf">24.0</span><span class="o">/</span><span class="mf">3600.0</span>
+        <span class="n">movie_end</span>   <span class="o">=</span> <span class="n">movie_start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span><span class="o">*</span><span class="n">movie</span><span class="o">.</span><span class="n">framedur</span><span class="o">/</span><span class="mf">86400.</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Movie MJD Range: &quot;</span><span class="p">,</span><span class="n">movie_start</span><span class="p">,</span><span class="n">movie_end</span><span class="p">)</span>
 
@@ -512,14 +513,67 @@
                                     <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span>
                                     <span class="n">jones</span><span class="o">=</span><span class="n">jones</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="n">inv_jones</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">dtermp</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span>
                                     <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Movie.get_frame"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.get_frame">[docs]</a>    <span class="k">def</span> <span class="nf">get_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame_num</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return one movie frame as an image object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">frame_num</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">frame_num</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid frame number!&quot;</span><span class="p">)</span>
+
+        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span> <span class="o">+</span> <span class="n">frame_num</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span><span class="o">*</span><span class="mi">3600</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">im</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">uframes</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">im</span><span class="o">.</span><span class="n">add_v</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">im</span></div>
+        
+
+<div class="viewcode-block" id="Movie.im_list"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.im_list">[docs]</a>    <span class="k">def</span> <span class="nf">im_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of the movie frames</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">))]</span></div>
+
+<div class="viewcode-block" id="Movie.avg_frame"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.avg_frame">[docs]</a>    <span class="k">def</span> <span class="nf">avg_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Average the movie frames into a single image</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">avg_imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">avg_imarr</span> <span class="o">=</span> <span class="n">avg_imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">avg_imarr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">):</span>
+            <span class="n">avg_qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">avg_uvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uframes</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">avg_qarr</span> <span class="o">=</span> <span class="n">avg_qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
+            <span class="n">avg_uarr</span> <span class="o">=</span> <span class="n">avg_uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
+            <span class="n">im</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">avg_qarr</span><span class="p">,</span> <span class="n">avg_uarr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">):</span>
+            <span class="n">avg_vvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">avg_varr</span> <span class="o">=</span> <span class="n">avg_vvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
+            <span class="n">im</span><span class="o">.</span><span class="n">add_v</span><span class="p">(</span><span class="n">avg_varr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">im</span></div>
+        
 <div class="viewcode-block" id="Movie.save_txt"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save the Movie data to text files with basename fname and filenames basename + 00001, etc. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Save the Movie data to text files with basename fname and filenames basename + 00001, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_mov_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
         <span class="k">return</span></div>
 
+<div class="viewcode-block" id="Movie.save_fits"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.save_fits">[docs]</a>    <span class="k">def</span> <span class="nf">save_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save the Movie data to fits files with basename fname and filenames basename + 00001, etc.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_mov_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
+        <span class="k">return</span></div>
+
 <div class="viewcode-block" id="Movie.export_mp4"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.export_mp4">[docs]</a>    <span class="k">def</span> <span class="nf">export_mp4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s1">&#39;movie.mp4&#39;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span> <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">frame_pad_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Save the Movie to an mp4 file&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Save the Movie to an mp4 file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="kn">import</span> <span class="nn">matplotlib</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;agg&#39;</span><span class="p">)</span>
@@ -612,31 +666,84 @@
 
         <span class="n">ani</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span><span class="n">update_img</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span><span class="o">*</span><span class="n">frame_pad_factor</span><span class="p">,</span><span class="n">interval</span><span class="o">=</span><span class="mf">1e3</span><span class="o">/</span><span class="n">fps</span><span class="p">)</span>
         <span class="n">writer</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">writers</span><span class="p">[</span><span class="s1">&#39;ffmpeg&#39;</span><span class="p">](</span><span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="n">bitrate</span><span class="o">=</span><span class="mf">1e6</span><span class="p">)</span>
-        <span class="n">ani</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Movie.get_frame"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.get_frame">[docs]</a>    <span class="k">def</span> <span class="nf">get_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame_num</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return one movie frame as an image object&quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">ehtim.image</span> <span class="k">as</span> <span class="nn">image</span>
-
-        <span class="k">if</span> <span class="n">frame_num</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">frame_num</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid frame number!&quot;</span><span class="p">)</span>
-
-        <span class="n">im</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">im</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">uframes</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)))</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">im</span><span class="o">.</span><span class="n">add_v</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">[</span><span class="n">frame_num</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)))</span>
-
-        <span class="k">return</span> <span class="n">im</span></div>
-        
-
-<div class="viewcode-block" id="Movie.im_list"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.im_list">[docs]</a>    <span class="k">def</span> <span class="nf">im_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a list of the movie frames&quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">ehtim.image</span> <span class="k">as</span> <span class="nn">image</span>
-
-        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">))]</span></div></div>
+        <span class="n">ani</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span></div></div>
 
 
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Merge list of image objects from Movie.im_list() into movie object</span>
+<span class="c1">##################################################################################################</span>
+<div class="viewcode-block" id="merge_im_list"><a class="viewcode-back" href="../../movie.html#ehtim.movie.merge_im_list">[docs]</a><span class="k">def</span> <span class="nf">merge_im_list</span><span class="p">(</span><span class="n">imlist</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Merge a list of image objects into a movie object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">framelist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">qlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">ulist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">nframes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)</span>
+
+    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Merging </span><span class="si">%i</span><span class="s2"> frames from MJD </span><span class="si">%i</span><span class="s2"> </span><span class="si">%.2f</span><span class="s2"> hr to MJD </span><span class="si">%i</span><span class="s2"> </span><span class="si">%.2f</span><span class="s2"> hr&quot;</span><span class="o">%</span><span class="p">(</span>
+            <span class="n">nframes</span><span class="p">,</span><span class="n">imlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span><span class="n">imlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">imlist</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">imlist</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nframes</span><span class="p">):</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">imlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">psize0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">psize</span>
+            <span class="n">xdim0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span>
+            <span class="n">ydim0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">ydim</span>
+            <span class="n">ra0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">ra</span>
+            <span class="n">dec0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">dec</span>
+            <span class="n">rf0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">rf</span>
+            <span class="n">src0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">source</span>
+            <span class="n">mjd0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">mjd</span>
+            <span class="n">hour0</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">time</span>
+            <span class="n">pulse</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">pulse</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">psize</span><span class="o">!=</span><span class="n">psize0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;psize of image </span><span class="si">%i</span><span class="s2"> != psize of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="o">!=</span><span class="n">xdim0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;xdim of image </span><span class="si">%i</span><span class="s2"> != xdim of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="o">!=</span><span class="n">ydim0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ydim of image </span><span class="si">%i</span><span class="s2"> != ydim of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ra</span><span class="o">!=</span><span class="n">ra0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;RA of image </span><span class="si">%i</span><span class="s2"> != RA of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">dec</span><span class="o">!=</span><span class="n">dec0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;DEC of image </span><span class="si">%i</span><span class="s2"> != DEC of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">rf</span><span class="o">!=</span><span class="n">rf0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;rf of image </span><span class="si">%i</span><span class="s2"> != rf of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">source</span><span class="o">!=</span><span class="n">src0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;source of image </span><span class="si">%i</span><span class="s2"> != src of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">mjd</span> <span class="o">&lt;</span> <span class="n">mjd0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;mjd of image </span><span class="si">%i</span><span class="s2"> &lt; mjd of image 0!&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+
+            <span class="n">hour</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">time</span>
+            <span class="k">if</span> <span class="n">im</span><span class="o">.</span><span class="n">mjd</span> <span class="o">&gt;</span> <span class="n">mjd0</span><span class="p">:</span>
+                <span class="n">hour</span> <span class="o">+=</span> <span class="mi">24</span><span class="o">*</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">mjd</span> <span class="o">-</span> <span class="n">mjd0</span><span class="p">)</span>
+
+
+        <span class="n">imarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+        <span class="n">framelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span>
+
+        <span class="c1"># Look for Stokes Q, U, V</span>
+        <span class="n">qarr</span> <span class="o">=</span> <span class="n">uarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">imarr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
+            <span class="n">qarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+            <span class="n">uarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+            <span class="n">qlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qarr</span><span class="p">)</span>
+            <span class="n">ulist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uarr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
+            <span class="n">varr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+            <span class="n">vlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">varr</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">framedur</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">framedur</span> <span class="o">=</span> <span class="p">((</span><span class="n">hour</span> <span class="o">-</span> <span class="n">hour0</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">nframes</span><span class="p">))</span><span class="o">*</span><span class="mf">3600.0</span>
+            
+    <span class="n">mov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">(</span><span class="n">framelist</span><span class="p">,</span> <span class="n">framedur</span><span class="p">,</span> <span class="n">psize0</span><span class="p">,</span> <span class="n">ra0</span><span class="p">,</span> <span class="n">dec0</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">rf0</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">src0</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="n">hour0</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qlist</span><span class="p">):</span>
+        <span class="n">mov</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">qlist</span><span class="p">,</span> <span class="n">ulist</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vlist</span><span class="p">):</span>
+        <span class="n">mov</span><span class="o">.</span><span class="n">add_v</span><span class="p">(</span><span class="n">vlist</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mov</span></div>
 
 <span class="c1">##################################################################################################</span>
 <span class="c1"># Movie creation and export functions</span>
@@ -648,13 +755,29 @@
 <span class="sd">       Args:</span>
 <span class="sd">           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.</span>
 <span class="sd">           nframes (int): The total number of frames</span>
-<span class="sd">           framedur (float): The frame duration (default = -1, corresponding to framedur taken from file headers)</span>
+<span class="sd">           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)</span>
 <span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
 
 <span class="sd">       Returns:</span>
 <span class="sd">           Movie: a Movie object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_movie_txt</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">nframes</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=</span><span class="n">framedur</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_fits"><a class="viewcode-back" href="../../movie.html#ehtim.movie.load_fits">[docs]</a><span class="k">def</span> <span class="nf">load_fits</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">nframes</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Read in a movie from fits files and create a Movie object.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.</span>
+<span class="sd">           nframes (int): The total number of frames</span>
+<span class="sd">           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)</span>
+<span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           Movie: a Movie object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_movie_fits</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">nframes</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=</span><span class="n">framedur</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">)</span></div>
+
 
 
 
