@@ -1484,6 +1484,70 @@ class Obsdata(object):
         ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
         return
 
+    def get_cphase_curves(self, tris):
+        """Get closure phase over time on all requested triangles"""
+
+        # Get closure phases (maximal set)
+        cphases = self.c_phases(mode='time', count='max')
+
+        # Get requested closure phases over time
+        cps = list()
+        for tri in tris:
+            cpdata = []
+            for entry in cphases:
+                for obs in entry:
+                    obstri = (obs['t1'],obs['t2'],obs['t3'])
+                    if set(obstri) == set(tri):
+                        # Flip the sign of the closure phase if necessary
+                        parity = paritycompare(tri, obstri)
+                        cpdata.append([obs['time'], parity*obs['cphase'], obs['sigmacp']])
+                        continue
+
+            cpdata = np.array(cpdata)
+
+            if len(cpdata) == 0:
+                #print "No closure phases on " + '%s - %s - %s' % (tri[0],tri[1],tri[2])
+                cps.append(None)
+            else:
+                cps.append(np.array([cpdata[:,0], cpdata[:,1], cpdata[:,2]]))
+
+        return cps
+
+    def get_camp_curves(self, quads):
+        """Get closure amplitude over time on all requested quadrangeles
+           (1-2)(3-4)/(1-4)(2-3)
+        """
+        # Get the closure amplitudes
+        camps = self.c_amplitudes(mode='time', count='max')
+
+        cas = list()
+        for quad in quads:
+            b1 = set((quad[0], quad[1]))
+            r1 = set((quad[0], quad[3]))
+
+            cadata = []
+            for entry in camps:
+                for obs in entry:
+                    obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
+                    if set(quad) == set(obsquad):
+                        num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
+                        denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+
+                        if (b1 in num) and (r1 in denom):
+                            cadata.append([obs['time'], obs['camp'], obs['sigmaca']])
+                        elif (r1 in num) and (b1 in denom):
+                            cadata.append([obs['time'], 1./obs['camp'], obs['sigmaca']/(obs['camp']**2)])
+                        continue
+
+            cadata = np.array(cadata)
+            if len(cadata) == 0:
+                #print "No closure amplitudes on this quadrangle!"
+                cas.append(None)
+            else:
+                cas.append(np.array([cadata[:,0], cadata[:,1], cadata[:,2]]))
+
+        return cas
+
 ##################################################################################################
 # Observation creation functions
 ##################################################################################################

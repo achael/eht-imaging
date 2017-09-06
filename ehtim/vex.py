@@ -166,7 +166,7 @@ class Vex(object):
             if inscan:
                 ret = self.get_variable("start",line)
                 if len(ret)>0:
-                    mjd,hr = self.vexdate_to_MJD_hr(ret) # convert vex time format to mjd and hour
+                    mjd,hr = vexdate_to_MJD_hr(ret) # convert vex time format to mjd and hour
                     temp['mjd_floor'] = mjd
                     temp['start_hr'] = hr
 
@@ -205,9 +205,9 @@ class Vex(object):
     # Function to get a value of 'vname' in a line which has format of
     # 'vname' = value ;(or :)
     def get_variable(self, vname, line):
-        idx = line.find(vname)
+        idx = self.find_variable(vname,line)
         name = ''
-        if idx>=0 and line[0]!='*':
+        if idx>=0:
             start = False
             for i in range(idx+len(vname),len(line)):
                 if start==True:
@@ -216,6 +216,15 @@ class Vex(object):
                 if start==False and line[i]!=' ' and line[i]!='=': break
                 if line[i]=='=': start = True
         return name
+
+    # check if a variable 'vname' exists by itself in a line.
+    # returns index of vname[0] in a line, or -1
+    def find_variable(self, vname, line):
+        idx = line.find(vname)
+        if ((idx>0 and line[idx-1]==' ') or idx==0) and line[0]!='*':
+            if idx+len(vname)==len(line): return idx
+            if line[idx+len(vname)]=='=' or line[idx+len(vname)]==' ' or line[idx+len(vname)]==':' or line[idx+len(vname)]==';': return idx
+        return -1
 
     # Find SEFD for a given station name.
     # For now look for it in Andrew's tables
@@ -230,12 +239,32 @@ class Vex(object):
         print('No station named %s'%station)
         return 10000. # some arbitrary value
 
-    # Function to find MJD (int!) and hour in UT from vex format,
-    # e.g, 2016y099d05h00m00s
-    def vexdate_to_MJD_hr(self, vexdate):
-        time = re.findall("[-+]?\d+[\.]?\d*",vexdate)
-        year = int(time[0])
-        date = int(time[1])
-        mjd = jdcal.gcal2jd(year,1,1)[1]+date-1
-        hour = int(time[2]) + float(time[3])/60. + float(time[4])/60./60.
-        return mjd,hour
+    # Find the time that any station starts observing the source in MJD.
+    # Find the time that the last station stops observing the source in MHD.
+    def get_obs_timerange(self, source):
+        sched = self.sched
+        first = True
+        for i_scan in range(len(sched)):
+            if sched[i_scan]['source']==source and first==True:
+                Tstart_hr = sched[i_scan]['start_hr']
+                mjd_s = sched[i_scan]['mjd_floor'] + Tstart_hr/24.
+                first = False
+            if sched[i_scan]['source']==source and first==False:
+                Tstop_hr = sched[i_scan]['start_hr'] + sched[i_scan]['scan'][0]['scan_sec']/3600.
+                mjd_e = sched[i_scan]['mjd_floor'] + Tstop_hr/24.
+
+        return mjd_s,mjd_e
+
+
+#=================================================================
+#=================================================================
+
+# Function to find MJD (int!) and hour in UT from vex format,
+# e.g, 2016y099d05h00m00s
+def vexdate_to_MJD_hr(vexdate):
+    time = re.findall("[-+]?\d+[\.]?\d*",vexdate)
+    year = int(time[0])
+    date = int(time[1])
+    mjd = jdcal.gcal2jd(year,1,1)[1]+date-1
+    hour = int(time[2]) + float(time[3])/60. + float(time[4])/60./60.
+    return mjd,hour

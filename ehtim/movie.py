@@ -352,44 +352,123 @@ class Movie(object):
         ehtim.io.save.save_mov_txt(self, fname)
         return
 
-    def export_mp4(self, out='movie.mp4', fps=10, dpi=120, scale='linear', dynamic_range=1000.0, pad_factor=1, verbose=False):
+    def export_mp4(self, out='movie.mp4', fps=10, dpi=120, interp='gaussian', scale='lin', dynamic_range=1000.0, cfun='afmhot', nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1, verbose=False):
+        """Save the Movie to an mp4 file"""
+
         import matplotlib
         matplotlib.use('agg')
         import matplotlib.pyplot as plt
         import matplotlib.animation as animation
 
+        if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
+            interp = 'gaussian'
+        else:
+            interp = 'nearest'
+
+        if scale == 'lin':
+            unit = 'Jy/pixel'
+        elif scale == 'log':
+            unit = 'log(Jy/pixel)'
+        elif scale=='gamma':
+            unit = '(Jy/pixel)^gamma'
+        else:
+            raise Exception("Scale not recognized!")
+
         fig = plt.figure()
         
-        extent = self.psize/RADPERUAS*self.xdim*np.array((1,-1,-1,1)) / 2.
+        #extent = self.psize/RADPERUAS*self.xdim*np.array((1,-1,-1,1)) / 2.
         maxi = np.max(np.concatenate([im for im in self.frames]))
+        #thin = 1
+        #mask = mask2 = x = y = a = b = m = Q1 = Q2 = None
+
+        if len(self.qframes) and plotp:
+            thin = self.xdim//nvec
+            mask = (self.frames[0]).reshape(self.ydim, self.xdim) > pcut * np.max(self.frames[0])
+            mask2 = mask[::thin, ::thin]
+            x = (np.array([[i for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
+            y = (np.array([[j for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
+            a = (-np.sin(np.angle(self.qframes[0]+1j*self.uframes[0])/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
+            b = ( np.cos(np.angle(self.qframes[0]+1j*self.uframes[0])/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
+
+            m = (np.abs(self.qframes[0] + 1j*self.uframes[0])/self.frames[0]).reshape(self.ydim, self.xdim)
+            m[np.logical_not(mask)] = 0
+
+            Q1 = plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
+            Q2 = plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)   
 
         def im_data(n):
-            n_data = int((n-n%pad_factor)/pad_factor)
-            if scale == 'linear':
-                return self.frames[n_data].reshape((self.ydim,self.xdim))
-            else:
-                return np.log(self.frames[n_data][n_data].reshape((self.ydim,self.xdim)) + maxi/plot_dynamic_range)
 
-        plt_im = plt.imshow(im_data(0), extent=extent, cmap=plt.get_cmap('afmhot'), interpolation='gaussian') 
-        if scale == 'linear':
+            n_data = int((n-n%frame_pad_factor)/frame_pad_factor)
+
+            if len(self.qframes) and plotp:
+                a = (-np.sin(np.angle(self.qframes[n_data]+1j*self.uframes[n_data])/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
+                b = ( np.cos(np.angle(self.qframes[n_data]+1j*self.uframes[n_data])/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
+
+                Q1.set_UVC(a,b)
+                Q2.set_UVC(a,b)
+            
+            if scale == 'lin':
+                return self.frames[n_data].reshape((self.ydim,self.xdim))                
+            elif scale == 'log':
+                return np.log(self.frames[n_data].reshape((self.ydim,self.xdim)) + maxi/dynamic_range)                
+            elif scale=='gamma':
+                return (self.frames[n_data]**(gamma)).reshape((self.ydim,self.xdim))
+
+        plt_im = plt.imshow(im_data(0), cmap=plt.get_cmap(cfun), interpolation=interp) 
+        plt.colorbar(plt_im, fraction=0.046, pad=0.04, label=unit)       
+
+        if scale == 'lin':
+
             plt_im.set_clim([0,maxi])
         else:
             plt_im.set_clim([np.log(maxi/dynamic_range),np.log(maxi)])
 
+        xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
+        yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
+        plt.xticks(xticks[0], xticks[1])
+        plt.yticks(yticks[0], yticks[1])
         plt.xlabel('Relative RA ($\mu$as)')
         plt.ylabel('Relative Dec ($\mu$as)')
+
         fig.set_size_inches([5,5])
         plt.tight_layout()
 
         def update_img(n):
             if verbose:
-                print("processing frame {0} of {1}".format(n, len(self.frames)*pad_factor))
+                print("processing frame {0} of {1}".format(n, len(self.frames)*frame_pad_factor))
             plt_im.set_data(im_data(n))
+            #plt_im = plt.imshow(im_data(n), extent=extent, cmap=plt.get_cmap(cfun), interpolation=interp) 
             return plt_im
 
-        ani = animation.FuncAnimation(fig,update_img,len(self.frames)*pad_factor,interval=1e3/fps)
+        ani = animation.FuncAnimation(fig,update_img,len(self.frames)*frame_pad_factor,interval=1e3/fps)
         writer = animation.writers['ffmpeg'](fps=fps, bitrate=1e6)
         ani.save(out,writer=writer,dpi=dpi)
+
+    def get_frame(self, frame_num):
+        """Return one movie frame as an image object"""
+        import ehtim.image as image
+
+        if frame_num < 0 or frame_num > len(self.frames):
+            raise Exception("Invalid frame number!")
+
+        im = image.Image(self.frames[frame_num].reshape((self.ydim,self.xdim)), self.psize, self.ra, self.dec, self.rf, self.pulse, self.source, self.mjd)
+        if len(self.qframes) > 0:
+            im.add_qu(self.qframes[frame_num].reshape((self.ydim,self.xdim)), self.uframes[frame_num].reshape((self.ydim,self.xdim)))
+        if len(self.vframes) > 0:
+            im.add_v(self.vframes[frame_num].reshape((self.ydim,self.xdim)))
+
+        return im
+        
+
+    def im_list(self):
+        """Return a list of the movie frames"""
+        import ehtim.image as image
+
+        return [self.get_frame(j) for j in range(len(self.frames))]
 
 
 

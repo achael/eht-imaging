@@ -596,7 +596,11 @@ class ScatteringModel(object):
 
         def get_frame(j):
             if type(Unscattered_Movie) == movie.Movie:
-                return image.Image(Unscattered_Movie.frames[j].reshape((N,N)), psize, ra, dec, rf, pulse, source, mjd)
+                im = image.Image(Unscattered_Movie.frames[j].reshape((N,N)), psize, ra, dec, rf, pulse, source, mjd)
+                if len(Unscattered_Movie.qframes) > 0:
+                    im.add_qu(Unscattered_Movie.qframes[j].reshape((N,N)), Unscattered_Movie.uframes[j].reshape((N,N)))
+
+                return im
             elif type(Unscattered_Movie) == list:
                 return Unscattered_Movie[j]
             else:
