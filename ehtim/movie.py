@@ -372,7 +372,10 @@ class Movie(object):
         return [self.get_frame(j) for j in range(len(self.frames))]
 
     def avg_frame(self):
-        """Average the movie frames into a single image
+        """Average the movie frames into a single image.
+
+           Returns:
+                Image : averaged image of all frames
         """
         
         avg_imvec = np.mean(self.frames,axis=0)
