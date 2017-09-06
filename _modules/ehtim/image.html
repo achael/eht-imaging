@@ -277,6 +277,7 @@
 
 <div class="viewcode-block" id="Image.copy"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a copy of the image object.</span>
+<span class="sd">           Args:</span>
 <span class="sd">           Returns: </span>
 <span class="sd">               newim (Image): copy of the Image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -287,6 +288,7 @@
 
 <div class="viewcode-block" id="Image.sourcevec"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.sourcevec">[docs]</a>    <span class="k">def</span> <span class="nf">sourcevec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the source position vector in geocentric coordinates at 0h GMST.</span>
+<span class="sd">           Args:</span>
 <span class="sd">           Returns:</span>
 <span class="sd">                vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -310,6 +312,7 @@
 
 <div class="viewcode-block" id="Image.fovx"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovx">[docs]</a>    <span class="k">def</span> <span class="nf">fovx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the image fov in x direction in radians.</span>
+<span class="sd">           Args:</span>
 <span class="sd">           Returns: </span>
 <span class="sd">                fovx (float) : image fov in x direction (radian)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -318,6 +321,7 @@
 
 <div class="viewcode-block" id="Image.fovy"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovy">[docs]</a>    <span class="k">def</span> <span class="nf">fovy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the image fov in y direction in radians.</span>
+<span class="sd">           Args:</span>
 <span class="sd">           Returns: </span>
 <span class="sd">                fovy (float) : image fov in y direction (radian)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -325,6 +329,7 @@
 
 <div class="viewcode-block" id="Image.total_flux"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.total_flux">[docs]</a>    <span class="k">def</span> <span class="nf">total_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the total flux of the Stokes I image in Jy.</span>
+<span class="sd">           Args:</span>
 <span class="sd">           Returns: </span>
 <span class="sd">                flux (float) : image total flux (Jy)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1116,6 +1121,7 @@
         <span class="sd">&quot;&quot;&quot;Save image data to text file.</span>
 <span class="sd">           Args:</span>
 <span class="sd">                fname (str): path to output text file</span>
+<span class="sd">           Returns:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_im_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
@@ -1125,6 +1131,7 @@
         <span class="sd">&quot;&quot;&quot;Save image data to a fits file.</span>
 <span class="sd">           Args:</span>
 <span class="sd">                fname (str): path to output fits file</span>
+<span class="sd">           Returns:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_im_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
         <span class="k">return</span></div></div>

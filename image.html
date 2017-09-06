@@ -467,6 +467,7 @@
 <dt id="ehtim.image.Image.copy">
 <code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a copy of the image object.
+Args:
 :returns: copy of the Image.
 :rtype: newim (Image)</p>
 </dd></dl>
@@ -513,6 +514,7 @@
 <dt id="ehtim.image.Image.fovx">
 <code class="descname">fovx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fovx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fovx" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the image fov in x direction in radians.
+Args:
 :returns: image fov in x direction (radian)
 :rtype: fovx (float)</p>
 </dd></dl>
@@ -521,6 +523,7 @@
 <dt id="ehtim.image.Image.fovy">
 <code class="descname">fovy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fovy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fovy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the image fov in y direction in radians.
+Args:
 :returns: image fov in y direction (radian)
 :rtype: fovy (float)</p>
 </dd></dl>
@@ -722,6 +725,7 @@
 <dd><p>Save image data to a fits file.
 :param fname: path to output fits file
 :type fname: str</p>
+<p>Returns:</p>
 </dd></dl>
 
 <dl class="method">
@@ -730,12 +734,14 @@
 <dd><p>Save image data to text file.
 :param fname: path to output text file
 :type fname: str</p>
+<p>Returns:</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.image.Image.sourcevec">
 <code class="descname">sourcevec</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.sourcevec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.sourcevec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the source position vector in geocentric coordinates at 0h GMST.
+Args:
 :returns: normal vector pointing to source in geocentric coordinates (m)
 :rtype: vec (numpy.array)</p>
 </dd></dl>
@@ -762,6 +768,7 @@
 <dt id="ehtim.image.Image.total_flux">
 <code class="descname">total_flux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.total_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.total_flux" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the total flux of the Stokes I image in Jy.
+Args:
 :returns: image total flux (Jy)
 :rtype: flux (float)</p>
 </dd></dl>
