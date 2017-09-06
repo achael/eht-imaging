@@ -7,6 +7,8 @@ from builtins import object
 import numpy as np
 import scipy.signal
 import scipy.special as sps
+import scipy.integrate as integrate
+from scipy.optimize import minimize
 
 import matplotlib.pyplot as plt
 from IPython import display
@@ -26,6 +28,20 @@ import cmath
 
 class ScatteringModel(object):
     """A scattering model based on a thin-screen approximation.
+<<<<<<< HEAD
+       Models include:
+           {'von_Mises', 'boxcar', 'dipole'}: These scattering models are motivated by observations of Sgr A*.
+                     Each gives a Gaussian at long wavelengths that matches the model defined
+                     by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
+                     with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
+                     at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
+                     if the reference wavelength is short enough to be beyond the lambda^2 regime!
+                     This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
+                     Note: This model *requires* a finite inner scale
+           'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
+            The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
+            The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov
+=======
       
        Models include: 
        
@@ -41,6 +57,7 @@ class ScatteringModel(object):
        'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
        The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
        The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov
+>>>>>>> d74d72fb17c72420d342e8f374e517ae238c7503
 
        Attributes:
             model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).
@@ -54,7 +71,7 @@ class ScatteringModel(object):
             rF (function): The Fresnel scale of the scattering screen at the specific wavelength.
     """
 
-    def __init__(self, model = 'simple', scatt_alpha = 5.0/3.0, observer_screen_distance = 8.023*10**21, source_screen_distance = 1.790*10**22, theta_maj_mas_ref = 1.309, theta_min_mas_ref = 0.64, POS_ANG = 78, wavelength_reference_cm = 1.0, r_in = 10000*10**5, r_out = 10**20):
+    def __init__(self, model = 'von_Mises', scatt_alpha = 5.0/3.0, observer_screen_distance = 8.023*10**21, source_screen_distance = 1.790*10**22, theta_maj_mas_ref = 1.309, theta_min_mas_ref = 0.64, POS_ANG = 78, wavelength_reference_cm = 1.0, r_in = 10000*10**5, r_out = 10**20):
         self.model = model
         self.POS_ANG = POS_ANG #Major axis position angle [degrees, east of north]
         self.observer_screen_distance = observer_screen_distance #cm
@@ -65,48 +82,59 @@ class ScatteringModel(object):
         self.r_out   = r_out     #outer scale [cm]
         self.scatt_alpha = scatt_alpha
 
-        if model == 'simple':
-            if r_in == 0.0:
-                print("Error! The 'simple' scattering model requires a finite inner scale.")
-            #Now, we need to solve for the effective parameters accounting for an inner scale
-            #By default, we will match the fitted Gaussian kernel as the wavelength goes to infinity
-            axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
-            #self.C_scatt = (1.20488e-15*axial_ratio*self.r_in**(2.0 - self.scatt_alpha)*self.wavelength_reference**2)/self.scatt_alpha
-            self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
-            #Note: the prefactor is exactly equal to 1/209952000000000000
-            geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
-            self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.Qprefactor = self.C_scatt*(self.r0_maj*self.r0_min)**(self.scatt_alpha/2.0) # This accounts for the effects of a finite inner scale
-        elif model == 'power-law':
-            self.r0_maj  = (2.0*np.log(2.0))**0.5/np.pi * wavelength_reference_cm/(theta_maj_mas_ref/1000.0/3600.0*np.pi/180.0) #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = (2.0*np.log(2.0))**0.5/np.pi * wavelength_reference_cm/(theta_min_mas_ref/1000.0/3600.0*np.pi/180.0) #Phase coherence length at the reference wavelength [cm]
-        elif model == 'amph_von_Misses':
-            axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
-            self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
-            #Note: the prefactor is exactly equal to 1/209952000000000000
-            geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
-            self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r_in_p = 1.0/(sps.gamma(0.5 - self.scatt_alpha/2.0)*sps.gamma(1.0 + self.scatt_alpha)) * ((2.0**(self.scatt_alpha + 4.0) * np.pi)/(1.0 + np.cos(np.pi * self.scatt_alpha)))**0.5 * self.r_in
-            A = theta_maj_mas_ref/theta_min_mas_ref
-            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution
-            self.zeta   = 1.0 - 2.0*sps.i1(self.kzeta)/(self.kzeta * sps.i0(self.kzeta))
+        FWHM_fac = (2.0 * np.log(2.0))**0.5/np.pi
+        self.Qbar = 2.0/sps.gamma((2.0 - self.scatt_alpha)/2.0) * (self.r_in**2*(1.0 + M)/(FWHM_fac*(self.wavelength_reference/(2.0*np.pi))**2) )**2 * ( (theta_maj_mas_ref**2 + theta_min_mas_ref**2)*(1.0/1000.0/3600.0*np.pi/180.0)**2)
+        self.C_scatt_0 = (self.wavelength_reference/(2.0*np.pi))**2 * self.Qbar*sps.gamma(1.0 - self.scatt_alpha/2.0)/(8.0*np.pi**2*self.r_in**2)
+        A = theta_maj_mas_ref/theta_min_mas_ref # Anisotropy, >=1, as lambda->infinity 
+        self.phi0 = (90 - self.POS_ANG) * np.pi/180.0
+
+        # Parameters for the approximate phase structure function 
+        theta_maj_rad_ref = theta_maj_mas_ref/1000.0/3600.0*np.pi/180.0
+        theta_min_rad_ref = theta_min_mas_ref/1000.0/3600.0*np.pi/180.0
+        self.Amaj_0 = ( self.r_in*(1.0 + M) * theta_maj_rad_ref/(FWHM_fac * (self.wavelength_reference/(2.0*np.pi)) * 2.0*np.pi ))**2
+        self.Amin_0 = ( self.r_in*(1.0 + M) * theta_min_rad_ref/(FWHM_fac * (self.wavelength_reference/(2.0*np.pi)) * 2.0*np.pi ))**2
+
+        if model == 'von_Mises':
+            def avM_Anisotropy(kzeta):                
+                return np.abs( (kzeta*sps.i0(kzeta)/sps.i1(kzeta) - 1.0)**0.5 - A )
+
+            self.kzeta = minimize(avM_Anisotropy, A**2, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
+            self.P_phi_prefac = 1.0/(2.0*np.pi*sps.i0(self.kzeta))  
         elif model == 'boxcar':
-            axial_ratio = theta_min_mas_ref/theta_maj_mas_ref  #axial ratio of the scattering disk at long wavelengths (minor/major size < 1)
-            self.C_scatt = 4.76299e-18*(1.0+M)**2 * np.pi**4 * r_in**(2.0 - scatt_alpha) * theta_maj_mas_ref * theta_min_mas_ref/(scatt_alpha * wavelength_reference_cm**2 * np.log(4.))
-            #Note: the prefactor is exactly equal to 1/209952000000000000
-            geometric_mean = (2.0*self.r_in**(2.0-self.scatt_alpha)/self.scatt_alpha/self.C_scatt)**0.5
-            self.r0_maj  = geometric_mean*axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r0_min  = geometric_mean/axial_ratio**0.5 #Phase coherence length at the reference wavelength [cm]
-            self.r_in_p = 1.0/(sps.gamma(0.5 - self.scatt_alpha/2.0)*sps.gamma(1.0 + self.scatt_alpha)) * ((2.0**(self.scatt_alpha + 4.0) * np.pi)/(1.0 + np.cos(np.pi * self.scatt_alpha)))**0.5 * self.r_in
-            A = theta_maj_mas_ref/theta_min_mas_ref
-            self.kzeta   = -0.17370 + 0.38067*A + 0.944246*A**2    # This is an approximate solution
-            self.kzeta_3 =  0.02987 + 0.28626*A # This is an approximate solution
-            self.zeta    = 1.0 - 2.0*sps.i1(self.kzeta)/(self.kzeta * sps.i0(self.kzeta))
+            def boxcar_Anisotropy(kzeta):                
+                return np.abs( np.sin(np.pi/(1.0 + kzeta))/(np.pi/(1.0 + kzeta)) - (theta_maj_mas_ref**2 - theta_min_mas_ref**2)/(theta_maj_mas_ref**2 + theta_min_mas_ref**2) )       
+
+            self.kzeta = minimize(boxcar_Anisotropy, A, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
+            self.P_phi_prefac = (1.0 + self.kzeta)/(2.0*np.pi)   
+        elif model == 'dipole':
+            def dipole_Anisotropy(kzeta):                
+                #return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 1.0, -kzeta) - A**2 )  
+                return np.abs( (1.0 + kzeta)*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/(3.0*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, -0.5, 2.0, -kzeta) - (2.0 + kzeta + kzeta*self.scatt_alpha)*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)) - A**2 )
+
+            self.kzeta = minimize(dipole_Anisotropy, A, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
+            self.P_phi_prefac = 1.0/(2.0*np.pi*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 1.0, -self.kzeta))       
         else:
             print("Scattering Model Not Recognized!")
-            return
+
+        # More parameters for the approximate phase structure function 
+        int_maj = integrate.quad(lambda phi_q: np.abs( np.cos( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi)[0]  
+        int_min = integrate.quad(lambda phi_q: np.abs( np.sin( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi)[0]      
+        B_prefac = self.C_scatt_0 * 2.0**(2.0 - self.scatt_alpha) * np.pi**0.5/(self.scatt_alpha * sps.gamma((self.scatt_alpha + 1.0)/2.0))
+        self.Bmaj_0 = B_prefac*int_maj
+        self.Bmin_0 = B_prefac*int_min
+
+        #Check normalization:
+        #print("Checking Normalization:",integrate.quad(lambda phi_q: self.P_phi(phi_q), 0, 2.0*np.pi)[0])  
+
+        return
+
+    def P_phi(self, phi):
+        if self.model == 'von_Mises':
+            return self.P_phi_prefac * np.cosh(self.kzeta*np.cos(phi - self.phi0))  
+        elif self.model == 'boxcar':
+            return self.P_phi_prefac * (1.0 - ((np.pi/(2.0*(1.0 + self.kzeta)) < (phi - self.phi0) % np.pi) & ((phi - self.phi0) % np.pi < np.pi - np.pi/(2.0*(1.0 + self.kzeta)))))
+        elif self.model == 'dipole':
+            return self.P_phi_prefac * (1.0 + self.kzeta*np.sin(phi - self.phi0)**2)**(-(self.scatt_alpha + 2.0)/2.0)
 
     def rF(self, wavelength):
         """Returns the Fresnel scale [cm] of the scattering screen at the specified wavelength [cm].
@@ -127,6 +155,32 @@ class ScatteringModel(object):
         """
         return self.observer_screen_distance/self.source_screen_distance
 
+    def dDphi_dz(self, r, phi, phi_q, wavelength):
+        """differential contribution to the phase structure function
+        """
+        return 4.0 * (wavelength/self.wavelength_reference)**2 * self.C_scatt_0/self.scatt_alpha * (sps.hyp1f1(-self.scatt_alpha/2.0, 0.5, -r**2/(4.0*self.r_in**2)*np.cos(phi - phi_q)**2) - 1.0)
+
+    def Dphi_exact(self, x, y, wavelength_cm):
+        r = (x**2 + y**2)**0.5
+        phi = np.arctan2(y, x)
+
+        return integrate.quad(lambda phi_q: self.dDphi_dz(r, phi, phi_q, wavelength_cm)*self.P_phi(phi_q), 0, 2.0*np.pi)[0]        
+
+    def Dmaj(self, r, wavelength_cm):
+        return (wavelength_cm/self.wavelength_reference)**2 * self.Bmaj_0 * (2.0 * self.Amaj_0/(self.scatt_alpha * self.Bmaj_0))**(-self.scatt_alpha/(2.0 - self.scatt_alpha)) * ((1.0 + (2.0*self.Amaj_0/(self.scatt_alpha * self.Bmaj_0))**(2.0/(2.0 - self.scatt_alpha)) * (r/self.r_in)**2 )**(self.scatt_alpha/2.0) - 1.0)
+
+    def Dmin(self, r, wavelength_cm):
+        return (wavelength_cm/self.wavelength_reference)**2 * self.Bmin_0 * (2.0 * self.Amin_0/(self.scatt_alpha * self.Bmin_0))**(-self.scatt_alpha/(2.0 - self.scatt_alpha)) * ((1.0 + (2.0*self.Amin_0/(self.scatt_alpha * self.Bmin_0))**(2.0/(2.0 - self.scatt_alpha)) * (r/self.r_in)**2 )**(self.scatt_alpha/2.0) - 1.0)
+
+    def Dphi_approx(self, x, y, wavelength_cm):
+        r = (x**2 + y**2)**0.5
+        phi = np.arctan2(y, x)
+
+        Dmaj_eval = self.Dmaj(r, wavelength_cm)
+        Dmin_eval = self.Dmin(r, wavelength_cm)
+
+        return (Dmaj_eval + Dmin_eval)/2.0 + (Dmaj_eval - Dmin_eval)/2.0*np.cos(2.0*(phi - self.phi0))
+
     def Q(self, qx, qy):
         """Computes the power spectrum of the scattering model at a wavenumber {qx,qy} (in 1/cm).
         The power spectrum is part of what defines the scattering model (along with Dphi).
@@ -142,64 +196,27 @@ class ScatteringModel(object):
         # This will be enforced externally
         # if qx == 0.0 and qy == 0.0:
         #     return 0.0
+        q = (qx**2 + qy**2)**0.5
+        phi_q = np.arctan2(qy, qx)
 
-        wavelengthbar = self.wavelength_reference/(2.0*np.pi)
-        qmin = 2.0*np.pi/self.r_out
-        qmax = 2.0*np.pi/self.r_in
-        #rotate qx and qy as needed
-        PA = (90 - self.POS_ANG) * np.pi/180.0
-        qx_rot =  qx*np.cos(PA) + qy*np.sin(PA)
-        qy_rot = -qx*np.sin(PA) + qy*np.cos(PA)
+        return self.Qbar * (q*self.r_in)**(-(self.scatt_alpha + 2.0)) * np.exp(-(q * self.r_in)**2) * self.P_phi(phi_q)
 
-        if self.model == 'simple':
-            return self.Qprefactor * 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0 + qmin**2.0)**(-(self.scatt_alpha+2.0)/2.0) * np.exp(-((qx_rot**2.0 + qy_rot**2.0)/qmax**2.0)**0.5)
-        elif self.model == 'power-law':
-            return 2.0**self.scatt_alpha * np.pi * self.scatt_alpha * sps.gamma(1.0 + self.scatt_alpha/2.0)/sps.gamma(1.0 - self.scatt_alpha/2.0)*wavelengthbar**-2.0*(self.r0_maj*self.r0_min)**-(self.scatt_alpha/2.0) * ( (self.r0_maj/self.r0_min)*qx_rot**2.0 + (self.r0_min/self.r0_maj)*qy_rot**2.0)**(-(self.scatt_alpha+2.0)/2.0)
-        elif self.model == 'amph_von_Misses':
-            q = (qx_rot**2 + qy_rot**2)**0.5
-            q_phi = np.arctan2(qy_rot, qx_rot)
-            return (8.0*np.pi)/((1.0+self.zeta)*sps.i0(self.kzeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0)) * np.exp(-(q*self.r_in)**2) * np.cosh(self.kzeta*np.cos( q_phi ))
-        elif self.model == 'boxcar':
-            q = (qx_rot**2 + qy_rot**2)**0.5
-            q_phi = np.arctan2(qy_rot, qx_rot)
+#    def Dphi(self, x, y, wavelength_cm):
+#        """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm).
+#           The phase structure function is part of what defines the scattering model (along with Q).
+#           Generically, the phase structure function must be proportional to wavelength^2 because of the cold plasma dispersion law
 
-            Q = (16.0*np.pi**2)/((1.0+self.zeta)*sps.gamma(1.0-self.scatt_alpha/2.0)) * (self.r_in/self.r0_maj)**2 * (self.r_in/wavelengthbar)**2 * (q * self.r_in)**(-(self.scatt_alpha + 2.0))
-            Q[(1.0/(2.0*self.kzeta_3) < (q_phi % np.pi)) & ((q_phi % np.pi) < np.pi - 1.0/(2.0*self.kzeta_3))] = 0.0
+#           Args:
+#                x (float): x coordinate of the displacement (toward East) in cm.
+#                y (float): y coordinate of the displacement (toward North) in cm.
+#                wavelength_cm (float): observing wavelength in cm
+#           Returns:
+#                (float): The phase structure function (dimensionless; radians^2)
+#            """
 
-            return Q
-
-    def Dphi(self, x, y, wavelength_cm):
-        """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm).
-           The phase structure function is part of what defines the scattering model (along with Q).
-           Generically, the phase structure function must be proportional to wavelength^2 because of the cold plasma dispersion law
-
-           Args:
-                x (float): x coordinate of the displacement (toward East) in cm.
-                y (float): y coordinate of the displacement (toward North) in cm.
-                wavelength_cm (float): observing wavelength in cm
-           Returns:
-                (float): The phase structure function (dimensionless; radians^2)
-            """
-
-        #Phase structure function; generically, this must be proportional to wavelength^2 because of the cold plasma dispersion law
-        #All units in cm
-        PA = (90. - self.POS_ANG) * np.pi/180.0
-        x_rot =  x*np.cos(PA) + y*np.sin(PA) #along the major axis
-        y_rot = -x*np.sin(PA) + y*np.cos(PA) #along the minor axis
-
-        if self.model == 'simple':
-            return (wavelength_cm/self.wavelength_reference)**2.0*self.C_scatt*(((x_rot/self.r0_maj)**2 + (y_rot/self.r0_min)**2 + self.r_in**2/(self.r0_maj*self.r0_min) )**(self.scatt_alpha/2.0)*(self.r0_maj*self.r0_min)**(self.scatt_alpha/2.0) - self.r_in**self.scatt_alpha)
-        elif self.model == 'power-law':
-            return (wavelength_cm/self.wavelength_reference)**2.0*((x_rot/self.r0_maj)**2 + (y_rot/self.r0_min)**2)**(self.scatt_alpha/2.0)
-        elif self.model == 'amph_von_Misses':
-            r     = (x_rot**2 + y_rot**2)**0.5
-            phi   = np.arctan2(y_rot, x_rot)
-            return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
-        elif self.model == 'boxcar':
-            print('Using amph_von_Misses for now...')
-            r     = (x_rot**2 + y_rot**2)**0.5
-            phi   = np.arctan2(y_rot, x_rot)
-            return 2.0/(self.scatt_alpha*(1.0 + self.zeta)) * (self.r_in_p/self.r0_maj)**2 * (wavelength_cm/self.wavelength_reference)**2 * (-1.0 + (1.0 + r**2/self.r_in_p**2)**(self.scatt_alpha/2.0)) * (1.0 + self.zeta * np.cos(2.0*phi))
+#        #Phase structure function; generically, this must be proportional to wavelength^2 because of the cold plasma dispersion law
+#        #All units in cm
+#        return 0.0
 
     def sqrtQ_Matrix(self, Reference_Image, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0):
         """Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.
@@ -227,7 +244,7 @@ class ScatteringModel(object):
 
         return sqrtQ
 
-    def Ensemble_Average_Kernel(self, Reference_Image, wavelength_cm = None):
+    def Ensemble_Average_Kernel(self, Reference_Image, wavelength_cm = None, use_approximate_form=True):
         """The ensemble-average convolution kernel for images; returns a 2D array corresponding to the image dimensions of the reference image
 
            Args:
@@ -242,14 +259,17 @@ class ScatteringModel(object):
             wavelength_cm = C/Reference_Image.rf*100.0 #Observing wavelength [cm]
 
         uvlist = np.fft.fftfreq(Reference_Image.xdim)/Reference_Image.psize # assume square kernel.  FIXME: create ulist and vlist, and construct u_grid and v_grid with the correct dimension
-        u_grid, v_grid = np.meshgrid(uvlist, uvlist)
-        ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm)
+        if use_approximate_form == True:
+            u_grid, v_grid = np.meshgrid(uvlist, uvlist)
+            ker_uv = self.Ensemble_Average_Kernel_Visibility(u_grid, v_grid, wavelength_cm, use_approximate_form=use_approximate_form)
+        else:
+            ker_uv = np.array([[self.Ensemble_Average_Kernel_Visibility(u, v, wavelength_cm, use_approximate_form=use_approximate_form) for u in uvlist] for v in uvlist]) 
 
         ker = np.real(np.fft.fftshift(np.fft.fft2(ker_uv)))
         ker = ker / np.sum(ker) # normalize to 1
         return ker
 
-    def Ensemble_Average_Kernel_Visibility(self, u, v, wavelength_cm):
+    def Ensemble_Average_Kernel_Visibility(self, u, v, wavelength_cm, use_approximate_form=True):
         """The ensemble-average multiplicative scattering kernel for visibilities at a particular {u,v} coordinate
 
            Args:
@@ -260,10 +280,12 @@ class ScatteringModel(object):
            Returns:
                float: The ensemble-average kernel at the specified {u,v} point and observing wavelength.
             """
+        if use_approximate_form == True:
+            return np.exp(-0.5*self.Dphi_approx(u*wavelength_cm/(1.0+self.Mag()), v*wavelength_cm/(1.0+self.Mag()), wavelength_cm))
+        else:
+            return np.exp(-0.5*self.Dphi_exact(u*wavelength_cm/(1.0+self.Mag()), v*wavelength_cm/(1.0+self.Mag()), wavelength_cm))
 
-        return np.exp(-0.5*self.Dphi(u*wavelength_cm/(1.0+self.Mag()), v*wavelength_cm/(1.0+self.Mag()), wavelength_cm))
-
-    def Ensemble_Average_Blur(self, im, wavelength_cm = None, ker = None):
+    def Ensemble_Average_Blur(self, im, wavelength_cm = None, ker = None, use_approximate_form=True):
         """Blurs an input Image with the ensemble-average scattering kernel.
 
            Args:
@@ -282,7 +304,7 @@ class ScatteringModel(object):
             wavelength_cm = C/im.rf*100.0 #Observing wavelength [cm]
 
         if ker is None:
-            ker = self.Ensemble_Average_Kernel(im, wavelength_cm)
+            ker = self.Ensemble_Average_Kernel(im, wavelength_cm, use_approximate_form)
 
         Iim = Wrapped_Convolve((im.imvec).reshape(im.ydim, im.xdim), ker)
         out = image.Image(Iim, im.psize, im.ra, im.dec, rf=C/(wavelength_cm/100.0), source=im.source, mjd=im.mjd, pulse=im.pulse)
@@ -296,7 +318,7 @@ class ScatteringModel(object):
 
         return out
 
-    def Deblur_obs(self, obs):
+    def Deblur_obs(self, obs, use_approximate_form=True):
         """Deblurs the observation obs by dividing visibilities by the ensemble-average scattering kernel. See Fish et al. (2014): arXiv:1409.4690.
 
            Args:
@@ -322,7 +344,7 @@ class ScatteringModel(object):
 
         # divide visibilities by the scattering kernel
         for i in range(len(vis)):
-            ker = self.Ensemble_Average_Kernel_Visibility(u[i], v[i], wavelength_cm = C/obs.rf*100.0)
+            ker = self.Ensemble_Average_Kernel_Visibility(u[i], v[i], wavelength_cm = C/obs.rf*100.0, use_approximate_form=use_approximate_form)
             vis[i] = vis[i] / ker
             qvis[i] = qvis[i] / ker
             uvis[i] = uvis[i] / ker
@@ -403,7 +425,7 @@ class ScatteringModel(object):
 
         return phi_Image
 
-    def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=False, DisplayImage=False, Force_Positivity=False):
+    def Scatter(self, Unscattered_Image, Epsilon_Screen=np.array([]), obs_frequency_Hz=0.0, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0, ea_ker=None, sqrtQ=None, Linearized_Approximation=False, DisplayImage=False, Force_Positivity=False, use_approximate_form=True):
         """Scatter an image using the specified epsilon screen.
            All lengths should be specified in centimeters
            If the observing frequency (obs_frequency_Hz) is not specified, then it will be taken to be equal to the frequency of the Unscattered_Image
@@ -443,7 +465,7 @@ class ScatteringModel(object):
             print("The image dimension should really be odd...")
 
         #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel
-        EA_Image = self.Ensemble_Average_Blur(Unscattered_Image, wavelength, ker = ea_ker)
+        EA_Image = self.Ensemble_Average_Blur(Unscattered_Image, wavelength, ker = ea_ker, use_approximate_form=use_approximate_form)
 
         # If no epsilon screen is specified, then generate a random realization
         if Epsilon_Screen.shape[0] == 0:
