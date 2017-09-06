@@ -310,7 +310,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">                obscopy (Obsdata): a copy of the Obsdata object.</span>
+<span class="sd">               (Obsdata): a copy of the Obsdata object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">newobs</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span>
                          <span class="n">ampcal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frcal</span><span class="p">)</span>
@@ -322,7 +322,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">                dataconj (numpy.recarray): a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.</span>
+<span class="sd">                (numpy.recarray): a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTPOL</span><span class="p">)</span>
@@ -351,7 +351,7 @@
 <span class="sd">           Args:</span>
 <span class="sd">                conj (bool): True if tlist_out includes conjugate baselines.</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                tlist_out (list): a list of data tables (type DTPOL) containing time-partitioned data</span>
+<span class="sd">                (list): a list of data tables (type DTPOL) containing time-partitioned data</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">conj</span><span class="p">:</span>
@@ -372,7 +372,7 @@
 <span class="sd">           Args:</span>
 <span class="sd">                conj (bool): True if tlist_out includes conjugate baselines.</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                bllist_out (list): a list of data tables (type DTPOL) containing baseline-partitioned data</span>
+<span class="sd">                (list): a list of data tables (type DTPOL) containing baseline-partitioned data</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lexsort</span><span class="p">((</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">]))</span>
@@ -394,7 +394,7 @@
 <span class="sd">                ang_unit (str): &#39;deg&#39; for degrees and &#39;rad&#39; for radian phases</span>
 <span class="sd">                debias (bool): True to debias visibility amplitudes</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                data (numpy.recarray): unpacked numpy array with data in fields requested</span>
+<span class="sd">                (numpy.recarray): unpacked numpy array with data in fields requested</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># If we only specify one field</span>
@@ -426,7 +426,7 @@
 <span class="sd">                debias (bool): True to debias visibility amplitudes</span>
 <span class="sd">                conj (bool): True to include conjugate baselines</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                data (numpy.recarray): unpacked numpy array with data in fields requested</span>
+<span class="sd">                (numpy.recarray): unpacked numpy array with data in fields requested</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -471,7 +471,7 @@
 <span class="sd">                debias (bool): True to debias visibility amplitudes</span>
 <span class="sd">                conj (bool): True to include conjugate baselines</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                data (numpy.recarray): unpacked numpy array with data in fields requested</span>
+<span class="sd">                (numpy.recarray): unpacked numpy array with data in fields requested</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -610,7 +610,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">                vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)</span>
+<span class="sd">                (numpy.array): normal vector pointing to source in geocentric coordinates (m)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="o">*</span><span class="n">DEGREE</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="o">*</span><span class="n">DEGREE</span><span class="p">)])</span></div>
 
@@ -620,7 +620,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">                res (float): normal array resolution in radians</span>
+<span class="sd">                (float): normal array resolution in radians</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;uvdist&#39;</span><span class="p">)[</span><span class="s1">&#39;uvdist&#39;</span><span class="p">])</span></div>
 
@@ -632,7 +632,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns: </span>
-<span class="sd">                obs_list (list): list of single-scan Obsdata objects</span>
+<span class="sd">                (list): list of single-scan Obsdata objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Splitting Observation File into &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tlist</span><span class="p">()))</span> <span class="o">+</span> <span class="s2">&quot; scans&quot;</span><span class="p">)</span>
@@ -651,7 +651,7 @@
 <span class="sd">           Args:</span>
 <span class="sd">                inttime (float): coherent integration time in seconds</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                obs_avg (Obsdata): Obsdata object containing averaged data</span>
+<span class="sd">                (Obsdata): Obsdata object containing averaged data</span>
 <span class="sd">        &quot;&quot;&quot;</span>
     
         <span class="n">alldata_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;v&#39;</span><span class="p">,</span> 
@@ -732,7 +732,7 @@
 <span class="sd">               pulse (function): The function convolved with the pixel values for continuous image.</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               dirtybeam (Image): an Image object with the dirty beam.</span>
+<span class="sd">               (Image): an Image object with the dirty beam.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">pdim</span> <span class="o">=</span> <span class="n">fov</span><span class="o">/</span><span class="n">npix</span>
@@ -762,7 +762,7 @@
 <span class="sd">               pulse (function): The function convolved with the pixel values for continuous image.</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               cleanbeam (Image): an Image object with the clean beam.</span>
+<span class="sd">               (Image): an Image object with the clean beam.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">make_square</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">npix</span><span class="p">,</span> <span class="n">fov</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">)</span>
@@ -774,7 +774,7 @@
         <span class="sd">&quot;&quot;&quot;Fit a gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               beam_params (tuple): a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.</span>
+<span class="sd">               (tuple): a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Define the sum of squares function that compares the quadratic expansion of the dirty image</span>
@@ -824,7 +824,7 @@
 <span class="sd">               pulse (function): The function convolved with the pixel values for continuous image.</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               dirtyimage (Image): an Image object with dirty image.</span>
+<span class="sd">               (Image): an Image object with dirty image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">pdim</span> <span class="o">=</span> <span class="n">fov</span><span class="o">/</span><span class="n">npix</span>
@@ -883,7 +883,7 @@
 <span class="sd">           Args:</span>
 <span class="sd"> </span>
 <span class="sd">           Returns:</span>
-<span class="sd">               obs_deblur (Obsdata): a new deblurred observation object.</span>
+<span class="sd">               (Obsdata): a new deblurred observation object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># make a copy of observation data</span>
@@ -933,7 +933,7 @@
 <span class="sd">                fitttype (str): &quot;amp&quot; to fit to visibilty amplitudes</span>
 <span class="sd">                paramguess (tuble): initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta) </span>
 <span class="sd">           Returns:</span>
-<span class="sd">               gauss_params: a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</span>
+<span class="sd">                (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">vis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
@@ -966,7 +966,7 @@
 <span class="sd">               count (str): If &#39;min&#39;, return minimal set of phases, if &#39;max&#39; return all closure phases up to reordering</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               bs_arr (numpy.recarry): A recarray of the bispectra values with datatype DTBIS</span>
+<span class="sd">               (numpy.recarry): A recarray of the bispectra values with datatype DTBIS</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1060,7 +1060,7 @@
 <span class="sd">               ang_unit (str): If &#39;deg&#39;, return closure phases in degrees, else return in radians</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               cphase_arr (numpy.recarry): A recarray of the closure phases with datatype DTPHASE</span>
+<span class="sd">               (numpy.recarry): A recarray of the closure phases with datatype DTPHASE</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;all&#39;</span><span class="p">):</span>
@@ -1105,7 +1105,7 @@
 <span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble closure phases</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               cphase_arr (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE</span>
+<span class="sd">               (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE</span>
 <span class="sd">        &quot;&quot;&quot;</span>
        
         <span class="c1"># Get closure phases (maximal set)</span>
@@ -1151,7 +1151,7 @@
 <span class="sd">               ang_unit (str): If &#39;deg&#39;, return closure phases in degrees, else return in radians</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               cphase_arr (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE</span>
+<span class="sd">               (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE</span>
 <span class="sd">        &quot;&quot;&quot;</span>
        
         <span class="c1"># Get closure phases (maximal set)</span>
@@ -1197,7 +1197,7 @@
 <span class="sd">               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               camp_arr (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP</span>
+<span class="sd">               (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1321,7 +1321,7 @@
 <span class="sd">               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               camp_arr (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP</span>
+<span class="sd">               (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1393,7 +1393,7 @@
 
 
 <span class="sd">           Returns:</span>
-<span class="sd">               axes (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1467,7 +1467,7 @@
 <span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39; </span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               axes (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1529,7 +1529,7 @@
 
 
 <span class="sd">           Returns:</span>
-<span class="sd">               axes (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1597,8 +1597,7 @@
 
 
 <span class="sd">           Returns:</span>
-<span class="sd">               axes (matplotlib.axes.Axes): Axes object with data plot</span>
-
+<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1678,8 +1677,16 @@
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_obs_oifits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">)</span>
         <span class="k">return</span></div>
 
+    <span class="c1"># TODO -- this could be redundant with cphase_tri</span>
+    <span class="c1"># would need to  change how it&#39;s implemented in closure.py</span>
 <div class="viewcode-block" id="Obsdata.get_cphase_curves"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.get_cphase_curves">[docs]</a>    <span class="k">def</span> <span class="nf">get_cphase_curves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tris</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get closure phase over time on all requested triangles&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get closure phase cuves over time on all requested triangles</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                tris (list): list of station triangles</span>
+<span class="sd">           Returns:</span>
+<span class="sd">                (list) : list of closure phase recarrays over time</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Get closure phases (maximal set)</span>
         <span class="n">cphases</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
@@ -1707,10 +1714,18 @@
 
         <span class="k">return</span> <span class="n">cps</span></div>
 
+    <span class="c1"># TODO -- this could be redundant with cphase_tri</span>
+    <span class="c1"># would need to  change how it&#39;s implemented in closure.py</span>
 <div class="viewcode-block" id="Obsdata.get_camp_curves"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.get_camp_curves">[docs]</a>    <span class="k">def</span> <span class="nf">get_camp_curves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quads</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get closure amplitude over time on all requested quadrangeles</span>
 <span class="sd">           (1-2)(3-4)/(1-4)(2-3)</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">                quads (list): list of station quadrangles</span>
+<span class="sd">           Returns:</span>
+<span class="sd">                (list) : list of closure amplitude recarrays over time</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="c1"># Get the closure amplitudes</span>
         <span class="n">camps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">)</span>
 

@@ -181,6 +181,9 @@
 <span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
 
+<span class="c1">###########################################################################################################################################</span>
+<span class="c1"># Vex object</span>
+<span class="c1">###########################################################################################################################################</span>
 <div class="viewcode-block" id="Vex"><a class="viewcode-back" href="../../vex.html#ehtim.vex.Vex">[docs]</a><span class="k">class</span> <span class="nc">Vex</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Read in observing schedule data from .vex files.</span>
 <span class="sd">       Assumes there is only 1 MODE in vex file</span>
@@ -361,16 +364,22 @@
 
 
     <span class="c1"># Function to obtain a desired sector from &#39;metalist&#39;</span>
-    <span class="k">def</span> <span class="nf">get_sector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sname</span><span class="p">):</span>
+<div class="viewcode-block" id="Vex.get_sector"><a class="viewcode-back" href="../../vex.html#ehtim.vex.Vex.get_sector">[docs]</a>    <span class="k">def</span> <span class="nf">get_sector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sname</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Obtain a desired sector from &#39;metalist&#39;. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metalist</span><span class="p">)):</span>
             <span class="k">if</span> <span class="n">sname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metalist</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">metalist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No sector named </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">sname</span><span class="p">)</span>
-        <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
 
     <span class="c1"># Function to get a value of &#39;vname&#39; in a line which has format of</span>
     <span class="c1"># &#39;vname&#39; = value ;(or :)</span>
-    <span class="k">def</span> <span class="nf">get_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vname</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+<div class="viewcode-block" id="Vex.get_variable"><a class="viewcode-back" href="../../vex.html#ehtim.vex.Vex.get_variable">[docs]</a>    <span class="k">def</span> <span class="nf">get_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vname</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Function to get a value of &#39;vname&#39; in a line.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_variable</span><span class="p">(</span><span class="n">vname</span><span class="p">,</span><span class="n">line</span><span class="p">)</span>
         <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
         <span class="k">if</span> <span class="n">idx</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
@@ -381,21 +390,25 @@
                     <span class="k">elif</span> <span class="n">line</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">!=</span><span class="s1">&#39; &#39;</span><span class="p">:</span> <span class="n">name</span> <span class="o">+=</span> <span class="n">line</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">start</span><span class="o">==</span><span class="kc">False</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">!=</span><span class="s1">&#39; &#39;</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">!=</span><span class="s1">&#39;=&#39;</span><span class="p">:</span> <span class="k">break</span>
                 <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;=&#39;</span><span class="p">:</span> <span class="n">start</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="n">name</span>
+        <span class="k">return</span> <span class="n">name</span></div>
 
     <span class="c1"># check if a variable &#39;vname&#39; exists by itself in a line.</span>
     <span class="c1"># returns index of vname[0] in a line, or -1</span>
-    <span class="k">def</span> <span class="nf">find_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vname</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+<div class="viewcode-block" id="Vex.find_variable"><a class="viewcode-back" href="../../vex.html#ehtim.vex.Vex.find_variable">[docs]</a>    <span class="k">def</span> <span class="nf">find_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vname</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Function to find a variable &#39;vname&#39; in a line.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">vname</span><span class="p">)</span>
         <span class="k">if</span> <span class="p">((</span><span class="n">idx</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">idx</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">!=</span><span class="s1">&#39;*&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">idx</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">vname</span><span class="p">)</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">):</span> <span class="k">return</span> <span class="n">idx</span>
             <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">vname</span><span class="p">)]</span><span class="o">==</span><span class="s1">&#39;=&#39;</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">vname</span><span class="p">)]</span><span class="o">==</span><span class="s1">&#39; &#39;</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">vname</span><span class="p">)]</span><span class="o">==</span><span class="s1">&#39;:&#39;</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">vname</span><span class="p">)]</span><span class="o">==</span><span class="s1">&#39;;&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">idx</span>
-        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span></div>
 
     <span class="c1"># Find SEFD for a given station name.</span>
     <span class="c1"># For now look for it in Andrew&#39;s tables</span>
     <span class="c1"># Vex files could have SEFD sector.</span>
-    <span class="k">def</span> <span class="nf">get_SEFD</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">station</span><span class="p">):</span>
+<div class="viewcode-block" id="Vex.get_SEFD"><a class="viewcode-back" href="../../vex.html#ehtim.vex.Vex.get_SEFD">[docs]</a>    <span class="k">def</span> <span class="nf">get_SEFD</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">station</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find SEFD for a given station.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot;/../arrays/SITES.txt&quot;</span><span class="p">)</span>
         <span class="n">sites</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
         <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -403,11 +416,15 @@
             <span class="k">if</span> <span class="n">sites</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">station</span><span class="p">:</span>
                 <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;[-+]?\d+[\.]?\d*&quot;</span><span class="p">,</span><span class="n">sites</span><span class="p">[</span><span class="n">i</span><span class="p">])[</span><span class="mi">3</span><span class="p">])</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;No station named </span><span class="si">%s</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">station</span><span class="p">)</span>
-        <span class="k">return</span> <span class="mf">10000.</span> <span class="c1"># some arbitrary value</span>
+        <span class="k">return</span> <span class="mf">10000.</span> <span class="c1"># some arbitrary value</span></div>
 
     <span class="c1"># Find the time that any station starts observing the source in MJD.</span>
     <span class="c1"># Find the time that the last station stops observing the source in MHD.</span>
-    <span class="k">def</span> <span class="nf">get_obs_timerange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+<div class="viewcode-block" id="Vex.get_obs_timerange"><a class="viewcode-back" href="../../vex.html#ehtim.vex.Vex.get_obs_timerange">[docs]</a>    <span class="k">def</span> <span class="nf">get_obs_timerange</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find the time that any station starts observing the source in MJD,</span>
+<span class="sd">           and the time that the last station stops observing the source.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">sched</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sched</span>
         <span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">i_scan</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sched</span><span class="p">)):</span>
@@ -419,7 +436,7 @@
                 <span class="n">Tstop_hr</span> <span class="o">=</span> <span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;scan_sec&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.</span>
                 <span class="n">mjd_e</span> <span class="o">=</span> <span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;mjd_floor&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">Tstop_hr</span><span class="o">/</span><span class="mf">24.</span>
 
-        <span class="k">return</span> <span class="n">mjd_s</span><span class="p">,</span><span class="n">mjd_e</span></div>
+        <span class="k">return</span> <span class="n">mjd_s</span><span class="p">,</span> <span class="n">mjd_e</span></div></div>
 
 
 <span class="c1">#=================================================================</span>
@@ -427,13 +444,15 @@
 
 <span class="c1"># Function to find MJD (int!) and hour in UT from vex format,</span>
 <span class="c1"># e.g, 2016y099d05h00m00s</span>
-<span class="k">def</span> <span class="nf">vexdate_to_MJD_hr</span><span class="p">(</span><span class="n">vexdate</span><span class="p">):</span>
+<div class="viewcode-block" id="vexdate_to_MJD_hr"><a class="viewcode-back" href="../../vex.html#ehtim.vex.vexdate_to_MJD_hr">[docs]</a><span class="k">def</span> <span class="nf">vexdate_to_MJD_hr</span><span class="p">(</span><span class="n">vexdate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Find the integer MJD and UT hour from vex format date. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">time</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;[-+]?\d+[\.]?\d*&quot;</span><span class="p">,</span><span class="n">vexdate</span><span class="p">)</span>
     <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">date</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="n">mjd</span> <span class="o">=</span> <span class="n">jdcal</span><span class="o">.</span><span class="n">gcal2jd</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">date</span><span class="o">-</span><span class="mi">1</span>
     <span class="n">hour</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="mf">60.</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">/</span><span class="mf">60.</span><span class="o">/</span><span class="mf">60.</span>
-    <span class="k">return</span> <span class="n">mjd</span><span class="p">,</span><span class="n">hour</span>
+    <span class="k">return</span> <span class="n">mjd</span><span class="p">,</span><span class="n">hour</span></div>
 </pre></div>
 
            </div>

@@ -220,7 +220,7 @@
 <span class="sd">               mjd (int): The integer MJD of the image</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               image (Image): the Image object    </span>
+<span class="sd">               (Image): the Image object    </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
@@ -297,7 +297,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">                vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)</span>
+<span class="sd">                (numpy.array): normal vector pointing to source in geocentric coordinates (m)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="o">*</span><span class="n">DEGREE</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="o">*</span><span class="n">DEGREE</span><span class="p">)])</span></div>
@@ -308,7 +308,7 @@
 <span class="sd">           Args: </span>
 <span class="sd">               stokes (str): &quot;I&quot;,&quot;Q&quot;,&quot;U&quot;,&quot;V&quot; for a given Stokes parameter</span>
 <span class="sd">           Returns:</span>
-<span class="sd">               imarr (numpy.array): 2D image array of dimension (ydim, xdim)</span>
+<span class="sd">               (numpy.array): 2D image array of dimension (ydim, xdim)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
@@ -324,7 +324,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns: </span>
-<span class="sd">                fovx (float) : image fov in x direction (radian)</span>
+<span class="sd">                (float) : image fov in x direction (radian)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span></div>
@@ -335,7 +335,7 @@
 <span class="sd">           Args:</span>
 
 <span class="sd">           Returns: </span>
-<span class="sd">                fovy (float) : image fov in y direction (radian)</span>
+<span class="sd">                (float) : image fov in y direction (radian)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydim</span></div>
 
@@ -344,7 +344,7 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">           Returns: </span>
-<span class="sd">                flux (float) : image total flux (Jy)</span>
+<span class="sd">                (float) : image total flux (Jy)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span></div>
 
@@ -364,7 +364,7 @@
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               obs (Obsdata): an observation object with no noise</span>
+<span class="sd">               (Obsdata): an observation object with no noise</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">observe_image_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="n">ft</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">)</span>
@@ -403,7 +403,7 @@
 <span class="sd">               dtermp_resid (float): the fractional std. dev. of the random error on the D-terms</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               obs (Obsdata): an observation object</span>
+<span class="sd">               (Obsdata): an observation object</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -489,7 +489,7 @@
 <span class="sd">               dtermp_resid (float): the fractional std. dev. of the random error on the D-terms</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               obs (Obsdata): an observation object</span>
+<span class="sd">               (Obsdata): an observation object</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -539,7 +539,7 @@
 
 
 <span class="sd">           Returns:</span>
-<span class="sd">               obs (Obsdata): an observation object</span>
+<span class="sd">               (Obsdata): an observation object</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -570,7 +570,7 @@
 <span class="sd">                targetfov  (float): new field of view (radian) </span>
 <span class="sd">                npix  (int): new pixel dimension </span>
 <span class="sd">           Returns:</span>
-<span class="sd">                im_regrid (Image): resampled image </span>
+<span class="sd">                (Image): resampled image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
         <span class="n">fov_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
@@ -630,7 +630,7 @@
 <span class="sd">             blursmall (bool) : True to blur the unpadded image rather than the large image.</span>
 
 <span class="sd">         Returns:</span>
-<span class="sd">             out (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images</span>
+<span class="sd">             (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -776,7 +776,7 @@
 <span class="sd">           Args:</span>
 <span class="sd">                flux  (float): total flux to add to image</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                im_flat (Image): output image </span>
+<span class="sd">                (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span>
@@ -791,7 +791,7 @@
 <span class="sd">                flux  (float): total flux to add to image</span>
 <span class="sd">                radius  (float): radius of top hat flux in radians</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                im_tophat (Image): output image </span>
+<span class="sd">                (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span>
@@ -818,7 +818,7 @@
 <span class="sd">               flux (float): the total flux contained in the Gaussian in Jy</span>
 <span class="sd">               beamparams (list): the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                im_gauss (Image): output image </span>
+<span class="sd">                (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span>
@@ -860,7 +860,7 @@
 <span class="sd">               x (float): the center x coordinate of the larger disk in radians</span>
 <span class="sd">               y (float): the center y coordinate of the larger disk in radians</span>
 <span class="sd">           Returns:</span>
-<span class="sd">               im_cresc (Image): output image </span>
+<span class="sd">               (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span>
@@ -892,7 +892,7 @@
 <span class="sd">               mag (float): constant polarization fraction to add to the image</span>
 <span class="sd">               angle (float): constant EVPA</span>
 <span class="sd">           Returns:</span>
-<span class="sd">                im_out (Image): output image </span>
+<span class="sd">                (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">mag</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">):</span>
@@ -912,7 +912,7 @@
 <span class="sd">               frac (float): fractional beam size for Stokes I  blurring</span>
 <span class="sd">               frac_pol (float): fractional beam size for Stokes Q,U,V  blurring</span>
 <span class="sd">           Returns:</span>
-<span class="sd">               im_out (Image): output image </span>
+<span class="sd">               (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span>
@@ -980,7 +980,7 @@
 <span class="sd">               fwhm_i (float): circular beam size for Stokes I  blurring in  radian</span>
 <span class="sd">               fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian</span>
 <span class="sd">           Returns:</span>
-<span class="sd">               im_out (Image): output image </span>
+<span class="sd">               (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span>
@@ -1006,7 +1006,7 @@
 <span class="sd">           Args:</span>
 <span class="sd">               frac_i (float): Stokes I floor as a fraction of maximum stokes I point</span>
 <span class="sd">           Returns:</span>
-<span class="sd">               im_out (Image): output image </span>
+<span class="sd">               (Image): output image </span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">image</span><span class="o">=</span><span class="bp">self</span>
@@ -1045,7 +1045,7 @@
 <span class="sd">               show (bool): Display the plot if true</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               fig (matplotlib.figure.Figure): figure object with image</span>
+<span class="sd">               (matplotlib.figure.Figure): figure object with image</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1167,7 +1167,7 @@
 <span class="sd">           fov (float): the field of view of each axis in radians</span>
 <span class="sd">           pulse (function): the function convolved with the pixel values for continuous image</span>
 <span class="sd">       Returns:</span>
-<span class="sd">           empty_image (Image): an image object</span>
+<span class="sd">           (Image): an image object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">pdim</span> <span class="o">=</span> <span class="n">fov</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">npix</span><span class="p">)</span>
@@ -1181,7 +1181,7 @@
 <span class="sd">       Args:</span>
 <span class="sd">            fname (str): path to input text file</span>
 <span class="sd">       Returns: </span>
-<span class="sd">            image (Image): loaded image object</span>
+<span class="sd">            (Image): loaded image object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_im_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span></div>
@@ -1192,7 +1192,7 @@
 <span class="sd">       Args:</span>
 <span class="sd">            fname (str): path to input fits file</span>
 <span class="sd">       Returns: </span>
-<span class="sd">            image (Image): loaded image object</span>
+<span class="sd">            (Image): loaded image object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_im_fits</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span></div>

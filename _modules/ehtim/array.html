@@ -178,7 +178,7 @@
 <span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
 
 <span class="c1">###########################################################################################################################################</span>
-<span class="c1">#Array object</span>
+<span class="c1"># Array object</span>
 <span class="c1">###########################################################################################################################################</span>
 <div class="viewcode-block" id="Array"><a class="viewcode-back" href="../../array.html#ehtim.array.Array">[docs]</a><span class="k">class</span> <span class="nc">Array</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A VLBI array of telescopes with site locations, SEFDs, and other data.</span>
@@ -210,6 +210,10 @@
 
 <div class="viewcode-block" id="Array.listbls"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.listbls">[docs]</a>    <span class="k">def</span> <span class="nf">listbls</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;List all baselines.</span>
+<span class="sd">           </span>
+<span class="sd">           Args:</span>
+<span class="sd">           Returns: </span>
+<span class="sd">                numpy.array : array of baselines</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">bls</span> <span class="o">=</span> <span class="p">[]</span>
@@ -256,6 +260,11 @@
 
 <div class="viewcode-block" id="Array.make_subarray"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.make_subarray">[docs]</a>    <span class="k">def</span> <span class="nf">make_subarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make a subarray from the Array object array that only includes the sites listed in sites.</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               sites (list) : list of sites in the subarray</span>
+<span class="sd">           Returns:</span>
+<span class="sd">               Array: an Array object with specified sites and metadata</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">all_sites</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">]</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t</span> <span class="ow">in</span> <span class="n">sites</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">all_sites</span><span class="p">])</span>
@@ -263,6 +272,9 @@
 
 <div class="viewcode-block" id="Array.save_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Save the array data in a text file.</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               fname (str) : path to output array file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_array_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fname</span><span class="p">)</span>
         <span class="k">return</span></div></div>
@@ -271,9 +283,16 @@
 <span class="c1">#Array creation functions</span>
 <span class="c1">###########################################################################################################################################</span>
 <div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ephemdir</span><span class="o">=</span><span class="s1">&#39;ephemeris&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read an array from a text file and return an Array object.</span>
-<span class="sd">       Sites with x=y=z=0 are spacecraft, and 2TLE ephemerides are loaded from ephemdir.</span>
+    <span class="sd">&quot;&quot;&quot;Read an array from a text file. </span>
+<span class="sd">       Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           fname (str) : path to input array file</span>
+<span class="sd">           ephemdir (str) : path to directroy with 2TLE ephemerides for spacecraft</span>
+<span class="sd">       Returns:</span>
+<span class="sd">           Array: an Array object loaded from file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_array_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ephemdir</span><span class="o">=</span><span class="n">ephemdir</span><span class="p">)</span></div>
 </pre></div>
 
