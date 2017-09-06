@@ -195,15 +195,14 @@
 <em class="property">class </em><code class="descclassname">ehtim.scattering.stochastic_optics.</code><code class="descname">ScatteringModel</code><span class="sig-paren">(</span><em>model='simple'</em>, <em>scatt_alpha=1.6666666666666667</em>, <em>observer_screen_distance=8.022999999999999e+21</em>, <em>source_screen_distance=1.79e+22</em>, <em>theta_maj_mas_ref=1.309</em>, <em>theta_min_mas_ref=0.64</em>, <em>POS_ANG=78</em>, <em>wavelength_reference_cm=1.0</em>, <em>r_in=1000000000</em>, <em>r_out=100000000000000000000L</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/scattering/stochastic_optics.html#ScatteringModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>A scattering model based on a thin-screen approximation.
 Models include:
-&#8216;simple&#8217;: This scattering model is motivated by observations of Sgr A*.</p>
-<blockquote>
-<div>It gives a Gaussian at long wavelengths that matches the model defined
+&#8216;simple&#8217;: This scattering model is motivated by observations of Sgr A*.
+It gives a Gaussian at long wavelengths that matches the model defined
 by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
 with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
 at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
 if the reference wavelength is short enough to be beyond the lambda^2 regime!
 This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
-Note: This model <em>requires</em> a finite inner scale</div></blockquote>
+Note: This model <em>requires</em> a finite inner scale</p>
 <p>&#8216;power-law&#8217;: This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
 The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
 The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov</p>
