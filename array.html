@@ -166,88 +166,6 @@
             
   <span class="target" id="module-array"></span><div class="section" id="array">
 <span id="id1"></span><h1>Array<a class="headerlink" href="#array" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-ehtim.array"></span><dl class="class">
-<dt id="ehtim.array.Array">
-<em class="property">class </em><code class="descclassname">ehtim.array.</code><code class="descname">Array</code><span class="sig-paren">(</span><em>tarr</em>, <em>ephem={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array" title="Permalink to this definition">¶</a></dt>
-<dd><p>A VLBI array of telescopes with site locations, SEFDs, and other data.</p>
-<dl class="attribute">
-<dt id="ehtim.array.Array.tarr">
-<code class="descname">tarr</code><a class="headerlink" href="#ehtim.array.Array.tarr" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; The array of telescope data with datatype DTARR</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.array.Array.tkey">
-<code class="descname">tkey</code><a class="headerlink" href="#ehtim.array.Array.tkey" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; A dictionary of rows in the tarr for each site name</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.array.Array.ephem">
-<code class="descname">ephem</code><a class="headerlink" href="#ehtim.array.Array.ephem" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; A dictionary of 2TLEs for each space antenna, Space antennas have x=y=z=0 in the tarr</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.array.Array.listbls">
-<code class="descname">listbls</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.listbls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.listbls" title="Permalink to this definition">¶</a></dt>
-<dd><p>List all baselines.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.array.Array.make_subarray">
-<code class="descname">make_subarray</code><span class="sig-paren">(</span><em>sites</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.make_subarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.make_subarray" title="Permalink to this definition">¶</a></dt>
-<dd><p>Make a subarray from the Array object array that only includes the sites listed in sites.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.array.Array.obsdata">
-<code class="descname">obsdata</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>tau=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.obsdata" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate u,v points and baseline uncertainties.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the source right ascension in fractional hours</li>
-<li><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the source declination in fractional degrees</li>
-<li><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the scan integration time in seconds</li>
-<li><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the uniform cadence between scans in seconds</li>
-<li><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the start time of the observation in hours</li>
-<li><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the end time of the observation in hours</li>
-<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; the mjd of the observation</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; how to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; station minimum elevation in degrees</li>
-<li><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; station maximum elevation in degrees</li>
-<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">an observation object with no data</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.array.Array.save_txt">
-<code class="descname">save_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#Array.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.Array.save_txt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save the array data in a text file.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.array.load_txt">
-<code class="descclassname">ehtim.array.</code><code class="descname">load_txt</code><span class="sig-paren">(</span><em>fname</em>, <em>ephemdir='ephemeris'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/array.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.array.load_txt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read an array from a text file and return an Array object.
-Sites with x=y=z=0 are spacecraft, and 2TLE ephemerides are loaded from ephemdir.</p>
-</dd></dl>
-
 </div>
 
 
@@ -304,7 +222,7 @@ Sites with x=y=z=0 are spacecraft, and 2TLE ephemerides are loaded from ephemdir
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

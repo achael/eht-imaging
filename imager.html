@@ -100,6 +100,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Stokes I Imager</a></li>
 <li class="toctree-l1"><a class="reference internal" href="calibration.html">Self Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Comparison Plots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 </ul>
 
             
@@ -165,50 +166,6 @@
             
   <span class="target" id="module-imager"></span><div class="section" id="stokes-i-imager">
 <span id="imager"></span><h1>Stokes I Imager<a class="headerlink" href="#stokes-i-imager" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="ehtim.imaging.imager_utils.imager_func">
-<code class="descclassname">ehtim.imaging.imager_utils.</code><code class="descname">imager_func</code><span class="sig-paren">(</span><em>Obsdata</em>, <em>InitIm</em>, <em>Prior</em>, <em>flux</em>, <em>d1='vis'</em>, <em>d2=False</em>, <em>s1='simple'</em>, <em>s2=False</em>, <em>alpha_s1=1</em>, <em>alpha_s2=1</em>, <em>alpha_d1=100</em>, <em>alpha_d2=100</em>, <em>alpha_flux=500</em>, <em>alpha_cm=500</em>, <em>clipfloor=0.0</em>, <em>datamin='gd'</em>, <em>grads=True</em>, <em>logim=True</em>, <em>maxit=100</em>, <em>stop=1e-10</em>, <em>ipynb=False</em>, <em>show_updates=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a general interferometric imager.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Obsdata</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The Obsdata object with VLBI data</li>
-<li><strong>Prior</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; The Image object with the prior image</li>
-<li><strong>InitIm</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; The Image object with the initial image for the minimization</li>
-<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The total flux of the output image in Jy</li>
-<li><strong>d1</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The first data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;</li>
-<li><strong>d2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The second data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;</li>
-<li><strong>s1</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The first regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;l1&#8217;, &#8216;patch&#8217;</li>
-<li><strong>s2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The second regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;l1&#8217;, &#8216;patch&#8217;</li>
-<li><strong>alpha_d1</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The first data term weighting</li>
-<li><strong>alpha_d2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The second data term weighting</li>
-<li><strong>alpha_s1</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The first regularizer term weighting</li>
-<li><strong>alpha_s2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The second regularizer term weighting</li>
-<li><strong>alpha_flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The weighting for the total flux constraint</li>
-<li><strong>alpha_cm</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The weighting for the center of mass constraint</li>
-<li><strong>clipfloor</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The Jy/pixel level above which prior image pixels are varied</li>
-<li><strong>datamin</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;lin&#8217;, linearized energy is used (currently only compatible with CHIRP)</li>
-<li><strong>grads</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, analytic gradients are used</li>
-<li><strong>logim</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, uses I = exp(I&#8217;) change of variables</li>
-<li><strong>maxit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Maximum number of minimizer iterations</li>
-<li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The convergence criterion</li>
-<li><strong>show_updates</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, displays the progress of the minimizer</li>
-<li><strong>ipynb</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, adjusts the plotting for the ipython/jupyter notebook</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Image object with result</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image">Image</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </div>
 
 
@@ -265,7 +222,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

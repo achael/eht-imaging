@@ -36,6 +36,7 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="ehtim 0.0.1 documentation" href="index.html"/>
+        <link rel="next" title="Scattering" href="scattering.html"/>
         <link rel="prev" title="Self Calibration" href="calibration.html"/> 
 
   
@@ -99,6 +100,7 @@
 <li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
 <li class="toctree-l1"><a class="reference internal" href="calibration.html">Self Calibration</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Comparison Plots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 </ul>
 
             
@@ -162,56 +164,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="module-plotting"></span><div class="section" id="module-ehtim.plotting.comp_plots">
-<span id="comparison-plots"></span><span id="plotting"></span><h1>Comparison Plots<a class="headerlink" href="#module-ehtim.plotting.comp_plots" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plot_bl_obs_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_bl_obs_compare</code><span class="sig-paren">(</span><em>obslist, site1, site2, field, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_bl_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_bl_obs_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot data from multiple observations vs time on a single baseline on the same axes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plot_bl_obs_im_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_bl_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, site1, site2, field, sgrscat=False, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_bl_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_bl_obs_im_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot data vs time on a single baseline compared to ground truth from an image on the same axes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plot_camp_obs_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_camp_obs_compare</code><span class="sig-paren">(</span><em>obslist, site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_camp_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_camp_obs_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plot_camp_obs_im_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_camp_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, site1, site2, site3, site4, sgrscat=False, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_camp_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_camp_obs_im_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot closure amplitude on a quadrangle compared to ground truth from an image on the same axes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plot_cphase_obs_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_cphase_obs_compare</code><span class="sig-paren">(</span><em>obslist, site1, site2, site3, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_cphase_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_cphase_obs_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot closure phase on a triangle vs time from multiple observations on the same axes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plot_cphase_obs_im_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_cphase_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, site1, site2, site3, sgrscat=False, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_cphase_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot closure phase on a triangle compared to ground truth from an image on the same axes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plotall_obs_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_compare</code><span class="sig-paren">(</span><em>obslist, field1, field2, rangex=False, rangey=False, conj=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot data from multiple observations on the same axes.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.plotting.comp_plots.plotall_obs_im_compare">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, field1, field2, sgrscat=False, rangex=False, rangey=False, conj=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_im_compare" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot data from observations compared to ground truth from an image on the same axes.</p>
-</dd></dl>
-
+  <span class="target" id="module-plotting"></span><div class="section" id="comparison-plots">
+<span id="plotting"></span><h1>Comparison Plots<a class="headerlink" href="#comparison-plots" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -223,6 +177,8 @@
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="scattering.html" class="btn btn-neutral float-right" title="Scattering" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="calibration.html" class="btn btn-neutral" title="Self Calibration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -266,7 +222,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -274,7 +274,7 @@
 <span class="n">C</span> <span class="o">=</span> <span class="mf">299792458.0</span> 
 <span class="n">DEGREE</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span>
 <span class="n">RADPERAS</span> <span class="o">=</span> <span class="n">DEGREE</span><span class="o">/</span><span class="mf">3600.</span>
-<span class="n">RADPERUAS</span> <span class="o">=</span> <span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e6</span>
+<span class="n">RADPERUAS</span> <span class="o">=</span> <span class="n">RADPERAS</span><span class="o">/</span><span class="mf">1e6</span>
 <span class="n">NHIST</span> <span class="o">=</span> <span class="mi">100</span> <span class="c1"># number of steps to store for hessian approx</span>
 
 <span class="n">DATATERMS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">]</span>
@@ -291,7 +291,7 @@
            <span class="n">alpha_d1</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">alpha_d2</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> 
            <span class="n">alpha_flux</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">alpha_cm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> 
            <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">datamin</span><span class="o">=</span><span class="s2">&quot;gd&quot;</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
-           <span class="n">maxit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_updates</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+           <span class="n">maxit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_updates</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
    
     <span class="sd">&quot;&quot;&quot;Run a general interferometric imager.</span>
 <span class="sd">       </span>
@@ -965,8 +965,8 @@
     <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
     
     <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="s1">&#39;afmhot&#39;</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">)</span>     
-    <span class="n">xticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
-    <span class="n">yticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">xticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mf">1e-6</span><span class="p">)</span>
+    <span class="n">yticks</span> <span class="o">=</span> <span class="n">ticks</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="o">/</span><span class="n">RADPERAS</span><span class="o">/</span><span class="mf">1e-6</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">xticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">yticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Relative RA ($\mu$as)&#39;</span><span class="p">)</span>
@@ -1067,7 +1067,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
