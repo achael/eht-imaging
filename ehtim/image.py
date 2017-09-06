@@ -78,6 +78,7 @@ class Image(object):
 
     def add_qu(self, qimage, uimage):
         """Add Stokes Q and U image.
+
            Args:
                qimage (numpy.array): The 2D Stokes Q values in Jy/pixel array
                uimage (numpy.array): The 2D Stokes U values in Jy/pixel array
@@ -92,6 +93,7 @@ class Image(object):
 
     def add_v(self, vimage):
         """Add Stokes V image.
+
            Args:
                vimage (numpy.array): The 2D Stokes Q values in Jy/pixel array
         """
@@ -101,6 +103,7 @@ class Image(object):
 
     def add_pol(self, qimage, uimage, vimage):
         """Add all 3 Stokes Q, U, and V images.
+
            Args:
                qimage (numpy.array): The 2D Stokes Q values in Jy/pixel array
                uimage (numpy.array): The 2D Stokes U values in Jy/pixel array
@@ -111,6 +114,9 @@ class Image(object):
 
     def copy(self):
         """Return a copy of the image object.
+
+           Args:
+
            Returns: 
                newim (Image): copy of the Image.
         """
@@ -121,6 +127,9 @@ class Image(object):
 
     def sourcevec(self):
         """Return the source position vector in geocentric coordinates at 0h GMST.
+
+           Args:
+
            Returns:
                 vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)
         """
@@ -129,6 +138,7 @@ class Image(object):
 
     def imarr(self, stokes="I"):
         """Return the 2D image array of a given Stokes parameter.
+
            Args: 
                stokes (str): "I","Q","U","V" for a given Stokes parameter
            Returns:
@@ -144,6 +154,9 @@ class Image(object):
 
     def fovx(self):
         """Return the image fov in x direction in radians.
+
+           Args:
+
            Returns: 
                 fovx (float) : image fov in x direction (radian)
         """
@@ -152,6 +165,9 @@ class Image(object):
 
     def fovy(self):
         """Returns the image fov in y direction in radians.
+
+           Args:
+
            Returns: 
                 fovy (float) : image fov in y direction (radian)
         """
@@ -159,6 +175,8 @@ class Image(object):
 
     def total_flux(self):
         """Return the total flux of the Stokes I image in Jy.
+
+           Args:
            Returns: 
                 flux (float) : image total flux (Jy)
         """
@@ -380,7 +398,8 @@ class Image(object):
         return eht.obsdata.merge_obs(obs_List)
 
     def regrid_image(self, targetfov, npix):
-        """Resample the image to new (square) dimensions
+        """Resample the image to new (square) dimensions.
+
            Args:
                 targetfov  (float): new field of view (radian) 
                 npix  (int): new pixel dimension 
@@ -587,6 +606,7 @@ class Image(object):
 
     def add_flat(self, flux):
         """Add a flat background flux to the Stokes I image.
+
            Args:
                 flux  (float): total flux to add to image
            Returns:
@@ -600,6 +620,7 @@ class Image(object):
 
     def add_tophat(self, flux, radius):
         """Add centered tophat flux to the Stokes I image inside a given radius.
+
            Args:
                 flux  (float): total flux to add to image
                 radius  (float): radius of top hat flux in radians
@@ -788,6 +809,7 @@ class Image(object):
 
     def blur_circ(self, fwhm_i, fwhm_pol=0):
         """Apply a circular gaussian filter to the image, with FWHM in radians.
+
            Args:
                fwhm_i (float): circular beam size for Stokes I  blurring in  radian
                fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian
@@ -814,6 +836,7 @@ class Image(object):
 
     def threshold(self, frac_i=1.e-5):
         """Apply a hard threshold to the image.
+
            Args:
                frac_i (float): Stokes I floor as a fraction of maximum stokes I point
            Returns:
@@ -948,8 +971,10 @@ class Image(object):
 
     def save_txt(self, fname):
         """Save image data to text file.
+
            Args:
                 fname (str): path to output text file
+           Returns:
         """
 
         ehtim.io.save.save_im_txt(self, fname)
@@ -959,6 +984,7 @@ class Image(object):
         """Save image data to a fits file.
            Args:
                 fname (str): path to output fits file
+           Returns:
         """
         ehtim.io.save.save_im_fits(self, fname)
         return

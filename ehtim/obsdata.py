@@ -140,6 +140,9 @@ class Obsdata(object):
 
     def copy(self):
         """Copy the observation object.
+
+           Args:
+
            Returns:
                 obscopy (Obsdata): a copy of the Obsdata object.
         """
@@ -149,6 +152,9 @@ class Obsdata(object):
 
     def data_conj(self):
         """Make a data array including all conjugate baselines. 
+
+           Args:
+
            Returns:
                 dataconj (numpy.recarray): a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.
         """
@@ -175,6 +181,7 @@ class Obsdata(object):
 
     def tlist(self, conj=False):
         """Group the data in a list of equal time observation datatables.
+
            Args:
                 conj (bool): True if tlist_out includes conjugate baselines.
            Returns:
@@ -195,6 +202,7 @@ class Obsdata(object):
 
     def bllist(self,conj=False):
         """Group the data in a list of same baseline datatables.
+
            Args:
                 conj (bool): True if tlist_out includes conjugate baselines.
            Returns:
@@ -212,6 +220,7 @@ class Obsdata(object):
        
     def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False):
         """Unpack the data over time on the selected baseline site1-site2.
+
            Args:
                 site1 (str): First site name
                 site2 (str): Second site name
@@ -242,7 +251,8 @@ class Obsdata(object):
         return np.array(allout)
 
     def unpack(self, fields, mode='all', ang_unit='deg',  debias=False, conj=False):
-        """Unpack the data for the whole observation 
+        """Unpack the data for the whole observation .
+
            Args:
                 fields (list): list of unpacked quantities from availalbe quantities in FIELDS
                 mode (str): 'all' returns all data in single table, 'time' groups output by equal time, 'bl' groups by baseline
@@ -286,7 +296,8 @@ class Obsdata(object):
 
         
     def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False):
-        """Unpack the data in a data recarray 
+        """Unpack the data in a data recarray.
+
            Args:
                 data (numpy.recarray): data recarray of format DTPOL
                 fields (list): list of unpacked quantities from availalbe quantities in FIELDS
@@ -429,6 +440,9 @@ class Obsdata(object):
 
     def sourcevec(self):
         """Return the source position vector in geocentric coordinates at 0h GMST.
+
+           Args:
+
            Returns:
                 vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)
         """
@@ -436,6 +450,9 @@ class Obsdata(object):
 
     def res(self):
         """Return the nominal resolution (1/longest baseline) of the observation in radians.
+
+           Args:
+
            Returns:
                 res (float): normal array resolution in radians
         """
@@ -445,7 +462,10 @@ class Obsdata(object):
 
     def split_obs(self):
         """Split single observation into multiple observation files, one per scan.
-           Returns:
+           
+           Args:
+
+           Returns: 
                 obs_list (list): list of single-scan Obsdata objects
         """
 
@@ -460,7 +480,8 @@ class Obsdata(object):
         return splitlist
 
     def avg_coherent(self, inttime):
-        """Coherently average data along u,v tracs in chunks of length inttime (sec)
+        """Coherently average data along u,v tracs in chunks of length inttime (sec).
+
            Args:
                 inttime (float): coherent integration time in seconds
            Returns:
@@ -693,6 +714,8 @@ class Obsdata(object):
     def deblur(self):
         """Deblur the observation obs by dividing by the Sgr A* scattering kernel.
 
+           Args:
+ 
            Returns:
                obs_deblur (Obsdata): a new deblurred observation object.
         """
@@ -738,6 +761,7 @@ class Obsdata(object):
 
     def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
         """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.
+
            Args:
                 flux (float): total flux in the fitted gaussian
                 fitttype (str): "amp" to fit to visibilty amplitudes
@@ -1319,6 +1343,7 @@ class Obsdata(object):
 
     def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
         """Plot closure phase over time on a triangle (1-2-3).
+
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
@@ -1456,6 +1481,7 @@ class Obsdata(object):
 
     def save_txt(self, fname):
         """Save visibility data to a text file.
+
            Args:
                 fname (str): path to output text file
         """
@@ -1464,7 +1490,8 @@ class Obsdata(object):
         return
 
     def save_uvfits(self, fname):
-        """Save visibility data to uvfits file
+        """Save visibility data to uvfits file.
+
            Args:
                 fname (str): path to output text file
         """
@@ -1474,6 +1501,7 @@ class Obsdata(object):
 
     def save_oifits(self, fname, flux=1.0):
         """ Save visibility data to oifits. Polarization data is NOT saved.
+
             Args:
                 fname (str): path to output text file
                 flux (float): normalization total flux
@@ -1554,6 +1582,7 @@ class Obsdata(object):
 
 def merge_obs(obs_List):
     """Merge a list of observations into a single observation file.
+
        Args:
            obs_List (list): list of split observation Obsdata objects.
        Returns:
@@ -1579,7 +1608,8 @@ def merge_obs(obs_List):
     return mergeobs
 
 def load_txt(fname):
-    """Read an observation from a text file 
+    """Read an observation from a text file.
+
        Args:
            fname (str): path to input text file
        Returns:
@@ -1589,6 +1619,7 @@ def load_txt(fname):
 
 def load_uvfits(fname, flipbl=False):
     """Load observation data from a uvfits file.
+
        Args:
            fname (str): path to input text file
            flipbl (bool): flip baseline phases if True.
@@ -1599,6 +1630,7 @@ def load_uvfits(fname, flipbl=False):
 
 def load_oifits(fname, flux=1.0):
     """Load data from an oifits file. Does NOT currently support polarization.
+
        Args:
            fname (str): path to input text file
            flux (float): normalization total flux
@@ -1609,6 +1641,7 @@ def load_oifits(fname, flux=1.0):
 
 def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object.
+
        Args:
            arrfile (str): path to input array file
            obsspec (str): path to input obs spec file
