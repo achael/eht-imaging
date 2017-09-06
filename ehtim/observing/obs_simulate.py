@@ -7,8 +7,10 @@ import astropy.time as at
 import time as ttime
 import scipy.ndimage as nd
 import numpy as np
+import datetime
 import ephem
 import astropy.coordinates as coords
+import copy 
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
@@ -421,16 +423,16 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ft="direct", pad_frac=0.5, re
                     vvisim = nd.map_coordinates(np.imag(vvis_im), uv2)
                     vvis = phase*(vvisre + 1j*qvisim)
 
-                #visibilities from DFT
-                else:
-                    mat = ftmatrix(mov.psize, mov.xdim, mov.ydim, uv, pulse=mov.pulse)
-                    vis = np.dot(mat, mov.frames[n])
+            #visibilities from DFT
+            else:
+                mat = ftmatrix(mov.psize, mov.xdim, mov.ydim, uv, pulse=mov.pulse)
+                vis = np.dot(mat, mov.frames[n])
 
-                    if len(mov.qframes):
-                        qvis = np.dot(mat, mov.qframes[n])
-                        uvis = np.dot(mat, mov.uframes[n])
-                    if len(mov.vframes):
-                        vvis = np.dot(mat, mov.vframes[n])
+                if len(mov.qframes):
+                    qvis = np.dot(mat, mov.qframes[n])
+                    uvis = np.dot(mat, mov.uframes[n])
+                if len(mov.vframes):
+                    vvis = np.dot(mat, mov.vframes[n])
 
             # Scatter the visibilities with the SgrA* kernel
             if sgrscat:
@@ -457,8 +459,8 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ft="direct", pad_frac=0.5, re
 # Noise + miscalibration funcitons
 ##################################################################################################
 
-def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GAINPDEF, phasecal=True,
-                    dcal=True, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID, frcal=True):
+def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frcal=True, 
+               gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID):
     """Compute ALL Jones Matrices for a list of times (non repeating), with gain and dterm errors.
        ra and dec should be in hours / degrees
        Will return a nested dictionary of matrices indexed by the site, then by the time
@@ -473,6 +475,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GA
     ra = obs.ra
     dec = obs.dec
     sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
+    tproc = str(ttime.time())
 
     # Create a dictionary of taus and a list of unique times
     nsites = len(obs.tarr['site'])
@@ -520,7 +523,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GA
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)
 
         # Amplitude gain
-        tproc = str(ttime.time())
+
         gainR = gainL = np.ones(len(times))
         if not ampcal:
             # Amplitude gain
@@ -529,14 +532,14 @@ def make_jones(obs, ampcal=True, opacitycal=True, gainp=GAINPDEF, gain_offset=GA
             else:
                 goff=gain_offset
 
-            gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff)))*(1.0 + gainp * hashrandn(site, 'gain', time, tproc,str(gainp)))
-                                     for time in times])))
-            gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff)))*(1.0 + gainp * hashrandn(site, 'gain', time, tproc,str(gainp)))
+            gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff), tproc))*(1.0 + gainp * hashrandn(site, 'gain', time, str(gainp), tproc))
+                                     for time in times]))) 
+            gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff), tproc))*(1.0 + gainp * hashrandn(site, 'gain', time, str(gainp), tproc))
                                      for time in times])))
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
-            taus = np.abs(np.array([taudict[site][j] * (1.0 + gainp * hashrandn(site, 'tau', times[j], tproc)) for j in range(len(times))]))
+            taus = np.abs(np.array([taudict[site][j] * (1.0 + taup * hashrandn(site, 'tau', times[j], tproc)) for j in range(len(times))]))
             atten = np.exp(-taus/(EP + 2.0*np.sin(el_angles)))
 
             gainR = gainR * atten
@@ -635,24 +638,8 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], ra*HOUR)
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)
 
-        # Amplitude gain - one by default now
-        # !AC TODO this assumes all gains 1 - should we put in a fixed gain term?
-        gainR = gainL = np.ones(len(times))
-
         # Amplitude gain assumed 1
         gainR = gainL = np.ones(len(times))
-
-        #!AC TODO gain_offset not implemented in inverse Jones
-        #          should be added to tarr?
-        #if not ampcal:
-        #    # Amplitude gain
-        #    if type(gain_offset) == dict:
-        #        goff = gain_offset[site]
-        #    else:
-        #        goff=gain_offset
-        #
-        #    gainR *= np.sqrt(1.0 +  0.01*goff)
-        #    gainL *= np.sqrt(1.0 +  0.01*goff)
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
@@ -685,7 +672,8 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
 
     return out
 
-def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, gainp=GAINPDEF, gain_offset=GAINPDEF,phasecal=True, dcal=True, dtermp=DTERMPDEF, frcal=True):
+def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
+                        gainp=GAINPDEF, gain_offset=GAINPDEF, taup=GAINPDEF, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID):
     """Corrupt visibilities in obs with jones matrices and add thermal noise
     """
 
@@ -693,8 +681,8 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ga
 
     # Build Jones Matrices
     jm_dict = make_jones(obs,
-                         ampcal=ampcal, opacitycal=opacitycal, gainp=gainp, gain_offset=gain_offset,
-                         phasecal=phasecal, dcal=dcal, dtermp=dtermp, frcal=frcal)
+                         ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,
+                         gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dtermp_resid=dtermp_resid)
     # Unpack Data
     obsdata = obs.data
     times = obsdata['time']
@@ -848,7 +836,7 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     return obsdata
 
 # The old noise generating function.
-def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, gain_offset=GAINPDEF):
+def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, seed=False):
     """Re-compute sigmas from SEFDS and add noise with gain & phase errors
        Returns signals & noises scaled by estimated gains, including opacity attenuation.
        Be very careful using outside of Image.observe!
@@ -874,7 +862,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     #print "------------------------------------------------------------------------------------------------------------------------"
 
     # Get data
-    obsdata = obs.data
+    obsdata = copy.deepcopy(obs.data)
     sites = obsdata[['t1','t2']].view(('a32',2))
     time = obsdata[['time']].view(('f8',1))
     tint = obsdata[['tint']].view(('f8',1))
@@ -885,7 +873,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     vvis = obsdata[['vvis']].view(('c16',1))
 
     taus = np.abs(obsdata[['tau1','tau2']].view(('f8',2)))
-    elevs = obs.unpack(['el1','el2'],ang_unit='deg').view(('f8',2))
+    elevs = obs.unpack(['el1','el2'], ang_unit='deg').view(('f8',2))
     bw = obs.bw
 
     # Recompute perfect sigmas from SEFDs
@@ -893,16 +881,13 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)/np.sqrt(2.0)
                             for i in range(len(tint))])
 
-    # Use estimated opacity to compute the ESTIMATED noise
-    sigma_est = sigma_perf
-    if not opacitycal:
-        sigma_est = sigma_est * np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
 
-    #PIN
     # Add gain and opacity fluctuations to the TRUE noise
-    sigma_true = sigma_perf
-    tproc = str(ttime.time())
+    if seed==False:
+        seed=str(ttime.time())
+    
     if not ampcal:
+        print ("GAIN")
         # Amplitude gain
         if type(gain_offset) == dict:
             goff1 = gain_offset[sites[i,0]]
@@ -910,32 +895,52 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
         else: 
             goff1=goff2=gain_offset
 
-        gain1 = np.abs(np.array([(1.0 + goff1 * hashrandn(sites[i,0], 'gain', str(goff1)))*(1.0 + gainp * hashrandn(sites[i,0], 'gain', time[i], tproc, str(gainp)))
+        gain1 = np.abs(np.array([(1.0 + goff1 * hashrandn(sites[i,0], 'gain', seed))*(1.0 + gainp * hashrandn(sites[i,0], 'gain', time[i], seed))
                                  for i in range(len(time))]))
-        gain2 = np.abs(np.array([(1.0 + goff2 * hashrandn(sites[i,0], 'gain', str(goff1)))*(1.0 + gainp * hashrandn(sites[i,1], 'gain', time[i], tproc, str(gainp)))
+        gain2 = np.abs(np.array([(1.0 + goff2 * hashrandn(sites[i,1], 'gain', seed))*(1.0 + gainp * hashrandn(sites[i,1], 'gain', time[i], seed))
                                  for i in range(len(time))]))
-        sigma_true = sigma_true/np.sqrt(gain1 * gain2)
+        gain_true = np.sqrt(gain1 * gain2)
+    else:
+        gain_true = 1
 
     if not opacitycal:
+        # Use estimated opacity to compute the ESTIMATED noise
+        tau_est = np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
+
         # Opacity Errors
-        tau1 = np.abs(np.array([taus[i,0]* (1.0 + gainp * hashrandn(sites[i,0], 'tau', time[i], tproc)) for i in range(len(time))]))
-        tau2 = np.abs(np.array([taus[i,1]* (1.0 + gainp * hashrandn(sites[i,1], 'tau', time[i], tproc)) for i in range(len(time))]))
+        tau1 = np.abs(np.array([taus[i,0]* (1.0 + taup * hashrandn(sites[i,0], 'tau', time[i], seed)) for i in range(len(time))]))
+        tau2 = np.abs(np.array([taus[i,1]* (1.0 + taup * hashrandn(sites[i,1], 'tau', time[i], seed)) for i in range(len(time))]))
 
         # Correct noise RMS for opacity
-        sigma_true = sigma_true * np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
+        tau_true = np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
+    else:
+        tau_true = tau_est = 1
 
-    # Add the noise and the gain error to the true visibilities
-    vis  = (vis  + cerror(sigma_true)) * (sigma_est/sigma_true) #sigma_est/sigma_true = gain
-    qvis = (qvis + cerror(sigma_true)) * (sigma_est/sigma_true)
-    uvis = (uvis + cerror(sigma_true)) * (sigma_est/sigma_true)
-    vvis = (vvis + cerror(sigma_true)) * (sigma_est/sigma_true)
+    # Add the noise
+    #ANDREW TODO -- sigma perf here??
+    #tau_true = tau_est
+    sigma_true = sigma_perf
+    sigma_est = sigma_perf * gain_true * tau_est
+
+    if add_th_noise:
+        print ("ADD NOISE")
+        vis  = (vis  + cerror(sigma_true))
+        qvis = (qvis + cerror(sigma_true))
+        uvis = (uvis + cerror(sigma_true))
+        vvis = (vvis + cerror(sigma_true))
+    
+    # Add the gain error to the true visibilities
+    vis =   vis * gain_true * tau_est / tau_true 
+    qvis = qvis * gain_true * tau_est / tau_true
+    uvis = uvis * gain_true * tau_est / tau_true 
+    vvis = vvis * gain_true * tau_est / tau_true 
 
     # Add random atmospheric phases
     if not phasecal:
-        phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i], tproc) for i in range(len(time))])
-        phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i], tproc) for i in range(len(time))])
+        phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i], seed) for i in range(len(time))])
+        phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i], seed) for i in range(len(time))])
 
-        vis  *= np.exp(1j *  (phase2-phase1))
+        vis  *= np.exp(1j * (phase2-phase1))
         qvis *= np.exp(1j * (phase2-phase1))
         uvis *= np.exp(1j * (phase2-phase1))
         vvis *= np.exp(1j * (phase2-phase1))
@@ -949,6 +954,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
 
     # This function doesn't use different visibility sigmas!
     obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
+
 
 	# Return observation data
     return obsdata

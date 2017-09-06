@@ -10,6 +10,7 @@ import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import itertools as it
+import sys
 
 import ehtim.image
 import ehtim.observing.obs_simulate
@@ -35,6 +36,7 @@ class Obsdata(object):
            tstop (float): The end time of the observation in hours
            rf (float): The observation frequency in Hz
            bw (float): The observation bandwidth in Hz
+
            ampcal (bool): True if amplitudes calibrated
            phasecal (bool): True if phases calibrated
            opacitycal (bool): True if time-dependent opacities correctly accounted for in sigmas
@@ -48,6 +50,28 @@ class Obsdata(object):
     """
 
     def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC'):
+        """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
+
+           Args:
+               ra (float): The source Right Ascension in fractional hours
+               dec (float): The source declination in fractional degrees
+               rf (float): The observation frequency in Hz
+               bw (float): The observation bandwidth in Hz
+               datatable (numpy.recarray): the basic data with datatype DTPOL
+               tarr (numpy.recarray): The array of telescope data with datatype DTARR
+               source (str): The source name
+               mjd (int): The integer MJD of the observation
+               ampcal (bool): True if amplitudes calibrated
+               phasecal (bool): True if phases calibrated
+               opacitycal (bool): True if time-dependent opacities correctly accounted for in sigmas
+               frcal (bool): True if feed rotation calibrated out of visibilities
+               dcal (bool): True if D terms calibrated out of visibilities
+               timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC'
+
+
+           Returns:
+               obsdata (Obsdata): an Obsdata object
+        """
 
         if len(datatable) == 0:
             raise Exception("No data in input table!")
@@ -116,13 +140,17 @@ class Obsdata(object):
 
     def copy(self):
         """Copy the observation object.
+           Returns:
+                obscopy (Obsdata): a copy of the Obsdata object.
         """
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd,
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal)
         return newobs
 
     def data_conj(self):
-        """Return a data array of same format as self.data but including all conjugate baselines.
+        """Make a data array including all conjugate baselines. 
+           Returns:
+                dataconj (numpy.recarray): a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.
         """
 
         data = np.empty(2*len(self.data), dtype=DTPOL)
@@ -142,12 +170,15 @@ class Obsdata(object):
                 data[f] = np.hstack((self.data[f], self.data[f]))
 
         # Sort the data by time
-        #!AC TODO should we apply some sorting within equal times?
         data = data[np.argsort(data['time'])]
         return data
 
     def tlist(self, conj=False):
-        """Return the data in a list of equal time observation datatables.
+        """Group the data in a list of equal time observation datatables.
+           Args:
+                conj (bool): True if tlist_out includes conjugate baselines.
+           Returns:
+                tlist_out (list): a list of data tables (type DTPOL) containing time-partitioned data
         """
 
         if conj:
@@ -162,29 +193,40 @@ class Obsdata(object):
 
         return np.array(datalist)
 
-    def split_obs(self):
-        """Split single observation into multiple observation files, one per scan.
+    def bllist(self,conj=False):
+        """Group the data in a list of same baseline datatables.
+           Args:
+                conj (bool): True if tlist_out includes conjugate baselines.
+           Returns:
+                bllist_out (list): a list of data tables (type DTPOL) containing baseline-partitioned data
         """
+        data = self.data
+        idx = np.lexsort((data['t2'], data['t1']))
+        
+        datalist = []
+        for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2'])) ):
 
-        print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
+            datalist.append(np.array([obs for obs in group]))
 
-        #Note that the tarr of the output includes all sites, even those that don't participate in the scan
-        splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, source=self.source,
-                             mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal)
-                     for tdata in self.tlist()
-                    ]
-
-        return splitlist
-
-    def unpack_bl(self, site1, site2, in_fields, ang_unit='deg', debias=False):
-        """Unpack the data for the given fields in_fields over time on the selected baseline site1-site2.
+        return np.array(datalist)
+       
+    def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False):
+        """Unpack the data over time on the selected baseline site1-site2.
+           Args:
+                site1 (str): First site name
+                site2 (str): Second site name
+                fields (list): list of unpacked quantities from available quantities in FIELDS
+                ang_unit (str): 'deg' for degrees and 'rad' for radian phases
+                debias (bool): True to debias visibility amplitudes
+           Returns:
+                data (numpy.recarray): unpacked numpy array with data in fields requested
         """
 
         # If we only specify one field
-        fields=['time']
-        if not isinstance(in_fields, list): fields.append(in_fields)
+        allfields=['time']
+        if not isinstance(fields, list): allfields.append(fields)
         else:
-            for i in range(len(in_fields)): fields.append(in_fields[i])
+            for i in range(len(fields)): allfields.append(fields[i])
 
         # Get field data on selected baseline
         allout = []
@@ -195,26 +237,33 @@ class Obsdata(object):
             for obs in scan:
                 if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
                     obs = np.array([obs])
-                    out = self.unpack_dat(obs, fields, ang_unit=ang_unit, debias=debias)
+                    out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias)
                     allout.append(out)
         return np.array(allout)
 
-    def unpack(self, fields, conj=False, ang_unit='deg', mode='all', debias=False):
-        """Return a recarray of all the data for the given fields extracted from the dtable.
-           If conj=True, will also return conjugate baselines.
-           ang_unit can be 'deg' or 'radian'
-           debias=True will debias visibility amplitudes
+    def unpack(self, fields, mode='all', ang_unit='deg',  debias=False, conj=False):
+        """Unpack the data for the whole observation 
+           Args:
+                fields (list): list of unpacked quantities from availalbe quantities in FIELDS
+                mode (str): 'all' returns all data in single table, 'time' groups output by equal time, 'bl' groups by baseline
+                ang_unit (str): 'deg' for degrees and 'rad' for radian phases
+                debias (bool): True to debias visibility amplitudes
+                conj (bool): True to include conjugate baselines
+           Returns:
+                data (numpy.recarray): unpacked numpy array with data in fields requested
+
         """
 
-        if not mode in ('time', 'all'):
-            raise Exception("possible options for mode are 'time' and 'all'")
-
+        
+        if not mode in ('time', 'all', 'bl'):
+            raise Exception("possible options for mode are 'time', 'all' and 'bl'")
+                    
         # If we only specify one field
         if not isinstance(fields, list): fields = [fields]
-
-        if mode=='all':
+        
+        if mode=='all':    
             if conj:
-                data = self.data_conj()
+                data = self.data_conj()     
             else:
                 data = self.data
             allout=self.unpack_dat(data, fields, ang_unit=ang_unit, debias=debias)
@@ -226,17 +275,35 @@ class Obsdata(object):
                 out=self.unpack_dat(scan, fields, ang_unit=ang_unit, debias=debias)
                 allout.append(out)
 
+        elif mode=='bl':
+            allout = []
+            bllist = self.bllist()
+            for bl in bllist:
+                out = self.unpack_dat(bl, fields, ang_unit=ang_unit, debias=debias)
+                allout.append(out)
+        
         return np.array(allout)
 
+        
     def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False):
-        """Return a recarray of data for the given fields extracted from the datatable 'data'.
-           If conj=True, will also return conjugate baselines.
-           ang_unit can be 'deg' or 'radian'
-           debias=True will debias visibility amplitudes
+        """Unpack the data in a data recarray 
+           Args:
+                data (numpy.recarray): data recarray of format DTPOL
+                fields (list): list of unpacked quantities from availalbe quantities in FIELDS
+                ang_unit (str): 'deg' for degrees and 'rad' for radian phases
+                debias (bool): True to debias visibility amplitudes
+                conj (bool): True to include conjugate baselines
+           Returns:
+                data (numpy.recarray): unpacked numpy array with data in fields requested
+
         """
 
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
+
+        # If we only specify one field
+        if type(fields) == str: 
+            fields = [fields]
 
         # Get field data
         allout = []
@@ -331,7 +398,6 @@ class Obsdata(object):
             if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]:
                 out = np.abs(out)
 
-                # !AC debias here?
                 if debias:
                     #print("Debiasing amplitudes in unpack!")
                     out = amp_debias(out, sig)
@@ -354,7 +420,7 @@ class Obsdata(object):
             # Reshape and stack with other fields
             out = np.array(out, dtype=[(field, ty)])
 
-            if len(allout) > 0: #N.B.: This throws an error sometimes
+            if len(allout) > 0: 
                 allout = rec.merge_arrays((allout, out), asrecarray=True, flatten=True)
             else:
                 allout = out
@@ -363,17 +429,115 @@ class Obsdata(object):
 
     def sourcevec(self):
         """Return the source position vector in geocentric coordinates at 0h GMST.
+           Returns:
+                vec (numpy.array): normal vector pointing to source in geocentric coordinates (m)
         """
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
 
     def res(self):
         """Return the nominal resolution (1/longest baseline) of the observation in radians.
+           Returns:
+                res (float): normal array resolution in radians
         """
         return 1.0/np.max(self.unpack('uvdist')['uvdist'])
 
+               
 
+    def split_obs(self):
+        """Split single observation into multiple observation files, one per scan.
+           Returns:
+                obs_list (list): list of single-scan Obsdata objects
+        """
+
+        print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
+
+        # ote that the tarr of the output includes all sites, even those that don't participate in the scan
+        splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, source=self.source,
+                             mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal)
+                     for tdata in self.tlist()
+                    ]
+
+        return splitlist
+
+    def avg_coherent(self, inttime):
+        """Coherently average data along u,v tracs in chunks of length inttime (sec)
+           Args:
+                inttime (float): coherent integration time in seconds
+           Returns:
+                obs_avg (Obsdata): Obsdata object containing averaged data
+        """
+    
+        alldata_list = ['vis', 'u', 'v', 
+                        'sigma', 't1', 't2', 'tau1', 'tau2',  
+                        'uvis', 'qvis', 'vvis', 'qsigma', 
+                        'usigma', 'vsigma', 'tint', 'time']
+
+        timesplit = self.unpack(alldata_list, mode='time')
+
+        inttime_hr = inttime/3600.
+        datatable = []
+        timeregion =  []
+        time_current = timesplit[0]['time'][0]
+        tavg = 1
+
+        for t in range(0, len(timesplit)):
+            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i' % (t,len(tsplit),inttime, tavg,t))
+            sys.stdout.flush()
+            
+            # accumulate data in a time region
+            if (timesplit[t]['time'][0] - time_current < inttime_hr):
+                
+                for i in range(0,len(timesplit[t]['time'])):
+                    timeregion.append(np.array
+                             ((
+                               timesplit[t]['time'][i], timesplit[t]['tint'][i], 
+                               timesplit[t]['t1'][i], timesplit[t]['t2'][i], timesplit[t]['tau1'][i], timesplit[t]['tau2'][i], 
+                               timesplit[t]['u'][i], timesplit[t]['v'][i],
+                               timesplit[t]['vis'][i], timesplit[t]['qvis'][i], timesplit[t]['uvis'][i], timesplit[t]['vvis'][i],
+                               timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
+                               ), dtype=DTPOL
+                             ))
+
+            # average data in a time region
+            else:
+                tavg += 1
+                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion), self.tarr, source=self.source, mjd=self.mjd)
+                            
+                blsplit = obs_timeregion.unpack(alldata_list, mode='bl')
+                for bl in range(0,len(blsplit)):
+                    
+                    bldata = blsplit[bl]
+                    datatable.append(np.array
+                             ((
+                               np.mean(obs_timeregion.data['time']), np.mean(bldata['tint']), 
+                               bldata['t1'][0], bldata['t2'][0], np.mean(bldata['tau1']), np.mean(bldata['tau2']), 
+                               np.mean(bldata['u']), np.mean(bldata['v']),
+                               np.mean(bldata['vis']), np.mean(bldata['qvis']), np.mean(bldata['uvis']), np.mean(bldata['vvis']),
+                               np.sqrt(np.sum(bldata['sigma']**2)/len(bldata)**2), np.sqrt(np.sum(bldata['qsigma']**2)/len(bldata)**2), 
+                               np.sqrt(np.sum(bldata['usigma']**2)/len(bldata)**2), np.sqrt(np.sum(bldata['vsigma']**2)/len(bldata)**2)
+                               ), dtype=DTPOL
+                             ))
+
+
+                # start a new time region            
+                timeregion = []
+                time_current = timesplit[t]['time'][0]
+                for i in range(0, len(timesplit[t]['time'])):
+                    timeregion.append(np.array
+                             ((
+                               timesplit[t]['time'][i], timesplit[t]['tint'][i], 
+                               timesplit[t]['t1'][i], timesplit[t]['t2'][i], timesplit[t]['tau1'][i], timesplit[t]['tau2'][i], 
+                               timesplit[t]['u'][i], timesplit[t]['v'][i],
+                               timesplit[t]['vis'][i], timesplit[t]['qvis'][i], timesplit[t]['uvis'][i], timesplit[t]['vvis'][i],
+                               timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
+                               ), dtype=DTPOL
+                             ))
+        print(len(datatable))
+            
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd)
+      
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
-        """Make an image observation dirty beam.
+        """Make an image of the observation dirty beam.
 
            Args:
                npix (int): The pixel size of the square output image.
@@ -381,11 +545,9 @@ class Obsdata(object):
                pulse (function): The function convolved with the pixel values for continuous image.
 
            Returns:
-               Image: an Image object with the dirty beam.
+               dirtybeam (Image): an Image object with the dirty beam.
         """
 
-
-        # !AC TODO add different types of beam weighting
         pdim = fov/npix
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
@@ -405,7 +567,7 @@ class Obsdata(object):
         return ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
 
     def cleanbeam(self, npix, fov, pulse=PULSE_DEFAULT):
-        """Make an image of observation clean beam.
+        """Make an image of the observation clean beam.
 
            Args:
                npix (int): The pixel size of the square output image.
@@ -413,10 +575,9 @@ class Obsdata(object):
                pulse (function): The function convolved with the pixel values for continuous image.
 
            Returns:
-               Image: an Image object with the clean beam.
+               cleanbeam (Image): an Image object with the clean beam.
         """
 
-        # !AC TODO include other beam weightings
         im = ehtim.image.make_square(self, npix, fov, pulse=pulse)
         beamparams = self.fit_beam()
         im = im.add_gauss(1.0, beamparams)
@@ -426,10 +587,9 @@ class Obsdata(object):
         """Fit a gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).
 
            Returns:
-               tuple: a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.
+               beam_params (tuple): a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.
         """
 
-        # !AC TODO include other beam weightings
         # Define the sum of squares function that compares the quadratic expansion of the dirty image
         # with the quadratic expansion of an elliptical gaussian
         def fit_chisq(beamparams, db_coeff):
@@ -477,10 +637,9 @@ class Obsdata(object):
                pulse (function): The function convolved with the pixel values for continuous image.
 
            Returns:
-               Image: an Image object with dirty image.
+               dirtyimage (Image): an Image object with dirty image.
         """
 
-        # !AC TODO add different types of beam weighting
         pdim = fov/npix
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
@@ -491,7 +650,7 @@ class Obsdata(object):
 
         xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
 
-        # Take the DTFTS
+        # Take the DFTS
         # Shouldn't need to real about conjugate baselines b/c unpack does not return them
         im  = np.array([[np.mean(np.real(vis)*np.cos(2*np.pi*(i*u + j*v)) -
                                  np.imag(vis)*np.sin(2*np.pi*(i*u + j*v)))
@@ -514,7 +673,7 @@ class Obsdata(object):
                   for i in xlist]
                   for j in xlist])
 
-        # Normalization
+        # Final normalization
         im  = im /np.sum(dim)
         qim = qim/np.sum(dim)
         uim = uim/np.sum(dim)
@@ -535,7 +694,7 @@ class Obsdata(object):
         """Deblur the observation obs by dividing by the Sgr A* scattering kernel.
 
            Returns:
-               Obsdata: a new deblurred observation object.
+               obs_deblur (Obsdata): a new deblurred observation object.
         """
 
         # make a copy of observation data
@@ -579,7 +738,14 @@ class Obsdata(object):
 
     def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
         """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.
+           Args:
+                flux (float): total flux in the fitted gaussian
+                fitttype (str): "amp" to fit to visibilty amplitudes
+                paramguess (tuble): initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta) 
+           Returns:
+               gauss_params: a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
         """
+
         vis = self.data['vis']
         u = self.data['u']
         v = self.data['v']
@@ -600,6 +766,7 @@ class Obsdata(object):
         optdict = {'maxiter':5000} # minimizer params
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
         return res.x
+
     def bispectra(self, vtype='vis', mode='time', count='min'):
         """Return a recarray of the equal time bispectra.
 
@@ -609,7 +776,7 @@ class Obsdata(object):
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
 
            Returns:
-               numpy.recarry: A recarray of the bispectra values with datatype DTBIS
+               bs_arr (numpy.recarry): A recarray of the bispectra values with datatype DTBIS
 
         """
 
@@ -624,7 +791,13 @@ class Obsdata(object):
         tlist = self.tlist(conj=True)
         outlist = []
         bis = []
+        tt = 1
         for tdata in tlist:
+            sys.stdout.flush()
+            sys.stdout.write('\rGetting bispectra: type: %s count: %s scan %i/%i ' % (vtype, count, tt, len(tlist)))
+
+            tt += 1
+
             time = tdata[0]['time']
             sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
 
@@ -639,7 +812,7 @@ class Obsdata(object):
             if count == 'min':
                 # If we want a minimal set, choose triangles with the minimum sefd reference
                 # Unless there is no sefd data, in which case choose the northernmost
-                # !AC TODO This should probably be an sefdr + sefdl average
+                # TODO This should probably be an sefdr + sefdl average instead
                 if len(set(self.tarr['sefdr'])) > 1:
                     ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
                 else:
@@ -687,16 +860,6 @@ class Obsdata(object):
 
         return np.array(outlist)
 
-    def unique_c_phases(self):
-        """Return an array of all unique closure phase triangles.
-        """
-
-        biarr = self.bispectra(mode="all", count="min")
-        catsites = np.vstack((np.vstack((biarr['t1'],biarr['t2'])), biarr['t3'] ))
-        uniqueclosure = np.vstack({tuple(row) for row in catsites.T})
-
-        return uniqueclosure
-
     def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg'):
         """Return a recarray of the equal time closure phases.
 
@@ -707,7 +870,7 @@ class Obsdata(object):
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
 
            Returns:
-               numpy.recarry: A recarray of the closure phases with datatype DTPHASE
+               cphase_arr (numpy.recarry): A recarray of the closure phases with datatype DTPHASE
         """
 
         if not mode in ('time', 'all'):
@@ -726,6 +889,7 @@ class Obsdata(object):
         # Reformat into a closure phase list/array
         outlist = []
         cps = []
+        sys.stdout.write('\rReformatting bispectra to closure phase...')
         for bis in bispecs:
             for bi in bis:
                 if len(bi) == 0: continue
@@ -742,7 +906,18 @@ class Obsdata(object):
         return np.array(outlist)
 
     def bispectra_tri(self, site1, site2, site3, vtype='vis'):
-        """Return closure phase over time on a triangle (1-2-3)."""
+        """Return complex bispectrum  over time on a triangle (1-2-3).
+
+           Args:
+               site1 (str): station 1 name
+               site2 (str): station 2 name
+               site3 (str): station 3 name
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+
+           Returns:
+               cphase_arr (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
+        """
+       
         # Get closure phases (maximal set)
         bs = self.bispectra(mode='time', count='max', vtype=vtype)
 
@@ -756,7 +931,6 @@ class Obsdata(object):
                     # Flip the sign of the closure phase if necessary
                     parity = paritycompare(tri, obstri)
 
-                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA??  
                     if parity==-1:
                         obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
                         t2 = copy.deepcopy(obs['t2'])
@@ -776,10 +950,22 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def cphase_tri(self, site1, site2, site3, vtype='vis'):
-        """Return closure phase over time on a triangle (1-2-3)."""
+    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg'):
+        """Return closure phase  over time on a triangle (1-2-3).
+
+           Args:
+               site1 (str): station 1 name
+               site2 (str): station 2 name
+               site3 (str): station 3 name
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+               ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
+
+           Returns:
+               cphase_arr (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
+        """
+       
         # Get closure phases (maximal set)
-        cphases = self.c_phases(mode='time', count='max', vtype=vtype)
+        cphases = self.c_phases(mode='time', count='max', vtype=vtype, ang_unit=ang_unit)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
@@ -791,8 +977,7 @@ class Obsdata(object):
                     # Flip the sign of the closure phase if necessary
                     parity = paritycompare(tri, obstri)
 
-                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
-                    obs['cphase']*=parity
+                    obs['cphase'] *= parity
 
                     if parity==-1:
                         t2 = copy.deepcopy(obs['t2'])
@@ -822,7 +1007,7 @@ class Obsdata(object):
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
 
            Returns:
-               numpy.recarry: A recarray of the closure amplitudes with datatype DTCAMP
+               camp_arr (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
 
         """
 
@@ -839,7 +1024,12 @@ class Obsdata(object):
         tlist = self.tlist(conj=True)
         outlist = []
         cas = []
+        tt = 1
         for tdata in tlist:
+            sys.stdout.flush()
+            sys.stdout.write('\rGetting closure amps: type: %s %s count: %s scan %i/%i ' % (vtype, ctype, count, tt, len(tlist)))
+            tt += 1
+
             time = tdata[0]['time']
             sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
             if len(sites) < 4:
@@ -853,7 +1043,7 @@ class Obsdata(object):
             # Minimal set
             if count == 'min':
                 # If we want a minimal set, choose the minimum sefd reference
-                # !AC TODO this should probably be an sefdr + sefdl average
+                # TODO this should probably be an sefdr + sefdl average instead
                 sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
                 ref = sites[0]
 
@@ -929,7 +1119,22 @@ class Obsdata(object):
         return np.array(outlist)
 
     def camp_quad(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True):
-        """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3)."""
+        """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
+
+           Args:
+               site1 (str): station 1 name
+               site2 (str): station 2 name
+               site3 (str): station 3 name
+               site4 (str): station 4 name
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+
+           Returns:
+               camp_arr (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
+
+        """
+
         
         quad = (site1, site2, site3, site4)
         b1 = set((site1, site2))
@@ -967,10 +1172,8 @@ class Obsdata(object):
                         obs['v4'] = v3
 
                         if ctype=='logcamp':
-                            #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
                             obs['camp'] = -obs['camp']
                         elif ctype=='camp':
-                            #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
                             obs['camp'] = 1./obs['camp']
                             obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
 
@@ -981,9 +1184,31 @@ class Obsdata(object):
 
 
     def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg', debias=True):
-        """Make a scatter plot of 2 real observation fields with errors.
-           If conj==True, display conjugate baselines.
+        """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
+
+           Args:
+               field1 (str): x-axis field (from FIELDS)
+               field2 (str): y-axis field (from FIELDS)
+
+               rangex (list): [xmin, xmax] x-axis limits
+               rangey (list): [ymin, ymax] y-axis limits
+
+               ebar (bool): Plot error bars if True
+               conj (bool): Plot conjuage baseline data points if True
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               show (bool): Display the plot if true
+               axis (matplotlib.axes.Axes): add plot to this axis
+               color (str): Color of scatterplot points
+               ang_unit (str): phase unit 'deg' or 'rad' 
+
+
+           Returns:
+               axes (matplotlib.axes.Axes): Axes object with data plot
+
         """
+
+
+
 
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
@@ -1003,16 +1228,6 @@ class Obsdata(object):
             sigy = self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field2)]
         else:
             sigy = None
-
-        # Debias amplitudes if appropriate:
-        # !AC TODO - now debiasing done in unpack -- ok?
-        #if field1 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
-        #    print "De-biasing amplitudes for plot x values!"
-        #    data[field1] = amp_debias(data[field1], sigx)
-
-        #if field2 in ['amp', 'qamp', 'uamp', 'vamp', 'pamp', 'mamp']:
-        #    print "De-biasing amplitudes for plot y values!"
-        #    data[field2] = amp_debias(data[field2], sigy)
 
         # Data ranges
         if not rangex:
@@ -1045,6 +1260,25 @@ class Obsdata(object):
 
     def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', debias=True):
         """Plot a field over time on a baseline site1-site2.
+
+           Args:
+               site1 (str): station 1 name
+               site2 (str): station 2 name
+               field (str): y-axis field (from FIELDS)
+
+               rangex (list): [xmin, xmax] x-axis (time) limits
+               rangey (list): [ymin, ymax] y-axis limits
+
+               ebar (bool): Plot error bars if True
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               show (bool): Display the plot if true
+               axis (matplotlib.axes.Axes): add plot to this axis
+               color (str): Color of scatterplot points
+               ang_unit (str): phase unit 'deg' or 'rad' 
+
+           Returns:
+               axes (matplotlib.axes.Axes): Axes object with data plot
+
         """
 
         if ang_unit=='deg': angle=DEGREE
@@ -1082,77 +1316,30 @@ class Obsdata(object):
         if show:
             plt.show(block=False)
         return x
-    def bs_tri(self, site1, site2, site3, vtype='vis'):
-        """Return closure phase over time on a triangle (1-2-3)."""
-        # Get closure phases (maximal set)
-        bs = self.bispectra(mode='time', count='max', vtype=vtype)
 
-        # Get requested closure phases over time
-        tri = (site1, site2, site3)
-        outdata = []
-        for entry in bs:
-            for obs in entry:
-                obstri = (obs['t1'],obs['t2'],obs['t3'])
-                if set(obstri) == set(tri):
-                    # Flip the sign of the closure phase if necessary
-                    parity = paritycompare(tri, obstri)
-
-                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA??  
-                    if parity==-1:
-                        obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
-                        t2 = copy.deepcopy(obs['t2'])
-                        u2 = copy.deepcopy(obs['u2'])
-                        v2 = copy.deepcopy(obs['v2'])
-
-                        obs['t2'] = obs['t3']
-                        obs['u2'] = obs['u3']
-                        obs['v2'] = obs['v3']
-
-                        obs['t3'] = t2
-                        obs['u3'] = u2
-                        obs['v3'] = v2
-
-                    outdata.append(np.array(obs, dtype=DTBIS))
-                    continue
-        return np.array(outdata)
-
-
-    def cphase_tri(self, site1, site2, site3, vtype='vis'):
-        """Return closure phase over time on a triangle (1-2-3)."""
-        # Get closure phases (maximal set)
-        cphases = self.c_phases(mode='time', count='max', vtype=vtype)
-
-        # Get requested closure phases over time
-        tri = (site1, site2, site3)
-        outdata = []
-        for entry in cphases:
-            for obs in entry:
-                obstri = (obs['t1'],obs['t2'],obs['t3'])
-                if set(obstri) == set(tri):
-                    # Flip the sign of the closure phase if necessary
-                    parity = paritycompare(tri, obstri)
-
-                    #ANDREW TODO DOES THIS CHANGE THE UNDERLYING DATA?? 
-                    obs['cphase']*=parity
-
-                    if parity==-1:
-                        t2 = copy.deepcopy(obs['t2'])
-                        u2 = copy.deepcopy(obs['u2'])
-                        v2 = copy.deepcopy(obs['v2'])
-
-                        obs['t2'] = obs['t3']
-                        obs['u2'] = obs['u3']
-                        obs['v2'] = obs['v3']
-
-                        obs['t3'] = t2
-                        obs['u3'] = u2
-                        obs['v3'] = v2
-
-                    outdata.append(np.array(obs, dtype=DTCPHASE))
-                    continue
-        return np.array(outdata)
     def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
         """Plot closure phase over time on a triangle (1-2-3).
+           Args:
+               site1 (str): station 1 name
+               site2 (str): station 2 name
+               site3 (str): station 3 name
+
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+               ang_unit (str): phase unit 'deg' or 'rad' 
+
+               rangex (list): [xmin, xmax] x-axis (time) limits
+               rangey (list): [ymin, ymax] y-axis (phase) limits
+
+               ebar (bool): Plot error bars if True
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               show (bool): Display the plot if true
+               axis (matplotlib.axes.Axes): add plot to this axis
+               color (str): Color of scatterplot points
+
+
+           Returns:
+               axes (matplotlib.axes.Axes): Axes object with data plot
+
         """
 
         if ang_unit=='deg': angle=1.0
@@ -1197,26 +1384,32 @@ class Obsdata(object):
     def plot_camp(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True,
                         ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
+
+           Args:
+               site1 (str): station 1 name
+               site2 (str): station 2 name
+               site3 (str): station 3 name
+               site4 (str): station 4 name
+
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+
+               rangex (list): [xmin, xmax] x-axis (time) limits
+               rangey (list): [ymin, ymax] y-axis (phase) limits
+
+               ebar (bool): Plot error bars if True
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               show (bool): Display the plot if true
+               axis (matplotlib.axes.Axes): add plot to this axis
+               color (str): Color of scatterplot points
+
+
+           Returns:
+               axes (matplotlib.axes.Axes): Axes object with data plot
+
+
         """
-        #quad = (site1, site2, site3, site4)
-        #b1 = set((site1, site2))
-        #r1 = set((site1, site4))
-
-        # Get the closure amplitudes
-        #camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias)
-        #plotdata = []
-        #for entry in camps:
-        #    for obs in entry:
-        #        obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
-        #        if set(quad) == set(obsquad):
-        #            num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
-        #            denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
-
-        #             if (b1 in num) and (r1 in denom):
-        #                 plotdata.append([obs['time'], obs['camp'], obs['sigmaca']])
-        #             elif (r1 in num) and (b1 in denom):
-        #                 plotdata.append([obs['time'], 1.0/obs['camp'], obs['sigmaca']/(obs['camp']**2)])
-        #             continue
 
         # Get closure phases (maximal set)
         cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, debias=debias)
@@ -1262,20 +1455,28 @@ class Obsdata(object):
             return x
 
     def save_txt(self, fname):
-        """Save visibility data to a text file."""
+        """Save visibility data to a text file.
+           Args:
+                fname (str): path to output text file
+        """
 
         ehtim.io.save.save_obs_txt(self,fname)
         return
 
-    #!AC TODO how can we save dterm and field rotation arrays to uvfits?
     def save_uvfits(self, fname):
-        """Save visibility data to uvfits.
+        """Save visibility data to uvfits file
+           Args:
+                fname (str): path to output text file
         """
+
         ehtim.io.save.save_obs_uvfits(self,fname)
         return
 
     def save_oifits(self, fname, flux=1.0):
         """ Save visibility data to oifits. Polarization data is NOT saved.
+            Args:
+                fname (str): path to output text file
+                flux (float): normalization total flux
         """
         #Antenna diameter currently incorrect and the exact times are not correct in the datetime object
         #Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function
@@ -1289,6 +1490,10 @@ class Obsdata(object):
 
 def merge_obs(obs_List):
     """Merge a list of observations into a single observation file.
+       Args:
+           obs_List (list): list of split observation Obsdata objects.
+       Returns:
+           mergeobs (Obsdata): merged Obsdata object containing all scans in input list
     """
 
     if (len(set([obs.ra for obs in obs_List])) > 1 or
@@ -1310,21 +1515,48 @@ def merge_obs(obs_List):
     return mergeobs
 
 def load_txt(fname):
-    """Read an observation from a text file and return an Obsdata object, with the same format as output from Obsdata.savedata().
+    """Read an observation from a text file 
+       Args:
+           fname (str): path to input text file
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
     """
     return ehtim.io.load.load_obs_txt(fname)
 
 def load_uvfits(fname, flipbl=False):
     """Load observation data from a uvfits file.
+       Args:
+           fname (str): path to input text file
+           flipbl (bool): flip baseline phases if True.
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
     """
     return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl)
 
 def load_oifits(fname, flux=1.0):
     """Load data from an oifits file. Does NOT currently support polarization.
+       Args:
+           fname (str): path to input text file
+           flux (float): normalization total flux
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
     """
     return ehtim.io.load.load_obs_oifits(fname, flux=flux)
 
 def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object.
+       Args:
+           arrfile (str): path to input array file
+           obsspec (str): path to input obs spec file
+           ifile (str): path to input Stokes I data file
+           qfile (str): path to input Stokes Q data file
+           ufile (str): path to input Stokes U data file
+           vfile (str): path to input Stokes V data file
+           src (str): source name
+           mjd (int): integer observation  MJD
+           ampcal (bool): True if amplitude calibrated
+           phasecal (bool): True if phase calibrated
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
     """
     return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile, src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)

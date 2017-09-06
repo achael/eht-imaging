@@ -2,7 +2,7 @@ from __future__ import division
 
 from ehtim.observing.pulses import *
 
-EP = 1.0e-15
+EP = 1.0e-10
 C = 299792458.0
 DEGREE = 3.141592653589/180.0
 HOUR = 15.0*DEGREE

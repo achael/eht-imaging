@@ -21,7 +21,7 @@ def norm_zbl(obs, flux=1.):
     for scan in scans:
         i += 1
         uvdist = np.sqrt(scan['u']**2 + scan['v']**2)
-        print(np.min(uvdist)/1.e4)
+        #print(np.min(uvdist)/1.e4)
         scan_zbl = np.abs(scan['vis'][np.argmin(uvdist)])
 
         scan['vis'] = scan['vis']/scan_zbl

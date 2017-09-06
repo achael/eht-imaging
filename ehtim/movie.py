@@ -349,7 +349,7 @@ class Movie(object):
     def save_txt(self, fname):
         """Save the Movie data to text files with basename fname and filenames basename + 00001, etc. """
 
-        ehtim.io.ioutils.save_mov_txt(self, fname)
+        ehtim.io.save.save_mov_txt(self, fname)
         return
 
     def export_mp4(self, out='movie.mp4', fps=10, dpi=120, scale='linear', dynamic_range=1000.0, pad_factor=1, verbose=False):
@@ -364,7 +364,7 @@ class Movie(object):
         maxi = np.max(np.concatenate([im for im in self.frames]))
 
         def im_data(n):
-            n_data = (n-n%pad_factor)/pad_factor
+            n_data = int((n-n%pad_factor)/pad_factor)
             if scale == 'linear':
                 return self.frames[n_data].reshape((self.ydim,self.xdim))
             else:
@@ -409,7 +409,7 @@ def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
        Returns:
            Movie: a Movie object
     """
-    return load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse)
+    return ehtim.io.load.load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse)
 
 
 

@@ -38,7 +38,7 @@ MAXIT = 100
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple']
 
-GRIDDER_P_RAD_DEFAULT = 2.0
+GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
@@ -49,15 +49,15 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 # Total Intensity Imager
 ##################################################################################################
 def imager_func(Obsdata, InitIm, Prior, flux,
-           d1='vis', d2=False, s1='simple', s2=False,
-           alpha_s1=1, alpha_s2=1,
-           alpha_d1=100, alpha_d2=100,
-           alpha_flux=500, alpha_cm=500,
-           ttype='direct', 
-           fft_pad_frac=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
-           grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
-           clipfloor=0., datamin="gd", grads=True, logim=True,
-           maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True):
+                   d1='vis', d2=False, s1='simple', s2=False,
+                   alpha_s1=1, alpha_s2=1,
+                   alpha_d1=100, alpha_d2=100,
+                   alpha_flux=500, alpha_cm=500,
+                   ttype='direct', 
+                   fft_pad_frac=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
+                   grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
+                   clipfloor=0., grads=True, logim=True,
+                   maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=True):
 
     """Run a general interferometric imager.
 
@@ -80,11 +80,10 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            ttype (str): The Fourier transform type; options are 'fast' and 'direct'
            fft_pad_frac (float): The FFT will pre-pad the image by this factor x the original size
            fft_interp (int): Interpolation order for sampling the FFT
-           grid_conv_func (str): The convolving function for gridding; options are 'gaussian', 'pill', and 'spheroidal'
-           grid_prad (float): The pixel radius for the convolving function in gridding for FFTs
+           grid_conv (str): The convolving function for gridding; options are 'gaussian', 'pill', and 'cubic'
+           grid_prad (int): The pixel radius for the convolving function in gridding for FFTs
 
            clipfloor (float): The Jy/pixel level above which prior image pixels are varied
-           datamin (str): If 'lin', linearized energy is used (currently only compatible with CHIRP)
            grads (bool): If True, analytic gradients are used
            logim (bool): If True, uses I = exp(I') change of variables
 
@@ -97,9 +96,9 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            Image: Image object with result
     """
 
-    print ("Imaging observation with %s Fourier transform" % ttype)
-    print ("Data terms: %s , %s" %  (d1,d2))
-    print ("Regularizer terms: %s, %s\n" % (s1,s2))
+    #print ("Imaging observation with %s Fourier transform" % ttype)
+    #print ("Data terms: %s , %s" %  (d1,d2))
+    #print ("Regularizer terms: %s, %s\n" % (s1,s2))
 
     # Make sure data and regularizer options are ok
     if not d1 and not d2:
@@ -137,12 +136,19 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     # Normalize prior image to total flux and limit imager range to prior values > clipfloor
     embed_mask = Prior.imvec > clipfloor
-    nprior = (flux * Prior.imvec / np.sum((Prior.imvec)[embed_mask]))[embed_mask]
-    ninit = (flux * InitIm.imvec / np.sum((InitIm.imvec)[embed_mask]))[embed_mask]
+    if (not norm_init) or print_objfunc:
+        nprior = Prior.imvec[embed_mask]
+        ninit = InitIm.imvec[embed_mask]
+    else:
+        nprior = (flux * Prior.imvec / np.sum((Prior.imvec)[embed_mask]))[embed_mask]
+        ninit = (flux * InitIm.imvec / np.sum((InitIm.imvec)[embed_mask]))[embed_mask]
+
 
     # Get data and fourier matrices for the data terms
-    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, ttype=ttype, fft_pad_frac=fft_pad_frac)
-    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, ttype=ttype, fft_pad_frac=fft_pad_frac)
+    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, ttype=ttype, fft_pad_frac=fft_pad_frac,
+                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp)
+    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, ttype=ttype, fft_pad_frac=fft_pad_frac,
+                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp)
 
     # Coordinate matrix for center-of-mass constraint
     coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim//2,-Prior.xdim//2,-1)]
@@ -150,39 +156,19 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
     coord = coord[embed_mask]
 
-    # Katie - if you are using the linearized energy then compute the A and b of your
-    # linearized equation given your current image
-    # TODO generalize this linearization for the other data terms!
-    if d1=='bs' and datamin=='lin':
-        (Alin1, blin1) = le.computeLinTerms_bi(ninit, A1, data1, sigma1,
-                               len(ninit), alpha=alpha_d1)
-    if d2=='bs' and datamin=='lin':
-        (Alin2, blin2) = le.computeLinTerms_bi(ninit, A2, data2, sigma2,
-                               len(ninit), alpha=alpha_d2)
-
-
     # Define the chi^2 and chi^2 gradient
     def chisq1(imvec):
-        return chisq(imvec, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask, fft_interp=fft_interp)
+        return chisq(imvec, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask)
 
     def chisq1grad(imvec):
-        if d1=='bs' and datamin=='lin':
-            c = 2.0/(2.0*len(sigma1)) * np.dot(Alin1.T, np.dot(Alin1, imvec) - blin1)
-        else:
-            c = chisqgrad(imvec, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask,
-                                fft_interp=fft_interp, grid_prad=grid_prad, grid_conv=grid_conv)
+        c = chisqgrad(imvec, A1, data1, sigma1, d1, ttype=ttype, mask=embed_mask)
         return c
 
     def chisq2(imvec):
-        return chisq(imvec, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask, fft_interp=fft_interp)
-
+        return chisq(imvec, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask)
 
     def chisq2grad(imvec):
-        if d2=='bs' and datamin=='lin':
-            c = 2.0/(2.0*len(sigma2)) * np.dot(Alin2.T, np.dot(Alin2, imvec) - blin2)
-        else:
-            c = chisqgrad(imvec, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask,
-                          fft_interp=fft_interp, grid_prad=grid_prad, grid_conv=grid_conv)
+        c = chisqgrad(imvec, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask)
         return c
 
     # Define the regularizer and regularizer gradient
@@ -254,11 +240,9 @@ def imager_func(Obsdata, InitIm, Prior, flux,
             chi2_2 = chisq2(im_step)
             s_1 = reg1(im_step)
             s_2 = reg2(im_step)
-            #fluxreg = flux_constraint(im_step)
-            #cmreg = cm_constraint(im_step)
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
             plot_i(im_step, Prior, nit, chi2_1, chi2_2, ipynb=ipynb)
-            print("i: %d chi2_1-1: %0.2f chi2_2-1: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1-1, chi2_2-1,s_1,s_2))
+            print("i: %d chi2_1: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1, chi2_2,s_1,s_2))
         nit += 1
 
     # Generate and the initial image
@@ -267,16 +251,21 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     else:
         xinit = ninit
 
-
     # Print stats
+    print("Initial S_1: %f S_2: %f" % (reg1(ninit), reg2(ninit)))
     print("Initial Chi^2_1: %f Chi^2_2: %f" % (chisq1(ninit), chisq2(ninit)))
+    print("Initial Objective Function: %f" % (objfunc(xinit)))
+    if print_objfunc:
+        return objfunc(xinit)
+
     print("Total Pixel #: ",(len(Prior.imvec)))
     print("Clipped Pixel #: ",(len(ninit)))
     print()
     plotcur(xinit)
 
     # Minimize
-    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST} # minimizer dict params
+    #stop2 = stop/(np.finfo(float).eps)
+    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST,'gtol':stop} # minimizer dict params
     tstart = time.time()
     if grads:
         res = opt.minimize(objfunc, xinit, method='L-BFGS-B', jac=objgrad,
@@ -315,7 +304,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 # Wrapper Functions
 ##################################################################################################
 
-def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[], fft_interp=FFT_INTERP_DEFAULT):
+def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     """return the chi^2 for the appropriate dtype
     """
 
@@ -349,22 +338,21 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[], fft_interp=FFT_
 
         vis_arr = fft_imvec(imvec, A[0])
         if dtype == 'vis':            
-            chisq = chisq_vis_fft(vis_arr, A, data, sigma, order=fft_interp)
+            chisq = chisq_vis_fft(vis_arr, A, data, sigma)
         elif dtype == 'amp':            
-            chisq = chisq_amp_fft(vis_arr, A, data, sigma, order=fft_interp)
+            chisq = chisq_amp_fft(vis_arr, A, data, sigma)
         elif dtype == 'bs':            
-            chisq = chisq_bs_fft(vis_arr, A, data, sigma, order=fft_interp)
+            chisq = chisq_bs_fft(vis_arr, A, data, sigma)
         elif dtype == 'cphase':            
-            chisq = chisq_cphase_fft(vis_arr, A, data, sigma, order=fft_interp)
+            chisq = chisq_cphase_fft(vis_arr, A, data, sigma)
         elif dtype == 'camp':            
-            chisq = chisq_camp_fft(vis_arr, A, data, sigma, order=fft_interp)
+            chisq = chisq_camp_fft(vis_arr, A, data, sigma)
         elif dtype == 'logcamp':            
-            chisq = chisq_logcamp_fft(vis_arr, A, data, sigma, order=fft_interp)
+            chisq = chisq_logcamp_fft(vis_arr, A, data, sigma)
 
     return chisq
 
-def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[],
-              fft_interp=FFT_INTERP_DEFAULT, grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT):
+def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     
     """return the chi^2 gradient for the appropriate dtype
     """
@@ -398,17 +386,17 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[],
         vis_arr = fft_imvec(imvec, A[0])
 
         if dtype == 'vis':                        
-            chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
+            chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma)
         elif dtype == 'amp':            
-            chisqgrad = chisqgrad_amp_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
+            chisqgrad = chisqgrad_amp_fft(vis_arr, A, data, sigma)
         elif dtype == 'bs':            
-            chisqgrad = chisqgrad_bs_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
+            chisqgrad = chisqgrad_bs_fft(vis_arr, A, data, sigma)
         elif dtype == 'cphase':            
-            chisqgrad = chisqgrad_cphase_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
+            chisqgrad = chisqgrad_cphase_fft(vis_arr, A, data, sigma)
         elif dtype == 'camp':            
-            chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
+            chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma)
         elif dtype == 'logcamp':            
-            chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma, order=fft_interp, conv_func=grid_conv, p_rad=grid_prad)
+            chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma)
         
         if len(mask)>0 and np.any(np.invert(mask)):
             chisqgrad = chisqgrad[mask]
@@ -463,7 +451,8 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
 
     return s
 
-def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', fft_pad_frac=1):
+def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', 
+              fft_pad_frac=1, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT, order=FFT_INTERP_DEFAULT):
     """Return the data, sigma, and matrices for the appropriate dtype
     """
 
@@ -485,19 +474,21 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', fft_pad_frac=1):
 
     elif ttype=='fast':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
+            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac)
-
+            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
+        
+        
     return (data, sigma, A)
+
 
 ##################################################################################################
 # DFT Chi-squared and Gradient Functions
@@ -631,333 +622,230 @@ def chisqgrad_logcamp(imvec, Amatrices, log_clamp, sigma):
 # FFT Chi-squared and Gradient Functions
 ##################################################################################################
 
-def chisq_vis_fft(vis_arr, A, vis, sigma, order=FFT_INTERP_DEFAULT):
+def chisq_vis_fft(vis_arr, A, vis, sigma):
     """Visibility chi-squared from fft
     """
-    im_info, uv = A # to maintain compatibility with chisq()
-                    # im_info = (im.xdim, im.ydim, npad, im.psize, im.pulse) 
 
-    samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
+    im_info, sampler_info_list, gridder_info_list = A
+    samples = sampler(vis_arr, sampler_info_list, sample_type="vis")
 
     chisq = np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
+
     return chisq
 
-def chisqgrad_vis_fft(vis_arr, A, vis, sigma, 
-                      order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
+def chisqgrad_vis_fft(vis_arr, A, vis, sigma):
 
     """The gradient of the visibility chi-squared from fft
     """
 
-    im_info, uv = A
-    (xdim, ydim, npad, psize, pulse) = im_info
-
-    # parameters to unpad the array  
-    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
-    if xdim % 2:
-        padvalx2 += 1
-    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
-    if ydim % 2:
-        padvaly2 += 1
-
-    # grid phase and pulse factor
-    phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
-    pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
+    im_info, sampler_info_list, gridder_info_list = A
 
     # samples and gradient FT
-    samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
-    wdiff_vec = -1.0/len(vis)*(vis - samples)/(sigma**2)
+    pulsefac = sampler_info_list[0].pulsefac
+    samples = sampler(vis_arr, sampler_info_list, sample_type="vis")
+    wdiff_vec = (-1.0/len(vis)*(vis - samples)/(sigma**2)) * pulsefac.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func=conv_func, p_rad=p_rad)    
-    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
+    wdiff_arr = gridder([wdiff_vec], gridder_info_list)    
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2, im_info.padvaly1:-im_info.padvaly2].flatten()) # TODO or is x<-->y??
 
     return out
 
-def chisq_amp_fft(vis_arr, A, amp, sigma, order=FFT_INTERP_DEFAULT):
+def chisq_amp_fft(vis_arr, A, amp, sigma):
     """Visibility amplitude chi-squared from fft
     """
-   
-    im_info, uv = A 
-    amp_samples = np.abs(sampler(vis_arr, im_info, [uv], order=order, sample_type="vis"))
+
+    im_info, sampler_info_list, gridder_info_list = A
+    amp_samples = np.abs(sampler(vis_arr, sampler_info_list, sample_type="vis"))
     chisq = np.sum(np.abs((amp_samples-amp)/sigma)**2)/(len(amp))
     return chisq
 
-def chisqgrad_amp_fft(vis_arr, A, amp, sigma,
-                      order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
+def chisqgrad_amp_fft(vis_arr, A, amp, sigma):
 
-    """The gradient of the amplitude chi-squared
+    """The gradient of the amplitude chi-kernesquared
     """
 
-    im_info, uv = A 
-    (xdim, ydim, npad, psize, pulse) = im_info
-
-    # parameters to unpad the array  
-    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
-    if xdim % 2:
-        padvalx2 += 1
-    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
-    if ydim % 2:
-        padvaly2 += 1
-
-    # grid phase and pulse factors
-    phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
-    pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
+    im_info, sampler_info_list, gridder_info_list = A
 
     # samples
-    samples = sampler(vis_arr, im_info, [uv], order=order, sample_type="vis")
+    samples = sampler(vis_arr, sampler_info_list, sample_type="vis")
     amp_samples = np.abs(samples)
 
     # gradient FT
-    wdiff_vec = -2.0/len(amp)*((amp - amp_samples) * amp_samples) / (sigma**2) / samples.conj()
+    pulsefac = sampler_info_list[0].pulsefac
+    wdiff_vec = (-2.0/len(amp)*((amp - amp_samples) * amp_samples) / (sigma**2) / samples.conj()) * pulsefac.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr = gridder(wdiff_vec * phase.conj() * pulsefac.conj(), im_info, uv, conv_func=conv_func, p_rad=p_rad)    
-    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr))) * npad * npad
+    wdiff_arr = gridder([wdiff_vec], gridder_info_list)       
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevent cells and flatten
-    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten()) # TODO or is x<-->y??
 
     return out
 
-def chisq_bs_fft(vis_arr, A, bis, sigma, order=FFT_INTERP_DEFAULT):
+def chisq_bs_fft(vis_arr, A, bis, sigma):
     """Bispectrum chi-squared from fft"""
-    im_info, (uv1, uv2, uv3) = A 
-    
-    bisamples = sampler(vis_arr, im_info, [uv1, uv2, uv3], order=order, sample_type="bs")
+
+    im_info, sampler_info_list, gridder_info_list = A
+    bisamples = sampler(vis_arr, sampler_info_list, sample_type="bs")
 
     return np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
 
-def chisqgrad_bs_fft(vis_arr, A, bis, sigma, 
-                     order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
+def chisqgrad_bs_fft(vis_arr, A, bis, sigma):
 
     """The gradient of the amplitude chi-squared
     """
-    im_info, (uv1, uv2, uv3) = A 
-    (xdim, ydim, npad, psize, pulse) = im_info
+    im_info, sampler_info_list, gridder_info_list = A
 
-    # grid phase and pulse factors
-    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
-    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
-    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
-    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
-    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
-    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
-
-    # parameters to unpad the array  
-    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
-    if xdim % 2:
-        padvalx2 += 1
-    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
-    if ydim % 2:
-        padvaly2 += 1
-
-    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
-    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
-    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
+    v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
+    v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
+    v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
     bisamples = v1*v2*v3
 
     wdiff = -1.0/len(bis)*(bis - bisamples)/(sigma**2)
 
-    pt1 = wdiff * (v2 * v3).conj()
-    pt2 = wdiff * (v1 * v3).conj()
-    pt3 = wdiff * (v1 * v2).conj()
+    pt1 = wdiff * (v2 * v3).conj() * sampler_info_list[0].pulsefac.conj()
+    pt2 = wdiff * (v1 * v3).conj() * sampler_info_list[1].pulsefac.conj()
+    pt3 = wdiff * (v1 * v2).conj() * sampler_info_list[2].pulsefac.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=conv_func, p_rad=p_rad)    
-    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3))) * npad * npad
+    wdiff = gridder([pt1,pt2,pt3], gridder_info_list)
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten()) # TODO or is x<-->y??
 
     return out
 
-def chisq_cphase_fft(vis_arr, A, clphase, sigma, order=FFT_INTERP_DEFAULT):
+def chisq_cphase_fft(vis_arr, A, clphase, sigma):
     """Closure Phases (normalized) chi-squared from fft
     """
 
-    im_info, (uv1, uv2, uv3) = A
+
     clphase = clphase * DEGREE
     sigma = sigma * DEGREE
-    clphase_samples = np.angle(sampler(vis_arr, im_info, [uv1, uv2, uv3], order=order, sample_type="bs"))
+
+    im_info, sampler_info_list, gridder_info_list = A
+    clphase_samples = np.angle(sampler(vis_arr, sampler_info_list, sample_type="bs"))
+
     chisq = (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples))/(sigma**2))
     return chisq
 
-def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma,
-                         order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
+def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma):
     """The gradient of the closure phase chi-squared from fft"""
-    """The gradient of the amplitude chi-squared"""
-    im_info, (uv1, uv2, uv3) = A
-    (xdim, ydim, npad, psize, pulse) = im_info
-    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
-    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
-    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
-    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
-    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
-    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
-    # parameters to unpad the array  
-    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
-    if xdim % 2:
-        padvalx2 += 1
-    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
-    if ydim % 2:
-        padvaly2 += 1
 
     clphase = clphase * DEGREE
     sigma = sigma * DEGREE
+    im_info, sampler_info_list, gridder_info_list = A
 
-    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
-    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
-    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
+    #sample visibilities and closure phases
+    v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
+    v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
+    v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
     clphase_samples = np.angle(v1*v2*v3)
 
     pref = (2.0/len(clphase)) * np.sin(clphase - clphase_samples)/(sigma**2)
-    pt1  = pref/v1.conj()
-    pt2  = pref/v2.conj()
-    pt3  = pref/v3.conj()
+    pt1  = pref/v1.conj() * sampler_info_list[0].pulsefac.conj()
+    pt2  = pref/v2.conj() * sampler_info_list[1].pulsefac.conj()
+    pt3  = pref/v3.conj() * sampler_info_list[2].pulsefac.conj()
 
     # Setup and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=conv_func, p_rad=p_rad)    
-    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3))) * npad * npad
+    wdiff = gridder([pt1,pt2,pt3], gridder_info_list)
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    out = np.imag(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+    out = np.imag(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten()) # TODO or is x<-->y??
 
     return out
 
-def chisq_camp_fft(vis_arr, A, clamp, sigma, order=FFT_INTERP_DEFAULT):
+def chisq_camp_fft(vis_arr, A, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared from fft
     """
 
-    im_info, (uv1, uv2, uv3, uv4) = A
-
-    clamp_samples = sampler(vis_arr, im_info, [uv1, uv2, uv3, uv4], order=order, sample_type="camp")
+    im_info, sampler_info_list, gridder_info_list = A
+    clamp_samples = sampler(vis_arr, sampler_info_list, sample_type="camp")
     chisq = np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
     return chisq
 
-def chisqgrad_camp_fft(vis_arr, A, clamp, sigma,
-                       order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
+def chisqgrad_camp_fft(vis_arr, A, clamp, sigma):
 
     """The gradient of the closure amplitude chi-squared from fft
     """
 
-    im_info, (uv1, uv2, uv3, uv4) = A
-    (xdim, ydim, npad, psize, pulse) = im_info
-
-    # parameters to unpad the array  
-    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
-    if xdim % 2:
-        padvalx2 += 1
-    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
-    if ydim % 2:
-        padvaly2 += 1
-
-    # grid phase and pulse factors
-    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
-    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
-    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
-    phase4 = np.exp(-1j*np.pi*psize*(uv4[:,0] + uv4[:,1]))
-    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
-    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
-    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
-    pulsefac4 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv4])
+    im_info, sampler_info_list, gridder_info_list = A
 
     # sampled visibility and closure amplitudes
-    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
-    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
-    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
-    v4 = sampler(vis_arr, im_info, [uv4], order=order, sample_type="vis")
-
+    v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
+    v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
+    v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
+    v4 = sampler(vis_arr, [sampler_info_list[3]], sample_type="vis")
     clamp_samples = np.abs((v1 * v2)/(v3 * v4))
 
     # gradient components
     pp = (-2.0/len(clamp)) * ((clamp - clamp_samples) * clamp_samples)/(sigma**2)
-    pt1 =  pp/v1.conj()
-    pt2 =  pp/v2.conj()
-    pt3 = -pp/v3.conj()
-    pt4 = -pp/v4.conj()
+    pt1 =  pp/v1.conj()* sampler_info_list[0].pulsefac.conj()
+    pt2 =  pp/v2.conj()* sampler_info_list[1].pulsefac.conj()
+    pt3 = -pp/v3.conj()* sampler_info_list[2].pulsefac.conj()
+    pt4 = -pp/v4.conj()* sampler_info_list[3].pulsefac.conj()
 
-    # grid and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func=conv_func, p_rad=p_rad)    
-
-    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3 + wdiff_arr4))) * npad * npad
+    # Setup and perform the inverse FFT
+    wdiff = gridder([pt1,pt2,pt3,pt4], gridder_info_list)
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten()) # TODO or is x<-->y??
 
     return out
 
-def chisq_logcamp_fft(vis_arr, A, log_clamp, sigma, order=FFT_INTERP_DEFAULT):
+def chisq_logcamp_fft(vis_arr, A, log_clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared from fft
     """
-    
-    im_info, (uv1, uv2, uv3, uv4) = A
-    samples = np.log(sampler(vis_arr, im_info, [uv1, uv2, uv3, uv4], order=order, sample_type="camp"))
-    chisq = np.sum(np.abs((log_clamp - samples)/sigma)**2) / (len(log_clamp))
+
+    im_info, sampler_info_list, gridder_info_list = A
+    log_clamp_samples = np.log(sampler(vis_arr, sampler_info_list, sample_type='camp'))
+
+    chisq = np.sum(np.abs((log_clamp - log_clamp_samples)/sigma)**2) / (len(log_clamp))
 
     return chisq
 
-def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma,
-                          order=FFT_INTERP_DEFAULT, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
+def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma):
 
     """The gradient of the closure amplitude chi-squared from fft
     """
 
-    im_info, (uv1, uv2, uv3, uv4) = A
-    (xdim, ydim, npad, psize, pulse) = im_info
+    im_info, sampler_info_list, gridder_info_list = A
 
-    # parameters to unpad the array  
-    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
-    if xdim % 2:
-        padvalx2 += 1
-    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
-    if ydim % 2:
-        padvaly2 += 1
-
-    # extra gridding phases and pulse factors
-    phase1 = np.exp(-1j*np.pi*psize*(uv1[:,0] + uv1[:,1]))
-    phase2 = np.exp(-1j*np.pi*psize*(uv2[:,0] + uv2[:,1]))
-    phase3 = np.exp(-1j*np.pi*psize*(uv3[:,0] + uv3[:,1]))
-    phase4 = np.exp(-1j*np.pi*psize*(uv4[:,0] + uv4[:,1]))
-    pulsefac1 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv1])
-    pulsefac2 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv2])
-    pulsefac3 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv3])
-    pulsefac4 = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv4])
-
-    # sampled visibilities and closure amplitudes
-    v1 = sampler(vis_arr, im_info, [uv1], order=order, sample_type="vis")
-    v2 = sampler(vis_arr, im_info, [uv2], order=order, sample_type="vis")
-    v3 = sampler(vis_arr, im_info, [uv3], order=order, sample_type="vis")
-    v4 = sampler(vis_arr, im_info, [uv4], order=order, sample_type="vis")
+    # sampled visibility and closure amplitudes
+    v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
+    v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
+    v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
+    v4 = sampler(vis_arr, [sampler_info_list[3]], sample_type="vis")
 
     log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
 
     # gradient components
     pp = (-2.0/len(log_clamp)) * (log_clamp - log_clamp_samples) / (sigma**2)
-    pt1 = pp / v1.conj()
-    pt2 = pp / v2.conj()
-    pt3 = -pp / v3.conj()
-    pt4 = -pp / v4.conj()
+    pt1 = pp / v1.conj()* sampler_info_list[0].pulsefac.conj()
+    pt2 = pp / v2.conj()* sampler_info_list[1].pulsefac.conj()
+    pt3 = -pp / v3.conj()* sampler_info_list[2].pulsefac.conj()
+    pt4 = -pp / v4.conj()* sampler_info_list[3].pulsefac.conj()
 
-    # grid and perform the inverse FFT
-    wdiff_arr1 = gridder(pt1 * phase1.conj() * pulsefac1.conj(), im_info, uv1, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr2 = gridder(pt2 * phase2.conj() * pulsefac2.conj(), im_info, uv2, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr3 = gridder(pt3 * phase3.conj() * pulsefac3.conj(), im_info, uv3, conv_func=conv_func, p_rad=p_rad)    
-    wdiff_arr4 = gridder(pt4 * phase4.conj() * pulsefac4.conj(), im_info, uv4, conv_func=conv_func, p_rad=p_rad)    
-
-    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr1 + wdiff_arr2 + wdiff_arr3 + wdiff_arr4))) * npad * npad
+    # Setup and perform the inverse FFT
+    wdiff = gridder([pt1,pt2,pt3,pt4], gridder_info_list)
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
     # extract relevant cells and flatten
-    out = np.real(grad_arr[padvalx1:-padvalx2,padvaly1:-padvaly2].flatten()) # TODO or is x<-->y??
+    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten()) # TODO or is x<-->y??
 
     return out
 
@@ -1209,8 +1097,8 @@ def chisqdata_logcamp(Obsdata, Prior, mask):
     return (clamp, sigma, A4)
 
 
-
-def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=1):
+def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=1,
+                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the visibilities, sigmas, uv points, and image info
     """
 
@@ -1219,15 +1107,20 @@ def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=1):
     vis = data_arr['vis']
     sigma = data_arr['sigma']
 
-    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
-    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+    im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
-    A = (im_info, uv) 
+    gs_info = make_gridder_and_sampler_info(im_info, uv, conv_func=conv_func, p_rad=p_rad, order=order)
+    sampler_info_list = [gs_info[0]]
+    gridder_info_list = [gs_info[1]]
+
+    A = (im_info, sampler_info_list, gridder_info_list)
 
     return (vis, sigma, A)
 
-def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=1):
+def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=1,
+                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the amplitudes, sigmas, uv points, and image info
     """
 
@@ -1236,15 +1129,19 @@ def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=1):
     amp = data_arr['amp']
     sigma = data_arr['sigma']
 
-    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
-    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+    im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
-    A = (im_info, uv) # to maintain compatibility with chisq() wrapper
+    gs_info = make_gridder_and_sampler_info(im_info, uv, conv_func=conv_func, p_rad=p_rad, order=order)
+    sampler_info_list = [gs_info[0]]
+    gridder_info_list = [gs_info[1]]
 
+    A = (im_info, sampler_info_list, gridder_info_list)
     return (amp, sigma, A)
 
-def chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=1):
+def chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=1,
+                     order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the bispectra, sigmas, uv points, and image info
     """
     biarr = Obsdata.bispectra(mode="all", count="min")
@@ -1254,15 +1151,21 @@ def chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=1):
     bi = biarr['bispec']
     sigma = biarr['sigmab']
 
-    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
-    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+    im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
-    A = (im_info, [uv1, uv2, uv3]) 
+    gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+    sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0]]
+    gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1]]
 
+    A = (im_info, sampler_info_list, gridder_info_list)
     return (bi, sigma, A)
 
-def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=1):
+def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=1,
+                         order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the closure phases, sigmas, uv points, and image info
     """
     clphasearr = Obsdata.c_phases(mode="all", count="min")
@@ -1272,15 +1175,21 @@ def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=1):
     clphase = clphasearr['cphase']
     sigma = clphasearr['sigmacp']
 
-    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
-    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+    im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
-    A = (im_info, [uv1, uv2, uv3])
+    gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+    sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0]]
+    gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1]]
 
+    A = (im_info, sampler_info_list, gridder_info_list)
     return (clphase, sigma, A)
 
-def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=1):
+def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=1,
+                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the closure phases, sigmas, uv points, and image info
     """
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=True)
@@ -1291,15 +1200,22 @@ def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=1):
     clamp = clamparr['camp']
     sigma = clamparr['sigmaca']
 
-    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
-    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+    im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
-    A = (im_info, [uv1, uv2, uv3, uv4]) 
+    gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info4 = make_gridder_and_sampler_info(im_info, uv4, conv_func=conv_func, p_rad=p_rad, order=order)
+    sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0],gs_info4[0]]
+    gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1],gs_info4[1]]
 
+    A = (im_info, sampler_info_list, gridder_info_list)
     return (clamp, sigma, A)
 
-def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=1):
+def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=1,
+                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the closure phases, sigmas, uv points, and image info
     """
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=True)
@@ -1310,17 +1226,57 @@ def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=1):
     clamp = clamparr['camp']
     sigma = clamparr['sigmaca']
 
-    npad = fft_pad_frac * np.max((Prior.xdim, Prior.ydim))
+    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
-    im_info = (Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+    im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
-    A = (im_info, [uv1, uv2, uv3, uv4]) 
+    gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info4 = make_gridder_and_sampler_info(im_info, uv4, conv_func=conv_func, p_rad=p_rad, order=order)
+    sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0],gs_info4[0]]
+    gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1],gs_info4[1]]
 
+    A = (im_info, sampler_info_list, gridder_info_list)
     return (clamp, sigma, A)
 
 ##################################################################################################
 # FFT functions
 ##################################################################################################
+
+class SamplerInfo(object):
+    def __init__(self, order, uv, pulsefac):
+        self.order = int(order)
+        self.uv = uv
+        self.pulsefac = pulsefac
+
+class GridderInfo(object):
+    def __init__(self, npad, func, p_rad, coords, weights):
+        self.npad = int(npad)
+        self.conv_func = func
+        self.p_rad = int(p_rad)
+        self.coords = coords
+        self.weights = weights
+
+class ImInfo(object):
+    def __init__(self, xdim, ydim, npad, psize, pulse):
+        self.xdim = int(xdim)
+        self.ydim = int(ydim)
+        self.npad = int(npad)
+        self.psize = psize
+        self.pulse = pulse
+
+        padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+        if xdim % 2:
+            padvalx2 += 1
+        padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+        if ydim % 2:
+            padvaly2 += 1
+
+        self.padvalx1 = padvalx1
+        self.padvalx2 = padvalx2
+        self.padvaly1 = padvaly1
+        self.padvaly2 = padvaly2
 
 def conv_func_pill(x,y):
     if abs(x) < 0.5 and abs(y) < 0.5:
@@ -1332,31 +1288,45 @@ def conv_func_pill(x,y):
 def conv_func_gauss(x,y):
     return np.exp(-(x**2 + y**2))
 
-# There's a bug in my version of scipy with spheroidal function of order 0! - gives nans for eta<1
-def conv_func_spheroidal(x,y,p,m):
-    etax = 2.*x/float(p)
-    etay = 2.*x/float(p)
-    psix =  abs(1-etax**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etax)[0]
-    psiy = abs(1-etay**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etay)[0]
+def conv_func_cubicspline(x,y):
+    if abs(x) <= 1:
+        fx = 1.5*abs(x)**3 - 2.5*abs(x)**2 + 1
+    elif abs(x) < 2:
+        fx = -0.5*abs(x)**3 + 2.5*abs(x)**2 -4*abs(x) + 2
+    else: 
+        fx = 0
 
-    return psix*psiy
+    if abs(y) <= 1:
+        fy = 1.5*abs(y)**3 - 2.5*abs(y)**2 + 1
+    elif abs(y) < 2:
+        fy = -0.5*abs(y)**3 + 2.5*abs(y)**2 - 4*abs(y) + 2
+    else: 
+        fy = 0
+
+    return fx*fy
+
+
+# There's a bug in my version of scipy with spheroidal function of order 0! - gives nans for eta<1
+#def conv_func_spheroidal(x,y,p,m):
+#    etax = 2.*x/float(p)
+#    etay = 2.*x/float(p)
+#    psix =  abs(1-etax**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etax)[0]
+#    psiy = abs(1-etay**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etay)[0]
+#    return psix*psiy
 
 def fft_imvec(imvec, im_info):
     """
     Returns fft of imvec on  grid
-    im_info = (xdim, ydim, npad, psize, pulse) = im_info
+    im_info = (xdim, ydim, npad, psize, pulse)
     order is the order of the spline interpolation
     """
 
-    (xdim, ydim, npad, psize, pulse) = im_info
-
-    # Pad image    
-    padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
-    if xdim % 2:
-        padvalx2 += 1
-    padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
-    if ydim % 2:
-        padvaly2 += 1
+    xdim = im_info.xdim
+    ydim = im_info.ydim
+    padvalx1 = im_info.padvalx1
+    padvalx2 = im_info.padvalx2
+    padvaly1 = im_info.padvaly1
+    padvaly2 = im_info.padvaly2
 
     imarr = imvec.reshape(ydim, xdim)
     imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
@@ -1365,13 +1335,189 @@ def fft_imvec(imvec, im_info):
         raise Exception("FFT padding did not return a square image!")
 
     # FFT for visibilities
-    # TODO can we get rid of the fftshifts?
     vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
 
     return vis_im
 
-# TODO add other sample types
-def sampler(griddata, im_info, uvset, sample_type="vis", order=3):
+def sampler(griddata, sampler_info_list, sample_type="vis"):
+    """
+    Samples griddata (e.g. the FFT of an image) at uv points 
+    the griddata should already be rotated so u,v = 0,0 is in the center
+    sampler_info_list is an appropriately ordered list of 4 sampler_info objects
+    order is the order of the spline interpolation
+    """
+    if sample_type not in ["vis","bs","camp"]:
+        raise Exception("sampler sample_type should be either 'vis','bs',or 'camp'!")
+    if griddata.shape[0] != griddata.shape[1]:
+        raise Exception("griddata should be a square array!")
+
+    dataset = []
+    for sampler_info in sampler_info_list:
+
+        vu2 = sampler_info.uv
+        pulsefac = sampler_info.pulsefac
+
+        datare = nd.map_coordinates(np.real(griddata), vu2, order=sampler_info.order)
+        dataim = nd.map_coordinates(np.imag(griddata), vu2, order=sampler_info.order)
+
+        data = datare + 1j*dataim
+        data = data * pulsefac
+
+        dataset.append(data)
+ 
+    if sample_type=="vis":
+        out = dataset[0]
+    if sample_type=="bs":
+        out = dataset[0]*dataset[1]*dataset[2]
+    if sample_type=="camp":
+        out = np.abs((dataset[0]*dataset[1])/(dataset[2]*dataset[3]))
+    return out
+
+def gridder(data_list, gridder_info_list):
+    """
+    Grid the data sampled at uv points on a square array
+    gridder_info_list is an list of gridder_info objects
+    """
+
+    if len(data_list) != len(gridder_info_list):
+        raise Exception("length of data_list in gridder() " + 
+                         "is not equal to length of gridder_info_list!")
+
+    npad = gridder_info_list[0].npad
+    datagrid = np.zeros((npad, npad)).astype('c16')
+
+    for k in range(len(gridder_info_list)):
+        gridder_info = gridder_info_list[k]
+        data = data_list[k]
+
+        if gridder_info.npad != npad:
+            raise Exception("npad values not consistent in gridder_info_list!")
+
+        p_rad = gridder_info.p_rad
+        coords = gridder_info.coords
+        weights = gridder_info.weights
+        
+        p_rad = int(p_rad)
+        for i in range(2*p_rad+1):
+            dy = i - p_rad
+            for j in range(2*p_rad+1):
+                dx = j - p_rad
+                weight = weights[i][j]
+                np.add.at(datagrid, tuple(map(tuple, (coords + [dy, dx]).transpose())), data*weight)
+    
+    return datagrid
+
+def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT, order=FFT_INTERP_DEFAULT):
+    """
+    Prep norms and weights for gridding data sampled at uv points on a square array
+    im_info tuple contains (xdim, ydim, npad, psize, pulse) of the grid
+    conv_func is the convolution function: current options are "pillbox", "gaussian"
+    p_rad is the pixel radius inside wich the conv_func is nonzero
+    """
+
+    if not (conv_func in ['pillbox','gaussian','cubic']):
+        raise Exception("conv_func must be either 'pillbox', 'gaussian', or, 'cubic'")
+
+    xdim = im_info.xdim
+    ydim = im_info.ydim
+    npad = im_info.npad
+    psize = im_info.psize
+    pulse = im_info.pulse
+
+    #compute grid u,v coordinates
+    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    du  = 1.0/(npad*psize)
+    vu2 = (vu2/du + 0.5*npad)
+
+    coords = np.round(vu2).astype(int)
+    dcoords = vu2 - np.round(vu2).astype(int)
+    vu2  = vu2.T
+
+    #compute pulse & grid phase factor
+    phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
+    pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
+    pulsefac = pulsefac * phase
+
+    #compute gridder norm
+    weights = []
+    norm = np.zeros_like(len(coords))
+    for i in range(2*p_rad+1):
+        weights.append([])
+        dy = i - p_rad
+        for j in range(2*p_rad+1):
+            dx = j - p_rad
+            if conv_func == 'gaussian':
+                norm = norm + conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1]) 
+            elif conv_func == 'pillbox':
+                norm = norm + conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])
+            elif conv_func == 'cubic':
+                norm = norm + conv_func_cubicspline(dy - dcoords[:,0], dx - dcoords[:,1])
+
+            weights[i].append(None)
+
+    #compute weights
+    for i in range(2*p_rad+1):
+        dy = i - p_rad
+        for j in range(2*p_rad+1):
+            dx = j - p_rad
+            if conv_func == 'gaussian':
+                weight = conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            elif conv_func == 'pillbox':
+                weight = conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            elif conv_func == 'cubic':
+                weight = conv_func_cubicspline(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+
+            weights[i][j] = weight
+
+    #output the coordinates, norms, and weights
+    sampler_info = SamplerInfo(order, vu2, pulsefac)
+    gridder_info = GridderInfo(npad, conv_func, p_rad, coords, weights)
+    return (sampler_info, gridder_info)
+
+
+def gridder_old(data, im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
+    """
+    Grid data sampled at uv points on a square array
+    im_info tuple contains (xdim, ydim, npad, psize, pulse) of the grid
+    conv_func is the convolution function: current options are "pillbox", "gaussian"
+    p_rad is the pixel radius inside wich the conv_func is nonzero
+    """
+
+    (xdim, ydim, npad, psize, pulse) = im_info
+
+    if len(uv) != len(data):
+        raise Exception("uv and data are not the same length!")
+    if not (conv_func in ['pillbox','gaussian']):
+        raise Exception("conv_func must be either 'pillbox' or 'gaussian'")
+
+    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    du  = 1.0/(npad*psize)
+    vu2 = (vu2/du + 0.5*npad)
+
+    datagrid = np.zeros((npad, npad)).astype('c16')
+    coords = np.round(vu2).astype(int)
+    dcoords = vu2 - np.round(vu2).astype(int)
+    norm = np.zeros_like(len(coords))
+
+    for dy in range(-p_rad, p_rad+1): 
+        for dx in range(-p_rad, p_rad+1):
+            if conv_func == 'gaussian':
+                norm = norm + conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1]) 
+            elif conv_func == 'pillbox':
+                norm = norm + conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1]) 
+
+    for dy in range(-p_rad, p_rad+1): 
+        for dx in range(-p_rad, p_rad+1):
+            if conv_func == 'gaussian':
+                weight = conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            elif conv_func == 'pillbox':
+                weight = conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            np.add.at(datagrid, tuple(map(tuple, (coords + [dy, dx]).transpose())), data*weight)
+    
+    return datagrid
+
+
+def sampler_old(griddata, im_info, uvset, sample_type="vis", order=3):
     """
     Samples griddata (e.g. the FFT of an image) at uv points 
     the griddata should already be rotated so u,v = 0,0 is in the center
@@ -1417,80 +1563,6 @@ def sampler(griddata, im_info, uvset, sample_type="vis", order=3):
     if sample_type=="camp":
         out = np.abs((dataset[0]*dataset[1])/(dataset[2]*dataset[3]))
     return out
-
-def gridder(data, im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
-    """
-    Grid data sampled at uv points on a square array
-    im_info tuple contains (xdim, ydim, npad, psize, pulse) of the grid
-    conv_func is the convolution function: current options are "pillbox", "gaussian"
-    p_rad is the pixel radius inside wich the conv_func is nonzero
-    """
-
-    (xdim, ydim, npad, psize, pulse) = im_info
-
-    if len(uv) != len(data):
-        raise Exception("uv and data are not the same length!")
-    if not (conv_func in ['pillbox','gaussian']):
-        raise Exception("conv_func must be either 'pillbox' or 'gaussian'")
-
-    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-    du  = 1.0/(npad*psize)
-    vu2 = (vu2/du + 0.5*npad)
-
-    datagrid = np.zeros((npad, npad)).astype('c16')
-    coords = np.round(vu2).astype(int)
-    dcoords = vu2 - np.round(vu2).astype(int)
-    norm = np.zeros_like(len(coords))
-
-    for dy in range(-p_rad, p_rad+1): 
-        for dx in range(-p_rad, p_rad+1):
-            if conv_func == 'gaussian':
-                norm = norm + conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1]) 
-            elif conv_func == 'pillbox':
-                norm = norm + conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1]) 
-
-    for dy in range(-p_rad, p_rad+1): 
-        for dx in range(-p_rad, p_rad+1):
-            if conv_func == 'gaussian':
-                weight = conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1])/norm
-            elif conv_func == 'pillbox':
-                weight = conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])/norm
-            np.add.at(datagrid, tuple(map(tuple, (coords + [dy, dx]).transpose())), data*weight)
-    
-    return datagrid
-
-#    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-#    du  = 1.0/(npad*psize)
-#    vu2 = (vu2/du + 0.5*npad)
-
-#    datagrid = np.zeros((npad, npad)).astype('c16')
-#    for k in range(len(data)):
-#        point = vu2[k]
-#        vispoint = data[k]
-
-#        vumin = np.ceil(point - p_rad).astype(int)
-#        vumax = np.floor(point + p_rad).astype(int)
-
-#        norm = 0.0 # Need to normalize the conv_func
-#        for i in np.arange(vumin[0], vumax[0]+1):
-#            for j in np.arange(vumin[1], vumax[1]+1):
-#                
-#                if conv_func == 'pillbox':
-#                    norm += conv_func_pill(j-point[1], i-point[0])
-
-#                elif conv_func == 'gaussian':
-#                    norm += conv_func_gauss(j-point[1], i-point[0])
-#        
-#        for i in np.arange(vumin[0], vumax[0]+1):
-#            for j in np.arange(vumin[1], vumax[1]+1):
-#                
-#                if conv_func == 'pillbox':
-#                    datagrid[i,j] += conv_func_pill(j-point[1], i-point[0]) * vispoint / norm
-
-#                elif conv_func == 'gaussian':
-#                    datagrid[i,j] += conv_func_gauss(j-point[1], i-point[0]) * vispoint / norm
-
-#    return datagrid
 
 ##################################################################################################
 # Restoring and Plotting Functions
