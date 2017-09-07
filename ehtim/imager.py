@@ -14,20 +14,28 @@ from ehtim.imaging.imager_utils import *
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
-NHIST = 100 # number of steps to store for hessian approx
-STOP = 1e-10 # convergence criterion
+NHIST = 50 # number of steps to store for hessian approx
+STOP = 1e-6 # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm']
 
+GRIDDER_P_RAD_DEFAULT = 2
+GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
+FFT_PAD_DEFAULT = 2
+FFT_INTERP_DEFAULT = 3
+
 ###########################################################################################################################################
 #Imager object
 ###########################################################################################################################################
+#TODO can we streamline parameters into a dictionary? 
 class Imager(object):
     """A general interferometric imager.
     """
 
-    def __init__(self, obsdata, init_im, prior_im=None,  flux=None, clipfloor=0., maxit=50, transform='log', data_term={'vis':100}, reg_term={'simple':1}, scattering_model=None, alpha_phi=1e4):
+    def __init__(self, obsdata, init_im, prior_im=None, flux=None, clipfloor=0., maxit=50, 
+                       transform='log', ttype='fast', data_term={'vis':100}, reg_term={'simple':1}, 
+                       scattering_model=None, alpha_phi=1e4):
 
         self.logstr = ""
         self._obs_list = []
@@ -41,6 +49,7 @@ class Imager(object):
         self._maxit_list = []
         self._flux_list = []
         self._transform_list = []
+        self._ttype_list = []
 
         # Parameters for the next imaging iteration
         self.reg_term_next = reg_term #e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
@@ -58,6 +67,14 @@ class Imager(object):
             self.flux_next = self.prior_next.total_flux()
         else:
             self.flux_next = flux
+
+        # FFT parameters
+        self.ttype_next = ttype
+        self.fft_gridder_prad = GRIDDER_P_RAD_DEFAULT
+        self.fft_conv_func = GRIDDER_CONV_FUNC_DEFAULT
+        self.fft_pad_frac = FFT_PAD_DEFAULT
+        self.fft_interp_order = FFT_INTERP_DEFAULT
+
 
         # Parameters related to scattering
         self.scattering_model = scattering_model
@@ -130,6 +147,10 @@ class Imager(object):
 
         # determine if we need to change the saved imager parameters on the next imager run
         if self.nruns == 0:
+            return
+
+        if self.ttype_next != self.ttype_last():
+            self._change_imgr_params = True
             return
 
         if len(self.reg_term_next) != len(self.reg_terms_last()):
@@ -258,6 +279,14 @@ class Imager(object):
             return
         return self._transform_list[-1]
 
+    def ttype_last(self):
+        """Return last fourier transform type used.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._ttype_list[-1]
+
     def init_imager_I(self):
         """Set up Stokes I imager.
         """
@@ -271,7 +300,9 @@ class Imager(object):
         if self._change_imgr_params:
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
-                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname)
+                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
+                                ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_frac=self.fft_pad_frac, 
+                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad)
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
 
@@ -309,7 +340,7 @@ class Imager(object):
             sigma = self._data_tuples[dname][1]
             A = self._data_tuples[dname][2]
 
-            chi2 = chisq(imvec, A, data, sigma, dname)
+            chi2 = chisq(imvec, A, data, sigma, dname, ttype=self.ttype_next, mask=self._embed_mask)
             chi2_dict[dname] = chi2
 
         return chi2_dict
@@ -323,7 +354,7 @@ class Imager(object):
             sigma = self._data_tuples[dname][1]
             A = self._data_tuples[dname][2]
 
-            chi2grad = chisqgrad(imvec, A, data, sigma, dname)
+            chi2grad = chisqgrad(imvec, A, data, sigma, dname, ttype=self.ttype_next, mask=self._embed_mask)
             chi2grad_dict[dname] = chi2grad
 
         return chi2grad_dict
@@ -780,6 +811,7 @@ class Imager(object):
         self._maxit_list.append(self.maxit_next)
         self._transform_list.append(self.transform_next)
         self._reg_term_list.append(self.reg_term_next)
+        self._ttype_list.append(self.ttype_next)
         self._dat_term_list.append(self.dat_term_next)
         self._alpha_phi_list.append(self.alpha_phi_next)
 

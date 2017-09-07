@@ -44,10 +44,10 @@ Documentation
    scattering
 
 
-Documentation is in progress, but here are some ways to learn to use the code: 
+The documentation is in progress, but here are some other ways to learn to use the code: 
 
-- The file example.py has a series of sample commands to load an image and array, generate data, and produce an image. 
-- `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the vlbi imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image. Note that this presentation used a previous version of the code -- function names and prefixes will need to be updated.
+- The file examples/example.py has a series of sample commands to load an image and array, generate data, and produce an image. 
+- `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the vlbi imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image.
 
 
 Acknowledgements

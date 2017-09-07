@@ -546,7 +546,6 @@ class Image(object):
 #                          for x in np.arange(0, -xdim_new, -1)]
 #                          for y in np.arange(0, -ydim_new, -1)] )
 #
-#
 #        # Normalize
 #        scaling = np.sum(im.imvec) / np.sum(out)
 #        out *= scaling

@@ -23,41 +23,24 @@ import math
 import cmath
 
 ################################################################################
-# The class ScatteringModel encompasses a generic scattering model, determined by the power spectrum Q and phase structure function Dphi
+# The class ScatteringModel enscompasses a generic scattering model, determined by the power spectrum Q and phase structure function Dphi
 ################################################################################
 
 class ScatteringModel(object):
     """A scattering model based on a thin-screen approximation.
-<<<<<<< HEAD
+
        Models include:
-           {'von_Mises', 'boxcar', 'dipole'}: These scattering models are motivated by observations of Sgr A*.
-                     Each gives a Gaussian at long wavelengths that matches the model defined
-                     by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
-                     with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
-                     at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
-                     if the reference wavelength is short enough to be beyond the lambda^2 regime!
-                     This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
-                     Note: This model *requires* a finite inner scale
+           ('von_Mises', 'boxcar', 'dipole'): These scattering models are motivated by observations of Sgr A*.
+            Each gives a Gaussian at long wavelengths that matches the model defined
+            by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
+            with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
+            at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
+            if the reference wavelength is short enough to be beyond the lambda^2 regime!
+            This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
+            Note: This model *requires* a finite inner scale
            'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
             The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
             The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov
-=======
-      
-       Models include: 
-       
-       'simple': This scattering model is motivated by observations of Sgr A*.
-       It gives a Gaussian at long wavelengths that matches the model defined
-       by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm
-       with a lambda^2 scaling. The source sizes {theta_maj, theta_min} are the image FWHM in milliarcseconds
-       at the reference wavelength. Note that this may not match the ensemble-average kernel at the reference wavelength,
-       if the reference wavelength is short enough to be beyond the lambda^2 regime!
-       This model also includes an inner and outer scale and will thus transition to scattering with scatt_alpha at shorter wavelengths
-       Note: This model *requires* a finite inner scale
-
-       'power-law': This scattering model gives a pure power law at all wavelengths. There is no inner scale, but there can be an outer scale.
-       The ensemble-average image is given by {theta_maj_mas_ref, theta_min_mas_ref, POS_ANG} at the reference wavelength wavelength_reference_cm.
-       The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) = wavelength^(11/5) for Kolmogorov
->>>>>>> d74d72fb17c72420d342e8f374e517ae238c7503
 
        Attributes:
             model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).

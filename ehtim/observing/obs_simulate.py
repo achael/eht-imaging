@@ -923,7 +923,6 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     sigma_est = sigma_perf * gain_true * tau_est
 
     if add_th_noise:
-        print ("ADD NOISE")
         vis  = (vis  + cerror(sigma_true))
         qvis = (qvis + cerror(sigma_true))
         uvis = (uvis + cerror(sigma_true))
