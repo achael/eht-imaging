@@ -101,6 +101,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     #print ("Regularizer terms: %s, %s\n" % (s1,s2))
 
     # Make sure data and regularizer options are ok
+    if ttype not in ['fast','direct']:
+        raise Exception("Possible ttype values are 'fast' and 'direct'!")
     if not d1 and not d2:
         raise Exception("Must have at least one data term!")
 
@@ -311,6 +313,8 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     chisq = 1 
     if not dtype in DATATERMS:
         return chisq
+    if ttype not in ['fast','direct']:
+        raise Exception("Possible ttype values are 'fast' and 'direct'!")
 
     if ttype == 'direct':
         if dtype == 'vis':
@@ -360,6 +364,8 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     chisqgrad = np.zeros(len(imvec))
     if not dtype in DATATERMS:
         return chisqgrad
+    if ttype not in ['fast','direct']:
+        raise Exception("Possible ttype values are 'fast' and 'direct'!")
 
     if ttype == 'direct':
         if dtype == 'vis':
@@ -457,7 +463,8 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct',
     """
 
     (data, sigma, A) = (False, False, False)
-
+    if ttype not in ['fast','direct']:
+        raise Exception("Possible ttype values are 'fast' and 'direct'!")
     if ttype=='direct':
         if dtype == 'vis':
             (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask)

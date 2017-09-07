@@ -144,6 +144,9 @@ class Imager(object):
             (self.prior_next.xdim != self.init_next.xdim) or
             (self.prior_next.ydim != self.prior_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
+    
+        if self.ttype_next not in ['fast','direct']:
+            raise Exception("Possible ttype_next values are 'fast' and 'direct'!")
 
         # determine if we need to change the saved imager parameters on the next imager run
         if self.nruns == 0:
