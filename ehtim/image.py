@@ -416,7 +416,7 @@ class Image(object):
         """
         
         fov_x = self.xdim * self.psize
-        fov_y = self.ydim * iselfm.psize
+        fov_y = self.ydim * self.psize
         
         x = np.linspace(-fov_x/2, fov_x/2, self.xdim)
         y = np.linspace(-fov_y/2, fov_y/2, self.ydim)
@@ -432,7 +432,7 @@ class Image(object):
 
         outim = Image(tmpimg, targetfov/npix, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
-        if len(im.qvec):
+        if len(self.qvec):
             interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.qvec, (self.ydim, self.xdim) ) )
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget)>fov_x/2.,:] = 0.0
@@ -447,7 +447,7 @@ class Image(object):
 
             outim.add_qu(outq, outu)
 
-        if len(im.vvec):
+        if len(self.vvec):
             interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.vvec, (self.ydim, self.xdim) ) )
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget)>fov_x/2.,:] = 0.0
@@ -517,71 +517,71 @@ class Image(object):
             error.append( np.sqrt( np.sum(  (im1_pad.imvec - im2_shift.imvec)**2 ) * im1_pad.psize**2 ) )
         return (error, im1_pad, im2_shift)
 
-#    def resample_square(self, xdim_new, ker_size=5):
-#        """Resample the image to new (square) dimensions
-#           Args:
-#                xdim_new  (int): new pixel dimension 
-#                ker_size  (int): kernel size for resampling
-#           Returns:
-#                im_resampled (Image): resampled image 
-#        """
-#
-#        im = self
-#        if im.xdim != im.ydim:
-#            raise Exception("Image must be square!")
-#        if im.pulse == ehtim.observing.pulses.deltaPulse2D:
-#            raise Exception("This function only works on continuously parametrized images: does not work with delta pulses!")
-#
-#        ydim_new = xdim_new
-#        fov = im.xdim * im.psize
-#        psize_new = fov / xdim_new
-#        ij = np.array([[[i*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0, j*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0]
-#                        for i in np.arange(0, -im.xdim, -1)]
-#                        for j in np.arange(0, -im.ydim, -1)]).reshape((im.xdim*im.ydim, 2))
-#        def im_new(x,y):
-#            mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
-#            return np.sum([im.imvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-#
-#        out = np.array([[im_new(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-#                          for x in np.arange(0, -xdim_new, -1)]
-#                          for y in np.arange(0, -ydim_new, -1)] )
-#
-#        # Normalize
-#        scaling = np.sum(im.imvec) / np.sum(out)
-#        out *= scaling
-#        outim = Image(out, psize_new, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
-#
-#        # Q and U images
-#        if len(im.qvec):
-#            def im_new_q(x,y):
-#                mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) *
-#                        ((y - ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y + ker_size*im.psize/2.0))).flatten()
-#                return np.sum([im.qvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-#            def im_new_u(x,y):
-#                mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) *
-#                        ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
-#                return np.sum([im.uvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-#            outq = np.array([[im_new_q(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-#                          for x in np.arange(0, -xdim_new, -1)]
-#                          for y in np.arange(0, -ydim_new, -1)] )
-#            outu = np.array([[im_new_u(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-#                          for x in np.arange(0, -xdim_new, -1)]
-#                          for y in np.arange(0, -ydim_new, -1)] )
-#            outq *= scaling
-#            outu *= scaling
-#            outim.add_qu(outq, outu)
-#        if len(im.vvec):
-#            def im_new_v(x,y):
-#                mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) *
-#                        ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
-#                return np.sum([im.vvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
-#            outv = np.array([[im_new_v(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
-#                          for x in np.arange(0, -xdim_new, -1)]
-#                          for y in np.arange(0, -ydim_new, -1)] )
-#            outv *= scaling
-#            outim.add_v(outv)
-#        return outim
-#
+    def resample_square(self, xdim_new, ker_size=5):
+        """Resample the image to new (square) dimensions
+           Args:
+                xdim_new  (int): new pixel dimension 
+                ker_size  (int): kernel size for resampling
+           Returns:
+                im_resampled (Image): resampled image 
+        """
+
+        im = self
+        if im.xdim != im.ydim:
+            raise Exception("Image must be square!")
+        if im.pulse == ehtim.observing.pulses.deltaPulse2D:
+            raise Exception("This function only works on continuously parametrized images: does not work with delta pulses!")
+
+        ydim_new = xdim_new
+        fov = im.xdim * im.psize
+        psize_new = fov / xdim_new
+        ij = np.array([[[i*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0, j*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0]
+                        for i in np.arange(0, -im.xdim, -1)]
+                        for j in np.arange(0, -im.ydim, -1)]).reshape((im.xdim*im.ydim, 2))
+        def im_new(x,y):
+            mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) * ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+            return np.sum([im.imvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
+
+        out = np.array([[im_new(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                          for x in np.arange(0, -xdim_new, -1)]
+                          for y in np.arange(0, -ydim_new, -1)] )
+
+        # Normalize
+        scaling = np.sum(im.imvec) / np.sum(out)
+        out *= scaling
+        outim = Image(out, psize_new, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+
+        # Q and U images
+        if len(im.qvec):
+            def im_new_q(x,y):
+                mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) *
+                        ((y - ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y + ker_size*im.psize/2.0))).flatten()
+                return np.sum([im.qvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
+            def im_new_u(x,y):
+                mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) *
+                        ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+                return np.sum([im.uvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
+            outq = np.array([[im_new_q(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                          for x in np.arange(0, -xdim_new, -1)]
+                          for y in np.arange(0, -ydim_new, -1)] )
+            outu = np.array([[im_new_u(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                          for x in np.arange(0, -xdim_new, -1)]
+                          for y in np.arange(0, -ydim_new, -1)] )
+            outq *= scaling
+            outu *= scaling
+            outim.add_qu(outq, outu)
+        if len(im.vvec):
+            def im_new_v(x,y):
+                mask = (((x - ker_size*im.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*im.psize/2.0)) *
+                        ((y-ker_size*im.psize/2.0) < ij[:,1]) * (ij[:,1] < (y+ker_size*im.psize/2.0))).flatten()
+                return np.sum([im.vvec[n] * im.pulse(x-ij[n,0], y-ij[n,1], im.psize, dom="I") for n in np.arange(len(im.imvec))[mask]])
+            outv = np.array([[im_new_v(x*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0, y*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0)
+                          for x in np.arange(0, -xdim_new, -1)]
+                          for y in np.arange(0, -ydim_new, -1)] )
+            outv *= scaling
+            outim.add_v(outv)
+        return outim
+
 #    def im_pad(self, fovx, fovy):
 #        """Pad an image to new fov_x by fov_y in radian.
 #           Args:
