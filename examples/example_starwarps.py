@@ -167,7 +167,7 @@ for iter in range(0, nIters+1):
         avgImg.imvec = np.mean([im.imvec for im in expVal_t],axis=0)
     
         #save flow diagram
-        plt.figure(), sw.plot_Flow(avgImg, val[iter], init_x, init_y, flowbasis_x, flowbasis_y, initTheta, step=1)
+        plt.figure(), sw.plot_Flow(avgImg, thetas[iter], init_x, init_y, flowbasis_x, flowbasis_y, initTheta, step=1)
         plt.savefig(dirname + '/flow_' + str(iter) +  '.pdf')
 
         #save a movie
