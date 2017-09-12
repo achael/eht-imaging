@@ -91,8 +91,7 @@ class ScatteringModel(object):
             self.P_phi_prefac = (1.0 + self.kzeta)/(2.0*np.pi)   
         elif model == 'dipole':
             def dipole_Anisotropy(kzeta):                
-                #return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 1.0, -kzeta) - A**2 )  
-                return np.abs( (1.0 + kzeta)*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/(3.0*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, -0.5, 2.0, -kzeta) - (2.0 + kzeta + kzeta*self.scatt_alpha)*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)) - A**2 )
+                return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 2.0, -kzeta) - A**2 )  
 
             self.kzeta = minimize(dipole_Anisotropy, A, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
             self.P_phi_prefac = 1.0/(2.0*np.pi*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 1.0, -self.kzeta))       
