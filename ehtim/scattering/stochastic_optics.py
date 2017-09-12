@@ -100,8 +100,8 @@ class ScatteringModel(object):
             print("Scattering Model Not Recognized!")
 
         # More parameters for the approximate phase structure function 
-        int_maj = integrate.quad(lambda phi_q: np.abs( np.cos( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi)[0]  
-        int_min = integrate.quad(lambda phi_q: np.abs( np.sin( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi)[0]      
+        int_maj = integrate.quad(lambda phi_q: np.abs( np.cos( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]  
+        int_min = integrate.quad(lambda phi_q: np.abs( np.sin( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]      
         B_prefac = self.C_scatt_0 * 2.0**(2.0 - self.scatt_alpha) * np.pi**0.5/(self.scatt_alpha * sps.gamma((self.scatt_alpha + 1.0)/2.0))
         self.Bmaj_0 = B_prefac*int_maj
         self.Bmin_0 = B_prefac*int_min
@@ -179,7 +179,7 @@ class ScatteringModel(object):
         # This will be enforced externally
         # if qx == 0.0 and qy == 0.0:
         #     return 0.0
-        q = (qx**2 + qy**2)**0.5
+        q = (qx**2 + qy**2)**0.5 + 1e-12/self.r_in #Add a small offset to avoid division by zero
         phi_q = np.arctan2(qy, qx)
 
         return self.Qbar * (q*self.r_in)**(-(self.scatt_alpha + 2.0)) * np.exp(-(q * self.r_in)**2) * self.P_phi(phi_q)
