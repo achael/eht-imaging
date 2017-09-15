@@ -576,8 +576,9 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 
 
 #!AC TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, flipbl=False):
+def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
     """Load uvfits data from a uvfits file.
+       To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R' or 'L'
     """
 
     # Load the uvfits file
@@ -635,15 +636,41 @@ def load_obs_uvfits(filename, flipbl=False):
     else: raise Exception('Cannot find observing frequencies!')
 
 
+    # Determine the number of correlation products in the data
+    num_corr = data['DATA'].shape[5]
+    print("Number of Correlation Products:",num_corr)
+    if num_corr == 1 and force_singlepol != None:
+        print("Cannot force single polarization when file is not full polarization.")
+        force_singlepol = None
+
     # Mask to screen bad data
     # Reducing to single frequency
 
     #TODO CHECK THESE DECISIONS CAREFULLY!!!!
     rrweight = data['DATA'][:,0,0,0,:,0,2]
-    llweight = data['DATA'][:,0,0,0,:,1,2]
-    rlweight = data['DATA'][:,0,0,0,:,2,2]
-    lrweight = data['DATA'][:,0,0,0,:,3,2]
+    if num_corr >= 2: 
+        llweight = data['DATA'][:,0,0,0,:,1,2]
+    else:
+        llweight = rrweight * 0.0
+    if num_corr >= 3: 
+        rlweight = data['DATA'][:,0,0,0,:,2,2]
+    else:
+        rlweight = rrweight * 0.0
+    if num_corr >= 4: 
+        lrweight = data['DATA'][:,0,0,0,:,3,2]
+    else:
+        lrweight = rrweight * 0.0
 
+    # If necessary, enforce single polarization
+    if force_singlepol == 'L':
+        rrweight = rrweight * 0.0
+        rlweight = rlweight * 0.0
+        lrweight = lrweight * 0.0
+    elif force_singlepol == 'R':
+        llweight = llweight * 0.0
+        rlweight = rlweight * 0.0
+        lrweight = lrweight * 0.0
+        
     #TODO less than or equal to?
     rrmask_2d = (rrweight > 0.)
     llmask_2d = (llweight > 0.)
@@ -709,9 +736,18 @@ def load_obs_uvfits(filename, flipbl=False):
     #TODO: coherent average ok?
     #TODO 2d or 1d mask
     rr_2d = data['DATA'][:,0,0,0,:,0,0] + 1j*data['DATA'][:,0,0,0,:,0,1]
-    ll_2d = data['DATA'][:,0,0,0,:,1,0] + 1j*data['DATA'][:,0,0,0,:,1,1]
-    rl_2d = data['DATA'][:,0,0,0,:,2,0] + 1j*data['DATA'][:,0,0,0,:,2,1]
-    lr_2d = data['DATA'][:,0,0,0,:,3,0] + 1j*data['DATA'][:,0,0,0,:,3,1]
+    if num_corr >= 2: 
+        ll_2d = data['DATA'][:,0,0,0,:,1,0] + 1j*data['DATA'][:,0,0,0,:,1,1]
+    else:
+        ll_2d = rr_2d*0.0
+    if num_corr >= 3: 
+        rl_2d = data['DATA'][:,0,0,0,:,2,0] + 1j*data['DATA'][:,0,0,0,:,2,1]
+    else:
+        rl_2d = rr_2d*0.0
+    if num_corr >= 4: 
+        lr_2d = data['DATA'][:,0,0,0,:,3,0] + 1j*data['DATA'][:,0,0,0,:,3,1]
+    else:
+        lr_2d = rr_2d*0.0
 
     rr_2d[~rrmask_2d] = np.nan
     ll_2d[~llmask_2d] = np.nan
