@@ -639,10 +639,10 @@ def load_obs_uvfits(filename, flipbl=False):
     # Reducing to single frequency
 
     #TODO CHECK THESE DECISIONS CAREFULLY!!!!
-    rrweight = data['DATA'][:,0,0,0,:,0,2]
-    llweight = data['DATA'][:,0,0,0,:,1,2]
-    rlweight = data['DATA'][:,0,0,0,:,2,2]
-    lrweight = data['DATA'][:,0,0,0,:,3,2]
+    rrweight = data['DATA'][:,0,0,:,:,0,2]
+    llweight = data['DATA'][:,0,0,:,:,1,2]
+    rlweight = data['DATA'][:,0,0,:,:,2,2]
+    lrweight = data['DATA'][:,0,0,:,:,3,2]
 
     #TODO less than or equal to?
     rrmask_2d = (rrweight > 0.)
@@ -651,10 +651,10 @@ def load_obs_uvfits(filename, flipbl=False):
     lrmask_2d = (lrweight > 0.)
 
     # if there is any unmasked data in the frequency column, use it
-    rrmask = np.any(rrmask_2d, axis=1)
-    llmask = np.any(llmask_2d, axis=1)
-    rlmask = np.any(rlmask_2d, axis=1)
-    lrmask = np.any(lrmask_2d, axis=1)
+    rrmask = np.any(np.any(rrmask_2d, axis=2), axis=1)
+    llmask = np.any(np.any(llmask_2d, axis=2), axis=1)
+    rlmask = np.any(np.any(rlmask_2d, axis=2), axis=1)
+    lrmask = np.any(np.any(rlmask_2d, axis=2), axis=1)
 
     # Total intensity mask
     # TODO or or and here? - what if we have only 1 of rr, ll?
@@ -708,25 +708,20 @@ def load_obs_uvfits(filename, flipbl=False):
     # replace masked vis with nans so they don't mess up the average
     #TODO: coherent average ok?
     #TODO 2d or 1d mask
-    rr_2d = data['DATA'][:,0,0,0,:,0,0] + 1j*data['DATA'][:,0,0,0,:,0,1]
-    ll_2d = data['DATA'][:,0,0,0,:,1,0] + 1j*data['DATA'][:,0,0,0,:,1,1]
-    rl_2d = data['DATA'][:,0,0,0,:,2,0] + 1j*data['DATA'][:,0,0,0,:,2,1]
-    lr_2d = data['DATA'][:,0,0,0,:,3,0] + 1j*data['DATA'][:,0,0,0,:,3,1]
+    rr_2d = data['DATA'][:,0,0,:,:,0,0] + 1j*data['DATA'][:,0,0,:,:,0,1]
+    ll_2d = data['DATA'][:,0,0,:,:,1,0] + 1j*data['DATA'][:,0,0,:,:,1,1]
+    rl_2d = data['DATA'][:,0,0,:,:,2,0] + 1j*data['DATA'][:,0,0,:,:,2,1]
+    lr_2d = data['DATA'][:,0,0,:,:,3,0] + 1j*data['DATA'][:,0,0,:,:,3,1]
 
     rr_2d[~rrmask_2d] = np.nan
     ll_2d[~llmask_2d] = np.nan
     rl_2d[~rlmask_2d] = np.nan
     lr_2d[~lrmask_2d] = np.nan
 
-    rr = np.nanmean(rr_2d, axis=1)[mask]
-    ll = np.nanmean(ll_2d, axis=1)[mask]
-    rl = np.nanmean(rl_2d, axis=1)[mask]
-    lr = np.nanmean(lr_2d, axis=1)[mask]
-
-    #rr = np.mean(data['DATA'][:,0,0,0,:,0,0][mask] + 1j*data['DATA'][:,0,0,0,:,0,1][mask], axis=1)
-    #ll = np.mean(data['DATA'][:,0,0,0,:,1,0][mask] + 1j*data['DATA'][:,0,0,0,:,1,1][mask], axis=1)
-    #rl = np.mean(data['DATA'][:,0,0,0,:,2,0][mask] + 1j*data['DATA'][:,0,0,0,:,2,1][mask], axis=1)
-    #lr = np.mean(data['DATA'][:,0,0,0,:,3,0][mask] + 1j*data['DATA'][:,0,0,0,:,3,1][mask], axis=1)
+    rr = np.nanmean(np.nanmean(rr_2d, axis=2), axis=1)[mask]
+    ll = np.nanmean(np.nanmean(ll_2d, axis=2), axis=1)[mask]
+    rl = np.nanmean(np.nanmean(rl_2d, axis=2), axis=1)[mask]
+    lr = np.nanmean(np.nanmean(lr_2d, axis=2), axis=1)[mask]
 
     # average weights
     # variances are mean / N , or sum / N^2
@@ -736,24 +731,24 @@ def load_obs_uvfits(filename, flipbl=False):
     rlweight[~rlmask_2d] = np.nan
     lrweight[~lrmask_2d] = np.nan
 
-    nsig_rr = np.sum(rrmask_2d, axis=1).astype(float)
+    nsig_rr = np.sum(np.sum(rrmask_2d, axis=2), axis=1).astype(float)
     nsig_rr[~rrmask] = np.nan
-    rrsig = np.sqrt(np.nansum(1./rrweight, axis=1)) / nsig_rr
+    rrsig = np.sqrt(np.nansum(np.nansum(1./rrweight, axis=2), axis=1)) / nsig_rr
     rrsig = rrsig[mask]
 
-    nsig_ll = np.sum(llmask_2d, axis=1).astype(float)
+    nsig_ll = np.sum(np.sum(llmask_2d, axis=2), axis=1).astype(float)
     nsig_ll[~llmask] = np.nan
-    llsig = np.sqrt(np.nansum(1./llweight, axis=1)) / nsig_ll
+    llsig = np.sqrt(np.nansum(np.nansum(1./llweight, axis=2), axis=1)) / nsig_ll
     llsig = llsig[mask]
 
-    nsig_rl = np.sum(rlmask_2d, axis=1).astype(float)
+    nsig_rl = np.sum(np.sum(rlmask_2d, axis=2), axis=1).astype(float)
     nsig_rl[~rlmask] = np.nan
-    rlsig = np.sqrt(np.nansum(1./rlweight, axis=1)) / nsig_rl
+    rlsig = np.sqrt(np.nansum(np.nansum(1./rlweight, axis=2), axis=1)) / nsig_rl
     rlsig = rlsig[mask]
 
-    nsig_lr = np.sum(lrmask_2d, axis=1).astype(float)
+    nsig_lr = np.sum(np.sum(lrmask_2d, axis=2), axis=1).astype(float)
     nsig_lr[~lrmask] = np.nan
-    lrsig = np.sqrt(np.nansum(1./lrweight, axis=1)) / nsig_lr
+    lrsig = np.sqrt(np.nansum(np.nansum(1./lrweight, axis=2), axis=1)) / nsig_lr
     lrsig = lrsig[mask]
 
     # make sigmas from weights
@@ -810,7 +805,7 @@ def load_obs_uvfits(filename, flipbl=False):
     if flipbl:
         u = -u
         v = -v
-
+    
     # Make a datatable
     datatable = []
     for i in range(len(times)):
