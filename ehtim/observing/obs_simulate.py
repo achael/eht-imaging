@@ -69,7 +69,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
         dto = (at.Time(fracmjd, format='mjd')).datetime
         time_sidereal = times_sidereal[k]
         theta = np.mod((time_sidereal - ra)*HOUR, 2*np.pi)
-        blpairs =/ []
+        blpairs = []
 
         for i1 in range(len(array.tarr)):
             for i2 in range(len(array.tarr)):

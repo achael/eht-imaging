@@ -502,7 +502,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i' % (t,len(tsplit),inttime, tavg,t))
+            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i' % (t,len(timesplit),inttime, tavg,t))
             sys.stdout.flush()
             
             # accumulate data in a time region
@@ -1632,16 +1632,17 @@ def load_txt(fname):
     """
     return ehtim.io.load.load_obs_txt(fname)
 
-def load_uvfits(fname, flipbl=False):
+def load_uvfits(fname, flipbl=False, force_singlepol=None):
     """Load observation data from a uvfits file.
 
        Args:
            fname (str): path to input text file
            flipbl (bool): flip baseline phases if True.
+           force_singlepol (str): 'R' or 'L' to load only 1 polarization
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol)
 
 def load_oifits(fname, flux=1.0):
     """Load data from an oifits file. Does NOT currently support polarization.
