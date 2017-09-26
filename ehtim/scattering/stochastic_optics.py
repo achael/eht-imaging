@@ -91,8 +91,7 @@ class ScatteringModel(object):
             self.P_phi_prefac = (1.0 + self.kzeta)/(2.0*np.pi)   
         elif model == 'dipole':
             def dipole_Anisotropy(kzeta):                
-                #return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 1.0, -kzeta) - A**2 )  
-                return np.abs( (1.0 + kzeta)*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/(3.0*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, -0.5, 2.0, -kzeta) - (2.0 + kzeta + kzeta*self.scatt_alpha)*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)) - A**2 )
+                return np.abs( sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 2.0, -kzeta)/sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 1.5, 2.0, -kzeta) - A**2 )  
 
             self.kzeta = minimize(dipole_Anisotropy, A, method='nelder-mead', options={'xtol': 1e-8, 'disp': False}).x
             self.P_phi_prefac = 1.0/(2.0*np.pi*sps.hyp2f1((self.scatt_alpha + 2.0)/2.0, 0.5, 1.0, -self.kzeta))       
@@ -100,8 +99,8 @@ class ScatteringModel(object):
             print("Scattering Model Not Recognized!")
 
         # More parameters for the approximate phase structure function 
-        int_maj = integrate.quad(lambda phi_q: np.abs( np.cos( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi)[0]  
-        int_min = integrate.quad(lambda phi_q: np.abs( np.sin( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi)[0]      
+        int_maj = integrate.quad(lambda phi_q: np.abs( np.cos( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]  
+        int_min = integrate.quad(lambda phi_q: np.abs( np.sin( self.phi0 - phi_q ) )**self.scatt_alpha * self.P_phi(phi_q), 0, 2.0*np.pi, limit=250)[0]      
         B_prefac = self.C_scatt_0 * 2.0**(2.0 - self.scatt_alpha) * np.pi**0.5/(self.scatt_alpha * sps.gamma((self.scatt_alpha + 1.0)/2.0))
         self.Bmaj_0 = B_prefac*int_maj
         self.Bmin_0 = B_prefac*int_min
@@ -176,30 +175,11 @@ class ScatteringModel(object):
             (float): The power spectrum Q(qx,qy)
         """
 
-        # This will be enforced externally
-        # if qx == 0.0 and qy == 0.0:
-        #     return 0.0
-        q = (qx**2 + qy**2)**0.5
+        q = (qx**2 + qy**2)**0.5 + 1e-12/self.r_in #Add a small offset to avoid division by zero
         phi_q = np.arctan2(qy, qx)
 
         return self.Qbar * (q*self.r_in)**(-(self.scatt_alpha + 2.0)) * np.exp(-(q * self.r_in)**2) * self.P_phi(phi_q)
 
-#    def Dphi(self, x, y, wavelength_cm):
-#        """Computes the phase structure function of the scattering model at a displacement {x,y} (in cm) for an observing wavelength wavelength_cm (cm).
-#           The phase structure function is part of what defines the scattering model (along with Q).
-#           Generically, the phase structure function must be proportional to wavelength^2 because of the cold plasma dispersion law
-
-#           Args:
-#                x (float): x coordinate of the displacement (toward East) in cm.
-#                y (float): y coordinate of the displacement (toward North) in cm.
-#                wavelength_cm (float): observing wavelength in cm
-#           Returns:
-#                (float): The phase structure function (dimensionless; radians^2)
-#            """
-
-#        #Phase structure function; generically, this must be proportional to wavelength^2 because of the cold plasma dispersion law
-#        #All units in cm
-#        return 0.0
 
     def sqrtQ_Matrix(self, Reference_Image, Vx_km_per_s=50.0, Vy_km_per_s=0.0, t_hr=0.0):
         """Computes the square root of the power spectrum on a discrete grid. Because translation of the screen is done most conveniently in Fourier space, a screen translation can also be included.
@@ -393,7 +373,7 @@ class ScatteringModel(object):
         if sqrtQ_init is None:
             sqrtQ = self.sqrtQ_Matrix(Reference_Image, Vx_km_per_s=Vx_km_per_s, Vy_km_per_s=Vy_km_per_s, t_hr=t_hr)
         else:
-            #If a matrix for sqrtQ_init is passed, we still need to potentially rotate it
+            #If a matrix for sqrtQ_init is passed, we still potentially need to rotate it
 
             if screen_x_offset_pixels != 0.0 or screen_y_offset_pixels != 0.0:
                 s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0/Nx), np.fft.fftfreq(Ny, d=1.0/Ny))
@@ -443,9 +423,6 @@ class ScatteringModel(object):
         rF  = self.rF(wavelength)
         Nx = Unscattered_Image.xdim
         Ny = Unscattered_Image.ydim
-
-        if Nx%2 == 0:
-            print("The image dimension should really be odd...")
 
         #First we need to calculate the ensemble-average image by blurring the unscattered image with the correct kernel
         EA_Image = self.Ensemble_Average_Blur(Unscattered_Image, wavelength, ker = ea_ker, use_approximate_form=use_approximate_form)
@@ -652,7 +629,9 @@ def Wrapped_Gradient(M):
 
 def MakeEpsilonScreenFromList(EpsilonList, N):
     epsilon = np.zeros((N,N),dtype=np.complex)
-    #There are (N^2-1)/2 real elements followed by (N^2-1)/2 complex elements
+    #If N is odd: there are (N^2-1)/2 real elements followed by their corresponding (N^2-1)/2 imaginary elements
+    #If N is even: there are (N^2+2)/2 of each, although 3 of these must be purely real, also giving a total of N^2-1 degrees of freedom
+    #This is because of conjugation symmetry in Fourier space to ensure a real Fourier transform
 
     #The first (N-1)/2 are the top row
     N_re = (N*N-1)//2 # FIXME: check logic if N is even
@@ -694,14 +673,23 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
     if rngseed != 0:
         np.random.seed( rngseed )
 
-    epsilon = np.random.normal(loc=0.0, scale=1.0/math.sqrt(2), size=(Nx,Ny)) + 1j * np.random.normal(loc=0.0, scale=1.0/math.sqrt(2), size=(Nx,Ny))
+    epsilon = np.random.normal(loc=0.0, scale=1.0/math.sqrt(2), size=(Ny,Nx)) + 1j * np.random.normal(loc=0.0, scale=1.0/math.sqrt(2), size=(Ny,Nx))
+
+    # The zero frequency doesn't affect scattering
     epsilon[0][0] = 0.0
 
     #Now let's ensure that it has the necessary conjugation symmetry
+    if Nx%2 == 0:
+        epsilon[0][Nx/2] = np.real(epsilon[0][Nx/2])
+    if Ny%2 == 0:
+        epsilon[Ny/2][0] = np.real(epsilon[Ny/2][0])
+    if Nx%2 == 0 and Ny%2 == 0:
+        epsilon[Ny/2][Nx/2] = np.real(epsilon[Ny/2][Nx/2])
+
     for x in range(Nx):
-        if x > (Nx-1)//2: # FIXME: check logic if N is even
+        if x > (Nx-1)//2: 
             epsilon[0][x] = np.conjugate(epsilon[0][Nx-x])
-        for y in range((Ny-1)//2, Ny): # FIXME: check logic if N is even
+        for y in range((Ny-1)//2, Ny): 
             x2 = Nx - x
             y2 = Ny - y
             if x2 == Nx:

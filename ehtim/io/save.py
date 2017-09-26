@@ -300,7 +300,7 @@ def save_obs_uvfits(obs, fname):
     header['CROTA2'] = 0.e0
     header['CTYPE3'] = 'STOKES'
     header['CRVAL3'] = -1.e0
-    header['CRDELT3'] = -1.e0
+    header['CDELT3'] = -1.e0
     header['CRPIX3'] = 1.e0
     header['CROTA3'] = 0.e0
     header['CTYPE4'] = 'FREQ'
@@ -558,7 +558,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
     # convert times to datetime objects
     time = data['time']
-    dttime = np.array([datetime.datetime.utcfromtimestamp(x*60*60) for x in time]); #TODO: these do not correspond to the acutal times
+    dttime = np.array([datetime.datetime.utcfromtimestamp(x*60.0*60.0) for x in time]); #TODO: these do not correspond to the acutal times
 
     # get the bispectrum information
     bi = biarr['bispec']
@@ -571,7 +571,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
     # convert times to datetime objects
     timeClosure = biarr['time']
-    dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x) for x in timeClosure]); #TODO: these do not correspond to the acutal times
+    dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x*60.0*60.0) for x in timeClosure]); #TODO: these do not correspond to the acutal times
 
     # convert antenna name strings to number identifiers
     biarr_ant1 = ehtim.io.writeData.convertStrings(biarr['t1'], union)

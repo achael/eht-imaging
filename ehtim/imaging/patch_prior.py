@@ -31,9 +31,9 @@ def patchPrior(im, beta, patchPriorFile='naturalPrior.mat', patchSize=8 ):
     means = np.array(ldata['means'])
 
     # reshape image
-    image = np.reshape(im.imvec, (im.ydim, im.xdim) )
+    img = np.reshape(im.imvec, (im.ydim, im.xdim) )
 
-    I1, counts = cleanImage(image, beta, nmodels, covs, mixweights, means, patchSize)
+    I1, counts = cleanImage(img, beta, nmodels, covs, mixweights, means, patchSize)
 
     if not all(counts[0][0] == item for item in np.reshape(counts, (-1)) ):
          raise TypeError("The counts are not the same for every pixel in the image")
@@ -43,11 +43,11 @@ def patchPrior(im, beta, patchPriorFile='naturalPrior.mat', patchSize=8 ):
 
     return (out, counts[0][0])
 
-def cleanImage(image, beta, nmodels, covs, mixweights, means, patchSize=8):
+def cleanImage(img, beta, nmodels, covs, mixweights, means, patchSize=8):
 
     # pad images with 0's
-    validRegion = np.lib.pad( np.ones(image.shape), (patchSize-1, patchSize-1), 'constant', constant_values=(0, 0) )
-    cleanIPad = np.lib.pad( image , (patchSize-1, patchSize-1), 'constant', constant_values=(0, 0) )
+    validRegion = np.lib.pad( np.ones(img.shape), (patchSize-1, patchSize-1), 'constant', constant_values=(0, 0) )
+    cleanIPad = np.lib.pad( img , (patchSize-1, patchSize-1), 'constant', constant_values=(0, 0) )
 
     # adjust the dynamic range of image to be in the range 0 to 1
     minCleanI = min( np.reshape(cleanIPad, (-1)) )
@@ -85,8 +85,8 @@ def cleanImage(image, beta, nmodels, covs, mixweights, means, patchSize=8):
     counts = np.extract(np.reshape(validRegion, (-1)), counts)
 
     # reshape
-    I1 = np.transpose(np.reshape( I1, (image.shape[1], image.shape[0])));
-    counts = np.transpose(np.reshape( counts, (image.shape[1], image.shape[0])));
+    I1 = np.transpose(np.reshape( I1, (img.shape[1], img.shape[0])));
+    counts = np.transpose(np.reshape( counts, (img.shape[1], img.shape[0])));
 
     return I1, counts
 
