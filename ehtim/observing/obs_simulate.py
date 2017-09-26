@@ -68,15 +68,15 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
         fracmjd = np.floor(mjd) + time/24.
         dto = (at.Time(fracmjd, format='mjd')).datetime
         time_sidereal = times_sidereal[k]
-        theta = np.mod((time_sidereal-ra)*HOUR, 2*np.pi)
-        blpairs = []
+        theta = np.mod((time_sidereal - ra)*HOUR, 2*np.pi)
+        blpairs =/ []
 
         for i1 in range(len(array.tarr)):
             for i2 in range(len(array.tarr)):
                 coord1 = np.array((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z']))
                 coord2 = np.array((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z']))
-                site2 =  array.tarr[i2]['site']
                 site1 =  array.tarr[i1]['site']
+                site2 =  array.tarr[i2]['site']
 
                 # use spacecraft ephemeris so get position of site 1
                 if np.all(coord1 == (0.,0.,0.)):

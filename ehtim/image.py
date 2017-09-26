@@ -416,7 +416,7 @@ class Image(object):
         """
         
         fov_x = self.xdim * self.psize
-        fov_y = self.ydim * iselfm.psize
+        fov_y = self.ydim * self.psize
         
         x = np.linspace(-fov_x/2, fov_x/2, self.xdim)
         y = np.linspace(-fov_y/2, fov_y/2, self.ydim)

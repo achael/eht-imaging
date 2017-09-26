@@ -499,7 +499,6 @@ def gmtstring(gmt):
 def utc_to_gmst(utc, mjd):
     """Convert utc times in hours to gmst using astropy
     """
-
     mjd=int(mjd) #MJD should always be an integer, but was float in older versions of the code
     time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
     time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
@@ -518,6 +517,7 @@ def earthrot(vecs, thetas):
     if len(thetas) == len(vecs):
         rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i])
                        for i in range(len(vecs))])
+
     # only one rotation angle, many sites
     elif len(thetas) == 1:
         rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]),-np.sin(thetas[0]),0),(np.sin(thetas[0]),np.cos(thetas[0]),0),(0,0,1))), vecs[i])
