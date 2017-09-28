@@ -27,7 +27,13 @@ from IPython import display
 ##################################################################################################
 
 
-def solve_singleImage(mu, Lambda, obs, measurement='visibility', numLinIters=5):
+def solve_singleImage(mu, Lambda_orig, obs, measurement='visibility', numLinIters=5, mask=[]):
+
+    if len(mask):
+        Lambda = Lambda_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
+    else:
+        Lambda = Lambda_orig 
+        mask = np.ones(mu.imvec.shape)>0  
 
     if measurement=='visibility':
         numLinIters = 1
@@ -36,9 +42,9 @@ def solve_singleImage(mu, Lambda, obs, measurement='visibility', numLinIters=5):
     z_List_lin = mu.copy()
         
     for k in range(0,numLinIters):
-        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs, z_List_lin, measurement=measurement)
+        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs, z_List_lin, measurement=measurement, mask=mask)
         if valid:
-            z_List_t_t.imvec, P_List_t_t = prodGaussiansLem2(F, measCov, meas, mu.imvec, Lambda)
+            z_List_t_t.imvec[mask], P_List_t_t = prodGaussiansLem2(F, measCov, meas, mu.imvec[mask], Lambda)
                 
             if k < numLinIters-1:
                 z_List_lin = z_List_t_t.copy()
@@ -51,10 +57,21 @@ def solve_singleImage(mu, Lambda, obs, measurement='visibility', numLinIters=5):
 
 ##################################################################################################
 
-def forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement='visibility', numLinIters=5, interiorPriors=False):
+def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visibility', numLinIters=5, interiorPriors=False, mask=[]):
     
     if measurement=='visibility':
         numLinIters = 1
+    
+    if len(mask):
+        A = A_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
+        Q = Q_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
+        Lambda = []
+        for t in range(0, len(Lambda_orig)):
+            Lambda.append( Lambda_orig[t][mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1]) )
+    else:
+        Lambda = Lambda_orig
+        A = A_orig
+        Q = Q_orig
     
     #if measurement=='bispectrum':
     #    print 'WARNING: check the loglikelihood for non-linear functions'
@@ -95,16 +112,17 @@ def forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement='visibility',
             mu_t = mu[t]
             Lambda_t = Lambda[t]
         
+        
         # predict
         if t==0:
             z_star_List_t_tm1[t].imvec = copy.deepcopy(mu_t.imvec)
             P_star_List_t_tm1[t] = copy.deepcopy(Lambda_t)
         else:
-            z_List_t_tm1[t].imvec = np.dot( A, z_List_t_t[t-1].imvec ) 
+            z_List_t_tm1[t].imvec[mask] = np.dot( A, z_List_t_t[t-1].imvec[mask] ) 
             P_List_t_tm1[t] = Q + np.dot( np.dot( A, P_List_t_t[t-1] ), np.transpose(A) )
             
             if interiorPriors:
-                z_star_List_t_tm1[t].imvec, P_star_List_t_tm1[t] = prodGaussiansLem1( mu_t.imvec, Lambda_t, z_List_t_tm1[t].imvec, P_List_t_tm1[t] )
+                z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t] = prodGaussiansLem1( mu_t.imvec[mask], Lambda_t, z_List_t_tm1[t].imvec[mask], P_List_t_tm1[t] )
             else:
                 z_star_List_t_tm1[t] = z_List_t_tm1[t].copy()
                 P_star_List_t_tm1[t] = copy.deepcopy(P_List_t_tm1[t])
@@ -113,9 +131,9 @@ def forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement='visibility',
         z_List_lin[t] = z_star_List_t_tm1[t].copy()
         
         for k in range(0,numLinIters):
-            meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement)
+            meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], z_List_lin[t], measurement=measurement, mask=mask)
             if valid:
-                z_List_t_t[t].imvec, P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec, P_star_List_t_tm1[t])
+                z_List_t_t[t].imvec[mask], P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t])
                 
                 if k < numLinIters-1:
                     z_List_lin[t] = z_List_t_t[t].copy()
@@ -124,9 +142,9 @@ def forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement='visibility',
                 P_List_t_t[t] = copy.deepcopy(P_star_List_t_tm1[t])
         
         if t>0 and interiorPriors:
-            loglikelihood_prior = loglikelihood_prior + evaluateGaussianDist_log( z_List_t_tm1[t].imvec, mu_t.imvec, Lambda_t + P_List_t_tm1[t] )
+            loglikelihood_prior = loglikelihood_prior + evaluateGaussianDist_log( z_List_t_tm1[t].imvec[mask], mu_t.imvec[mask], Lambda_t + P_List_t_tm1[t] )
         if valid:
-            loglikelihood_data = loglikelihood_data + evaluateGaussianDist_log( np.dot(F , z_star_List_t_tm1[t].imvec), meas, measCov + np.dot( F, np.dot(P_star_List_t_tm1[t], F.T)) )
+            loglikelihood_data = loglikelihood_data + evaluateGaussianDist_log( np.dot(F , z_star_List_t_tm1[t].imvec[mask]), meas, measCov + np.dot( F, np.dot(P_star_List_t_tm1[t], F.T)) )
                 
     loglikelihood = loglikelihood_prior + loglikelihood_data
     return ((loglikelihood_data, loglikelihood_prior, loglikelihood), z_List_t_tm1, P_List_t_tm1, z_List_t_t, P_List_t_t, z_List_lin)
@@ -134,13 +152,24 @@ def forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement='visibility',
 
 ###################################### EXTENDED MESSAGE PASSING ########################################
 
-def forwardUpdates(mu, Lambda, obs_List, A, Q, measurement='visibility', apxImgs=False, interiorPriors=False):
+def forwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visibility', apxImgs=False, interiorPriors=False, mask=[]):
     
     #if measurement=='bispectrum':
     #    print 'WARNING: check the loglikelihood for non-linear functions'
 
     if apxImgs == False:
         apxImgs = mu
+    
+    if len(mask):
+        A = A_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
+        Q = Q_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
+        Lambda = []
+        for t in range(0, len(Lambda_orig)):
+            Lambda.append( Lambda_orig[t][mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1]) )
+    else:
+        Lambda = Lambda_orig
+        A = A_orig
+        Q = Q_orig
     
     # create an image of 0's
     zero_im = mu[0].copy()
@@ -177,43 +206,54 @@ def forwardUpdates(mu, Lambda, obs_List, A, Q, measurement='visibility', apxImgs
         
         # predict
         if t==0:
-            z_star_List_t_tm1[t].imvec = copy.deepcopy(mu_t.imvec) 
+            z_star_List_t_tm1[t].imvec[mask] = copy.deepcopy(mu_t.imvec[mask]) 
             P_star_List_t_tm1[t] = copy.deepcopy(Lambda_t) 
         else:
-            z_List_t_tm1[t].imvec = np.dot( A, z_List_t_t[t-1].imvec ) 
+            z_List_t_tm1[t].imvec[mask] = np.dot( A, z_List_t_t[t-1].imvec[mask] ) 
             P_List_t_tm1[t] = Q + np.dot( np.dot( A, P_List_t_t[t-1] ), np.transpose(A) ) 
             
             if interiorPriors: 
-                z_star_List_t_tm1[t].imvec, P_star_List_t_tm1[t] = prodGaussiansLem1( mu_t.imvec, Lambda_t, z_List_t_tm1[t].imvec, P_List_t_tm1[t] )
+                z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t] = prodGaussiansLem1( mu_t.imvec[mask], Lambda_t, z_List_t_tm1[t].imvec[mask], P_List_t_tm1[t] )
             else:
                 z_star_List_t_tm1[t] = z_List_t_tm1[t].copy()
                 P_star_List_t_tm1[t] = copy.deepcopy(P_List_t_tm1[t])
 
         # update
 
-        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement)
+        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, mask=mask)
 
         if valid:
-            z_List_t_t[t].imvec, P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec, P_star_List_t_tm1[t])
+            z_List_t_t[t].imvec[mask], P_List_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t])
         else:
             z_List_t_t[t] = z_star_List_t_tm1[t].copy()
             P_List_t_t[t] = copy.deepcopy(P_star_List_t_tm1[t])
         
         if t>0 and interiorPriors:
-            loglikelihood_prior = loglikelihood_prior + evaluateGaussianDist_log( z_List_t_tm1[t].imvec, mu_t.imvec, Lambda_t + P_List_t_tm1[t] )  
+            loglikelihood_prior = loglikelihood_prior + evaluateGaussianDist_log( z_List_t_tm1[t].imvec[mask], mu_t.imvec[mask], Lambda_t + P_List_t_tm1[t] )  
         if valid:
-            loglikelihood_data = loglikelihood_data + evaluateGaussianDist_log( np.dot(F , z_star_List_t_tm1[t].imvec), meas, measCov + np.dot( F, np.dot(P_star_List_t_tm1[t], F.T)) )
+            loglikelihood_data = loglikelihood_data + evaluateGaussianDist_log( np.dot(F , z_star_List_t_tm1[t].imvec[mask]), meas, measCov + np.dot( F, np.dot(P_star_List_t_tm1[t], F.T)) )
     
     loglikelihood = loglikelihood_prior + loglikelihood_data
     
     return ((loglikelihood_data, loglikelihood_prior, loglikelihood), z_List_t_tm1, P_List_t_tm1, z_List_t_t, P_List_t_t)
     
 
-def backwardUpdates(mu, Lambda, obs_List, A, Q, measurement='visibility', apxImgs=False):
+def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visibility', apxImgs=False, mask=[]):
 
     if apxImgs == False:
         apxImgs = mu
-    
+        
+    if len(mask):
+        A = A_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
+        Q = Q_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
+        Lambda = []
+        for t in range(0, len(Lambda_orig)):
+            Lambda.append( Lambda_orig[t][mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1]) )
+    else:
+        Lambda = Lambda_orig
+        A = A_orig
+        Q = Q_orig
+        
     # create an image of 0's 
     zero_im = mu[0].copy()
     zero_im.imvec = 0.0*zero_im.imvec
@@ -247,14 +287,14 @@ def backwardUpdates(mu, Lambda, obs_List, A, Q, measurement='visibility', apxImg
             z_star_t_tp1[t].imvec = copy.deepcopy(mu_t.imvec) 
             P_star_t_tp1[t] = copy.deepcopy(Lambda_t) 
         else:
-            z_star_t_tp1[t].imvec, P_star_t_tp1[t] = prodGaussiansLem2( A, Q + P_t_t[t+1], z_t_t[t+1].imvec, mu_t.imvec, Lambda_t)
+            z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t] = prodGaussiansLem2( A, Q + P_t_t[t+1], z_t_t[t+1].imvec[mask], mu_t.imvec[mask], Lambda_t)
 
         # update
 
-        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement)
+        meas, idealmeas, F, measCov, valid = getMeasurementTerms(obs_List[t], apxImgs[t], measurement=measurement, mask=mask)
 
         if valid:
-            z_t_t[t].imvec, P_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_t_tp1[t].imvec, P_star_t_tp1[t])
+            z_t_t[t].imvec[mask], P_t_t[t] = prodGaussiansLem2(F, measCov, meas, z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t])
             
         else:
             z_t_t[t] = z_star_t_tp1[t].copy()
@@ -263,7 +303,7 @@ def backwardUpdates(mu, Lambda, obs_List, A, Q, measurement='visibility', apxImg
     return (z_t_t, P_t_t)
 
     
-def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A):
+def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A, mask=[]):
 
     z = copy.deepcopy(z_t_t)
     P = copy.deepcopy(P_t_t)
@@ -275,15 +315,18 @@ def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A):
         
         if t < lastidx: 
             backwardsA[t] = np.dot( np.dot(P_t_t[t], A.T ), np.linalg.inv(P_t_tm1[t+1]) )
-            z[t].imvec = z_t_t[t].imvec + np.dot( backwardsA[t], z[t+1].imvec - z_t_tm1[t+1].imvec )
+            z[t].imvec[mask] = z_t_t[t].imvec[mask] + np.dot( backwardsA[t], z[t+1].imvec[mask] - z_t_tm1[t+1].imvec[mask] )
             P[t] = np.dot( np.dot( backwardsA[t] , P[t+1] - P_t_tm1[t+1]), backwardsA[t].T ) + P_t_t[t]
     
     return (z, P, backwardsA)
     
 
     
-def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method='phase', measurement='visibility', interiorPriors=False, numLinIters=1, apxImgs=False, compute_expVal_tm1_t=True):
+def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method='phase', measurement='visibility', interiorPriors=False, numLinIters=1, apxImgs=False, compute_expVal_tm1_t=True, mask=[]):
     
+    if not len(mask):
+        mask = np.ones(mu[0].imvec.shape)>0
+        
     if mu[0].xdim!=mu[0].ydim:
         error('Error: This has only been checked thus far on square images!')
     
@@ -296,13 +339,13 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
     Q = Upsilon
          
     if apxImgs == False:
-        loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t, apxImgs = forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement=measurement, interiorPriors=interiorPriors, numLinIters=numLinIters)
+        loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t, apxImgs = forwardUpdates_apxImgs(mu, Lambda, obs_List, A, Q, measurement=measurement, interiorPriors=interiorPriors, numLinIters=numLinIters, mask=mask)
     else:
-        loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t = forwardUpdates(mu, Lambda, obs_List, A, Q, measurement=measurement, interiorPriors=interiorPriors, apxImgs=apxImgs)
+        loglikelihood, z_t_tm1, P_t_tm1, z_t_t, P_t_t = forwardUpdates(mu, Lambda, obs_List, A, Q, measurement=measurement, interiorPriors=interiorPriors, apxImgs=apxImgs, mask=mask)
 
 
     if interiorPriors:
-        z_backward_t_t, P_backward_t_t = backwardUpdates(mu, Lambda, obs_List, A, Q, measurement=measurement, apxImgs=apxImgs)
+        z_backward_t_t, P_backward_t_t = backwardUpdates(mu, Lambda, obs_List, A, Q, measurement=measurement, apxImgs=apxImgs, mask=mask)
         
         z = copy.deepcopy(z_backward_t_t)
         P = copy.deepcopy(P_backward_t_t)
@@ -311,10 +354,10 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
                 z[t] = z_backward_t_t[t].copy()
                 P[t] = copy.deepcopy(P_backward_t_t[t])
             else:
-                z[t].imvec, P[t] = prodGaussiansLem1(z_t_tm1[t].imvec, P_t_tm1[t], z_backward_t_t[t].imvec, P_backward_t_t[t])
+                z[t].imvec[mask], P[t] = prodGaussiansLem1(z_t_tm1[t].imvec[mask], P_t_tm1[t], z_backward_t_t[t].imvec[mask], P_backward_t_t[t])
         
     else:
-        z, P, backwardsA = smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A)
+        z, P, backwardsA = smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A, mask=mask)
 
 
 
@@ -324,12 +367,12 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
     expVal_tm1_t = copy.deepcopy(P)
     for t in range(0,len(obs_List)):
         # expected value of xx^T for each x
-        z_t_hvec = np.array([z[t].imvec])
+        z_t_hvec = np.array([z[t].imvec[mask]])
         expVal_t_t[t] = np.dot(z_t_hvec.T, z_t_hvec) + P[t]
 
         # expected value of x_t x_t-1^T for each x except for the first one
         if t>0 and interiorPriors==False and compute_expVal_tm1_t:
-            z_tm1_hvec = np.array([z[t-1].imvec])
+            z_tm1_hvec = np.array([z[t-1].imvec[mask]])
             expVal_tm1_t[t] = np.dot(z_tm1_hvec.T, z_t_hvec) + np.dot(backwardsA[t-1], P[t])
 
     if interiorPriors and compute_expVal_tm1_t:
@@ -463,7 +506,7 @@ def maximizeTheta(expVal_t_t, expVal_tm1_t, dummy_im, Q, centerTheta, init_x, in
     return (thetaNew, secondDeriv, D1, D2)
 
 
-def negloglikelihood(theta, mu, Lambda, obs_List, Upsilon, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method, measurement, interiorPriors):
+def negloglikelihood(theta, mu, Lambda, obs_List, Upsilon, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method, measurement, interiorPriors, mask=[]):
     
     warpMtx = calcWarpMtx(mu, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method=method)   
     
@@ -471,7 +514,7 @@ def negloglikelihood(theta, mu, Lambda, obs_List, Upsilon, init_x, init_y, flowb
     B = np.zeros(mu.imvec.shape)
     Q = Upsilon
  
-    loglike, z_t_tm1, P_t_tm1, z_t_t, P_t_t = forwardUpdates(mu, Lambda, obs_List, A, B, Q, measurement=measurement, interiorPriors=interiorPriors)
+    loglike, z_t_tm1, P_t_tm1, z_t_t, P_t_t = forwardUpdates(mu, Lambda, obs_List, A, B, Q, measurement=measurement, interiorPriors=interiorPriors, mask=mask)
     
     return -loglike[2]
         
@@ -616,36 +659,36 @@ def prodGaussiansLem2(A, Sigma, y, mu, Q):
     
     return (mean, covariance)
     
-def getMeasurementTerms(obs, im, measurement='visibility'):
+def getMeasurementTerms(obs, im, measurement='visibility', mask=[]):
     
     if measurement=='visibility':
         # calculate Fourier Transform A matrix
         data = obs.unpack(['u','v','vis','sigma'])
         uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
+        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
         
         A_exp = realimagStack(A)
         F = A_exp
         
         meas_exp = realimagStack(data['vis'])  
         measCov = np.diag( np.concatenate( (data['sigma']**2, data['sigma']**2), axis=0) )
-        idealmeas = np.dot( A_exp, im.imvec )
+        idealmeas = np.dot( A_exp, im.imvec[mask] )
         
     elif measurement=='visibility-log':
         
         # calculate Fourier Transform A matrix
         data = obs.unpack(['u','v','vis','sigma'])
         uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
+        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
         
         A_expanded = realimagStack(A)
-        derivA = np.dot( A_expanded, np.diag(np.exp(im.imvec)) )
+        derivA = np.dot( A_expanded, np.diag(np.exp(im.imvec[mask])) )
         F = derivA
         
-        meas_exp = realimagStack( data['vis'] )  + np.dot(derivA,im.imvec) - np.dot( A_expanded, np.exp(im.imvec) )
+        meas_exp = realimagStack( data['vis'] )  + np.dot(derivA,im.imvec[mask]) - np.dot( A_expanded, np.exp(im.imvec[mask]) )
 
         measCov = np.diag( np.concatenate( (data['sigma']**2, data['sigma']**2), axis=0) )
-        idealmeas = np.dot( A_expanded, np.exp(im.imvec) )
+        idealmeas = np.dot( A_expanded, np.exp(im.imvec[mask]) )
         
     elif measurement=='visibility-gamma':
         gamma = 2.0
@@ -653,16 +696,16 @@ def getMeasurementTerms(obs, im, measurement='visibility'):
         # calculate Fourier Transform A matrix
         data = obs.unpack(['u','v','vis','sigma'])
         uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
+        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
         
         A_expanded = realimagStack(A)
-        derivA = np.dot( A_expanded, np.diag(gamma*(im.imvec**(gamma-1.0))) )
+        derivA = np.dot( A_expanded, np.diag(gamma*(im.imvec[mask]**(gamma-1.0))) )
         F = derivA
         
-        meas_exp = realimagStack( data['vis'] )  + np.dot(derivA,im.imvec) - np.dot( A_expanded, (im.imvec**gamma) )
+        meas_exp = realimagStack( data['vis'] )  + np.dot(derivA,im.imvec[mask]) - np.dot( A_expanded, (im.imvec[mask]**gamma) )
 
         measCov = np.diag( np.concatenate( (data['sigma']**2, data['sigma']**2), axis=0) )
-        idealmeas = np.dot( A_expanded, (im.imvec**gamma) )
+        idealmeas = np.dot( A_expanded, (im.imvec[mask]**gamma) )
     
     elif measurement=='bispectrum':
         biarr = obs.bispectra(mode="all", count="min")
@@ -677,9 +720,9 @@ def getMeasurementTerms(obs, im, measurement='visibility'):
         sigs = biarr['sigmab']
 
         # Compute the fourier matrices
-        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse)
+        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse, mask=mask),
+              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse, mask=mask),
+              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse, mask=mask)
              )
         
         measCov = np.diag( np.concatenate( (sigs**2, sigs**2), axis=0 ) )
@@ -687,7 +730,7 @@ def getMeasurementTerms(obs, im, measurement='visibility'):
         F = A_exp
         
         #meas_exp = realimagStack(bispec)
-        meas_exp = realimagStack(bispec) + np.dot(A_exp, im.imvec) - idealmeas
+        meas_exp = realimagStack(bispec) + np.dot(A_exp, im.imvec[mask]) - idealmeas
     
     elif measurement=='amp-bispectrum':
         
@@ -705,11 +748,11 @@ def getMeasurementTerms(obs, im, measurement='visibility'):
         sigs = biarr['sigmab']
 
         # Compute the fourier matrices
-        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse)
+        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse, mask=mask),
+              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse, mask=mask),
+              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse, mask=mask)
              )
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
+        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
         
         idealmeas_visamp, A_visamp = computeVisAmpLinTerms(im.imvec, A, im.xdim*im.ydim)
         idealmeas_bispec, A_bispec = computeBispectrumLinTerms(im.imvec, A3, im.xdim*im.ydim)
@@ -720,7 +763,7 @@ def getMeasurementTerms(obs, im, measurement='visibility'):
         visamps = np.abs(data['vis'])
         meas_real = np.concatenate( ( visamps, realimagStack(bispec) ), axis=0 )
         
-        meas_exp = meas_real + np.dot(F, im.imvec) - idealmeas
+        meas_exp = meas_real + np.dot(F, im.imvec[mask]) - idealmeas
         
         measCov = np.diag( np.concatenate( (data['sigma']**2, (sigs)**2, (sigs)**2), axis=0 ) )
 
@@ -740,11 +783,11 @@ def getMeasurementTerms(obs, im, measurement='visibility'):
         sigs = biarr['sigmab']
 
         # Compute the fourier matrices
-        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse)
+        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse, mask=mask),
+              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse, mask=mask),
+              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse, mask=mask)
              )
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
+        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
         
         idealmeas_visamp, A_visamp = computeVisAmpLinTerms(im.imvec, A, im.xdim*im.ydim)
         idealmeas_clphase, A_clphase = computeClosurePhaseLinTerms(im.imvec, A3, im.xdim*im.ydim)
@@ -758,7 +801,7 @@ def getMeasurementTerms(obs, im, measurement='visibility'):
         clphases = np.concatenate( (cosvals, sinvals), axis=0)
         meas_real = np.concatenate( (visamps, clphases), axis=0 )
         
-        meas_exp = meas_real + np.dot(F, im.imvec) - idealmeas
+        meas_exp = meas_real + np.dot(F, im.imvec[mask]) - idealmeas
         
         print('WARNING! THIS IS WRONG. CHANGE ASAP!!')
         measCov = np.diag( np.concatenate( (data['sigma']**2, (sigs/np.abs(bispec))**2, (sigs/np.abs(bispec))**2), axis=0 ) )
@@ -835,7 +878,7 @@ def dirtyImage(im, obs_List, init_x=[], init_y=[], flowbasis_x=[], flowbasis_y=[
         
     return im_List
 
-def weinerFiltering(meanImg, covImg, obs_List):
+def weinerFiltering(meanImg, covImg, obs_List, mask=[]):
 
     if type(obs_List) != list:
         obs_List = [obs_List]
@@ -851,7 +894,7 @@ def weinerFiltering(meanImg, covImg, obs_List):
     
     for t in range(0,len(obs_List)):
         
-        meas, idealmeas, A, measCov, valid = getMeasurementTerms(obs_List[t], meanImg, measurement='visibility')
+        meas, idealmeas, A, measCov, valid = getMeasurementTerms(obs_List[t], meanImg, measurement='visibility', mask=mask)
         
         if valid==False: 
             im_List[t] = meanImg.copy()
