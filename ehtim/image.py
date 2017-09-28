@@ -405,12 +405,13 @@ class Image(object):
 
         return eht.obsdata.merge_obs(obs_List)
 
-    def regrid_image(self, targetfov, npix):
+    def regrid_image(self, targetfov, npix, interp='linear'):
         """Resample the image to new (square) dimensions.
 
            Args:
                 targetfov  (float): new field of view (radian) 
                 npix  (int): new pixel dimension 
+                interp ('linear', 'cubic', 'quintic'): type of interpolation. default is linear
            Returns:
                 (Image): resampled image 
         """
@@ -424,7 +425,8 @@ class Image(object):
         xtarget = np.linspace(-targetfov/2, targetfov/2, npix)
         ytarget = np.linspace(-targetfov/2, targetfov/2, npix)
 
-        interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.imvec, (self.ydim, self.xdim) ) )
+        #interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.imvec, (self.ydim, self.xdim) ) )
+        interpfunc = scipy.interpolate.interp2d( y, x, np.reshape(self.imvec, (self.ydim, self.xdim) ) , kind=interp)
         tmpimg = interpfunc(ytarget, xtarget)
         tmpimg[np.abs(xtarget)>fov_x/2.,:] = 0.0
         tmpimg[:,np.abs(ytarget)>fov_y/2.] = 0.0
@@ -433,13 +435,15 @@ class Image(object):
         outim = Image(tmpimg, targetfov/npix, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         if len(self.qvec):
-            interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.qvec, (self.ydim, self.xdim) ) )
+            #interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.qvec, (self.ydim, self.xdim) ) )
+            interpfunc = scipy.interpolate.interp2d( y, x, np.reshape(self.qvec, (self.ydim, self.xdim) ) , kind=interp)
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget)>fov_x/2.,:] = 0.0
             tmpimg[:,np.abs(ytarget)>fov_y/2.] = 0.0
             outq = tmpimg * (targetfov/npix)**2 / self.psize**2
 
-            interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.uvec, (self.ydim, self.xdim) ) )
+            #interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.uvec, (self.ydim, self.xdim) ) )
+            interpfunc = scipy.interpolate.interp2d( y, x, np.reshape(self.uvec, (self.ydim, self.xdim) ) , kind=interp)
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget)>fov_x/2.,:] = 0.0
             tmpimg[:,np.abs(ytarget)>fov_y/2.] = 0.0
@@ -448,7 +452,8 @@ class Image(object):
             outim.add_qu(outq, outu)
 
         if len(self.vvec):
-            interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.vvec, (self.ydim, self.xdim) ) )
+            #interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(self.vvec, (self.ydim, self.xdim) ) )
+            interpfunc = scipy.interpolate.interp2d( y, x, np.reshape(self.vvec, (self.ydim, self.xdim) ) , kind=interp)
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget)>fov_x/2.,:] = 0.0
             tmpimg[:,np.abs(ytarget)>fov_y/2.] = 0.0
@@ -458,7 +463,7 @@ class Image(object):
 
         return outim
     
-    def compare_images(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, metric = ['nxcorr', 'nrmse', 'rssd'], blursmall=False):
+    def compare_images(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, metric = ['nxcorr', 'nrmse', 'rssd'], blursmall=False, shift=False):
         """Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.
 
          Args:
@@ -476,6 +481,32 @@ class Image(object):
         """
 
         im1 = self.copy()
+        (idx, xcorr, im1_pad, im2_pad) = findShift(im1, im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
+
+        if shift:
+            idx = shift
+
+        im2_shift = im2_pad.shiftImg(idx)
+
+        error = []
+        if 'nxcorr' in metric:
+            error.append( xcorr[ idx[0], idx[1] ] / (im1_pad.xdim * im1_pad.ydim) )
+        if 'nrmse' in metric:
+            error.append( np.sqrt( np.sum( ( (im1_pad.imvec - im2_shift.imvec)**2 * im1_pad.psize**2  ) ) / np.sum( (im1_pad.imvec )**2 * im1_pad.psize**2 ) ) )
+        if 'rssd' in metric:
+            error.append( np.sqrt( np.sum(  (im1_pad.imvec - im2_shift.imvec)**2 ) * im1_pad.psize**2 ) )
+        
+        return (error, im1_pad, im2_shift)
+
+    def shiftImg(self, shiftidx):
+        im_shift = np.roll(self.imvec.reshape(self.ydim, self.xdim),   shiftidx[0], axis=0)
+        im_shift = np.roll(im_shift, shiftidx[1], axis=1)
+        im_shift = Image( im_shift, self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        return im_shift
+        
+    def findShift(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, blursmall=False):
+    
+        im1 = self.copy()
         if target_fov==None:
             max_fov = np.max([im1.xdim * im1.psize, im1.ydim * im1.psize, im2.xdim * im2.psize, im2.ydim * im2.psize])
             target_fov = 2*max_fov
@@ -488,8 +519,8 @@ class Image(object):
             im1 = im1.blur_gauss(beamparams, blur_frac)
             im2 = im2.blur_gauss(beamparams, blur_frac)
 
-        im1_pad = im1.regrid_image(im1, target_fov, npix)
-        im2_pad = im2.regrid_image(im2, target_fov, npix)
+        im1_pad = im1.regrid_image(target_fov, npix)
+        im2_pad = im2.regrid_image(target_fov, npix)
 
         if ((blur_frac > 0.0) * (blursmall==False)):
             im1_pad = im1_pad.blur_gauss(beamparams, blur_frac)
@@ -503,19 +534,9 @@ class Image(object):
 
         xcorr =  np.real( np.fft.ifft2( fft_im1 * np.conj(fft_im2) ) )
         idx = np.unravel_index(xcorr.argmax(), xcorr.shape)
+        
+        return (idx, xcorr, im1_pad, im2_pad)
 
-        im2_shift = np.roll(im2_pad.imvec.reshape(im2_pad.ydim, im2_pad.xdim),   idx[0], axis=0)
-        im2_shift = np.roll(im2_shift, idx[1], axis=1)
-        im2_shift = eh.image.Image( im2_shift, im2_pad.psize, im2_pad.ra, im2_pad.dec, rf=im2_pad.rf, source=im2_pad.source, mjd=im2_pad.mjd, pulse=im2_pad.pulse)
-
-        error = []
-        if 'nxcorr' in metric:
-            error.append( np.max(xcorr.reshape(-1)) / (im1_pad.xdim * im1_pad.ydim) )
-        if 'nrmse' in metric:
-            error.append( np.sqrt( np.sum( ( (im1_pad.imvec - im2_shift.imvec)**2 * im1_pad.psize**2  ) ) / np.sum( (im1_pad.imvec )**2 * im1_pad.psize**2 ) ) )
-        if 'rssd' in metric:
-            error.append( np.sqrt( np.sum(  (im1_pad.imvec - im2_shift.imvec)**2 ) * im1_pad.psize**2 ) )
-        return (error, im1_pad, im2_shift)
 
     def resample_square(self, xdim_new, ker_size=5):
         """Resample the image to new (square) dimensions
@@ -582,33 +603,33 @@ class Image(object):
             outim.add_v(outv)
         return outim
 
-#    def im_pad(self, fovx, fovy):
-#        """Pad an image to new fov_x by fov_y in radian.
-#           Args:
-#                fovx  (float): new fov in x dimension (rad) 
-#                fovy  (float): new fov in y dimension (rad) 
-#           Returns:
-#                im_pad (Image): padded image 
-#        """
-#        im = self
-#        fovoldx=im.psize*im.xdim
-#        fovoldy=im.psize*im.ydim
-#        padx=int(0.5*(fovx-fovoldx)/im.psize)
-#        pady=int(0.5*(fovy-fovoldy)/im.psize)
-#        imarr=im.imvec.reshape(im.ydim, im.xdim)
-#        imarr=np.pad(imarr,((padx,padx),(pady,pady)),'constant')
-#        outim=Image(imarr, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)#
-#        if len(im.qvec):
-#            qarr=im.qvec.reshape(im.ydim,im.xdim)
-#            qarr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
-#            uarr=im.uvec.reshape(im.ydim,im.xdim)
-#            uarr=np.pad(uarr,((padx,padx),(pady,pady)),'constant')
-#            outim.add_qu(qarr,uarr)
-#        if len(im.vvec):
-#            varr=im.vvec.reshape(im.ydim,im.xdim)
-#            varr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
-#            outim.add_v(varr)
-#        return outim
+    def im_pad(self, fovx, fovy):
+        """Pad an image to new fov_x by fov_y in radian.
+           Args:
+                fovx  (float): new fov in x dimension (rad)
+                fovy  (float): new fov in y dimension (rad)
+           Returns:
+                im_pad (Image): padded image
+        """
+        im = self
+        fovoldx=im.psize*im.xdim
+        fovoldy=im.psize*im.ydim
+        padx=int(0.5*(fovx-fovoldx)/im.psize)
+        pady=int(0.5*(fovy-fovoldy)/im.psize)
+        imarr=im.imvec.reshape(im.ydim, im.xdim)
+        imarr=np.pad(imarr,((padx,padx),(pady,pady)),'constant')
+        outim=Image(imarr, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)#
+        if len(im.qvec):
+            qarr=im.qvec.reshape(im.ydim,im.xdim)
+            qarr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
+            uarr=im.uvec.reshape(im.ydim,im.xdim)
+            uarr=np.pad(uarr,((padx,padx),(pady,pady)),'constant')
+            outim.add_qu(qarr,uarr)
+        if len(im.vvec):
+            varr=im.vvec.reshape(im.ydim,im.xdim)
+            varr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
+            outim.add_v(varr)
+        return outim
 
 
     def add_flat(self, flux):
@@ -996,6 +1017,126 @@ class Image(object):
         ehtim.io.save.save_im_fits(self, fname)
         return
 
+
+
+    def overlay_display(self, im_array, f=False, aligned=True, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=1.e3, color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
+        """Display the image.
+
+           Args:
+               cfun (str): matplotlib.pyplot color function
+               scale (str): image scaling in ['log','gamma','lin']
+               interp (str): image interpolation 'gauss' or 'lin'
+
+               gamma (float): index for gamma scaling
+               dynamic_range (float): dynamic range for log and gamma scaling
+
+               plotp (bool): True to plot linear polarimetic image
+               nvec (int): number of polarimetric vectors to plot
+               pcut (float): minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel
+               export_pdf (str): path to exported PDF with plot
+               show (bool): Display the plot if true
+
+           Returns:
+               (matplotlib.figure.Figure): figure object with image
+
+        """
+
+        if not f:
+            f = plt.figure()
+        plt.clf()
+        
+        im0 = self.copy()
+        
+        if len(dynamic_range)==1:
+            dynamic_range = dynamic_range * np.ones(len(im_array)+1)
+        
+        psize = im0.psize
+        max_fov = np.max([im0.xdim*im0.psize, im0.ydim*im0.psize])
+        for i in range(0, len(im_array)):
+            psize = np.min([psize, im_array[i].psize])
+            max_fov = np.max([max_fov, im_array[i].xdim*im_array[i].psize, im_array[i].ydim*im_array[i].psize]) 
+            
+        if not final_fov:
+            final_fov = max_fov
+
+        im_array_shift = []
+        for i in range(0, len(im_array)):
+            (idx, _, im0_pad, im_pad) = im0.findShift(im_array[i], target_fov=2*max_fov, psize=psize)
+            if i==0:
+                    npix = int(im0_pad.xdim/2)
+                    im0_pad = im0_pad.regrid_image(final_fov, npix) 
+            if not shift:
+                tmp = im_pad.shiftImg(idx)
+            else:
+                tmp = im_pad.shiftImg(shift)
+            im_array_shift.append( tmp.regrid_image(final_fov, npix) )
+                
+               
+        unit = 'Jy/pixel'
+        if scale=='log':
+            unit = 'log(Jy/pixel)'
+            im0_pad.imvec = np.log(im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[i])
+            for i in range(0, len(im_array)):
+                im_array_shift[i].imvec = np.log(im_array_shift[i].imvec + np.max(im_array_shift[i].imvec)/dynamic_range[i+1])
+
+        if scale=='gamma':
+            unit = '(Jy/pixel)^gamma'
+            im0_pad.imvec = (im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[i])**(gamma)
+            for i in range(0, len(im_array)):
+                im_array_shift[i].imvec = (im_array_shift[i].imvec + np.max(im_array_shift[i].imvec)/dynamic_range[i+1])**(gamma)
+         
+        composite_img = np.zeros((im0_pad.ydim, im0_pad.xdim,3))
+        for i in range(-1, len(im_array)):
+        
+            if i==-1:
+                immtx = im0_pad.imvec.reshape(im0_pad.ydim, im0_pad.xdim)
+            else:
+                immtx = im_array_shift[i].imvec.reshape(im0_pad.ydim, im0_pad.xdim)
+                
+            immtx = immtx - np.min(np.min(immtx))
+            immtx = immtx / np.max(np.max(immtx))
+            
+            for c in range(0,3):
+                composite_img[:,:,c] = composite_img[:,:,c] + (color_coding[i+1,c] * immtx)
+        
+        plt.subplot(111)
+        plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
+        im = plt.imshow(composite_img)
+        #plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
+        xticks = ticks(im0_pad.xdim, im0_pad.psize/RADPERAS/1e-6)
+        yticks = ticks(im0_pad.ydim, im0_pad.psize/RADPERAS/1e-6)
+        plt.xticks(xticks[0], xticks[1])
+        plt.yticks(yticks[0], yticks[1])
+        plt.xlabel('Relative RA ($\mu$as)')
+        plt.ylabel('Relative Dec ($\mu$as)')
+
+        plt.show(block=False)
+
+        if export_pdf != "":
+            f.savefig(export_pdf, bbox_inches='tight')
+
+        return (f, idx)
+
+
+    def save_txt(self, fname):
+        """Save image data to text file.
+
+           Args:
+                fname (str): path to output text file
+           Returns:
+        """
+
+        ehtim.io.save.save_im_txt(self, fname)
+        return
+
+    def save_fits(self, fname):
+        """Save image data to a fits file.
+           Args:
+                fname (str): path to output fits file
+           Returns:
+        """
+        ehtim.io.save.save_im_fits(self, fname)
+        return
 ###########################################################################################################################################
 #Image creation functions
 ###########################################################################################################################################
