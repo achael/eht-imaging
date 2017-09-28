@@ -481,7 +481,7 @@ class Image(object):
         """
 
         im1 = self.copy()
-        (idx, xcorr, im1_pad, im2_pad) = findShift(im1, im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
+        (idx, xcorr, im1_pad, im2_pad) = im1.findShift(im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
 
         if shift:
             idx = shift
