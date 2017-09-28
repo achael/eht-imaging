@@ -1066,9 +1066,8 @@ class Image(object):
                     npix = int(im0_pad.xdim/2)
                     im0_pad = im0_pad.regrid_image(final_fov, npix) 
             if not shift:
-                tmp = im_pad.shiftImg(idx)
-            else:
-                tmp = im_pad.shiftImg(shift)
+                shift=idx
+            tmp = im_pad.shiftImg(shift)
             im_array_shift.append( tmp.regrid_image(final_fov, npix) )
                 
                
@@ -1115,7 +1114,7 @@ class Image(object):
         if export_pdf != "":
             f.savefig(export_pdf, bbox_inches='tight')
 
-        return (f, idx)
+        return (f, shift)
 
 
     def save_txt(self, fname):
