@@ -14,7 +14,7 @@ from ehtim.const_def import *
 def make_bispectrum(l1, l2, l3,vtype):
     """make a list of bispectra and errors
        l1,l2,l3 are full datatables of visibility entries
-       vtype is visibility type
+       vtype is visibility types
     """
     # Choose the appropriate polarization and compute the bs and err
     if vtype in ["vis", "qvis", "uvis","vvis"]:
@@ -73,10 +73,10 @@ def make_bispectrum(l1, l2, l3,vtype):
                                  var2/np.abs(p2)**2 +
                                  var3/np.abs(p3)**2)
     # Katie's 2nd + 3rd order corrections - see CHIRP supplement
-    bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
-                               var1*var3*np.abs(p2)**2 +
-                               var2*var3*np.abs(p1)**2 +
-                               var1*var2*var3)
+    #bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
+    #                           var1*var3*np.abs(p2)**2 +
+    #                           var2*var3*np.abs(p1)**2 +
+    #                           var1*var2*var3)
     return (bi, bisig)
 
 def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True):

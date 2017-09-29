@@ -260,6 +260,10 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     if print_objfunc:
         return objfunc(xinit)
 
+    if d1 in DATATERMS:
+        print("Total Data 1: ", (len(data1)))
+    if d2 in DATATERMS:
+        print("Total Data 2: ", (len(data2)))
     print("Total Pixel #: ",(len(Prior.imvec)))
     print("Clipped Pixel #: ",(len(ninit)))
     print()
