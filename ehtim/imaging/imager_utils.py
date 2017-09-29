@@ -1021,16 +1021,16 @@ def spatchgrad(imvec, priorvec, flux):
 def embed(im, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image array into the size of boolean embed mask
     """
-    j=0
     out=np.zeros(len(mask))
-    for i in range(len(mask)):
-        if mask[i]:
-            out[i] = im[j]
-            j += 1
+
+    # Here's a much faster version than before 
+    out[mask.nonzero()] = im
+
+    if clipfloor != 0.0:       
+        if randomfloor: # prevent total variation gradient singularities
+            out[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
         else:
-            # prevent total variation gradient singularities
-            if randomfloor: out[i] = clipfloor * np.random.normal()
-            else: out[i] = clipfloor
+            out[(mask-1).nonzero()] = clipfloor
 
     return out
 
