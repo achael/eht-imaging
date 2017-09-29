@@ -300,7 +300,7 @@ def save_obs_uvfits(obs, fname):
     header['CROTA2'] = 0.e0
     header['CTYPE3'] = 'STOKES'
     header['CRVAL3'] = -1.e0
-    header['CRDELT3'] = -1.e0
+    header['CDELT3'] = -1.e0
     header['CRPIX3'] = 1.e0
     header['CROTA3'] = 0.e0
     header['CTYPE4'] = 'FREQ'
