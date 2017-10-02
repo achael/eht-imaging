@@ -8,7 +8,7 @@ from builtins import object
 import numpy as np
 import re
 import os
-import ehtim.observing.jdcal
+import ehtim.observing.jdcal as jdcal
 
 import ehtim.array
 
