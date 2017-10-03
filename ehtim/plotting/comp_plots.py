@@ -52,7 +52,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=Fals
     return axis
 
 
-def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, clist=COLORLIST):
+def plot_cphase_obs_compare(obslist,  site1, site2, site3, vtype='vis', rangex=False, rangey=False, show=True, clist=COLORLIST):
     """Plot closure phase on a triangle vs time from multiple observations on the same axes.
     """
 
@@ -65,14 +65,14 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
+        axis = obs.plot_cphase(site1, site2, site3, vtype=vtype, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
 
     if show:
         plt.show(block=False)
     return axis
 
 
-def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=COLORLIST):
+def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, vtype='vis', rangex=False, rangey=False, show=True, clist=COLORLIST):
     """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
     """
 
@@ -85,7 +85,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
+        axis = obs.plot_camp(site1, site2, site3, site4, vtype=vtype, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
 
     if show:
         plt.show(block=False)
@@ -144,7 +144,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
     return axis
 
 
-def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST):
+def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, vtype='vis', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST):
     """Plot closure phase on a triangle compared to ground truth from an image on the same axes.
     """
 
@@ -162,14 +162,14 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=Fals
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
+        axis = obs.plot_cphase(site1, site2, site3, vtype=vtype, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
 
     if show:
         plt.show(block=False)
     return axis
 
 
-def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST):
+def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, vtype='vis', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST):
     """Plot closure amplitude on a quadrangle compared to ground truth from an image on the same axes.
     """
 
@@ -187,7 +187,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
+        axis = obs.plot_camp(site1, site2, site3, site4, vtype=vtype, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)])
 
     if show:
         plt.show(block=False)
