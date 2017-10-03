@@ -195,7 +195,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat
 
 
     """Plot closure amplitude on a quadrangle compared to ground truth from an image on the same axes.
-        """
+    """
     
     try: len(obslist)
     except TypeError: obslist = [obslist]

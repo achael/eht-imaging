@@ -241,11 +241,8 @@ class Obsdata(object):
         # If we only specify one field
         if timetype not  in ['GMST','UTC','utc','gmst']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
-        if timetype=='UTC':
-            allfields=['time_utc']
-        elif timetype=='GMST':
-            allfields=['time_gmst']
-
+        allfields = ['time']
+x
         if not isinstance(fields, list): allfields.append(fields)
         else:
             for i in range(len(fields)): allfields.append(fields[i])
@@ -260,7 +257,16 @@ class Obsdata(object):
                 if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
                     obs = np.array([obs])
                     out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias)
+
+                    #ANDREW TODO DOES THIS WORK
+                    if timetype in ['UTC','utc'] and self.timetype=='GMST':
+                        out['time'] = gmst_to_utc(out['time'])
+                    elif timetype in ['GMST','gmst'] and self.timetype=='UTC':
+                        out['time'] = utc_to_gmst(out['time'])
+
                     allout.append(out)
+
+
         return np.array(allout)
 
     def unpack(self, fields, mode='all', ang_unit='deg',  debias=False, conj=False):
@@ -399,7 +405,6 @@ class Obsdata(object):
 
             if field in ["time_utc"] and self.timetype=='GMST':
                 out = gmst_to_utc(out, self.mjd)
-
             if field in ["time_gmst"] and self.timetype=='UTC':
                 out = utc_to_gmst(out, self.mjd)
 
