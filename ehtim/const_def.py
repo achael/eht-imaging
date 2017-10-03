@@ -58,7 +58,8 @@ DTCAMP = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),('t4','a32'),
           ('camp','f8'),('sigmaca','f8')]
 
 # Observation fields for plotting and retrieving data
-FIELDS = ['time','tint','u','v','uvdist',
+FIELDS = ['time','time_utc','time_gmst',
+          'tint','u','v','uvdist',
           't1','t2','tau1','tau2',
           'el1','el2','hr_ang1','hr_ang2','par_ang1','par_ang2',
           'vis','amp','phase','snr',

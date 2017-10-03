@@ -218,7 +218,7 @@ class Obsdata(object):
 
         return np.array(datalist)
        
-    def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False):
+    def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=self.timetype):
         """Unpack the data over time on the selected baseline site1-site2.
 
            Args:
@@ -227,12 +227,19 @@ class Obsdata(object):
                 fields (list): list of unpacked quantities from available quantities in FIELDS
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
+                timetype (str): 'GMST' or 'UTC' 
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
         """
 
         # If we only specify one field
-        allfields=['time']
+        if timetype not  in ['GMST','UTC']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
+        if timetype=='UTC':
+            allfields=['time_utc']
+        elif timetype=='GMST':
+            allfields=['time_gmst']
+
         if not isinstance(fields, list): allfields.append(fields)
         else:
             for i in range(len(fields)): allfields.append(fields[i])
@@ -319,7 +326,10 @@ class Obsdata(object):
         # Get field data
         allout = []
         for field in fields:
-            if field in ["u","v","tint","time","tau1","tau2"]:
+            if field in ["time","time_utc","time_gmst"]:
+                out = data['time']
+                ty='f8'
+            if field in ["u","v","tint","tau1","tau2"]:
                 out = data[field]
                 ty = 'f8'
             elif field in ["uvdist"]:
@@ -380,6 +390,13 @@ class Obsdata(object):
 
             else: raise Exception("%s is not valid field \n" % field +
                                   "valid field values are " + ' '.join(FIELDS))
+
+            if field in ["time_utc"] and self.timetype=='GMST':
+                out = gmst_to_utc(out, self.mjd)
+
+            if field in ["time_gmst"] and self.timetype=='UTC':
+                out = utc_to_gmst(out, self.mjd)
+
 
             # Elevation and Parallactic Angles
             if field in ["el1","el2","hr_ang1","hr_ang2","par_ang1","par_ang2"]:
@@ -502,7 +519,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i' % (t,len(tsplit),inttime, tavg,t))
+            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i' % (t,len(timesplit),inttime, tavg,t))
             sys.stdout.flush()
             
             # accumulate data in a time region
@@ -712,7 +729,7 @@ class Obsdata(object):
         return out
 
     def deblur(self):
-        """Deblur the observation obs by dividing by the Sgr A* scattering kernel.
+        """Deblur the observation obs by dividing by the Sgr A* redscattering kernel.
 
            Args:
  
@@ -791,14 +808,14 @@ class Obsdata(object):
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
         return res.x
 
-    def bispectra(self, vtype='vis', mode='time', count='min'):
+    def bispectra(self, vtype='vis', mode='time', count='min',timetype=self.timetype):
         """Return a recarray of the equal time bispectra.
 
            Args:
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
                mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
-
+               timetype (str): 'GMST' or 'UTC'
            Returns:
                (numpy.recarry): A recarray of the bispectra values with datatype DTBIS
 
@@ -810,6 +827,10 @@ class Obsdata(object):
             raise Exception("possible options for count are 'min' and 'max'")
         if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
             raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if timetype not  in ['GMST','UTC']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
+
+
 
         # Generate the time-sorted data with conjugate baselines
         tlist = self.tlist(conj=True)
@@ -823,6 +844,10 @@ class Obsdata(object):
             tt += 1
 
             time = tdata[0]['time']
+            if timetype=='GMST' and self.timetype=='UTC':
+                time = utc_to_gmst(time, self.mjd)
+            if timetype=='UTC' and self.timetype=='GMST':
+                time = gmst_to_utc(time, self.mjd) 
             sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
 
             # Create a dictionary of baselines at the current time incl. conjugates;
@@ -884,7 +909,7 @@ class Obsdata(object):
 
         return np.array(outlist)
 
-    def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg'):
+    def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg', timetype=timetype):
         """Return a recarray of the equal time closure phases.
 
            Args:
@@ -892,6 +917,7 @@ class Obsdata(object):
                mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
+               timetype (str): 'UTC' or 'GMST'
 
            Returns:
                (numpy.recarry): A recarray of the closure phases with datatype DTPHASE
@@ -903,12 +929,15 @@ class Obsdata(object):
             raise Exception("possible options for count are 'max' and 'min'")
         if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
             raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if timetype not  in ['GMST','UTC']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
+
 
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
 
         # Get the bispectra data
-        bispecs = self.bispectra(vtype=vtype, mode='time', count=count)
+        bispecs = self.bispectra(vtype=vtype, mode='time', count=count, timetype=timetype)
 
         # Reformat into a closure phase list/array
         outlist = []
@@ -929,7 +958,7 @@ class Obsdata(object):
             outlist = np.array(cps)
         return np.array(outlist)
 
-    def bispectra_tri(self, site1, site2, site3, vtype='vis'):
+    def bispectra_tri(self, site1, site2, site3, vtype='vis',timetype=self.timetype):
         """Return complex bispectrum  over time on a triangle (1-2-3).
 
            Args:
@@ -937,13 +966,14 @@ class Obsdata(object):
                site2 (str): station 2 name
                site3 (str): station 3 name
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+               timetype (str): 'UTC' or 'GMST'
 
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
         """
        
         # Get closure phases (maximal set)
-        bs = self.bispectra(mode='time', count='max', vtype=vtype)
+        bs = self.bispectra(mode='time', count='max', vtype=vtype, timetype=timetype)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
@@ -974,7 +1004,7 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg'):
+    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=self.timetype):
         """Return closure phase  over time on a triangle (1-2-3).
 
            Args:
@@ -983,13 +1013,14 @@ class Obsdata(object):
                site3 (str): station 3 name
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
+               timetype (str): 'GMST' or 'UTC'
 
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
         """
        
         # Get closure phases (maximal set)
-        cphases = self.c_phases(mode='time', count='max', vtype=vtype, ang_unit=ang_unit)
+        cphases = self.c_phases(mode='time', count='max', vtype=vtype, ang_unit=ang_unit,timetype=timetype)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
@@ -1020,7 +1051,7 @@ class Obsdata(object):
                     continue
         return np.array(outdata)
 
-    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True):
+    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True,timetype=self.timetype):
         """Return a recarray of the equal time closure amplitudes.
 
            Args:
@@ -1029,6 +1060,7 @@ class Obsdata(object):
                mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               timetype (str): 'GMST' or 'UTC'
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
@@ -1043,6 +1075,8 @@ class Obsdata(object):
             raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if not (ctype in ['camp', 'logcamp']):
             raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
+        if timetype not  in ['GMST','UTC']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
 
         # Get data sorted by time
         tlist = self.tlist(conj=True)
@@ -1055,6 +1089,11 @@ class Obsdata(object):
             tt += 1
 
             time = tdata[0]['time']
+            if timetype=='GMST' and self.timetype=='UTC':
+                time = utc_to_gmst(time, self.mjd)
+            if timetype=='UTC' and self.timetype=='GMST':
+                time = gmst_to_utc(time, self.mjd) 
+
             sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
             if len(sites) < 4:
                 continue
@@ -1090,9 +1129,14 @@ class Obsdata(object):
                         if (sites[j], sites[k]) not in l_dict.keys():
                             continue
 
-                        red1 = l_dict[sites[i], sites[j]]
-                        red2 = l_dict[ref, sites[k]]
-                        blue2 = l_dict[sites[j], sites[k]]
+                        #ANDREW TODO behavior when no baseline?
+                        try:
+                            red1 = l_dict[sites[i], sites[j]]
+                            red2 = l_dict[ref, sites[k]]
+                            blue2 = l_dict[sites[j], sites[k]]
+                        except KeyError:
+                            continue
+                            
                         # Compute the closure amplitude and the error
                         (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
 
@@ -1115,10 +1159,14 @@ class Obsdata(object):
                     for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
 
                         # Blue is numerator, red is denominator
-                        blue1 = l_dict[quad[0], quad[1]] #MJ: Need to add checks here
-                        blue2 = l_dict[quad[2], quad[3]]
-                        red1 = l_dict[quad[0], quad[3]]
-                        red2 = l_dict[quad[1], quad[2]]
+                        #ANDREW TODO behavior when no baseline?
+                        try:
+                            blue1 = l_dict[quad[0], quad[1]] 
+                            blue2 = l_dict[quad[2], quad[3]]
+                            red1 = l_dict[quad[0], quad[3]]
+                            red2 = l_dict[quad[1], quad[2]]
+                        except KeyError:
+                            continue
 
                         # Compute the closure amplitude and the error
                         (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
@@ -1142,7 +1190,7 @@ class Obsdata(object):
 
         return np.array(outlist)
 
-    def camp_quad(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True):
+    def camp_quad(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True, timetype=self.timetype):
         """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
            Args:
@@ -1153,6 +1201,7 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               timetype (str): 'UTC' or 'GMST'
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
@@ -1166,7 +1215,7 @@ class Obsdata(object):
 
         # Get the closure amplitudes
         outdata = []
-        camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias)
+        camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias,timetype=timetype)
         for entry in camps:
             for obs in entry:
                 obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
@@ -1282,7 +1331,7 @@ class Obsdata(object):
             plt.show(block=False)
         return x
 
-    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', debias=True):
+    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', debias=True, timetype=self.timetype):
         """Plot a field over time on a baseline site1-site2.
 
            Args:
@@ -1312,12 +1361,13 @@ class Obsdata(object):
         if field not in FIELDS:
             raise Exception("valid fields are " + string.join(FIELDS))
 
-        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias)
+        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
         if not rangex:
             rangex = [self.tstart,self.tstop]
         if not rangey:
             rangey = [np.min(plotdata[field]) - 0.2 * np.abs(np.min(plotdata[field])),
                       np.max(plotdata[field]) + 0.2 * np.abs(np.max(plotdata[field]))]
+
         # Plot the data
         if axis:
             x = axis
@@ -1339,9 +1389,10 @@ class Obsdata(object):
 
         if show:
             plt.show(block=False)
+
         return x
 
-    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg'):
+    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', timetype=self.timetype):
         """Plot closure phase over time on a triangle (1-2-3).
 
            Args:
@@ -1351,7 +1402,7 @@ class Obsdata(object):
 
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
                ang_unit (str): phase unit 'deg' or 'rad' 
-
+               timetype (str): 'GMST' or 'UTC'
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (phase) limits
 
@@ -1360,6 +1411,7 @@ class Obsdata(object):
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                color (str): Color of scatterplot points
+               
 
 
            Returns:
@@ -1371,7 +1423,7 @@ class Obsdata(object):
         else: angle = eh.DEGREE
 
         # Get closure phases (maximal set)
-        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype)
+        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         if len(plotdata) == 0:
@@ -1406,7 +1458,7 @@ class Obsdata(object):
             plt.show(block=False)
         return x
 
-    def plot_camp(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True,
+    def plot_camp(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True,timetype=self.timetype,
                         ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
@@ -1419,6 +1471,7 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               timetype (str): 'GMST' or 'UTC'
 
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (phase) limits
@@ -1436,7 +1489,7 @@ class Obsdata(object):
         """
 
         # Get closure phases (maximal set)
-        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, debias=debias)
+        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
         
@@ -1513,17 +1566,18 @@ class Obsdata(object):
 
     # TODO -- this could be redundant with cphase_tri
     # would need to  change how it's implemented in closure.py
-    def get_cphase_curves(self, tris):
+    def get_cphase_curves(self, tris,timetype=self.timetype):
         """Get closure phase cuves over time on all requested triangles
 
            Args:
                 tris (list): list of station triangles
+                timetype (str): 'UTC' or 'GMST'
            Returns:
                 (list) : list of closure phase recarrays over time
         """
 
         # Get closure phases (maximal set)
-        cphases = self.c_phases(mode='time', count='max')
+        cphases = self.c_phases(mode='time', count='max',timetype=timetype)
 
         # Get requested closure phases over time
         cps = list()
@@ -1550,18 +1604,19 @@ class Obsdata(object):
 
     # TODO -- this could be redundant with cphase_tri
     # would need to  change how it's implemented in closure.py
-    def get_camp_curves(self, quads):
+    def get_camp_curves(self, quads, timetype=self.timetype):
         """Get closure amplitude over time on all requested quadrangeles
            (1-2)(3-4)/(1-4)(2-3)
 
            Args:
                 quads (list): list of station quadrangles
+                timetype (str): 'UTC' or 'GMST'
            Returns:
                 (list) : list of closure amplitude recarrays over time
         """
 
         # Get the closure amplitudes
-        camps = self.c_amplitudes(mode='time', count='max')
+        camps = self.c_amplitudes(mode='time', count='max',timetype=timetype)
 
         cas = list()
         for quad in quads:
@@ -1632,16 +1687,17 @@ def load_txt(fname):
     """
     return ehtim.io.load.load_obs_txt(fname)
 
-def load_uvfits(fname, flipbl=False):
+def load_uvfits(fname, flipbl=False, force_singlepol=None):
     """Load observation data from a uvfits file.
 
        Args:
            fname (str): path to input text file
            flipbl (bool): flip baseline phases if True.
+           force_singlepol (str): 'R' or 'L' to load only 1 polarization
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol)
 
 def load_oifits(fname, flux=1.0):
     """Load data from an oifits file. Does NOT currently support polarization.

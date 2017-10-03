@@ -397,13 +397,13 @@ class Image(object):
                                        elevmin=.01, elevmax=89.99,
                                        ft=ft, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                        opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
-                                       taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermps,dtermp_resid=termp_resid,
+                                       taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,dtermp_resid=dtermp_resid,
                                        jones=jones, inv_jones=inv_jones)
 
 
             obs_List.append(obs)
 
-        return eht.obsdata.merge_obs(obs_List)
+        return ehtim.obsdata.merge_obs(obs_List)
 
     def regrid_image(self, targetfov, npix, interp='linear'):
         """Resample the image to new (square) dimensions.

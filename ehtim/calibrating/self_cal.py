@@ -43,7 +43,7 @@ def norm_zbl(obs, flux=1.):
     return obs_cal
 
 
-def self_cal(obs, im, method="both", show_solution=False):
+def self_cal(obs, im, method="both", show_solution=False, pad_amp=0.):
     """Self-calibrate a dataset to a fixed image.
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -58,7 +58,7 @@ def self_cal(obs, im, method="both", show_solution=False):
         if not show_solution:
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
-        scan_cal = self_cal_scan(scan, im, method=method, show_solution=show_solution)
+        scan_cal = self_cal_scan(scan, im, method=method, show_solution=show_solution, pad_amp=pad_amp)
 
         if len(data_cal):
             data_cal = np.hstack((data_cal, scan_cal))
@@ -69,7 +69,7 @@ def self_cal(obs, im, method="both", show_solution=False):
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
-def self_cal_scan(scan, im, method="both", show_solution=False):
+def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
     """Self-calibrate a scan to a fixed  image.
     """
 
@@ -83,7 +83,7 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
     tkey = {b:a for a,b in enumerate(sites)}
     tidx1 = [tkey[row['t1']] for row in scan]
     tidx2 = [tkey[row['t2']] for row in scan]
-    sigma_inv = 1.0/scan['sigma']
+    sigma_inv = 1.0/(scan['sigma'] + pad_amp*np.abs(scan['vis']))
 
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
@@ -98,8 +98,8 @@ def self_cal_scan(scan, im, method="both", show_solution=False):
 
     gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
 
-    optdict = {'maxiter':1000} # minimizer params
-    res = opt.minimize(errfunc, gpar_guess, method='Powell',options=optdict)
+    optdict = {'maxiter':5000} # minimizer params
+    res = opt.minimize(errfunc, gpar_guess, method='Powell', options=optdict)
     g_fit = res.x.view(np.complex128)
 
     if method=="phase":

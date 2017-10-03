@@ -260,6 +260,10 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     if print_objfunc:
         return objfunc(xinit)
 
+    if d1 in DATATERMS:
+        print("Total Data 1: ", (len(data1)))
+    if d2 in DATATERMS:
+        print("Total Data 2: ", (len(data2)))
     print("Total Pixel #: ",(len(Prior.imvec)))
     print("Clipped Pixel #: ",(len(ninit)))
     print()
@@ -928,12 +932,30 @@ def stvgrad(imvec, nx, ny, flux):
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
     im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
 
-    g1 = (2*im - im_l1 - im_l2)/np.sqrt((im_l1 - im)**2 + (im_l2 - im)**2)
-    g2 = (im - im_r1)/np.sqrt((im_r1 - im)**2 + (im_r1l2 - im_r1)**2)
-    g3 = (im - im_r2)/np.sqrt((im_r2 - im)**2 + (im_l1r2 - im_r2)**2)
+    ####
+    #correct??
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0),-1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0), 1, axis=1)[1:ny+1, 1:nx+1]
+
+    #wrong??
+    #im_r1l2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+    #im_l1r2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
+
+    #add together terms and return 
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2)
+
+    #mask the first row column gradient terms that don't exist
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0,:] = 1
+    mask2[:,0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+
+    # add terms together and return
     out= -(g1 + g2 + g3).flatten()
     return out/norm
 
@@ -946,7 +968,7 @@ def stv2(imvec, nx, ny, flux):
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    out = -np.sum(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2)
+    out = -np.sum((im_l1 - im)**2 + (im_l2 - im)**2)
     return out/norm
 
 def stv2grad(imvec, nx, ny, flux):
@@ -960,12 +982,20 @@ def stv2grad(imvec, nx, ny, flux):
     im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
     im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
     im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
-    im_r1l2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
-    im_l1r2 = np.roll(np.roll(impad, 1, axis=0), -1, axis=1)[1:ny+1, 1:nx+1]
 
     g1 = (2*im - im_l1 - im_l2)
     g2 = (im - im_r1)
     g3 = (im - im_r2)
+
+    #mask the first row column gradient terms that don't exist
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0,:] = 1
+    mask2[:,0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+
+    #add together terms and return 
     out= -2*(g1 + g2 + g3).flatten()
     return out/norm
 
@@ -991,16 +1021,16 @@ def spatchgrad(imvec, priorvec, flux):
 def embed(im, mask, clipfloor=0., randomfloor=False):
     """Embeds a 1d image array into the size of boolean embed mask
     """
-    j=0
     out=np.zeros(len(mask))
-    for i in range(len(mask)):
-        if mask[i]:
-            out[i] = im[j]
-            j += 1
+
+    # Here's a much faster version than before 
+    out[mask.nonzero()] = im
+
+    if clipfloor != 0.0:       
+        if randomfloor: # prevent total variation gradient singularities
+            out[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
         else:
-            # prevent total variation gradient singularities
-            if randomfloor: out[i] = clipfloor * np.random.normal()
-            else: out[i] = clipfloor
+            out[(mask-1).nonzero()] = clipfloor
 
     return out
 

@@ -14,7 +14,7 @@ from ehtim.const_def import *
 def make_bispectrum(l1, l2, l3,vtype):
     """make a list of bispectra and errors
        l1,l2,l3 are full datatables of visibility entries
-       vtype is visibility type
+       vtype is visibility types
     """
     # Choose the appropriate polarization and compute the bs and err
     if vtype in ["vis", "qvis", "uvis","vvis"]:
@@ -73,10 +73,10 @@ def make_bispectrum(l1, l2, l3,vtype):
                                  var2/np.abs(p2)**2 +
                                  var3/np.abs(p3)**2)
     # Katie's 2nd + 3rd order corrections - see CHIRP supplement
-    bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
-                               var1*var3*np.abs(p2)**2 +
-                               var2*var3*np.abs(p1)**2 +
-                               var1*var2*var3)
+    #bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
+    #                           var1*var3*np.abs(p2)**2 +
+    #                           var2*var3*np.abs(p1)**2 +
+    #                           var1*var2*var3)
     return (bi, bisig)
 
 def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True):
@@ -496,10 +496,20 @@ def gmtstring(gmt):
     out = "%02i:%02i:%2.4f" % (h,m,s)
     return out
 
+#TODO fix this hacky way to do it!!
+def gmst_to_utc(gmst,mjd):
+    """Convert gmst times in hours to utc hours using astropy
+    """
+
+    mjd=int(mjd)
+    time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
+    time_sidereal_ref = time_obj.sidereal_time('mean', 'greenwich').hour
+    time_utc = (gmst - time_sidereal_ref) * 0.9972695601848 
+    return time_utc
+
 def utc_to_gmst(utc, mjd):
     """Convert utc times in hours to gmst using astropy
     """
-
     mjd=int(mjd) #MJD should always be an integer, but was float in older versions of the code
     time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
     time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
@@ -518,6 +528,7 @@ def earthrot(vecs, thetas):
     if len(thetas) == len(vecs):
         rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i])
                        for i in range(len(vecs))])
+
     # only one rotation angle, many sites
     elif len(thetas) == 1:
         rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]),-np.sin(thetas[0]),0),(np.sin(thetas[0]),np.cos(thetas[0]),0),(0,0,1))), vecs[i])
