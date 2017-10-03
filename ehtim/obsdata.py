@@ -1236,6 +1236,7 @@ class Obsdata(object):
         for entry in camps:
             for obs in entry:
                 obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
+
                 if set(quad) == set(obsquad):
                     num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
                     denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
@@ -1265,12 +1266,14 @@ class Obsdata(object):
 
                         if ctype=='logcamp':
                             obs['camp'] = -obs['camp']
-                        elif ctype=='camp':
+                        else:
                             obs['camp'] = 1./obs['camp']
                             obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
-
-                    outdata.append(np.array(obs, dtype=DTCAMP))
+                        outdata.append(np.array(obs, dtype=DTCAMP))
+                    elif (r1 in num) and (r2 in num) and (b1 in denom) and (b2 in denom):
+                        outdata.append(np.array(obs, dtype=DTCAMP))
                     continue
+
 
         return np.array(outdata)
 
