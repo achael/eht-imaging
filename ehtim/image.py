@@ -403,7 +403,7 @@ class Image(object):
 
             obs_List.append(obs)
 
-        return eht.obsdata.merge_obs(obs_List)
+        return ehtim.obsdata.merge_obs(obs_List)
 
     def regrid_image(self, targetfov, npix, interp='linear'):
         """Resample the image to new (square) dimensions.
