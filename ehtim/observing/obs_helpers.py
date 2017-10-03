@@ -496,6 +496,17 @@ def gmtstring(gmt):
     out = "%02i:%02i:%2.4f" % (h,m,s)
     return out
 
+#TODO fix this hacky way to do it!!
+def gmst_to_utc(gmst,mjd):
+    """Convert gmst times in hours to utc hours using astropy
+    """
+
+    mjd=int(mjd)
+    time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
+    time_sidereal_ref = time_obj.sidereal_time('mean', 'greenwich').hour
+    time_utc = (gmst - time_sidereal_ref) * 0.9972695601848 
+    return time_utc
+
 def utc_to_gmst(utc, mjd):
     """Convert utc times in hours to gmst using astropy
     """
