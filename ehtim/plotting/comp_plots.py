@@ -33,7 +33,7 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
         plt.show(block=False)
     return axis
 
-def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True):
+def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True):
     """Plot data from multiple observations vs time on a single baseline on the same axes.
         """
     
@@ -46,7 +46,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=Fals
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar)
+        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
 
 
     if show:
@@ -133,7 +133,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex
         plt.show(block=False)
     return axis
 
-def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True):
+def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True):
     """Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
         """
     
@@ -153,7 +153,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
     for i in range(len(obslist)):
         obs = obslist[i]
 
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, sgrscat=False, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar)
+        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, sgrscat=False, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
 
 
     if show:

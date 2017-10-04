@@ -1476,7 +1476,7 @@ x
         if ebar and np.any(plotdata[:,2]):
             x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.', color=color)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1], fmt='.', color=color)
+            x.plot(plotdata[:,0], plotdata[:,1], '.', color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
