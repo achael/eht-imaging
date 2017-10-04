@@ -1237,17 +1237,20 @@ class Obsdata(object):
 
         # Get the closure amplitudes
         outdata = []
-        camps = self.c_amplitudes(mode='time', count='max', vtype='vis', ctype=ctype, debias=debias,timetype=timetype)
+        camps = self.c_amplitudes(mode='time', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
+        
+        # camps does not contain inverses
         for entry in camps:
             for obs in entry:
-                obsquad = (obs['t1'],obs['t2'],obs['t3'],obs['t4'])
+
+                obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
 
                 if set(quad) == set(obsquad):
                     num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
                     denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
 
-                    # flip inverse closure amplitudes
-                    if (r1 in denom) and (r2 in denom) and (b1 in num) and (b2 in num):
+                    #flip inverse closure amplitudes
+                    if ((r1 in denom) and (r2 in denom) and (b1 in num) and (b2 in num)):
 
                         t2 = copy.deepcopy(obs['t2'])
                         u2 = copy.deepcopy(obs['u2'])
@@ -1275,8 +1278,11 @@ class Obsdata(object):
                             obs['camp'] = 1./obs['camp']
                             obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
                         outdata.append(np.array(obs, dtype=DTCAMP))
-                    elif (r1 in num) and (r2 in num) and (b1 in denom) and (b2 in denom):
+
+                    # not an inverse closure amplitude
+                    elif ((r1 in num) and (r2 in num) and (b1 in denom) and (b2 in denom)):
                         outdata.append(np.array(obs, dtype=DTCAMP))
+
                     continue
 
 
