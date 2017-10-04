@@ -242,7 +242,7 @@ class Obsdata(object):
         if timetype not  in ['GMST','UTC','utc','gmst']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
         allfields = ['time']
-x
+
         if not isinstance(fields, list): allfields.append(fields)
         else:
             for i in range(len(fields)): allfields.append(fields[i])
