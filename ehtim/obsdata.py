@@ -507,8 +507,15 @@ class Obsdata(object):
 
         return splitlist
 
+    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_frac=1):
+        """Give the reduced chi^2 of the observation for the specified image and datatype.
+        """
+        import ehtim.imaging.imager_utils as iu
+        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, fft_pad_frac=fft_pad_frac)
+        return iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+
     def avg_coherent(self, inttime):
-        """Coherently average data along u,v tracs in chunks of length inttime (sec).
+        """Coherently average data along u,v tracks in chunks of length inttime (sec).
 
            Args:
                 inttime (float): coherent integration time in seconds
