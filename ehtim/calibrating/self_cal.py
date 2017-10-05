@@ -88,7 +88,7 @@ def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
         if method=="phase":
-            g = g/np.abs(g) # TODO: use np.sign()?
+            g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
             g = np.abs(g)
 
@@ -103,7 +103,7 @@ def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
     g_fit = res.x.view(np.complex128)
 
     if method=="phase":
-        g_fit = g_fit/np.abs(g_fit) # TODO: use np.sign()?
+        g_fit = g_fit/np.abs(g_fit) # TODO: use use exp(i*np.arg())?
     if method=="amp":
         g_fit = np.abs(g_fit)
 
@@ -112,9 +112,13 @@ def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
     if show_solution == True:
         print(np.abs(gij_inv))
 
-    scan['vis'] = gij_inv * scan['vis']
+    scan['vis']  = gij_inv * scan['vis']
     scan['qvis'] = gij_inv * scan['qvis']
     scan['uvis'] = gij_inv * scan['uvis']
-    scan['sigma'] = np.abs(gij_inv) * scan['sigma']
+    scan['vvis'] = gij_inv * scan['vvis']
+    scan['sigma']  = np.abs(gij_inv) * scan['sigma']
+    scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
+    scan['usigma'] = np.abs(gij_inv) * scan['usigma']
+    scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
 
     return scan
