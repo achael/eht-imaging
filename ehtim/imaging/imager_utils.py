@@ -1015,6 +1015,46 @@ def spatchgrad(imvec, priorvec, flux):
     out = -(imvec  - priorvec)
     return out/norm
 
+
+def stvuniso(imvec, nx, ny, flux):
+    """Univarite Isotropic Total variation regularizer
+    """
+    #norm = flux
+    norm = 1
+    im = imvec.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    out = -np.sum(np.abs(im_l1 - im) + np.abs(im_l2 - im))
+    return out/norm
+
+
+# l0 norm calculation
+def sl0norm(imvec, f_thre):
+    '''
+    calculate l0-norm of the image. This method counts up the number of
+    the brightes pixels contributing to (1-f_thre) of the totalflux.
+    
+    This code is a modification of code contributed from the Sparse Lab library by Kazu and Mareki
+
+    Args:
+      f_thre (float): a threshold.
+    '''
+
+    #image2d = image.imvec.reshape(Ny, Nx)
+    image_vec_srt = np.sort(np.abs(imvec))
+
+    x = np.where(image_vec_srt==image_vec_srt.max())
+    image_cumsum = np.cumsum(image_vec_srt)
+    i_thre = np.min(np.where(image_cumsum > (1.0-f_thre)*image_vec_srt.sum()))
+    L0 = image_vec_srt.shape[0] - i_thre
+    L0_nrm = L0/(1.0*len(imvec))
+    out = -L0_nrm
+    
+    return out
+
+
+
 ##################################################################################################
 # Embedding and Chi^2 Data functions
 ##################################################################################################
