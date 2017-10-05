@@ -342,7 +342,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     elif ttype== 'fast':
         if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        vis_arr = fft_imvec(imvec, A[0])
+        #vis_arr = fft_imvec(imvec, A[0]) << # This was duplicated?!?
 
         vis_arr = fft_imvec(imvec, A[0])
         if dtype == 'vis':            

@@ -507,7 +507,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_frac=1):
+    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_frac=2):
         """Give the reduced chi^2 of the observation for the specified image and datatype.
         """
         import ehtim.imaging.imager_utils as iu
