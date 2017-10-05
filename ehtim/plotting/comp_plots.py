@@ -107,7 +107,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
 ##################################################################################################
 # Plotters: Compare Observations to Image
 ##################################################################################################
-def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST, ebar=True):
+def plotall_obs_im_compare(obslist, image, field1, field2, ft='direct', sgrscat=False, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST, ebar=True):
     """Plot data from observations compared to ground truth from an image on the same axes.
         """
     
@@ -115,7 +115,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex
     except TypeError: obslist = [obslist]
     
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ft=ft)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -133,7 +133,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2, sgrscat=False, rangex
         plt.show(block=False)
     return axis
 
-def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True):
+def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ft='direct', sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True):
     """Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
         """
     
@@ -142,7 +142,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
     except TypeError: obslist = [obslist]
     
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ft=ft)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -162,7 +162,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, sgrscat=False,  
 
 
 
-def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True):
+def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ft='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True):
 
     """Plot closure phase on a triangle compared to ground truth from an image on the same axes.
         """
@@ -171,7 +171,7 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=Fals
     except TypeError: obslist = [obslist]
     
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat,add_th_noise=False)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat,add_th_noise=False, ft=ft)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
@@ -191,7 +191,7 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, sgrscat=Fals
 
 
 
-def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True):
+def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ft='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True):
 
 
     """Plot closure amplitude on a quadrangle compared to ground truth from an image on the same axes.
@@ -201,7 +201,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, sgrscat
     except TypeError: obslist = [obslist]
     
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ft=ft)
         obstrue.data['sigma'] *= 0
         obslist.append(obstrue)
     
