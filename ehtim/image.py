@@ -196,7 +196,7 @@ class Image(object):
         self.qvec = - self.qvec
         return
 
-    def observe_same_nonoise(self, obs, sgrscat=False, ft="direct", fft_pad_factor=1):
+    def observe_same_nonoise(self, obs, sgrscat=False, ttype="direct", fft_pad_factor=1):
         """Observe the image on the same baselines as an existing observation object without adding noise.
 
            Args:
@@ -209,13 +209,13 @@ class Image(object):
                (Obsdata): an observation object with no noise
         """
 
-        data = simobs.observe_image_nonoise(self, obs, sgrscat=sgrscat, ft=ft, fft_pad_factor=fft_pad_factor)
+        data = simobs.observe_image_nonoise(self, obs, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, data,
                                              obs.tarr, source=self.source, mjd=obs.mjd)
         return obs_no_noise
 
-    def observe_same(self, obsin, ft='direct', fft_pad_factor=1,
+    def observe_same(self, obsin, ttype='direct', fft_pad_factor=1,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
                            jones=False, inv_jones=False,
@@ -249,7 +249,7 @@ class Image(object):
 
         """
 
-        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ft=ft, fft_pad_factor=fft_pad_factor)
+        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
 
         # Jones Matrix Corruption & Calibration
         if jones:
@@ -293,7 +293,7 @@ class Image(object):
 
     def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, timetype='UTC',
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ft='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
+                      ttype='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, 
@@ -312,7 +312,7 @@ class Image(object):
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
-               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
@@ -345,7 +345,7 @@ class Image(object):
                             tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax)
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, ft=ft, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
+        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
                                      gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,taup=taup,dtermp_resid=dtermp_resid,
                                      jones=jones, inv_jones=inv_jones)
@@ -353,7 +353,7 @@ class Image(object):
         return obs
 
     def observe_vex(self, vex, source,
-                      ft='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
+                      ttype='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, 
@@ -395,7 +395,7 @@ class Image(object):
                                        vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0,
                                        vex.bw_hz, mjd=vex.sched[i_scan]['mjd_floor'],
                                        elevmin=.01, elevmax=89.99,
-                                       ft=ft, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
+                                       ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                        opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
                                        taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,dtermp_resid=dtermp_resid,
                                        jones=jones, inv_jones=inv_jones)

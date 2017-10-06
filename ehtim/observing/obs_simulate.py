@@ -166,7 +166,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
 # Observe w/o noise
 ##################################################################################################
 
-def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1):
+def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor=1):
     """Observe the image on the same baselines as an existing observation object
        if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
        Does NOT add noise
@@ -178,10 +178,10 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1)
     if (im.rf != obs.rf):
         raise Exception("Image frequency is not the same as observation frequency!")
 
-    if ft=='direct' or ft=='fast':
+    if ttype=='direct' or ttype=='fast':
         print("Producing clean visibilities from image with " + ft + " FT . . . ")
     else:
-        raise Exception("ft=%s, options for ft are 'direct' and 'fast'"%ft)
+        raise Exception("ttype=%s, options for ft are 'direct' and 'fast'"%ft)
 
     # Copy data to be safe 
     obsdata = obs.copy().data
@@ -203,7 +203,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1)
     vvis = np.zeros(len(uv))
 
     #visibilities from FFT
-    if ft=="fast":
+    if ttype=="fast":
 
         # Pad image
         #npad = int(np.ceil(pad_frac*1./(im.psize*umin)))
@@ -307,7 +307,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ft="direct", fft_pad_factor=1)
 
     return obsdata
 
-def observe_movie_nonoise(mov, obs, sgrscat=False, ft="direct", pad_frac=0.5, repeat=False):
+def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", pad_frac=0.5, repeat=False):
         """Observe the movie on the same baselines as an existing observation object
            if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
            Does NOT add noise
@@ -360,7 +360,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ft="direct", pad_frac=0.5, re
             vvis = np.zeros(len(uv))
 
             #visibilities from FFT
-            if ft=="fast":
+            if ttype=="fast":
 
                 # Pad image
                 npad = int(np.ceil(pad_frac*1./(mov.psize*umin)))

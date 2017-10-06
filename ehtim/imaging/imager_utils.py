@@ -1558,7 +1558,7 @@ def sampler_old(griddata, im_info, uvset, sample_type="vis", order=3):
     """
     Samples griddata (e.g. the FFT of an image) at uv points 
     the griddata should already be rotated so u,v = 0,0 is in the center
-    im_info tuple contains (xdim, ydim, npad, psize, pulse) of the grid
+    im_info tuple contains (xdim, ydim, , psize, pulse) of the grid
     order is the order of the spline interpolation
     sample_type gives the type of sample returned: options are 'vis','bs','camp'
     """
