@@ -1025,7 +1025,7 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False):
+    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False, cphases=[]):
         """Return closure phase  over time on a triangle (1-2-3).
 
            Args:
@@ -1035,6 +1035,7 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'GMST' or 'UTC'
+               cphases: optionally pass in the cphases so they are not recomputed if you are plotting multiple triangles
 
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
@@ -1042,7 +1043,9 @@ class Obsdata(object):
         if timetype==False:
             timetype=self.timetype 
         # Get closure phases (maximal set)
-        cphases = self.c_phases(mode='time', count='max', vtype=vtype, ang_unit=ang_unit,timetype=timetype)
+        
+        if len(cphases) == 0:
+            cphases = self.c_phases(mode='time', count='max', vtype=vtype, ang_unit=ang_unit,timetype=timetype)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
@@ -1213,7 +1216,7 @@ class Obsdata(object):
 
         return np.array(outlist)
 
-    def camp_quad(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True, timetype=False):
+    def camp_quad(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True, timetype=False, camps=[]):
         """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
            Args:
@@ -1225,6 +1228,7 @@ class Obsdata(object):
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
                timetype (str): 'UTC' or 'GMST'
+               camps: optionally pass in the camps so they don't have to be recomputted each time
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
@@ -1244,7 +1248,9 @@ class Obsdata(object):
 
         # Get the closure amplitudes
         outdata = []
-        camps = self.c_amplitudes(mode='time', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
+        
+        if len(camps) == 0: 
+            camps = self.c_amplitudes(mode='time', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
         
         # camps does not contain inverses
         for entry in camps:
@@ -1433,7 +1439,7 @@ class Obsdata(object):
 
         return x
 
-    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', timetype=False):
+    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', timetype=False, cphases=[]):
         """Plot closure phase over time on a triangle (1-2-3).
 
            Args:
@@ -1465,7 +1471,7 @@ class Obsdata(object):
         else: angle = eh.DEGREE
 
         # Get closure phases (maximal set)
-        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype)
+        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         if len(plotdata) == 0:
@@ -1501,7 +1507,7 @@ class Obsdata(object):
         return x
 
     def plot_camp(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True,timetype=False,
-                        ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b'):
+                        ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', camps=[]):
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
            Args:
@@ -1532,7 +1538,7 @@ class Obsdata(object):
         if timetype==False:
             timetype=self.timetype
         # Get closure phases (maximal set)
-        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
+        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, debias=debias, timetype=timetype, camps=camps)
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
         

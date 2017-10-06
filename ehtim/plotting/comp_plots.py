@@ -55,7 +55,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=Fals
 
 
 
-def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True):
+def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True, cphases=[]):
 
     """Plot closure phase on a triangle vs time from multiple observations on the same axes.
         """
@@ -65,13 +65,16 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
     
     if len(obslist) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
+      
+    if len(cphases)==0:
+        cphases = np.matlib.repmat([],len(obslist),1)
     
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
 
         axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], 
-                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar)
+                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar, cphases=cphases[i])
 
 
     if show:
@@ -80,7 +83,7 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
 
 
 
-def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True):
+def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True, camps=[]):
 
     """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
         """
@@ -90,13 +93,16 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
     
     if len(obslist) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
-    
+
+    if len(camps)==0:
+        cphases = np.matlib.repmat([],len(obslist),1)
+
     axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
 
         axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar)
+                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar, camps=camps[i])
 
 
 
