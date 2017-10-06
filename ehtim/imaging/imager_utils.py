@@ -342,7 +342,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     elif ttype== 'fast':
         if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        vis_arr = fft_imvec(imvec, A[0])
+        #vis_arr = fft_imvec(imvec, A[0]) << # This was duplicated?!?
 
         vis_arr = fft_imvec(imvec, A[0])
         if dtype == 'vis':            
@@ -1015,6 +1015,46 @@ def spatchgrad(imvec, priorvec, flux):
     out = -(imvec  - priorvec)
     return out/norm
 
+
+def stvuniso(imvec, nx, ny, flux):
+    """Univarite Isotropic Total variation regularizer
+    """
+    #norm = flux
+    norm = 1
+    im = imvec.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    out = -np.sum(np.abs(im_l1 - im) + np.abs(im_l2 - im))
+    return out/norm
+
+
+# l0 norm calculation
+def sl0norm(imvec, f_thre):
+    '''
+    calculate l0-norm of the image. This method counts up the number of
+    the brightes pixels contributing to (1-f_thre) of the totalflux.
+    
+    This code is a modification of code contributed from the Sparse Lab library by Kazu and Mareki
+
+    Args:
+      f_thre (float): a threshold.
+    '''
+
+    #image2d = image.imvec.reshape(Ny, Nx)
+    image_vec_srt = np.sort(np.abs(imvec))
+
+    x = np.where(image_vec_srt==image_vec_srt.max())
+    image_cumsum = np.cumsum(image_vec_srt)
+    i_thre = np.min(np.where(image_cumsum > (1.0-f_thre)*image_vec_srt.sum()))
+    L0 = image_vec_srt.shape[0] - i_thre
+    L0_nrm = L0/(1.0*len(imvec))
+    out = -L0_nrm
+    
+    return out
+
+
+
 ##################################################################################################
 # Embedding and Chi^2 Data functions
 ##################################################################################################
@@ -1471,7 +1511,20 @@ def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAU
     vu2  = vu2.T
 
     #compute pulse & grid phase factor
-    phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
+#    if im_info.xdim%2 and not npad%2:
+#        phase = np.exp(-2j*np.pi*psize*(uv[:,0] + uv[:,1]))
+#    else:
+#        phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
+
+    # TODO: phase rotations should be done separately for x and y if the image isn't square
+    # e.g., 
+    phase = np.exp(-1j*np.pi*psize*((1+im_info.xdim%2)*uv[:,0] + (1+im_info.ydim%2)*uv[:,1])) 
+###   Andrew prefers the less elegant:
+##    if im_info.xdim%2: 
+##        phase *= np.exp(-1j*np.pi*psize*uv[:,0])
+##    if im_info.ydim%2: 
+##        phase *= np.exp(-1j*np.pi*psize*uv[:,1])
+
     pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
     pulsefac = pulsefac * phase
 

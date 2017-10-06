@@ -7,6 +7,7 @@ import sys
 
 import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
+import ehtim.imaging.imager_utils as iu
 
 def norm_zbl(obs, flux=1.):
     """Normalize scans to zero baseline
@@ -43,25 +44,40 @@ def norm_zbl(obs, flux=1.):
     return obs_cal
 
 
-def self_cal(obs, im, method="both", show_solution=False, pad_amp=0.):
+def self_cal(obs, im, method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2):
     """Self-calibrate a dataset to a fixed image.
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
 
+    # First, sample the model visibilities
+    if ttype == 'direct':
+        data_arr = obs.unpack(['u','v','vis','sigma'])
+        uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
+        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
+        V = np.dot(A, im.imvec)
+    else:
+        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_frac=fft_pad_frac)
+        im_info, sampler_info_list, gridder_info_list = fft_A
+        vis_arr = iu.fft_imvec(im.imvec, im_info)
+        V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
+   
     scans = obs.tlist()
     n = len(scans)
     data_cal = []
     i = 0
+    data_index = 0
     for scan in scans:
         i += 1
         if not show_solution:
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
-        scan_cal = self_cal_scan(scan, im, method=method, show_solution=show_solution, pad_amp=pad_amp)
+
+        scan_cal = self_cal_scan(scan, V[data_index:(data_index+len(scan))], im, method=method, show_solution=show_solution, pad_amp=pad_amp)
+        data_index += len(scan)
 
         if len(data_cal):
-            data_cal = np.hstack((data_cal, scan_cal))
+            data_cal = np.append(data_cal, scan_cal)
         else:
             data_cal = scan_cal
 
@@ -69,14 +85,9 @@ def self_cal(obs, im, method="both", show_solution=False, pad_amp=0.):
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
-def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
+def self_cal_scan(scan, V_scan, im, method="both", show_solution=False, pad_amp=0.):
     """Self-calibrate a scan to a fixed  image.
     """
-
-    # calculating image true visibs (beware no scattering here..)
-    uv = np.hstack((scan['u'].reshape(-1,1), scan['v'].reshape(-1,1)))
-    A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
-    V = np.dot(A, im.imvec)
 
     sites = list(set(scan['t1']).union(set(scan['t2'])))
 
@@ -88,11 +99,11 @@ def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
         if method=="phase":
-            g = g/np.abs(g) # TODO: use np.sign()?
+            g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
             g = np.abs(g)
 
-        Verr = scan['vis'] - g[tidx1]*g[tidx2].conj() * V
+        Verr = scan['vis'] - g[tidx1]*g[tidx2].conj() * V_scan
         chisq = np.sum((Verr.real * sigma_inv)**2) + np.sum((Verr.imag * sigma_inv)**2)
         return chisq
 
@@ -103,7 +114,7 @@ def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
     g_fit = res.x.view(np.complex128)
 
     if method=="phase":
-        g_fit = g_fit/np.abs(g_fit) # TODO: use np.sign()?
+        g_fit = g_fit/np.abs(g_fit) # TODO: use use exp(i*np.arg())?
     if method=="amp":
         g_fit = np.abs(g_fit)
 
@@ -112,9 +123,13 @@ def self_cal_scan(scan, im, method="both", show_solution=False, pad_amp=0.):
     if show_solution == True:
         print(np.abs(gij_inv))
 
-    scan['vis'] = gij_inv * scan['vis']
+    scan['vis']  = gij_inv * scan['vis']
     scan['qvis'] = gij_inv * scan['qvis']
     scan['uvis'] = gij_inv * scan['uvis']
-    scan['sigma'] = np.abs(gij_inv) * scan['sigma']
+    scan['vvis'] = gij_inv * scan['vvis']
+    scan['sigma']  = np.abs(gij_inv) * scan['sigma']
+    scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
+    scan['usigma'] = np.abs(gij_inv) * scan['usigma']
+    scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
 
     return scan

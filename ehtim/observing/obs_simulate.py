@@ -239,7 +239,8 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
         vis = visre + 1j*visim
 
         # Extra phase to match centroid convention -- right??
-        phase = np.exp(-1j*np.pi*im.psize*(uv[:,0] + uv[:,1]))
+        #phase = np.exp(-1j*np.pi*im.psize*(uv[:,0] + uv[:,1]))
+        phase = np.exp(-1j*np.pi*im.psize*((1+im.xdim%2)*uv[:,0] + (1+im.ydim%2)*uv[:,1])) 
         vis = vis * phase
 
         # Multiply by the pulse function
