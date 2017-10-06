@@ -1511,7 +1511,20 @@ def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAU
     vu2  = vu2.T
 
     #compute pulse & grid phase factor
-    phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
+#    if im_info.xdim%2 and not npad%2:
+#        phase = np.exp(-2j*np.pi*psize*(uv[:,0] + uv[:,1]))
+#    else:
+#        phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
+
+    # TODO: phase rotations should be done separately for x and y if the image isn't square
+    # e.g., 
+    phase = np.exp(-1j*np.pi*psize*((1+im_info.xdim%2)*uv[:,0] + (1+im_info.ydim%2)*uv[:,1])) 
+###   Andrew prefers the less elegant:
+##    if im_info.xdim%2: 
+##        phase *= np.exp(-1j*np.pi*psize*uv[:,0])
+##    if im_info.ydim%2: 
+##        phase *= np.exp(-1j*np.pi*psize*uv[:,1])
+
     pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
     pulsefac = pulsefac * phase
 
