@@ -18,8 +18,6 @@ def network_cal(obs, zbl, sites, zbl_uvdist_max=ZBLCUTOFF, method="both", show_s
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
-
-
     if len(sites) < 2:
         print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']       
@@ -112,9 +110,15 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
     gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
-    vpar_guess = np.ones(n_clusterbls, dtype=np.complex128).view(dtype=np.float64)
+   
+    vpar_guess = np.ones(n_clusterbls, dtype=np.complex128)
+    for i in range(len(scan_keys)):
+        vpar_guess[scan_keys[i]] = vis[i]
+    vpar_guess = vpar_guess.view(dtype=np.float64)
+
     gvpar_guess = np.hstack((gpar_guess, vpar_guess))
 
+   
     # error function
     def errfunc(gvpar):
 
@@ -129,9 +133,10 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         if method=="amp":
             g = np.abs(g)
 
-        # append the default values to g and v for the zero baseline points
-        g = np.append(g,1.)
-        v = np.append(v,zbl)
+        # append the default values to g for missing points
+        # and to v for the zero baseline points
+        g = np.append(g, 1.)
+        v = np.append(v, zbl)
 
         #print (g)
         #print (v)
@@ -163,8 +168,14 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     if method=="amp":
         g_fit = np.abs(g_fit)
 
+    #if show_solution == True:
+       # print (np.abs(g_fit))
+       # print (np.abs(v_fit))
+
+
     g_fit = np.append(g_fit, 1.)
     v_fit = np.append(v_fit, zbl)
+
 
     #g1_fit = np.array([g_fit[k] if k>=0 else 1. for k in g1_keys])
     #g2_fit = np.array([g_fit[k] if k>=0 else 1. for k in g2_keys])
@@ -172,10 +183,15 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     g2_fit = g_fit[g2_keys]
     
     gij_inv = (g1_fit * g2_fit.conj())**(-1)
-
     if show_solution == True:
+        print (tkey)
+        print (g1_keys)
+        print (g2_keys)
+        print (g_fit)
+        print (g1_fit)
+        print (g2_fit)
         print (np.abs(gij_inv))
-        print (np.abs(v_fit))
+
         
     # apply gains to scan visibility 
     scan['vis']  = gij_inv * scan['vis']
