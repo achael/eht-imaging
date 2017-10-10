@@ -13,7 +13,7 @@ import ehtim.imaging.imager_utils as iu
 
 ZBLCUTOFF = 1.e7;
 
-def network_cal(obs, zbl, sites, zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.):
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.):
     """Network-calibrate a dataset with zbl constraints
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -57,7 +57,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     """
     if len(sites) < 2:
         print("less than 2 stations specified in network cal: defaulting to calibrating all !")
-        sites = scan['sites']       
+        sites = list(set(np.hstack((scan['t1'], scan['t2']))))       
 
     #sites = list(set(scan['t1']).union(set(scan['t2'])))
 
@@ -113,7 +113,9 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
    
     vpar_guess = np.ones(n_clusterbls, dtype=np.complex128)
     for i in range(len(scan_keys)):
+        if scan_keys[i] < 0: continue
         vpar_guess[scan_keys[i]] = vis[i]
+
     vpar_guess = vpar_guess.view(dtype=np.float64)
 
     gvpar_guess = np.hstack((gpar_guess, vpar_guess))
@@ -156,7 +158,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         g_fracerr = 0.3
         sharpness = 5.
         chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
-        chisq_v = np.sum(-np.log(spec.expit(sharpness*(1-np.abs(v)/zbl))))
+        chisq_v = np.sum((np.abs(v)/zbl)**4)
+        #chisq_v = np.sum(-np.log(spec.expit(sharpness*(1-np.abs(v)/zbl))))
 
         return chisq + chisq_g + chisq_v
 
