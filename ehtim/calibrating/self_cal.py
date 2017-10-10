@@ -25,40 +25,7 @@ def network_cal(obs, zbl=1, zbl_uvdist_max=ZBLCUTOFF, stations=[], method="both"
         stations = obs.tarr['sites']       
 
     # find colocated sites and put into list allclusters
-    clusters = []
-    clustered_sites = []
-    for i1 in range(len(obs.tarr)):
-        t1 = obs.tarr[i1]
-
-        if t1['site'] in clustered_sites: 
-            continue
-
-        csites = [t1['site']]
-        clustered_sites.append(t1['site'])
-        for i2 in range(len(obs.tarr))[i1:]:  
-            t2 = obs.tarr[i2]
-            if t2['site'] in clustered_sites: 
-                continue
-
-            site1coord = np.array([t1['x'], t1['y'], t1['z']])
-            site2coord = np.array([t2['x'], t2['y'], t2['z']])
-            uvdist = np.sqrt(np.sum((site1coord-site2coord)**2)) / (C / obs.rf)
-
-            if uvdist < zbl_uvdist_max:
-                csites.append(t2['site'])
-                clustered_sites.append(t2['site'])
-        clusters.append(csites)
-    
-    clusterdict = {}
-    for site in obs.tarr['site']:
-        for k in range(len(clusters)):
-            if site in  clusters[k]:
-                clusterdict[site] = k
-
-    clusterbls = [set(comb) for comb in it.combinations(range(len(clusterdict)),2)]
-    
-    cluster_data = (clusters, clusterdict, clusterbls)
-
+    cluster_data = make_cluster_data(obs, zbl_uvdist_max)
     #print (clusters)
     #print (clusterdict)
     #print (clusterbls)
@@ -213,8 +180,42 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
     return scan
 
+def make_cluster_data(obs, zbl_uvdist_max):
+    clusters = []
+    clustered_sites = []
+    for i1 in range(len(obs.tarr)):
+        t1 = obs.tarr[i1]
 
+        if t1['site'] in clustered_sites: 
+            continue
 
+        csites = [t1['site']]
+        clustered_sites.append(t1['site'])
+        for i2 in range(len(obs.tarr))[i1:]:  
+            t2 = obs.tarr[i2]
+            if t2['site'] in clustered_sites: 
+                continue
+
+            site1coord = np.array([t1['x'], t1['y'], t1['z']])
+            site2coord = np.array([t2['x'], t2['y'], t2['z']])
+            uvdist = np.sqrt(np.sum((site1coord-site2coord)**2)) / (C / obs.rf)
+
+            if uvdist < zbl_uvdist_max:
+                csites.append(t2['site'])
+                clustered_sites.append(t2['site'])
+        clusters.append(csites)
+    
+    clusterdict = {}
+    for site in obs.tarr['site']:
+        for k in range(len(clusters)):
+            if site in  clusters[k]:
+                clusterdict[site] = k
+
+    clusterbls = [set(comb) for comb in it.combinations(range(len(clusterdict)),2)]
+    
+    cluster_data = (clusters, clusterdict, clusterbls)
+
+    return cluster_data
 
 
 
