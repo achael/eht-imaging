@@ -152,7 +152,13 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
         verr = vis - g1*g2.conj() * v_scan
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
-        return chisq
+
+        g_fracerr = 0.3
+        sharpness = 5.
+        chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
+        chisq_v = np.sum(-np.log(expit(sharpness*(1-np.abs(v)/zbl))))
+
+        return chisq + chisq_g + chisq_v
 
     #print ("errfunc init: ", errfunc(gvpar_guess))
     optdict = {'maxiter' : 5000} # minimizer params
