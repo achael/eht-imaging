@@ -156,12 +156,12 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         g_fracerr = 0.3
         sharpness = 5.
         chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
-        chisq_v = np.sum(-np.log(expit(sharpness*(1-np.abs(v)/zbl))))
+        chisq_v = np.sum(-np.log(spec.expit(sharpness*(1-np.abs(v)/zbl))))
 
         return chisq + chisq_g + chisq_v
 
     #print ("errfunc init: ", errfunc(gvpar_guess))
-    optdict = {'maxiter' : 5000} # minimizer params
+    optdict = {'maxiter' : 500} # minimizer params
     res = opt.minimize(errfunc, gvpar_guess, method='Powell', options=optdict)
 
     # get solution
@@ -174,9 +174,9 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     if method=="amp":
         g_fit = np.abs(g_fit)
 
-    #if show_solution == True:
-       # print (np.abs(g_fit))
-       # print (np.abs(v_fit))
+    if show_solution == True:
+        print (np.abs(g_fit))
+        print (np.abs(v_fit))
 
 
     g_fit = np.append(g_fit, 1.)
@@ -189,14 +189,6 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     g2_fit = g_fit[g2_keys]
     
     gij_inv = (g1_fit * g2_fit.conj())**(-1)
-    if show_solution == True:
-        print (tkey)
-        print (g1_keys)
-        print (g2_keys)
-        print (g_fit)
-        print (g1_fit)
-        print (g2_fit)
-        print (np.abs(gij_inv))
 
         
     # apply gains to scan visibility 
