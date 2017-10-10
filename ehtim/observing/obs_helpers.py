@@ -50,9 +50,9 @@ def make_bispectrum(l1, l2, l3,vtype):
         var3 = l3['sigma']**2 + l3['vsigma']**2
 
     elif vtype == "lrvis":
-        p1 = l1['vis'] - 1j*l1['vvis']
-        p2 = l2['vis'] - 1j*l2['vvis']
-        p3 = l3['vis'] - 1j*l3['vvis']
+        p1 = l1['qvis'] - 1j*l1['uvis']
+        p2 = l2['qvis'] - 1j*l2['uvis']
+        p3 = l3['qvis'] - 1j*l3['uvis']
         
         var1 = l1['qsigma']**2 + l1['usigma']**2
         var2 = l2['qsigma']**2 + l2['usigma']**2

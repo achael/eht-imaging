@@ -133,7 +133,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         if method=="phase":
             g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
-            g = np.abs(g)
+             g = np.abs(np.real(g))
+            #g = np.abs(g)
 
         # append the default values to g for missing points
         # and to v for the zero baseline points
@@ -152,7 +153,12 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         g1 = g[g1_keys]
         g2 = g[g2_keys]
 
-        verr = vis - g1*g2.conj() * v_scan
+        #TODO DEBIAS
+        if method=='amp':
+            verr = np.abs(vis) - g1*g2.conj() * np.abs(v_scan)
+        else:
+            verr = vis - g1*g2.conj() * v_scan
+        
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
 
         g_fracerr = 0.3
@@ -175,7 +181,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     if method=="phase":
         g_fit = g_fit / np.abs(g_fit)
     if method=="amp":
-        g_fit = np.abs(g_fit)
+        g_fit = np.abs(np.real(g_fit))
+        #g_fit = np.abs(g_fit)
 
     if show_solution == True:
         print (np.abs(g_fit))
