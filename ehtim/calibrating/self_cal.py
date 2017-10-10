@@ -189,7 +189,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
     return scan
 
-def make_cluster_data(obs, zbl_uvdist_max):
+def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
     clusters = []
     clustered_sites = []
     for i1 in range(len(obs.tarr)):
