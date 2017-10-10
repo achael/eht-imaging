@@ -179,9 +179,9 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
         raise Exception("Image frequency is not the same as observation frequency!")
 
     if ttype=='direct' or ttype=='fast':
-        print("Producing clean visibilities from image with " + ft + " FT . . . ")
+        print("Producing clean visibilities from image with " + ttype + " FT . . . ")
     else:
-        raise Exception("ttype=%s, options for ft are 'direct' and 'fast'"%ft)
+        raise Exception("ttype=%s, options for ttype are 'direct' and 'fast'"%ttype)
 
     # Copy data to be safe 
     obsdata = obs.copy().data
