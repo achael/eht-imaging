@@ -26,20 +26,30 @@ class Closure(object):
 	# make list of all possible tri/quadr-angles
         #sites = [self.tarr[i][0] for i in range(len(self.tarr))] # List of telescope names
         sites = [self.tarr[i][0] for i in range(len(self.tarr))] # List of telescope names
+        bl   = list(it.combinations(sites,2))
         tri  = list(it.combinations(sites,3))
         quad = list(it.combinations(sites,4))
 
         # closure phase/amp. time curves of all possible tri/quadr-angles ("None" if no data)
         cp = obs.get_cphase_curves(tri)
         ca = obs.get_camp_curves(quad)
+#        va = obs.get_amp_curves(bl)
 
-        # remove tri/quadr-angles that have no data
+#        # remove bl/tri/quadr-angles that have no data
+#        self.va=[]
+#        self.bl=[]
+#        for i in range(len(va)):
+#            if va[i] is not None:
+#                (self.va).append(va[i])
+#                (self.bl).append(bl[i])
+
         self.cp=[]
         self.tri=[]
         for i in range(len(cp)):
             if cp[i] is not None:
                 (self.cp).append(cp[i])
                 (self.tri).append(tri[i])
+
         self.ca=[]
         self.quad=[]
         for i in range(len(ca)):

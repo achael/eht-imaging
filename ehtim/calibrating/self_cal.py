@@ -2,12 +2,244 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+import scipy.special as spec
 import scipy.optimize as opt
 import sys
+import itertools as it
 
 import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
 import ehtim.imaging.imager_utils as iu
+
+ZBLCUTOFF = 1.e7;
+
+def network_cal(obs, zbl=1, zbl_uvdist_max=ZBLCUTOFF, stations=[], method="both", show_solution=False, pad_amp=0.):
+    """Network-calibrate a dataset with zbl constraints
+    """
+    # V = model visibility, V' = measured visibility, G_i = site gain
+    # G_i * conj(G_j) * V_ij = V'_ij
+
+
+    if len(stations) < 2:
+        print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
+        stations = obs.tarr['sites']       
+
+    # find colocated sites and put into list allclusters
+    clusters = []
+    clustered_sites = []
+    for i1 in range(len(obs.tarr)):
+        t1 = obs.tarr[i1]
+
+        if t1['site'] in clustered_sites: 
+            continue
+
+        csites = [t1['site']]
+        clustered_sites.append(t1['site'])
+        for i2 in range(len(obs.tarr))[i1:]:  
+            t2 = obs.tarr[i2]
+            if t2['site'] in clustered_sites: 
+                continue
+
+            site1coord = np.array([t1['x'], t1['y'], t1['z']])
+            site2coord = np.array([t2['x'], t2['y'], t2['z']])
+            uvdist = np.sqrt(np.sum((site1coord-site2coord)**2)) / (C / obs.rf)
+
+            if uvdist < zbl_uvdist_max:
+                csites.append(t2['site'])
+                clustered_sites.append(t2['site'])
+        clusters.append(csites)
+    
+    clusterdict = {}
+    for site in obs.tarr['site']:
+        for k in range(len(clusters)):
+            if site in  clusters[k]:
+                clusterdict[site] = k
+
+    clusterbls = [set(comb) for comb in it.combinations(range(len(clusterdict)),2)]
+    
+    cluster_data = (clusters, clusterdict, clusterbls)
+
+    #print (clusters)
+    #print (clusterdict)
+    #print (clusterbls)
+
+    # loop over scans and calibrate
+    scans = obs.tlist()
+    n = len(scans)
+    data_cal = []
+    i = 0
+    data_index = 0
+    for scan in scans:
+        i += 1
+        if not show_solution:
+            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
+            sys.stdout.flush()
+
+        scan_cal = network_cal_scan(scan, zbl, stations, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp)
+        data_index += len(scan)
+
+        if len(data_cal):
+            data_cal = np.append(data_cal, scan_cal)
+        else:
+            data_cal = scan_cal
+
+    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, source=obs.source,
+                                    mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
+    return obs_cal
+
+def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.):
+    """Network-calibrate a scan with zbl constraints
+    """
+
+    #sites = list(set(scan['t1']).union(set(scan['t2'])))
+
+    # clustered site information
+    allclusters = clustered_sites[0]
+    clusterdict = clustered_sites[1]
+    clusterbls = clustered_sites[2]
+
+    # create a dictionary to keep track of gains 
+    tkey = {b:a for a,b in enumerate(sites)}
+    clusterkey = clusterdict
+
+    # make a list of gain keys that relates scan bl gains to solved site ones
+    # -1 means that this station does not have a gain that is being solved for
+
+    # and make a list of scan keys that relates scan bl visibilities to solved cluster ones
+    # -1 means it's a zero baseline!
+
+    g1_keys = []
+    g2_keys = []
+    scan_keys = []
+    for row in scan:
+        try: 
+            g1_keys.append(tkey[row['t1']])
+        except KeyError: 
+            g1_keys.append(-1)
+        try: 
+            g2_keys.append(tkey[row['t2']])
+        except KeyError: 
+            g2_keys.append(-1)
+
+        clusternum1 = clusterkey[row['t1']]
+        clusternum2 = clusterkey[row['t2']]
+        if clusternum1 == clusternum2: # sites are in the same cluster
+            scan_keys.append(-1)
+        else: #sites are not in the same cluster
+            bl_index = clusterbls.index(set((clusternum1, clusternum2)))       
+            scan_keys.append(bl_index)
+
+
+    # no sites to calibrate on this scan!
+    if len(g1_keys) == 0:
+        return scan
+
+    # scan visibilities and sigmas with extra padding
+    vis = scan['vis']
+    sigma_inv = 1.0/(scan['sigma'] + pad_amp*np.abs(scan['vis']))
+
+    # initial guesses for parameters 
+    n_gains = len(sites)
+    n_clusterbls = len(clusterbls)
+    gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
+    vpar_guess = 2*np.ones(n_clusterbls, dtype=np.complex128).view(dtype=np.float64)
+    gvpar_guess = np.hstack((gpar_guess, vpar_guess))
+
+    # error function
+    def errfunc(gvpar):
+
+        # all the forward site gains (complex)
+        g = gvpar[0:2*n_gains].astype(np.float64).view(dtype=np.complex128)
+        # all the intercluster visibilities (complex)
+        v = gvpar[2*n_gains:].astype(np.float64).view(dtype=np.complex128)
+
+        # choose to only scale ampliltudes or phases
+        if method=="phase":
+            g = g/np.abs(g) # TODO: use exp(i*np.arg())?
+        if method=="amp":
+            g = np.abs(g)
+
+        # append the default values to g and v for the zero baseline points
+        np.append(g,1.)
+        np.append(v,zbl)
+
+        # scan visibilities are either an intercluster visibility or the fixed zbl
+        #v_scan = np.array([v[k] if k>=0 else zbl for k in scan_keys])
+        #g1 = np.array([g[k] if k>=0 else 1. for k in tidx1])
+        #g2 = np.array([g[k] if k>=0 else 1. for k in tidx2])
+        
+        v_scan = v[scan_keys]
+        g1 = g[g1_keys]
+        g2 = g[g2_keys]
+
+        verr = vis - g1*g2.conj() * v_scan
+        chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
+        return chisq
+
+    optdict = {'maxiter' : 5000} # minimizer params
+    res = opt.minimize(errfunc, gvpar_guess, method='Powell', options=optdict)
+
+    # get solution
+    g_fit = res.x[0:2*n_gains].view(np.complex128)
+    v_fit = res.x[2*n_gains:].view(np.complex128)
+    np.append(g_fit, 1.)
+    np.append(v_fit, zbl)
+
+    if method=="phase":
+        g_fit = g_fit/np.abs(g_fit) # TODO: use use exp(i*np.arg())?
+    if method=="amp":
+        g_fit = np.abs(g_fit)
+
+    #g1_fit = np.array([g_fit[k] if k>=0 else 1. for k in g1_keys])
+    #g2_fit = np.array([g_fit[k] if k>=0 else 1. for k in g2_keys])
+    g1_fit = g_fit[g1_keys]
+    g2_fit = g_fit[g2_keys]
+    
+    gij_inv = (g1_fit * g2_fit.conj())**(-1)
+
+    if show_solution == True:
+        print (np.abs(gij_inv))
+        print (np.abs(v_fit))
+        
+    # apply gains to scan visibility 
+    scan['vis']  = gij_inv * scan['vis']
+    scan['qvis'] = gij_inv * scan['qvis']
+    scan['uvis'] = gij_inv * scan['uvis']
+    scan['vvis'] = gij_inv * scan['vvis']
+    scan['sigma']  = np.abs(gij_inv) * scan['sigma']
+    scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
+    scan['usigma'] = np.abs(gij_inv) * scan['usigma']
+    scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
+
+    return scan
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def norm_zbl(obs, flux=1.):
     """Normalize scans to zero baseline
