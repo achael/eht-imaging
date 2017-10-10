@@ -13,7 +13,7 @@ import ehtim.imaging.imager_utils as iu
 
 ZBLCUTOFF = 1.e7;
 
-def network_cal(obs, zbl, sites, zbl_uvdist_max=ZBLCUTOFFF, method="both", show_solution=False, pad_amp=0.):
+def network_cal(obs, zbl, sites, zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.):
     """Network-calibrate a dataset with zbl constraints
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -130,8 +130,11 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
             g = np.abs(g)
 
         # append the default values to g and v for the zero baseline points
-        np.append(g,1.)
-        np.append(v,zbl)
+        g = np.append(g,1.)
+        v = np.append(v,zbl)
+
+        #print (g)
+        #print (v)
 
         # scan visibilities are either an intercluster visibility or the fixed zbl
         #v_scan = np.array([v[k] if k>=0 else zbl for k in scan_keys])
@@ -146,23 +149,22 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
         return chisq
 
-    print ("errfunc init: ", errfunc(gvpar_guess))
+    #print ("errfunc init: ", errfunc(gvpar_guess))
     optdict = {'maxiter' : 5000} # minimizer params
     res = opt.minimize(errfunc, gvpar_guess, method='Powell', options=optdict)
 
     # get solution
-    print ("errfunc end: " ,errfunc(res.x))
+    #print ("errfunc end: " ,errfunc(res.x))
     g_fit = res.x[0:2*n_gains].view(np.complex128)
     v_fit = res.x[2*n_gains:].view(np.complex128)
     
-
-    np.append(g_fit, 1.)
-    np.append(v_fit, zbl)
-
     if method=="phase":
-        g_fit = g_fit/np.abs(g_fit) # TODO: use use exp(i*np.arg())?
+        g_fit = g_fit / np.abs(g_fit)
     if method=="amp":
         g_fit = np.abs(g_fit)
+
+    g_fit = np.append(g_fit, 1.)
+    v_fit = np.append(v_fit, zbl)
 
     #g1_fit = np.array([g_fit[k] if k>=0 else 1. for k in g1_keys])
     #g2_fit = np.array([g_fit[k] if k>=0 else 1. for k in g2_keys])
