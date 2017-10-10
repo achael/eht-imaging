@@ -265,6 +265,23 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
 
 #    return out_mov
 
+
+def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
+    """Read in a movie from a hdf5 file and create a Movie object
+       file_name should be the name of the hdf5 file
+       thisdoes not use the header of the hdf5 file so you need to give it 
+       psize, framedur_sec, ra and dec
+    """
+    
+    import h5py
+    file    = h5py.File(file_name, 'r') 
+    name    = list(file.keys())[0]
+    d       = file[str(name)] 
+    sim  = d[:]
+    file.close()
+    return Movie(sim, framedur_sec, psize, ra, dec, rf)
+
+
 def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
     """Read in a movie from text files and create a Movie object
        Text files should be filename + 00001, etc.

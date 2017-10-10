@@ -13,16 +13,16 @@ import ehtim.imaging.imager_utils as iu
 
 ZBLCUTOFF = 1.e7;
 
-def network_cal(obs, zbl=1, zbl_uvdist_max=ZBLCUTOFF, stations=[], method="both", show_solution=False, pad_amp=0.):
+def network_cal(obs, zbl, sites, zbl_uvdist_max=ZBLCUTOFFF, method="both", show_solution=False, pad_amp=0.):
     """Network-calibrate a dataset with zbl constraints
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
 
 
-    if len(stations) < 2:
+    if len(sites) < 2:
         print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
-        stations = obs.tarr['sites']       
+        sites = obs.tarr['site']       
 
     # find colocated sites and put into list allclusters
     cluster_data = make_cluster_data(obs, zbl_uvdist_max)
@@ -42,7 +42,7 @@ def network_cal(obs, zbl=1, zbl_uvdist_max=ZBLCUTOFF, stations=[], method="both"
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
 
-        scan_cal = network_cal_scan(scan, zbl, stations, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp)
+        scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp)
         data_index += len(scan)
 
         if len(data_cal):
@@ -57,6 +57,9 @@ def network_cal(obs, zbl=1, zbl_uvdist_max=ZBLCUTOFF, stations=[], method="both"
 def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.):
     """Network-calibrate a scan with zbl constraints
     """
+    if len(sites) < 2:
+        print("less than 2 stations specified in network cal: defaulting to calibrating all !")
+        sites = scan['sites']       
 
     #sites = list(set(scan['t1']).union(set(scan['t2'])))
 
@@ -98,18 +101,18 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
 
     # no sites to calibrate on this scan!
-    if len(g1_keys) == 0:
+    if np.all(g1_keys == -1):
         return scan
 
     # scan visibilities and sigmas with extra padding
     vis = scan['vis']
-    sigma_inv = 1.0/(scan['sigma'] + pad_amp*np.abs(scan['vis']))
+    sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
 
     # initial guesses for parameters 
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
     gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
-    vpar_guess = 2*np.ones(n_clusterbls, dtype=np.complex128).view(dtype=np.float64)
+    vpar_guess = np.ones(n_clusterbls, dtype=np.complex128).view(dtype=np.float64)
     gvpar_guess = np.hstack((gpar_guess, vpar_guess))
 
     # error function
@@ -143,12 +146,16 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
         return chisq
 
+    print ("errfunc init: ", errfunc(gvpar_guess))
     optdict = {'maxiter' : 5000} # minimizer params
     res = opt.minimize(errfunc, gvpar_guess, method='Powell', options=optdict)
 
     # get solution
+    print ("errfunc end: " ,errfunc(res.x))
     g_fit = res.x[0:2*n_gains].view(np.complex128)
     v_fit = res.x[2*n_gains:].view(np.complex128)
+    
+
     np.append(g_fit, 1.)
     np.append(v_fit, zbl)
 

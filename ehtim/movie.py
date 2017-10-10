@@ -586,6 +586,10 @@ def merge_im_list(imlist, framedur=-1):
 # Movie creation and export functions
 ##################################################################################################
 
+def load_hdf5(file_name, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT)
+    return load_movie_hdf5(file_name, framedur_sec=framedur_sec, psize=psize, ra=ra, dec=dec, rf=rf, pulse=pulse)
+
+
 def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
     """Read in a movie from text files and create a Movie object.
 
