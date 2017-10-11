@@ -5,7 +5,9 @@ from builtins import object
 
 import numpy as np
 
-def resample(y, n=16):
+def sumdown_lin(y, n=16):
+    """Summing segments of a line together to reduce its size
+    """
     nold = y.shape[0]
     nnew = n
 
@@ -22,8 +24,8 @@ def resample(y, n=16):
 
     return np.diff(csum)
 
-def resample2(img, n=16):
-    """Resampling an image
+def sumdown_img(img, n=16):
+    """Summing patches of an image together to reduce its size
 
     For simplicity, we will just pad each side of an image to an
     integer multiple of n and then down sample but summing up the
