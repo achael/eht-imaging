@@ -6,16 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
 
-def gauss(x0, sx):
-    n = 128
-    X = 0.5 * (n - 1)
-    x = np.linspace(-X, X, n) / n - x0
-    return np.exp(-0.5 * (x * x) / (sx * sx)) / np.sqrt(2 * np.pi * sx * sx)
-
-def gauss2(x0, y0, sx, sy):
-    return np.sqrt(np.outer(gauss(x0, sx), gauss(y0, sy)))
-
-
 urltemplate = "http://vlbiimaging.csail.mit.edu/static/testData/uploads/{}/pngimages/test_02.png"
 submissions = ["2617818", "7039776", "8649732", "6288084", "5869777", "6356229"]
 labels      = ["CHRIP\nNatural", "SQUEEZE\nTotal Variation", "BSMEM", "Bispectrum MEM\nL-BFGS",
