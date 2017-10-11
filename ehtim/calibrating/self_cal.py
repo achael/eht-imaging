@@ -11,9 +11,16 @@ import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
 import ehtim.imaging.imager_utils as iu
 
+from multiprocessing import Pool
+
+import itertools
+
 ZBLCUTOFF = 1.e7;
 
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.,gain_tol=.2):
+###################################################################################################################################
+#Network-Calibration
+###################################################################################################################################
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.,gain_tol=.2, processes=-1, caltable=False):
     """Network-calibrate a dataset with zbl constraints
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -22,35 +29,54 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
         print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']       
 
+    # Make the pool for parallel processing
+    if processes > 0:
+        print("Using Multiprocessing")
+        pool = Pool(processes=processes)
+    else:
+        print("Not Using Multiprocessing")
+
     # find colocated sites and put into list allclusters
     cluster_data = make_cluster_data(obs, zbl_uvdist_max)
 
     # loop over scans and calibrate
-    scans = obs.tlist()
-    n = len(scans)
-    data_cal = []
-    i = 0
-    data_index = 0
-    for scan in scans:
-        i += 1
-        if not show_solution:
-            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
+    scans     = obs.tlist()
+    scans_cal = scans.copy()
+
+    if processes > 0:
+        scans_cal = np.array(pool.map(get_scan_cal, [[i, len(scans), scans[i], zbl, sites, cluster_data, method, pad_amp, gain_tol, caltable, show_solution] for i in range(len(scans))]))
+    else:
+        for i in range(len(scans)):
+            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
             sys.stdout.flush()
+            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, 
+                                            method=method, show_solution=show_solution, caltable=caltable, 
+                                            pad_amp=pad_amp, gain_tol=gain_tol)
 
-        scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
-        data_index += len(scan)
+    if caltable:
+        allsites = obs.tarr['site']
+        caldict = scans_cal[0]
+        for i in range(1,len(scans_cal)):
+            row = scans_cal[i]
+            for site in allsites:
+                try: dat = row[site]
+                except KeyError: continue
 
-        if len(data_cal):
-            data_cal = np.append(data_cal, scan_cal)
-        else:
-            data_cal = scan_cal
+                try: caldict[site] = np.append(caldict[site], row[site])
+                except KeyError: caldict[site] = dat
 
-    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, 
-                                    source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
-                                    ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
-    return obs_cal
+        caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr, 
+                                           source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
+        out = caltable
+    else:
+        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, 
+                                        np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd, 
+                                        ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
+                                        timetype=obs.timetype)
+        out = obs_cal
+    return out
 
-def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0., gain_tol=.2):
+def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
     """Network-calibrate a scan with zbl constraints
     """
     if len(sites) < 2:
@@ -183,97 +209,49 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     g_fit = np.append(g_fit, 1.)
     v_fit = np.append(v_fit, zbl)
 
-    g1_fit = g_fit[g1_keys]
-    g2_fit = g_fit[g2_keys]
-    
-    gij_inv = (g1_fit * g2_fit.conj())**(-1)
+    if caltable:
+        allsites = list(set(scan['t1']).union(set(scan['t2'])))
 
+        caldict = {}
+        for site in allsites:
+            if site in sites: 
+                site_key = tkey[site]
+            else:
+                site_key = -1
+            caldict[site] = np.array((scan['time'][0], g_fit[site_key], g_fit[site_key]), dtype=DTCAL)  
+        out = caldict
         
-    # apply gains to scan visibility 
-    scan['vis']  = gij_inv * scan['vis']
-    scan['qvis'] = gij_inv * scan['qvis']
-    scan['uvis'] = gij_inv * scan['uvis']
-    scan['vvis'] = gij_inv * scan['vvis']
-    scan['sigma']  = np.abs(gij_inv) * scan['sigma']
-    scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
-    scan['usigma'] = np.abs(gij_inv) * scan['usigma']
-    scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
+    else:
+        g1_fit = g_fit[g1_keys]
+        g2_fit = g_fit[g2_keys]
+        gij_inv = (g1_fit * g2_fit.conj())**(-1)
+        scan['vis']  = gij_inv * scan['vis']
+        scan['qvis'] = gij_inv * scan['qvis']
+        scan['uvis'] = gij_inv * scan['uvis']
+        scan['vvis'] = gij_inv * scan['vvis']
+        scan['sigma']  = np.abs(gij_inv) * scan['sigma']
+        scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
+        scan['usigma'] = np.abs(gij_inv) * scan['usigma']
+        scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
+        out = scan
 
-    return scan
-
-def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
-    clusters = []
-    clustered_sites = []
-    for i1 in range(len(obs.tarr)):
-        t1 = obs.tarr[i1]
-
-        if t1['site'] in clustered_sites: 
-            continue
-
-        csites = [t1['site']]
-        clustered_sites.append(t1['site'])
-        for i2 in range(len(obs.tarr))[i1:]:  
-            t2 = obs.tarr[i2]
-            if t2['site'] in clustered_sites: 
-                continue
-
-            site1coord = np.array([t1['x'], t1['y'], t1['z']])
-            site2coord = np.array([t2['x'], t2['y'], t2['z']])
-            uvdist = np.sqrt(np.sum((site1coord-site2coord)**2)) / (C / obs.rf)
-
-            if uvdist < zbl_uvdist_max:
-                csites.append(t2['site'])
-                clustered_sites.append(t2['site'])
-        clusters.append(csites)
-    
-    clusterdict = {}
-    for site in obs.tarr['site']:
-        for k in range(len(clusters)):
-            if site in  clusters[k]:
-                clusterdict[site] = k
-
-    clusterbls = [set(comb) for comb in it.combinations(range(len(clusterdict)),2)]
-    
-    cluster_data = (clusters, clusterdict, clusterbls)
-
-    return cluster_data
-
-def norm_zbl(obs, flux=1.):
-    """Normalize scans to zero baseline
-    """
-    # V = model visibility, V' = measured visibility, G_i = site gain
-    # G_i * conj(G_j) * V_ij = V'_ij
-
-    scans = obs.tlist()
-    n = len(scans)
-    data_norm = []
-    i = 0
-    for scan in scans:
-        i += 1
-        uvdist = np.sqrt(scan['u']**2 + scan['v']**2)
-        #print(np.min(uvdist)/1.e4)
-        scan_zbl = np.abs(scan['vis'][np.argmin(uvdist)])
-
-        scan['vis'] = scan['vis']/scan_zbl
-        scan['sigma'] = scan['sigma']/scan_zbl
-        scan['qvis'] = scan['qvis']/scan_zbl
-        scan['qsigma'] = scan['qsigma']/scan_zbl
-        scan['uvis'] = scan['uvis']/scan_zbl
-        scan['usigma'] = scan['usigma']/scan_zbl
-        scan['vvis'] = scan['vvis']/scan_zbl
-        scan['vsigma'] = scan['vsigma']/scan_zbl
-
-        if len(data_norm):
-            data_norm = np.hstack((data_norm, scan))
-        else:
-            data_norm = scan
-
-    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_norm, obs.tarr,
-                                    source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
-                                    ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
-    return obs_cal
+    return out
 
 
+def get_scan_cal(args):
+    return get_scan_cal2(*args)
+
+def get_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution):
+
+    print('.')
+
+    scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, method=method,caltable=caltable, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol)
+
+    return scan_cal
+
+###################################################################################################################################
+#Self-Calibration
+###################################################################################################################################
 def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2, gain_tol=.2, caltable=False):
     """Self-calibrate a dataset to a fixed image.
     """
@@ -438,3 +416,81 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         out = scan
 
     return out
+
+
+###################################################################################################################################
+#Misc
+###################################################################################################################################
+
+def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
+    clusters = []
+    clustered_sites = []
+    for i1 in range(len(obs.tarr)):
+        t1 = obs.tarr[i1]
+
+        if t1['site'] in clustered_sites: 
+            continue
+
+        csites = [t1['site']]
+        clustered_sites.append(t1['site'])
+        for i2 in range(len(obs.tarr))[i1:]:  
+            t2 = obs.tarr[i2]
+            if t2['site'] in clustered_sites: 
+                continue
+
+            site1coord = np.array([t1['x'], t1['y'], t1['z']])
+            site2coord = np.array([t2['x'], t2['y'], t2['z']])
+            uvdist = np.sqrt(np.sum((site1coord-site2coord)**2)) / (C / obs.rf)
+
+            if uvdist < zbl_uvdist_max:
+                csites.append(t2['site'])
+                clustered_sites.append(t2['site'])
+        clusters.append(csites)
+    
+    clusterdict = {}
+    for site in obs.tarr['site']:
+        for k in range(len(clusters)):
+            if site in  clusters[k]:
+                clusterdict[site] = k
+
+    clusterbls = [set(comb) for comb in it.combinations(range(len(clusterdict)),2)]
+    
+    cluster_data = (clusters, clusterdict, clusterbls)
+
+    return cluster_data
+
+def norm_zbl(obs, flux=1.):
+    """Normalize scans to zero baseline
+    """
+    # V = model visibility, V' = measured visibility, G_i = site gain
+    # G_i * conj(G_j) * V_ij = V'_ij
+
+    scans = obs.tlist()
+    n = len(scans)
+    data_norm = []
+    i = 0
+    for scan in scans:
+        i += 1
+        uvdist = np.sqrt(scan['u']**2 + scan['v']**2)
+        #print(np.min(uvdist)/1.e4)
+        scan_zbl = np.abs(scan['vis'][np.argmin(uvdist)])
+
+        scan['vis'] = scan['vis']/scan_zbl
+        scan['sigma'] = scan['sigma']/scan_zbl
+        scan['qvis'] = scan['qvis']/scan_zbl
+        scan['qsigma'] = scan['qsigma']/scan_zbl
+        scan['uvis'] = scan['uvis']/scan_zbl
+        scan['usigma'] = scan['usigma']/scan_zbl
+        scan['vvis'] = scan['vvis']/scan_zbl
+        scan['vsigma'] = scan['vsigma']/scan_zbl
+
+        if len(data_norm):
+            data_norm = np.hstack((data_norm, scan))
+        else:
+            data_norm = scan
+
+    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_norm, obs.tarr,
+                                    source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+                                    ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
+    return obs_cal
+

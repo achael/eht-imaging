@@ -96,11 +96,9 @@ class Caltable(object):
             rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'], kind=interp)
             linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'], kind=interp)
 
-            
         bllist = obs.bllist()
         datatable = []
         for bl_obs in bllist:
-        
             t1 = bl_obs['t1'][0] 
             t2 = bl_obs['t2'][0]
             time_mjd = bl_obs['time']/24.0 + obs.mjd
