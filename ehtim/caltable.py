@@ -151,7 +151,11 @@ class Caltable(object):
    
 def load_caltable(obs, datapath, channel):
 
+    """Load Maciek's apriori cal tables
+    """
+
     datatables = {}
+    
     
     for s in range(0, len(obs.tarr)):
     
@@ -165,8 +169,8 @@ def load_caltable(obs, datapath, channel):
             
             time = (float(row[0]) - obs.mjd) * 24.0 # time is given in mjd
             
-            rscale = float(row[1]) # r
-            lscale = float(row[2]) # l
+            rscale = np.sqrt(float(row[1])) # r
+            lscale = np.sqrt(float(row[2])) # l
                 
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
         

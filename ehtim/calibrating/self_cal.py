@@ -218,7 +218,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
                 site_key = tkey[site]
             else:
                 site_key = -1
-            caldict[site] = np.array((scan['time'][0], g_fit[site_key], g_fit[site_key]), dtype=DTCAL)  
+            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)  
         out = caldict
         
     else:
@@ -398,7 +398,8 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
                 site_key = tkey[site]
             else:
                 site_key = -1
-            caldict[site] = np.array((scan['time'][0], g_fit[site_key], g_fit[site_key]), dtype=DTCAL)  
+            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)  
+
         out = caldict
         
     else:
