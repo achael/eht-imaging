@@ -13,7 +13,7 @@ import ehtim.imaging.imager_utils as iu
 
 ZBLCUTOFF = 1.e7;
 
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.):
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.,gain_tol=.2):
     """Network-calibrate a dataset with zbl constraints
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -40,7 +40,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
 
-        scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp)
+        scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
         data_index += len(scan)
 
         if len(data_cal):
@@ -52,7 +52,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
-def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.):
+def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0., gain_tol=.2):
     """Network-calibrate a scan with zbl constraints
     """
     if len(sites) < 2:
@@ -161,7 +161,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
 
-        g_fracerr = 0.3
+        g_fracerr = gain_tol #0.3
         sharpness = 5.
         chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
         chisq_v = np.sum((np.abs(v)/zbl)**4)
@@ -250,31 +250,6 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
 
     return cluster_data
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def norm_zbl(obs, flux=1.):
     """Normalize scans to zero baseline
     """
@@ -310,14 +285,14 @@ def norm_zbl(obs, flux=1.):
     return obs_cal
 
 
-def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2):
+def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2,gain_tol=.2):
     """Self-calibrate a dataset to a fixed image.
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
 
     if len(sites) < 2:
-        print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
+        print("less than 2 stations specified in self cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']       
 
     # First, sample the model visibilities
@@ -343,7 +318,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
 
-        scan_cal = self_cal_scan(scan, V[data_index:(data_index+len(scan))], im, method=method, show_solution=show_solution, pad_amp=pad_amp)
+        scan_cal = self_cal_scan(scan, V[data_index:(data_index+len(scan))], sites=sites, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
         data_index += len(scan)
 
         if len(data_cal):
@@ -355,7 +330,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
-def self_cal_scan(scan, V_scan, sites=[], method="both", show_solution=False, pad_amp=0.):
+def self_cal_scan(scan, V_scan, sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2):
     """Self-calibrate a scan to a fixed  image.
     """
 
@@ -405,13 +380,18 @@ def self_cal_scan(scan, V_scan, sites=[], method="both", show_solution=False, pa
 
         #TODO DEBIAS
         if method=='amp':
-            verr = np.abs(vis) - g1*g2.conj() * np.abs(V_scan)
+            verr = np.abs(scan['vis']) - g1*g2.conj() * np.abs(V_scan)
         else:
-            verr = vis - g1*g2.conj() * V_scan
+            verr = scan['vis'] - g1*g2.conj() * V_scan
         
 
-        Verr = scan['vis'] - g[tidx1]*g[tidx2].conj() * V_scan
-        chisq = np.sum((Verr.real * sigma_inv)**2) + np.sum((Verr.imag * sigma_inv)**2)
+        #Verr = scan['vis'] - g[tidx1]*g[tidx2].conj() * V_scan
+        chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
+
+        
+        chisq_g = np.sum((np.log(np.abs(g))**2 / gain_tol**2))
+
+
         return chisq
 
 
