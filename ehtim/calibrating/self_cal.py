@@ -11,9 +11,21 @@ import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
 import ehtim.imaging.imager_utils as iu
 
+from multiprocessing import Pool
+
 ZBLCUTOFF = 1.e7;
 
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.,gain_tol=.2):
+def get_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, show_solution, pad_amp,gain_tol):
+    print('.')
+
+    scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, method=method, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol)
+
+    return scan_cal
+
+def get_scan_cal(args):
+    return get_scan_cal2(*args)
+
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.,gain_tol=.2, processes=-1):
     """Network-calibrate a dataset with zbl constraints
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -22,6 +34,13 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
         print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']       
 
+    # Make the pool for parallel processing
+    if processes > 0:
+        print("Using Multiprocessing")
+        pool = Pool(processes=processes)
+    else:
+        print("Not Using Multiprocessing")
+
     # find colocated sites and put into list allclusters
     cluster_data = make_cluster_data(obs, zbl_uvdist_max)
 
@@ -29,11 +48,14 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
     scans     = obs.tlist()
     scans_cal = scans.copy()
 
-    for i in range(len(scans)):
-        sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
-        sys.stdout.flush()
+    if processes > 0:
+        scans_cal = np.array(pool.map(get_scan_cal, [[i, len(scans), scans[i], zbl, sites, cluster_data, method, show_solution, pad_amp,gain_tol] for i in range(len(scans))]))
+    else:
+        for i in range(len(scans)):
+            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
+            sys.stdout.flush()
 
-        scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
+            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
 
     obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.concatenate(scans_cal), obs.tarr, source=obs.source,
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
