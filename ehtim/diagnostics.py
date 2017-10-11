@@ -43,3 +43,9 @@ def sumdown_img(img, n=16):
 
     img = np.pad(img, ((px, Nx-nx-px), (py, Ny-ny-py)), 'constant')
     return img.reshape(n, mx, n, my).sum(axis=(1,3))
+
+def onedimize(imgs, n=16):
+    imgs = [sumdown_img(img, n=n) for img in imgs]
+    mean = np.dstack(imgs).mean(axis=2)
+    idxs = np.argsort(-mean.reshape(n*n))
+    return [img.reshape(n*n)[idxs] for img in imgs], mean.reshape(n*n)[idxs]
