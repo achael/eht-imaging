@@ -24,31 +24,19 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
 
     # find colocated sites and put into list allclusters
     cluster_data = make_cluster_data(obs, zbl_uvdist_max)
-    #print (clusters)
-    #print (clusterdict)
-    #print (clusterbls)
 
     # loop over scans and calibrate
-    scans = obs.tlist()
-    n = len(scans)
-    data_cal = []
-    i = 0
-    data_index = 0
-    for scan in scans:
-        i += 1
+    scans     = obs.tlist()
+    scans_cal = scans.copy()
+
+    for i in range(len(scans)):
         if not show_solution:
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
 
-        scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
-        data_index += len(scan)
+        scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
 
-        if len(data_cal):
-            data_cal = np.append(data_cal, scan_cal)
-        else:
-            data_cal = scan_cal
-
-    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_cal, obs.tarr, source=obs.source,
+    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.concatenate(scans_cal), obs.tarr, source=obs.source,
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
