@@ -13,9 +13,12 @@ import ehtim.imaging.imager_utils as iu
 
 from multiprocessing import Pool
 
+import itertools
+
 ZBLCUTOFF = 1.e7;
 
 def get_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, show_solution, pad_amp,gain_tol):
+
     print('.')
 
     scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, method=method, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol)
