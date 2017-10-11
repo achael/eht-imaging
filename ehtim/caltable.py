@@ -23,12 +23,8 @@ from ehtim.observing.obs_helpers import *
 import scipy
 
 ##################################################################################################
-# Obsdata object
+# Caltable object
 ##################################################################################################
-
-DTCAL = [('time','f8'),('rscale','f8'),('lscale','f8')]
- 
-
 class Caltable(object):
     """
 
@@ -85,9 +81,17 @@ class Caltable(object):
          
         rinterp = {}
         linterp = {}
+        skipsites = []
         for s in range(0, len(self.tarr)):
-    
-            site = self.tarr[s]['site']  
+            site = self.tarr[s]['site']
+
+            try: 
+                self.data[site]
+            except KeyError:
+                skipsites.append(site)
+                print ("No Calibration  Data for %s !" % site)                
+                continue
+
             time_mjd = self.data[site]['time']/24.0 + self.mjd
             rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'], kind=interp)
             linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'], kind=interp)
@@ -101,10 +105,21 @@ class Caltable(object):
             t2 = bl_obs['t2'][0]
             time_mjd = bl_obs['time']/24.0 + obs.mjd
             
-            rrscale = np.sqrt(rinterp[t1](time_mjd) * rinterp[t2](time_mjd) )
-            llscale = np.sqrt(linterp[t1](time_mjd) * linterp[t2](time_mjd) )
-            rlscale = np.sqrt(rinterp[t1](time_mjd) * linterp[t2](time_mjd) )
-            lrscale = np.sqrt(linterp[t1](time_mjd) * rinterp[t2](time_mjd) )
+            if t1 in skipsites:
+                rscale1 = lscale1 = 1
+            else:
+                rscale1 = rinterp[t1](time_mjd)
+                lscale1 = linterp[t1](time_mjd)
+            if t2 in skipsites:
+                rscale2 = lscale2 = 1
+            else:
+                rscale2 = rinterp[t2](time_mjd)
+                lscale2 = rinterp[t2](time_mjd)
+
+            rrscale = rscale1 * rscale2.conj()
+            llscale = lscale1 * lscale2.conj()
+            rlscale = rscale1 * lscale2.conj()
+            lrscale = lscale1 * rscale2.conj()
             
             rrvis = (bl_obs['vis']  +    bl_obs['vvis']) * rrscale
             llvis = (bl_obs['vis']  -    bl_obs['vvis']) * llscale
@@ -116,11 +131,10 @@ class Caltable(object):
             bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
             bl_obs['vvis'] = 0.5  * (rrvis - llvis)
             
-            
-            rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * rrscale
-            llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * llscale
-            rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * rlscale
-            lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * lrscale
+            rrsigma = (bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
+            llsigma = (bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
+            rlsigma = (bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
+            lrsigma = (bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
             
             bl_obs['sigma'] =  0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
             bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
@@ -132,7 +146,7 @@ class Caltable(object):
             else:
                 datatable = bl_obs
             
-        calobs = eh.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr, source=obs.source, mjd=obs.mjd)
+        calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr, source=obs.source, mjd=obs.mjd)
         
         return calobs
 

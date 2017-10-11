@@ -57,6 +57,9 @@ DTCAMP = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),('t4','a32'),
           ('u3','f8'),('v3','f8'),('u4','f8'),('v4','f8'),
           ('camp','f8'),('sigmaca','f8')]
 
+DTCAL = [('time','f8'), ('rscale','c16'), ('lscale','c16')]
+
+
 # Observation fields for plotting and retrieving data
 FIELDS = ['time','time_utc','time_gmst',
           'tint','u','v','uvdist',
