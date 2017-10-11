@@ -171,7 +171,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
     #print ("errfunc init: ", errfunc(gvpar_guess))
     optdict = {'maxiter' : 500} # minimizer params
-    res = opt.minimize(errfunc, gvpar_guess, method='Powell', options=optdict)
+    res = opt.minimize(errfunc, gvpar_guess, method='CG', options=optdict)
 
     # get solution
     #print ("errfunc end: " ,errfunc(res.x))
@@ -310,11 +310,15 @@ def norm_zbl(obs, flux=1.):
     return obs_cal
 
 
-def self_cal(obs, im, method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2):
+def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2):
     """Self-calibrate a dataset to a fixed image.
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
+
+    if len(sites) < 2:
+        print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
+        sites = obs.tarr['site']       
 
     # First, sample the model visibilities
     if ttype == 'direct':
@@ -351,43 +355,86 @@ def self_cal(obs, im, method="both", show_solution=False, pad_amp=0., ttype='dir
                                     mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
 
-def self_cal_scan(scan, V_scan, im, method="both", show_solution=False, pad_amp=0.):
+def self_cal_scan(scan, V_scan, sites=[], method="both", show_solution=False, pad_amp=0.):
     """Self-calibrate a scan to a fixed  image.
     """
 
-    sites = list(set(scan['t1']).union(set(scan['t2'])))
+    if len(sites) < 2:
+        print("less than 2 stations specified in network cal: defaulting to calibrating all !")
+        sites = list(set(scan['t1']).union(set(scan['t2'])))
 
+
+    # create a dictionary to keep track of gains 
     tkey = {b:a for a,b in enumerate(sites)}
-    tidx1 = [tkey[row['t1']] for row in scan]
-    tidx2 = [tkey[row['t2']] for row in scan]
+
+    # make a list of gain keys that relates scan bl gains to solved site ones
+    # -1 means that this station does not have a gain that is being solved for
+    g1_keys = []
+    g2_keys = []
+    scan_keys = []
+    for row in scan:
+        try: 
+            g1_keys.append(tkey[row['t1']])
+        except KeyError: 
+            g1_keys.append(-1)
+        try: 
+            g2_keys.append(tkey[row['t2']])
+        except KeyError: 
+            g2_keys.append(-1)
+
+
+    #tidx1 = [tkey[row['t1']] for row in scan]
+    #tidx2 = [tkey[row['t2']] for row in scan]
     sigma_inv = 1.0/(scan['sigma'] + pad_amp*np.abs(scan['vis']))
+
+    gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
 
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
+        
         if method=="phase":
             g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
-            g = np.abs(g)
+             g = np.abs(np.real(g))
+            #g = np.abs(g)
+
+        # append the default values to g for missing gains
+        g = np.append(g, 1.)
+        g1 = g[g1_keys]
+        g2 = g[g2_keys]
+
+        #TODO DEBIAS
+        if method=='amp':
+            verr = np.abs(vis) - g1*g2.conj() * np.abs(V_scan)
+        else:
+            verr = vis - g1*g2.conj() * V_scan
+        
 
         Verr = scan['vis'] - g[tidx1]*g[tidx2].conj() * V_scan
         chisq = np.sum((Verr.real * sigma_inv)**2) + np.sum((Verr.imag * sigma_inv)**2)
         return chisq
 
-    gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
+
 
     optdict = {'maxiter':5000} # minimizer params
     res = opt.minimize(errfunc, gpar_guess, method='Powell', options=optdict)
     g_fit = res.x.view(np.complex128)
 
-    if method=="phase":
-        g_fit = g_fit/np.abs(g_fit) # TODO: use use exp(i*np.arg())?
-    if method=="amp":
-        g_fit = np.abs(g_fit)
-
-    gij_inv = (g_fit[tidx1] * g_fit[tidx2].conj())**(-1)
-
     if show_solution == True:
-        print(np.abs(gij_inv))
+        print (np.abs(g_fit))
+
+    if method=="phase":
+        g_fit = g_fit / np.abs(g_fit)
+    if method=="amp":
+        g_fit = np.abs(np.real(g_fit))
+
+    g_fit = np.append(g_fit, 1.)
+    g1_fit = g_fit[g1_keys]
+    g2_fit = g_fit[g2_keys]
+    
+    gij_inv = (g1_fit * g2_fit.conj())**(-1)
+
+
 
     scan['vis']  = gij_inv * scan['vis']
     scan['qvis'] = gij_inv * scan['qvis']
