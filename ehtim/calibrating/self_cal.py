@@ -30,9 +30,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
     scans_cal = scans.copy()
 
     for i in range(len(scans)):
-        if not show_solution:
-            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
-            sys.stdout.flush()
+        sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
+        sys.stdout.flush()
 
         scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, method=method, show_solution=show_solution, pad_amp=pad_amp,gain_tol=gain_tol)
 
