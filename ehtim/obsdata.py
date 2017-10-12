@@ -1391,9 +1391,7 @@ class Obsdata(object):
 
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
-            raise Exception("valid fields are " + ' '.join(FIELDS))
-
-        f = plt.figure()
+            raise Exception("valid fields are " + ' '.join(FIELDS))        
 
         # Unpack x and y axis data
         data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)
@@ -1445,11 +1443,11 @@ class Obsdata(object):
 #            print
 #        fig.canvas.callbacks.connect('pick_event', on_pick)
 
+        if export_pdf != "" and not axis:
+            fig.savefig(export_pdf, bbox_inches='tight')
+
         if show:
             plt.show(block=False)
-
-        if export_pdf != "":
-            f.savefig(export_pdf, bbox_inches='tight')
 
         return x
 
