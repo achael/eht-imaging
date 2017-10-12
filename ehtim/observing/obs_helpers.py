@@ -2,6 +2,7 @@ from __future__ import division
 from builtins import str
 from builtins import map
 from builtins import range
+import ephem
 
 import astropy.time as at
 import numpy as np
@@ -11,6 +12,115 @@ from ehtim.const_def import *
 ##################################################################################################
 # Other Functions
 ##################################################################################################
+
+def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC', elevmin=ELEV_LOW,  elevmax=ELEV_HIGH):
+
+    if not isinstance(time, np.ndarray): time = np.array([time]).flatten()
+    if not isinstance(site1, np.ndarray): site1 = np.array([site1]).flatten()
+    if not isinstance(site2, np.ndarray): site2 = np.array([site2]).flatten()
+
+    if len(site1) == len(site2) == 1:
+        site1 = np.array([site1[0] for i in range(len(time))])
+        site2 = np.array([site2[0] for i in range(len(time))])
+    elif not (len(site1) == len(site2) == len(time)):
+        raise Exception("site1, site2, and time not the same dimension in compute_uv_coordinates!") 
+
+    # Source vector
+    sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
+    projU = np.cross(np.array([0,0,1]), sourcevec)
+    projU = projU/np.linalg.norm(projU)
+    projV = -np.cross(projU, sourcevec)
+
+    # Wavelength
+    l = C/rf
+
+    #ANDREW TODO DOES THIS WORK
+    if timetype=='GMST':
+        time_sidereal = time
+        time_utc = gmst_to_utc(time, mjd)
+    elif timetype=='UTC':
+        time_sidereal = utc_to_gmst(time, mjd)
+        time_utc = time
+    else: raise Exception("timetype must be UTC or GMST!")
+
+
+    fracmjd = np.floor(mjd) + time/24.
+    dto = (at.Time(fracmjd, format='mjd')).datetime
+    theta = np.mod((time_sidereal - ra)*HOUR, 2*np.pi)
+
+    i1 = np.array([array.tkey[site] for site in site1])
+    i2 = np.array([array.tkey[site] for site in site2])
+
+    coord1 = np.vstack((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z'])).T
+    coord2 = np.vstack((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z'])).T
+
+    # TODO SPEED UP!??
+    # use spacecraft ephemeris to get position of site 1
+    spacemask1 = [np.all(coord == (0.,0.,0.)) for coord in coord1]
+    if np.any(spacemask1):
+        if timetype=='GMST':
+            raise Exception("Spacecraft ephemeris only work with UTC!")
+
+        site1space_list = site2[spacemask1]
+        site1space_dtolist = dto[spacemask1]
+        coord1space = []
+        for k in range(len(site1space_list)):
+            site1space = site1space_list[k]
+            dto_no2 = dto[k]
+            sat = ephem.readtle(array.ephem[site1space][0],array.ephem[site1space][1],array.ephem[site1space][2])
+            sat.compute(dto) # often complains if ephemeris out of date!
+            elev = sat.elevation
+            lat = sat.sublat / DEGREE
+            lon = sat.sublong / DEGREE
+            # pyephem doesn't use an ellipsoid earth model!
+            c1 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
+            c1 = np.array((c1.x.value, c1.y.value, c1.z.value))
+            coord1space.append(c1)
+        coord1space = np.array(c1)
+        coord1[spacemask1] = coord1space
+
+    spacemask2 = [np.all(coord == (0.,0.,0.)) for coord in coord2]
+    if np.any(spacemask2):
+        if timetype=='GMST':
+            raise Exception("Spacecraft ephemeris only work with UTC!")
+
+        site2space_list = site2[spacemask2]
+        site2space_dtolist = dto[spacemask2]
+        coord2space = []
+        for k in range(len(site2space_list)):
+            site2space = site2space_list[k]
+            dto_now = dto[k]
+            sat = ephem.readtle(array.ephem[site2space][0],array.ephem[site2space][1],array.ephem[site2space][2])
+            sat.compute(dto_now) # often complains if ephemeris out of date!
+            elev = sat.elevation
+            lat = sat.sublat / DEGREE
+            lon = sat.sublong / DEGREE
+            # pyephem doesn't use an ellipsoid earth model!
+            c2 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
+            c2 = np.array((c2.x.value, c2.y.value, c2.z.value))
+            coord2space.append(c2)
+        coord2space = np.array(c2)
+        coord2[spacemask2] = coord2space
+
+    # rotate the station coordinates with the earth
+    coord1 = earthrot(coord1, theta)
+    coord2 = earthrot(coord2, theta)
+
+    # u,v coordinates
+    u = np.dot((coord1 - coord2)/l, projU) # u (lambda)
+    v = np.dot((coord1 - coord2)/l, projV) # v (lambda)
+
+    # mask out below elevation cut
+    mask = (elevcut(coord1, sourcevec, elevmin=elevmin, elevmax=elevmax) *
+            elevcut(coord2, sourcevec, elevmin=elevmin, elevmax=elevmax))
+
+    time = time[mask]
+    u = u[mask]
+    v = v[mask]
+    
+    # return times and uv points where we have  data
+    return (time, u, v)
+
 def make_bispectrum(l1, l2, l3,vtype):
     """make a list of bispectra and errors
        l1,l2,l3 are full datatables of visibility entries

@@ -13,7 +13,7 @@ import itertools as it
 import sys
 
 import ehtim.image
-import ehtim.observing.obs_simulate
+import ehtim.observing.obs_simulate as simobs
 import ehtim.io.save
 import ehtim.io.load
 
@@ -513,6 +513,29 @@ class Obsdata(object):
         import ehtim.imaging.imager_utils as iu
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, fft_pad_frac=fft_pad_frac)
         return iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+
+    def recompute_uv(self):
+        """Recompute u,v points using observation times and metadata
+        
+           Returns:
+                (Obsdata): New Obsdata object containing the same data with recomputed u,v points
+        """
+
+        times = self.data['time']
+        site1 = self.data['t1']
+        site2 = self.data['t2']
+        arr = ehtim.array.Array(self.tarr)
+        print ("Recomputing U,V Points using MJD %d \n RA %e \n DEC %e \n RF %e GHz" % (self.mjd, self.ra, self.dec, self.rf/1.e9))
+
+        (timesout,uout,vout) = compute_uv_coordinates(arr, site1, site2, times, self.mjd, self.ra, self.dec, self.rf, timetype=self.timetype, elevmin=0, elevmax=90)
+
+        if len(timesout) != len(times):
+            raise Exception("len(timesout) != len(times) in recompute_uv: check elevation  limits!!")
+        
+        obsout = self.copy()
+        obsout.data['u'] = uout
+        obsout.data['v'] = vout
+        return obsout
 
     def avg_coherent(self, inttime):
         """Coherently average data along u,v tracks in chunks of length inttime (sec).
@@ -1371,9 +1394,7 @@ class Obsdata(object):
         x.set_xlabel(field1)
         x.set_ylabel(field2)
 
-
         # clickable points
-
 #        def on_pick(event):
 #            artist = event.artist
 #            xmouse, ymouse = event.mouseevent.xdata, event.mouseevent.ydata
@@ -1382,8 +1403,6 @@ class Obsdata(object):
 #            print ('Data point:', x[ind[0]], y[ind[0]])
 #            print
 #        fig.canvas.callbacks.connect('pick_event', on_pick)
-
-
 
         if show:
             plt.show(block=False)
