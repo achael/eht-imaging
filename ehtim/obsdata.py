@@ -49,7 +49,7 @@ class Obsdata(object):
            data (numpy.recarray): the basic data with datatype DTPOL
     """
 
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC'):
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC', scantable=None):
         """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
 
            Args:
@@ -131,6 +131,7 @@ class Obsdata(object):
 
         # Save the data
         self.data = obsdata
+        self.scans = scantable
 
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
@@ -150,7 +151,7 @@ class Obsdata(object):
                (Obsdata): a copy of the Obsdata object.
         """
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal)
+                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
         return newobs
 
     def data_conj(self):
