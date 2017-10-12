@@ -11,6 +11,7 @@ import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
 import ehtim.imaging.imager_utils as iu
 
+from multiprocessing import cpu_count
 from multiprocessing import Pool
 
 import itertools
@@ -32,6 +33,10 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
     # Make the pool for parallel processing
     if processes > 0:
         print("Using Multiprocessing")
+        pool = Pool(processes=processes)
+    elif processes == 0:
+        processes = int(cpu_count())
+        print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes)
     else:
         print("Not Using Multiprocessing")

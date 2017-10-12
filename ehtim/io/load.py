@@ -846,7 +846,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
     vvis[~vmask_dsize] = 0.
 
     vsigma = copy.deepcopy(isigma) #ARGH POINTERS
-    vsigma[~vmask_dsize] = 0.
+    vsigma[~vmask_dsize] = isigma[~vmask_dsize]
 
     # Stokes Q,U
     qvis = 0.5 * (rl + lr)
@@ -856,8 +856,8 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
 
     qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
     usigma = qsigma
-    qsigma[~qumask_dsize] = 0.
-    usigma[~qumask_dsize] = 0.
+    qsigma[~qumask_dsize] = isigma[~qumask_dsize]
+    usigma[~qumask_dsize] = isigma[~qumask_dsize]
 
     # Reverse sign of baselines for correct imaging?
     if flipbl:
