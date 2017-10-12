@@ -19,6 +19,100 @@ from ehtim.observing.obs_helpers import *
 # Generate U-V Points
 ##################################################################################################
 
+def make_uvpoints2(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT,
+                      tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH, timetype='UTC'):
+    """Generate u,v points and baseline errors for the array.
+       Return an obsdata array with no visibilities.
+       tstart and tstop are hrs in UTC
+       tint and tadv are seconds.
+       rf and bw are Hz
+       ra is fractional hours
+       dec is fractional degrees
+       tau can be a single number or a dictionary giving one per site
+    """
+
+    # Set up time start and steps
+    tstep = tadv/3600.0
+    if tstop < tstart:
+        tstop = tstop + 24.0;
+
+
+    # Observing times
+    # TODO: Scale - utc or tt?
+    times = np.arange(tstart, tstop, tstep)
+    if timetype not in ['UTC', 'GMST']:
+        print("Time Type Not Recognized! Assuming UTC!")
+        timetype = 'UTC'
+
+    ################
+    #PIN
+    ###########
+
+    #print mjd
+    #print np.min(times_sidereal), np.max(times_sidereal)
+    # Generate uv points at all times
+    outlist = []
+    blpairs = []
+    for i1 in range(len(array.tarr)):
+        for i2 in range(len(array.tarr)):
+            if (i1!=i2 and
+                i1 < i2 and # This is the right condition for uvfits save order
+                not ((i2, i1) in blpairs)): # This cuts out the conjugate baselines
+
+                blpairs.append((i1,i2))
+                
+                # Optical Depth
+                if type(tau) == dict:
+                    try:
+                        tau1 = tau[i1]
+                        tau2 = tau[i2]
+                    except KeyError:
+                        tau1 = tau2 = TAUDEF
+                else:
+                    tau1 = tau2 = tau
+
+                # Noise on the correlations
+                sig_rr = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdr'], tint, bw)
+                sig_ll = blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdl'], tint, bw)
+                sig_rl = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdl'], tint, bw)
+                sig_lr = blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdr'], tint, bw)
+                sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
+                sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
+
+                site1 = array.tarr[i1]['site']
+                site2 = array.tarr[i2]['site']
+                (timesout,uout,vout) = compute_uv_coordinates(array, site1, site2, times, mjd, ra, dec, rf, timetype=timetype, elevmin=elevmin, elevmax=elevmax)
+                for k in range(len(timesout)):
+                    # Append data to list
+                    outlist.append(np.array((
+                              timesout[k],
+                              tint, # Integration
+                              site1, # Station 1
+                              site2, # Station 2
+                              tau1, # Station 1 zenith optical depth
+                              tau2, # Station 1 zenith optical depth
+                              uout[k], # u (lambda)
+                              vout[k], # v (lambda)
+                              0.0, # I Visibility (Jy)
+                              0.0, # Q Visibility
+                              0.0, # U Visibility
+                              0.0, # V Visibilities
+                              sig_iv, # I Sigma (Jy)
+                              sig_qu, # Q Sigma
+                              sig_qu, # U Sigma
+                              sig_iv  # V Sigma
+                            ), dtype=DTPOL
+                            ))
+
+    obsarr = np.array(outlist)
+
+    if not len(obsarr):
+        raise Exception("No mutual visibilities in the specified time range!")
+
+    return obsarr
+
+
+
 def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT,
                       tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH, timetype='UTC'):
     """Generate u,v points and baseline errors for the array.

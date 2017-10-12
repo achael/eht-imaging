@@ -13,7 +13,7 @@ import itertools as it
 import sys
 
 import ehtim.image
-import ehtim.observing.obs_simulate
+import ehtim.observing.obs_simulate as simobs
 import ehtim.io.save
 import ehtim.io.load
 
@@ -49,7 +49,7 @@ class Obsdata(object):
            data (numpy.recarray): the basic data with datatype DTPOL
     """
 
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC'):
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC', scantable=None):
         """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
 
            Args:
@@ -131,6 +131,7 @@ class Obsdata(object):
 
         # Save the data
         self.data = obsdata
+        self.scans = scantable
 
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
@@ -150,7 +151,7 @@ class Obsdata(object):
                (Obsdata): a copy of the Obsdata object.
         """
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal)
+                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
         return newobs
 
     def data_conj(self):
@@ -514,6 +515,29 @@ class Obsdata(object):
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, fft_pad_frac=fft_pad_frac)
         return iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
 
+    def recompute_uv(self):
+        """Recompute u,v points using observation times and metadata
+        
+           Returns:
+                (Obsdata): New Obsdata object containing the same data with recomputed u,v points
+        """
+
+        times = self.data['time']
+        site1 = self.data['t1']
+        site2 = self.data['t2']
+        arr = ehtim.array.Array(self.tarr)
+        print ("Recomputing U,V Points using MJD %d \n RA %e \n DEC %e \n RF %e GHz" % (self.mjd, self.ra, self.dec, self.rf/1.e9))
+
+        (timesout,uout,vout) = compute_uv_coordinates(arr, site1, site2, times, self.mjd, self.ra, self.dec, self.rf, timetype=self.timetype, elevmin=0, elevmax=90)
+
+        if len(timesout) != len(times):
+            raise Exception("len(timesout) != len(times) in recompute_uv: check elevation  limits!!")
+        
+        obsout = self.copy()
+        obsout.data['u'] = uout
+        obsout.data['v'] = vout
+        return obsout
+
     def avg_coherent(self, inttime):
         """Coherently average data along u,v tracks in chunks of length inttime (sec).
 
@@ -745,6 +769,32 @@ class Obsdata(object):
         out.add_v(vim)
 
         return out
+
+    def flag_low_snr(self, snr_cut = 3):
+        # This drops all data points with snr below the specified snr_cut
+        obs_out = self.copy()
+        snr_mask = obs_out.unpack('snr')['snr'] > snr_cut
+        obs_out.data = obs_out.data[snr_mask]
+        return obs_out
+
+    def flag_anomalous(self, field = 'snr', max_diff_seconds = 100, robust_nsigma_cut = 5):
+        # This drops all data points with anomalous field (e.g., amp or snr)
+        obs_out = self.copy()
+
+        stats = dict()
+
+        for t1 in set(obs_out.data['t1']):
+            for t2 in set(obs_out.data['t2']):
+                vals = obs_out.unpack_bl(t1,t2,field)
+                for j in range(len(vals)):
+                    near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
+                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0] #only the nearby fields
+                    dfields = np.median(np.abs(fields-np.median(fields))) # robust estimator of the scatter
+                    stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = np.abs(vals[field][j]-np.median(fields)) / dfields
+
+        mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in obs_out.data])
+        obs_out.data = obs_out.data[mask]  
+        return obs_out
 
     def deblur(self):
         """Deblur the observation obs by dividing by the Sgr A* redscattering kernel.
@@ -1327,8 +1377,6 @@ class Obsdata(object):
         """
 
 
-
-
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
             raise Exception("valid fields are " + ' '.join(FIELDS))
@@ -1357,6 +1405,7 @@ class Obsdata(object):
                       np.max(data[field2]) + 0.2 * np.abs(np.max(data[field2]))]
 
         # Plot the data
+        tolerance = len(data[field2])
         if axis:
             x = axis
         else:
@@ -1364,14 +1413,23 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and (np.any(sigy) or np.any(sigx)):
-            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='.', color=color)
+            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='.', color=color,picker=tolerance)
         else:
-            x.plot(data[field1], data[field2], '.', color=color)
-
+            x.plot(data[field1], data[field2], '.', color=color,picker=tolerance)
         x.set_xlim(rangex)
         x.set_ylim(rangey)
         x.set_xlabel(field1)
         x.set_ylabel(field2)
+
+        # clickable points
+#        def on_pick(event):
+#            artist = event.artist
+#            xmouse, ymouse = event.mouseevent.xdata, event.mouseevent.ydata
+#            x, y = artist.get_xdata(), artist.get_ydata()
+#            ind = event.ind
+#            print ('Data point:', x[ind[0]], y[ind[0]])
+#            print
+#        fig.canvas.callbacks.connect('pick_event', on_pick)
 
         if show:
             plt.show(block=False)

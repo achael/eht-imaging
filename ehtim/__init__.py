@@ -14,6 +14,7 @@ import ehtim.movie
 import ehtim.image
 import ehtim.vex
 import ehtim.closure
+import ehtim.caltable
 
 from ehtim.imaging.imager_utils import imager_func
 from ehtim.calibrating import self_cal
