@@ -6,6 +6,7 @@ from builtins import range
 import numpy as np
 import string
 import astropy.io.fits as fits
+import astropy.time
 import datetime
 import os
 import copy
@@ -714,6 +715,26 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
     mjd = int(np.min(jds)-2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
 
+    DTSCANS = [('time','f8'),('interval','f8'),('startvis','f8'),('endvis','f8')]
+    import astropy.time
+    
+    try:
+        scantable = []
+        nxtable = hdulist['AIPS NX']
+        for scan in nxtable.data: 
+            
+            reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').mjd
+            scantime = (scan['TIME'] + reftime  - mjd)
+            scanint = scan['TIME INTERVAL']
+            startvis = scan['START VIS'] - 1
+            endvis = scan['END VIS'] - 1 
+            scantable.append(np.array((scantime, scanint, startvis, endvis), dtype=DTSCANS))
+        scantable = np.array(scantable)
+        
+    except: 
+        print("No NX table exists")
+        scantable = None
+
     # Integration times
     tints = data['INTTIM'][mask]
 
@@ -880,7 +901,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
     datatable = np.array(datatable)
 
     #!AC TODO get calibration flags from uvfits?
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd)
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd, scantable=scantable)
 
 
 def load_obs_oifits(filename, flux=1.0):
