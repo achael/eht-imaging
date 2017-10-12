@@ -74,10 +74,15 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def applycal(self, obs, interp='linear'):
+    def applycal(self, obs, interp='linear', extrapolate=False):
 
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
+
+        if extrapolate is True: # extrapolate can be a tuple or numpy array
+            fill_value = "extrapolate"
+        else:
+            fill_value = extrapolate
 
         rinterp = {}
         linterp = {}
@@ -93,8 +98,10 @@ class Caltable(object):
                 continue
 
             time_mjd = self.data[site]['time']/24.0 + self.mjd
-            rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'], kind=interp)
-            linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'], kind=interp)
+            rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'],
+                                                       kind=interp, fill_value=fill_value)
+            linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'],
+                                                       kind=interp, fill_value=fill_value)
 
         bllist = obs.bllist()
         datatable = []
