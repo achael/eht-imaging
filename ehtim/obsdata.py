@@ -770,6 +770,27 @@ class Obsdata(object):
 
         return out
 
+    def flag_low_snr(self, snr_cut = 3):
+        # This drops all data points with snr below the specified snr_cut
+        snr_mask = self.unpack('snr')['snr'] > snr_cut
+        self.data = self.data[snr_mask]
+
+    def flag_anomalous(self, field = 'snr', max_diff_seconds = 100, robust_nsigma_cut = 5):
+        # This drops all data points with anomalous field (e.g., amp or snr)
+        stats = dict()
+
+        for t1 in set(self.data['t1']):
+            for t2 in set(self.data['t2']):
+                vals = self.unpack_bl(t1,t2,field)
+                for j in range(len(vals)):
+                    near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
+                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0] #only the nearby fields
+                    dfields = np.median(np.abs(fields-np.median(fields))) # robust estimator of the scatter
+                    stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = np.abs(vals[field][j]-np.median(fields)) / dfields
+
+        mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in self.data])
+        self.data = self.data[mask]  
+
     def deblur(self):
         """Deblur the observation obs by dividing by the Sgr A* redscattering kernel.
 
