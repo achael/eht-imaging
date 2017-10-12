@@ -74,7 +74,7 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def applycal(self, obs, interp='linear', extrapolate=False):
+    def applycal(self, obs, interp='linear', extrapolate=None):
 
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
@@ -131,17 +131,17 @@ class Caltable(object):
             rlvis = (bl_obs['qvis'] + 1j*bl_obs['uvis']) * rlscale
             lrvis = (bl_obs['qvis'] - 1j*bl_obs['uvis']) * lrscale
 
-            bl_obs['vis'] =  0.5  * (rrvis + llvis)
+            bl_obs['vis']  = 0.5  * (rrvis + llvis)
             bl_obs['qvis'] = 0.5  * (rlvis + lrvis)
             bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
             bl_obs['vvis'] = 0.5  * (rrvis - llvis)
 
-            rrsigma = (bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
-            llsigma = (bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
-            rlsigma = (bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
-            lrsigma = (bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
+            rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
+            llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
+            rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
+            lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
 
-            bl_obs['sigma'] =  0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+            bl_obs['sigma']  = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
             bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
             bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 )
             bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
@@ -155,7 +155,6 @@ class Caltable(object):
 
         return calobs
 
-
 def load_caltable(obs, datadir):
     """Load Maciek's apriori cal tables
     """
@@ -165,7 +164,6 @@ def load_caltable(obs, datadir):
 
         site = obs.tarr[s]['site']
         filename = datadir + obs.source + '_' + site + '.txt'
-
         data = np.loadtxt(filename, dtype=bytes).astype(str)
 
         datatable = []
