@@ -74,7 +74,7 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def applycal(self, obs, interp='linear', extrapolate=None):
+    def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol = False):
 
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
@@ -120,6 +120,14 @@ class Caltable(object):
             else:
                 rscale2 = rinterp[t2](time_mjd)
                 lscale2 = rinterp[t2](time_mjd)
+
+            if force_singlepol == 'R':
+                lscale1 = rscale1
+                lscale2 = rscale2
+
+            if force_singlepol == 'L':
+                rscale1 = lscale1
+                rscale2 = lscale2
 
             rrscale = rscale1 * rscale2.conj()
             llscale = lscale1 * lscale2.conj()
