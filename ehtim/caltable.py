@@ -74,11 +74,16 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
           
-    def applycal(self, obs, interp='linear'):
+    def applycal(self, obs, interp='linear', extrapolate = None):
     
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
          
+        if extrapolate == True:
+            fill_value = 'extrapolate'
+        else:
+            fill_value = extrapolate
+
         rinterp = {}
         linterp = {}
         skipsites = []
@@ -93,8 +98,9 @@ class Caltable(object):
                 continue
 
             time_mjd = self.data[site]['time']/24.0 + self.mjd
-            rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'], kind=interp)
-            linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'], kind=interp)
+
+            rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'], kind=interp, fill_value = fill_value)
+            linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'], kind=interp, fill_value = fill_value)
 
         bllist = obs.bllist()
         datatable = []
@@ -124,17 +130,17 @@ class Caltable(object):
             rlvis = (bl_obs['qvis'] + 1j*bl_obs['uvis']) * rlscale
             lrvis = (bl_obs['qvis'] - 1j*bl_obs['uvis']) * lrscale
             
-            bl_obs['vis'] =  0.5  * (rrvis + llvis) 
+            bl_obs['vis']  =  0.5  * (rrvis + llvis) 
             bl_obs['qvis'] = 0.5  * (rlvis + lrvis)
             bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
             bl_obs['vvis'] = 0.5  * (rrvis - llvis)
             
-            rrsigma = (bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
-            llsigma = (bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
-            rlsigma = (bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
-            lrsigma = (bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
+            rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
+            llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
+            rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
+            lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
             
-            bl_obs['sigma'] =  0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+            bl_obs['sigma']  =  0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
             bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
             bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 ) 
             bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 ) 
@@ -149,7 +155,7 @@ class Caltable(object):
         return calobs
 
    
-def load_caltable(obs, datapath, channel):
+def load_caltable(obs, datapath):
 
     """Load Maciek's apriori cal tables
     """
@@ -160,7 +166,7 @@ def load_caltable(obs, datapath, channel):
     for s in range(0, len(obs.tarr)):
     
         site = obs.tarr[s]['site']
-        filename = datapath + obs.source + '_' + site + '_' + str(channel) + '.txt'
+        filename = datapath + obs.source + '_' + site + '.txt'
 
         data = np.loadtxt(filename, dtype=bytes).astype(str)   
 
