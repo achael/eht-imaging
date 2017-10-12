@@ -1327,8 +1327,6 @@ class Obsdata(object):
         """
 
 
-
-
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
             raise Exception("valid fields are " + ' '.join(FIELDS))
@@ -1357,6 +1355,7 @@ class Obsdata(object):
                       np.max(data[field2]) + 0.2 * np.abs(np.max(data[field2]))]
 
         # Plot the data
+        tolerance = len(data[field2])
         if axis:
             x = axis
         else:
@@ -1364,14 +1363,27 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and (np.any(sigy) or np.any(sigx)):
-            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='.', color=color)
+            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='.', color=color,picker=tolerance)
         else:
-            x.plot(data[field1], data[field2], '.', color=color)
-
+            x.plot(data[field1], data[field2], '.', color=color,picker=tolerance)
         x.set_xlim(rangex)
         x.set_ylim(rangey)
         x.set_xlabel(field1)
         x.set_ylabel(field2)
+
+
+        # clickable points
+
+#        def on_pick(event):
+#            artist = event.artist
+#            xmouse, ymouse = event.mouseevent.xdata, event.mouseevent.ydata
+#            x, y = artist.get_xdata(), artist.get_ydata()
+#            ind = event.ind
+#            print ('Data point:', x[ind[0]], y[ind[0]])
+#            print
+#        fig.canvas.callbacks.connect('pick_event', on_pick)
+
+
 
         if show:
             plt.show(block=False)

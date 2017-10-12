@@ -155,8 +155,6 @@ def load_caltable(obs, datapath, channel):
     """
 
     datatables = {}
-    
-    
     for s in range(0, len(obs.tarr)):
     
         site = obs.tarr[s]['site']
