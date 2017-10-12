@@ -73,14 +73,14 @@ class Caltable(object):
         """
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
-          
-    def applycal(self, obs, interp='linear', extrapolate = None):
-    
+
+    def applycal(self, obs, interp='linear', extrapolate=None):
+
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
-         
-        if extrapolate == True:
-            fill_value = 'extrapolate'
+
+        if extrapolate is True: # extrapolate can be a tuple or numpy array
+            fill_value = "extrapolate"
         else:
             fill_value = extrapolate
 
@@ -90,25 +90,26 @@ class Caltable(object):
         for s in range(0, len(self.tarr)):
             site = self.tarr[s]['site']
 
-            try: 
+            try:
                 self.data[site]
             except KeyError:
                 skipsites.append(site)
-                print ("No Calibration  Data for %s !" % site)                
+                print ("No Calibration  Data for %s !" % site)
                 continue
 
             time_mjd = self.data[site]['time']/24.0 + self.mjd
-
-            rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'], kind=interp, fill_value = fill_value)
-            linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'], kind=interp, fill_value = fill_value)
+            rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'],
+                                                       kind=interp, fill_value=fill_value)
+            linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'],
+                                                       kind=interp, fill_value=fill_value)
 
         bllist = obs.bllist()
         datatable = []
         for bl_obs in bllist:
-            t1 = bl_obs['t1'][0] 
+            t1 = bl_obs['t1'][0]
             t2 = bl_obs['t2'][0]
             time_mjd = bl_obs['time']/24.0 + obs.mjd
-            
+
             if t1 in skipsites:
                 rscale1 = lscale1 = 1
             else:
@@ -124,67 +125,60 @@ class Caltable(object):
             llscale = lscale1 * lscale2.conj()
             rlscale = rscale1 * lscale2.conj()
             lrscale = lscale1 * rscale2.conj()
-            
+
             rrvis = (bl_obs['vis']  +    bl_obs['vvis']) * rrscale
             llvis = (bl_obs['vis']  -    bl_obs['vvis']) * llscale
             rlvis = (bl_obs['qvis'] + 1j*bl_obs['uvis']) * rlscale
             lrvis = (bl_obs['qvis'] - 1j*bl_obs['uvis']) * lrscale
-            
-            bl_obs['vis']  =  0.5  * (rrvis + llvis) 
+
+            bl_obs['vis']  = 0.5  * (rrvis + llvis)
             bl_obs['qvis'] = 0.5  * (rlvis + lrvis)
             bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
             bl_obs['vvis'] = 0.5  * (rrvis - llvis)
-            
+
             rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
             llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
             rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
             lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
-            
-            bl_obs['sigma']  =  0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+
+            bl_obs['sigma']  = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
             bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
-            bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 ) 
-            bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 ) 
-        
+            bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 )
+            bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+
             if len(datatable):
                 datatable = np.hstack((datatable,bl_obs))
             else:
                 datatable = bl_obs
-            
+
         calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr, source=obs.source, mjd=obs.mjd)
-        
+
         return calobs
 
-   
-def load_caltable(obs, datapath):
-
+def load_caltable(obs, datadir):
     """Load Maciek's apriori cal tables
     """
 
     datatables = {}
-    
-    
     for s in range(0, len(obs.tarr)):
-    
-        site = obs.tarr[s]['site']
-        filename = datapath + obs.source + '_' + site + '.txt'
 
-        data = np.loadtxt(filename, dtype=bytes).astype(str)   
+        site = obs.tarr[s]['site']
+        filename = datadir + obs.source + '_' + site + '.txt'
+        data = np.loadtxt(filename, dtype=bytes).astype(str)
 
         datatable = []
         for row in data:
-            
+
             time = (float(row[0]) - obs.mjd) * 24.0 # time is given in mjd
-            
+
             rscale = np.sqrt(float(row[1])) # r
             lscale = np.sqrt(float(row[2])) # l
-                
+
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
-        
+
         datatables[site] = np.array(datatable)
 
     caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd,
-        timetype=obs.timetype)
-        
-    return caltable
-    
+                        timetype=obs.timetype)
 
+    return caltable
