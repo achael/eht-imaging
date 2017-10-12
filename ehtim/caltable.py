@@ -119,7 +119,7 @@ class Caltable(object):
                 rscale2 = lscale2 = 1
             else:
                 rscale2 = rinterp[t2](time_mjd)
-                lscale2 = rinterp[t2](time_mjd)
+                lscale2 = linterp[t2](time_mjd)
 
             if force_singlepol == 'R':
                 lscale1 = rscale1
