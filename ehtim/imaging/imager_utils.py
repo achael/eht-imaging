@@ -63,8 +63,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
        Args:
            Obsdata (Obsdata): The Obsdata object with VLBI data
-           Prior (Image): The Image object with the prior image
            InitIm (Image): The Image object with the initial image for the minimization
+           Prior (Image): The Image object with the prior image
            flux (float): The total flux of the output image in Jy
            d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
            d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'

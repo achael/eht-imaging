@@ -770,11 +770,22 @@ class Obsdata(object):
 
         return out
 
+    def flag_sites(self, sites):
+        # This will remove all visibilities that include any of the specified sites
+        obs_out = self.copy()
+        t1_list = obs_out.unpack('t1')['t1']
+        t2_list = obs_out.unpack('t2')['t2']
+        site_mask = [t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))]
+        obs_out.data = obs_out.data[site_mask]
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
+        return obs_out
+
     def flag_low_snr(self, snr_cut = 3):
         # This drops all data points with snr below the specified snr_cut
         obs_out = self.copy()
         snr_mask = obs_out.unpack('snr')['snr'] > snr_cut
         obs_out.data = obs_out.data[snr_mask]
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
 
     def flag_anomalous(self, field = 'snr', max_diff_seconds = 100, robust_nsigma_cut = 5):
@@ -794,6 +805,7 @@ class Obsdata(object):
 
         mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in obs_out.data])
         obs_out.data = obs_out.data[mask]  
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
 
     def deblur(self):
@@ -1352,7 +1364,7 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg', debias=True):
+    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg', debias=True, export_pdf=""):
         """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
 
            Args:
@@ -1379,7 +1391,7 @@ class Obsdata(object):
 
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
-            raise Exception("valid fields are " + ' '.join(FIELDS))
+            raise Exception("valid fields are " + ' '.join(FIELDS))        
 
         # Unpack x and y axis data
         data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)
@@ -1431,8 +1443,12 @@ class Obsdata(object):
 #            print
 #        fig.canvas.callbacks.connect('pick_event', on_pick)
 
+        if export_pdf != "" and not axis:
+            fig.savefig(export_pdf, bbox_inches='tight')
+
         if show:
             plt.show(block=False)
+
         return x
 
     def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', debias=True, timetype=False):
