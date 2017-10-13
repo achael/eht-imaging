@@ -44,12 +44,6 @@ def make_uvpoints2(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DE
         print("Time Type Not Recognized! Assuming UTC!")
         timetype = 'UTC'
 
-    ################
-    #PIN
-    ###########
-
-    #print mjd
-    #print np.min(times_sidereal), np.max(times_sidereal)
     # Generate uv points at all times
     outlist = []
     blpairs = []
