@@ -215,7 +215,7 @@ def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
     src = caltable.source
     for site_info in caltable.tarr:
         site = site_info['site']
-        filename = datadir + src + '_' + site +'.txt'
+        filename = datadir + '/' + src + '_' + site +'.txt'
         outfile = open(filename, 'w')
         site_data = datatables[site]
         for entry in site_data:
@@ -230,7 +230,7 @@ def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
 
             rreal = float(np.real(rscale))
             rimag = float(np.imag(rscale))
-            lreal = float(np.real(scale))
+            lreal = float(np.real(lscale))
             limag = float(np.imag(lscale))
 #            outline = str(float(time)) + ' ' + str(float(rscale)) + ' ' + str(float(lscale)) + '\n'
             outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float(lreal)) + ' ' + str(float(limag)) + '\n'
