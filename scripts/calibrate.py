@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
 import sys
+import os
+
 import numpy as np
 import ehtim as eh
 import matplotlib.pyplot as plt
 
-# File locations
-hops_uvfits_location = '../../EHT_Imaging_WG_Team1_LargeFiles'
-caltable_location    = '../SEFD_tables/SEFDSv2'
-
 # Function definitions
 def pick(obs, req_sites):
+    """
+    Pick out observations with only certain sites
+    """
     tlists   = obs.tlist()
     mask     = [req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
                 for tlist in tlists]
@@ -18,7 +19,10 @@ def pick(obs, req_sites):
     out.data = np.concatenate(tlists[mask])
     return out
 
-def multical(obs, sites, n=3, amp_zbl=8.0, gain_tol=0.1):
+def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1):
+    """
+    Apply applycal() multiple times
+    """
     sites  = set(sites) # make sure that sites is a set
     common = {'sites':sites,
               'zbl_uvdist_max':10000000.0,
@@ -30,56 +34,47 @@ def multical(obs, sites, n=3, amp_zbl=8.0, gain_tol=0.1):
 
     for i in range(n):
         # Self calibrate the amplitudes
-        caltab = eh.self_cal.network_cal(pick(obs, sites), amp_zbl,
-                                         method='amp',
+        caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='amp',
                                          **common)
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
 
         # Self calibrate the phases
-        caltab = eh.self_cal.network_cal(pick(obs, sites), amp_zbl,
-                                         method='phase',
+        caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='phase',
                                          **common)
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
 
     return obs
 
+# Tack to experiment number mapper (Unused, just for record)
+expt = {'D':3597,
+        'B':3598,
+        'C':3599,
+        'A':3600,
+        'E':3601}
+
+# Parameters
+t_avg = 10.0
+pol   = "R"
+
 # Check arguments
-if len(sys.argv) < 6:
-    print("Usage: calibrate.py <src> <pol> <t_avg_sec> <expt> <band> [<pruning_factor>]")
+if len(sys.argv) < 4:
+    print("Usage: calibrate <input uvfits file> <SEFD directory> <amp_zbl> "+
+          "[<pruning_factor>]")
     exit(0)
 
-src   = sys.argv[1]
-pol   = sys.argv[2]
-t_avg = int(sys.argv[3]) # Averaging time (seconds)
-expt  = int(sys.argv[4]) #expt and track should be a single code
-band  = sys.argv[5] # 'lo' or 'hi'
-pruning_factor = int(sys.argv[6]) if len(sys.argv) > 6 else 1
+input_name     = sys.argv[1]
+caltab_dir     = sys.argv[2]
+amp_zbl        = float(sys.argv[3])
+pruning_factor = int(sys.argv[4]) if len(sys.argv) > 4 else 1
 
-# Determine the source zero-baseline flux density in Jy
-if src == 'OJ287':
-    amp_zbl = 4.0 # The zero-baseline flux density (Jy); depends on the source
-elif src == '3C279':
-    amp_zbl = 8.0
-else:
-    raise "Undetermined zero-baseline flux density (Jy) for source"
-
-# Associate experiment numbers with track ids
-if expt == 3597:
-    track = 'D'
-elif expt == 3598:
-    track = 'B'
-elif expt == 3599:
-    track = 'C'
-elif expt == 3600:
-    track = 'A'
-elif expt == 3601:
-    track = 'E'
+out_prefix = os.path.basename(input_name[:-13])+pol+pol
+print(input_name, caltab_dir, amp_zbl, out_prefix)
 
 # Load uvfits file
-obs = eh.obsdata.load_uvfits(hops_uvfits_location + '/er1-hops-' + band + '/6.uvfits/hops_' + str(expt) + '_' + src + '_' + band + '_closed.uvfits', force_singlepol=pol)
+obs = eh.obsdata.load_uvfits(input_name, force_singlepol=pol)
 
 # A-priori calibrate by applying the caltable
-caltab  = eh.caltable.load_caltable(obs, caltable_location + '/SEFD_' + band.upper() + '/' + track + '/')
+caltab  = eh.caltable.load_caltable(obs, caltab_dir)
 obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True, force_singlepol=pol)
 
 # Compute averages
@@ -91,19 +86,15 @@ if pruning_factor > 1:
 
 # First get the ALMA and APEX calibration right -- allow huge gain_tol
 sites = {'AA','AP'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=5, amp_zbl=amp_zbl, gain_tol=10.0)
+obs_cal_avg = multical(obs_cal_avg, sites, n=5, amp0=amp_zbl, gain_tol=10.0)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
 sites = {'SM','JC'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=3, amp_zbl=amp_zbl, gain_tol=0.3)
+obs_cal_avg = multical(obs_cal_avg, sites, n=3, amp0=amp_zbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
 sites = {'AA','AP','SM','JC'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp_zbl=amp_zbl, gain_tol=0.1)
-obs_cal_avg.save_uvfits('./Network_Cal/hops_' + str(expt) + '_' + src + '_' + band + '_' + pol + pol + '_' + str(int(t_avg)) + 's-avg_' + 'zbl=' + str(zbl) + '_network.uvfits')
+obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp0=amp_zbl, gain_tol=0.1)
 
-# Make final plots
-obs_cal_avg.plot_bl('AA','AP','amp')
-obs_cal_avg.plot_bl('SM','JC','amp')
-obs_cal_avg.plotall('uvdist', 'amp')
-plt.show()
+# Save output
+obs_cal_avg.save_uvfits(out_prefix+'+netcal.uvfits')
