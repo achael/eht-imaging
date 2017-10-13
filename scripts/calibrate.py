@@ -39,16 +39,20 @@ def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1):
 
     for i in range(n):
         # Self calibrate the amplitudes
+        datadir = '{}-{}-amp'.format(stepname, i)
         caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='amp',
                                          **common)
-        caltab.save_txt(obs, datadir='amp-caltab-{}-{}'.format(stepname, i))
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
+        caltab.save_txt(obs, datadir=datadir)
+        obs_cal_avg.save_uvfits(datadir+'/'+args.output)
 
         # Self calibrate the phases
+        datadir = '{}-{}-phase'.format(stepname, i)
         caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='phase',
                                          **common)
-        caltab.save_txt(obs, datadir='phase-caltab-{}-{}'.format(stepname, i))
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
+        caltab.save_txt(obs, datadir=datadir)
+        obs_cal_avg.save_uvfits(datadir+'/'+args.output)
 
     return obs
 
@@ -91,20 +95,24 @@ obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True, force_singlep
 
 # Compute averages
 obs_cal_avg = obs_cal.avg_coherent(args.tavg)
+obs_cal_avg.save_uvfits(os.path.basename(args.input[:-13])+args.pol+args.pol+'+avg.uvfits')
 
 # Speed up testing
 if args.prune > 1:
     obs_cal_avg.data = np.concatenate(obs_cal_avg.tlist()[::args.prune])
 
 # First get the ALMA and APEX calibration right -- allow huge gain_tol
+stepname = 'step1'
 sites = {'AA','AP'}
 obs_cal_avg = multical(obs_cal_avg, sites, n=5, amp0=args.ampzbl, gain_tol=10.0)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
+stepname = 'step2'
 sites = {'SM','JC'}
 obs_cal_avg = multical(obs_cal_avg, sites, n=3, amp0=args.ampzbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
+stepname = 'step3'
 sites = {'AA','AP','SM','JC'}
 obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp0=args.ampzbl, gain_tol=0.1)
 
