@@ -179,9 +179,17 @@ def load_caltable(obs, datadir):
 
             time = (float(row[0]) - obs.mjd) * 24.0 # time is given in mjd
 
-            rscale = np.sqrt(float(row[1])) # r
-            lscale = np.sqrt(float(row[2])) # l
-
+             # Maciek's old convention had a square root
+ #           rscale = np.sqrt(float(row[1])) # r
+ #           lscale = np.sqrt(float(row[2])) # l
+            if len(row) == 3:
+                rscale = float(row[1])
+                lscale = float(row[2])
+            elif len(row) == 5:
+                rscale = float(row[1]) + 1j*float(row[2])
+                lscale = float(row[3]) + 1j*float(row[4])
+            else:
+                raise Exception("cannot load caltable -- format unknown!")
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
 
         datatables[site] = np.array(datatable)
@@ -203,14 +211,15 @@ def save_caltable(caltable, obs, datadir = ''):
         site_data = datatables[site]
         for entry in site_data:
             time = entry['time'] / 24.0 + obs.mjd
-#            rreal = entry['rreal']
-#            rimag = entry['rimag']
-#            lreal = entry['lreal']
-#            limag = entry['limag']
+
             rscale = np.square(entry['rscale'])
             lscale = np.square(entry['lscale'])
-            outline = str(float(time)) + ' ' + str(float(rscale)) + ' ' + str(float(lscale)) + '\n'
-#            outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float((lreal)) + ' ' + str(float(limag)) + '\n'
+            rreal = float(np.real(rscale))
+            rimag = float(np.imag(rscale))
+            lreal = float(np.real(scale))
+            limag = float(np.imag(lscale))
+#            outline = str(float(time)) + ' ' + str(float(rscale)) + ' ' + str(float(lscale)) + '\n'
+            outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float((lreal)) + ' ' + str(float(limag)) + '\n'
             outfile.write(outline)
         outfile.close()
       
