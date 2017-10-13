@@ -182,3 +182,27 @@ def load_caltable(obs, datadir):
                         timetype=obs.timetype)
 
     return caltable
+
+def save_caltable(caltable, obs, datadir = ''):
+    """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
+    """
+    datatables = caltable.data
+    src = caltable.source
+    for site_info in caltable.tarr:
+        site = site_info['site']
+        filename = datadir + src + '_' + site +'.txt'
+        outfile = open(filename, 'w')
+        site_data = datatables[site]
+        for entry in site_data:
+            time = entry['time'] / 24.0 + obs.mjd
+#            rreal = entry['rreal']
+#            rimag = entry['rimag']
+#            lreal = entry['lreal']
+#            limag = entry['limag']
+            rscale = np.square(entry['rscale'])
+            lscale = np.square(entry['lscale'])
+            outline = str(float(time)) + ' ' + str(float(rscale)) + ' ' + str(float(lscale)) + '\n'
+#            outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float((lreal)) + ' ' + str(float(limag)) + '\n'
+            outfile.write(outline)
+        outfile.close()
+      
