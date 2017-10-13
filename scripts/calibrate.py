@@ -2,6 +2,7 @@
 
 import sys
 import os
+import argparse
 
 import numpy as np
 import ehtim as eh
@@ -52,49 +53,53 @@ expt = {'D':3597,
         'A':3600,
         'E':3601}
 
-# Parameters
-t_avg = 10.0
-pol   = "R"
+# Argument parsing
+parser = argparse.ArgumentParser(description="Perform network calibration")
+parser.add_argument('input',          required=True,            help="input uvfits file")
+parser.add_argument('caltab',         required=True,            help="caltable directory")
+parser.add_argument('output',         default=None,             help="output file")
+parser.add_argument('-P', '--prune',  default=1,    type=int,   help="pruning factor")
+parser.add_argument('-z', '--ampzbl', default=7.0,  type=float, help="amplitude at zero-baseline")
+parser.add_argument('-t', '--tavg',   default=10.0, type=float, help="averaging time")
+parser.add_argument('-p', '--pol',    default="R",              help="polarization")
+args = parser.parse_args()
 
-# Check arguments
-if len(sys.argv) < 4:
-    print("Usage: calibrate <input uvfits file> <SEFD directory> <amp_zbl> "+
-          "[<pruning_factor>]")
-    exit(0)
-
-input_name     = sys.argv[1]
-caltab_dir     = sys.argv[2]
-amp_zbl        = float(sys.argv[3])
-pruning_factor = int(sys.argv[4]) if len(sys.argv) > 4 else 1
-
-out_prefix = os.path.basename(input_name[:-13])+pol+pol
-print(input_name, caltab_dir, amp_zbl, out_prefix)
+if args.output is None:
+    args.output = os.path.basename(args.input[:-13])+args.pol+args.pol+'+netcal.uvfits'
+print("Parameters:")
+print("    input:",  args.input)
+print("    caltab:", args.caltab)
+print("    output:", args.output)
+print("    prune:",  args.prune)
+print("    ampzbl:", args.ampzbl)
+print("    tavg:",   args.tavg)
+print("    pol:",    args.pol)
 
 # Load uvfits file
-obs = eh.obsdata.load_uvfits(input_name, force_singlepol=pol)
+obs = eh.obsdata.load_uvfits(args.input, force_singlepol=args.pol)
 
 # A-priori calibrate by applying the caltable
-caltab  = eh.caltable.load_caltable(obs, caltab_dir)
-obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True, force_singlepol=pol)
+caltab  = eh.caltable.load_caltable(obs, args.caltab)
+obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True, force_singlepol=args.pol)
 
 # Compute averages
-obs_cal_avg = obs_cal.avg_coherent(t_avg)
+obs_cal_avg = obs_cal.avg_coherent(args.tavg)
 
 # Speed up testing
-if pruning_factor > 1:
-    obs_cal_avg.data = np.concatenate(obs_cal_avg.tlist()[::pruning_factor])
+if args.prune > 1:
+    obs_cal_avg.data = np.concatenate(obs_cal_avg.tlist()[::args.prune])
 
 # First get the ALMA and APEX calibration right -- allow huge gain_tol
 sites = {'AA','AP'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=5, amp0=amp_zbl, gain_tol=10.0)
+obs_cal_avg = multical(obs_cal_avg, sites, n=5, amp0=args.ampzbl, gain_tol=10.0)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
 sites = {'SM','JC'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=3, amp0=amp_zbl, gain_tol=0.3)
+obs_cal_avg = multical(obs_cal_avg, sites, n=3, amp0=args.ampzbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
 sites = {'AA','AP','SM','JC'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp0=amp_zbl, gain_tol=0.1)
+obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp0=args.ampzbl, gain_tol=0.1)
 
 # Save output
 obs_cal_avg.save_uvfits(out_prefix+'+netcal.uvfits')
