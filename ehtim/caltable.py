@@ -211,10 +211,18 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
 def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
     """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
     """
+    import os 
+    if not os.path.exists(datadir):
+        os.makedirs(datadir)
+
     datatables = caltable.data
     src = caltable.source
     for site_info in caltable.tarr:
         site = site_info['site']
+
+        if len(datatables.get(site, [])) == 0:
+            continue
+
         filename = datadir + '/' + src + '_' + site +'.txt'
         outfile = open(filename, 'w')
         site_data = datatables[site]
