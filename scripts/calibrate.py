@@ -47,7 +47,7 @@ def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1):
         # Self calibrate the phases
         caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='phase',
                                          **common)
-        caltab.save_txt(obs, datadir='phase-catlab-{}-{}'.format(stepname, i))
+        caltab.save_txt(obs, datadir='phase-caltab-{}-{}'.format(stepname, i))
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
 
     return obs
@@ -109,4 +109,4 @@ sites = {'AA','AP','SM','JC'}
 obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp0=args.ampzbl, gain_tol=0.1)
 
 # Save output
-obs_cal_avg.save_uvfits(out_prefix+'+netcal.uvfits')
+obs_cal_avg.save_uvfits(args.output)
