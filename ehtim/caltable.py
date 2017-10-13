@@ -218,6 +218,10 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     src = caltable.source
     for site_info in caltable.tarr:
         site = site_info['site']
+
+        if len(datatables.get(site, [])) == 0:
+            continue
+
         filename = datadir + '/' + src + '_' + site +'.txt'
         outfile = open(filename, 'w')
         site_data = datatables[site]
