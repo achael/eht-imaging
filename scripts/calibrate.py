@@ -11,12 +11,12 @@ caltable_location    = '../SEFD_tables/SEFDSv2'
 
 # Function definitions
 def pick(obs, req_sites):
-   tlists   = obs.tlist()
-   mask     = [req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
-               for tlist in tlists]
-   out      = obs.copy()
-   out.data = np.concatenate(tlists[mask])
-   return out
+    tlists   = obs.tlist()
+    mask     = [req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
+                for tlist in tlists]
+    out      = obs.copy()
+    out.data = np.concatenate(tlists[mask])
+    return out
 
 def multical(obs, sites, amp0=8.0, n=3, gain_tol = 0.1):
     sites  = set(sites) # make sure that sites is a set
@@ -42,15 +42,15 @@ def multical(obs, sites, amp0=8.0, n=3, gain_tol = 0.1):
     return obs
 
 # Check arguments
-if len(sys.argv) <= 6:
-    print("Usage: calibrate <src> <pol> <t_avg_sec> <expt> <band> [<processes> <pruning_factor>]")
+if len(sys.argv) < 6:
+    print("Usage: calibrate.py <src> <pol> <t_avg_sec> <expt> <band> [<processes> <pruning_factor>]")
     exit(0)
 
-src = sys.argv[1]
-pol = sys.argv[2]
+src   = sys.argv[1]
+pol   = sys.argv[2]
 t_avg = int(sys.argv[3]) # Averaging time (seconds)
-expt = int(sys.argv[4]) #expt and track should be a single code
-band = sys.argv[5] # 'lo' or 'hi'
+expt  = int(sys.argv[4]) #expt and track should be a single code
+band  = sys.argv[5] # 'lo' or 'hi'
 if len(sys.argv) > 6:
     processes = int(sys.argv[6])
 if len(sys.argv) > 7:
@@ -67,13 +67,13 @@ elif src == '3C279':
 # Associate experiment numbers with track ids
 if expt == 3597:
     track = 'D'
-elif expt == 3598: 
+elif expt == 3598:
     track = 'B'
-elif expt == 3599: 
+elif expt == 3599:
     track = 'C'
-elif expt == 3600: 
+elif expt == 3600:
     track = 'A'
-elif expt == 3601: 
+elif expt == 3601:
     track = 'E'
 
 # Load uvfits file
@@ -101,10 +101,10 @@ obs_cal_avg = multical(obs_cal_avg, sites, n=3, gain_tol = 0.3)
 # Recalibrate all redundant stations
 sites = {'AA','AP','SM','JC'}
 obs_cal_avg = multical(obs_cal_avg, sites, n=2, gain_tol = 0.1)
+obs_cal_avg.save_uvfits('./Network_Cal/hops_' + str(expt) + '_' + src + '_' + band + '_' + pol + pol + '_' + str(int(t_avg)) + 's-avg_' + 'zbl=' + str(zbl) + '_network.uvfits')
 
 # Make final plots
 obs_cal_avg.plot_bl('AA','AP','amp')
 obs_cal_avg.plot_bl('SM','JC','amp')
 obs_cal_avg.plotall('uvdist', 'amp')
 plt.show()
-obs_cal_avg.save_uvfits('./Network_Cal/hops_' + str(expt) + '_' + src + '_' + band + '_' + pol + pol + '_' + str(int(t_avg)) + 's-avg_' + 'zbl=' + str(zbl) + '_network.uvfits')
