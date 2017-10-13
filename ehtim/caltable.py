@@ -10,7 +10,7 @@ import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import itertools as it
-import sys
+import sys, os
 
 import ehtim.image
 import ehtim.observing.obs_simulate
@@ -163,11 +163,11 @@ class Caltable(object):
 
         return calobs
 
-    def save_txt(self, obs, datadir = '', sqrt_gains=False):
+    def save_txt(self, obs, datadir='.', sqrt_gains=False):
         """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
         """
 
-        save_caltable(self, obs, datadir = datadir, sqrt_gains=sqrt_gains)
+        save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
 
 def load_caltable(obs, datadir, sqrt_gains=False ):
     """Load Maciek's apriori cal tables
@@ -208,9 +208,12 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
 
     return caltable
 
-def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
+def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
     """
+    if not os.path.exists(datadir):
+        os.makedirs(datadir)
+
     datatables = caltable.data
     src = caltable.source
     for site_info in caltable.tarr:
@@ -236,4 +239,3 @@ def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
             outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float(lreal)) + ' ' + str(float(limag)) + '\n'
             outfile.write(outline)
         outfile.close()
-      

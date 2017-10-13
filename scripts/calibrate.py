@@ -8,6 +8,8 @@ import numpy as np
 import ehtim as eh
 import matplotlib.pyplot as plt
 
+stepname='init'
+
 # Function definitions
 def pick(obs, req_sites):
     """
@@ -37,11 +39,13 @@ def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1):
         # Self calibrate the amplitudes
         caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='amp',
                                          **common)
+        caltab.save_txt(obs, datadir='amp-caltab-{}-{}'.format(stepname, i))
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
 
         # Self calibrate the phases
         caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='phase',
                                          **common)
+        caltab.save_txt(obs, datadir='phase-catlab-{}-{}'.format(stepname, i))
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
 
     return obs
