@@ -249,7 +249,8 @@ def get_scan_cal(args):
 
 def get_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution):
     if n > 1:
-        print('.', end='', flush=True)
+        sys.stdout.write('.')
+        sys.stdout.flush()
 
     return network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, method=method,caltable=caltable, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol)
 
