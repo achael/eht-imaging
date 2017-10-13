@@ -64,6 +64,9 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
         caldict = scans_cal[0]
         for i in range(1,len(scans_cal)):
             row = scans_cal[i]
+            if len(row) == 0: 
+                continue 
+
             for site in allsites:
                 try: dat = row[site]
                 except KeyError: continue
@@ -216,7 +219,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     v_fit = np.append(v_fit, zbl)
 
     if caltable:
-        allsites = list(set(scan['t1']).union(set(scan['t2'])))
+        allsites = list(set(scan['t1']).union(set(scan['t2']))) if g_fit[-2] != 1.0 else []
 
         caldict = {}
         for site in allsites:
