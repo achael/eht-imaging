@@ -163,6 +163,12 @@ class Caltable(object):
 
         return calobs
 
+    def save_txt(self, obs, datadir = '', sqrt_gains=False):
+        """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
+        """
+
+        save_caltable(self, obs, datadir = datadir, sqrt_gains=sqrt_gains)
+
 def load_caltable(obs, datadir, sqrt_gains=False ):
     """Load Maciek's apriori cal tables
     """
