@@ -163,7 +163,7 @@ class Caltable(object):
 
         return calobs
 
-def load_caltable(obs, datadir):
+def load_caltable(obs, datadir, sqrt_gains=False ):
     """Load Maciek's apriori cal tables
     """
 
@@ -190,6 +190,9 @@ def load_caltable(obs, datadir):
                 lscale = float(row[3]) + 1j*float(row[4])
             else:
                 raise Exception("cannot load caltable -- format unknown!")
+            if sqrt_gains:
+                rscale = rscale**.5
+                lscale = lscale**.5
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
 
         datatables[site] = np.array(datatable)
@@ -199,7 +202,7 @@ def load_caltable(obs, datadir):
 
     return caltable
 
-def save_caltable(caltable, obs, datadir = ''):
+def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
     """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
     """
     datatables = caltable.data
@@ -212,8 +215,13 @@ def save_caltable(caltable, obs, datadir = ''):
         for entry in site_data:
             time = entry['time'] / 24.0 + obs.mjd
 
-            rscale = np.square(entry['rscale'])
-            lscale = np.square(entry['lscale'])
+            if sqrt_gains:
+                rscale = np.square(entry['rscale'])
+                lscale = np.square(entry['lscale'])
+            else:
+                rscale = entry['rscale']
+                lscale = entry['lscale']
+
             rreal = float(np.real(rscale))
             rimag = float(np.imag(rscale))
             lreal = float(np.real(scale))
