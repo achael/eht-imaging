@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import sys
 import os
 import argparse
@@ -59,9 +61,9 @@ expt = {'D':3597,
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Perform network calibration")
-parser.add_argument('input',          required=True,            help="input uvfits file")
-parser.add_argument('caltab',         required=True,            help="caltable directory")
-parser.add_argument('output',         default=None,             help="output file")
+parser.add_argument('input',                                    help="input uvfits file")
+parser.add_argument('caltab',                                   help="caltable directory")
+parser.add_argument('-o', '--output', default=None,             help="output file")
 parser.add_argument('-P', '--prune',  default=1,    type=int,   help="pruning factor")
 parser.add_argument('-z', '--ampzbl', default=7.0,  type=float, help="amplitude at zero-baseline")
 parser.add_argument('-t', '--tavg',   default=10.0, type=float, help="averaging time")
@@ -71,13 +73,13 @@ args = parser.parse_args()
 if args.output is None:
     args.output = os.path.basename(args.input[:-13])+args.pol+args.pol+'+netcal.uvfits'
 print("Parameters:")
-print("    input:",  args.input)
+print("    input: ", args.input)
 print("    caltab:", args.caltab)
 print("    output:", args.output)
-print("    prune:",  args.prune)
+print("    prune: ", args.prune)
 print("    ampzbl:", args.ampzbl)
-print("    tavg:",   args.tavg)
-print("    pol:",    args.pol)
+print("    tavg:  ", args.tavg)
+print("    pol:   ", args.pol)
 
 # Load uvfits file
 obs = eh.obsdata.load_uvfits(args.input, force_singlepol=args.pol)
