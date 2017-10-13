@@ -88,6 +88,7 @@ print("    pol:   ", args.pol)
 # Load uvfits file
 obs = eh.obsdata.load_uvfits(args.input, force_singlepol=args.pol)
 obs = obs.flag_sites(["SR"])
+obs = obs.flag_anomalous('snr', robust_nsigma_cut=3.0)
 
 # A-priori calibrate by applying the caltable
 caltab  = eh.caltable.load_caltable(obs, args.caltab)
