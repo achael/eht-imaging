@@ -6,7 +6,7 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
-import pulses
-import jdcal
-import obs_helpers
-import obs_simulate
+from . import pulses
+from . import jdcal
+from . import obs_helpers
+from . import obs_simulate
