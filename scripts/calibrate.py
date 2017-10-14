@@ -26,7 +26,7 @@ def pick(obs, req_sites):
 
 def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1):
     """
-    Apply applycal() multiple times
+    Apply network_cal() multiple times
     """
     sites  = set(sites) # make sure that sites is a set
     common = {'sites':sites,
