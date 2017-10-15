@@ -788,8 +788,29 @@ class Obsdata(object):
         print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
 
+    def flag_large_scatter(self, field = 'amp', scatter_cut = 1.0, max_diff_seconds = 100):
+        # This drops all data points with scatter in the field (e.g., amp or snr) greater than a prescribed amount
+        obs_out = self.copy()
+
+        stats = dict()
+
+        for t1 in set(obs_out.data['t1']):
+            for t2 in set(obs_out.data['t2']):
+                vals = obs_out.unpack_bl(t1,t2,field)
+                for j in range(len(vals)):
+                    near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
+                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0] #only the nearby fields
+                    dfields = np.median(np.abs(fields-np.median(fields))) # robust estimator of the scatter
+                    stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = dfields
+
+        mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))] < scatter_cut for rec in obs_out.data])
+        obs_out.data = obs_out.data[mask]  
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
+        return obs_out
+
     def flag_anomalous(self, field = 'snr', max_diff_seconds = 100, robust_nsigma_cut = 5):
         # This drops all data points with anomalous field (e.g., amp or snr)
+        # Here, we use median absolute deviation from the median as a robust proxy for standard deviation
         obs_out = self.copy()
 
         stats = dict()
