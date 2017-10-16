@@ -28,7 +28,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
     # G_i * conj(G_j) * V_ij = V'_ij
     if len(sites) < 2:
         print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
-        sites = obs.tarr['site']       
+        sites = obs.tarr['site']
 
     # Make the pool for parallel processing
     if processes > 0:
@@ -50,12 +50,13 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
 
     if processes > 0:
         scans_cal = np.array(pool.map(get_scan_cal, [[i, len(scans), scans[i], zbl, sites, cluster_data, method, pad_amp, gain_tol, caltable, show_solution] for i in range(len(scans))]))
+        print('DONE')
     else:
         for i in range(len(scans)):
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
             sys.stdout.flush()
-            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, 
-                                            method=method, show_solution=show_solution, caltable=caltable, 
+            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data,
+                                            method=method, show_solution=show_solution, caltable=caltable,
                                             pad_amp=pad_amp, gain_tol=gain_tol)
 
     if caltable:
@@ -73,12 +74,12 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
                 try: caldict[site] = np.append(caldict[site], row[site])
                 except KeyError: caldict[site] = dat
 
-        caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr, 
+        caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
     else:
-        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, 
-                                        np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd, 
+        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
+                                        np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
                                         timetype=obs.timetype)
         out = obs_cal
@@ -89,7 +90,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     """
     if len(sites) < 2:
         print("less than 2 stations specified in network cal: defaulting to calibrating all !")
-        sites = list(set(np.hstack((scan['t1'], scan['t2']))))       
+        sites = list(set(np.hstack((scan['t1'], scan['t2']))))
 
     #sites = list(set(scan['t1']).union(set(scan['t2'])))
 
@@ -98,7 +99,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     clusterdict = clustered_sites[1]
     clusterbls = clustered_sites[2]
 
-    # create a dictionary to keep track of gains 
+    # create a dictionary to keep track of gains
     tkey = {b:a for a,b in enumerate(sites)}
     clusterkey = clusterdict
 
@@ -112,13 +113,13 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     g2_keys = []
     scan_keys = []
     for row in scan:
-        try: 
+        try:
             g1_keys.append(tkey[row['t1']])
-        except KeyError: 
+        except KeyError:
             g1_keys.append(-1)
-        try: 
+        try:
             g2_keys.append(tkey[row['t2']])
-        except KeyError: 
+        except KeyError:
             g2_keys.append(-1)
 
         clusternum1 = clusterkey[row['t1']]
@@ -126,7 +127,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         if clusternum1 == clusternum2: # sites are in the same cluster
             scan_keys.append(-1)
         else: #sites are not in the same cluster
-            bl_index = clusterbls.index(set((clusternum1, clusternum2)))       
+            bl_index = clusterbls.index(set((clusternum1, clusternum2)))
             scan_keys.append(bl_index)
 
 
@@ -138,11 +139,11 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     vis = scan['vis']
     sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
 
-    # initial guesses for parameters 
+    # initial guesses for parameters
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
     gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
-   
+
     vpar_guess = np.ones(n_clusterbls, dtype=np.complex128)
     for i in range(len(scan_keys)):
         if scan_keys[i] < 0: continue
@@ -152,7 +153,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
     gvpar_guess = np.hstack((gpar_guess, vpar_guess))
 
-   
+
     # error function
     def errfunc(gvpar):
 
@@ -174,7 +175,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         v = np.append(v, zbl)
 
         # scan visibilities are either an intercluster visibility or the fixed zbl
-        
+
         v_scan = v[scan_keys]
         g1 = g[g1_keys]
         g2 = g[g2_keys]
@@ -184,7 +185,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
             verr = np.abs(vis) - g1*g2.conj() * np.abs(v_scan)
         else:
             verr = vis - g1*g2.conj() * v_scan
-        
+
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
 
         g_fracerr = gain_tol #0.3
@@ -203,7 +204,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     #print ("errfunc end: " ,errfunc(res.x))
     g_fit = res.x[0:2*n_gains].view(np.complex128)
     v_fit = res.x[2*n_gains:].view(np.complex128)
-    
+
     if method=="phase":
         g_fit = g_fit / np.abs(g_fit)
     if method=="amp":
@@ -222,13 +223,13 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
         caldict = {}
         for site in allsites:
-            if site in sites: 
+            if site in sites:
                 site_key = tkey[site]
             else:
                 site_key = -1
-            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)  
+            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)
         out = caldict
-        
+
     else:
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
@@ -250,12 +251,12 @@ def get_scan_cal(args):
     return get_scan_cal2(*args)
 
 def get_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution):
+    if n > 1:
+        sys.stdout.write('.')
+        sys.stdout.flush()
 
-    print('.')
+    return network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, method=method,caltable=caltable, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol)
 
-    scan_cal = network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, method=method,caltable=caltable, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol)
-
-    return scan_cal
 
 ###################################################################################################################################
 #Self-Calibration
@@ -267,7 +268,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
     # G_i * conj(G_j) * V_ij = V'_ij
     if len(sites) < 2:
         print("less than 2 stations specified in self cal: defaulting to calibrating all stations!")
-        sites = obs.tarr['site']       
+        sites = obs.tarr['site']
 
     # First, sample the model visibilities
     if ttype == 'direct':
@@ -280,7 +281,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         im_info, sampler_info_list, gridder_info_list = fft_A
         vis_arr = iu.fft_imvec(im.imvec, im_info)
         V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
-   
+
     scans = obs.tlist()
     n = len(scans)
     data_cal = []
@@ -292,7 +293,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
             sys.stdout.flush()
 
-        scan_cal = self_cal_scan(scan, im, V_scan=V[data_index:(data_index+len(scan))], sites=sites, 
+        scan_cal = self_cal_scan(scan, im, V_scan=V[data_index:(data_index+len(scan))], sites=sites,
                                  method=method, show_solution=show_solution, caltable=caltable,
                                  pad_amp=pad_amp, gain_tol=gain_tol)
         data_index += len(scan)
@@ -310,12 +311,12 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
                 try: caldict[site] = np.append(caldict[site], row[site])
                 except KeyError: caldict[site] = dat
 
-        caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr, 
+        caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
     else:
-        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, 
-                                        np.concatenate(data_cal), obs.tarr, source=obs.source, mjd=obs.mjd, 
+        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
+                                        np.concatenate(data_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
                                         timetype=obs.timetype)
 
@@ -324,7 +325,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
 
 def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
     """Self-calibrate a scan to a fixed  image.
-       if caltable==True, returns a caltable dictionary. If False, returns the  scan. 
+       if caltable==True, returns a caltable dictionary. If False, returns the  scan.
     """
 
     if len(sites) < 2:
@@ -336,7 +337,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V_scan = np.dot(A, im.imvec)
 
-    # create a dictionary to keep track of gains 
+    # create a dictionary to keep track of gains
     tkey = {b:a for a,b in enumerate(sites)}
 
     # make a list of gain keys that relates scan bl gains to solved site ones
@@ -345,13 +346,13 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
     g2_keys = []
     scan_keys = []
     for row in scan:
-        try: 
+        try:
             g1_keys.append(tkey[row['t1']])
-        except KeyError: 
+        except KeyError:
             g1_keys.append(-1)
-        try: 
+        try:
             g2_keys.append(tkey[row['t2']])
-        except KeyError: 
+        except KeyError:
             g2_keys.append(-1)
 
     sigma_inv = 1.0/(scan['sigma'] + pad_amp*np.abs(scan['vis']))
@@ -360,7 +361,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
-        
+
         if method=="phase":
             g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
@@ -377,7 +378,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
             verr = np.abs(scan['vis']) - g1*g2.conj() * np.abs(V_scan)
         else:
             verr = scan['vis'] - g1*g2.conj() * V_scan
-        
+
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
         chisq_g = np.sum((np.log(np.abs(g))**2 / gain_tol**2))
 
@@ -402,14 +403,14 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
         caldict = {}
         for site in allsites:
-            if site in sites: 
+            if site in sites:
                 site_key = tkey[site]
             else:
                 site_key = -1
-            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)  
+            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)
 
         out = caldict
-        
+
     else:
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
@@ -437,14 +438,14 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
     for i1 in range(len(obs.tarr)):
         t1 = obs.tarr[i1]
 
-        if t1['site'] in clustered_sites: 
+        if t1['site'] in clustered_sites:
             continue
 
         csites = [t1['site']]
         clustered_sites.append(t1['site'])
-        for i2 in range(len(obs.tarr))[i1:]:  
+        for i2 in range(len(obs.tarr))[i1:]:
             t2 = obs.tarr[i2]
-            if t2['site'] in clustered_sites: 
+            if t2['site'] in clustered_sites:
                 continue
 
             site1coord = np.array([t1['x'], t1['y'], t1['z']])
@@ -455,7 +456,7 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
                 csites.append(t2['site'])
                 clustered_sites.append(t2['site'])
         clusters.append(csites)
-    
+
     clusterdict = {}
     for site in obs.tarr['site']:
         for k in range(len(clusters)):
@@ -463,7 +464,7 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
                 clusterdict[site] = k
 
     clusterbls = [set(comb) for comb in it.combinations(range(len(clusterdict)),2)]
-    
+
     cluster_data = (clusters, clusterdict, clusterbls)
 
     return cluster_data
