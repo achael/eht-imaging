@@ -226,7 +226,6 @@ def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
             rimag = float(np.imag(rscale))
             lreal = float(np.real(scale))
             limag = float(np.imag(lscale))
-#            outline = str(float(time)) + ' ' + str(float(rscale)) + ' ' + str(float(lscale)) + '\n'
             outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float(lreal)) + ' ' + str(float(limag)) + '\n'
             outfile.write(outline)
         outfile.close()
