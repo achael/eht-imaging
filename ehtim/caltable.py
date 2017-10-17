@@ -10,7 +10,7 @@ import numpy.lib.recfunctions as rec
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import itertools as it
-import sys
+import sys, os
 
 import ehtim.image
 import ehtim.observing.obs_simulate
@@ -163,6 +163,12 @@ class Caltable(object):
 
         return calobs
 
+    def save_txt(self, obs, datadir='.', sqrt_gains=False):
+        """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
+        """
+
+        save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
+
 def load_caltable(obs, datadir, sqrt_gains=False ):
     """Load Maciek's apriori cal tables
     """
@@ -202,14 +208,21 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
 
     return caltable
 
-def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
+def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
     """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
     """
+    if not os.path.exists(datadir):
+        os.makedirs(datadir)
+
     datatables = caltable.data
     src = caltable.source
     for site_info in caltable.tarr:
         site = site_info['site']
-        filename = datadir + src + '_' + site +'.txt'
+
+        if len(datatables.get(site, [])) == 0:
+            continue
+
+        filename = datadir + '/' + src + '_' + site +'.txt'
         outfile = open(filename, 'w')
         site_data = datatables[site]
         for entry in site_data:
@@ -224,9 +237,8 @@ def save_caltable(caltable, obs, datadir = '', sqrt_gains=False):
 
             rreal = float(np.real(rscale))
             rimag = float(np.imag(rscale))
-            lreal = float(np.real(scale))
+            lreal = float(np.real(lscale))
             limag = float(np.imag(lscale))
             outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float(lreal)) + ' ' + str(float(limag)) + '\n'
             outfile.write(outline)
         outfile.close()
-      
