@@ -770,6 +770,15 @@ class Obsdata(object):
 
         return out
 
+    def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
+        # This will remove all visibilities that include any of the specified sites
+        obs_out = self.copy()
+        uvdist_list = obs_out.unpack('uvdist')['uvdist']
+        mask = [uv_min <= uvdist_list[j] <= uv_max for j in range(len(uvdist_list))]
+        obs_out.data = obs_out.data[mask]
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
+        return obs_out
+
     def flag_sites(self, sites):
         # This will remove all visibilities that include any of the specified sites
         obs_out = self.copy()
