@@ -49,7 +49,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
     scans_cal = scans.copy()
 
     if processes > 0:
-        scans_cal = np.array(pool.map(get_scan_cal, [[i, len(scans), scans[i], zbl, sites, cluster_data, method, pad_amp, gain_tol, caltable, show_solution] for i in range(len(scans))]))
+        scans_cal = np.array(pool.map(get_network_scan_cal, [[i, len(scans), scans[i], zbl, sites, cluster_data, method, pad_amp, gain_tol, caltable, show_solution] for i in range(len(scans))]))
         print('DONE')
     else:
         for i in range(len(scans)):
@@ -247,10 +247,10 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     return out
 
 
-def get_scan_cal(args):
-    return get_scan_cal2(*args)
+def get_network_scan_cal(args):
+    return get_network_scan_cal2(*args)
 
-def get_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution):
+def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution):
     if n > 1:
         sys.stdout.write('.')
         sys.stdout.flush()
@@ -261,7 +261,7 @@ def get_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
-def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2, gain_tol=.2, caltable=False):
+def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2, gain_tol=.2, caltable=False, processes=-1):
     """Self-calibrate a dataset to a fixed image.
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -270,7 +270,19 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         print("less than 2 stations specified in self cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']
 
+    # Make the pool for parallel processing
+    if processes > 0:
+        print("Using Multiprocessing")
+        pool = Pool(processes=processes)
+    elif processes == 0:
+        processes = int(cpu_count())
+        print("Using Multiprocessing with %d Processes" % processes)
+        pool = Pool(processes=processes)
+    else:
+        print("Not Using Multiprocessing")
+
     # First, sample the model visibilities
+    print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
     if ttype == 'direct':
         data_arr = obs.unpack(['u','v','vis','sigma'])
         uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
@@ -281,29 +293,34 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         im_info, sampler_info_list, gridder_info_list = fft_A
         vis_arr = iu.fft_imvec(im.imvec, im_info)
         V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
+    print("Done!")
 
-    scans = obs.tlist()
-    n = len(scans)
-    data_cal = []
-    i = 0
-    data_index = 0
-    for scan in scans:
-        i += 1
-        if not show_solution:
-            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,n))
+    # Partition the list of model visibilities into scans
+    from itertools import islice
+    it = iter(V)
+    scan_lengths = [len(o) for o in obs.tlist()]
+    V_scans      = [list(islice(it, 0, i)) for i in scan_lengths]
+
+    # loop over scans and calibrate
+    scans     = obs.tlist()
+    scans_cal = scans.copy()
+
+    if processes > 0:
+        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method, show_solution, pad_amp, gain_tol, caltable] for i in range(len(scans))]))
+        print('DONE')
+    else:
+        for i in range(len(scans)):
+            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
             sys.stdout.flush()
-
-        scan_cal = self_cal_scan(scan, im, V_scan=V[data_index:(data_index+len(scan))], sites=sites,
-                                 method=method, show_solution=show_solution, caltable=caltable,
-                                 pad_amp=pad_amp, gain_tol=gain_tol)
-        data_index += len(scan)
-        data_cal.append(scan_cal)
+            scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
+                                 method=method, show_solution=show_solution,
+                                 pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
 
     if caltable:
         allsites = obs.tarr['site']
-        caldict = data_cal[0]
-        for i in range(1,len(data_cal)):
-            row = data_cal[i]
+        caldict = scans_cal[0]
+        for i in range(1,len(scans_cal)):
+            row = scans_cal[i]
             for site in allsites:
                 try: dat = row[site]
                 except KeyError: continue
@@ -316,7 +333,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         out = caltable
     else:
         obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
-                                        np.concatenate(data_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
+                                        np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
                                         timetype=obs.timetype)
 
@@ -382,7 +399,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
         chisq_g = np.sum((np.log(np.abs(g))**2 / gain_tol**2))
 
-        return chisq
+        return chisq + chisq_g
 
     optdict = {'maxiter': 5000} # minimizer params
     res = opt.minimize(errfunc, gpar_guess, method='Powell', options=optdict)
@@ -426,6 +443,16 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         out = scan
 
     return out
+
+def get_selfcal_scan_cal(args):
+    return get_selfcal_scan_cal2(*args)
+
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable):
+    if n > 1:
+        sys.stdout.write('.')
+        sys.stdout.flush()
+
+    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
 
 
 ###################################################################################################################################
