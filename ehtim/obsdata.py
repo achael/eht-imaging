@@ -1842,7 +1842,7 @@ def load_txt(fname):
     """
     return ehtim.io.load.load_obs_txt(fname)
 
-def load_uvfits(fname, flipbl=False, force_singlepol=None):
+def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all):
     """Load observation data from a uvfits file.
 
        Args:
@@ -1852,7 +1852,7 @@ def load_uvfits(fname, flipbl=False, force_singlepol=None):
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF)
 
 def load_oifits(fname, flux=1.0):
     """Load data from an oifits file. Does NOT currently support polarization.
