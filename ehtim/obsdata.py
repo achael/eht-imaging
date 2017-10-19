@@ -137,7 +137,6 @@ class Obsdata(object):
         times = self.unpack(['time'])['time']
         self.tstart = times[0]
         self.mjd = int(mjd)
-        #self.mjd = fracmjd(mjd, self.tstart)
         self.tstop = times[-1]
         if self.tstop < self.tstart:
             self.tstop += 24.0

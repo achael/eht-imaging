@@ -151,7 +151,6 @@ class Vex(object):
         tdataout = np.array(tdataout)
         self.array = ehtim.array.Array(tdataout)
 
-
         # SCHED  =========================================================
         SCHED = self.get_sector('SCHED')
         sched = []

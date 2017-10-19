@@ -76,6 +76,7 @@ def make_uvpoints2(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DE
                 site1 = array.tarr[i1]['site']
                 site2 = array.tarr[i2]['site']
                 (timesout,uout,vout) = compute_uv_coordinates(array, site1, site2, times, mjd, ra, dec, rf, timetype=timetype, elevmin=elevmin, elevmax=elevmax)
+
                 for k in range(len(timesout)):
                     # Append data to list
                     outlist.append(np.array((
