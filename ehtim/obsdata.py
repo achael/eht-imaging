@@ -769,6 +769,15 @@ class Obsdata(object):
 
         return out
 
+    def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
+        # This will remove all visibilities that include any of the specified sites
+        obs_out = self.copy()
+        uvdist_list = obs_out.unpack('uvdist')['uvdist']
+        mask = [uv_min <= uvdist_list[j] <= uv_max for j in range(len(uvdist_list))]
+        obs_out.data = obs_out.data[mask]
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
+        return obs_out
+
     def flag_sites(self, sites):
         # This will remove all visibilities that include any of the specified sites
         obs_out = self.copy()
@@ -1832,7 +1841,7 @@ def load_txt(fname):
     """
     return ehtim.io.load.load_obs_txt(fname)
 
-def load_uvfits(fname, flipbl=False, force_singlepol=None):
+def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all):
     """Load observation data from a uvfits file.
 
        Args:
@@ -1842,7 +1851,7 @@ def load_uvfits(fname, flipbl=False, force_singlepol=None):
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF)
 
 def load_oifits(fname, flux=1.0):
     """Load data from an oifits file. Does NOT currently support polarization.
