@@ -594,7 +594,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 
 
 #!AC TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
+def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, IF=all):
     """Load uvfits data from a uvfits file.
        To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R' or 'L'
     """
@@ -664,18 +664,39 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
     # Mask to screen bad data
     # Reducing to single frequency
 
+    # prepare the arrays of if and channels that will be extracted from the data. 
+    nvis = data['DATA'].shape[0]
+    full_nchannels = data['DATA'].shape[4]
+    full_nifs = data['DATA'].shape[3]
+    if channel == all:
+        channel = np.arange(0, full_nchannels, 1) 
+    else:
+        channel = np.array([channel]).reshape(-1) 
+    if IF == all: 
+        IF = np.arange(0, full_nifs, 1)  
+    else:
+        IF = np.array([IF]).reshape(-1) 
+        
+    if (np.max(channel) >= full_nchannels) or (np.min(channel) < 0):
+        raise Exception('The specified channel does not exist')
+    if (np.max(IF) >= full_nifs) or (np.min(IF) < 0):
+        raise Exception('The specified IF does not exist')  
+        
+    nchannels = len(np.array(channel))
+    nifs = len(np.array(IF))
+
     #TODO CHECK THESE DECISIONS CAREFULLY!!!!
-    rrweight = data['DATA'][:,0,0,:,:,0,2]
+    rrweight = data['DATA'][:,0,0,IF,channel,0,2].reshape(nvis, nifs, nchannels)
     if num_corr >= 2: 
-        llweight = data['DATA'][:,0,0,:,:,1,2]
+        llweight = data['DATA'][:,0,0,IF,channel,1,2].reshape(nvis, nifs, nchannels)
     else:
         llweight = rrweight * 0.0
     if num_corr >= 3: 
-        rlweight = data['DATA'][:,0,0,:,:,2,2]
+        rlweight = data['DATA'][:,0,0,IF,channel,2,2].reshape(nvis, nifs, nchannels)
     else:
         rlweight = rrweight * 0.0
     if num_corr >= 4: 
-        lrweight = data['DATA'][:,0,0,:,:,3,2]
+        lrweight = data['DATA'][:,0,0,IF,channel,3,2].reshape(nvis, nifs, nchannels)
     else:
         lrweight = rrweight * 0.0
 
@@ -714,9 +735,6 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
     jds = data['DATE'][mask].astype('d') + data['_DATE'][mask].astype('d')
     mjd = int(np.min(jds)-2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
-
-    DTSCANS = [('time','f8'),('interval','f8'),('startvis','f8'),('endvis','f8')]
-    import astropy.time
     
     try:
         scantable = []
@@ -773,17 +791,17 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None):
     # replace masked vis with nans so they don't mess up the average
     #TODO: coherent average ok?
     #TODO 2d or 1d mask
-    rr_2d = data['DATA'][:,0,0,:,:,0,0] + 1j*data['DATA'][:,0,0,:,:,0,1]
+    rr_2d = data['DATA'][:,0,0,IF,channel,0,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,0,1].reshape(nvis, nifs, nchannels)
     if num_corr >= 2: 
-        ll_2d = data['DATA'][:,0,0,:,:,1,0] + 1j*data['DATA'][:,0,0,:,:,1,1]
+        ll_2d = data['DATA'][:,0,0,IF,channel,1,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,1,1].reshape(nvis, nifs, nchannels)
     else:
         ll_2d = rr_2d*0.0
     if num_corr >= 3: 
-        rl_2d = data['DATA'][:,0,0,:,:,2,0] + 1j*data['DATA'][:,0,0,:,:,2,1]
+        rl_2d = data['DATA'][:,0,0,IF,channel,2,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,2,1].reshape(nvis, nifs, nchannels)
     else:
         rl_2d = rr_2d*0.0
     if num_corr >= 4: 
-        lr_2d = data['DATA'][:,0,0,:,:,3,0] + 1j*data['DATA'][:,0,0,:,:,3,1]
+        lr_2d = data['DATA'][:,0,0,IF,channel,3,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,3,1].reshape(nvis, nifs, nchannels)
     else:
         lr_2d = rr_2d*0.0
 
