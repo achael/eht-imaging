@@ -791,17 +791,21 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     # replace masked vis with nans so they don't mess up the average
     #TODO: coherent average ok?
     #TODO 2d or 1d mask
-    rr_2d = data['DATA'][:,0,0,IF,channel,0,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,0,1].reshape(nvis, nifs, nchannels)
+    rr_2d = data['DATA'][:,0,0,IF,channel,0,0] + 1j*data['DATA'][:,0,0,IF,channel,0,1]
+    rr_2d = rr_2d.reshape(nvis, nifs, nchannels)
     if num_corr >= 2: 
-        ll_2d = data['DATA'][:,0,0,IF,channel,1,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,1,1].reshape(nvis, nifs, nchannels)
+        ll_2d = data['DATA'][:,0,0,IF,channel,1,0] + 1j*data['DATA'][:,0,0,IF,channel,1,1]
+        ll_2d = ll_2d.reshape(nvis, nifs, nchannels)
     else:
         ll_2d = rr_2d*0.0
     if num_corr >= 3: 
-        rl_2d = data['DATA'][:,0,0,IF,channel,2,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,2,1].reshape(nvis, nifs, nchannels)
+        rl_2d = data['DATA'][:,0,0,IF,channel,2,0] + 1j*data['DATA'][:,0,0,IF,channel,2,1]
+        rl_2d = rl_2d.reshape(nvis, nifs, nchannels)
     else:
         rl_2d = rr_2d*0.0
     if num_corr >= 4: 
-        lr_2d = data['DATA'][:,0,0,IF,channel,3,0].reshape(nvis, nifs, nchannels) + 1j*data['DATA'][:,0,0,IF,channel,3,1].reshape(nvis, nifs, nchannels)
+        lr_2d = data['DATA'][:,0,0,IF,channel,3,0] + 1j*data['DATA'][:,0,0,IF,channel,3,1]
+        lr_2d = lr_2d.reshape(nvis, nifs, nchannels)
     else:
         lr_2d = rr_2d*0.0
 
