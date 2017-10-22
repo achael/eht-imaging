@@ -925,7 +925,7 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     return obsdata
 
 # The old noise generating function.
-def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, seed=False):
+def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, seed=False, deepcopy=True):
     """Re-compute sigmas from SEFDS and add noise with gain & phase errors
        Returns signals & noises scaled by estimated gains, including opacity attenuation.
        Be very careful using outside of Image.observe!
@@ -951,7 +951,11 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     #print "------------------------------------------------------------------------------------------------------------------------"
 
     # Get data
-    obsdata = copy.deepcopy(obs.data)
+    if deepcopy:
+        obsdata = copy.deepcopy(obs.data)
+    else:
+        obsdata = obs.data
+            
     sites = obsdata[['t1','t2']].view(('a32',2))
     time = obsdata[['time']].view(('f8',1))
     tint = obsdata[['tint']].view(('f8',1))
