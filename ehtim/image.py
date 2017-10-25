@@ -131,6 +131,9 @@ class Image(object):
         newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         if len(self.qvec):
             newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
+        if len(self.vvec):
+            newim.add_v(self.vvec.reshape(self.ydim,self.xdim))
+
         return newim
 
     def sourcevec(self):

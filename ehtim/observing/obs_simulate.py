@@ -262,9 +262,10 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
     """
 
     # Check for agreement in coordinates and frequency
-    if (im.ra!= obs.ra) or (im.dec != obs.dec):
+    tolerance = 1e-8
+    if (np.abs(im.ra - obs.ra) > tolerance) or (np.abs(im.dec - obs.dec) > tolerance):
         raise Exception("Image coordinates are not the same as observtion coordinates!")
-    if (im.rf != obs.rf):
+    if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
         raise Exception("Image frequency is not the same as observation frequency!")
 
     if ttype=='direct' or ttype=='fast':
@@ -404,10 +405,11 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", pad_frac=0.5,
         """
 
         # Check for agreement in coordinates and frequency
-        if (mov.ra!= obs.ra) or (mov.dec != obs.dec):
+        tolerance = 1e-8
+        if (np.abs(mov.ra - obs.ra) > tolerance) or (np.abs(mov.dec - obs.dec) > tolerance):
             raise Exception("Image coordinates are not the same as observation coordinates!")
-            if (mov.rf != obs.rf):
-                raise Exception("Image frequency is not the same as observation frequency!")
+        if (np.abs(mov.rf - obs.rf)/obs.rf > tolerance):
+            raise Exception("Image frequency is not the same as observation frequency!")
 
         mjdstart = float(mov.mjd) + float(mov.start_hr/24.0)
         mjdend = mjdstart + (len(mov.frames)*mov.framedur)/86400.0
@@ -926,7 +928,7 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     return obsdata
 
 # The old noise generating function.
-def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, seed=False):
+def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, seed=False, deepcopy=True):
     """Re-compute sigmas from SEFDS and add noise with gain & phase errors
        Returns signals & noises scaled by estimated gains, including opacity attenuation.
        Be very careful using outside of Image.observe!
@@ -952,7 +954,11 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
     #print "------------------------------------------------------------------------------------------------------------------------"
 
     # Get data
-    obsdata = copy.deepcopy(obs.data)
+    if deepcopy:
+        obsdata = copy.deepcopy(obs.data)
+    else:
+        obsdata = obs.data
+            
     sites = obsdata[['t1','t2']].view(('a32',2))
     time = obsdata[['time']].view(('f8',1))
     tint = obsdata[['tint']].view(('f8',1))
