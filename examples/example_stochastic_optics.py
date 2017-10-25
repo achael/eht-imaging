@@ -52,7 +52,18 @@ imgr_deblur.out_last().display()
 # Now image using stochastic optics
 imgr_so = eh.imager.Imager(obs, gaussprior, prior_im=gaussprior, maxit=200, flux=total_flux, clipfloor=-1.)
 imgr_so.make_image_I_stochastic_optics()
-# Increase the scattering regularization slightly and re-image (desired max |Epsilon| is ~2.5)
-imgr_so.alpha_phi_next *= 1.5
+# Now look at the unscattered image, the scattered image, and replicate the scattering using the solved screen
+imgr_so.out_last().display()
+imgr_so.out_scattered_last().display()
+imgr_so.scattering_model.Scatter(imgr_so.out_last(), Epsilon_Screen=so.MakeEpsilonScreenFromList(imgr_so.out_epsilon_last(), npix), ea_ker = imgr_so._ea_ker, sqrtQ=imgr_so._sqrtQ, Linearized_Approximation=True, DisplayImage=True)
+
+#Note that only the scattered image will fit the measured visibilities!
+eh.comp_plots.plotall_obs_im_compare(obs, imgr_so.out_last(), 'uvdist', 'amp')
+eh.comp_plots.plotall_obs_im_compare(obs, imgr_so.out_scattered_last(), 'uvdist', 'amp')
+
+# Decrease the scattering regularization slightly and re-image (desired max |Epsilon| is ~2.5)
+imgr_so.alpha_phi_next /= 2.0
+imgr_so.init_next = imgr_so.out_last().blur_circ(obs.res())
+imgr_so.epsilon_list_next = imgr_so.out_epsilon_last()
 imgr_so.make_image_I_stochastic_optics()
 imgr_so.out_last().display()
