@@ -159,7 +159,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', 
     for i in range(len(obslist)):
         obs = obslist[i]
 
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, sgrscat=False, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
+        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
 
 
     if show:
