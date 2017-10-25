@@ -261,9 +261,10 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
     """
 
     # Check for agreement in coordinates and frequency
-    if (im.ra!= obs.ra) or (im.dec != obs.dec):
+    tolerance = 1e-8
+    if (np.abs(im.ra - obs.ra) > tolerance) or (np.abs(im.dec - obs.dec) > tolerance):
         raise Exception("Image coordinates are not the same as observtion coordinates!")
-    if (im.rf != obs.rf):
+    if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
         raise Exception("Image frequency is not the same as observation frequency!")
 
     if ttype=='direct' or ttype=='fast':
@@ -403,10 +404,11 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", pad_frac=0.5,
         """
 
         # Check for agreement in coordinates and frequency
-        if (mov.ra!= obs.ra) or (mov.dec != obs.dec):
+        tolerance = 1e-8
+        if (np.abs(mov.ra - obs.ra) > tolerance) or (np.abs(mov.dec - obs.dec) > tolerance):
             raise Exception("Image coordinates are not the same as observation coordinates!")
-            if (mov.rf != obs.rf):
-                raise Exception("Image frequency is not the same as observation frequency!")
+        if (np.abs(mov.rf - obs.rf)/obs.rf > tolerance):
+            raise Exception("Image frequency is not the same as observation frequency!")
 
         mjdstart = float(mov.mjd) + float(mov.start_hr/24.0)
         mjdend = mjdstart + (len(mov.frames)*mov.framedur)/86400.0
