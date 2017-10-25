@@ -36,7 +36,6 @@ class Caltable(object):
 
            Args:
 
-
            Returns:
                caltable (Caltable): an Caltable object
         """
@@ -170,7 +169,7 @@ class Caltable(object):
         save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
 
 def load_caltable(obs, datadir, sqrt_gains=False ):
-    """Load Maciek's apriori cal tables
+    """Load apriori cal tables
     """
 
     datatables = {}
@@ -186,7 +185,7 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
         #print ("filename)
         datatable = []
 
-        # ANDREW VERY HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
+        # ANDREW HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
         onerowonly=False        
         try: data.shape[1]
         except IndexError: 
@@ -212,7 +211,7 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
                 rscale = rscale**.5
                 lscale = lscale**.5
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
-            #ANDREW VERY HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
+            #ANDREW HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
             #if onerowonly:
             #    datatable.append(np.array((1.1*time, rscale, lscale), dtype=DTCAL))
 
@@ -224,7 +223,7 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
     return caltable
 
 def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
-    """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
+    """Saves a Caltable object to text file
     """
     if not os.path.exists(datadir):
         os.makedirs(datadir)

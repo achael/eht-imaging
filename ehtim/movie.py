@@ -339,7 +339,7 @@ class Movie(object):
             obs_List.append(obs)
 
         if len(obs_List) == 0:
-            raise Exception("Movie has no overlap with the vex file and source=" + source)
+            raise Exception("Movie has no overlap with the vex file")
 
         obs = ehtim.obsdata.merge_obs(obs_List)
 

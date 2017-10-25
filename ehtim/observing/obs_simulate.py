@@ -552,7 +552,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", pad_frac=0.5,
 ##################################################################################################
 
 def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frcal=True, 
-               gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID):
+               gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF_RESID,dterm_offset=DTERMPDEF):
     """Compute ALL Jones Matrices for a list of times (non repeating), with gain and dterm errors.
        ra and dec should be in hours / degrees
        Will return a nested dictionary of matrices indexed by the site, then by the time
@@ -646,12 +646,19 @@ def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frca
         # D Term errors
         dR = dL = 0.0
         if not dcal:
+            if type(dterm_offset) == dict:
+                doff = dterm_offset[site]
+            else:
+                doff=dterm_offset
+
             dR = tarr[i]['dr']
-            if dR == 0.0: dR = dtermp * (hashrandn(site, 'drreal', tproc) + 1j * hashrandn(site, 'drim', tproc))
             dL = tarr[i]['dl']
-            if dL == 0.0: dL = dtermp * (hashrandn(site, 'dlreal', tproc) + 1j * hashrandn(site, 'dlim', tproc))
-            dR = dR + dtermp_resid * (hashrandn(site, 'drreal_resid', tproc) + 1j * hashrandn(site, 'drim_resid', tproc))
-            dL = dL + dtermp_resid * (hashrandn(site, 'dlreal_resid', tproc) + 1j * hashrandn(site, 'dlim_resid', tproc))
+
+            dR += doff * (hashrandn(site, 'drreal', tproc) + 1j * hashrandn(site, 'drim', tproc))
+            dL += doff * (hashrandn(site, 'dlreal', tproc) + 1j * hashrandn(site, 'dlim', tproc))
+
+            dR *= (1 + dtermp * (hashrandn(site, 'drreal_resid', tproc) + 1j * hashrandn(site, 'drim_resid', tproc)))
+            dL *= (1 + dtermp * (hashrandn(site, 'dlreal_resid', tproc) + 1j * hashrandn(site, 'dlim_resid', tproc)))
 
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
@@ -765,7 +772,7 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
     return out
 
 def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
-                        gainp=GAINPDEF, gain_offset=GAINPDEF, taup=GAINPDEF, dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID):
+                        gainp=GAINPDEF, gain_offset=GAINPDEF, taup=GAINPDEF, dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF):
     """Corrupt visibilities in obs with jones matrices and add thermal noise
     """
 
@@ -774,7 +781,7 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ph
     # Build Jones Matrices
     jm_dict = make_jones(obs,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,
-                         gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dtermp_resid=dtermp_resid)
+                         gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dterm_offset=dterm_offset)
     # Unpack Data
     obsdata = obs.data
     times = obsdata['time']
