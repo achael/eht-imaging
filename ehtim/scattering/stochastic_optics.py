@@ -44,17 +44,34 @@ class ScatteringModel(object):
 
        Attributes:
             model (string): The type of scattering model (determined by the power spectrum of phase fluctuations).
-            POS_ANG (float): The position angle of the major axis of the scattering.
+            scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3).
             observer_screen_distance (float): The distance from the observer to the scattering screen in cm.
             source_screen_distance (float): The distance from the source to the scattering screen in cm.
-            wavelength_reference (float): The reference wavelength for the scattering model in cm.
-            r_in (float): The inner scale of the scattering screen
-            r_out (float): The outer scale of the scattering screen
-            scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3).
+            theta_maj_mas_ref (float): FWHM in mas of the major axis angular broadening at the specified reference wavelength.
+            theta_min_mas_ref (float): FWHM in mas of the minor axis angular broadening at the specified reference wavelength.
+            POS_ANG (float): The position angle of the major axis of the scattering.
+            wavelength_reference_cm (float): The reference wavelength for the scattering model in cm.
+            r_in (float): The inner scale of the scattering screen in cm.
+            r_out (float): The outer scale of the scattering screen in cm.
             rF (function): The Fresnel scale of the scattering screen at the specific wavelength.
     """
 
     def __init__(self, model = 'von_Mises', scatt_alpha = 5.0/3.0, observer_screen_distance = 8.023*10**21, source_screen_distance = 1.790*10**22, theta_maj_mas_ref = 1.309, theta_min_mas_ref = 0.64, POS_ANG = 78, wavelength_reference_cm = 1.0, r_in = 10000*10**5, r_out = 10**20):
+        """To initialize the scattering model, specify:
+
+           Attributes:
+                model (string): The type of scattering model (determined by the power spectrum of phase fluctuations). Options are 'von_Mises', 'boxcar', 'dipole', and 'power-law'
+                scatt_alpha (float): The power-law index of the phase fluctuations (Kolmogorov is 5/3).
+                observer_screen_distance (float): The distance from the observer to the scattering screen in cm.
+                source_screen_distance (float): The distance from the source to the scattering screen in cm.
+                theta_maj_mas_ref (float): FWHM in mas of the major axis angular broadening at the specified reference wavelength.
+                theta_min_mas_ref (float): FWHM in mas of the minor axis angular broadening at the specified reference wavelength.
+                POS_ANG (float): The position angle of the major axis of the scattering.
+                wavelength_reference_cm (float): The reference wavelength for the scattering model in cm.
+                r_in (float): The inner scale of the scattering screen in cm.
+                r_out (float): The outer scale of the scattering screen in cm.
+        """
+
         self.model = model
         self.POS_ANG = POS_ANG #Major axis position angle [degrees, east of north]
         self.observer_screen_distance = observer_screen_distance #cm
@@ -404,6 +421,7 @@ class ScatteringModel(object):
                 ea_ker (2D ndarray): The used can optionally pass a precomputed array of the ensemble-average blurring kernel.
                 sqrtQ (2D ndarray): The used can optionally pass a precomputed array of the square root of the power spectrum.
                 Linearized_Approximation (bool): If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson & Narayan 2016). If False, uses Eq. 9 of that paper.
+                DisplayImage (bool): If True, show a plot of the unscattered, ensemble-average, and scattered images as well as the phase screen.
                 Force_Positivity (bool): If True, eliminates negative flux from the scattered image from the linearized approximation.
                 Return_Image_List (bool): If True, returns a list of the scattered frames. If False, returns a movie object.
 
