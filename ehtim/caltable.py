@@ -111,12 +111,12 @@ class Caltable(object):
             time_mjd = bl_obs['time']/24.0 + obs.mjd
 
             if t1 in skipsites:
-                rscale1 = lscale1 = 1
+                rscale1 = lscale1 = np.array(1.)
             else:
                 rscale1 = rinterp[t1](time_mjd)
                 lscale1 = linterp[t1](time_mjd)
             if t2 in skipsites:
-                rscale2 = lscale2 = 1
+                rscale2 = lscale2 = np.array(1.)
             else:
                 rscale2 = rinterp[t2](time_mjd)
                 lscale2 = linterp[t2](time_mjd)
@@ -178,9 +178,20 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
 
         site = obs.tarr[s]['site']
         filename = datadir + obs.source + '_' + site + '.txt'
-        data = np.loadtxt(filename, dtype=bytes).astype(str)
-
+        try:
+            data = np.loadtxt(filename, dtype=bytes).astype(str)
+        except IOError:
+            continue
+            
+        #print ("filename)
         datatable = []
+
+        # ANDREW VERY HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
+        onerowonly=False        
+        try: data.shape[1]
+        except IndexError: 
+            data = data.reshape(1,len(data))
+            onerowonly = True
         for row in data:
 
             time = (float(row[0]) - obs.mjd) * 24.0 # time is given in mjd
@@ -188,6 +199,7 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
              # Maciek's old convention had a square root
  #           rscale = np.sqrt(float(row[1])) # r
  #           lscale = np.sqrt(float(row[2])) # l
+
             if len(row) == 3:
                 rscale = float(row[1])
                 lscale = float(row[2])
@@ -200,12 +212,15 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
                 rscale = rscale**.5
                 lscale = lscale**.5
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
+            #ANDREW VERY HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
+            #if onerowonly:
+            #    datatable.append(np.array((1.1*time, rscale, lscale), dtype=DTCAL))
 
         datatables[site] = np.array(datatable)
-
-    caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd,
-                        timetype=obs.timetype)
-
+    if len(datatables)>0:
+        caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
+    else:
+        caltable=False
     return caltable
 
 def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
