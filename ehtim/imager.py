@@ -42,6 +42,8 @@ class Imager(object):
         self._init_list = []
         self._prior_list = []
         self._out_list = []
+        self._out_list_epsilon   = []
+        self._out_list_scattered = []
         self._flux_list = {}
         self._reg_term_list = []
         self._dat_term_list = []
@@ -57,6 +59,8 @@ class Imager(object):
 
         self.obs_next = obsdata
         self.init_next = init_im
+
+        self.epsilon_list_next = []
 
         if prior_im==None:
             self.prior_next = self.init_next
@@ -242,6 +246,22 @@ class Imager(object):
             return
         return self._out_list[-1]
 
+    def out_scattered_last(self):
+        """Return last result with scattering.
+        """
+        if self.nruns == 0 or len(self._out_list_scattered) == 0:
+            print("No stochastic optics imager runs yet!")
+            return
+        return self._out_list_scattered[-1]
+
+    def out_epsilon_last(self):
+        """Return last result with scattering.
+        """
+        if self.nruns == 0 or len(self._out_list_epsilon) == 0:
+            print("No stochastic optics imager runs yet!")
+            return
+        return self._out_list_epsilon[-1]
+
     def init_last(self):
         """Return last initial image.
         """
@@ -322,7 +342,6 @@ class Imager(object):
         wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
         N = self.prior_next.xdim
         FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance #Field of view, in cm, at the scattering screen
-
 
         # The ensemble-average convolution kernel and its gradients
         self._ea_ker = self.scattering_model.Ensemble_Average_Kernel(self.prior_next, wavelength_cm = wavelength)
@@ -746,10 +765,11 @@ class Imager(object):
         else:
             xinit = self._ninit_I
 
-        xinit = np.concatenate((xinit,np.zeros(N**2-1)))
-        print(xinit)
-        print(xinit.shape)
-        print(np.exp(xinit))
+        if len(self.epsilon_list_next) == 0:
+            xinit = np.concatenate((xinit,np.zeros(N**2-1)))
+        else:
+            xinit = np.concatenate((xinit,self.epsilon_list_next))
+        
 
         self._nit = 0
 
@@ -783,6 +803,8 @@ class Imager(object):
                             self.prior_next.psize, self.prior_next.ra, self.prior_next.dec,
                             rf=self.prior_next.rf, source=self.prior_next.source,
                             mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
+        outep = res.x[N**2:]
+        outscatt = self.scattering_model.Scatter(outim, Epsilon_Screen=so.MakeEpsilonScreenFromList(outep, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True)
 
         # Preserving image complex polarization fractions
         if len(self.prior_next.qvec):
@@ -799,6 +821,9 @@ class Imager(object):
         # Append to history
         logstr = str(self.nruns) + ": make_image_I_stochastic_optics()"
         self._append_image_history(outim, logstr)
+        self._out_list_epsilon.append(res.x[N**2:])
+        self._out_list_scattered.append(outscatt)
+
         self.nruns += 1
 
         # Return Image object
