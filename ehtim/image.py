@@ -223,7 +223,7 @@ class Image(object):
                            opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF, gain_offset=GAINPDEF, gainp=GAINPDEF, 
-                           dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID):
+                           dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -245,7 +245,7 @@ class Image(object):
                gainp (float): the fractional std. dev. of the random error on the gains
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
-               dtermp_resid (float): the fractional std. dev. of the random error on the D-terms
+               dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
 
            Returns:
                (Obsdata): an observation object
@@ -261,7 +261,7 @@ class Image(object):
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, dcal=dcal, frcal=frcal,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                                 dtermp=dtermp,dtermp_resid=dtermp_resid)
+                                                 dtermp=dtermp,dterm_offset=dterm_offset)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
                                              obs.tarr, source=obs.source, mjd=obs.mjd,
@@ -300,7 +300,7 @@ class Image(object):
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, 
-                      dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID):
+                      dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF):
 
         """Generate baselines from an array object and observe the image.
 
@@ -331,11 +331,10 @@ class Image(object):
                gainp (float): the fractional std. dev. of the random error on the gains
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
-               dtermp_resid (float): the fractional std. dev. of the random error on the D-terms
+               dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
 
            Returns:
                (Obsdata): an observation object
-
         """
 
 
@@ -350,7 +349,7 @@ class Image(object):
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
-                                     gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,taup=taup,dtermp_resid=dtermp_resid,
+                                     gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,taup=taup,dterm_offset=dterm_offset,
                                      jones=jones, inv_jones=inv_jones)
 
         return obs
@@ -360,7 +359,7 @@ class Image(object):
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, 
-                      dtermp=DTERMPDEF, dtermp_resid=DTERMPDEF_RESID):
+                      dterm_offset=DTERMPDEF, dterm=DTERMPDEF_RESID):
 
         """Generate baselines from a vex file and observes the image.
 
@@ -380,7 +379,7 @@ class Image(object):
                gainp (float): the fractional std. dev. of the random error on the gains
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
-               dtermp_resid (float): the fractional std. dev. of the random error on the D-terms
+               dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
 
 
            Returns:
@@ -400,7 +399,7 @@ class Image(object):
                                        elevmin=.01, elevmax=89.99,
                                        ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                        opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
-                                       taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,dtermp_resid=dtermp_resid,
+                                       taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,dterm_offset=dterm_offset,
                                        jones=jones, inv_jones=inv_jones)
 
 
