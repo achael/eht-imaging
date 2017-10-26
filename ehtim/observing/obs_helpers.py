@@ -613,7 +613,7 @@ def gmst_to_utc(gmst,mjd):
 
     mjd=int(mjd)
     time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
-    time_sidereal_ref = time_obj.sidereal_time('mean', 'greenwich').hour
+    time_sidereal_ref = time_obj_ref.sidereal_time('mean', 'greenwich').hour
     time_utc = (gmst - time_sidereal_ref) * 0.9972695601848 
     return time_utc
 
