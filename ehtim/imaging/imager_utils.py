@@ -56,7 +56,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
                    ttype='direct', 
                    fft_pad_frac=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
                    grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
-                   clipfloor=0., grads=True, logim=True,
+                   clipfloor=0., grads=True, logim=True, debias=True, snrcut=0,
                    maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=True):
 
     """Run a general interferometric imager.
@@ -148,9 +148,9 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     # Get data and fourier matrices for the data terms
     (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, ttype=ttype, fft_pad_frac=fft_pad_frac,
-                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp)
+                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
     (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, ttype=ttype, fft_pad_frac=fft_pad_frac,
-                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp)
+                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
 
     # Coordinate matrix for center-of-mass constraint
     coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim//2,-Prior.xdim//2,-1)]
@@ -461,7 +461,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
 
     return s
 
-def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', 
+def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
               fft_pad_frac=1, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT, order=FFT_INTERP_DEFAULT):
     """Return the data, sigma, and matrices for the appropriate dtype
     """
@@ -473,29 +473,32 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct',
         if dtype == 'vis':
             (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask)
+            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask,debias=debias)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask)
+            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask,debias=debias,snrcut=snrcut)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask)
+            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask,debias=debias,snrcut=snrcut)
 
     elif ttype=='fast':
         if dtype=='vis':
             (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad,debias=debias)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, 
+                               fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, 
+                               fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad,debias=debias,snrcut=snrcut)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior,
+                               fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad,debias=debias,snrcut=snrcut)
         
         
     return (data, sigma, A)
@@ -1086,11 +1089,11 @@ def chisqdata_vis(Obsdata, Prior, mask):
 
     return (vis, sigma, A)
 
-def chisqdata_amp(Obsdata, Prior, mask):
+def chisqdata_amp(Obsdata, Prior, mask,debias=True):
     """Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
     """
 
-    ampdata = Obsdata.unpack(['u','v','amp','sigma'], debias=True)
+    ampdata = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
     uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))
     amp = ampdata['amp']
     sigma = ampdata['sigma']
@@ -1133,17 +1136,18 @@ def chisqdata_cphase(Obsdata, Prior, mask):
          )
     return (clphase, sigma, A3)
 
-def chisqdata_camp(Obsdata, Prior, mask):
+def chisqdata_camp(Obsdata, Prior, mask, debias=True,snrcut=0):
     """Return the closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
     """
 
-    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=True)
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
-    clamp = clamparr['camp']
-    sigma = clamparr['sigmaca']
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
+    snrmask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
+    clamp = clamparr['camp'][snrmask]
+    sigma = clamparr['sigmaca'][snrmask]
 
     A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
@@ -1153,17 +1157,19 @@ def chisqdata_camp(Obsdata, Prior, mask):
 
     return (clamp, sigma, A4)
 
-def chisqdata_logcamp(Obsdata, Prior, mask):
+def chisqdata_logcamp(Obsdata, Prior, mask, debias=True, snrcut=0):
     """Return the log closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
     """
 
-    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=True)
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
-    clamp = clamparr['camp']
-    sigma = clamparr['sigmaca']
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
+    snrmask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
+    clamp = clamparr['camp'][snrmask]
+    sigma = clamparr['sigmaca'][snrmask]
 
     A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
@@ -1197,11 +1203,11 @@ def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=1,
     return (vis, sigma, A)
 
 def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=1,
-                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True):
     """Return the amplitudes, sigmas, uv points, and image info
     """
 
-    data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=True)
+    data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
     amp = data_arr['amp']
     sigma = data_arr['sigma']
@@ -1266,17 +1272,18 @@ def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=1,
     return (clphase, sigma, A)
 
 def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=1,
-                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
     """Return the closure phases, sigmas, uv points, and image info
     """
-    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=True)
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
-    clamp = clamparr['camp']
-    sigma = clamparr['sigmaca']
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
+    mask = clamparr['camp']/clamparr['sigmaca'] > snrcut
 
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[mask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
+    clamp = clamparr['camp'][mask]
+    sigma = clamparr['sigmaca'][mask]
     npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
@@ -1292,17 +1299,18 @@ def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=1,
     return (clamp, sigma, A)
 
 def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=1,
-                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
     """Return the closure phases, sigmas, uv points, and image info
     """
-    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=True)
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
-    clamp = clamparr['camp']
-    sigma = clamparr['sigmaca']
+    clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
+    mask = clamparr['camp']/clamparr['sigmaca'] > snrcut
 
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[mask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
+    clamp = clamparr['camp'][mask]
+    sigma = clamparr['sigmaca'][mask]
     npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
