@@ -95,6 +95,11 @@ class Imager(object):
         self._change_imgr_params = True
         self.nruns = 0
 
+
+        #closure amplitude debiasing/snr cut
+        self.debias=True
+        self.camp_snrcut=0
+
         #set embedding matrices and prepare imager
         self.check_params()
         self.check_limits()
@@ -325,7 +330,7 @@ class Imager(object):
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
                                 ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_frac=self.fft_pad_frac, 
-                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad)
+                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, snrcut=self.camp_snrcut)
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
 
