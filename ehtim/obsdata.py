@@ -769,6 +769,85 @@ class Obsdata(object):
 
         return out
 
+
+    def rescale_noise(self, noise_rescale_factor=1.0):
+        """Rescale the thermal noise on all Stokes parameters by a constant factor. This is useful for, e.g., AIPS data, which has a single constant factor missing that relates 'weights' to thermal noise.
+
+           Args:
+               noise_rescale_factor (float): The number to multiple the existing sigmas by.
+
+           Returns:
+               (Obsdata): An Obsdata object with the rescaled noise values.
+        """
+
+        new_obs = self.copy()
+
+        for d in new_obs.data:
+            d[-4] = d[-4] * noise_rescale_factor
+            d[-3] = d[-3] * noise_rescale_factor
+            d[-2] = d[-2] * noise_rescale_factor
+            d[-1] = d[-1] * noise_rescale_factor
+
+        return new_obs
+
+    def estimate_noise_rescale_factor(self, max_diff_sec = 0.0, min_num = 10, print_std = False, count='max'):
+        """Estimates a singe, constant rescaling factor for thermal noise across all baselines, times, and polarizations. Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise. This is useful for, e.g., AIPS data, which has a single constant factor missing that relates 'weights' to thermal noise. The output can be non-sensical if there are higher-order terms in the closure phase error budget.
+
+           Args:
+               max_diff_sec (float): The maximum difference of adjacent closure phases (in seconds) to be included in the estimate. If 0.0, auto-estimates this value to twice the median scan length.
+               min_num (int): The minimum number of closure phase differences for a triangle to be included in the set of estimators.
+               print_std (bool): Whether or not to print the normalized standard deviation for each closure triangle.
+               count (bool): Specification of which closure phases to use (e.g., 'max' or 'min')
+
+           Returns:
+               (float): The rescaling factor
+        """
+
+        if max_diff_sec == 0.0:
+            max_diff_sec = np.median(self.unpack('tint')['tint'])
+
+        # Now check the noise statistics on all closure phase triangles
+        c_phases = self.c_phases(vtype='vis', mode='time', count=count, ang_unit='')
+        all_triangles = []
+        for scan in c_phases:
+            for cphase in scan:
+                all_triangles.append((cphase[1],cphase[2],cphase[3]))
+
+        std_list = []
+        print("Estimating noise for %d triangles...\n" % len(set(all_triangles)))
+
+        i_count = 0
+        for tri in set(all_triangles):
+            i_count = i_count + 1
+            if print_std == False:
+                sys.stdout.flush()
+                sys.stdout.write('\rGetting noise for triangles %i/%i ' % (i_count, len(set(all_triangles))))
+
+            all_tri = np.array([[]])
+            for scan in c_phases:
+                for cphase in scan:
+                    if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2]:
+                        all_tri = np.append(all_tri, ((cphase[0], cphase[-2], cphase[-1])))
+            all_tri = all_tri.reshape(int(len(all_tri)/3),3)
+
+            # Now go through and find studentized differences of adjacent points
+            s_list = np.array([])
+            for j in range(len(all_tri)-1):
+                if (all_tri[j+1,0]-all_tri[j,0])*3600.0 < max_diff_sec:
+                    diff = (all_tri[j+1,1]-all_tri[j,1]) % (2.0*np.pi)
+                    if diff > np.pi: diff -= 2.0*np.pi
+
+                    s_list = np.append(s_list, diff/(all_tri[j,2]**2 + all_tri[j+1,2]**2)**0.5)
+
+            if len(s_list) > min_num:
+                std_list.append(np.std(s_list))
+                if print_std == True:
+                    print(tri,np.std(s_list))
+    
+        rescale_factor = np.median(std_list)
+
+        return rescale_factor
+
     def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
         # This will remove all visibilities that include any of the specified sites
         obs_out = self.copy()
