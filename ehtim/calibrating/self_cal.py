@@ -83,6 +83,10 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
                                         timetype=obs.timetype)
         out = obs_cal
+
+    if processes != -1:
+        pool.close()
+
     return out
 
 def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
@@ -338,6 +342,10 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
                                         timetype=obs.timetype)
 
         out = obs_cal
+
+    if processes != -1:
+        pool.close()
+
     return out
 
 def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
