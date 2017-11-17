@@ -300,7 +300,7 @@ class Image(object):
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, 
-                      dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF):
+                      dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF, fix_theta_GMST = False):
 
         """Generate baselines from an array object and observe the image.
 
@@ -344,7 +344,7 @@ class Image(object):
             mjd = self.mjd
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd,
-                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax)
+                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST = fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,

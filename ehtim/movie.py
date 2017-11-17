@@ -213,7 +213,7 @@ class Movie(object):
                       ttype='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
-                      tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
+                      tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, fix_theta_GMST = False):
 
         """Generate baselines from an array object and observe the movie.
 
@@ -255,7 +255,7 @@ class Movie(object):
         if mjd == None:
             mjd = self.mjd
 
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, mjd=mjd, timetype=timetype)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, tau=tau, mjd=mjd, timetype=timetype, fix_theta_GMST = fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, sgrscat=sgrscat, add_th_noise=add_th_noise, opacitycal=opacitycal,
@@ -269,7 +269,7 @@ class Movie(object):
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                           jones=False, inv_jones=False,
-                          tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF):
+                          tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, fix_theta_GMST = False):
 
         """Generate baselines from a vex file and observes the movie.
 
@@ -335,7 +335,7 @@ class Movie(object):
             obs = subarray.obsdata(movie.ra, movie.dec, movie.rf, vex.bw_hz, t_int, t_int,
                                        vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0 - EP,
                                        mjd=vex.sched[i_scan]['mjd_floor'],
-                                       elevmin=.01, elevmax=89.99, timetype='UTC')
+                                       elevmin=.01, elevmax=89.99, timetype='UTC', fix_theta_GMST = fix_theta_GMST)
             obs_List.append(obs)
 
         if len(obs_List) == 0:

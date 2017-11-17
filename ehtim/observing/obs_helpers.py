@@ -13,7 +13,7 @@ from ehtim.const_def import *
 # Other Functions
 ##################################################################################################
 
-def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC', elevmin=ELEV_LOW,  elevmax=ELEV_HIGH):
+def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC', elevmin=ELEV_LOW,  elevmax=ELEV_HIGH, fix_theta_GMST = False):
 
     if not isinstance(time, np.ndarray): time = np.array([time]).flatten()
     if not isinstance(site1, np.ndarray): site1 = np.array([site1]).flatten()
@@ -43,10 +43,11 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         time_utc = time
     else: raise Exception("timetype must be UTC or GMST!")
 
-
     fracmjd = np.floor(mjd) + time/24.
     dto = (at.Time(fracmjd, format='mjd')).datetime
     theta = np.mod((time_sidereal - ra)*HOUR, 2*np.pi)
+    if type(fix_theta_GMST) != bool:
+        theta = np.mod((fix_theta_GMST - ra)*HOUR, 2*np.pi)
 
     i1 = np.array([array.tkey[site] for site in site1])
     i2 = np.array([array.tkey[site] for site in site2])
