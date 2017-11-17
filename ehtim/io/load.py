@@ -11,7 +11,7 @@ import datetime
 import os
 import copy
 import sys
-import ttime
+import time as ttime
 
 import ehtim.obsdata
 import ehtim.image
