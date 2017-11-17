@@ -309,10 +309,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 def get_snr_help(Esnr):
     """estimates snr given a single biased snr measurement
     """
-        if Esnr**2 >= 2.0: 
-            return np.sqrt(Esnr**2 - 1.0)
-        else:
-            return 1.0
+    if Esnr**2 >= 2.0: 
+        return np.sqrt(Esnr**2 - 1.0)
+    else:
+        return 1.0
 
 def get_snr(Esnr):
     """"applies get_snr_help on vector
