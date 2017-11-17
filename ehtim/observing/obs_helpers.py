@@ -191,7 +191,7 @@ def make_bispectrum(l1, l2, l3,vtype):
     #                           var1*var2*var3)
     return (bi, bisig)
 
-def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, debias_type=='old'):
+def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, debias_type='old'):
     """make a list of closure amplitudes and errors
        red1 and red2 are full datatables of numerator entries
        blue1 and blue2 are full datatables denominator entries
