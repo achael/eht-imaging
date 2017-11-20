@@ -1000,7 +1000,7 @@ class Obsdata(object):
         """Return a recarray of the equal time bispectra.
 
            Args:
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+               vtype (str): The visibilty type ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis') from which to assemble bispectra
                mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
                timetype (str): 'GMST' or 'UTC'
@@ -1246,7 +1246,7 @@ class Obsdata(object):
                     continue
         return np.array(outdata)
 
-    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True,timetype=False):
+    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', debias=True, timetype=False, debias_type='old'):
         """Return a recarray of the equal time closure amplitudes.
 
            Args:
@@ -1334,7 +1334,8 @@ class Obsdata(object):
                             continue
                             
                         # Compute the closure amplitude and the error
-                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
+                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
+                                                                 ctype=ctype, debias=debias, debias_type=debias_type)
 
                         # Add the closure amplitudes to the equal-time list
                         # Our site convention is (12)(34)/(14)(23)
@@ -1365,7 +1366,8 @@ class Obsdata(object):
                             continue
 
                         # Compute the closure amplitude and the error
-                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype=ctype)
+                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype, 
+                                                                 ctype=ctype, debias=debias, debias_type=debias_type)
 
                         # Add the closure amplitudes to the equal-time list
                         # Our site convention is (12)(34)/(14)(23)

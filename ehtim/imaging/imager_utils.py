@@ -91,7 +91,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            stop (float): The convergence criterion
            show_updates (bool): If True, displays the progress of the minimizer
            ipynb (bool): If True, adjusts the plotting for the ipython/jupyter notebook
-
+           
+           print_objfunc (bool): If True,  prints current data and regularizer terms and exits
        Returns:
            Image: Image object with result
     """
