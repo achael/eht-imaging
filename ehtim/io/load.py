@@ -11,6 +11,7 @@ import datetime
 import os
 import copy
 import sys
+import time as ttime
 
 import ehtim.obsdata
 import ehtim.image
@@ -983,8 +984,8 @@ def load_obs_oifits(filename, flux=1.0):
 
     # integration time
     tint = np.array([vis_data[i].int_time for i in range(len(vis_data))])
-    if not all(tint[0] == item for item in np.reshape(tint, (-1)) ):
-        raise TypeError("The time integrations for each visibility are different")
+    #if not all(tint[0] == item for item in np.reshape(tint, (-1)) ):
+        #raise TypeError("The time integrations for each visibility are different")
     tint = tint[0]
     tint = tint * np.ones( amp.shape )
 
