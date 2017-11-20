@@ -354,7 +354,7 @@ class Image(object):
 
         return obs
 
-    def observe_vex(self, vex, source,
+    def observe_vex(self, vex, source, t_int=0.0,
                       ttype='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
@@ -380,6 +380,7 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+               t_int (float): if not zero, overrides the vex scans to produce visibilities for each t_int seconds
 
 
            Returns:
@@ -387,13 +388,16 @@ class Image(object):
 
         """
 
+        if t_int == 0.0:
+            t_int = vex.sched[i_scan]['scan'][0]['scan_sec']
+
         obs_List=[]
         for i_scan in range(len(vex.sched)):
             if vex.sched[i_scan]['source'] != source:
                 continue
             subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
 
-            obs = self.observe(subarray, vex.sched[i_scan]['scan'][0]['scan_sec'], 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'],
+            obs = self.observe(subarray, t_int, 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'],
                                        vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0,
                                        vex.bw_hz, mjd=vex.sched[i_scan]['mjd_floor'],
                                        elevmin=.01, elevmax=89.99,
