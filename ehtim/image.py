@@ -359,7 +359,7 @@ class Image(object):
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, 
-                      dterm_offset=DTERMPDEF, dterm=DTERMPDEF_RESID):
+                      dterm_offset=DTERMPDEF, dtermp=DTERMPDEF_RESID):
 
         """Generate baselines from a vex file and observes the image.
 

@@ -107,6 +107,8 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
         pscl = 1.0
     elif punit=="uas":
         pscl = RADPERUAS
+    elif punit=="mas":
+        pscl = RADPERUAS * 1000.0
 
     # Open the FITS file
     hdulist = fits.open(filename)
