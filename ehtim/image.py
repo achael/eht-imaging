@@ -687,10 +687,10 @@ class Image(object):
 
         im = self
         try:
-        	x=beamparams[3]
-        	y=beamparams[4]
+            x=beamparams[3]
+            y=beamparams[4]
         except IndexError:
-        	x=y=0.0
+            x=y=0.0
 
         sigma_maj = beamparams[0] / (2. * np.sqrt(2. * np.log(2.)))
         sigma_min = beamparams[1] / (2. * np.sqrt(2. * np.log(2.)))
@@ -836,6 +836,46 @@ class Image(object):
         if len(image.vvec):
             out.add_v(vim)
         return out
+
+    def fit_gauss(self, paramguess=None):
+        """Determine the Gaussian parameters that short baselines would measure for the source.
+
+           Args:
+           Returns:
+               (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
+        """        
+        import scipy.optimize as opt
+
+        # This could be done using moments of the intensity distribution, but we'll use the visibility approach
+        u_max = 1.0/(self.psize * self.xdim)/5.0
+        uv = np.array([[u, v] for u in np.arange(-u_max,u_max*1.001,u_max/4.0) for v in np.arange(-u_max,u_max*1.001,u_max/4.0)])
+        u = uv[:,0]
+        v = uv[:,1]
+        vis = np.dot(ehtim.obsdata.ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse), self.imvec) 
+
+        if paramguess == None:
+            paramguess = (self.psize * self.xdim / 4.0, self.psize * self.xdim / 4.0, 0.)
+
+        def errfunc(p):
+            vismodel = gauss_uv(u,v, self.total_flux(), p, x=0., y=0.)
+            err = np.sum((np.abs(vis)-np.abs(vismodel))**2)
+            return err
+
+        optdict = {'maxiter':5000, 'maxfev':5000, 'xtol': paramguess[0]/1e9, 'ftol': 1e-10} # minimizer params
+        res = opt.minimize(errfunc, paramguess, method='Nelder-Mead',options=optdict)
+
+        # Return in the form [maj, min, PA]
+        x = res.x
+        x[0] = np.abs(x[0])
+        x[1] = np.abs(x[1])
+        x[2] = np.mod(x[2], np.pi)
+        if x[0] < x[1]:
+            maj = x[1]
+            x[1] = x[0]
+            x[0] = maj
+            x[2] = np.mod(x[2] + np.pi/2.0, np.pi)
+
+        return x
 
     def blur_circ(self, fwhm_i, fwhm_pol=0):
         """Apply a circular gaussian filter to the image, with FWHM in radians.
