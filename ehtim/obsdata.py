@@ -507,11 +507,11 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_frac=2):
+    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_frac=2, systematic_noise=0.0):
         """Give the reduced chi^2 of the observation for the specified image and datatype.
         """
         import ehtim.imaging.imager_utils as iu
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, fft_pad_frac=fft_pad_frac)
+        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, fft_pad_frac=fft_pad_frac,systematic_noise=systematic_noise)
         return iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
 
     def recompute_uv(self):
