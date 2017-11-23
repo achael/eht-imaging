@@ -299,9 +299,9 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
                 snr2 = get_snr(snr2)
                 snr3 = get_snr(snr3)
                 snr4 = get_snr(snr4)
-                camp = log_camp_debias(camp, snr1, snr2,snr3,snr4,'ExactLog')
+                camp = logcamp_debias(camp, snr1, snr2,snr3,snr4,'ExactLog')
             else:    
-                camp = log_camp_debias(camp, snr1, snr2, snr3, snr4)
+                camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
 
     return (camp, camperr)
 
