@@ -1100,7 +1100,7 @@ def chisqdata_amp(Obsdata, Prior, mask,debias=True, systematic_noise=0.0):
     uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))
     amp = ampdata['amp']
     #sigma = ampdata['sigma']
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
+    sigma = np.linalg.norm([ampdata['sigma'], systematic_noise*ampdata['amp']],axis=0)
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (amp, sigma, A)
