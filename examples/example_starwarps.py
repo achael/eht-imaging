@@ -18,7 +18,7 @@ import ehtim as eh
 from   ehtim.calibrating import self_cal as sc
 from ehtim.imaging import patch_prior as pp
 import ehtim.image as image
-import ehtim.starwarps as sw
+from ehtim.imaging import starwarps as sw
 import matplotlib.pyplot as plt
 import sys, os, copy
 import scipy
