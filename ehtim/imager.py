@@ -35,7 +35,7 @@ class Imager(object):
 
     def __init__(self, obsdata, init_im, prior_im=None, flux=None, clipfloor=0., maxit=50, 
                        transform='log', ttype='fast', data_term={'vis':100}, reg_term={'simple':1}, 
-                       scattering_model=None, alpha_phi=1e4):
+                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0):
 
         self.logstr = ""
         self._obs_list = []
@@ -56,6 +56,7 @@ class Imager(object):
         # Parameters for the next imaging iteration
         self.reg_term_next = reg_term #e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
         self.dat_term_next = data_term #e.g. [('amp', 1000), ('cphase',100)]
+        self.systematic_noise = systematic_noise
 
         self.obs_next = obsdata
         self.init_next = init_im
@@ -330,7 +331,7 @@ class Imager(object):
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
                                 ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_frac=self.fft_pad_frac, 
-                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, snrcut=self.camp_snrcut)
+                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, snrcut=self.camp_snrcut,systematic_noise=self.systematic_noise)
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
 
