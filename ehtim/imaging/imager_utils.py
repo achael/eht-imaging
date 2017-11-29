@@ -463,7 +463,8 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
     return s
 
 def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
-              fft_pad_frac=1, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT, order=FFT_INTERP_DEFAULT):
+              fft_pad_frac=1, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT,
+              order=FFT_INTERP_DEFAULT, systematic_noise=0.0):
     """Return the data, sigma, and matrices for the appropriate dtype
     """
 
@@ -472,9 +473,9 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
         raise Exception("Possible ttype values are 'fast' and 'direct'!")
     if ttype=='direct':
         if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask)
+            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, systematic_noise=systematic_noise)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask,debias=debias)
+            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask,debias=debias, systematic_noise=systematic_noise)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask)
         elif dtype == 'cphase':
@@ -486,9 +487,9 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
 
     elif ttype=='fast':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad, systematic_noise=systematic_noise)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad,debias=debias)
+            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad,debias=debias, systematic_noise=systematic_noise)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=fft_pad_frac,order=order,conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'cphase':
@@ -1078,26 +1079,28 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
 
     return out
 
-def chisqdata_vis(Obsdata, Prior, mask):
+def chisqdata_vis(Obsdata, Prior, mask, systematic_noise=0.0):
     """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
     """
 
-    data_arr = Obsdata.unpack(['u','v','vis','sigma'])
+    data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
     vis = data_arr['vis']
-    sigma = data_arr['sigma']
+    #sigma = ampdata['sigma']
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (vis, sigma, A)
 
-def chisqdata_amp(Obsdata, Prior, mask,debias=True):
+def chisqdata_amp(Obsdata, Prior, mask,debias=True, systematic_noise=0.0):
     """Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
     """
 
     ampdata = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
     uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))
     amp = ampdata['amp']
-    sigma = ampdata['sigma']
+    #sigma = ampdata['sigma']
+    sigma = np.linalg.norm([ampdata['sigma'], systematic_noise*ampdata['amp']],axis=0)
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (amp, sigma, A)
@@ -1182,14 +1185,16 @@ def chisqdata_logcamp(Obsdata, Prior, mask, debias=True, snrcut=0):
 
 
 def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=1,
-                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
+                      p_rad=GRIDDER_P_RAD_DEFAULT,systematic_noise=0.0):
     """Return the visibilities, sigmas, uv points, and image info
     """
 
-    data_arr = Obsdata.unpack(['u','v','vis','sigma'])
+    data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
     vis = data_arr['vis']
-    sigma = data_arr['sigma']
+    #sigma = data_arr['sigma']
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
 
     npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
@@ -1204,14 +1209,16 @@ def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=1,
     return (vis, sigma, A)
 
 def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=1,
-                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True):
+                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
+                      p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,systematic_noise=0.0):
     """Return the amplitudes, sigmas, uv points, and image info
     """
 
     data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
     amp = data_arr['amp']
-    sigma = data_arr['sigma']
+    #sigma = data_arr['sigma']
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
 
     npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
 
