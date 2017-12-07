@@ -7,8 +7,62 @@ from builtins import object
 
 import numpy as np
 import re
+
+import jdcal
+import movie_utils as mu
 import os
-import ehtim.observing.jdcal as jdcal
+
+def movie_observe_vex(movie, vex, source, synchronize_start = True, t_int = 0.0, sgrscat=False, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, frcal=True,
+                tau=vb.TAUDEF, gainp=vb.GAINPDEF, gain_offset=vb.GAINPDEF, dtermp=vb.DTERMPDEF,
+                jones=False, inv_jones=False, dcal=True):
+    """Generates an observation corresponding to a given vex objectS
+       movie is a movie object 
+       vex is a vex object
+       source is the source string identifier in the vex object, e.g., 'SGRA'
+       synchronize_start is a flag that determines whether the start of the movie should be defined to be the start of the observations
+       t_int overrides the vex scans to produce visibilities for each t_int seconds
+    """
+
+    obs_List=[]
+
+    if synchronize_start:
+        movie = movie.copy()
+        movie.mjd = vex.sched[0]['mjd_floor']
+        movie.start_hr = vex.sched[0]['start_hr']
+
+    movie_start = float(movie.mjd) + movie.start_hr/24.0
+    movie_end   = movie_start + len(movie.frames)*movie.framedur/24.0/3600.0
+
+    print "Movie MJD Range: ",movie_start,movie_end
+
+    snapshot = 1.0
+    if t_int > 0.0: 
+        snapshot = 0.0
+
+    for i_scan in range(len(vex.sched)):
+        if vex.sched[i_scan]['source'] != source:
+            continue
+        subarray = vb.make_subarray(vex.array, [vex.sched[i_scan]['scan'][key]['site'] for key in vex.sched[i_scan]['scan'].keys()])
+
+        if snapshot == 1.0:
+            t_int = np.max(np.array([vex.sched[i_scan]['scan'][site]['scan_sec'] for site in vex.sched[i_scan]['scan'].keys()]))
+            print t_int
+            #vex.sched[i_scan]['scan'][0]['scan_sec']
+
+        vex_scan_start_mjd = float(vex.sched[i_scan]['mjd_floor']) + vex.sched[i_scan]['start_hr']/24.0
+        vex_scan_stop_mjd  = vex_scan_start_mjd + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0/24.0
+
+        print "Scan MJD Range: ",vex_scan_start_mjd,vex_scan_stop_mjd
+
+        if vex_scan_start_mjd < movie_start or vex_scan_stop_mjd > movie_end:
+            continue
+
+        obs = subarray.obsdata(movie.ra, movie.dec, movie.rf, vex.bw_hz, t_int, t_int, 
+                                   vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0 - vb.EP, 
+                                   mjd=vex.sched[i_scan]['mjd_floor'],
+                                   elevmin=.01, elevmax=89.99, timetype='UTC')   
+        obs_List.append(obs)
+
 
 import ehtim.array
 
