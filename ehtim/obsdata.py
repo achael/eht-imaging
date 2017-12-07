@@ -49,7 +49,8 @@ class Obsdata(object):
            data (numpy.recarray): the basic data with datatype DTPOL
     """
 
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True, timetype='UTC', scantable=None):
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=True, phasecal=True, 
+                                                      opacitycal=True, dcal=True, frcal=True, timetype='UTC', scantable=None):
         """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
 
            Args:
@@ -150,7 +151,8 @@ class Obsdata(object):
                (Obsdata): a copy of the Obsdata object.
         """
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
+                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal,
+                         frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
         return newobs
 
     def data_conj(self):
@@ -442,13 +444,16 @@ class Obsdata(object):
                     out = amp_debias(out, sig)
 
                 ty = 'f8'
-            elif field in ["phase", "qphase", "uphase", "vphase","pphase", "mphase","rrphase","llphase","lrphase","rlphase"]:
+            elif field in ["phase", "qphase", "uphase", "vphase","pphase", 
+                           "mphase","rrphase","llphase","lrphase","rlphase"]:
                 out = np.angle(out)/angle
                 ty = 'f8'
-            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma","rrsigma","llsigma","rlsigma","lrsigma"]:
+            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma",
+                           "rrsigma","llsigma","rlsigma","lrsigma"]:
                 out = np.abs(sig)
                 ty = 'f8'
-            elif field in ["sigma_phase","qsigma_phase","usigma_phase","vsigma_phase","psigma_phase","msigma_phase",
+            elif field in ["sigma_phase","qsigma_phase","usigma_phase",
+                           "vsigma_phase","psigma_phase","msigma_phase",
                            "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]:
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'
@@ -499,7 +504,7 @@ class Obsdata(object):
 
         print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
 
-        # ote that the tarr of the output includes all sites, even those that don't participate in the scan
+        # note that the tarr of the output includes all sites, even those that don't participate in the scan
         splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, source=self.source,
                              mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal)
                      for tdata in self.tlist()
@@ -511,8 +516,10 @@ class Obsdata(object):
         """Give the reduced chi^2 of the observation for the specified image and datatype.
         """
         import ehtim.imaging.imager_utils as iu
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, fft_pad_frac=fft_pad_frac,systematic_noise=systematic_noise)
-        return iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, 
+                                        fft_pad_frac=fft_pad_frac,systematic_noise=systematic_noise)
+        chisq = iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+        return chisq
 
     def recompute_uv(self):
         """Recompute u,v points using observation times and metadata
@@ -525,9 +532,11 @@ class Obsdata(object):
         site1 = self.data['t1']
         site2 = self.data['t2']
         arr = ehtim.array.Array(self.tarr)
-        print ("Recomputing U,V Points using MJD %d \n RA %e \n DEC %e \n RF %e GHz" % (self.mjd, self.ra, self.dec, self.rf/1.e9))
+        print ("Recomputing U,V Points using MJD %d \n RA %e \n DEC %e \n RF %e GHz" 
+                                       % (self.mjd, self.ra, self.dec, self.rf/1.e9))
 
-        (timesout,uout,vout) = compute_uv_coordinates(arr, site1, site2, times, self.mjd, self.ra, self.dec, self.rf, timetype=self.timetype, elevmin=0, elevmax=90)
+        (timesout,uout,vout) = compute_uv_coordinates(arr, site1, site2, times, self.mjd, self.ra, self.dec, 
+                                                      self.rf, timetype=self.timetype, elevmin=0, elevmax=90)
 
         if len(timesout) != len(times):
             raise Exception("len(timesout) != len(times) in recompute_uv: check elevation  limits!!")
@@ -560,7 +569,9 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i' % (t,len(timesplit),inttime, tavg,t))
+            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i' 
+                              % (t,len(timesplit),inttime, tavg,t)
+                            )
             sys.stdout.flush()
             
             # accumulate data in a time region
@@ -569,18 +580,30 @@ class Obsdata(object):
                 for i in range(0,len(timesplit[t]['time'])):
                     timeregion.append(np.array
                              ((
-                               timesplit[t]['time'][i], timesplit[t]['tint'][i], 
-                               timesplit[t]['t1'][i], timesplit[t]['t2'][i], timesplit[t]['tau1'][i], timesplit[t]['tau2'][i], 
-                               timesplit[t]['u'][i], timesplit[t]['v'][i],
-                               timesplit[t]['vis'][i], timesplit[t]['qvis'][i], timesplit[t]['uvis'][i], timesplit[t]['vvis'][i],
-                               timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
+                               timesplit[t]['time'][i], 
+                               timesplit[t]['tint'][i], 
+                               timesplit[t]['t1'][i], 
+                               timesplit[t]['t2'][i], 
+                               timesplit[t]['tau1'][i],
+                               timesplit[t]['tau2'][i], 
+                               timesplit[t]['u'][i], 
+                               timesplit[t]['v'][i],
+                               timesplit[t]['vis'][i], 
+                               timesplit[t]['qvis'][i], 
+                               timesplit[t]['uvis'][i], 
+                               timesplit[t]['vvis'][i],
+                               timesplit[t]['sigma'][i], 
+                               timesplit[t]['qsigma'][i], 
+                               timesplit[t]['usigma'][i], 
+                               timesplit[t]['vsigma'][i]
                                ), dtype=DTPOL
                              ))
 
             # average data in a time region
             else:
                 tavg += 1
-                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion), self.tarr, source=self.source, mjd=self.mjd)
+                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion), 
+                                         self.tarr, source=self.source, mjd=self.mjd)
                             
                 blsplit = obs_timeregion.unpack(alldata_list, mode='bl')
                 for bl in range(0,len(blsplit)):
@@ -588,12 +611,22 @@ class Obsdata(object):
                     bldata = blsplit[bl]
                     datatable.append(np.array
                              ((
-                               np.mean(obs_timeregion.data['time']), np.mean(bldata['tint']), 
-                               bldata['t1'][0], bldata['t2'][0], np.mean(bldata['tau1']), np.mean(bldata['tau2']), 
-                               np.mean(bldata['u']), np.mean(bldata['v']),
-                               np.mean(bldata['vis']), np.mean(bldata['qvis']), np.mean(bldata['uvis']), np.mean(bldata['vvis']),
-                               np.sqrt(np.sum(bldata['sigma']**2)/len(bldata)**2), np.sqrt(np.sum(bldata['qsigma']**2)/len(bldata)**2), 
-                               np.sqrt(np.sum(bldata['usigma']**2)/len(bldata)**2), np.sqrt(np.sum(bldata['vsigma']**2)/len(bldata)**2)
+                               np.mean(obs_timeregion.data['time']),
+                               np.mean(bldata['tint']), 
+                               bldata['t1'][0], 
+                               bldata['t2'][0], 
+                               np.mean(bldata['tau1']), 
+                               np.mean(bldata['tau2']), 
+                               np.mean(bldata['u']), 
+                               np.mean(bldata['v']),
+                               np.mean(bldata['vis']),
+                               np.mean(bldata['qvis']), 
+                               np.mean(bldata['uvis']), 
+                               np.mean(bldata['vvis']),
+                               np.sqrt(np.sum(bldata['sigma']**2)/len(bldata)**2), 
+                               np.sqrt(np.sum(bldata['qsigma']**2)/len(bldata)**2), 
+                               np.sqrt(np.sum(bldata['usigma']**2)/len(bldata)**2), 
+                               np.sqrt(np.sum(bldata['vsigma']**2)/len(bldata)**2)
                                ), dtype=DTPOL
                              ))
 
