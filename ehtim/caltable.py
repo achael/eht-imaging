@@ -73,6 +73,85 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
+    #TODO default extrapolation?
+    def merge(self, caltablelist, interp='linear', extrapolate=1):
+        """Merge the calibration table with a list of other calibration tables"""
+
+        if extrapolate is True: # extrapolate can be a tuple or numpy array
+            fill_value = "extrapolate"
+        else:
+            fill_value = extrapolate
+
+        try: 
+            x=caltablelist.__iter__
+        except AttributeError: caltablelist = [caltablelist]
+ 
+        #self = ct
+        #caltablelist = [ct2]
+
+        tarr1 = self.tarr.copy() #TODO do we need explicit copy?
+        tkey1 = self.tkey.copy()
+        data1 = self.data.copy()
+        for caltable in caltablelist:
+            #TODO check metadata!#
+            #ARE THEY ALL REFERENCED TO SAME MJD???#
+
+            tarr2 = caltable.tarr.copy() #TODO do we need explicit copy?
+            tkey2 = caltable.tkey.copy()
+            data2 = caltable.data.copy()
+
+            for site in data2.keys():
+
+                # if site in both tables
+                if site in data1.keys():
+                    #merge the data by interpolating
+                    time1 = data1[site]['time']
+                    time2 = data2[site]['time']
+
+
+                    rinterp1 = scipy.interpolate.interp1d(time1, data1[site]['rscale'],
+                                                          kind=interp, fill_value=fill_value,bounds_error=False)
+                    linterp1 = scipy.interpolate.interp1d(time1, data1[site]['lscale'],
+                                                          kind=interp, fill_value=fill_value,bounds_error=False)
+
+                    rinterp2 = scipy.interpolate.interp1d(time2, data2[site]['rscale'],
+                                                          kind=interp, fill_value=fill_value,bounds_error=False)
+                    linterp2 = scipy.interpolate.interp1d(time2, data2[site]['lscale'],
+                                                          kind=interp, fill_value=fill_value,bounds_error=False)                                       
+              
+                    times_merge = np.unique(np.hstack((time1,time2)))   
+
+                    #print 'site'
+                    #print np.min(time1),np.max(time1)
+                    #print np.min(time2),np.max(time2)
+                    #print np.min(times_merge),np.max(times_merge)
+ 
+                    rscale_merge = rinterp1(times_merge) * rinterp2(times_merge)
+                    lscale_merge = linterp1(times_merge) * linterp2(times_merge)
+
+                    #put the merged data back in data1
+                    #TODO can we do this faster?
+                    datatable = []
+                    for i in xrange(len(times_merge)):
+                        datatable.append(np.array((times_merge[i], rscale_merge[i], lscale_merge[i]), dtype=DTCAL))
+                    data1[site] = np.array(datatable)
+
+                # sites not in both caltables
+                else:
+                    if site not in tkey1.keys():
+                        tarr1 = np.append(tarr1,tarr2[tkey2[site]])
+                    data1[site] =  data2[site]
+
+            #update tkeys every time
+            tkey1 =  {tarr1[i]['site']: i for i in range(len(tarr1))}
+
+        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1, source=self.source, mjd=self.mjd, timetype=self.timetype)
+        
+        return new_caltable
+                    
+                
+
+
     def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol = False):
 
         if not (self.tarr == obs.tarr).all():
@@ -98,9 +177,9 @@ class Caltable(object):
 
             time_mjd = self.data[site]['time']/24.0 + self.mjd
             rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'],
-                                                       kind=interp, fill_value=fill_value)
+                                                       kind=interp, fill_value=fill_value,bounds_error=False)
             linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'],
-                                                       kind=interp, fill_value=fill_value)
+                                                       kind=interp, fill_value=fill_value,bounds_error=False)
 
         bllist = obs.bllist()
         datatable = []
