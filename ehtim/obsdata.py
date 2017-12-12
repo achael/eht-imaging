@@ -1354,7 +1354,7 @@ class Obsdata(object):
                         else: k = j+1
 
                         # MJ: I tried joining these into a single if statement using or without success... no idea why..
-                        if (sites[i], sites[j]) not in l_dict.keys():.
+                        if (sites[i], sites[j]) not in l_dict.keys():
                             continue
 
                         if (ref, sites[k]) not in l_dict.keys():
