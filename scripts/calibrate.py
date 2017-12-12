@@ -24,7 +24,7 @@ def pick(obs, req_sites):
     out.data = np.concatenate(tlists[mask])
     return out
 
-def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1):
+def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1, only_amp=True):
     """
     Apply network_cal() multiple times
     """
@@ -46,6 +46,9 @@ def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1):
         caltab.save_txt(obs, datadir=datadir)
         obs_cal_avg.save_uvfits(datadir+'/'+args.output)
 
+        if only_amp: 
+            continue
+
         # Self calibrate the phases
         datadir = '{}-{}-phase'.format(stepname, i)
         caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='phase',
@@ -66,7 +69,7 @@ expt = {'D':3597,
 # Argument parsing
 parser = argparse.ArgumentParser(description="Perform network calibration")
 parser.add_argument('input',                                    help="input uvfits file")
-parser.add_argument('caltab',                                   help="caltable directory")
+parser.add_argument('-c', '--caldir', default=None,             help="caltable directory")
 parser.add_argument('-o', '--output', default=None,             help="output file")
 parser.add_argument('-P', '--prune',  default=1,    type=int,   help="pruning factor")
 parser.add_argument('-z', '--ampzbl', default=7.0,  type=float, help="amplitude at zero-baseline")
@@ -78,7 +81,7 @@ if args.output is None:
     args.output = os.path.basename(args.input[:-13])+args.pol+args.pol+'+netcal.uvfits'
 print("Parameters:")
 print("    input: ", args.input)
-print("    caltab:", args.caltab)
+print("    caltab directory:", args.caldir)
 print("    output:", args.output)
 print("    prune: ", args.prune)
 print("    ampzbl:", args.ampzbl)
@@ -87,14 +90,20 @@ print("    pol:   ", args.pol)
 
 # Load uvfits file
 obs = eh.obsdata.load_uvfits(args.input, force_singlepol=args.pol)
+print("Flagging the SMA Reference Antenna...")
 obs = obs.flag_sites(["SR"])
+print("Flagging points with anomalous snr...")
 obs = obs.flag_anomalous('snr', robust_nsigma_cut=3.0)
 
-# A-priori calibrate by applying the caltable
-caltab  = eh.caltable.load_caltable(obs, args.caltab)
-obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True, force_singlepol=args.pol)
+# Optional: A-priori calibrate by applying the caltable
+if args.caldir != None:
+    print("Loading the a priori calibration table...")
+    caltab  = eh.caltable.load_caltable(obs, args.caldir)
+    obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True, force_singlepol=args.pol)
+else:
+    obs_cal = obs.copy()
 
-# Compute averages
+# Coherently average the input data with a specified coherence time
 obs_cal_avg = obs_cal.avg_coherent(args.tavg)
 obs_cal_avg.save_uvfits(os.path.basename(args.input[:-13])+args.pol+args.pol+'+avg.uvfits')
 
@@ -102,15 +111,15 @@ obs_cal_avg.save_uvfits(os.path.basename(args.input[:-13])+args.pol+args.pol+'+a
 if args.prune > 1:
     obs_cal_avg.data = np.concatenate(obs_cal_avg.tlist()[::args.prune])
 
-# First get the ALMA and APEX calibration right -- allow huge gain_tol
+# First get the ALMA and APEX calibration right -- allow modest gain_tol
 stepname = 'step1'
 sites = {'AA','AP'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=5, amp0=args.ampzbl, gain_tol=10.0)
+obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
 stepname = 'step2'
 sites = {'SM','JC'}
-obs_cal_avg = multical(obs_cal_avg, sites, n=3, amp0=args.ampzbl, gain_tol=0.3)
+obs_cal_avg = multical(obs_cal_avg, sites, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
 stepname = 'step3'
