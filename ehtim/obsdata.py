@@ -804,7 +804,8 @@ class Obsdata(object):
 
 
     def rescale_noise(self, noise_rescale_factor=1.0):
-        """Rescale the thermal noise on all Stokes parameters by a constant factor. This is useful for, e.g., AIPS data, which has a single constant factor missing that relates 'weights' to thermal noise.
+        """Rescale the thermal noise on all Stokes parameters by a constant factor. 
+           This is useful for, e.g., AIPS data, which has a single constant factor missing that relates 'weights' to thermal noise.
 
            Args:
                noise_rescale_factor (float): The number to multiple the existing sigmas by.
@@ -824,10 +825,14 @@ class Obsdata(object):
         return new_obs
 
     def estimate_noise_rescale_factor(self, max_diff_sec = 0.0, min_num = 10, print_std = False, count='max'):
-        """Estimates a singe, constant rescaling factor for thermal noise across all baselines, times, and polarizations. Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise. This is useful for, e.g., AIPS data, which has a single constant factor missing that relates 'weights' to thermal noise. The output can be non-sensical if there are higher-order terms in the closure phase error budget.
+        """Estimates a singe, constant rescaling factor for thermal noise across all baselines, times, and polarizations. 
+           Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise. 
+           This is useful for, e.g., AIPS data, which has a single constant factor missing that relates 'weights' to thermal noise. 
+           The output can be non-sensical if there are higher-order terms in the closure phase error budget.
 
            Args:
-               max_diff_sec (float): The maximum difference of adjacent closure phases (in seconds) to be included in the estimate. If 0.0, auto-estimates this value to twice the median scan length.
+               max_diff_sec (float): The maximum difference of adjacent closure phases (in seconds) to be included in the estimate. 
+                                     If 0.0, auto-estimates this value to twice the median scan length.
                min_num (int): The minimum number of closure phase differences for a triangle to be included in the set of estimators.
                print_std (bool): Whether or not to print the normalized standard deviation for each closure triangle.
                count (bool): Specification of which closure phases to use (e.g., 'max' or 'min')
@@ -1051,8 +1056,6 @@ class Obsdata(object):
             raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
-
-
 
         # Generate the time-sorted data with conjugate baselines
         tlist = self.tlist(conj=True)
@@ -1344,12 +1347,14 @@ class Obsdata(object):
                     if (ref, sites[i]) not in l_dict.keys():
                         continue
 
-                    blue1 = l_dict[ref, sites[i]] # MJ: This causes a KeyError in some cases, probably with flagged data or something
+                    # MJ: This causes a KeyError in some cases, probably with flagged data or something
+                    blue1 = l_dict[ref, sites[i]] 
                     for j in range(1, i):
                         if j == i-1: k = 1
                         else: k = j+1
 
-                        if (sites[i], sites[j]) not in l_dict.keys(): # MJ: I tried joining these into a single if statement using or without success... no idea why...
+                        # MJ: I tried joining these into a single if statement using or without success... no idea why..
+                        if (sites[i], sites[j]) not in l_dict.keys():.
                             continue
 
                         if (ref, sites[k]) not in l_dict.keys():
@@ -1507,7 +1512,8 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, show=True, axis=False, color='b', ang_unit='deg', debias=True, export_pdf=""):
+    def plotall(self, field1, field2, ebar=True, rangex=False, rangey=False, conj=False, 
+                show=True, axis=False, color='b', ang_unit='deg', debias=True, export_pdf=""):
         """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
 
            Args:
@@ -1594,7 +1600,8 @@ class Obsdata(object):
 
         return x
 
-    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', debias=True, timetype=False):
+    def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False, 
+                show=True, axis=False, color='b', ang_unit='deg', debias=True, timetype=False):
         """Plot a field over time on a baseline site1-site2.
 
            Args:
@@ -1641,7 +1648,8 @@ class Obsdata(object):
         
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
-            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0], yerr=errdata[sigtype(field)][:,0], fmt='.', color=color)
+            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0], 
+                       yerr=errdata[sigtype(field)][:,0], fmt='.', color=color)
         else:
             x.plot(plotdata['time'][:,0], plotdata[field][:,0],'.', color=color)
 
@@ -1656,7 +1664,8 @@ class Obsdata(object):
 
         return x
 
-    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, show=True, axis=False, color='b', ang_unit='deg', timetype=False, cphases=[]):
+    def plot_cphase(self, site1, site2, site3, vtype='vis', ebar=True, rangex=False, rangey=False, 
+                    show=True, axis=False, color='b', ang_unit='deg', timetype=False, cphases=[]):
         """Plot closure phase over time on a triangle (1-2-3).
 
            Args:
@@ -1755,7 +1764,8 @@ class Obsdata(object):
         if timetype==False:
             timetype=self.timetype
         # Get closure phases (maximal set)
-        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, debias=debias, timetype=timetype, camps=camps)
+        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype, 
+                                debias=debias, timetype=timetype, camps=camps)
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
         
@@ -1940,8 +1950,10 @@ def merge_obs(obs_List):
     #The important things to merge are the mjd, the data, and the list of telescopes
     data_merge = np.hstack([obs.data for obs in obs_List])
 
-    mergeobs = Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, np.unique(np.concatenate([obs.tarr for obs in obs_List])),
-                       source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal)
+    mergeobs = Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge,
+                       np.unique(np.concatenate([obs.tarr for obs in obs_List])),
+                       source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, 
+                       phasecal=obs_List[0].phasecal)
 
     return mergeobs
 
