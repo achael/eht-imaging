@@ -46,7 +46,7 @@ def multical(obs, sites, n=3, amp0=8.0, gain_tol=0.1, only_amp=True):
         caltab.save_txt(obs, datadir=datadir)
         obs_cal_avg.save_uvfits(datadir+'/'+args.output)
 
-        if only_amp: 
+        if only_amp:
             continue
 
         # Self calibrate the phases
@@ -105,6 +105,9 @@ else:
 
 # Coherently average the input data with a specified coherence time
 obs_cal_avg = obs_cal.avg_coherent(args.tavg)
+# Flag for anomalous snr in the averaged data
+obs_cal_avg = obs_cal_avg.flag_anomalous('snr', robust_nsigma_cut=3.0)
+# Save the averaged data
 obs_cal_avg.save_uvfits(os.path.basename(args.input[:-13])+args.pol+args.pol+'+avg.uvfits')
 
 # Speed up testing
