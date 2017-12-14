@@ -54,7 +54,7 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
         if master_caltab == None:
             master_caltab = caltab
         else:
-            master_caltab.merge(caltab)
+            master_caltab = master_caltab.merge(caltab)
 
         if only_amp: 
             continue
@@ -69,7 +69,7 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
         if master_caltab == None:
             master_caltab = caltab
         else:
-            master_caltab.merge(caltab)
+            master_caltab = master_caltab.merge(caltab)
 
     return [obs, master_caltab]
 
