@@ -21,8 +21,6 @@ def pick(obs, req_sites):
     mask     = [req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
                 for tlist in tlists]
     out      = obs.copy()
-    if len(tlists[mask]) == 0:
-        return []
 
     out.data = np.concatenate(tlists[mask])
     return out
