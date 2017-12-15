@@ -913,6 +913,18 @@ class Obsdata(object):
         print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
 
+    def flag_UT_range(self, UT_start_hour = 0.0, UT_stop_hour = 0.0, flag_or_keep = 0):
+        # This drops (or only keeps) points within a specified UT range
+        obs_out = self.copy()
+        UT_mask = obs_out.unpack('time')['time'] <= UT_start_hour
+        UT_mask = UT_mask + (obs_out.unpack('time')['time'] >= UT_stop_hour)
+        if flag_or_keep:
+            UT_mask = np.invert(UT_mask)
+
+        obs_out.data = obs_out.data[UT_mask]
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
+        return obs_out
+
     def flag_large_scatter(self, field = 'amp', scatter_cut = 1.0, max_diff_seconds = 100):
         # This drops all data points with scatter in the field (e.g., amp or snr) greater than a prescribed amount
         obs_out = self.copy()
