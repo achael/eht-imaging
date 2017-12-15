@@ -40,8 +40,8 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
               'processes':0,
               'caltable':True}
     # If the specified sites aren't present, skip the calibration
-    if len(pick(obs,sites).data) == 0:
-        return obs
+    if not pick(obs,sites):
+        return [obs, master_caltab]
 
     for i in range(n):
         # Self calibrate the amplitudes
