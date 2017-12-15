@@ -21,8 +21,7 @@ def pick(obs, req_sites):
     mask     = [req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
                 for tlist in tlists]
     out      = obs.copy()
-
-    out.data = np.concatenate(tlists[mask])
+    out.data = [] if len(tlists[mask]) == 0 else np.concatenate(tlists[mask])
     return out
 
 def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=True):
