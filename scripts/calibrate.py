@@ -56,7 +56,7 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
         else:
             master_caltab = master_caltab.merge(caltab)
 
-        if only_amp: 
+        if only_amp:
             continue
 
         # Self calibrate the phases
