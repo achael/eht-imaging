@@ -117,7 +117,7 @@ else:
 # Coherently average the input data with a specified coherence time
 obs_cal_avg = obs_cal.avg_coherent(args.tavg)
 # Flag for anomalous snr in the averaged data
-obs_cal_avg = obs_cal_avg.flag_anomalous('snr', robust_nsigma_cut=3.0)
+#obs_cal_avg = obs_cal_avg.flag_anomalous('snr', robust_nsigma_cut=3.0)
 # Save the averaged data
 obs_cal_avg.save_uvfits(os.path.basename(args.input[:-13])+args.pol+args.pol+'+avg.uvfits')
 
