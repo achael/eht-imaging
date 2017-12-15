@@ -89,7 +89,7 @@ parser.add_argument('-p', '--pol',    default="R",              help="polarizati
 args = parser.parse_args()
 
 if args.output is None:
-    args.output = os.path.basename(args.input[:-13])+args.pol+args.pol+'+netcal.uvfits'
+    args.output = os.path.basename(args.input[:-14])+args.pol+args.pol+'+netcal.uvfits'
 print("Parameters:")
 print("    input: ", args.input)
 print("    caltab directory:", args.caldir)
@@ -119,7 +119,7 @@ obs_cal_avg = obs_cal.avg_coherent(args.tavg)
 # Flag for anomalous snr in the averaged data
 #obs_cal_avg = obs_cal_avg.flag_anomalous('snr', robust_nsigma_cut=3.0)
 # Save the averaged data
-obs_cal_avg.save_uvfits(os.path.basename(args.input[:-13])+args.pol+args.pol+'+avg.uvfits')
+obs_cal_avg.save_uvfits(os.path.basename(args.input[:-14])+args.pol+args.pol+'+avg.uvfits')
 
 # Speed up testing
 if args.prune > 1:
@@ -145,4 +145,4 @@ sites = {'AA','AP','SM','JC'}
 
 # Save output
 obs_cal_avg.save_uvfits(args.output)
-master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-13]) + '/master_caltab')
+master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '/master_caltab')
