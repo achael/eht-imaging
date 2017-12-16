@@ -79,13 +79,14 @@ expt = {'D':3597,
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Perform network calibration")
-parser.add_argument('input',                                    help="input uvfits file")
-parser.add_argument('-c', '--caldir', default=None,             help="caltable directory")
-parser.add_argument('-o', '--output', default=None,             help="output file")
-parser.add_argument('-P', '--prune',  default=1,    type=int,   help="pruning factor")
-parser.add_argument('-z', '--ampzbl', default=7.0,  type=float, help="amplitude at zero-baseline")
-parser.add_argument('-t', '--tavg',   default=10.0, type=float, help="averaging time")
-parser.add_argument('-p', '--pol',    default="R",              help="polarization")
+parser.add_argument('input',                                              help="input uvfits file")
+parser.add_argument('-c', '--caldir',        default=None,                help="caltable directory")
+parser.add_argument('-o', '--output',        default=None,                help="output file")
+parser.add_argument('-P', '--prune',         default=1,    type=int,      help="pruning factor")
+parser.add_argument('-z', '--ampzbl',        default=7.0,  type=float,    help="amplitude at zero-baseline")
+parser.add_argument('-t', '--tavg',          default=10.0, type=float,    help="averaging time")
+parser.add_argument('-p', '--pol',           default="R",                 help="polarization")
+parser.add_argument('-r', '--rescale-noise', default=False, dest='rescl', help="rescale noise", action='store_true')
 args = parser.parse_args()
 
 if args.output is None:
@@ -98,6 +99,7 @@ print("    prune: ", args.prune)
 print("    ampzbl:", args.ampzbl)
 print("    tavg:  ", args.tavg)
 print("    pol:   ", args.pol)
+print("    rescl: ", args.rescl)
 
 # Load uvfits file
 obs = eh.obsdata.load_uvfits(args.input, force_singlepol=args.pol)
@@ -105,6 +107,11 @@ print("Flagging the SMA Reference Antenna...")
 obs = obs.flag_sites(["SR"])
 print("Flagging points with anomalous snr...")
 obs = obs.flag_anomalous('snr', robust_nsigma_cut=3.0)
+
+# Rescale noise if needed
+if args.rescl:
+    noise_scale_factor = obs.estimate_noise_rescale_factor()
+    obs = obs.rescale_noise(noise_scale_factor)
 
 # Optional: A-priori calibrate by applying the caltable
 if args.caldir != None:
