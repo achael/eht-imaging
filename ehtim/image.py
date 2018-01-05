@@ -411,6 +411,21 @@ class Image(object):
 
         return ehtim.obsdata.merge_obs(obs_List)
 
+    def rotate(self, angle):
+        """Rotate the image counterclockwise by the specified angle.
+
+           Args:
+                angle  (float): CCW angle to rotate the image (radian) 
+           Returns:
+                (Image): resampled image 
+        """        
+        
+        imvec_rot = scipy.ndimage.interpolation.rotate(self.imvec.reshape((self.xdim, self.ydim)), angle*180.0/np.pi, reshape=False, order=3, mode='constant', cval=0.0, prefilter=True)
+        outim = self.copy()
+        outim.imvec = imvec_rot.flatten()
+        return outim
+
+
     def regrid_image(self, targetfov, npix, interp='linear'):
         """Resample the image to new (square) dimensions.
 
