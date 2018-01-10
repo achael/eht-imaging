@@ -23,6 +23,7 @@ import sys
 import matplotlib.pyplot as plt
 from IPython import display
 
+PROPERROR = True
 
 ##################################################################################################
 
@@ -119,7 +120,11 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measuremen
             P_star_List_t_tm1[t] = copy.deepcopy(Lambda_t)
         else:
             z_List_t_tm1[t].imvec[mask] = np.dot( A, z_List_t_t[t-1].imvec[mask] ) 
-            P_List_t_tm1[t] = Q + np.dot( np.dot( A, P_List_t_t[t-1] ), np.transpose(A) )
+            if PROPERROR:
+                P_List_t_tm1[t] = Q + np.dot( np.dot( A, P_List_t_t[t-1] ), np.transpose(A) )
+            else:
+                print('no prop error')
+                P_List_t_tm1[t] = Q 
             
             if interiorPriors:
                 z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t] = prodGaussiansLem1( mu_t.imvec[mask], Lambda_t, z_List_t_tm1[t].imvec[mask], P_List_t_tm1[t] )
@@ -210,7 +215,11 @@ def forwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visib
             P_star_List_t_tm1[t] = copy.deepcopy(Lambda_t) 
         else:
             z_List_t_tm1[t].imvec[mask] = np.dot( A, z_List_t_t[t-1].imvec[mask] ) 
-            P_List_t_tm1[t] = Q + np.dot( np.dot( A, P_List_t_t[t-1] ), np.transpose(A) ) 
+            if PROPERROR:
+                print('no prop error')
+                P_List_t_tm1[t] = Q + np.dot( np.dot( A, P_List_t_t[t-1] ), np.transpose(A) ) 
+            else:
+                P_List_t_tm1[t] = Q 
             
             if interiorPriors: 
                 z_star_List_t_tm1[t].imvec[mask], P_star_List_t_tm1[t] = prodGaussiansLem1( mu_t.imvec[mask], Lambda_t, z_List_t_tm1[t].imvec[mask], P_List_t_tm1[t] )
@@ -287,7 +296,11 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visi
             z_star_t_tp1[t].imvec = copy.deepcopy(mu_t.imvec) 
             P_star_t_tp1[t] = copy.deepcopy(Lambda_t) 
         else:
-            z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t] = prodGaussiansLem2( A, Q + P_t_t[t+1], z_t_t[t+1].imvec[mask], mu_t.imvec[mask], Lambda_t)
+            if PROPERROR:
+                z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t] = prodGaussiansLem2( A, Q + P_t_t[t+1], z_t_t[t+1].imvec[mask], mu_t.imvec[mask], Lambda_t)
+            else:
+                print('no prop error')
+                z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t] = prodGaussiansLem2( A, Q, z_t_t[t+1].imvec[mask], mu_t.imvec[mask], Lambda_t)
 
         # update
 
