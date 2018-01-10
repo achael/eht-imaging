@@ -950,7 +950,7 @@ class Image(object):
 
 
 
-    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
+    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, has_ticks=True, has_title=True, has_colorbar=True, export_pdf="", show=True):
         """Display the image.
 
            Args:
@@ -989,6 +989,7 @@ class Image(object):
         if scale=='gamma':
             imarr = (imarr + np.max(imarr)/dynamic_range)**(gamma)
             unit = '(Jy/pixel)^gamma'
+            
 
         if len(self.qvec) and plotp:
             thin = self.xdim//nvec
@@ -1002,12 +1003,12 @@ class Image(object):
             m = (np.abs(self.qvec + 1j*self.uvec)/self.imvec).reshape(self.ydim, self.xdim)
             m[np.logical_not(mask)] = 0
 
-            plt.suptitle('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
+            if has_title: plt.suptitle('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
 
             # Stokes I plot
             plt.subplot(121)
             im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
-            plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
+            if has_colorbar: plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
             plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                        width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
@@ -1015,46 +1016,56 @@ class Image(object):
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                        width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
 
-            xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
-            yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
-            plt.xticks(xticks[0], xticks[1])
-            plt.yticks(yticks[0], yticks[1])
-            plt.xlabel('Relative RA ($\mu$as)')
-            plt.ylabel('Relative Dec ($\mu$as)')
-            plt.title('Stokes I')
+            if has_title: plt.title('Stokes I')
 
             # m plot
             plt.subplot(122)
             im = plt.imshow(m, cmap=plt.get_cmap('winter'), interpolation=interp, vmin=0, vmax=1)
-            plt.colorbar(im, fraction=0.046, pad=0.04, label='|m|')
+            if has_colorbar: plt.colorbar(im, fraction=0.046, pad=0.04, label='|m|')
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                    width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                    width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
-            plt.xticks(xticks[0], xticks[1])
-            plt.yticks(yticks[0], yticks[1])
-            plt.xlabel('Relative RA ($\mu$as)')
-            plt.ylabel('Relative Dec ($\mu$as)')
-            plt.title('m (above %0.2f max flux)' % pcut)
+
+            if has_title: plt.title('m (above %0.2f max flux)' % pcut)
 
         else:
             plt.subplot(111)
-            plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
+            
+            if has_title: plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
+                
             im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
-            plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
-            xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
-            yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
-            plt.xticks(xticks[0], xticks[1])
-            plt.yticks(yticks[0], yticks[1])
-            plt.xlabel('Relative RA ($\mu$as)')
-            plt.ylabel('Relative Dec ($\mu$as)')
+            if has_colorbar: plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
+            
+        nsubplots = 1
+        if len(self.qvec) and plotp:
+            nsubplots = 2
+            
+        for p in range(1,nsubplots+1):
+            plt.subplot(1, nsubplots, p)   
+            if has_ticks: 
+                xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
+                yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
+                plt.xticks(xticks[0], xticks[1])
+                plt.yticks(yticks[0], yticks[1])
+                plt.xlabel('Relative RA ($\mu$as)')
+                plt.ylabel('Relative Dec ($\mu$as)')
+            else: 
+                plt.axis('off')
+                fov_uas = self.xdim * self.psize / RADPERUAS # get the fov in uas
+                roughfactor = 1./3. # make the bar about 1/3 the fov
+                fov_scale = int( math.ceil(fov_uas * roughfactor / 10.0 ) ) * 10 # round around 1/3 the fov to nearest 10
+                start = self.xdim * roughfactor / 3.0 # select the start location 
+                end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
+                plt.plot([start, end], [self.ydim-start, self.ydim-start], color="white", lw=1) # plot line
+                plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$-arcseconds", color="white", ha="center", va="center", fontsize=12./nsubplots)
 
         plt.show(block=False)
 
         if export_pdf != "":
-            f.savefig(export_pdf, bbox_inches='tight')
+            f.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
 
         return f
 
