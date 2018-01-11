@@ -950,7 +950,7 @@ class Image(object):
 
 
 
-    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, has_ticks=True, has_title=True, has_colorbar=True, export_pdf="", show=True):
+    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_colorbar=True, export_pdf="", show=True):
         """Display the image.
 
            Args:
@@ -964,6 +964,9 @@ class Image(object):
                plotp (bool): True to plot linear polarimetic image
                nvec (int): number of polarimetric vectors to plot
                pcut (float): minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel
+               label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none' 
+               has_title (bool): True if you want a title on the plot
+               has_colorbar (bool): True if you want a colorbar on the plot
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
 
@@ -1035,7 +1038,7 @@ class Image(object):
             plt.subplot(111)
             
             if has_title: plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
-                
+            
             im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
             if has_colorbar: plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
             
@@ -1045,14 +1048,14 @@ class Image(object):
             
         for p in range(1,nsubplots+1):
             plt.subplot(1, nsubplots, p)   
-            if has_ticks: 
+            if label_type=='ticks': 
                 xticks = ticks(self.xdim, self.psize/RADPERAS/1e-6)
                 yticks = ticks(self.ydim, self.psize/RADPERAS/1e-6)
                 plt.xticks(xticks[0], xticks[1])
                 plt.yticks(yticks[0], yticks[1])
                 plt.xlabel('Relative RA ($\mu$as)')
                 plt.ylabel('Relative Dec ($\mu$as)')
-            else: 
+            elif label_type=='scale': 
                 plt.axis('off')
                 fov_uas = self.xdim * self.psize / RADPERUAS # get the fov in uas
                 roughfactor = 1./3. # make the bar about 1/3 the fov
@@ -1061,6 +1064,14 @@ class Image(object):
                 end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
                 plt.plot([start, end], [self.ydim-start, self.ydim-start], color="white", lw=1) # plot line
                 plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$-arcseconds", color="white", ha="center", va="center", fontsize=12./nsubplots)
+                ax = plt.gca()
+                ax.axes.get_xaxis().set_visible(False)
+                ax.axes.get_yaxis().set_visible(False)
+            elif label_type=='none':
+                plt.axis('off')
+                ax = plt.gca()
+                ax.axes.get_xaxis().set_visible(False)
+                ax.axes.get_yaxis().set_visible(False)
 
         plt.show(block=False)
 
