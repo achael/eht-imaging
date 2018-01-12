@@ -411,6 +411,12 @@ class Image(object):
 
         return ehtim.obsdata.merge_obs(obs_List)
 
+    def sample_uv(self, uv, ttype='fast', fft_pad_factor=2):
+        """Return complex visibilities at the specified uv points
+        """
+
+        return simobs.observe_image_nonoise(self, uv, ttype=ttype, fft_pad_factor=fft_pad_factor)    
+
     def rotate(self, angle):
         """Rotate the image counterclockwise by the specified angle.
 
