@@ -5,6 +5,7 @@ from builtins import range
 import ephem
 
 import astropy.time as at
+import astropy.coordinates as coords
 import numpy as np
 import scipy.special as ss
 
