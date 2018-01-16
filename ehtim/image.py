@@ -411,12 +411,6 @@ class Image(object):
 
         return ehtim.obsdata.merge_obs(obs_List)
 
-    def sample_uv(self, uv, ttype='fast', fft_pad_factor=2):
-        """Return complex visibilities at the specified uv points
-        """
-
-        return simobs.observe_image_nonoise(self, uv, ttype=ttype, fft_pad_factor=fft_pad_factor)    
-
     def rotate(self, angle):
         """Rotate the image counterclockwise by the specified angle.
 
@@ -956,7 +950,7 @@ class Image(object):
 
 
 
-    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit = 'Jy', export_pdf="", show=True):
+    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), export_pdf="", show=True):
         """Display the image.
 
            Args:
@@ -974,7 +968,7 @@ class Image(object):
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
-               cbar_unit (string): specifies the unit of each pixel for the colorbar: 'Jy', 'mJy', '$\mu$Jy'
+               cbar_unit (tuple of strings): specifies the unit of each pixel for the colorbar: 'Jy', 'm-Jy', '$\mu$Jy'
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
 
@@ -994,26 +988,54 @@ class Image(object):
         imvec = np.array(self.imvec).reshape(-1)
         qvec = np.array(self.qvec).reshape(-1)
         uvec = np.array(self.uvec).reshape(-1)
-        if cbar_unit == 'mJy':
+        if cbar_unit[0] == 'm-Jy' or cbar_unit[0] == 'mJy':
             imvec = imvec * 1.e3
             qvec = qvec * 1.e3
             uvec = uvec * 1.e3
-        elif cbar_unit == '$\mu$Jy':
+        elif cbar_unit[0] == '$\mu$-Jy' or cbar_unit[0] == '$\mu$Jy':
             imvec = imvec * 1.e6
             qvec = qvec * 1.e6
             uvec = uvec * 1.e6
-            
+        elif cbar_unit[0] != 'Jy':
+            raise ValueError('cbar_unit ' + cbar_unit[0] + ' is not a possible option')
+        
+        if cbar_unit[1] == 'pixel':
+            factor = 1.
+        elif cbar_unit[1] == '$arcseconds$^2$' or cbar_unit[1] == 'as$^2$':
+            fovfactor = self.xdim*self.psize*(1/RADPERAS)
+            factor = (1./fovfactor)**2 / (1./self.xdim)**2 
+        elif cbar_unit[1] == '$\m-arcseconds$^2$' or cbar_unit[1] == 'mas$^2$':
+            fovfactor = self.xdim*self.psize*(1/RADPERUAS) / 1000.
+            factor = (1./fovfactor)**2 / (1./self.xdim)**2 
+        elif cbar_unit[1] == '$\mu$-arcseconds$^2$' or cbar_unit[1] == '$\mu$as$^2$':
+            fovfactor = self.xdim*self.psize*(1/RADPERUAS)
+            factor = (1./fovfactor)**2 / (1./self.xdim)**2 
+        else:
+            raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
+        imvec = imvec * factor
+        qvec = qvec * factor
+        uvec = uvec * factor
+        
         imarr = (imvec).reshape(self.ydim, self.xdim)
-        unit = cbar_unit + '/pixel'
+        unit = cbar_unit[0] + ' per ' + cbar_unit[1]
         if scale=='log':
+            if (imarr < 0.0).any():
+                print('clipping values less than 0')
+                imarr[imarr<0.0] = 0.0
             imarr = np.log(imarr + np.max(imarr)/dynamic_range)
-            unit = 'log(' + cbar_unit + '/pixel)'
+            unit = 'log(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')'
 
         if scale=='gamma':
+            if (imarr < 0.0).any():
+                print('clipping values less than 0')
+                imarr[imarr<0.0] = 0.0
             imarr = (imarr + np.max(imarr)/dynamic_range)**(gamma)
-            unit = '(' + cbar_unit + '/pixel)^gamma'
-            
-
+            unit = '(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')^gamma'
+                   
+        if cbar_lims:
+            imarr[imarr>cbar_lims[1]] = cbar_lims[1]
+            imarr[imarr<cbar_lims[0]] = cbar_lims[0]
+                  
         if len(qvec) and plotp:
             thin = self.xdim//nvec
             mask = (imvec).reshape(self.ydim, self.xdim) > pcut * np.max(imvec)
@@ -1030,7 +1052,10 @@ class Image(object):
 
             # Stokes I plot
             plt.subplot(121)
-            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+            if cbar_lims:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+            else:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
             if has_cbar: 
                 plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
                 if cbar_lims:
@@ -1067,7 +1092,11 @@ class Image(object):
             
             if has_title: plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
             
-            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+            if cbar_lims:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+            else:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+                
             if has_cbar: 
                 plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
                 if cbar_lims:
