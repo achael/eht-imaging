@@ -255,29 +255,38 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
 # Observe w/o noise
 ##################################################################################################
 
+
+
 def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor=1):
     """Observe the image on the same baselines as an existing observation object
        if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
        Does NOT add noise
+       obs can also just be a list of uv coordinates in which case the list of corresponding visibilities is returned
     """
+    from ehtim.obsdata import Obsdata 
 
-    # Check for agreement in coordinates and frequency
-    tolerance = 1e-8
-    if (np.abs(im.ra - obs.ra) > tolerance) or (np.abs(im.dec - obs.dec) > tolerance):
-        raise Exception("Image coordinates are not the same as observtion coordinates!")
-    if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
-        raise Exception("Image frequency is not the same as observation frequency!")
+    if type(obs) == Obsdata:
+        # Check for agreement in coordinates and frequency
+        tolerance = 1e-8
+        if (np.abs(im.ra - obs.ra) > tolerance) or (np.abs(im.dec - obs.dec) > tolerance):
+            raise Exception("Image coordinates are not the same as observtion coordinates!")
+        if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
+            raise Exception("Image frequency is not the same as observation frequency!")
 
-    if ttype=='direct' or ttype=='fast':
-        print("Producing clean visibilities from image with " + ttype + " FT . . . ")
+        if ttype=='direct' or ttype=='fast':
+            print("Producing clean visibilities from image with " + ttype + " FT . . . ")
+        else:
+            raise Exception("ttype=%s, options for ttype are 'direct' and 'fast'"%ttype)
+
+        # Copy data to be safe 
+        obsdata = obs.copy().data
+
+        # Extract uv data
+        uv = obsdata[['u','v']].view(('f8',2))
     else:
-        raise Exception("ttype=%s, options for ttype are 'direct' and 'fast'"%ttype)
-
-    # Copy data to be safe 
-    obsdata = obs.copy().data
-
-    # Extract uv data
-    uv = obsdata[['u','v']].view(('f8',2))
+        uv = np.array(obs)
+        if uv.shape[1] != 2:
+            raise Exception("When given as a list of uv points, the obs should be a list of pairs of u-v coordinates!")
 
     umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
     umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
@@ -391,10 +400,16 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
             vvis[i] *= ker
 
     # Put the visibilities back in the obsdata array
-    obsdata['vis'] = vis
-    obsdata['qvis'] = qvis
-    obsdata['uvis'] = uvis
-    obsdata['vvis'] = vvis
+    if type(obs) == Obsdata:
+        obsdata['vis'] = vis
+        obsdata['qvis'] = qvis
+        obsdata['uvis'] = uvis
+        obsdata['vvis'] = vvis
+    else:
+        if len(im.qvec):
+            obsdata = [vis, qvis, uvis, vvis]
+        else:
+            obsdata = vis
 
     return obsdata
 
