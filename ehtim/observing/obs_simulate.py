@@ -19,16 +19,33 @@ from ehtim.observing.obs_helpers import *
 # Generate U-V Points
 ##################################################################################################
 
-def make_uvpoints2(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT,
-                      tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH, timetype='UTC', fix_theta_GMST = False):
-    """Generate u,v points and baseline errors for the array.
-       Return an obsdata array with no visibilities.
-       tstart and tstop are hrs in UTC
-       tint and tadv are seconds.
-       rf and bw are Hz
-       ra is fractional hours
-       dec is fractional degrees
-       tau can be a single number or a dictionary giving one per site
+def make_uvpoints(array, 
+                  ra, dec, rf, bw, 
+                  tint, tadv, tstart, tstop, mjd=MJD_DEFAULT,
+                  tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH, 
+                  timetype='UTC', fix_theta_GMST = False):
+
+    """Generate u,v points and baseline sigmas for a given array.
+
+       Args:
+           array (Array): the array object
+           ra (float): The source Right Ascension in fractional hours
+           dec (float): The source declination in fractional degrees
+           rf (float): The observation frequency in Hz
+           bw (float): The observation bandwidth in Hz
+           tint (float): the scan integration time in seconds
+           tadv (float): the uniform cadence between scans in seconds
+           tstart (float): the start time of the observation in hours
+           tstop (float): the end time of the observation in hours
+           mjd (int): the mjd of the observation, if different from the image mjd
+           timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
+           elevmin (float): station minimum elevation in degrees
+           elevmax (float): station maximum elevation in degrees
+           tau (float): the base opacity at all sites, or a dict giving one opacity per site
+           fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points through time
+
+       Returns:
+           (Obsdata): an observation object with all visibilities zeroed
     """
 
     # Set up time start and steps
@@ -75,10 +92,12 @@ def make_uvpoints2(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DE
 
                 site1 = array.tarr[i1]['site']
                 site2 = array.tarr[i2]['site']
-                (timesout,uout,vout) = compute_uv_coordinates(array, site1, site2, times, mjd, ra, dec, rf, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
+                (timesout,uout,vout) = compute_uv_coordinates(array, site1, site2, times, mjd, 
+                                                              ra, dec, rf, timetype=timetype, 
+                                                              elevmin=elevmin, elevmax=elevmax,
+                                                              fix_theta_GMST=fix_theta_GMST)
 
                 for k in range(len(timesout)):
-                    # Append data to list
                     outlist.append(np.array((
                               timesout[k],
                               tint, # Integration
@@ -106,151 +125,6 @@ def make_uvpoints2(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DE
 
     return obsarr
 
-
-
-def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT,
-                      tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH, timetype='UTC'):
-    """Generate u,v points and baseline errors for the array.
-       Return an obsdata array with no visibilities.
-       tstart and tstop are hrs in UTC
-       tint and tadv are seconds.
-       rf and bw are Hz
-       ra is fractional hours
-       dec is fractional degrees
-       tau can be a single number or a dictionary giving one per site
-    """
-
-    #if mjdtogmt(mjd)-tstart > 1e-9:
-    #    raise Exception("Initial time is greater than given mjd!")
-
-    # Set up coordinate system
-    sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
-    projU = np.cross(np.array([0,0,1]), sourcevec)
-    projU = projU/np.linalg.norm(projU)
-    projV = -np.cross(projU, sourcevec)
-
-    # Set up time start and steps
-    tstep = tadv/3600.0
-    if tstop < tstart:
-        tstop = tstop + 24.0;
-
-    # Wavelength
-    l = C/rf
-
-    # Observing times
-    # TODO: Scale - utc or tt?
-    times = np.arange(tstart, tstop, tstep)
-    if timetype == 'UTC':
-        times_sidereal = utc_to_gmst(times, mjd)
-    elif timetype == 'GMST':
-        times_sidereal = times
-    else:
-        print("Time Type Not Recognized! Assuming UTC!")
-        times_sidereal = utc_to_gmst(times, mjd)
-
-    #print mjd
-    #print np.min(times_sidereal), np.max(times_sidereal)
-    # Generate uv points at all times
-    outlist = []
-    for k in range(len(times)):
-        time = times[k]
-        fracmjd = np.floor(mjd) + time/24.
-        dto = (at.Time(fracmjd, format='mjd')).datetime
-        time_sidereal = times_sidereal[k]
-        theta = np.mod((time_sidereal - ra)*HOUR, 2*np.pi)
-        blpairs = []
-
-        for i1 in range(len(array.tarr)):
-            for i2 in range(len(array.tarr)):
-                coord1 = np.array((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z']))
-                coord2 = np.array((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z']))
-                site1 =  array.tarr[i1]['site']
-                site2 =  array.tarr[i2]['site']
-
-                # use spacecraft ephemeris so get position of site 1
-                if np.all(coord1 == (0.,0.,0.)):
-                    if timetype=='GMST':
-                        raise Exception("Spacecraft ephemeris only work with UTC!")
-                    sat = ephem.readtle(array.ephem[site1][0],array.ephem[site1][1],array.ephem[site1][2])
-                    sat.compute(dto) # often complains if ephemeris out of date!
-                    elev = sat.elevation
-                    lat = sat.sublat / DEGREE
-                    lon = sat.sublong / DEGREE
-                    # pyephem doesn't use an ellipsoid earth model!
-                    coord1 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
-                    coord1 = np.array((coord1.x.value, coord1.y.value, coord1.z.value))
-
-                # use spacecraft ephemeris to get position of site 2
-                if np.all(coord2 == (0.,0.,0.)):
-                    if timetype=='GMST':
-                        raise Exception("Spacecraft ephemeris only work with UTC!")
-                    sat = ephem.readtle(array.ephem[site2][0],array.ephem[site2][1],array.ephem[site2][2])
-                    sat.compute(dto) # often complains if ephemeris out of date!
-                    elev = sat.elevation
-                    lat = sat.sublat  / DEGREE
-                    lon = sat.sublong / DEGREE
-                    # pyephem doesn't use an ellipsoid earth model!
-                    coord2 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
-                    coord2 = np.array((coord2.x.value, coord2.y.value, coord2.z.value))
-
-                # rotate the station coordinates
-                coord1 = earthrot(coord1, theta)
-                coord2 = earthrot(coord2, theta)
-
-                if (i1!=i2 and
-                    i1 < i2 and # This is the right condition for uvfits save order
-                    not ((i2, i1) in blpairs) and # This cuts out the conjugate baselines
-                    elevcut(coord1, sourcevec, elevmin=elevmin, elevmax=elevmax)[0] and
-                    elevcut(coord2, sourcevec, elevmin=elevmin, elevmax=elevmax)[0]
-                   ):
-
-                    # Optical Depth
-                    if type(tau) == dict:
-                        try:
-                            tau1 = tau[i1]
-                            tau2 = tau[i2]
-                        except KeyError:
-                            tau1 = tau2 = TAUDEF
-                    else:
-                        tau1 = tau2 = tau
-
-
-                    # Noise on the correlations
-                    sig_rr = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdr'], tint, bw)
-                    sig_ll = blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdl'], tint, bw)
-                    sig_rl = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdl'], tint, bw)
-                    sig_lr = blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdr'], tint, bw)
-
-                    # Append data to list
-                    blpairs.append((i1,i2))
-                    outlist.append(np.array((
-                              time,
-                              tint, # Integration
-                              array.tarr[i1]['site'], # Station 1
-                              array.tarr[i2]['site'], # Station 2
-                              tau1, # Station 1 optical depth
-                              tau2, # Station 1 optical depth
-                              np.dot((coord1 - coord2)/l, projU), # u (lambda)
-                              np.dot((coord1 - coord2)/l, projV), # v (lambda)
-                              0.0, # I Visibility (Jy)
-                              0.0, # Q Visibility
-                              0.0, # U Visibility
-                              0.0, # V Visibilities
-                              0.5*np.sqrt(sig_rr**2 + sig_ll**2), # I Sigma (Jy)
-                              0.5*np.sqrt(sig_rl**2 + sig_lr**2), # Q Sigma
-                              0.5*np.sqrt(sig_rl**2 + sig_lr**2), # U Sigma
-                              0.5*np.sqrt(sig_rr**2 + sig_ll**2)  # V Sigma
-                            ), dtype=DTPOL
-                            ))
-
-    obsarr = np.array(outlist)
-
-    if not len(obsarr):
-        raise Exception("No mutual visibilities in the specified time range!")
-
-    return obsarr
-
-
 ##################################################################################################
 # Observe w/o noise
 ##################################################################################################
@@ -258,11 +132,19 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEF
 
 
 def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor=1):
-    """Observe the image on the same baselines as an existing observation object
-       if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-       Does NOT add noise
-       obs can also just be a list of uv coordinates in which case the list of corresponding visibilities is returned
+    """Observe a image on the same baselines as an existing observation object with no noise.
+
+       Args:
+           im (Image): the image to be observed
+           obs (Obsdata): The empty observation object OR a list of u,v coordinates
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+           fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+
+       Returns:
+           (Obsdata): an observation object
     """
+
     from ehtim.obsdata import Obsdata 
 
     if type(obs) == Obsdata:
@@ -337,7 +219,8 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
         visim = nd.map_coordinates(np.imag(vis_im), uv2)
         vis = visre + 1j*visim
 
-        # Extra phase to match centroid convention -- right??
+        # Extra phase to match centroid convention 
+        # TODO -- is the convention right??
         #phase = np.exp(-1j*np.pi*im.psize*(uv[:,0] + uv[:,1]))
         phase = np.exp(-1j*np.pi*im.psize*((1+im.xdim%2)*uv[:,0] + (1+im.ydim%2)*uv[:,1])) 
         vis = vis * phase
@@ -413,168 +296,193 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
 
     return obsdata
 
-def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", pad_frac=0.5, repeat=False):
-        """Observe the movie on the same baselines as an existing observation object
-           if sgrscat==True, the visibilites will be blurred by the Sgr A* scattering kernel
-           Does NOT add noise
-        """
+def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_factor=1, repeat=False):
 
-        # Check for agreement in coordinates and frequency
-        tolerance = 1e-8
-        if (np.abs(mov.ra - obs.ra) > tolerance) or (np.abs(mov.dec - obs.dec) > tolerance):
-            raise Exception("Image coordinates are not the same as observation coordinates!")
-        if (np.abs(mov.rf - obs.rf)/obs.rf > tolerance):
-            raise Exception("Image frequency is not the same as observation frequency!")
+    """Observe a movie on the same baselines as an existing observation object with no noise.
 
-        mjdstart = float(mov.mjd) + float(mov.start_hr/24.0)
-        mjdend = mjdstart + (len(mov.frames)*mov.framedur)/86400.0
+       Args:
+           mov (Movie): the movie to be observed
+           obs (Obsdata): The empty observation object
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+           fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+           repeat (bool): if True, repeat the movie to fill up the observation interval
 
-        # Get data
-        obslist = obs.tlist()
+       Returns:
+           (Obsdata): an observation object
+    """
 
-        # times
-        obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+    # Check for agreement in coordinates and frequency
+    tolerance = 1e-8
+    if (np.abs(mov.ra - obs.ra) > tolerance) or (np.abs(mov.dec - obs.dec) > tolerance):
+        raise Exception("Image coordinates are not the same as observation coordinates!")
+    if (np.abs(mov.rf - obs.rf)/obs.rf > tolerance):
+        raise Exception("Image frequency is not the same as observation frequency!")
 
-        if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
-            raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
+    mjdstart = float(mov.mjd) + float(mov.start_hr/24.0)
+    mjdend = mjdstart + (len(mov.frames)*mov.framedur)/86400.0
 
-        # Observe nearest frame
-        obsdata_out = []
-        for i in range(len(obslist)):
-            obsdata = obslist[i]
+    # Get data
+    obslist = obs.tlist()
 
-            # Frame number
-            mjd = obsmjds[i]
-            n = int(np.floor((mjd - mjdstart) * 86400. / mov.framedur))
+    # times
+    obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
 
-            if (n >= len(mov.frames)):
-                if repeat: n = np.mod(n, len(mov.frames))
-                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
+    if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
+        raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
-            # Extract uv data & perform DFT
-            uv = obsdata[['u','v']].view(('f8',2))
-            umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
-            umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
+    # Observe nearest frame
+    obsdata_out = []
+    for i in range(len(obslist)):
+        obsdata = obslist[i]
 
-            if not mov.psize < 1.0/(2.0*umax):
-                print("    Warning!: longest baseline > 1/2 x maximum image spatial wavelength!")
-            if not mov.psize*np.sqrt(mov.xdim*mov.ydim) > 1.0/(0.5*umin):
-                print("    Warning!: shortest baseline < 2 x minimum image spatial wavelength!")
+        # Frame number
+        mjd = obsmjds[i]
+        n = int(np.floor((mjd - mjdstart) * 86400. / mov.framedur))
 
-            vis = np.zeros(len(uv))
-            qvis = np.zeros(len(uv))
-            uvis = np.zeros(len(uv))
-            vvis = np.zeros(len(uv))
+        if (n >= len(mov.frames)):
+            if repeat: n = np.mod(n, len(mov.frames))
+            else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
-            #visibilities from FFT
-            if ttype=="fast":
+        # Extract uv data & perform DFT
+        uv = obsdata[['u','v']].view(('f8',2))
+        umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
+        umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
 
-                # Pad image
-                npad = int(np.ceil(pad_frac*1./(mov.psize*umin)))
-                npad = power_of_two(npad)
+        if not mov.psize < 1.0/(2.0*umax):
+            print("    Warning!: longest baseline > 1/2 x maximum image spatial wavelength!")
+        if not mov.psize*np.sqrt(mov.xdim*mov.ydim) > 1.0/(0.5*umin):
+            print("    Warning!: shortest baseline < 2 x minimum image spatial wavelength!")
 
-                padvalx1 = padvalx2 = int(np.floor((npad - mov.xdim)/2.0))
-                if mov.xdim % 2:
-                    padvalx2 += 1
-                padvaly1 = padvaly2 = int(np.floor((npad - mov.ydim)/2.0))
-                if mov.ydim % 2:
-                    padvaly2 += 1
+        vis = np.zeros(len(uv))
+        qvis = np.zeros(len(uv))
+        uvis = np.zeros(len(uv))
+        vvis = np.zeros(len(uv))
 
-                imarr = mov.frames[n].reshape(mov.ydim, mov.xdim)
-                imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
-                npad = imarr.shape[0]
-                if imarr.shape[0]!=imarr.shape[1]:
-                    raise Exception("FFT padding did not return a square image!")
+        #visibilities from FFT
+        if ttype=="fast":
 
-                # Scaled uv points
-                du = 1.0/(npad*mov.psize)
-                uv2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-                uv2 = (uv2/du + 0.5*npad).T
+            # Pad image
+            #npad = int(np.ceil(pad_frac*1./(mov.psize*umin)))
+            npad = fft_pad_factor * np.max((im.xdim, im.ydim))
+            npad = power_of_two(npad)
 
-                # FFT for visibilities
-                vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
+            padvalx1 = padvalx2 = int(np.floor((npad - mov.xdim)/2.0))
+            if mov.xdim % 2:
+                padvalx2 += 1
+            padvaly1 = padvaly2 = int(np.floor((npad - mov.ydim)/2.0))
+            if mov.ydim % 2:
+                padvaly2 += 1
 
-                # Sample the visibilities
-                visre = nd.map_coordinates(np.real(vis_im), uv2)
-                visim = nd.map_coordinates(np.imag(vis_im), uv2)
-                vis = visre + 1j*visim
+            imarr = mov.frames[n].reshape(mov.ydim, mov.xdim)
+            imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+            npad = imarr.shape[0]
+            if imarr.shape[0]!=imarr.shape[1]:
+                raise Exception("FFT padding did not return a square image!")
 
-                #extra phase to match centroid convention -- right?
-                phase = np.exp(-1j*np.pi*mov.psize*(uv[:,0]+uv[:,1]))
-                vis = vis * phase
+            # Scaled uv points
+            du = 1.0/(npad*mov.psize)
+            uv2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+            uv2 = (uv2/du + 0.5*npad).T
 
-                if len(mov.qframes):
-                    qarr = mov.qframes[n].reshape(mov.ydim, mov.xdim)
-                    qarr = np.pad(qarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
-                    uarr = mov.uframes[n].reshape(mov.ydim, mov.xdim)
-                    uarr = np.pad(uarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+            # FFT for visibilities
+            vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
 
-                    qvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(qarr)))
-                    uvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(uarr)))
+            # Sample the visibilities
+            visre = nd.map_coordinates(np.real(vis_im), uv2)
+            visim = nd.map_coordinates(np.imag(vis_im), uv2)
+            vis = visre + 1j*visim
 
-                    qvisre = nd.map_coordinates(np.real(qvis_im), uv2)
-                    qvisim = nd.map_coordinates(np.imag(qvis_im), uv2)
-                    qvis = phase*(qvisre + 1j*qvisim)
+            #extra phase to match centroid convention -- right?
+            phase = np.exp(-1j*np.pi*mov.psize*(uv[:,0]+uv[:,1]))
+            vis = vis * phase
 
-                    uvisre = nd.map_coordinates(np.real(uvis_im), uv2)
-                    uvisim = nd.map_coordinates(np.imag(uvis_im), uv2)
-                    uvis = phase*(uvisre + 1j*uvisim)
+            if len(mov.qframes):
+                qarr = mov.qframes[n].reshape(mov.ydim, mov.xdim)
+                qarr = np.pad(qarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+                uarr = mov.uframes[n].reshape(mov.ydim, mov.xdim)
+                uarr = np.pad(uarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
 
-                if len(mov.vframes):
-                    varr = mov.frames[n].reshape(mov.ydim, mov.xdim)
-                    varr = np.pad(varr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+                qvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(qarr)))
+                uvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(uarr)))
 
-                    vvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(varr)))
+                qvisre = nd.map_coordinates(np.real(qvis_im), uv2)
+                qvisim = nd.map_coordinates(np.imag(qvis_im), uv2)
+                qvis = phase*(qvisre + 1j*qvisim)
 
-                    vvisre = nd.map_coordinates(np.real(vvis_im), uv2)
-                    vvisim = nd.map_coordinates(np.imag(vvis_im), uv2)
-                    vvis = phase*(vvisre + 1j*qvisim)
+                uvisre = nd.map_coordinates(np.real(uvis_im), uv2)
+                uvisim = nd.map_coordinates(np.imag(uvis_im), uv2)
+                uvis = phase*(uvisre + 1j*uvisim)
 
-            #visibilities from DFT
-            else:
-                mat = ftmatrix(mov.psize, mov.xdim, mov.ydim, uv, pulse=mov.pulse)
-                vis = np.dot(mat, mov.frames[n])
+            if len(mov.vframes):
+                varr = mov.frames[n].reshape(mov.ydim, mov.xdim)
+                varr = np.pad(varr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
 
-                if len(mov.qframes):
-                    qvis = np.dot(mat, mov.qframes[n])
-                    uvis = np.dot(mat, mov.uframes[n])
-                if len(mov.vframes):
-                    vvis = np.dot(mat, mov.vframes[n])
+                vvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(varr)))
 
-            # Scatter the visibilities with the SgrA* kernel
-            if sgrscat:
-                for i in range(len(vis)):
-                    ker = sgra_kernel_uv(mov.rf, uv[i,0], uv[i,1])
-                    vis[i]  *= ker
-                    qvis[i] *= ker
-                    uvis[i] *= ker
+                vvisre = nd.map_coordinates(np.real(vvis_im), uv2)
+                vvisim = nd.map_coordinates(np.imag(vvis_im), uv2)
+                vvis = phase*(vvisre + 1j*qvisim)
 
-            # Put the visibilities back in the obsdata array
-            obsdata['vis'] = vis
-            obsdata['qvis'] = qvis
-            obsdata['uvis'] = uvis
+        #visibilities from DFT
+        else:
+            mat = ftmatrix(mov.psize, mov.xdim, mov.ydim, uv, pulse=mov.pulse)
+            vis = np.dot(mat, mov.frames[n])
 
-            if len(obsdata_out):
-                obsdata_out = np.hstack((obsdata_out, obsdata))
-            else:
-                obsdata_out = obsdata
+            if len(mov.qframes):
+                qvis = np.dot(mat, mov.qframes[n])
+                uvis = np.dot(mat, mov.uframes[n])
+            if len(mov.vframes):
+                vvis = np.dot(mat, mov.vframes[n])
 
-        # Return observation data
-        return obsdata_out
+        # Scatter the visibilities with the SgrA* kernel
+        if sgrscat:
+            for i in range(len(vis)):
+                ker = sgra_kernel_uv(mov.rf, uv[i,0], uv[i,1])
+                vis[i]  *= ker
+                qvis[i] *= ker
+                uvis[i] *= ker
+
+        # Put the visibilities back in the obsdata array
+        obsdata['vis'] = vis
+        obsdata['qvis'] = qvis
+        obsdata['uvis'] = uvis
+
+        if len(obsdata_out):
+            obsdata_out = np.hstack((obsdata_out, obsdata))
+        else:
+            obsdata_out = obsdata
+
+    # Return observation data
+    return obsdata_out
 
 ##################################################################################################
 # Noise + miscalibration funcitons
 ##################################################################################################
 
-def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frcal=True, 
-               gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF_RESID,dterm_offset=DTERMPDEF):
-    """Compute ALL Jones Matrices for a list of times (non repeating), with gain and dterm errors.
-       ra and dec should be in hours / degrees
-       Will return a nested dictionary of matrices indexed by the site, then by the time
+def make_jones(obs,  opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
+               taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,  
+               dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
+               seed=False):
 
-       gain_offset can be optionally set as a dictionary that specifies the standard deviation 
-       of the time independtent offset drawn for each telescope site. If it is a single value than 
-       the standard deviation of this random  variable is the same for all sites. 
+    """Computes Jones Matrices for a list of times (non repeating), with gain and dterm errors.
+
+       Args:
+           obs (Obsdata): the observation with scans for the Jones matrices to be computed
+           opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+           ampcal (bool): if False, time-dependent gaussian errors are added to complex station gains
+           phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
+           dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
+           frcal (bool): if False, feed rotation angle terms are added to Jones matrices. 
+           taup (float): the fractional std. dev. of the random error on the opacities
+           gainp (float): the fractional std. dev. of the random error on the gains
+           gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+           dtermp (float): the fractional std. dev. of the random error on the D-terms
+           dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+           seed : a seed for the random number generators, uses system time if false
+
+       Returns:
+           (dict): a nested dictionary of matrices indexed by the site, then by the time
     """
 
     tlist = obs.tlist()
@@ -614,6 +522,10 @@ def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frca
     else:
         times_sid = utc_to_gmst(times, obs.mjd)
 
+    # Seed for random number generators
+    if seed==False:
+        seed=str(ttime.time())
+
     # Generate Jones Matrices at each time for each telescope
     out = {}
     for i in range(len(tarr)):
@@ -629,24 +541,22 @@ def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frca
         hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], ra*HOUR)
         par_angles = par_angle(hr_angles, latlon[:,0], dec*DEGREE)
 
-        # Amplitude gain
-
+        # Amplitude gains
         gainR = gainL = np.ones(len(times))
         if not ampcal:
-            # Amplitude gain
             if type(gain_offset) == dict:
                 goff = gain_offset[site]
             else:
-                goff=gain_offset
+                goff = gain_offset
 
-            gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff), tproc))*(1.0 + gainp * hashrandn(site, 'gain', time, str(gainp), tproc))
+            gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainR',str(goff), seed))*(1.0 + gainp * hashrandn(site, 'gainR', time, str(gainp), seed))
                                      for time in times]))) 
-            gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gain',str(goff), tproc))*(1.0 + gainp * hashrandn(site, 'gain', time, str(gainp), tproc))
+            gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainL',str(goff), seed))*(1.0 + gainp * hashrandn(site, 'gainL', time, str(gainp), seed))
                                      for time in times])))
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
-            taus = np.abs(np.array([taudict[site][j] * (1.0 + taup * hashrandn(site, 'tau', times[j], tproc)) for j in range(len(times))]))
+            taus = np.abs(np.array([taudict[site][j] * (1.0 + taup * hashrandn(site, 'tau', times[j], seed)) for j in range(len(times))]))
             atten = np.exp(-taus/(EP + 2.0*np.sin(el_angles)))
 
             gainR = gainR * atten
@@ -654,7 +564,7 @@ def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frca
 
         # Atmospheric Phase
         if not phasecal:
-            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, tproc) for time in times])
+            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, seed) for time in times])
             gainR = gainR * np.exp(1j*phase)
             gainL = gainL * np.exp(1j*phase)
 
@@ -664,17 +574,18 @@ def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frca
             if type(dterm_offset) == dict:
                 doff = dterm_offset[site]
             else:
-                doff=dterm_offset
+                doff = dterm_offset
 
             dR = tarr[i]['dr']
             dL = tarr[i]['dl']
 
-            dR += doff * (hashrandn(site, 'drreal', tproc) + 1j * hashrandn(site, 'drim', tproc))
-            dL += doff * (hashrandn(site, 'dlreal', tproc) + 1j * hashrandn(site, 'dlim', tproc))
+            dR += doff * (hashrandn(site, 'dRre', seed) + 1j * hashrandn(site, 'dRim', seed))
+            dL += doff * (hashrandn(site, 'dLre', seed) + 1j * hashrandn(site, 'dLim', seed))
 
-            dR *= (1 + dtermp * (hashrandn(site, 'drreal_resid', tproc) + 1j * hashrandn(site, 'drim_resid', tproc)))
-            dL *= (1 + dtermp * (hashrandn(site, 'dlreal_resid', tproc) + 1j * hashrandn(site, 'dlim_resid', tproc)))
+            dR *= (1 + dtermp * (hashrandn(site, 'dRre_resid', seed) + 1j * hashrandn(site, 'dRim_resid', seed)))
+            dL *= (1 + dtermp * (hashrandn(site, 'dLre_resid', seed) + 1j * hashrandn(site, 'dLim_resid', seed)))
 
+        #print ('dterms:', np.abs(dR),np.abs(dL))
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
         if not frcal:
@@ -686,18 +597,25 @@ def make_jones(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frca
                                 [np.exp(-1j*fr_angle[j])*gainR[j], np.exp(1j*fr_angle[j])*dR*gainR[j]],
                                 [np.exp(-1j*fr_angle[j])*dL*gainL[j], np.exp(1j*fr_angle[j])*gainL[j]]
                                 ])
-                                for j in range(len(times))}
+                                for j in range(len(times))
+                     }
 
         out[site] = j_matrices
 
     return out
 
-def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
-    """Compute all Inverse Jones Matrices for a list of times (non repeating), with NO gain and dterm errors.
-       ra and dec should be in hours / degrees
-       Will return a dictionary of matrices for each time, indexed by the site, with the matrices in time order
+def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
-       for each telescope site.
+    """Computes inverse Jones Matrices for a list of times (non repeating), with NO gain and dterm errors.
+
+       Args:
+           obs (Obsdata): the observation with scans for the inverse Jones matrices to be computed
+           opacitycal (bool): if False, estimated opacity terms are applied in the inverse gains
+           dcal (bool): if False, estimated inverse d-terms are applied to the inverse Jones matrices
+           frcal (bool): if False, inverse feed rotation angle terms are applied to Jones matrices. 
+
+       Returns:
+           (dict): a nested dictionary of matrices indexed by the site, then by the time
     """
 
     # Get data
@@ -716,6 +634,7 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         times = np.append(times, time)
         sites_in = np.array([])
         for bl in scan:
+
             # Should we screen for conflicting same-time measurements of tau?
             if len(sites_in) >= nsites: break
 
@@ -780,25 +699,53 @@ def make_jones_inverse(obs, ampcal=True, phasecal=True, opacitycal=True, dcal=Tr
         j_matrices_inv = {times[j]: pref[j]*np.array([
                                      [np.exp(1j*fr_angle[j])*gainL[j], -np.exp(1j*fr_angle[j])*dR*gainR[j]],
                                      [-np.exp(-1j*fr_angle[j])*dL*gainL[j], np.exp(-1j*fr_angle[j])*gainR[j]]
-                                     ]) for j in range(len(times))}
+                                     ]) for j in range(len(times))
+                         }
 
         out[site] = j_matrices_inv
 
     return out
 
-def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
-                        gainp=GAINPDEF, gain_offset=GAINPDEF, taup=GAINPDEF, dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF):
+def add_jones_and_noise(obs, add_th_noise=True, 
+                        opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
+                        taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
+                        seed=False, deepcopy=True):
+
     """Corrupt visibilities in obs with jones matrices and add thermal noise
+
+       Args:
+           obs (Obsdata): the original observation
+           add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+           opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+           ampcal (bool): if False, time-dependent gaussian errors are added to complex station gains
+           phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
+           dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
+           frcal (bool): if False, feed rotation angle terms are added to Jones matrices. 
+           taup (float): the fractional std. dev. of the random error on the opacities
+           gainp (float): the fractional std. dev. of the random error on the gains
+           gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+           dtermp (float): the fractional std. dev. of the random error on the D-terms
+           dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+           seed : a seed for the random number generators, uses system time if false
+           deepcopy (bool) : if True, does a deep copy of the observation before unpacking
+
+       Returns:
+           (np.array): an observation  data array
     """
 
-    print("Applying Jones Matrices to data . . . ")
 
+    print("Applying Jones Matrices to data . . . ")
     # Build Jones Matrices
     jm_dict = make_jones(obs,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,
-                         gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dterm_offset=dterm_offset)
+                         gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dterm_offset=dterm_offset,
+                         seed=seed)
     # Unpack Data
-    obsdata = obs.data
+    if deepcopy:
+        obsdata = copy.deepcopy(obs.data)
+    else:
+        obsdata = obs.data
+
     times = obsdata['time']
     t1 = obsdata['t1']
     t2 = obsdata['t2']
@@ -820,7 +767,7 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ph
     if not opacitycal:
         print("   Applying opacity attenuation: opacitycal-->False")
     if not ampcal:
-        print("   Applying gain corruption: gaincal-->False")
+        print("   Applying gain corruption: ampcal-->False")
     if not phasecal:
         print("   Applying atmospheric phase corruption: phasecal-->False")
     if not dcal:
@@ -862,18 +809,29 @@ def add_jones_and_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, ph
     # Return observation data
     return obsdata
 
-def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=True, frcal=True):
-    """Corrupt visibilities in obs with jones matrices and add thermal noise
+def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, deepcopy=True):
+    """Apply inverse jones matrices to an observation
+
+       Args:
+           obs (Obsdata): the original observation
+           add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+           dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
+           frcal (bool): if False, feed rotation angle terms are added to Jones matrices. 
+           deepcopy (bool) : if True, does a deep copy of the observation before unpacking
+
+       Returns:
+           (np.array): an observation data array
     """
 
     print("Applying a priori calibration with estimated Jones matrices . . . ")
-
     # Build Inverse Jones Matrices
-    jm_dict = make_jones_inverse(obs,
-                                 ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
-                                 dcal=dcal, frcal=frcal)
+    jm_dict = make_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
+
     # Unpack Data
-    obsdata = obs.data
+    if deepcopy:
+        obsdata = copy.deepcopy(obs.data)
+    else:
+        obsdata = obs.data
     times = obsdata['time']
     t1 = obsdata['t1']
     t2 = obsdata['t2']
@@ -929,7 +887,7 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
         sig_rl_matrix_new = np.dot(inv_j1, np.dot(sig_rl_matrix, np.conjugate(inv_j2.T)))
         sig_lr_matrix_new = np.dot(inv_j1, np.dot(sig_lr_matrix, np.conjugate(inv_j2.T)))
 
-        # !AC TODO is this correct?
+        # TODO is this correct?
         # Get the final sigma matrix as a quadrature sum
         sig_matrix_new = np.sqrt(np.abs(sig_rr_matrix_new)**2 + np.abs(sig_ll_matrix_new)**2 +
                                  np.abs(sig_rl_matrix_new)**2 + np.abs(sig_lr_matrix_new)**2)
@@ -950,25 +908,34 @@ def apply_jones_inverse(obs, ampcal=True, opacitycal=True, phasecal=True, dcal=T
     return obsdata
 
 # The old noise generating function.
-def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=True, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, seed=False, deepcopy=True):
-    """Re-compute sigmas from SEFDS and add noise with gain & phase errors
-       Returns signals & noises scaled by estimated gains, including opacity attenuation.
-       Be very careful using outside of Image.observe!
+def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True,
+              taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, 
+              seed=False, deepcopy=True):
 
-       gain_offset can be optionally set as a dictionary that specifies the standard deviation 
-       of the constant offset for each telescope site. If it is a single value than it is the standard deviation
-       for all sites. 
+    """Add thermal noise and gain & phase calibration errors to a dataset. Old routine replaced by add_jones_and_noise. 
+
+       Args:
+           obs (Obsdata): the original observation
+           add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
+           opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+           ampcal (bool): if False, time-dependent gaussian errors are added to complex station gains
+           phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
+           taup (float): the fractional std. dev. of the random error on the opacities
+           gainp (float): the fractional std. dev. of the random error on the gains
+           gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+           seed : a seed for the random number generators, uses system time if false
+           deepcopy (bool) : if True, does a deep copy of the observation before unpacking
+
+       Returns:
+           (np.array): an observation data array
     """
 
     print("Adding gain + phase errors to data and applying a priori calibration . . . ")
-
     #print "------------------------------------------------------------------------------------------------------------------------"
-    opacitycalout=True #With old noise function, output is always calibrated to estimated opacity
-                       #!AC TODO Could change this
     if not opacitycal:
         print("   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True")
     if not ampcal:
-        print("   Applying gain corruption: gaincal-->False")
+        print("   Applying gain corruption: ampcal-->False")
     if not phasecal:
         print("   Applying atmospheric phase corruption: phasecal-->False")
     if add_th_noise:
@@ -1000,12 +967,12 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
                             for i in range(len(tint))])
 
 
-    # Add gain and opacity fluctuations to the TRUE noise
+    # Seed for random number generators
     if seed==False:
         seed=str(ttime.time())
     
+    # Add gain and opacity fluctuations to the TRUE noise
     if not ampcal:
-        print ("GAIN")
         # Amplitude gain
         if type(gain_offset) == dict:
             goff1 = gain_offset[sites[i,0]]
@@ -1035,8 +1002,7 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
         tau_true = tau_est = 1
 
     # Add the noise
-    #ANDREW TODO -- sigma perf here??
-    #tau_true = tau_est
+    #TODO -- sigma perf here??
     sigma_true = sigma_perf
     sigma_est = sigma_perf * gain_true * tau_est
 
@@ -1071,7 +1037,6 @@ def add_noise(obs, ampcal=True, opacitycal=True, phasecal=True, add_th_noise=Tru
 
     # This function doesn't use different visibility sigmas!
     obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
-
 
 	# Return observation data
     return obsdata
