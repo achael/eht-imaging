@@ -69,7 +69,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         coord1space = []
         for k in range(len(site1space_list)):
             site1space = site1space_list[k]
-            dto_no2 = dto[k]
+            dto_now = site1space_dtolist[k]
             sat = ephem.readtle(array.ephem[site1space][0],array.ephem[site1space][1],array.ephem[site1space][2])
             sat.compute(dto) # often complains if ephemeris out of date!
             elev = sat.elevation
@@ -79,7 +79,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             c1 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
             c1 = np.array((c1.x.value, c1.y.value, c1.z.value))
             coord1space.append(c1)
-        coord1space = np.array(c1)
+        coord1space = np.array(coord1space)
         coord1[spacemask1] = coord1space
 
     spacemask2 = [np.all(coord == (0.,0.,0.)) for coord in coord2]
@@ -92,7 +92,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         coord2space = []
         for k in range(len(site2space_list)):
             site2space = site2space_list[k]
-            dto_now = dto[k]
+            dto_now = site2space_dtolist[k]
             sat = ephem.readtle(array.ephem[site2space][0],array.ephem[site2space][1],array.ephem[site2space][2])
             sat.compute(dto_now) # often complains if ephemeris out of date!
             elev = sat.elevation
@@ -102,7 +102,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             c2 = coords.EarthLocation.from_geodetic(lon, lat, elev, ellipsoid=None)
             c2 = np.array((c2.x.value, c2.y.value, c2.z.value))
             coord2space.append(c2)
-        coord2space = np.array(c2)
+        coord2space = np.array(coord2space)
         coord2[spacemask2] = coord2space
 
     # rotate the station coordinates with the earth
