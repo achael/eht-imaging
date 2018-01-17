@@ -81,7 +81,7 @@ class Array(object):
 
         """
 
-        obsarr = simobs.make_uvpoints2(self, ra, dec, rf, bw,
+        obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                             tint, tadv, tstart, tstop,
                                             mjd=mjd, tau=tau,
                                             elevmin=elevmin, elevmax=elevmax,
