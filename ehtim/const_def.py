@@ -21,11 +21,9 @@ PULSE_DEFAULT = trianglePulse2D
 ELEV_LOW = 10.0
 ELEV_HIGH = 85.0
 
-# Default Optical Depth and std. dev % on gain
-TAUDEF = 0.1
-GAINPDEF = 0.1
-DTERMPDEF = 0.1 # rms amplitude of D-terms if not specified in array file
-DTERMPDEF_RESID = 0.01 # rms *residual* amplitude of D-terms (random, unknown contribution)
+TAUDEF = 0.1 # Default Optical Depth
+GAINPDEF = 0.1 # Default rms of gain errors
+DTERMPDEF = 0.1 # Default rms of D-term errors
 
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas

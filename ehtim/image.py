@@ -40,7 +40,6 @@ class Image(object):
            uvec (array): The vector of stokes U values in Jy/pixel (len xdim*ydim)
            vvec (array): The vector of stokes V values in Jy/pixel (len xdim*ydim)
     """
-
     def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, time=0.):
         """A polarimetric image (in units of Jy/pixel).
 
@@ -58,7 +57,6 @@ class Image(object):
            Returns:
                (Image): the Image object    
         """
-
         if len(image.shape) != 2:
             raise Exception("image must be a 2D numpy array")
 
@@ -85,6 +83,7 @@ class Image(object):
         self.vvec = []
 
     def add_qu(self, qimage, uimage):
+
         """Add Stokes Q and U image.
 
            Args:
@@ -100,16 +99,19 @@ class Image(object):
         self.uvec = uimage.flatten()
 
     def add_v(self, vimage):
+
         """Add Stokes V image.
 
            Args:
                vimage (numpy.array): The 2D Stokes Q values in Jy/pixel array
         """
+
         if vimage.shape != (self.ydim, self.xdim):
             raise Exception("V image shape incompatible with I image!")
         self.vvec = vimage.flatten()
 
     def add_pol(self, qimage, uimage, vimage):
+
         """Add all 3 Stokes Q, U, and V images.
 
            Args:
@@ -121,6 +123,7 @@ class Image(object):
         self.add_v(vimage)
 
     def copy(self):
+
         """Return a copy of the image object.
 
            Args:
@@ -137,6 +140,7 @@ class Image(object):
         return newim
 
     def sourcevec(self):
+
         """Return the source position vector in geocentric coordinates at 0h GMST.
 
            Args:
@@ -148,6 +152,7 @@ class Image(object):
         return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
 
     def imarr(self, stokes="I"):
+
         """Return the 2D image array of a given Stokes parameter.
 
            Args: 
@@ -164,6 +169,7 @@ class Image(object):
         return imarr
 
     def fovx(self):
+
         """Return the image fov in x direction in radians.
 
            Args:
@@ -175,6 +181,7 @@ class Image(object):
         return self.psize * self.xdim
 
     def fovy(self):
+
         """Returns the image fov in y direction in radians.
 
            Args:
@@ -182,29 +189,37 @@ class Image(object):
            Returns: 
                 (float) : image fov in y direction (radian)
         """
+
         return self.psize * self.ydim
 
     def total_flux(self):
+
         """Return the total flux of the Stokes I image in Jy.
 
            Args:
            Returns: 
                 (float) : image total flux (Jy)
         """
+
         return np.sum(self.imvec)
 
     def flip_chi(self):
+
         """Flip between the different conventions for measuring the EVPA (E of N vs N of E).
         """
+
         self.qvec = - self.qvec
         return
 
-    def observe_same_nonoise(self, obs, sgrscat=False, ttype="direct", fft_pad_factor=1):
+    def observe_same_nonoise(self, obs, 
+                                   ttype="direct", fft_pad_factor=1, 
+                                   sgrscat=False):
+
         """Observe the image on the same baselines as an existing observation object without adding noise.
 
            Args:
                obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
-               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
@@ -218,18 +233,20 @@ class Image(object):
                                              obs.tarr, source=self.source, mjd=obs.mjd)
         return obs_no_noise
 
-    def observe_same(self, obsin, ttype='direct', fft_pad_factor=1,
+    def observe_same(self, obsin, 
+                           ttype='direct', fft_pad_factor=1,
                            sgrscat=False, add_th_noise=True,
-                           opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
+                           opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                            jones=False, inv_jones=False,
-                           tau=TAUDEF, taup=GAINPDEF, gain_offset=GAINPDEF, gainp=GAINPDEF, 
-                           dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF):
+                           tau=TAUDEF, taup=GAINPDEF, 
+                           gain_offset=GAINPDEF, gainp=GAINPDEF, 
+                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
                obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
-               ft (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
@@ -241,15 +258,14 @@ class Image(object):
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
-               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
+               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
 
            Returns:
                (Obsdata): an observation object
-
         """
 
         obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
@@ -269,9 +285,7 @@ class Image(object):
                                              opacitycal=opacitycal, dcal=dcal, frcal=frcal)
             if inv_jones:
                 print("Applying a priori calibration with estimated Jones matrices . . . ")
-                obsdata = simobs.apply_jones_inverse(obs,
-                                                     ampcal=ampcal, opacitycal=opacitycal,
-                                                     phasecal=phasecal, dcal=dcal, frcal=frcal)
+                obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
                 obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
                                                  obs.tarr, source=obs.source, mjd=obs.mjd,
@@ -294,13 +308,17 @@ class Image(object):
                                              #these are always set to True after inverse jones cal
         return obs
 
-    def observe(self, array, tint, tadv, tstart, tstop, bw, mjd=None, timetype='UTC',
+    def observe(self, array, tint, tadv, tstart, tstop, bw,
+                      mjd=None, timetype='UTC',
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ttype='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
-                      opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                      ttype='direct', fft_pad_factor=1, 
+                      sgrscat=False, add_th_noise=True,
+                      opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                       jones=False, inv_jones=False,
-                      tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, 
-                      dtermp=DTERMPDEF_RESID, dterm_offset=DTERMPDEF, fix_theta_GMST = False):
+                      tau=TAUDEF, taup=GAINPDEF, 
+                      gainp=GAINPDEF, gain_offset=GAINPDEF, 
+                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, 
+                      fix_theta_GMST = False):
 
         """Generate baselines from an array object and observe the image.
 
@@ -332,6 +350,7 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points through time
 
            Returns:
                (Obsdata): an observation object
@@ -359,7 +378,7 @@ class Image(object):
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, 
-                      dterm_offset=DTERMPDEF, dtermp=DTERMPDEF_RESID):
+                      dterm_offset=DTERMPDEF, dtermp=DTERMPDEF):
 
         """Generate baselines from a vex file and observes the image.
 
@@ -381,7 +400,6 @@ class Image(object):
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
                t_int (float): if not zero, overrides the vex scans to produce visibilities for each t_int seconds
-
 
            Returns:
                (Obsdata): an observation object
@@ -410,12 +428,6 @@ class Image(object):
             obs_List.append(obs)
 
         return ehtim.obsdata.merge_obs(obs_List)
-
-    def sample_uv(self, uv, ttype='fast', fft_pad_factor=2):
-        """Return complex visibilities at the specified uv points
-        """
-
-        return simobs.observe_image_nonoise(self, uv, ttype=ttype, fft_pad_factor=fft_pad_factor)    
 
     def rotate(self, angle):
         """Rotate the image counterclockwise by the specified angle.
@@ -956,7 +968,7 @@ class Image(object):
 
 
 
-    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit = 'Jy', export_pdf="", show=True):
+    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), export_pdf="", show=True):
         """Display the image.
 
            Args:
@@ -974,7 +986,7 @@ class Image(object):
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
-               cbar_unit (string): specifies the unit of each pixel for the colorbar: 'Jy', 'mJy', '$\mu$Jy'
+               cbar_unit (tuple of strings): specifies the unit of each pixel for the colorbar: 'Jy', 'm-Jy', '$\mu$Jy'
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
 
@@ -994,26 +1006,54 @@ class Image(object):
         imvec = np.array(self.imvec).reshape(-1)
         qvec = np.array(self.qvec).reshape(-1)
         uvec = np.array(self.uvec).reshape(-1)
-        if cbar_unit == 'mJy':
+        if cbar_unit[0] == 'm-Jy' or cbar_unit[0] == 'mJy':
             imvec = imvec * 1.e3
             qvec = qvec * 1.e3
             uvec = uvec * 1.e3
-        elif cbar_unit == '$\mu$Jy':
+        elif cbar_unit[0] == '$\mu$-Jy' or cbar_unit[0] == '$\mu$Jy':
             imvec = imvec * 1.e6
             qvec = qvec * 1.e6
             uvec = uvec * 1.e6
-            
+        elif cbar_unit[0] != 'Jy':
+            raise ValueError('cbar_unit ' + cbar_unit[0] + ' is not a possible option')
+        
+        if cbar_unit[1] == 'pixel':
+            factor = 1.
+        elif cbar_unit[1] == '$arcseconds$^2$' or cbar_unit[1] == 'as$^2$':
+            fovfactor = self.xdim*self.psize*(1/RADPERAS)
+            factor = (1./fovfactor)**2 / (1./self.xdim)**2 
+        elif cbar_unit[1] == '$\m-arcseconds$^2$' or cbar_unit[1] == 'mas$^2$':
+            fovfactor = self.xdim*self.psize*(1/RADPERUAS) / 1000.
+            factor = (1./fovfactor)**2 / (1./self.xdim)**2 
+        elif cbar_unit[1] == '$\mu$-arcseconds$^2$' or cbar_unit[1] == '$\mu$as$^2$':
+            fovfactor = self.xdim*self.psize*(1/RADPERUAS)
+            factor = (1./fovfactor)**2 / (1./self.xdim)**2 
+        else:
+            raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
+        imvec = imvec * factor
+        qvec = qvec * factor
+        uvec = uvec * factor
+        
         imarr = (imvec).reshape(self.ydim, self.xdim)
-        unit = cbar_unit + '/pixel'
+        unit = cbar_unit[0] + ' per ' + cbar_unit[1]
         if scale=='log':
+            if (imarr < 0.0).any():
+                print('clipping values less than 0')
+                imarr[imarr<0.0] = 0.0
             imarr = np.log(imarr + np.max(imarr)/dynamic_range)
-            unit = 'log(' + cbar_unit + '/pixel)'
+            unit = 'log(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')'
 
         if scale=='gamma':
+            if (imarr < 0.0).any():
+                print('clipping values less than 0')
+                imarr[imarr<0.0] = 0.0
             imarr = (imarr + np.max(imarr)/dynamic_range)**(gamma)
-            unit = '(' + cbar_unit + '/pixel)^gamma'
-            
-
+            unit = '(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')^gamma'
+                   
+        if cbar_lims:
+            imarr[imarr>cbar_lims[1]] = cbar_lims[1]
+            imarr[imarr<cbar_lims[0]] = cbar_lims[0]
+                  
         if len(qvec) and plotp:
             thin = self.xdim//nvec
             mask = (imvec).reshape(self.ydim, self.xdim) > pcut * np.max(imvec)
@@ -1030,7 +1070,10 @@ class Image(object):
 
             # Stokes I plot
             plt.subplot(121)
-            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+            if cbar_lims:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+            else:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
             if has_cbar: 
                 plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
                 if cbar_lims:
@@ -1067,7 +1110,11 @@ class Image(object):
             
             if has_title: plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
             
-            im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+            if cbar_lims:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+            else:
+                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+                
             if has_cbar: 
                 plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
                 if cbar_lims:
