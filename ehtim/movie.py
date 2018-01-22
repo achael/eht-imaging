@@ -115,21 +115,21 @@ class Movie(object):
         self.qframes = [-qvec for qvec in self.qframes]
         return
 
-    def observe_same_nonoise(self, obs, ttype="direct", pad_frac=0.5,  repeat=False, sgrscat=False):
+    def observe_same_nonoise(self, obs, sgrscat=False, ttype="direct", fft_pad_factor=True, repeat=False):
         """Observe the movie on the same baselines as an existing observation object without adding noise.
 
            Args:
                obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
-               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
-               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
-               repeat (bool): if True, repeat the movie to fill up the observation interval
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+               repeat (bool): if True, repeat the movie to fill up the observation interval
 
            Returns:
                Obsdata: an observation object
         """
 
-        obsdata = simobs.observe_movie_nonoise(self, obs, ttype=ttype, pad_frac=pad_frac, sgrscat=sgrscat, repeat=repeat)
+        obsdata = simobs.observe_movie_nonoise(self, obs, ttype=ttype, fft_pad_frac=pad_frac, sgrscat=sgrscat, repeat=repeat)
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata,
                                              obs.tarr, source=self.source, mjd=np.floor(obs.mjd))
@@ -183,9 +183,7 @@ class Movie(object):
                                              opacitycal=opacitycal, dcal=dcal, frcal=frcal)
             if inv_jones:
                 print("Applying a priori calibration with estimated Jones matrices . . . ")
-                obsdata = simobs.apply_jones_inverse(obs,
-                                                     ampcal=ampcal, opacitycal=opacitycal,
-                                                     phasecal=phasecal, dcal=dcal, frcal=frcal)
+                obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
                 obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
                                                  obs.tarr, source=obs.source, mjd=obs.mjd,

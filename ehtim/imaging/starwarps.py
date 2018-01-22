@@ -316,12 +316,14 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visi
     return (z_t_t, P_t_t)
 
     
-def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A, mask=[]):
+def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A_orig, mask=[]):
 
     z = copy.deepcopy(z_t_t)
     P = copy.deepcopy(P_t_t)
     backwardsA = copy.deepcopy(P_t_t)
     
+    if len(mask):
+        A = A_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
     
     lastidx = len(z)-1
     for t in range(lastidx,-1,-1):
