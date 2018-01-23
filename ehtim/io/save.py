@@ -392,7 +392,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
         rl = rl * 0.0
         lr = lr * 0.0
         weightrr = weightrr * 0.0
-        weightrl = weighrl * 0.0
+        weightrl = weightrl * 0.0
         weightlr = weightlr * 0.0
     elif force_singlepol == 'R':
         print("force_singlepol='R': treating Stokes 'I' as RR and ignoring Q,U,V!!")
@@ -401,7 +401,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
         rl = rl * 0.0
         lr = lr * 0.0
         weightll = weightll * 0.0
-        weightrl = weighrl * 0.0
+        weightrl = weightrl * 0.0
         weightlr = weightlr * 0.0
 
     # Data array
