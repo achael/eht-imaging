@@ -267,8 +267,9 @@ def save_obs_txt(obs, fname):
     return
 
 
-def save_obs_uvfits(obs, fname):
+def save_obs_uvfits(obs, fname, force_singlepol=None):
     """Save observation data to uvfits.
+       To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
     """
 
     # Open template UVFITS
@@ -382,6 +383,26 @@ def save_obs_uvfits(obs, fname):
     weightll = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
     weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
     weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
+
+    # If necessary, enforce single polarization
+    if force_singlepol == 'L':
+        print("force_singlepol='L': treating Stokes 'I' as LL and ignoring Q,U,V!!")
+        ll = obsdata['vis']
+        rr = rr * 0.0
+        rl = rl * 0.0
+        lr = lr * 0.0
+        weightrr = weightrr * 0.0
+        weightrl = weighrl * 0.0
+        weightlr = weightlr * 0.0
+    elif force_singlepol == 'R':
+        print("force_singlepol='R': treating Stokes 'I' as RR and ignoring Q,U,V!!")
+        rr = obsdata['vis']
+        ll = rr * 0.0
+        rl = rl * 0.0
+        lr = lr * 0.0
+        weightll = weightll * 0.0
+        weightrl = weighrl * 0.0
+        weightlr = weightlr * 0.0
 
     # Data array
     outdat = np.zeros((ndat, 1, 1, 1, 1, 4, 3))

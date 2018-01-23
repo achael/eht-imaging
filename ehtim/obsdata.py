@@ -1877,14 +1877,15 @@ class Obsdata(object):
         return
 
 
-    def save_uvfits(self, fname):
+    def save_uvfits(self, fname, force_singlepol=False):
         """Save visibility data to uvfits file.
 
            Args:
                 fname (str): path to output text file
+                force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL' and save single pol. 
         """
 
-        ehtim.io.save.save_obs_uvfits(self,fname)
+        ehtim.io.save.save_obs_uvfits(self,fname,force_singlepol=force_singlepol)
         return
 
     def save_oifits(self, fname, flux=1.0):
