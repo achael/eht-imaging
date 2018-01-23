@@ -560,12 +560,12 @@ def merge_im_list(imlist, framedur=-1):
         # Look for Stokes Q, U, V
         qarr = uarr = np.zeros(imarr.shape)
         if len(im.qvec):
-            qarr = im.qvec(ydim0, xdim0)
-            uarr = im.uvec(ydim0, xdim0)
+            qarr = im.qvec.reshape(ydim0, xdim0)
+            uarr = im.uvec.reshape(ydim0, xdim0)
             qlist.append(qarr)
             ulist.append(uarr)
         if len(im.vvec):
-            varr = im.vvec(ydim0, xdim0)
+            varr = im.vvec.reshape(ydim0, xdim0)
             vlist.append(varr)
 
     if framedur == -1:
