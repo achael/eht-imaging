@@ -212,7 +212,7 @@ class Image(object):
         return
 
     def observe_same_nonoise(self, obs, 
-                                   ttype="direct", fft_pad_factor=1, 
+                                   ttype="direct", fft_pad_factor=2, 
                                    sgrscat=False):
 
         """Observe the image on the same baselines as an existing observation object without adding noise.
@@ -234,7 +234,7 @@ class Image(object):
         return obs_no_noise
 
     def observe_same(self, obsin, 
-                           ttype='direct', fft_pad_factor=1,
+                           ttype='direct', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                            jones=False, inv_jones=False,
@@ -311,7 +311,7 @@ class Image(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                       mjd=None, timetype='UTC',
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ttype='direct', fft_pad_factor=1, 
+                      ttype='direct', fft_pad_factor=2, 
                       sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                       jones=False, inv_jones=False,
@@ -333,7 +333,7 @@ class Image(object):
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
-               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
@@ -374,7 +374,7 @@ class Image(object):
         return obs
 
     def observe_vex(self, vex, source, t_int=0.0,
-                      ttype='direct', fft_pad_factor=1, sgrscat=False, add_th_noise=True,
+                      ttype='direct', fft_pad_factor=2, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, 
@@ -438,7 +438,7 @@ class Image(object):
                 (Image): resampled image 
         """        
         
-        imvec_rot = scipy.ndimage.interpolation.rotate(self.imvec.reshape((self.xdim, self.ydim)), angle*180.0/np.pi, reshape=False, order=3, mode='constant', cval=0.0, prefilter=True)
+        imvec_rot = scipy.ndimage.interpolation.rotate(self.imvec.reshape((self.ydim, self.xdim)), angle*180.0/np.pi, reshape=False, order=3, mode='constant', cval=0.0, prefilter=True)
         outim = self.copy()
         outim.imvec = imvec_rot.flatten()
         return outim
@@ -656,17 +656,17 @@ class Image(object):
         padx=int(0.5*(fovx-fovoldx)/im.psize)
         pady=int(0.5*(fovy-fovoldy)/im.psize)
         imarr=im.imvec.reshape(im.ydim, im.xdim)
-        imarr=np.pad(imarr,((padx,padx),(pady,pady)),'constant')
+        imarr=np.pad(imarr,((pady,pady),(padx,padx)),'constant')
         outim=Image(imarr, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)#
         if len(im.qvec):
             qarr=im.qvec.reshape(im.ydim,im.xdim)
-            qarr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
+            qarr=np.pad(qarr,((pady,pady),(padx,padx)),'constant')
             uarr=im.uvec.reshape(im.ydim,im.xdim)
-            uarr=np.pad(uarr,((padx,padx),(pady,pady)),'constant')
+            uarr=np.pad(uarr,((pady,pady),(padx,padx)),'constant')
             outim.add_qu(qarr,uarr)
         if len(im.vvec):
             varr=im.vvec.reshape(im.ydim,im.xdim)
-            varr=np.pad(qarr,((padx,padx),(pady,pady)),'constant')
+            varr=np.pad(qarr,((pady,pady),(padx,padx)),'constant')
             outim.add_v(varr)
         return outim
 

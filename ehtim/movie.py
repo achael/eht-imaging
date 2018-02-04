@@ -144,7 +144,7 @@ class Movie(object):
 
            Args:
                obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
-               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast" or "nfft", use FFT to produce visibilities. Else "direct" for DTFT
                pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
                repeat (bool): if True, repeat the movie to fill up the observation interval
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
@@ -227,7 +227,7 @@ class Movie(object):
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
-               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast" or "nfft", use FFT to produce visibilities. Else "direct" for DTFT
                pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point

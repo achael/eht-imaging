@@ -528,7 +528,7 @@ class Obsdata(object):
                 im (Image): image to test chi^2
                 dtype (str): data type of chi^2
                 mask (arr): mask of same dimension as im.imvec to screen out pixels in chi^2 computation
-                ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                 fft_pad_frac (float): zero pad the image to fft_pad_factor * image size in FFT
                 systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
 
@@ -770,7 +770,7 @@ class Obsdata(object):
         return np.array((fwhm_maj, fwhm_min, theta))
 
     def dirtyimage(self, npix, fov, pulse=PULSE_DEFAULT):
-
+        #TODO ANDREW is this right? 
         """Make the observation dirty image (direct Fourier transform).
 
            Args:
