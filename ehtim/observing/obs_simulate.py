@@ -11,7 +11,7 @@ import datetime
 import ephem
 import astropy.coordinates as coords
 import copy 
-
+from pynfft.nfft import NFFT
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
@@ -138,13 +138,15 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
            im (Image): the image to be observed
            obs (Obsdata): The empty observation object OR a list of u,v coordinates
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-           ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+           ttype (str): if "fast" or 'nfft', use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
        Returns:
            (Obsdata): an observation object
     """
 
+    #ANDREW TODO -- be careful with these imports!!
+    #it may be redundant and all imports should go at the top
     from ehtim.obsdata import Obsdata 
 
     if type(obs) == Obsdata:
@@ -155,10 +157,10 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
         if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
             raise Exception("Image frequency is not the same as observation frequency!")
 
-        if ttype=='direct' or ttype=='fast':
+        if ttype=='direct' or ttype=='fast' or ttype=='nfft':
             print("Producing clean visibilities from image with " + ttype + " FT . . . ")
         else:
-            raise Exception("ttype=%s, options for ttype are 'direct' and 'fast'"%ttype)
+            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
 
         # Copy data to be safe 
         obsdata = obs.copy().data
@@ -261,6 +263,51 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
             vvis = phase*(vvisre + 1j*vvisim)
             vvis = vvis*pulsefac
 
+    #visibilities from NFFT
+    elif ttype=="nfft":
+
+        uvdim = len(uv)
+        if (im.xdim%2 or im.ydim%2):
+            raise Exception("NFFT doesn't work with odd image dimensions!")
+
+        npad = fft_pad_factor * np.max((im.xdim, im.ydim))
+
+        #ANDREW TODO kernel size?? 
+        if (im.xdim>12 and im.ydim>12):
+            nker = 12
+        else:
+            nker = np.min(im.xdim,im.ydim)/2
+        plan = NFFT([im.xdim,im.ydim],uvdim, m=nker, n=[npad,npad])
+
+        #sampled points
+        uvlist = uv*im.psize
+
+        #precompute
+        plan.x = uvlist
+        plan.precompute()
+
+        #phase and pulsefac
+        phase = np.exp(-1j*np.pi*(uvlist[:,0] + uvlist[:,1]))
+        pulsefac = np.array([im.pulse(2*np.pi*uvlist[i,0], 2*np.pi*uvlist[i,1], 1., dom="F") for i in xrange(uvdim)])
+
+        #compute uniform --> nonuniform transform
+        plan.f_hat = im.imvec.copy().reshape((im.ydim,im.xdim)).T
+        plan.trafo()
+        vis = plan.f.copy()*phase*pulsefac
+
+        if len(im.qvec):
+            plan.f_hat = im.qvec.copy().reshape((im.ydim,im.xdim)).T
+            plan.trafo()
+            qvis = plan.f.copy()*phase*pulsefac
+
+            plan.f_hat = im.uvec.copy().reshape((im.ydim,im.xdim)).T
+            plan.trafo()
+            uvis = plan.f.copy()*phase*pulsefac
+        if len(im.vvec):
+            plan.f_hat = im.vvec.copy().reshape((im.ydim,im.xdim)).T
+            plan.trafo()
+            vvis = plan.f.copy()*phase*pulsefac
+
     #visibilities from DFT
     else:
         mat = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
@@ -304,7 +351,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
            mov (Movie): the movie to be observed
            obs (Obsdata): The empty observation object
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-           ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+           ttype (str): if "fast", or 'nfft', use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
            repeat (bool): if True, repeat the movie to fill up the observation interval
 
@@ -359,12 +406,12 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
         uvis = np.zeros(len(uv))
         vvis = np.zeros(len(uv))
 
-        #visibilities from FFT
+        #visibilities from FFT with interpolation
         if ttype=="fast":
 
             # Pad image
             #npad = int(np.ceil(pad_frac*1./(mov.psize*umin)))
-            npad = fft_pad_factor * np.max((im.xdim, im.ydim))
+            npad = fft_pad_factor * np.max((mov.xdim, mov.ydim))
             npad = power_of_two(npad)
 
             padvalx1 = padvalx2 = int(np.floor((npad - mov.xdim)/2.0))
@@ -397,6 +444,11 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
             phase = np.exp(-1j*np.pi*mov.psize*(uv[:,0]+uv[:,1]))
             vis = vis * phase
 
+            # Multiply by the pulse function
+            # TODO make faster?
+            pulsefac = np.array([mov.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], mov.psize, dom="F") for uvpt in uv])
+            vis = vis * pulsefac
+
             if len(mov.qframes):
                 qarr = mov.qframes[n].reshape(mov.ydim, mov.xdim)
                 qarr = np.pad(qarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
@@ -409,10 +461,12 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
                 qvisre = nd.map_coordinates(np.real(qvis_im), uv2)
                 qvisim = nd.map_coordinates(np.imag(qvis_im), uv2)
                 qvis = phase*(qvisre + 1j*qvisim)
+                qvis = qvis*pulsefac
 
                 uvisre = nd.map_coordinates(np.real(uvis_im), uv2)
                 uvisim = nd.map_coordinates(np.imag(uvis_im), uv2)
                 uvis = phase*(uvisre + 1j*uvisim)
+                uvis = uvis*pulsefac
 
             if len(mov.vframes):
                 varr = mov.frames[n].reshape(mov.ydim, mov.xdim)
@@ -423,6 +477,52 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
                 vvisre = nd.map_coordinates(np.real(vvis_im), uv2)
                 vvisim = nd.map_coordinates(np.imag(vvis_im), uv2)
                 vvis = phase*(vvisre + 1j*qvisim)
+                qvis = vvis*pulsefac
+
+        #visibilities from NFFT
+        elif ttype=="nfft":
+
+            uvdim = len(uv)
+            if (mov.xdim%2 or mov.ydim%2):
+                raise Exception("NFFT doesn't work with odd image dimensions!")
+
+            npad = fft_pad_factor * np.max((mov.xdim, mov.ydim))
+
+            #ANDREW TODO kernel size?? 
+            if (mov.xdim>12 and mov.ydim>12):
+                nker = 12
+            else:
+                nker = np.min(mov.xdim,mov.ydim)/2
+            plan = NFFT([mov.xdim,mov.ydim],uvdim, m=nker, n=[npad,npad])
+
+            #sampled points
+            uvlist = uv*mov.psize
+
+            #precompute
+            plan.x = uvlist
+            plan.precompute()
+
+            #phase and pulsefac
+            phase = np.exp(-1j*np.pi*(uvlist[:,0] + uvlist[:,1]))
+            pulsefac = np.array([mov.pulse(2*np.pi*uvlist[i,0], 2*np.pi*uvlist[i,1], 1., dom="F") for i in xrange(uvdim)])
+
+            #compute uniform --> nonuniform transform
+            plan.f_hat = mov.frames[n].copy().reshape((mov.ydim,mov.xdim)).T
+            plan.trafo()
+            vis = plan.f.copy()*phase*pulsefac
+
+            if len(mov.qframes):
+                plan.f_hat = mov.qframes[n].copy().reshape((mov.ydim,mov.xdim)).T
+                plan.trafo()
+                qvis = plan.f.copy()*phase*pulsefac
+
+                plan.f_hat = mov.uframes[n].copy().reshape((mov.ydim,mov.xdim)).T
+                plan.trafo()
+                uvis = plan.f.copy()*phase*pulsefac
+            if len(mov.vframes):
+                plan.f_hat = mov.vframes[n].copy().reshape((mov.ydim,mov.xdim)).T
+                plan.trafo()
+                vvis = plan.f.copy()*phase*pulsefac
 
         #visibilities from DFT
         else:

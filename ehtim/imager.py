@@ -155,8 +155,8 @@ class Imager(object):
             (self.prior_next.ydim != self.prior_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
     
-        if self.ttype_next not in ['fast','direct']:
-            raise Exception("Possible ttype_next values are 'fast' and 'direct'!")
+        if self.ttype_next not in ['fast','direct','nfft']:
+            raise Exception("Possible ttype_next values are 'fast', 'direct','nfft'!")
 
         # determine if we need to change the saved imager parameters on the next imager run
         if self.nruns == 0:
@@ -331,7 +331,8 @@ class Imager(object):
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
                                 ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_frac=self.fft_pad_frac, 
-                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, snrcut=self.camp_snrcut,systematic_noise=self.systematic_noise)
+                                conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, 
+                                snrcut=self.camp_snrcut,systematic_noise=self.systematic_noise)
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
 
@@ -471,8 +472,14 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
-        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec #the scattered image vector
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
+                               self.prior_next.dec, rf=self.obs_next.rf, 
+                               source=self.prior_next.source, mjd=self.prior_next.mjd)
+
+        #the scattered image vector
+        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), 
+                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, 
+                                                 Linearized_Approximation=True).imvec 
 
         # Calculate the chi^2 using the scattered image
         datterm = 0.
@@ -522,7 +529,8 @@ class Imager(object):
         wavelength = C/self.obs_next.rf*100.0 #Observing wavelength [cm]
         wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
         N = self.prior_next.xdim
-        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance #Field of view, in cm, at the scattering screen
+        #Field of view, in cm, at the scattering screen
+        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance 
         rF = self.scattering_model.rF(wavelength)
 
         imvec       = minvec[:N**2]
@@ -530,8 +538,13 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
-        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec #the scattered image vector
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
+                               self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, 
+                               mjd=self.prior_next.mjd)
+        #the scattered image vector
+        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
+                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, 
+                                                 Linearized_Approximation=True).imvec 
 
         EA_Image = self.scattering_model.Ensemble_Average_Blur(IM, ker = self._ea_ker)
         EA_Gradient = so.Wrapped_Gradient((EA_Image.imvec/(FOV/N)).reshape(N, N))
@@ -655,8 +668,12 @@ class Imager(object):
             if self.transform_next == 'log':
                 imvec = np.exp(imvec)
 
-            IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
-            scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec #the scattered image vector
+            IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
+                                   self.prior_next.dec, rf=self.obs_next.rf, 
+                                   source=self.prior_next.source, mjd=self.prior_next.mjd)
+            #the scattered image vector
+            scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
+                                                     ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec 
 
             # Calculate the chi^2 using the scattered image
             datterm = 0.
@@ -810,7 +827,9 @@ class Imager(object):
                             rf=self.prior_next.rf, source=self.prior_next.source,
                             mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
         outep = res.x[N**2:]
-        outscatt = self.scattering_model.Scatter(outim, Epsilon_Screen=so.MakeEpsilonScreenFromList(outep, N), ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True)
+        outscatt = self.scattering_model.Scatter(outim, Epsilon_Screen=so.MakeEpsilonScreenFromList(outep, N), 
+                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, 
+                                                 Linearized_Approximation=True)
 
         # Preserving image complex polarization fractions
         if len(self.prior_next.qvec):
