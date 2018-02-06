@@ -71,7 +71,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
             site1space = site1space_list[k]
             dto_now = site1space_dtolist[k]
             sat = ephem.readtle(array.ephem[site1space][0],array.ephem[site1space][1],array.ephem[site1space][2])
-            sat.compute(dto) # often complains if ephemeris out of date!
+            sat.compute(dto_now) # often complains if ephemeris out of date!
             elev = sat.elevation
             lat = sat.sublat / DEGREE
             lon = sat.sublong / DEGREE
