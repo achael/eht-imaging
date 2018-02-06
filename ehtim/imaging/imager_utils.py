@@ -464,7 +464,7 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2(imvec, xdim, ydim, flux)
     elif stype == "compact":
-        s = -scompact(imvec, xdim, ydim, psize)
+        s = -scompact(imvec, xdim, ydim, psize, flux)
     else:
         s = 0
 
@@ -491,7 +491,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2grad(imvec, xdim, ydim, flux)[mask]
     elif stype == "compact":
-        s = -scompactgrad(imvec, xdim, ydim, psize)
+        s = -scompactgrad(imvec, xdim, ydim, psize, flux)
     else:
         s = np.zeros(len(imvec))
 
@@ -2382,18 +2382,27 @@ def sampler_old(griddata, im_info, uvset, sample_type="vis", order=3):
         out = np.abs((dataset[0]*dataset[1])/(dataset[2]*dataset[3]))
     return out
 
-def scompact(imvec, nx, ny, psize):
-    im = imvec.reshape(ny, nx)
+def scompact(imvec, nx, ny, psize, flux):
+    im = imvec.reshape(ny, nx) 
+    im = im / flux
+    
     xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
     xxpsize = xx * psize
     yypsize = yy * psize
+    
     out = np.sum(np.sum(im * ( (xxpsize - np.sum(np.sum(im * xxpsize)) )**2 + (yypsize - np.sum(np.sum(im * yypsize)) )**2 ) ) )
     return -out
 
     
-def scompactgrad(imvec, nx, ny, psize):
+def scompactgrad(imvec, nx, ny, psize, flux):
     im = imvec.reshape(ny, nx)
+    im = im / flux
+    
     xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
     xxpsize = xx * psize
     yypsize = yy * psize
     
