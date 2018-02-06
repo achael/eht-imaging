@@ -77,7 +77,7 @@ class Imager(object):
         self.ttype_next = ttype
         self.fft_gridder_prad = GRIDDER_P_RAD_DEFAULT
         self.fft_conv_func = GRIDDER_CONV_FUNC_DEFAULT
-        self.fft_pad_frac = FFT_PAD_DEFAULT
+        self.fft_pad_factor = FFT_PAD_DEFAULT
         self.fft_interp_order = FFT_INTERP_DEFAULT
 
 
@@ -330,7 +330,7 @@ class Imager(object):
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
-                                ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_frac=self.fft_pad_frac, 
+                                ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_factor=self.fft_pad_factor, 
                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, 
                                 snrcut=self.camp_snrcut,systematic_noise=self.systematic_noise)
                 self._data_tuples[dname] = tup

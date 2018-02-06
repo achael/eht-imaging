@@ -166,7 +166,8 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
         obsdata = obs.copy().data
 
         # Extract uv data
-        uv = obsdata[['u','v']].view(('f8',2))
+        #uv = obsdata[['u','v']].view(('f8',2))
+        uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
     else:
         uv = np.array(obs)
         if uv.shape[1] != 2:
@@ -273,10 +274,11 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))
 
         #ANDREW TODO kernel size?? 
-        if (im.xdim>12 and im.ydim>12):
-            nker = 12
-        else:
-            nker = np.min(im.xdim,im.ydim)/2
+        nker = np.floor(np.min((im.xdim,im.ydim))/5)
+        if (nker>50):
+            nker = 50
+        elif (im.xdim<50 or im.ydim<50):
+            nker = np.min((im.xdim,im.ydim))/2
         plan = NFFT([im.xdim,im.ydim],uvdim, m=nker, n=[npad,npad])
 
         #sampled points
@@ -392,7 +394,8 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
             else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
         # Extract uv data & perform DFT
-        uv = obsdata[['u','v']].view(('f8',2))
+        #uv = obsdata[['u','v']].view(('f8',2))
+        uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
         umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
         umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
 
@@ -489,10 +492,11 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
             npad = fft_pad_factor * np.max((mov.xdim, mov.ydim))
 
             #ANDREW TODO kernel size?? 
-            if (mov.xdim>12 and mov.ydim>12):
-                nker = 12
-            else:
-                nker = np.min(mov.xdim,mov.ydim)/2
+            nker = np.floor(np.min((im.xdim,im.ydim))/5)
+            if (nker>50):
+                nker = 50
+            elif (im.xdim<50 or im.ydim<50):
+                nker = np.min((im.xdim,im.ydim))/2
             plan = NFFT([mov.xdim,mov.ydim],uvdim, m=nker, n=[npad,npad])
 
             #sampled points
@@ -1048,21 +1052,31 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     else:
         obsdata = obs.data
             
-    sites = obsdata[['t1','t2']].view(('a32',2))
-    time = obsdata[['time']].view(('f8',1))
-    tint = obsdata[['tint']].view(('f8',1))
-    uv = obsdata[['u','v']].view(('f8',2))
-    vis = obsdata[['vis']].view(('c16',1))
-    qvis = obsdata[['qvis']].view(('c16',1))
-    uvis = obsdata[['uvis']].view(('c16',1))
-    vvis = obsdata[['vvis']].view(('c16',1))
+#    sites = obsdata[['t1','t2']].view(('a32',2))
+#    time = obsdata[['time']].view(('f8',1))
+#    tint = obsdata[['tint']].view(('f8',1))
+#    uv = obsdata[['u','v']].view(('f8',2))
+#    vis = obsdata[['vis']].view(('c16',1))
+#    qvis = obsdata[['qvis']].view(('c16',1))
+#    uvis = obsdata[['uvis']].view(('c16',1))
+#    vvis = obsdata[['vvis']].view(('c16',1))
+#    taus = np.abs(obsdata[['tau1','tau2']].view(('f8',2)))
+#    elevs = obs.unpack(['el1','el2'], ang_unit='deg').view(('f8',2))
 
-    taus = np.abs(obsdata[['tau1','tau2']].view(('f8',2)))
-    elevs = obs.unpack(['el1','el2'], ang_unit='deg').view(('f8',2))
-    bw = obs.bw
+    sites = recarr_to_ndarr(obsdata[['t1','t2']],'a32')
+    uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
+    taus = np.abs(recarr_to_ndarr(obsdata[['tau1','tau2']],'f8'))
+    elevs = recarr_to_ndarr(obs.unpack(['el1','el2'],ang_unit='deg'),'f8')
+    time = obsdata['time']
+    tint = obsdata['tint']
+    vis  = obsdata['vis']
+    qvis = obsdata['qvis']
+    uvis = obsdata['uvis']
+    vvis = obsdata['vvis']
 
     # Recompute perfect sigmas from SEFDs
     # Multiply 1/sqrt(2) for sum of polarizations
+    bw = obs.bw
     sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)/np.sqrt(2.0)
                             for i in range(len(tint))])
 

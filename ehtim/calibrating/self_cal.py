@@ -265,7 +265,7 @@ def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
-def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_frac=2, gain_tol=.2, caltable=False, processes=-1):
+def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_factor=2, gain_tol=.2, caltable=False, processes=-1):
     """Self-calibrate a dataset to a fixed image.
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
@@ -293,7 +293,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V = np.dot(A, im.imvec)
     else:
-        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_frac=fft_pad_frac)
+        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_factor=fft_pad_factor)
         im_info, sampler_info_list, gridder_info_list = fft_A
         vis_arr = iu.fft_imvec(im.imvec, im_info)
         V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')

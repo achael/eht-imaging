@@ -39,7 +39,7 @@ MAXIT = 100
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple']
 
-NFFT_KERSIZE_DEFAULT = 12
+NFFT_KERSIZE_DEFAULT = 20
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
@@ -56,7 +56,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
                    alpha_d1=100, alpha_d2=100,
                    alpha_flux=500, alpha_cm=500,
                    ttype='direct', 
-                   fft_pad_frac=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
+                   fft_pad_factor=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
                    grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
                    clipfloor=0., grads=True, logim=True, debias=True, snrcut=0,
                    maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=True):
@@ -80,7 +80,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            alpha_cm (float): The weighting for the center of mass constraint
 
            ttype (str): The Fourier transform type; options are 'fast', 'direct', 'nfft'
-           fft_pad_frac (float): The FFT will pre-pad the image by this factor x the original size
+           fft_pad_factor (float): The FFT will pre-pad the image by this factor x the original size
            fft_interp (int): Interpolation order for sampling the FFT
            grid_conv (str): The convolving function for gridding; options are 'gaussian', 'pill', and 'cubic'
            grid_prad (int): The pixel radius for the convolving function in gridding for FFTs
@@ -105,7 +105,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     # Make sure data and regularizer options are ok
     if ttype not in ['fast','direct','nfft']:
-        raise Exception("Possible ttype values are 'fast' and 'direct'! and 'nfft!'")
+        raise Exception("Possible ttype values are 'fast', 'direct'!, 'nfft!'")
     if not d1 and not d2:
         raise Exception("Must have at least one data term!")
 
@@ -150,9 +150,9 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
 
     # Get data and fourier matrices for the data terms
-    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, ttype=ttype, fft_pad_frac=fft_pad_frac,
+    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, ttype=ttype, fft_pad_factor=fft_pad_factor,
                                     conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
-    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, ttype=ttype, fft_pad_frac=fft_pad_frac,
+    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, ttype=ttype, fft_pad_factor=fft_pad_factor,
                                     conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
 
     # Coordinate matrix for center-of-mass constraint
@@ -322,7 +322,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
         return chisq
 
     if ttype not in ['fast','direct','nfft']:
-        raise Exception("Possible ttype values are 'fast' and 'direct'! and 'nfft!'")
+        raise Exception("Possible ttype values are 'fast', 'direct'!, 'nfft!'")
 
     if ttype == 'direct':
         if dtype == 'vis':
@@ -341,7 +341,6 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     elif ttype== 'fast':
         if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        #vis_arr = fft_imvec(imvec, A[0]) << # This was duplicated?!?
 
         vis_arr = fft_imvec(imvec, A[0])
         if dtype == 'vis':            
@@ -383,8 +382,8 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     if not dtype in DATATERMS:
         return chisqgrad
 
-    if ttype not in ['fast','direct']:
-        raise Exception("Possible ttype values are 'fast' and 'direct'!")
+    if ttype not in ['fast','direct','nfft']:
+        raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
 
     if ttype == 'direct':
         if dtype == 'vis':
@@ -495,14 +494,14 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
     return s
 
 def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
-              fft_pad_frac=2, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT,
+              fft_pad_factor=2, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT,
               order=FFT_INTERP_DEFAULT, systematic_noise=0.0):
     """Return the data, sigma, and matrices for the appropriate dtype
     """
 
     (data, sigma, A) = (False, False, False)
-    if ttype not in ['fast','direct']:
-        raise Exception("Possible ttype values are 'fast' and 'direct'!")
+    if ttype not in ['fast','direct','nfft']:
+        raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
 
     if ttype=='direct':
         if dtype == 'vis':
@@ -521,47 +520,47 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
     elif ttype=='fast':
         if dtype=='vis':
             (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, systematic_noise=systematic_noise,
-                               fft_pad_frac=fft_pad_frac,order=order,
+                               fft_pad_factor=fft_pad_factor,order=order,
                                conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'amp':
             (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, debias=debias, systematic_noise=systematic_noise,
-                               fft_pad_frac=fft_pad_frac,order=order,
+                               fft_pad_factor=fft_pad_factor,order=order,
                                conv_func=conv_func, p_rad=p_rad)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior,
-                               fft_pad_frac=fft_pad_frac,order=order,
+                               fft_pad_factor=fft_pad_factor,order=order,
                                conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, 
-                               fft_pad_frac=fft_pad_frac,order=order,
+                               fft_pad_factor=fft_pad_factor,order=order,
                                conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'camp':
             (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, debias=debias, snrcut=snrcut,
-                               fft_pad_frac=fft_pad_frac,order=order,
+                               fft_pad_factor=fft_pad_factor,order=order,
                                conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'logcamp':
             (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior,debias=debias,snrcut=snrcut,
-                               fft_pad_frac=fft_pad_frac,order=order,
+                               fft_pad_factor=fft_pad_factor,order=order,
                                conv_func=conv_func,p_rad=p_rad)
     elif ttype=='nfft':
         if dtype=='vis':
             (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, systematic_noise=systematic_noise,
-                               fft_pad_frac=fft_pad_frac, p_rad=p_rad)
+                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'amp':
             (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, debias=debias, systematic_noise=systematic_noise,
-                               fft_pad_frac=fft_pad_frac, p_rad=p_rad)
+                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior,
-                               fft_pad_frac=fft_pad_frac, p_rad=p_rad)
+                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, 
-                               fft_pad_frac=fft_pad_frac, p_rad=p_rad)
+                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'camp':
             (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, debias=debias, snrcut=snrcut,
-                               fft_pad_frac=fft_pad_frac, p_rad=p_rad)
+                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'logcamp':
             (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior,debias=debias,snrcut=snrcut,
-                               fft_pad_frac=fft_pad_frac, p_rad=p_rad)
+                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         
         
     return (data, sigma, A)
@@ -954,7 +953,7 @@ def chisq_vis_nfft(imvec, A, vis, sigma):
 
     return chisq
 
-def chisqgrad_vis_fft(imvec, A, vis, sigma):
+def chisqgrad_vis_nfft(imvec, A, vis, sigma):
 
     """The gradient of the visibility chi-squared from nfft
     """
@@ -973,7 +972,7 @@ def chisqgrad_vis_fft(imvec, A, vis, sigma):
     wdiff_vec = (-1.0/len(vis)*(vis - samples)/(sigma**2)) * pulsefac.conj()
     plan.f = wdiff_vec
     plan.adjoint()
-    out = np.real((plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim))s
+    out = np.real((plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim))
 
     return out
 
@@ -996,7 +995,7 @@ def chisq_amp_nfft(imvec, A, amp, sigma):
 
     return chisq
 
-def chisqgrad_amp_fft(imvec, A, amp, sigma):
+def chisqgrad_amp_nfft(imvec, A, amp, sigma):
 
     """The gradient of the amplitude chi-squared from nfft
     """
@@ -1054,7 +1053,7 @@ def chisq_bs_nfft(imvec, A, bis, sigma):
     chisq = np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
     return chisq
 
-def chisqgrad_bs_fft(imvec, A, bis, sigma):
+def chisqgrad_bs_nfft(imvec, A, bis, sigma):
     """The gradient of the amplitude chi-squared from the nfft
     """
     #get nfft objects
@@ -1106,7 +1105,7 @@ def chisqgrad_bs_fft(imvec, A, bis, sigma):
     out = out1 + out2 + out3
     return out
 
-def chisq_cphase_nfft(vis_arr, A, clphase, sigma):
+def chisq_cphase_nfft(imvec, A, clphase, sigma):
     """Closure Phases (normalized) chi-squared from nfft
     """
 
@@ -1145,7 +1144,7 @@ def chisq_cphase_nfft(vis_arr, A, clphase, sigma):
 
     return chisq
 
-def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma):
+def chisqgrad_cphase_nfft(imvec, A, clphase, sigma):
     """The gradient of the closure phase chi-squared from nfft"""
 
     clphase = clphase * DEGREE
@@ -1200,7 +1199,7 @@ def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma):
     out = out1 + out2 + out3
     return out
 
-def chisq_camp_nfft(vis_arr, A, clamp, sigma):
+def chisq_camp_nfft(imvec, A, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared from fft
     """
 
@@ -1243,7 +1242,7 @@ def chisq_camp_nfft(vis_arr, A, clamp, sigma):
     chisq = np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
     return chisq
 
-def chisqgrad_camp_fft(vis_arr, A, clamp, sigma):
+def chisqgrad_camp_nfft(imvec, A, clamp, sigma):
 
     """The gradient of the closure amplitude chi-squared from fft
     """
@@ -1311,7 +1310,7 @@ def chisqgrad_camp_fft(vis_arr, A, clamp, sigma):
     out = out1 + out2 + out3 + out4
     return out
 
-def chisq_logcamp_fft(vis_arr, A, log_clamp, sigma):
+def chisq_logcamp_nfft(imvec, A, log_clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared from fft
     """
 
@@ -1355,7 +1354,7 @@ def chisq_logcamp_fft(vis_arr, A, log_clamp, sigma):
     chisq = np.sum(np.abs((log_clamp - log_clamp_samples)/sigma)**2) / (len(log_clamp))
     return chisq
 
-def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma):
+def chisqgrad_logcamp_nfft(imvec, A, log_clamp, sigma):
 
     """The gradient of the closure amplitude chi-squared from fft
     """
@@ -1724,7 +1723,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, debias=True, snrcut=0):
 ##################################################################################################
 # FFT Chi^2 Data functions
 ##################################################################################################
-def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=2,
+def chisqdata_vis_fft(Obsdata, Prior, fft_pad_factor=2,
                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
                       p_rad=GRIDDER_P_RAD_DEFAULT,systematic_noise=0.0):
     """Return the visibilities, sigmas, uv points, and image info
@@ -1738,7 +1737,7 @@ def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=2,
     #sigma = data_arr['sigma']
     sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
@@ -1750,7 +1749,7 @@ def chisqdata_vis_fft(Obsdata, Prior, fft_pad_frac=2,
 
     return (vis, sigma, A)
 
-def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=2,
+def chisqdata_amp_fft(Obsdata, Prior, fft_pad_factor=2,
                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
                       p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,systematic_noise=0.0):
     """Return the amplitudes, sigmas, uv points, and image info
@@ -1764,7 +1763,7 @@ def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=2,
     #sigma = data_arr['sigma']
     sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
@@ -1775,7 +1774,7 @@ def chisqdata_amp_fft(Obsdata, Prior, fft_pad_frac=2,
     A = (im_info, sampler_info_list, gridder_info_list)
     return (amp, sigma, A)
 
-def chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=2,
+def chisqdata_bs_fft(Obsdata, Prior, fft_pad_factor=2,
                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the bispectra, sigmas, uv points, and image info
     """
@@ -1786,7 +1785,7 @@ def chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=2,
     bi = biarr['bispec']
     sigma = biarr['sigmab']
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
@@ -1799,7 +1798,7 @@ def chisqdata_bs_fft(Obsdata, Prior, fft_pad_frac=2,
     A = (im_info, sampler_info_list, gridder_info_list)
     return (bi, sigma, A)
 
-def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=2,
+def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_factor=2,
                          order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
     """Return the closure phases, sigmas, uv points, and image info
     """
@@ -1810,7 +1809,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=2,
     clphase = clphasearr['cphase']
     sigma = clphasearr['sigmacp']
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
@@ -1823,7 +1822,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_frac=2,
     A = (im_info, sampler_info_list, gridder_info_list)
     return (clphase, sigma, A)
 
-def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=2,
+def chisqdata_camp_fft(Obsdata, Prior, fft_pad_factor=2,
                        order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
     """Return the closure phases, sigmas, uv points, and image info
     """
@@ -1836,7 +1835,7 @@ def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=2,
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
     clamp = clamparr['camp'][mask]
     sigma = clamparr['sigmaca'][mask]
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
@@ -1850,7 +1849,7 @@ def chisqdata_camp_fft(Obsdata, Prior, fft_pad_frac=2,
     A = (im_info, sampler_info_list, gridder_info_list)
     return (clamp, sigma, A)
 
-def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=2,
+def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_factor=2,
                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
     """Return the closure phases, sigmas, uv points, and image info
     """
@@ -1863,7 +1862,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=2,
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
     clamp = clamparr['camp'][mask]
     sigma = clamparr['sigmaca'][mask]
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
 
@@ -1882,7 +1881,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_frac=2,
 # NFFT Chi^2 Data functions
 ##################################################################################################
 def chisqdata_vis_nfft(Obsdata, Prior, systematic_noise=0., 
-                       fft_pad_frac=2, p_rad=NFFT_KERSIZE_DEFAULT):
+                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the visibilities, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -1896,14 +1895,14 @@ def chisqdata_vis_nfft(Obsdata, Prior, systematic_noise=0.,
     #sigma = data_arr['sigma']
     sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
     A = [A1]
 
     return (vis, sigma, A)
 
 def chisqdata_amp_nfft(Obsdata, Prior, debias=True, systematic_noise=0.,
-                       fft_pad_frac=2, p_rad=NFFT_KERSIZE_DEFAULT):
+                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the amplitudes, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -1917,7 +1916,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, debias=True, systematic_noise=0.,
     #sigma = data_arr['sigma']
     sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
     A = [A1]
@@ -1925,7 +1924,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, debias=True, systematic_noise=0.,
     return (amp, sigma, A)
 
 def chisqdata_bs_nfft(Obsdata, Prior, 
-                      fft_pad_frac=2, p_rad=NFFT_KERSIZE_DEFAULT):
+                      fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the bispectra, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -1938,7 +1937,7 @@ def chisqdata_bs_nfft(Obsdata, Prior,
     bi = biarr['bispec']
     sigma = biarr['sigmab']
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
     A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
@@ -1948,7 +1947,7 @@ def chisqdata_bs_nfft(Obsdata, Prior,
     return (bi, sigma, A)
 
 def chisqdata_cphase_nfft(Obsdata, Prior,
-                          fft_pad_frac=2, p_rad=NFFT_KERSIZE_DEFAULT):
+                          fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -1961,7 +1960,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior,
     clphase = clphasearr['cphase']
     sigma = clphasearr['sigmacp']
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
     A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
@@ -1971,7 +1970,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior,
     return (clphase, sigma, A)
 
 def chisqdata_camp_nfft(Obsdata, Prior, debias=True,snrcut=0,
-                       fft_pad_frac=2, p_rad=NFFT_KERSIZE_DEFAULT):
+                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -1987,7 +1986,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, debias=True,snrcut=0,
     clamp = clamparr['camp'][mask]
     sigma = clamparr['sigmaca'][mask]
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
     A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
@@ -1998,7 +1997,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, debias=True,snrcut=0,
     return (clamp, sigma, A)
 
 def chisqdata_logcamp_nfft(Obsdata, Prior, debias=True,snrcut=0,
-                           fft_pad_frac=2, p_rad=NFFT_KERSIZE_DEFAULT):
+                           fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -2014,7 +2013,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, debias=True,snrcut=0,
     clamp = clamparr['camp'][mask]
     sigma = clamparr['sigmaca'][mask]
 
-    npad = int(fft_pad_frac * np.max((Prior.xdim, Prior.ydim)))
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
 
 
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
@@ -2042,16 +2041,16 @@ class NFFTInfo(object):
         
         # set nfft plan
         uv_scaled = uv*psize
-        nfft_plan = NFFT([xdim, ydim], uvdim, m=p_rad, n=[npad,npad])
+        nfft_plan = NFFT([xdim, ydim], self.uvdim, m=p_rad, n=[npad,npad])
         nfft_plan.x = uv_scaled
         nfft_plan.precompute()
         self.plan = nfft_plan
 
         # compute phase and pulsefac
-        phase = np.exp(-1j*np.pi*(uv_scaled[:,0]+uv_scaled[:,1]))
+        phases = np.exp(-1j*np.pi*(uv_scaled[:,0]+uv_scaled[:,1]))
         pulses = np.array([pulse(2*np.pi*uv_scaled[i,0], 2*np.pi*uv_scaled[i,1], 1., dom="F") 
                            for i in xrange(self.uvdim)])
-        self.pulsefac = (pulsefac*phase)
+        self.pulsefac = (pulses*phases)
 
 class SamplerInfo(object):
     def __init__(self, order, uv, pulsefac):
