@@ -129,7 +129,7 @@ class Movie(object):
                Obsdata: an observation object
         """
 
-        obsdata = simobs.observe_movie_nonoise(self, obs, ttype=ttype, fft_pad_frac=pad_frac, sgrscat=sgrscat, repeat=repeat)
+        obsdata = simobs.observe_movie_nonoise(self, obs, ttype=ttype, fft_pad_factor=pad_frac, sgrscat=sgrscat, repeat=repeat)
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata,
                                              obs.tarr, source=self.source, mjd=np.floor(obs.mjd))

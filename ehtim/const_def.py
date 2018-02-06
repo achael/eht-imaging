@@ -79,3 +79,20 @@ FIELDS = ['time','time_utc','time_gmst',
           'rlvis','rlamp','rlphase','rlsnr','rlsigma','rlsigma_phase'
           'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase']
 
+#miscellaneous functions
+
+#TODO this makes a copy -- is there a faster robust way? 
+def recarr_to_ndarr(x,typ):
+    """converts a record array x to a normal ndarray with all fields converted to datatype typ
+    """
+
+    fields = x.dtype.names
+    shape = x.shape + (len(fields),)
+    dt = [(name,typ) for name in fields]
+    y = x.astype(dt).view(typ).reshape(shape)
+    return y
+
+
+
+
+

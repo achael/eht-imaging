@@ -20,6 +20,9 @@ import ehtim.observing.obs_simulate as simobs
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+import warnings
+warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
+
 ##################################################################################################
 # Obsdata object
 ##################################################################################################
@@ -426,7 +429,8 @@ class Obsdata(object):
                     times_sid = utc_to_gmst(data['time'], self.mjd)
 
                 thetas = np.mod((times_sid - self.ra)*HOUR, 2*np.pi)
-                coords = tdata[['x','y','z']].view(('f8', 3))
+                coords = recarr_to_ndarr(tdata[['x','y','z']],'f8')
+                #coords = tdata[['x','y','z']].view(('f8', 3))
                 el_angle = elev(earthrot(coords, thetas), self.sourcevec())
                 latlon = xyz_2_latlong(coords)
                 hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], self.ra*HOUR)
@@ -520,7 +524,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_frac=2, systematic_noise=0.0):
+    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_factor=2, systematic_noise=0.0):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
@@ -529,7 +533,7 @@ class Obsdata(object):
                 dtype (str): data type of chi^2
                 mask (arr): mask of same dimension as im.imvec to screen out pixels in chi^2 computation
                 ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
-                fft_pad_frac (float): zero pad the image to fft_pad_factor * image size in FFT
+                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                 systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
 
            Returns: 
@@ -539,7 +543,7 @@ class Obsdata(object):
         # TODO -- import this at top, but circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype, 
-                                        fft_pad_frac=fft_pad_frac,systematic_noise=systematic_noise)
+                                        fft_pad_factor=fft_pad_factor,systematic_noise=systematic_noise)
         chisq = iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
         return chisq
 
