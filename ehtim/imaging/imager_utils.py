@@ -37,7 +37,7 @@ NHIST = 50 # number of steps to store for hessian approx
 MAXIT = 100
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'compact']
 
 NFFT_KERSIZE_DEFAULT = 20
 GRIDDER_P_RAD_DEFAULT = 2
@@ -463,6 +463,8 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2(imvec, xdim, ydim, flux)
+    elif stype == "compact":
+        s = -scompact(imvec, xdim, ydim, psize, flux)
     else:
         s = 0
 
@@ -488,6 +490,8 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2grad(imvec, xdim, ydim, flux)[mask]
+    elif stype == "compact":
+        s = -scompactgrad(imvec, xdim, ydim, psize, flux)
     else:
         s = np.zeros(len(imvec))
 
@@ -2377,6 +2381,41 @@ def sampler_old(griddata, im_info, uvset, sample_type="vis", order=3):
     if sample_type=="camp":
         out = np.abs((dataset[0]*dataset[1])/(dataset[2]*dataset[3]))
     return out
+
+def scompact(imvec, nx, ny, psize, flux):
+    im = imvec.reshape(ny, nx) 
+    im = im / flux
+    
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
+    
+    out = np.sum(np.sum(im * ( (xxpsize - np.sum(np.sum(im * xxpsize)) )**2 + (yypsize - np.sum(np.sum(im * yypsize)) )**2 ) ) )
+    return -out
+
+    
+def scompactgrad(imvec, nx, ny, psize, flux):
+    im = imvec.reshape(ny, nx)
+    im = im / flux
+    
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
+    
+    xcom = np.sum(np.sum( im * xxpsize))
+    ycom = np.sum(np.sum( im * yypsize))
+    
+    term1 = np.sum(np.sum( im * ( (xxpsize - xcom) ) ) )
+    term2 = np.sum(np.sum( im * ( (yypsize - ycom) ) ) )
+    
+    grad = -2*xxpsize*term1 - 2*yypsize*term2  + (xxpsize - xcom )**2 + (yypsize - ycom)**2 
+    
+    return -grad.reshape(-1)
+
 
 ##################################################################################################
 # Restoring ,Embedding, and Plotting Functions
