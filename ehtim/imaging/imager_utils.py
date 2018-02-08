@@ -464,6 +464,8 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2(imvec, xdim, ydim, flux)
     elif stype == "compact":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
         s = -scompact(imvec, xdim, ydim, psize, flux)
     else:
         s = 0
@@ -491,6 +493,8 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2grad(imvec, xdim, ydim, flux)[mask]
     elif stype == "compact":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
         s = -scompactgrad(imvec, xdim, ydim, psize, flux)
     else:
         s = np.zeros(len(imvec))
