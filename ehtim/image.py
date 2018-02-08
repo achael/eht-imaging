@@ -421,7 +421,7 @@ class Image(object):
             subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
 
             obs = self.observe(subarray, t_int, 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'],
-                                       vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + t_int/3600.0,
+                                       vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0,
                                        vex.bw_hz, mjd=vex.sched[i_scan]['mjd_floor'],
                                        elevmin=.01, elevmax=89.99,
                                        ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
