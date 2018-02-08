@@ -1006,6 +1006,42 @@ class Obsdata(object):
         print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
 
+    def taper(self, fwhm):
+        """Taper the observation with a circular Gaussian kernel
+           Args:   
+               fwhm (float): real space fwhm size of convolution kernel in radian
+           Returns:
+               (Obsdata): a new taperd observation object
+        """
+        datatable = (obs.copy()).data
+
+        vis = datatable['vis']
+        qvis = datatable['qvis']
+        uvis = datatable['uvis']
+        vvis = datatable['vvis']
+        sigma = datatable['sigma']
+        qsigma = datatable['qsigma']
+        usigma = datatable['usigma']
+        vsigma = datatable['vsigma']
+        u = datatable['u']
+        v = datatable['v']
+
+        sigma = fwhm / (2*np.sqrt(2*np.log(2)))
+        ker = np.exp(-2 * np.pi**2 * sigma**2*(u**2+v**2))
+
+        datatable['vis'] = vis*ker
+        datatable['qvis'] = qvis*ker
+        datatable['uvis'] = uvis*ker
+        datatable['vvis'] = vvis*ker
+        datatable['sigma'] = sigma*ker
+        datatable['qsigma'] = qsigma*ker
+        datatable['usigma'] = usigma*ker
+        datatable['vsigma'] = vsigma*ker
+
+        obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr, source=self.source, mjd=self.mjd,
+                            ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal)
+        return obstaper
+
     def deblur(self):
         """Deblur the observation obs by dividing by the Sgr A* redscattering kernel.
 

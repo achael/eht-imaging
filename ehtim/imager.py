@@ -35,7 +35,9 @@ class Imager(object):
 
     def __init__(self, obsdata, init_im, prior_im=None, flux=None, clipfloor=0., maxit=50, 
                        transform='log', ttype='fast', data_term={'vis':100}, reg_term={'simple':1}, 
-                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0):
+                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0,
+                       fft_pad_factor=FFT_PAD_DEFAULT, fft_interp_order=FFT_INTERP_DEFAULT, 
+                       fft_conv_func=GRIDDER_CONV_FUNC_DEFAULT, fft_gridder_prad=GRIDDER_P_RAD_DEFAULT):
 
         self.logstr = ""
         self._obs_list = []
@@ -75,11 +77,10 @@ class Imager(object):
 
         # FFT parameters
         self.ttype_next = ttype
-        self.fft_gridder_prad = GRIDDER_P_RAD_DEFAULT
-        self.fft_conv_func = GRIDDER_CONV_FUNC_DEFAULT
-        self.fft_pad_factor = FFT_PAD_DEFAULT
-        self.fft_interp_order = FFT_INTERP_DEFAULT
-
+        self.fft_gridder_prad = fft_gridder_prad
+        self.fft_conv_func = fft_conv_func
+        self.fft_pad_factor = fft_pad_factor
+        self.fft_interp_order = fft_interp_order
 
         # Parameters related to scattering
         self.scattering_model = scattering_model
