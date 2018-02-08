@@ -406,11 +406,12 @@ class Image(object):
 
         """
 
-        if t_int == 0.0:
-            t_int = vex.sched[i_scan]['scan'][0]['scan_sec']
-
         obs_List=[]
         for i_scan in range(len(vex.sched)):
+        
+            if t_int == 0.0:
+                 t_int = vex.sched[i_scan]['scan'][0]['scan_sec']
+        
             if vex.sched[i_scan]['source'] != source:
                 continue
             subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
