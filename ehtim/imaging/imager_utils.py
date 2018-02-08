@@ -494,7 +494,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
     elif stype == "compact":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompactgrad(imvec, xdim, ydim, psize, flux)
+        s = -scompactgrad(imvec, xdim, ydim, psize, flux)[mask]
     else:
         s = np.zeros(len(imvec))
 
