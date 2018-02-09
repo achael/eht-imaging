@@ -136,20 +136,20 @@ if args.prune > 1:
 master_caltab = None
 
 # First get the ALMA and APEX calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '/step1'
+stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step1'
 sites = {'AA','AP'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '/step2'
+stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step2'
 sites = {'SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
-stepname = args.input[:-15] + '/step3'
+stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step3'
 sites = {'AA','AP','SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.1)
 
 # Save output
 obs_cal_avg.save_uvfits(args.output)
-master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '/master_caltab')
+master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '.'+args.pol+args.pol+'/master_caltab')
