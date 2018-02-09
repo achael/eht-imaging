@@ -674,19 +674,28 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     if channel == all:
         channel = np.arange(0, full_nchannels, 1) 
     else:
-        channel = np.array([channel]).reshape(-1) 
+        try: 
+            nchannels = len(np.array(channel))
+            channel = np.array(channel).reshape(-1) 
+        except TypeError:
+            channel = np.array([channel]).reshape(-1) 
+            nchannels = len(np.array(channel))
+
     if IF == all: 
         IF = np.arange(0, full_nifs, 1)  
     else:
-        IF = np.array([IF]).reshape(-1) 
-        
+        try: 
+            nifs =  len(IF)
+            IF = np.array(IF).reshape(-1) 
+        except TypeError:
+            IF = np.array([IF]).reshape(-1) 
+            nifs = len(np.array(IF))
+
     if (np.max(channel) >= full_nchannels) or (np.min(channel) < 0):
         raise Exception('The specified channel does not exist')
     if (np.max(IF) >= full_nifs) or (np.min(IF) < 0):
         raise Exception('The specified IF does not exist')  
         
-    nchannels = len(np.array(channel))
-    nifs = len(np.array(IF))
 
     #TODO CHECK THESE DECISIONS CAREFULLY!!!!
     rrweight = data['DATA'][:,0,0,IF,channel,0,2].reshape(nvis, nifs, nchannels)

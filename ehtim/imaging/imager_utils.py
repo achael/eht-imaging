@@ -59,7 +59,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
                    fft_pad_factor=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
                    grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
                    clipfloor=0., grads=True, logim=True, debias=True, snrcut=0,
-                   maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=False):
+                   maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=True):
 
     """Run a general interferometric imager.
 

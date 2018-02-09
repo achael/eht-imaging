@@ -18,7 +18,7 @@ NHIST = 50 # number of steps to store for hessian approx
 STOP = 1e-6 # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm','compact']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm','compact','compact2']
 
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
@@ -650,9 +650,9 @@ class Imager(object):
             outstr = "i: %d " % self._nit
 
             for dname in sorted(self.dat_term_next.keys()):
-                outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname])
+                outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
             for regname in sorted(self.reg_term_next.keys()):
-                outstr += "%s : %0.2f " % (regname, reg_term_dict[regname])
+                outstr += "%s : %0.2f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
 
             if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
             plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, ipynb=False)
