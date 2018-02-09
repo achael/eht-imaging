@@ -44,19 +44,19 @@ def writeOIFITS(filename, RA, DEC, frequency, bandWidth, intTime,
 
 	# put in the visibility information - note this does not include phase errors!
 	for i in range(0, len(u)):
-		station_curr = (data.array['ARRAY_NAME'].station[ ant1[i] - 1 ] , data.array['ARRAY_NAME'].station[ ant2[i] - 1 ]);
+		station_curr = (data.array['ARRAY_NAME'].station[ int(ant1[i] - 1) ] , data.array['ARRAY_NAME'].station[ int(ant2[i] - 1) ]);
 		currVis = ehtim.io.oifits.OI_VIS(timeobs[i], intTime, visamp[i], visamperr[i], visphi[i], visphierr[i], flagVis, u[i]*wavelength, v[i]*wavelength, data.wavelength['WAVELENGTH_NAME'], data.target[0], array=data.array['ARRAY_NAME'], station=station_curr, cflux=False, cfluxerr=False);
 		data.vis = np.append( data.vis, currVis );
 
 	# put in bispectrum information
 	for j in range(0, len(uClosure)):
-		station_curr = (data.array['ARRAY_NAME'].station[ antOrder[j][0] - 1 ] , data.array['ARRAY_NAME'].station[ antOrder[j][1] - 1 ], data.array['ARRAY_NAME'].station[ antOrder[j][2] - 1 ]);
+		station_curr = (data.array['ARRAY_NAME'].station[ int(antOrder[j][0] - 1) ] , data.array['ARRAY_NAME'].station[ int(antOrder[j][1] - 1) ], data.array['ARRAY_NAME'].station[ int(antOrder[j][2] - 1) ]);
 		currT3 = ehtim.io.oifits.OI_T3(timeClosure[j], intTime, t3amp[j], t3amperr[j], t3phi[j], t3phierr[j], flagVis, uClosure[j][0]*wavelength, vClosure[j][0]*wavelength, uClosure[j][1]*wavelength, vClosure[j][1]*wavelength, data.wavelength['WAVELENGTH_NAME'], data.target[0], array=data.array['ARRAY_NAME'], station=station_curr);
 		data.t3 = np.append(data.t3, currT3 );
 
 	# put in visibility squared information
 	for k in range(0, len(u)):
-		station_curr = (data.array['ARRAY_NAME'].station[ ant1[k] - 1 ] , data.array['ARRAY_NAME'].station[ ant2[k] - 1 ]);
+		station_curr = (data.array['ARRAY_NAME'].station[ int(ant1[k] - 1) ] , data.array['ARRAY_NAME'].station[ int(ant2[k] - 1) ]);
 		currVis2 = ehtim.io.oifits.OI_VIS2(timeobs[k], intTime, visamp[k]**2, 2.0*visamp[k]*visamperr[k], flagVis, u[k]*wavelength, v[k]*wavelength, data.wavelength['WAVELENGTH_NAME'], data.target[0], array=data.array['ARRAY_NAME'], station=station_curr);
 		data.vis2 = np.append(data.vis2, currVis2 );
 

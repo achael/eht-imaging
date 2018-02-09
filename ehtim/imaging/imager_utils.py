@@ -37,7 +37,7 @@ NHIST = 50 # number of steps to store for hessian approx
 MAXIT = 100
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'compact']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'compact', 'compact2']
 
 NFFT_KERSIZE_DEFAULT = 20
 GRIDDER_P_RAD_DEFAULT = 2
@@ -59,7 +59,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
                    fft_pad_factor=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
                    grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
                    clipfloor=0., grads=True, logim=True, debias=True, snrcut=0,
-                   maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=True):
+                   maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=False):
 
     """Run a general interferometric imager.
 
@@ -117,7 +117,6 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     if (not ((s1 in REGULARIZERS) or s1==False)) or (not ((s2 in REGULARIZERS) or s2==False)):
         raise Exception("Invalid regularizer: valid regularizers are: " + ' '.join(REGULARIZERS))
-
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
         raise Exception("Initial image does not match dimensions of the prior image!")
 
@@ -464,7 +463,13 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2(imvec, xdim, ydim, flux)
     elif stype == "compact":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
         s = -scompact(imvec, xdim, ydim, psize, flux)
+    elif stype == "compact2":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        s = -scompact2(imvec, xdim, ydim, psize, flux)
     else:
         s = 0
 
@@ -491,7 +496,13 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -stv2grad(imvec, xdim, ydim, flux)[mask]
     elif stype == "compact":
-        s = -scompactgrad(imvec, xdim, ydim, psize, flux)
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        s = -scompactgrad(imvec, xdim, ydim, psize, flux)[mask]
+    elif stype == "compact2":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        s = -scompact2grad(imvec, xdim, ydim, psize, flux)[mask]
     else:
         s = np.zeros(len(imvec))
 
@@ -2416,6 +2427,30 @@ def scompactgrad(imvec, nx, ny, psize, flux):
     
     return -grad.reshape(-1)
 
+def scompact2(imvec, nx, ny, psize, flux):
+    im = imvec.reshape(ny, nx) 
+    
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
+    
+    out = np.sum(np.sum(im**2 * ( xxpsize**2 + yypsize**2 ) ) )
+    return -out
+    
+def scompact2grad(imvec, nx, ny, psize, flux):
+    im = imvec.reshape(ny, nx)
+    
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
+
+    grad = 2*im*(xxpsize**2 + yypsize**2) 
+    
+    return -grad.reshape(-1)
 
 ##################################################################################################
 # Restoring ,Embedding, and Plotting Functions
