@@ -373,7 +373,7 @@ class Image(object):
 
         return obs
 
-    def observe_vex(self, vex, source, t_int=0.0,
+    def observe_vex(self, vex, source, t_int=0.0, tight_tadv = False,
                       ttype='direct', fft_pad_factor=2, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
@@ -406,16 +406,26 @@ class Image(object):
 
         """
 
+        t_int_flag = False
         if t_int == 0.0:
-            t_int = vex.sched[i_scan]['scan'][0]['scan_sec']
+            t_int_flag = True
 
         obs_List=[]
         for i_scan in range(len(vex.sched)):
+        
+            if t_int_flag:
+                 t_int = vex.sched[i_scan]['scan'][0]['scan_sec']
+                 
+            if tight_tadv:
+                t_adv = t_int
+            else:
+                t_adv = 2.0*vex.sched[i_scan]['scan'][0]['scan_sec']
+        
             if vex.sched[i_scan]['source'] != source:
                 continue
             subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
 
-            obs = self.observe(subarray, t_int, 2.0*vex.sched[i_scan]['scan'][0]['scan_sec'],
+            obs = self.observe(subarray, t_int, t_adv,
                                        vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0,
                                        vex.bw_hz, mjd=vex.sched[i_scan]['mjd_floor'],
                                        elevmin=.01, elevmax=89.99,
