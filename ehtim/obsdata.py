@@ -925,7 +925,7 @@ class Obsdata(object):
         # This will remove all visibilities that include any of the specified sites
         obs_out = self.copy()
         uvdist_list = obs_out.unpack('uvdist')['uvdist']
-        mask = [uv_min <= uvdist_list[j] <= uv_max for j in range(len(uvdist_list))]
+        mask = np.array([uv_min <= uvdist_list[j] <= uv_max for j in range(len(uvdist_list))])
         obs_out.data = obs_out.data[mask]
         print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
@@ -936,7 +936,7 @@ class Obsdata(object):
         obs_out = self.copy()
         t1_list = obs_out.unpack('t1')['t1']
         t2_list = obs_out.unpack('t2')['t2']
-        site_mask = [t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))]
+        site_mask = np.array([t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))])
         obs_out.data = obs_out.data[site_mask]
         print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
