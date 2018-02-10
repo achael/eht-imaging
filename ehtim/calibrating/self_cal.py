@@ -49,7 +49,12 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
     scans_cal = scans.copy()
 
     if processes > 0:
-        scans_cal = np.array(pool.map(get_network_scan_cal, [[i, len(scans), scans[i], zbl, sites, cluster_data, method, pad_amp, gain_tol, caltable, show_solution] for i in range(len(scans))]))
+        scans_cal = np.array(filter(lambda x: x,
+                                    pool.map(get_network_scan_cal,
+                                             [[i, len(scans), scans[i],
+                                               zbl, sites, cluster_data, method, pad_amp, gain_tol, caltable, show_solution]
+                                              for i in range(len(scans))
+                                             ])))
         print('DONE')
     else:
         for i in range(len(scans)):
@@ -64,8 +69,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
         caldict = scans_cal[0]
         for i in range(1,len(scans_cal)):
             row = scans_cal[i]
-            if len(row) == 0: 
-                continue 
+            if len(row) == 0:
+                continue
 
             for site in allsites:
                 try: dat = row[site]
@@ -538,4 +543,3 @@ def norm_zbl(obs, flux=1.):
                                     source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
                                     ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
     return obs_cal
-
