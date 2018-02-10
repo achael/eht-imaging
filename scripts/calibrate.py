@@ -16,8 +16,8 @@ def pick(obs, req_sites):
     Pick out observations with only certain sites
     """
     tlists   = obs.tlist()
-    mask     = [req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
-                for tlist in tlists]
+    mask     = np.array([req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
+                         for tlist in tlists])
     out      = obs.copy()
     out.data = [] if len(tlists[mask]) == 0 else np.concatenate(tlists[mask])
     return out
