@@ -66,7 +66,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
 
     if caltable:
         allsites = obs.tarr['site']
-        caldict = scans_cal[0]
+        caldict = {k:v.reshape(1) for k,v in scans_cal[0].items()}
         for i in range(1,len(scans_cal)):
             row = scans_cal[i]
             if len(row) == 0:
