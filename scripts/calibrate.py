@@ -114,7 +114,10 @@ obs = obs.flag_anomalous('snr', robust_nsigma_cut=3.0)
 # Rescale noise if needed
 if args.rescl:
     noise_scale_factor = obs.estimate_noise_rescale_factor()
-    obs = obs.rescale_noise(noise_scale_factor)
+    if np.isnan(noise_scale_factor):
+        print("WARNING: failed to estimate noise scale factor; do not rescale")
+    else:
+        obs = obs.rescale_noise(noise_scale_factor)
 
 # Optional: A-priori calibrate by applying the caltable
 if args.caldir != None:
