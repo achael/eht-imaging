@@ -916,7 +916,7 @@ class Obsdata(object):
                 if print_std == True:
                     print(tri,np.std(s_list))
 
-        return np.median(std_list) if len(std_list) > 0 else 1.0
+        return np.median(std_list)
 
     def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
 
