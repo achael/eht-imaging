@@ -119,6 +119,7 @@ class Obsdata(object):
                      # Reverse the baseline in the right order for uvfits:
                      if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):
                         (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
+                        (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
                         dat['u'] = -dat['u']
                         dat['v'] = -dat['v']
                         dat['vis'] = np.conj(dat['vis'])
