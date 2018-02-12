@@ -22,6 +22,12 @@ from ehtim.observing.obs_helpers import *
 
 import scipy
 
+def relaxed_interp1d(x, y, **kwargs):
+    if len(x) == 1:
+        x = np.array([-0.5, 0.5]) + x[0]
+        y = np.array([ 1.0, 1.0]) * y[0]
+    return scipy.interpolate.interp1d(x, y, **kwargs)
+
 ##################################################################################################
 # Caltable object
 ##################################################################################################
@@ -82,10 +88,10 @@ class Caltable(object):
         else:
             fill_value = extrapolate
 
-        try: 
+        try:
             x=caltablelist.__iter__
         except AttributeError: caltablelist = [caltablelist]
- 
+
         #self = ct
         #caltablelist = [ct2]
 
@@ -109,23 +115,23 @@ class Caltable(object):
                     time2 = data2[site]['time']
 
 
-                    rinterp1 = scipy.interpolate.interp1d(time1, data1[site]['rscale'],
-                                                          kind=interp, fill_value=fill_value,bounds_error=False)
-                    linterp1 = scipy.interpolate.interp1d(time1, data1[site]['lscale'],
-                                                          kind=interp, fill_value=fill_value,bounds_error=False)
+                    rinterp1 = relaxed_interp1d(time1, data1[site]['rscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
+                    linterp1 = relaxed_interp1d(time1, data1[site]['lscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
 
-                    rinterp2 = scipy.interpolate.interp1d(time2, data2[site]['rscale'],
-                                                          kind=interp, fill_value=fill_value,bounds_error=False)
-                    linterp2 = scipy.interpolate.interp1d(time2, data2[site]['lscale'],
-                                                          kind=interp, fill_value=fill_value,bounds_error=False)                                       
-              
-                    times_merge = np.unique(np.hstack((time1,time2)))   
+                    rinterp2 = relaxed_interp1d(time2, data2[site]['rscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
+                    linterp2 = relaxed_interp1d(time2, data2[site]['lscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
+
+                    times_merge = np.unique(np.hstack((time1,time2)))
 
                     #print 'site'
                     #print np.min(time1),np.max(time1)
                     #print np.min(time2),np.max(time2)
                     #print np.min(times_merge),np.max(times_merge)
- 
+
                     rscale_merge = rinterp1(times_merge) * rinterp2(times_merge)
                     lscale_merge = linterp1(times_merge) * linterp2(times_merge)
 
@@ -146,10 +152,10 @@ class Caltable(object):
             tkey1 =  {tarr1[i]['site']: i for i in range(len(tarr1))}
 
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1, source=self.source, mjd=self.mjd, timetype=self.timetype)
-        
+
         return new_caltable
-                    
-                
+
+
 
 
     def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol = False):
@@ -176,10 +182,10 @@ class Caltable(object):
                 continue
 
             time_mjd = self.data[site]['time']/24.0 + self.mjd
-            rinterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['rscale'],
-                                                       kind=interp, fill_value=fill_value,bounds_error=False)
-            linterp[site] = scipy.interpolate.interp1d(time_mjd, self.data[site]['lscale'],
-                                                       kind=interp, fill_value=fill_value,bounds_error=False)
+            rinterp[site] = relaxed_interp1d(time_mjd, self.data[site]['rscale'],
+                                             kind=interp, fill_value=fill_value,bounds_error=False)
+            linterp[site] = relaxed_interp1d(time_mjd, self.data[site]['lscale'],
+                                             kind=interp, fill_value=fill_value,bounds_error=False)
 
         bllist = obs.bllist()
         datatable = []
@@ -260,14 +266,14 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
             data = np.loadtxt(filename, dtype=bytes).astype(str)
         except IOError:
             continue
-            
+
         #print ("filename)
         datatable = []
 
         # ANDREW HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
-        onerowonly=False        
+        onerowonly=False
         try: data.shape[1]
-        except IndexError: 
+        except IndexError:
             data = data.reshape(1,len(data))
             onerowonly = True
         for row in data:

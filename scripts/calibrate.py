@@ -15,11 +15,14 @@ def pick(obs, req_sites):
     """
     Pick out observations with only certain sites
     """
-    tlists   = obs.tlist()
-    mask     = [req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
-                for tlist in tlists]
-    out      = obs.copy()
-    out.data = [] if len(tlists[mask]) == 0 else np.concatenate(tlists[mask])
+    tlists = obs.tlist()
+    mask   = np.array([req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
+                       for tlist in tlists])
+    out    = obs.copy()
+    if len(tlists[mask]) == 0:
+        out.data = np.array([])
+    else:
+        out.data = np.concatenate(tlists[mask])
     return out
 
 stepname='init'
@@ -111,7 +114,10 @@ obs = obs.flag_anomalous('snr', robust_nsigma_cut=3.0)
 # Rescale noise if needed
 if args.rescl:
     noise_scale_factor = obs.estimate_noise_rescale_factor()
-    obs = obs.rescale_noise(noise_scale_factor)
+    if np.isnan(noise_scale_factor):
+        print("WARNING: failed to estimate noise scale factor; do not rescale")
+    else:
+        obs = obs.rescale_noise(noise_scale_factor)
 
 # Optional: A-priori calibrate by applying the caltable
 if args.caldir != None:
@@ -136,20 +142,20 @@ if args.prune > 1:
 master_caltab = None
 
 # First get the ALMA and APEX calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '/step1'
+stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step1'
 sites = {'AA','AP'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '/step2'
+stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step2'
 sites = {'SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
-stepname = args.input[:-15] + '/step3'
+stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step3'
 sites = {'AA','AP','SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.1)
 
 # Save output
 obs_cal_avg.save_uvfits(args.output)
-master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '/master_caltab')
+master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '.'+args.pol+args.pol+'/master_caltab')
