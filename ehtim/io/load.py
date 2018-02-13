@@ -672,7 +672,8 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     full_nchannels = data['DATA'].shape[4]
     full_nifs = data['DATA'].shape[3]
     if channel == all:
-        channel = np.arange(0, full_nchannels, 1) 
+        channel = np.arange(0, full_nchannels, 1)
+        nchannels = full_nchannels 
     else:
         try: 
             nchannels = len(np.array(channel))
@@ -682,7 +683,8 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
             nchannels = len(np.array(channel))
 
     if IF == all: 
-        IF = np.arange(0, full_nifs, 1)  
+        IF = np.arange(0, full_nifs, 1)
+        nifs =  full_nifs  
     else:
         try: 
             nifs =  len(IF)

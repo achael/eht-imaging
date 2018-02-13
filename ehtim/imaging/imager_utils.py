@@ -1696,7 +1696,7 @@ def chisqdata_camp(Obsdata, Prior, mask, debias=True,snrcut=0):
     """
 
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
-    snrmask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
@@ -1717,7 +1717,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, debias=True, snrcut=0):
     """
 
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
-    snrmask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
@@ -1842,7 +1842,7 @@ def chisqdata_camp_fft(Obsdata, Prior, fft_pad_factor=2,
     """Return the closure phases, sigmas, uv points, and image info
     """
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
-    mask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
@@ -1869,7 +1869,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_factor=2,
     """Return the closure phases, sigmas, uv points, and image info
     """
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
-    mask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
@@ -1992,7 +1992,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, debias=True,snrcut=0,
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
-    mask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
@@ -2019,7 +2019,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, debias=True,snrcut=0,
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
-    mask = clamparr['camp']/clamparr['sigmaca'] > snrcut
+    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
