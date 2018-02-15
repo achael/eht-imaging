@@ -1,3 +1,21 @@
+# load.py
+# functions to load observation & image data from files
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -382,7 +400,7 @@ def load_array_txt(filename, ephemdir='ephemeris'):
     for line in tdataout:
         if np.all(np.array([line['x'],line['y'],line['z']]) == (0.,0.,0.)):
             sitename = str(line['site'])
-            ephempath = path  + '/' + ephemdir + '/' + sitename #!AC TODO ephempath shouldn't always start with path
+            ephempath = path  + '/' + ephemdir + '/' + sitename #TODO ephempath shouldn't always start with path
             try:
                 edata[sitename] = np.loadtxt(ephempath, dtype=bytes, comments='#', delimiter='/').astype(str)
                 print('loaded spacecraft ephemeris %s' % ephempath)
@@ -527,12 +545,12 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
             dec = np.sign(float(x[0])) * (abs(float(x[0])) + float(x[1])/60.0 + float(x[2])/3600.0)
         elif line[0] == 'Corr_int_time':
             tint = float(line[2])
-        elif line[0] == 'Corr_chan_bw':  #!AC TODO what if multiple channels?
+        elif line[0] == 'Corr_chan_bw':  #TODO what if multiple channels?
             bw = float(line[2]) * 1e6 #in MHz
-        elif line[0] == 'Channel': #!AC TODO what if multiple scans with different params?
+        elif line[0] == 'Channel': #TODO what if multiple scans with different params?
             rf = float(line[2].split(':')[0]) * 1e6
         elif line[0] == 'Scan_start':
-            x = line[2].split(':') #!AC properly compute MJD!
+            x = line[2].split(':') #TODO properly compute MJD!
         elif line[0] == 'Endscan':
             stop=True
     f.close()
@@ -561,7 +579,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 
     datatable = np.array(datatable)
 
-    #!AC TODO qfile ufile and vfile must have exactly the same format as ifile: add some consistency check
+    #TODO qfile ufile and vfile must have exactly the same format as ifile: add some consistency check
     if not qfile==0:
         f = open(qfile)
         i = 0
@@ -596,7 +614,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
     return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)
 
 
-#!AC TODO can we save new telescope array terms and flags to uvfits and load them?
+#TODO can we save new telescope array terms and flags to uvfits and load them?
 def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, IF=all):
     """Load uvfits data from a uvfits file.
        To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R' or 'L'
@@ -613,13 +631,13 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     xyz = np.real(hdulist['AIPS AN'].data['STABXYZ'])
     try:
         sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
-        sefdl = np.real(hdulist['AIPS AN'].data['SEFD']) #!AC TODO add sefdl to uvfits?
+        sefdl = np.real(hdulist['AIPS AN'].data['SEFD']) #TODO add sefdl to uvfits?
     except KeyError:
         #print("Warning! no SEFD data in UVfits file")
         sefdr = np.zeros(len(tnames))
         sefdl = np.zeros(len(tnames))
 
-    #!AC TODO - get the *actual* values of these telescope parameters
+    #TODO - get the *actual* values of these telescope parameters
     fr_par = np.zeros(len(tnames))
     fr_el = np.zeros(len(tnames))
     fr_off = np.zeros(len(tnames))
@@ -938,7 +956,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
 
     datatable = np.array(datatable)
 
-    #!AC TODO get calibration flags from uvfits?
+    #TODO get calibration flags from uvfits?
     return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd, scantable=scantable)
 
 
@@ -974,7 +992,7 @@ def load_obs_oifits(filename, flux=1.0):
     bandpass = oidata.wavelength[list(oidata.wavelength.keys())[0]].eff_band
     frequency = C/wavelength
 
-    # !AC TODO: this result seems wrong...
+    #TODO: this result seems wrong...
     bw = np.mean(2*(np.sqrt( bandpass**2*frequency**2 + C**2) - C)/bandpass)
     rf = np.mean(frequency)
 
@@ -1034,7 +1052,7 @@ def load_obs_oifits(filename, flux=1.0):
     vvis = vvis.ravel()
     amperr = amperr.ravel()
 
-    #!AC TODO - check that we are properly using the error from the amplitude and phase
+    #TODO - check that we are properly using the error from the amplitude and phase
     # create data tables
     datatable = np.array([(time[i], tint[i], t1[i], t2[i], tau1[i], tau2[i], u[i], v[i],
                            flux*vis[i], qvis[i], uvis[i], vvis[i],

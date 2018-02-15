@@ -1,3 +1,21 @@
+# save.py
+# functions to save observation & image data from files
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import division
 from __future__ import print_function
 from builtins import range
@@ -290,9 +308,9 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     header['OBJECT'] = obs.source
     header['MJD'] = float(obs.mjd)
     header['BUNIT'] = 'JY'
-    header['VELREF'] = 3        # !AC TODO ??
+    header['VELREF'] = 3        # TODO ??
     header['ALTRPIX'] = 1.e0
-    header['TELESCOP'] = 'ALMA' # !AC TODO Can we change this field?
+    header['TELESCOP'] = 'ALMA' # TODO Can we change this field?
     header['INSTRUME'] = 'ALMA'
     header['CTYPE2'] = 'COMPLEX'
     header['CRVAL2'] = 1.e0
@@ -448,7 +466,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     col3 = fits.Column(name='NOSTA', format='1J', array=tnums)
     colfin = fits.Column(name='SEFD', format='1D', array=sefd)
 
-    #!AC TODO these antenna fields+header are questionable - look into them
+    #TODO these antenna fields+header are questionable - look into them
 
     col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
     col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
@@ -471,7 +489,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     head['EXTNAME'] = 'AIPS AN'
     head['EXTVER'] = 1
     head['RDATE'] = '2000-01-01T00:00:00.0'
-    head['GSTIA0'] = 114.38389781355     # !AC TODO ?? for jan 1 2000
+    head['GSTIA0'] = 114.38389781355     # TODO ?? for jan 1 2000
     head['UT1UTC'] = 0.e0
     head['DATUTC'] = 0.e0
     head['TIMESYS'] = 'UTC'
@@ -480,7 +498,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     head['FREQ']= obs.rf
     head['FREQID'] = 1
 
-    head['ARRNAM'] = 'ALMA'     #!AC TODO Can we change this field?
+    head['ARRNAM'] = 'ALMA'     # TODO Can we change this field?
     head['XYZHAND'] = 'RIGHT'
     head['ARRAYX'] = 0.e0
     head['ARRAYY'] = 0.e0

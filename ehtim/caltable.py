@@ -1,3 +1,21 @@
+# caltable.py
+# a calibration table class
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -95,14 +113,15 @@ class Caltable(object):
         #self = ct
         #caltablelist = [ct2]
 
-        tarr1 = self.tarr.copy() #TODO do we need explicit copy?
+        tarr1 = self.tarr.copy() 
         tkey1 = self.tkey.copy()
         data1 = self.data.copy()
         for caltable in caltablelist:
-            #TODO check metadata!#
-            #ARE THEY ALL REFERENCED TO SAME MJD???#
 
-            tarr2 = caltable.tarr.copy() #TODO do we need explicit copy?
+            #TODO check metadata!
+            #TODO ARE THEY ALL REFERENCED TO SAME MJD???
+
+            tarr2 = caltable.tarr.copy() 
             tkey2 = caltable.tkey.copy()
             data2 = caltable.data.copy()
 
@@ -270,19 +289,19 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
         #print ("filename)
         datatable = []
 
-        # ANDREW HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
-        onerowonly=False
-        try: data.shape[1]
-        except IndexError:
-            data = data.reshape(1,len(data))
-            onerowonly = True
+        # TODO hacky way to make it work with only one entry
+#        onerowonly=False
+#        try: data.shape[1]
+#        except IndexError:
+#            data = data.reshape(1,len(data))
+#            onerowonly = True
         for row in data:
 
             time = (float(row[0]) - obs.mjd) * 24.0 # time is given in mjd
 
-             # Maciek's old convention had a square root
- #           rscale = np.sqrt(float(row[1])) # r
- #           lscale = np.sqrt(float(row[2])) # l
+            # Maciek's old convention had a square root
+            #rscale = np.sqrt(float(row[1])) # r
+            #lscale = np.sqrt(float(row[2])) # l
 
             if len(row) == 3:
                 rscale = float(row[1])
@@ -296,7 +315,6 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
                 rscale = rscale**.5
                 lscale = lscale**.5
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
-            #ANDREW HACKY WAY TO MAKE IT WORK WITH ONLY ONE ENTRY
             #if onerowonly:
             #    datatable.append(np.array((1.1*time, rscale, lscale), dtype=DTCAL))
 

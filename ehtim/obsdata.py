@@ -1,3 +1,22 @@
+# obsdata.py
+# a interferometric observation class
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -775,7 +794,7 @@ class Obsdata(object):
         return np.array((fwhm_maj, fwhm_min, theta))
 
     def dirtyimage(self, npix, fov, pulse=PULSE_DEFAULT):
-        #TODO ANDREW is this right?
+
         """Make the observation dirty image (direct Fourier transform).
 
            Args:
@@ -798,6 +817,7 @@ class Obsdata(object):
         xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
 
         # Take the DFTS
+        #TODO verify if is this right?
         # Shouldn't need to real about conjugate baselines b/c unpack does not return them
         im  = np.array([[np.mean(np.real(vis)*np.cos(2*np.pi*(i*u + j*v)) -
                                  np.imag(vis)*np.sin(2*np.pi*(i*u + j*v)))
@@ -1090,7 +1110,7 @@ class Obsdata(object):
         return obsdeblur
 
     def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
-        #TODO this fit doesn't work very well!
+
         """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.
 
            Args:
@@ -1101,6 +1121,7 @@ class Obsdata(object):
                 (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
         """
 
+        #TODO this fit doesn't work very well!
         vis = self.data['vis']
         u = self.data['u']
         v = self.data['v']
