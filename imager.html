@@ -168,7 +168,11 @@
 <span id="imager"></span><h1>Stokes I Imager<a class="headerlink" href="#stokes-i-imager" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="ehtim.imaging.imager_utils.imager_func">
+<<<<<<< HEAD
 <code class="descclassname">ehtim.imaging.imager_utils.</code><code class="descname">imager_func</code><span class="sig-paren">(</span><em>Obsdata</em>, <em>InitIm</em>, <em>Prior</em>, <em>flux</em>, <em>d1='vis'</em>, <em>d2=False</em>, <em>s1='simple'</em>, <em>s2=False</em>, <em>alpha_s1=1</em>, <em>alpha_s2=1</em>, <em>alpha_d1=100</em>, <em>alpha_d2=100</em>, <em>alpha_flux=500</em>, <em>alpha_cm=500</em>, <em>ttype='direct'</em>, <em>fft_pad_factor=2</em>, <em>fft_interp=3</em>, <em>grid_prad=2</em>, <em>grid_conv='gaussian'</em>, <em>clipfloor=0.0</em>, <em>grads=True</em>, <em>logim=True</em>, <em>debias=True</em>, <em>snrcut=0</em>, <em>maxit=100</em>, <em>stop=1e-10</em>, <em>ipynb=False</em>, <em>show_updates=True</em>, <em>print_objfunc=False</em>, <em>norm_init=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descclassname">ehtim.imaging.imager_utils.</code><code class="descname">imager_func</code><span class="sig-paren">(</span><em>Obsdata</em>, <em>InitIm</em>, <em>Prior</em>, <em>flux</em>, <em>d1='vis'</em>, <em>d2=False</em>, <em>s1='simple'</em>, <em>s2=False</em>, <em>alpha_s1=1</em>, <em>alpha_s2=1</em>, <em>alpha_d1=100</em>, <em>alpha_d2=100</em>, <em>alpha_flux=500</em>, <em>alpha_cm=500</em>, <em>ttype='direct'</em>, <em>fft_pad_frac=2</em>, <em>fft_interp=3</em>, <em>grid_prad=2</em>, <em>grid_conv='gaussian'</em>, <em>clipfloor=0.0</em>, <em>grads=True</em>, <em>logim=True</em>, <em>maxit=100</em>, <em>stop=1e-10</em>, <em>ipynb=False</em>, <em>show_updates=True</em>, <em>print_objfunc=False</em>, <em>norm_init=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Run a general interferometric imager.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -176,8 +180,13 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>Obsdata</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The Obsdata object with VLBI data</li>
+<<<<<<< HEAD
 <li><strong>InitIm</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; The Image object with the initial image for the minimization</li>
 <li><strong>Prior</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; The Image object with the prior image</li>
+=======
+<li><strong>Prior</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; The Image object with the prior image</li>
+<li><strong>InitIm</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; The Image object with the initial image for the minimization</li>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The total flux of the output image in Jy</li>
 <li><strong>d1</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The first data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;, &#8216;logcamp&#8217;</li>
 <li><strong>d2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The second data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;, &#8216;logcamp&#8217;</li>
@@ -189,8 +198,13 @@
 <li><strong>alpha_s2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The second regularizer term weighting</li>
 <li><strong>alpha_flux</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The weighting for the total flux constraint</li>
 <li><strong>alpha_cm</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The weighting for the center of mass constraint</li>
+<<<<<<< HEAD
 <li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The Fourier transform type; options are &#8216;fast&#8217;, &#8216;direct&#8217;, &#8216;nfft&#8217;</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The FFT will pre-pad the image by this factor x the original size</li>
+=======
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The Fourier transform type; options are &#8216;fast&#8217; and &#8216;direct&#8217;</li>
+<li><strong>fft_pad_frac</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The FFT will pre-pad the image by this factor x the original size</li>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <li><strong>fft_interp</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Interpolation order for sampling the FFT</li>
 <li><strong>grid_conv</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The convolving function for gridding; options are &#8216;gaussian&#8217;, &#8216;pill&#8217;, and &#8216;cubic&#8217;</li>
 <li><strong>grid_prad</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The pixel radius for the convolving function in gridding for FFTs</li>
@@ -201,7 +215,10 @@
 <li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; The convergence criterion</li>
 <li><strong>show_updates</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, displays the progress of the minimizer</li>
 <li><strong>ipynb</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, adjusts the plotting for the ipython/jupyter notebook</li>
+<<<<<<< HEAD
 <li><strong>print_objfunc</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True,  prints current data and regularizer terms and exits</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -217,7 +234,11 @@
 
 <span class="target" id="module-ehtim.imager"></span><dl class="class">
 <dt id="ehtim.imager.Imager">
+<<<<<<< HEAD
 <em class="property">class </em><code class="descclassname">ehtim.imager.</code><code class="descname">Imager</code><span class="sig-paren">(</span><em>obsdata</em>, <em>init_im</em>, <em>prior_im=None</em>, <em>flux=None</em>, <em>clipfloor=0.0</em>, <em>maxit=50</em>, <em>transform='log'</em>, <em>ttype='fast'</em>, <em>data_term={'vis': 100}</em>, <em>reg_term={'simple': 1}</em>, <em>scattering_model=None</em>, <em>alpha_phi=10000.0</em>, <em>systematic_noise=0.0</em>, <em>fft_pad_factor=2</em>, <em>fft_interp_order=3</em>, <em>fft_conv_func='gaussian'</em>, <em>fft_gridder_prad=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager" title="Permalink to this definition">¶</a></dt>
+=======
+<em class="property">class </em><code class="descclassname">ehtim.imager.</code><code class="descname">Imager</code><span class="sig-paren">(</span><em>obsdata</em>, <em>init_im</em>, <em>prior_im=None</em>, <em>flux=None</em>, <em>clipfloor=0.0</em>, <em>maxit=50</em>, <em>transform='log'</em>, <em>data_term={'vis': 100}</em>, <em>reg_term={'simple': 1}</em>, <em>scattering_model=None</em>, <em>alpha_phi=10000.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>A general interferometric imager.</p>
 <dl class="method">
 <dt id="ehtim.imager.Imager.check_limits">
@@ -360,24 +381,30 @@ Returns the estimated unscattered image.</p>
 </dd></dl>
 
 <dl class="method">
+<<<<<<< HEAD
 <dt id="ehtim.imager.Imager.out_epsilon_last">
 <code class="descname">out_epsilon_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_epsilon_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.out_epsilon_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return last result with scattering.</p>
 </dd></dl>
 
 <dl class="method">
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dt id="ehtim.imager.Imager.out_last">
 <code class="descname">out_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.out_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return last result.</p>
 </dd></dl>
 
 <dl class="method">
+<<<<<<< HEAD
 <dt id="ehtim.imager.Imager.out_scattered_last">
 <code class="descname">out_scattered_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_scattered_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.out_scattered_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return last result with scattering.</p>
 </dd></dl>
 
 <dl class="method">
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dt id="ehtim.imager.Imager.prior_last">
 <code class="descname">prior_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.prior_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.prior_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return last used prior image.</p>
@@ -401,12 +428,15 @@ Returns the estimated unscattered image.</p>
 <dd><p>Return last image transfrom used.</p>
 </dd></dl>
 
+<<<<<<< HEAD
 <dl class="method">
 <dt id="ehtim.imager.Imager.ttype_last">
 <code class="descname">ttype_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.ttype_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.ttype_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return last fourier transform type used.</p>
 </dd></dl>
 
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </dd></dl>
 
 </div>

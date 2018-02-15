@@ -218,9 +218,15 @@ The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) 
 </dd></dl>
 
 <dl class="attribute">
+<<<<<<< HEAD
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha">
 <code class="descname">scatt_alpha</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> &#8211; The power-law index of the phase fluctuations (Kolmogorov is 5/3).</p>
+=======
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG">
+<code class="descname">POS_ANG</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.POS_ANG" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The position angle of the major axis of the scattering.</p>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </dd></dl>
 
 <dl class="attribute">
@@ -236,6 +242,7 @@ The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) 
 </dd></dl>
 
 <dl class="attribute">
+<<<<<<< HEAD
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel.theta_maj_mas_ref">
 <code class="descname">theta_maj_mas_ref</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.theta_maj_mas_ref" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> &#8211; FWHM in mas of the major axis angular broadening at the specified reference wavelength.</p>
@@ -256,19 +263,37 @@ The ensemble-average image size is proportional to wavelength^(1+2/scatt_alpha) 
 <dl class="attribute">
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference_cm">
 <code class="descname">wavelength_reference_cm</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference_cm" title="Permalink to this definition">¶</a></dt>
+=======
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference">
+<code class="descname">wavelength_reference</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.wavelength_reference" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p><em>float</em> &#8211; The reference wavelength for the scattering model in cm.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel.r_in">
 <code class="descname">r_in</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_in" title="Permalink to this definition">¶</a></dt>
+<<<<<<< HEAD
 <dd><p><em>float</em> &#8211; The inner scale of the scattering screen in cm.</p>
+=======
+<dd><p><em>float</em> &#8211; The inner scale of the scattering screen</p>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.scattering.stochastic_optics.ScatteringModel.r_out">
 <code class="descname">r_out</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.r_out" title="Permalink to this definition">¶</a></dt>
+<<<<<<< HEAD
 <dd><p><em>float</em> &#8211; The outer scale of the scattering screen in cm.</p>
+=======
+<dd><p><em>float</em> &#8211; The outer scale of the scattering screen</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha">
+<code class="descname">scatt_alpha</code><a class="headerlink" href="#ehtim.scattering.stochastic_optics.ScatteringModel.scatt_alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The power-law index of the phase fluctuations (Kolmogorov is 5/3).</p>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </dd></dl>
 
 <dl class="attribute">
@@ -465,7 +490,10 @@ Note: an odd image dimension is required!</p>
 <li><strong>ea_ker</strong> (<em>2D ndarray</em>) &#8211; The used can optionally pass a precomputed array of the ensemble-average blurring kernel.</li>
 <li><strong>sqrtQ</strong> (<em>2D ndarray</em>) &#8211; The used can optionally pass a precomputed array of the square root of the power spectrum.</li>
 <li><strong>Linearized_Approximation</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, uses a linearized approximation for the scattering (Eq. 10 of Johnson &amp; Narayan 2016). If False, uses Eq. 9 of that paper.</li>
+<<<<<<< HEAD
 <li><strong>DisplayImage</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, show a plot of the unscattered, ensemble-average, and scattered images as well as the phase screen.</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <li><strong>Force_Positivity</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, eliminates negative flux from the scattered image from the linearized approximation.</li>
 <li><strong>Return_Image_List</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, returns a list of the scattered frames. If False, returns a movie object.</li>
 </ul>

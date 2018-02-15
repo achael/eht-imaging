@@ -281,27 +281,46 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">qvec</span> <span class="k">for</span> <span class="n">qvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">]</span>
         <span class="k">return</span></div>
 
+<<<<<<< HEAD
 <div class="viewcode-block" id="Movie.observe_same_nonoise"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same_nonoise">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s2">&quot;direct&quot;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+=======
+<div class="viewcode-block" id="Movie.observe_same_nonoise"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same_nonoise">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="s2">&quot;direct&quot;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="sd">&quot;&quot;&quot;Observe the movie on the same baselines as an existing observation object without adding noise.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): the existing observation with  baselines where the image FT will be sampled</span>
+<<<<<<< HEAD
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 <span class="sd">               ttype (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 <span class="sd">               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT</span>
 <span class="sd">               repeat (bool): if True, repeat the movie to fill up the observation interval</span>
+=======
+<span class="sd">               ft (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT</span>
+<span class="sd">               repeat (bool): if True, repeat the movie to fill up the observation interval</span>
+<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="sd">           Returns:</span>
 <span class="sd">               Obsdata: an observation object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
+<<<<<<< HEAD
         <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">observe_movie_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">pad_frac</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">)</span>
+=======
+        <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">observe_movie_nonoise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="s2">&quot;direct&quot;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">)</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="n">obs_no_noise</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span>
                                              <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">obs_no_noise</span></div>
 
+<<<<<<< HEAD
 <div class="viewcode-block" id="Movie.observe_same"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obsin</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+=======
+<div class="viewcode-block" id="Movie.observe_same"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obsin</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
                            <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                            <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                            <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -310,7 +329,11 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">               obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled</span>
+<<<<<<< HEAD
 <span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+=======
+<span class="sd">               ft (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="sd">               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT</span>
 <span class="sd">               repeat (bool): if True, repeat the movie to fill up the observation interval</span>
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
@@ -333,7 +356,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Producing clean visibilities from movie . . . &quot;</span><span class="p">)</span>
+<<<<<<< HEAD
         <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same_nonoise</span><span class="p">(</span><span class="n">obsin</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="n">pad_frac</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">)</span>
+=======
+        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same_nonoise</span><span class="p">(</span><span class="n">obsin</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">ft</span><span class="o">=</span><span class="n">ft</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="n">pad_frac</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">)</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="c1"># Jones Matrix Corruption &amp; Calibration</span>
         <span class="k">if</span> <span class="n">jones</span><span class="p">:</span>
@@ -349,7 +376,13 @@
                                              <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">inv_jones</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Applying a priori calibration with estimated Jones matrices . . . &quot;</span><span class="p">)</span>
+<<<<<<< HEAD
                 <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">apply_jones_inverse</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">)</span>
+=======
+                <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">apply_jones_inverse</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span>
+                                                     <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span>
+                                                     <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">)</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
                 <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span>
                                                  <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span>
@@ -374,10 +407,17 @@
 
 <div class="viewcode-block" id="Movie.observe"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">elevmin</span><span class="o">=</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
+<<<<<<< HEAD
                       <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                       <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                       <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">,</span> <span class="n">fix_theta_GMST</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+=======
+                      <span class="n">ft</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">pad_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">):</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="sd">&quot;&quot;&quot;Generate baselines from an array object and observe the movie.</span>
 
@@ -393,7 +433,11 @@
 <span class="sd">               timetype (str): how to interpret tstart and tstop; either &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">               elevmin (float): station minimum elevation in degrees</span>
 <span class="sd">               elevmax (float): station maximum elevation in degrees</span>
+<<<<<<< HEAD
 <span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+=======
+<span class="sd">               ft (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="sd">               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT</span>
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 <span class="sd">               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point</span>
@@ -419,7 +463,11 @@
         <span class="k">if</span> <span class="n">mjd</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">mjd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span>
 
+<<<<<<< HEAD
         <span class="n">obs</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">fix_theta_GMST</span> <span class="o">=</span> <span class="n">fix_theta_GMST</span><span class="p">)</span>
+=======
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">)</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="c1"># Observe on the same baselines as the empty observation and add noise</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span>
@@ -433,7 +481,11 @@
                           <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                           <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                           <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<<<<<<< HEAD
                           <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">,</span> <span class="n">fix_theta_GMST</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+=======
+                          <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">):</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="sd">&quot;&quot;&quot;Generate baselines from a vex file and observes the movie.</span>
 
@@ -499,11 +551,19 @@
             <span class="n">obs</span> <span class="o">=</span> <span class="n">subarray</span><span class="o">.</span><span class="n">obsdata</span><span class="p">(</span><span class="n">movie</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">movie</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">movie</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">vex</span><span class="o">.</span><span class="n">bw_hz</span><span class="p">,</span> <span class="n">t_int</span><span class="p">,</span> <span class="n">t_int</span><span class="p">,</span>
                                        <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">],</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;start_hr&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;scan&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;scan_sec&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">3600.0</span> <span class="o">-</span> <span class="n">EP</span><span class="p">,</span>
                                        <span class="n">mjd</span><span class="o">=</span><span class="n">vex</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="n">i_scan</span><span class="p">][</span><span class="s1">&#39;mjd_floor&#39;</span><span class="p">],</span>
+<<<<<<< HEAD
                                        <span class="n">elevmin</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="mf">89.99</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">fix_theta_GMST</span> <span class="o">=</span> <span class="n">fix_theta_GMST</span><span class="p">)</span>
             <span class="n">obs_List</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs_List</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Movie has no overlap with the vex file&quot;</span><span class="p">)</span>
+=======
+                                       <span class="n">elevmin</span><span class="o">=.</span><span class="mi">01</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="mf">89.99</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">)</span>
+            <span class="n">obs_List</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs_List</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Movie has no overlap with the vex file and source=&quot;</span> <span class="o">+</span> <span class="n">source</span><span class="p">)</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="n">obs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">merge_obs</span><span class="p">(</span><span class="n">obs_List</span><span class="p">)</span>
 
@@ -726,12 +786,21 @@
         <span class="c1"># Look for Stokes Q, U, V</span>
         <span class="n">qarr</span> <span class="o">=</span> <span class="n">uarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">imarr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
+<<<<<<< HEAD
             <span class="n">qarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
             <span class="n">uarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
             <span class="n">qlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qarr</span><span class="p">)</span>
             <span class="n">ulist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uarr</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
             <span class="n">varr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+=======
+            <span class="n">qarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+            <span class="n">uarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+            <span class="n">qlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qarr</span><span class="p">)</span>
+            <span class="n">ulist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">uarr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span>
+            <span class="n">varr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">(</span><span class="n">ydim0</span><span class="p">,</span> <span class="n">xdim0</span><span class="p">)</span>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
             <span class="n">vlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">varr</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">framedur</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
@@ -750,10 +819,13 @@
 <span class="c1"># Movie creation and export functions</span>
 <span class="c1">##################################################################################################</span>
 
+<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">load_hdf5</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">framedur_sec</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">psize</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="mf">17.761122472222223</span><span class="p">,</span> <span class="n">dec</span><span class="o">=-</span><span class="mf">28.992189444444445</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="mf">230e9</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="n">load_movie_hdf5</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">framedur_sec</span><span class="o">=</span><span class="n">framedur_sec</span><span class="p">,</span> <span class="n">psize</span><span class="o">=</span><span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="o">=</span><span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">rf</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">)</span>
 
 
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../movie.html#ehtim.movie.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">basename</span><span class="p">,</span> <span class="n">nframes</span><span class="p">,</span> <span class="n">framedur</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Read in a movie from text files and create a Movie object.</span>
 

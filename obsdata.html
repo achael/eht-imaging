@@ -168,7 +168,11 @@
 <span id="id1"></span><h1>Obsdata<a class="headerlink" href="#obsdata" title="Permalink to this headline">¶</a></h1>
 <span class="target" id="module-ehtim.obsdata"></span><dl class="class">
 <dt id="ehtim.obsdata.Obsdata">
+<<<<<<< HEAD
 <em class="property">class </em><code class="descclassname">ehtim.obsdata.</code><code class="descname">Obsdata</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatable</em>, <em>tarr</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>opacitycal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>timetype='UTC'</em>, <em>scantable=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata" title="Permalink to this definition">¶</a></dt>
+=======
+<em class="property">class </em><code class="descclassname">ehtim.obsdata.</code><code class="descname">Obsdata</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatable</em>, <em>tarr</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>opacitycal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>timetype='UTC'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</p>
 <dl class="attribute">
 <dt id="ehtim.obsdata.Obsdata.source">
@@ -275,7 +279,11 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.avg_coherent">
 <code class="descname">avg_coherent</code><span class="sig-paren">(</span><em>inttime</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.avg_coherent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.avg_coherent" title="Permalink to this definition">¶</a></dt>
+<<<<<<< HEAD
 <dd><p>Coherently average data along u,v tracks in chunks of length inttime (sec).</p>
+=======
+<dd><p>Coherently average data along u,v tracs in chunks of length inttime (sec).</p>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -292,17 +300,27 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.bispectra">
+<<<<<<< HEAD
 <code class="descname">bispectra</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>mode='time'</em>, <em>count='min'</em>, <em>timetype=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.bispectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.bispectra" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">bispectra</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>mode='time'</em>, <em>count='min'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.bispectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.bispectra" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Return a recarray of the equal time bispectra.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<<<<<<< HEAD
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;, &#8216;qvis&#8217;, &#8216;uvis&#8217;,&#8217;vvis&#8217;,&#8217;rrvis&#8217;,&#8217;lrvis&#8217;,&#8217;rlvis&#8217;,&#8217;llvis&#8217;) from which to assemble bispectra</li>
 <li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return phases in a list of equal time arrays, if &#8216;all&#8217;, return all phases in a single array</li>
 <li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of phases, if &#8216;max&#8217; return all closure phases up to reordering</li>
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+=======
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra</li>
+<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return phases in a list of equal time arrays, if &#8216;all&#8217;, return all phases in a single array</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of phases, if &#8216;max&#8217; return all closure phases up to reordering</li>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -318,7 +336,11 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.bispectra_tri">
+<<<<<<< HEAD
 <code class="descname">bispectra_tri</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>timetype=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.bispectra_tri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.bispectra_tri" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">bispectra_tri</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.bispectra_tri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.bispectra_tri" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Return complex bispectrum  over time on a triangle (1-2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -329,7 +351,10 @@
 <li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; station 2 name</li>
 <li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; station 3 name</li>
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble closure phases</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -363,7 +388,11 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.c_amplitudes">
+<<<<<<< HEAD
 <code class="descname">c_amplitudes</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>mode='time'</em>, <em>count='min'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>debias_type='old'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.c_amplitudes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.c_amplitudes" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">c_amplitudes</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>mode='time'</em>, <em>count='min'</em>, <em>ctype='camp'</em>, <em>debias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.c_amplitudes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.c_amplitudes" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Return a recarray of the equal time closure amplitudes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -375,7 +404,10 @@
 <li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return amplitudes in a list of equal time arrays, if &#8216;all&#8217;, return all amplitudes in a single array</li>
 <li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of amplitudes, if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -391,7 +423,11 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.c_phases">
+<<<<<<< HEAD
 <code class="descname">c_phases</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>mode='time'</em>, <em>count='min'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.c_phases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.c_phases" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">c_phases</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>mode='time'</em>, <em>count='min'</em>, <em>ang_unit='deg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.c_phases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.c_phases" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Return a recarray of the equal time closure phases.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -402,7 +438,10 @@
 <li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return phases in a list of equal time arrays, if &#8216;all&#8217;, return all phases in a single array</li>
 <li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of phases, if &#8216;max&#8217; return all closure phases up to reordering</li>
 <li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;deg&#8217;, return closure phases in degrees, else return in radians</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -418,7 +457,11 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.camp_quad">
+<<<<<<< HEAD
 <code class="descname">camp_quad</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>camps=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.camp_quad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.camp_quad" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">camp_quad</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.camp_quad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.camp_quad" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -432,8 +475,11 @@
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble closure amplitudes</li>
 <li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
 <li><strong>camps</strong> &#8211; optionally pass in the camps so they don&#8217;t have to be recomputted each time</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -448,6 +494,7 @@
 </dd></dl>
 
 <dl class="method">
+<<<<<<< HEAD
 <dt id="ehtim.obsdata.Obsdata.chisq">
 <code class="descname">chisq</code><span class="sig-paren">(</span><em>im</em>, <em>dtype='vis'</em>, <em>ttype='direct'</em>, <em>mask=[]</em>, <em>fft_pad_factor=2</em>, <em>systematic_noise=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.chisq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.chisq" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give the reduced chi^2 of the observation for the specified image and datatype.</p>
@@ -476,6 +523,8 @@
 </dd></dl>
 
 <dl class="method">
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dt id="ehtim.obsdata.Obsdata.cleanbeam">
 <code class="descname">cleanbeam</code><span class="sig-paren">(</span><em>npix</em>, <em>fov</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.cleanbeam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.cleanbeam" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make an image of the observation clean beam.</p>
@@ -519,7 +568,11 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.cphase_tri">
+<<<<<<< HEAD
 <code class="descname">cphase_tri</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>cphases=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.cphase_tri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.cphase_tri" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">cphase_tri</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ang_unit='deg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.cphase_tri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.cphase_tri" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Return closure phase  over time on a triangle (1-2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -531,8 +584,11 @@
 <li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; station 3 name</li>
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble closure phases</li>
 <li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If &#8216;deg&#8217;, return closure phases in degrees, else return in radians</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
 <li><strong>cphases</strong> &#8211; optionally pass in the cphases so they are not recomputed if you are plotting multiple triangles</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -566,7 +622,11 @@
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.deblur">
 <code class="descname">deblur</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.deblur"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.deblur" title="Permalink to this definition">¶</a></dt>
+<<<<<<< HEAD
 <dd><p>Deblur the observation obs by dividing by the Sgr A* redscattering kernel.</p>
+=======
+<dd><p>Deblur the observation obs by dividing by the Sgr A* scattering kernel.</p>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <p>Args:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -631,6 +691,7 @@
 </dd></dl>
 
 <dl class="method">
+<<<<<<< HEAD
 <dt id="ehtim.obsdata.Obsdata.estimate_noise_rescale_factor">
 <code class="descname">estimate_noise_rescale_factor</code><span class="sig-paren">(</span><em>max_diff_sec=0.0</em>, <em>min_num=10</em>, <em>print_std=False</em>, <em>count='max'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.estimate_noise_rescale_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.estimate_noise_rescale_factor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimate a singe, constant rescaling factor for thermal noise across all baselines, times, and polarizations.
@@ -664,6 +725,11 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 <dt id="ehtim.obsdata.Obsdata.fit_beam">
 <code class="descname">fit_beam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.fit_beam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.fit_beam" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit a Gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).</p>
+=======
+<dt id="ehtim.obsdata.Obsdata.fit_beam">
+<code class="descname">fit_beam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.fit_beam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.fit_beam" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit a gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).</p>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -703,13 +769,18 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.get_camp_curves">
+<<<<<<< HEAD
 <code class="descname">get_camp_curves</code><span class="sig-paren">(</span><em>quads</em>, <em>timetype=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.get_camp_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.get_camp_curves" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">get_camp_curves</code><span class="sig-paren">(</span><em>quads</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.get_camp_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.get_camp_curves" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Get closure amplitude over time on all requested quadrangeles
 (1-2)(3-4)/(1-4)(2-3)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
+<<<<<<< HEAD
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>quads</strong> (<em>list</em>) &#8211; list of station quadrangles</li>
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
@@ -721,6 +792,13 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(list)</p>
 </td>
+=======
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>quads</strong> (<em>list</em>) &#8211; list of station quadrangles</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of closure amplitude recarrays over time</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(list)</td>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </tr>
 </tbody>
 </table>
@@ -728,12 +806,17 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.get_cphase_curves">
+<<<<<<< HEAD
 <code class="descname">get_cphase_curves</code><span class="sig-paren">(</span><em>tris</em>, <em>timetype=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.get_cphase_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.get_cphase_curves" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">get_cphase_curves</code><span class="sig-paren">(</span><em>tris</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.get_cphase_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.get_cphase_curves" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Get closure phase cuves over time on all requested triangles</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
+<<<<<<< HEAD
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>tris</strong> (<em>list</em>) &#8211; list of station triangles</li>
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
@@ -745,6 +828,13 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(list)</p>
 </td>
+=======
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tris</strong> (<em>list</em>) &#8211; list of station triangles</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of closure phase recarrays over time</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(list)</td>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </tr>
 </tbody>
 </table>
@@ -752,7 +842,11 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_bl">
+<<<<<<< HEAD
 <code class="descname">plot_bl</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>field</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>ang_unit='deg'</em>, <em>debias=True</em>, <em>timetype=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_bl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_bl" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">plot_bl</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>field</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>ang_unit='deg'</em>, <em>debias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_bl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_bl" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Plot a field over time on a baseline site1-site2.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -785,7 +879,11 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_camp">
+<<<<<<< HEAD
 <code class="descname">plot_camp</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>camps=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_camp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_camp" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">plot_camp</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_camp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_camp" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -799,7 +897,10 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble closure amplitudes</li>
 <li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <li><strong>rangex</strong> (<em>list</em>) &#8211; [xmin, xmax] x-axis (time) limits</li>
 <li><strong>rangey</strong> (<em>list</em>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
 <li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
@@ -822,7 +923,11 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_cphase">
+<<<<<<< HEAD
 <code class="descname">plot_cphase</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>cphases=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_cphase" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">plot_cphase</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>ang_unit='deg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_cphase" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Plot closure phase over time on a triangle (1-2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -834,7 +939,10 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 <li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; station 3 name</li>
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra</li>
 <li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <li><strong>rangex</strong> (<em>list</em>) &#8211; [xmin, xmax] x-axis (time) limits</li>
 <li><strong>rangey</strong> (<em>list</em>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
 <li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
@@ -857,7 +965,11 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plotall">
+<<<<<<< HEAD
 <code class="descname">plotall</code><span class="sig-paren">(</span><em>field1</em>, <em>field2</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>conj=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>ang_unit='deg'</em>, <em>debias=True</em>, <em>export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plotall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plotall" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">plotall</code><span class="sig-paren">(</span><em>field1</em>, <em>field2</em>, <em>ebar=True</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>conj=False</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>ang_unit='deg'</em>, <em>debias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plotall"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plotall" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -889,6 +1001,7 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 </dd></dl>
 
 <dl class="method">
+<<<<<<< HEAD
 <dt id="ehtim.obsdata.Obsdata.recompute_uv">
 <code class="descname">recompute_uv</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.recompute_uv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.recompute_uv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Recompute u,v points using observation times and metadata</p>
@@ -906,6 +1019,8 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 </dd></dl>
 
 <dl class="method">
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dt id="ehtim.obsdata.Obsdata.res">
 <code class="descname">res</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.res"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.res" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the nominal resolution (1/longest baseline) of the observation in radians.</p>
@@ -923,6 +1038,7 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 </dd></dl>
 
 <dl class="method">
+<<<<<<< HEAD
 <dt id="ehtim.obsdata.Obsdata.rescale_noise">
 <code class="descname">rescale_noise</code><span class="sig-paren">(</span><em>noise_rescale_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.rescale_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.rescale_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rescale the thermal noise on all Stokes parameters by a constant factor.
@@ -942,6 +1058,8 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 </dd></dl>
 
 <dl class="method">
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dt id="ehtim.obsdata.Obsdata.save_oifits">
 <code class="descname">save_oifits</code><span class="sig-paren">(</span><em>fname</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_oifits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_oifits" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save visibility data to oifits. Polarization data is NOT saved.</p>
@@ -975,17 +1093,25 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.save_uvfits">
+<<<<<<< HEAD
 <code class="descname">save_uvfits</code><span class="sig-paren">(</span><em>fname</em>, <em>force_singlepol=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_uvfits" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">save_uvfits</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.save_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.save_uvfits" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Save visibility data to uvfits file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
+<<<<<<< HEAD
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to output text file</li>
 <li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8216;R&#8217; or &#8216;L&#8217;, will interpret stokes I field as &#8216;RR&#8217; or &#8216;LL&#8217; and save single pol.</li>
 </ul>
 </td>
+=======
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to output text file</td>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </tr>
 </tbody>
 </table>
@@ -1026,6 +1152,7 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 </dd></dl>
 
 <dl class="method">
+<<<<<<< HEAD
 <dt id="ehtim.obsdata.Obsdata.taper">
 <code class="descname">taper</code><span class="sig-paren">(</span><em>fwhm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.taper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.taper" title="Permalink to this definition">¶</a></dt>
 <dd><p>Taper the observation with a circular Gaussian kernel
@@ -1044,6 +1171,8 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 </dd></dl>
 
 <dl class="method">
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dt id="ehtim.obsdata.Obsdata.tlist">
 <code class="descname">tlist</code><span class="sig-paren">(</span><em>conj=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.tlist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.tlist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Group the data in a list of equal time observation datatables.</p>
@@ -1090,7 +1219,11 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.unpack_bl">
+<<<<<<< HEAD
 <code class="descname">unpack_bl</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>fields</em>, <em>ang_unit='deg'</em>, <em>debias=False</em>, <em>timetype=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.unpack_bl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.unpack_bl" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descname">unpack_bl</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>fields</em>, <em>ang_unit='deg'</em>, <em>debias=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.unpack_bl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.unpack_bl" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Unpack the data over time on the selected baseline site1-site2.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1102,7 +1235,10 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 <li><strong>fields</strong> (<em>list</em>) &#8211; list of unpacked quantities from available quantities in FIELDS</li>
 <li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
+<<<<<<< HEAD
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -1221,7 +1357,11 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 
 <dl class="function">
 <dt id="ehtim.obsdata.load_uvfits">
+<<<<<<< HEAD
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">load_uvfits</code><span class="sig-paren">(</span><em>fname</em>, <em>flipbl=False</em>, <em>force_singlepol=None</em>, <em>channel=&lt;built-in function all&gt;</em>, <em>IF=&lt;built-in function all&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_uvfits" title="Permalink to this definition">¶</a></dt>
+=======
+<code class="descclassname">ehtim.obsdata.</code><code class="descname">load_uvfits</code><span class="sig-paren">(</span><em>fname</em>, <em>flipbl=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_uvfits" title="Permalink to this definition">¶</a></dt>
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Load observation data from a uvfits file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1230,7 +1370,10 @@ This is useful for, e.g., AIPS data, which has a single constant factor missing 
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; path to input text file</li>
 <li><strong>flipbl</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; flip baseline phases if True.</li>
+<<<<<<< HEAD
 <li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; &#8216;R&#8217; or &#8216;L&#8217; to load only 1 polarization</li>
+=======
+>>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
