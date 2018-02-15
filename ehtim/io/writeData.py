@@ -1,3 +1,7 @@
+# writeData.py
+# functionto save observation to OIFITS
+# author: Katie Bouman
+
 from __future__ import division
 from __future__ import print_function
 from builtins import range

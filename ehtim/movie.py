@@ -1,3 +1,22 @@
+# movie.py
+# a interferometric movie class
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -16,6 +35,9 @@ import ehtim.io.load
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+###########################################################################################################################################
+#Movie object
+###########################################################################################################################################
 class Movie(object):
     """A polarimetric movie (in units of Jy/pixel).
 
@@ -192,7 +214,7 @@ class Movie(object):
                                                  #these are always set to True after inverse jones call
 
         # No Jones Matrices, Add noise the old way
-        # !AC There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
+        # TODO There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
         elif add_th_noise:
             print("Adding gain + phase errors to data and applying a priori calibration . . . ")
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
@@ -297,7 +319,7 @@ class Movie(object):
         """
 
         obs_List=[]
-        movie = self.copy() #!AC TODO costly??
+        movie = self.copy() 
 
         if synchronize_start:
             movie.mjd = vex.sched[0]['mjd_floor']

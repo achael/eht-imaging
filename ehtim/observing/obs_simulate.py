@@ -1,3 +1,21 @@
+# obs_simulate.py
+# functions to simulate interferometric observations
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -145,7 +163,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
            (Obsdata): an observation object
     """
 
-    #ANDREW TODO -- be careful with these imports!!
+    #TODO -- be careful with these imports!!
     #it may be redundant and all imports should go at the top
     from ehtim.obsdata import Obsdata 
 
@@ -273,7 +291,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
 
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))
 
-        #ANDREW TODO kernel size?? 
+        #TODO kernel size?? 
         nker = np.floor(np.min((im.xdim,im.ydim))/5)
         if (nker>50):
             nker = 50
@@ -491,7 +509,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
 
             npad = fft_pad_factor * np.max((mov.xdim, mov.ydim))
 
-            #ANDREW TODO kernel size?? 
+            #TODO kernel size?? 
             nker = np.floor(np.min((im.xdim,im.ydim))/5)
             if (nker>50):
                 nker = 50

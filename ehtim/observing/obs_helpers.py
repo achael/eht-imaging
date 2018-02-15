@@ -1,3 +1,21 @@
+# obs_helpers.py
+# helper functions for simulating and manipulating observations 
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from __future__ import division
 from builtins import str
 from builtins import map
@@ -36,7 +54,6 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     # Wavelength
     l = C/rf
 
-    #ANDREW TODO DOES THIS WORK
     if timetype=='GMST':
         time_sidereal = time
         time_utc = gmst_to_utc(time, mjd)
@@ -444,7 +461,7 @@ def blnoise(sefd1, sefd2, tint, bw):
        2-bit quantization is responsible for the 0.88 factor
     """
 
-    #!AC TODO Is the factor of sqrt(2) correct?
+    #TODO Is the factor of sqrt(2) correct?
     #noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
 
     noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
@@ -515,7 +532,7 @@ def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT):
        in this version, it puts the image centroid at the origin
     """
 
-    # !AC TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
+    # TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
     # Coordinate matrix for COM constraint
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
