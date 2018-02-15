@@ -7,7 +7,7 @@ def read(fname):
 if __name__ == "__main__":
    setup(
         name="ehtim",
-        version = "0.0.1",
+        version = "1.0.0",
 
         author = "Andrew Chael",
         author_email = "achael@cfa.harvard.edu",
