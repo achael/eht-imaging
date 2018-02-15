@@ -320,11 +320,7 @@
 
 <dl class="method">
 <dt id="ehtim.movie.Movie.observe">
-<<<<<<< HEAD
 <code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>repeat=False</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ttype='direct'</em>, <em>pad_frac=0.5</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em>, <em>fix_theta_GMST=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe" title="Permalink to this definition">¶</a></dt>
-=======
-<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>repeat=False</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ft='direct'</em>, <em>pad_frac=0.5</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe" title="Permalink to this definition">¶</a></dt>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Generate baselines from an array object and observe the movie.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -342,11 +338,7 @@
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; how to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
 <li><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; station minimum elevation in degrees</li>
 <li><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; station maximum elevation in degrees</li>
-<<<<<<< HEAD
 <li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
-=======
-<li><strong>ft</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <li><strong>pad_frac</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; zero pad the image so that pad_frac*shortest baseline is captured in FFT</li>
 <li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
 <li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
@@ -376,11 +368,7 @@
 
 <dl class="method">
 <dt id="ehtim.movie.Movie.observe_same">
-<<<<<<< HEAD
 <code class="descname">observe_same</code><span class="sig-paren">(</span><em>obsin</em>, <em>ttype='direct'</em>, <em>pad_frac=0.5</em>, <em>repeat=False</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same" title="Permalink to this definition">¶</a></dt>
-=======
-<code class="descname">observe_same</code><span class="sig-paren">(</span><em>obsin</em>, <em>ft='direct'</em>, <em>pad_frac=0.5</em>, <em>repeat=False</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same" title="Permalink to this definition">¶</a></dt>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Observe the image on the same baselines as an existing observation object and add noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -388,11 +376,7 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>obsin</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled</li>
-<<<<<<< HEAD
 <li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
-=======
-<li><strong>ft</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <li><strong>pad_frac</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; zero pad the image so that pad_frac*shortest baseline is captured in FFT</li>
 <li><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, repeat the movie to fill up the observation interval</li>
 <li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
@@ -423,11 +407,7 @@
 
 <dl class="method">
 <dt id="ehtim.movie.Movie.observe_same_nonoise">
-<<<<<<< HEAD
 <code class="descname">observe_same_nonoise</code><span class="sig-paren">(</span><em>obs</em>, <em>sgrscat=False</em>, <em>ttype='direct'</em>, <em>fft_pad_factor=True</em>, <em>repeat=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
-=======
-<code class="descname">observe_same_nonoise</code><span class="sig-paren">(</span><em>obs</em>, <em>ft='direct'</em>, <em>pad_frac=0.5</em>, <em>repeat=False</em>, <em>sgrscat=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Observe the movie on the same baselines as an existing observation object without adding noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -435,17 +415,10 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled</li>
-<<<<<<< HEAD
 <li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
 <li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
 <li><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, repeat the movie to fill up the observation interval</li>
-=======
-<li><strong>ft</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221;, use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
-<li><strong>pad_frac</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#float" title="(in Python v2.7)"><em>float</em></a>) &#8211; zero pad the image so that pad_frac*shortest baseline is captured in FFT</li>
-<li><strong>repeat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, repeat the movie to fill up the observation interval</li>
-<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 </ul>
 </td>
 </tr>
@@ -461,11 +434,7 @@
 
 <dl class="method">
 <dt id="ehtim.movie.Movie.observe_vex">
-<<<<<<< HEAD
 <code class="descname">observe_vex</code><span class="sig-paren">(</span><em>vex</em>, <em>source</em>, <em>synchronize_start=True</em>, <em>t_int=0.0</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em>, <em>fix_theta_GMST=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_vex" title="Permalink to this definition">¶</a></dt>
-=======
-<code class="descname">observe_vex</code><span class="sig-paren">(</span><em>vex</em>, <em>source</em>, <em>synchronize_start=True</em>, <em>t_int=0.0</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/movie.html#Movie.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.movie.Movie.observe_vex" title="Permalink to this definition">¶</a></dt>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <dd><p>Generate baselines from a vex file and observes the movie.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

@@ -184,10 +184,7 @@
 <span class="kn">import</span> <span class="nn">scipy.ndimage</span> <span class="k">as</span> <span class="nn">nd</span>
 <span class="kn">import</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">as</span> <span class="nn">filt</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<<<<<<< HEAD
 <span class="kn">from</span> <span class="nn">pynfft.nfft</span> <span class="k">import</span> <span class="n">NFFT</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="kn">import</span> <span class="nn">ehtim.image</span> <span class="k">as</span> <span class="nn">image</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">linearize_energy</span> <span class="k">as</span> <span class="n">le</span>
@@ -206,14 +203,9 @@
 <span class="n">MAXIT</span> <span class="o">=</span> <span class="mi">100</span>
 
 <span class="n">DATATERMS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">]</span>
-<<<<<<< HEAD
 <span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span><span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;compact&#39;</span><span class="p">,</span> <span class="s1">&#39;compact2&#39;</span><span class="p">]</span>
 
 <span class="n">NFFT_KERSIZE_DEFAULT</span> <span class="o">=</span> <span class="mi">20</span>
-=======
-<span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span><span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">]</span>
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="n">GRIDDER_P_RAD_DEFAULT</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">GRIDDER_CONV_FUNC_DEFAULT</span> <span class="o">=</span> <span class="s1">&#39;gaussian&#39;</span>
 <span class="n">FFT_PAD_DEFAULT</span> <span class="o">=</span> <span class="mi">2</span>
@@ -230,28 +222,17 @@
                    <span class="n">alpha_d1</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">alpha_d2</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
                    <span class="n">alpha_flux</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">alpha_cm</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
                    <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> 
-<<<<<<< HEAD
                    <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">FFT_PAD_DEFAULT</span><span class="p">,</span> <span class="n">fft_interp</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span>
                    <span class="n">grid_prad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">,</span> <span class="n">grid_conv</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span>
                    <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-=======
-                   <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">FFT_PAD_DEFAULT</span><span class="p">,</span> <span class="n">fft_interp</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span>
-                   <span class="n">grid_prad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">,</span> <span class="n">grid_conv</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span>
-                   <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
                    <span class="n">maxit</span><span class="o">=</span><span class="n">MAXIT</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show_updates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">print_objfunc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">norm_init</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;Run a general interferometric imager.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           Obsdata (Obsdata): The Obsdata object with VLBI data</span>
-<<<<<<< HEAD
 <span class="sd">           InitIm (Image): The Image object with the initial image for the minimization</span>
 <span class="sd">           Prior (Image): The Image object with the prior image</span>
-=======
-<span class="sd">           Prior (Image): The Image object with the prior image</span>
-<span class="sd">           InitIm (Image): The Image object with the initial image for the minimization</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="sd">           flux (float): The total flux of the output image in Jy</span>
 <span class="sd">           d1 (str): The first data term; options are &#39;vis&#39;, &#39;bs&#39;, &#39;amp&#39;, &#39;cphase&#39;, &#39;camp&#39;, &#39;logcamp&#39;</span>
 <span class="sd">           d2 (str): The second data term; options are &#39;vis&#39;, &#39;bs&#39;, &#39;amp&#39;, &#39;cphase&#39;, &#39;camp&#39;, &#39;logcamp&#39;</span>
@@ -264,13 +245,8 @@
 <span class="sd">           alpha_flux (float): The weighting for the total flux constraint</span>
 <span class="sd">           alpha_cm (float): The weighting for the center of mass constraint</span>
 
-<<<<<<< HEAD
 <span class="sd">           ttype (str): The Fourier transform type; options are &#39;fast&#39;, &#39;direct&#39;, &#39;nfft&#39;</span>
 <span class="sd">           fft_pad_factor (float): The FFT will pre-pad the image by this factor x the original size</span>
-=======
-<span class="sd">           ttype (str): The Fourier transform type; options are &#39;fast&#39; and &#39;direct&#39;</span>
-<span class="sd">           fft_pad_frac (float): The FFT will pre-pad the image by this factor x the original size</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="sd">           fft_interp (int): Interpolation order for sampling the FFT</span>
 <span class="sd">           grid_conv (str): The convolving function for gridding; options are &#39;gaussian&#39;, &#39;pill&#39;, and &#39;cubic&#39;</span>
 <span class="sd">           grid_prad (int): The pixel radius for the convolving function in gridding for FFTs</span>
@@ -283,12 +259,8 @@
 <span class="sd">           stop (float): The convergence criterion</span>
 <span class="sd">           show_updates (bool): If True, displays the progress of the minimizer</span>
 <span class="sd">           ipynb (bool): If True, adjusts the plotting for the ipython/jupyter notebook</span>
-<<<<<<< HEAD
 <span class="sd">           </span>
 <span class="sd">           print_objfunc (bool): If True,  prints current data and regularizer terms and exits</span>
-=======
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="sd">       Returns:</span>
 <span class="sd">           Image: Image object with result</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -298,11 +270,8 @@
     <span class="c1">#print (&quot;Regularizer terms: %s, %s\n&quot; % (s1,s2))</span>
 
     <span class="c1"># Make sure data and regularizer options are ok</span>
-<<<<<<< HEAD
     <span class="k">if</span> <span class="n">ttype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fast&#39;</span><span class="p">,</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span><span class="s1">&#39;nfft&#39;</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Possible ttype values are &#39;fast&#39;, &#39;direct&#39;!, &#39;nfft!&#39;&quot;</span><span class="p">)</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">if</span> <span class="ow">not</span> <span class="n">d1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">d2</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one data term!&quot;</span><span class="p">)</span>
 
@@ -314,10 +283,6 @@
 
     <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="p">((</span><span class="n">s1</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">s1</span><span class="o">==</span><span class="kc">False</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="p">((</span><span class="n">s2</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">s2</span><span class="o">==</span><span class="kc">False</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid regularizer: valid regularizers are: &quot;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REGULARIZERS</span><span class="p">))</span>
-<<<<<<< HEAD
-=======
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">if</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span> <span class="o">!=</span> <span class="n">InitIm</span><span class="o">.</span><span class="n">psize</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="n">InitIm</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="n">InitIm</span><span class="o">.</span><span class="n">ydim</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image does not match dimensions of the prior image!&quot;</span><span class="p">)</span>
 
@@ -350,17 +315,10 @@
 
 
     <span class="c1"># Get data and fourier matrices for the data terms</span>
-<<<<<<< HEAD
     <span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">sigma1</span><span class="p">,</span> <span class="n">A1</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">d1</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span>
                                     <span class="n">conv_func</span><span class="o">=</span><span class="n">grid_conv</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="n">grid_prad</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">fft_interp</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">)</span>
     <span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">sigma2</span><span class="p">,</span> <span class="n">A2</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">d2</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span>
                                     <span class="n">conv_func</span><span class="o">=</span><span class="n">grid_conv</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="n">grid_prad</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">fft_interp</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">)</span>
-=======
-    <span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">sigma1</span><span class="p">,</span> <span class="n">A1</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">d1</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span>
-                                    <span class="n">conv_func</span><span class="o">=</span><span class="n">grid_conv</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="n">grid_prad</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">fft_interp</span><span class="p">)</span>
-    <span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="n">sigma2</span><span class="p">,</span> <span class="n">A2</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">embed_mask</span><span class="p">,</span> <span class="n">d2</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span>
-                                    <span class="n">conv_func</span><span class="o">=</span><span class="n">grid_conv</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="n">grid_prad</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">fft_interp</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="c1"># Coordinate matrix for center-of-mass constraint</span>
     <span class="n">coord</span> <span class="o">=</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
@@ -470,13 +428,10 @@
     <span class="k">if</span> <span class="n">print_objfunc</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">objfunc</span><span class="p">(</span><span class="n">xinit</span><span class="p">)</span>
 
-<<<<<<< HEAD
     <span class="k">if</span> <span class="n">d1</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Total Data 1: &quot;</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data1</span><span class="p">)))</span>
     <span class="k">if</span> <span class="n">d2</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Total Data 2: &quot;</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data2</span><span class="p">)))</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Total Pixel #: &quot;</span><span class="p">,(</span><span class="nb">len</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">imvec</span><span class="p">)))</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Clipped Pixel #: &quot;</span><span class="p">,(</span><span class="nb">len</span><span class="p">(</span><span class="n">ninit</span><span class="p">)))</span>
     <span class="nb">print</span><span class="p">()</span>
@@ -531,7 +486,6 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">chisq</span>
 
-<<<<<<< HEAD
     <span class="k">if</span> <span class="n">ttype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fast&#39;</span><span class="p">,</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span><span class="s1">&#39;nfft&#39;</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Possible ttype values are &#39;fast&#39;, &#39;direct&#39;!, &#39;nfft!&#39;&quot;</span><span class="p">)</span>
 
@@ -546,34 +500,12 @@
             <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
             <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-=======
-    <span class="k">if</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;direct&#39;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>
-            <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
-            <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;bs&#39;</span><span class="p">:</span>
-            <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;cphase&#39;</span><span class="p">:</span>
-            <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
-            <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>
             <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_logcamp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
     
     <span class="k">elif</span> <span class="n">ttype</span><span class="o">==</span> <span class="s1">&#39;fast&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<<<<<<< HEAD
-=======
-        <span class="n">vis_arr</span> <span class="o">=</span> <span class="n">fft_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="n">vis_arr</span> <span class="o">=</span> <span class="n">fft_imvec</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>            
@@ -589,7 +521,6 @@
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>            
             <span class="n">chisq</span> <span class="o">=</span> <span class="n">chisq_logcamp_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
 
-<<<<<<< HEAD
     <span class="k">elif</span> <span class="n">ttype</span><span class="o">==</span> <span class="s1">&#39;nfft&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -609,12 +540,6 @@
     <span class="k">return</span> <span class="n">chisq</span>
 
 <span class="k">def</span> <span class="nf">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[]):</span>
-=======
-    <span class="k">return</span> <span class="n">chisq</span>
-
-<span class="k">def</span> <span class="nf">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[]):</span>
-    
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="sd">&quot;&quot;&quot;return the chi^2 gradient for the appropriate dtype</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -622,7 +547,6 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">chisqgrad</span>
 
-<<<<<<< HEAD
     <span class="k">if</span> <span class="n">ttype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fast&#39;</span><span class="p">,</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span><span class="s1">&#39;nfft&#39;</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Possible ttype values are &#39;fast&#39;, &#39;direct&#39;,&#39;nfft&#39;!&quot;</span><span class="p">)</span>
 
@@ -637,24 +561,6 @@
             <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
             <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-=======
-    <span class="k">if</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;direct&#39;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>
-            <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_vis</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
-            <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_amp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;bs&#39;</span><span class="p">:</span>
-            <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;cphase&#39;</span><span class="p">:</span>
-            <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
-            <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>
             <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad_logcamp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
 
@@ -679,7 +585,6 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
 
-<<<<<<< HEAD
     <span class="k">elif</span> <span class="n">ttype</span><span class="o">==</span> <span class="s1">&#39;nfft&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -700,18 +605,13 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">chisqgrad</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">return</span> <span class="n">chisqgrad</span>
 
 
 <span class="k">def</span> <span class="nf">regularizer</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">stype</span><span class="p">):</span>
-<<<<<<< HEAD
     <span class="sd">&quot;&quot;&quot;return the regularizer value</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">ssimple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;l1&quot;</span><span class="p">:</span>
@@ -720,10 +620,6 @@
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sgs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;patch&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">spatch</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
-<<<<<<< HEAD
-=======
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;tv&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -732,7 +628,6 @@
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">stv2</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
-<<<<<<< HEAD
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;compact&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -741,19 +636,14 @@
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">scompact2</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">else</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">return</span> <span class="n">s</span>
 
 <span class="k">def</span> <span class="nf">regularizergrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">stype</span><span class="p">):</span>
-<<<<<<< HEAD
     <span class="sd">&quot;&quot;&quot;return the regularizer gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">ssimplegrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
@@ -763,10 +653,6 @@
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sgsgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;patch&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">spatchgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
-<<<<<<< HEAD
-=======
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;tv&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -775,7 +661,6 @@
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">stv2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">flux</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
-<<<<<<< HEAD
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;compact&quot;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -784,26 +669,18 @@
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">scompact2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">xdim</span><span class="p">,</span> <span class="n">ydim</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">else</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">s</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
               <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">,</span>
               <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> 
-              <span class="n">fft_pad_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">):</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="sd">&quot;&quot;&quot;Return the data, sigma, and matrices for the appropriate dtype</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-<<<<<<< HEAD
     <span class="k">if</span> <span class="n">ttype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fast&#39;</span><span class="p">,</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span><span class="s1">&#39;nfft&#39;</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Possible ttype values are &#39;fast&#39;, &#39;direct&#39;,&#39;nfft&#39;!&quot;</span><span class="p">)</span>
 
@@ -812,20 +689,11 @@
             <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_vis</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">systematic_noise</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
             <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">systematic_noise</span><span class="p">)</span>
-=======
-
-    <span class="k">if</span> <span class="n">ttype</span><span class="o">==</span><span class="s1">&#39;direct&#39;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;vis&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_vis</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;bs&#39;</span><span class="p">:</span>
             <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_bs</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;cphase&#39;</span><span class="p">:</span>
             <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_cphase</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
-<<<<<<< HEAD
             <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_camp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>
             <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_logcamp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">)</span>
@@ -874,25 +742,6 @@
         <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>
             <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_logcamp_nfft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">,</span>
                                <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="n">p_rad</span><span class="p">)</span>
-=======
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_camp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_logcamp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
-
-    <span class="k">elif</span> <span class="n">ttype</span><span class="o">==</span><span class="s1">&#39;fast&#39;</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">dtype</span><span class="o">==</span><span class="s1">&#39;vis&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_vis_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">conv_func</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">p_rad</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;amp&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_amp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">conv_func</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">p_rad</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;bs&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_bs_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">conv_func</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">p_rad</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;cphase&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_cphase_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">conv_func</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">p_rad</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;camp&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_camp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">conv_func</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">p_rad</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">chisqdata_logcamp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="n">fft_pad_frac</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">conv_func</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">p_rad</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         
         
     <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
@@ -937,12 +786,8 @@
     <span class="sd">&quot;&quot;&quot;Bispectrum chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">bisamples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span>
-<<<<<<< HEAD
     <span class="n">chisq</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(((</span><span class="n">bis</span> <span class="o">-</span> <span class="n">bisamples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">bis</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">chisq</span>
-=======
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(((</span><span class="n">bis</span> <span class="o">-</span> <span class="n">bisamples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">bis</span><span class="p">))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="k">def</span> <span class="nf">chisqgrad_bs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">bis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;The gradient of the bispectrum chi-squared&quot;&quot;&quot;</span>
@@ -960,13 +805,8 @@
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">DEGREE</span>
     <span class="n">clphase_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">))</span>
-<<<<<<< HEAD
     <span class="n">chisq</span><span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clphase</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">clphase</span><span class="o">-</span><span class="n">clphase_samples</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">chisq</span>
-=======
-    <span class="k">return</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clphase</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">clphase</span><span class="o">-</span><span class="n">clphase_samples</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="k">def</span> <span class="nf">chisqgrad_cphase</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;The gradient of the closure phase chi-squared&quot;&quot;&quot;</span>
@@ -989,12 +829,8 @@
     <span class="sd">&quot;&quot;&quot;Closure Amplitudes (normalized) chi-squared&quot;&quot;&quot;</span>
 
     <span class="n">clamp_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">imvec</span><span class="p">)))</span>
-<<<<<<< HEAD
     <span class="n">chisq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">clamp</span> <span class="o">-</span> <span class="n">clamp_samples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clamp</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">chisq</span>
-=======
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">clamp</span> <span class="o">-</span> <span class="n">clamp_samples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">clamp</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="k">def</span> <span class="nf">chisqgrad_camp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;The gradient of the closure amplitude chi-squared&quot;&quot;&quot;</span>
@@ -1020,16 +856,10 @@
     <span class="n">a2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imvec</span><span class="p">))</span>
     <span class="n">a3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">imvec</span><span class="p">))</span>
     <span class="n">a4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Amatrices</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">imvec</span><span class="p">))</span>
-<<<<<<< HEAD
 
     <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a2</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a3</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a4</span><span class="p">)</span>
     <span class="n">chisq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">log_clamp</span> <span class="o">-</span> <span class="n">samples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">log_clamp</span><span class="p">))</span>
     <span class="k">return</span>  <span class="n">chisq</span>
-=======
-    <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a1</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a2</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a3</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">a4</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">log_clamp</span> <span class="o">-</span> <span class="n">samples</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">log_clamp</span><span class="p">))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="k">def</span> <span class="nf">chisqgrad_logcamp</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">Amatrices</span><span class="p">,</span> <span class="n">log_clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;The gradient of the Log closure amplitude chi-squared&quot;&quot;&quot;</span>
@@ -1051,10 +881,6 @@
 <span class="c1">##################################################################################################</span>
 <span class="c1"># FFT Chi-squared and Gradient Functions</span>
 <span class="c1">##################################################################################################</span>
-<<<<<<< HEAD
-=======
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="k">def</span> <span class="nf">chisq_vis_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Visibility chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1084,12 +910,8 @@
     <span class="n">grad_arr</span> <span class="o">=</span> <span class="n">grad_arr</span> <span class="o">*</span> <span class="p">(</span><span class="n">im_info</span><span class="o">.</span><span class="n">npad</span> <span class="o">*</span> <span class="n">im_info</span><span class="o">.</span><span class="n">npad</span><span class="p">)</span>
 
     <span class="c1"># extract relevant cells and flatten</span>
-<<<<<<< HEAD
     <span class="c1"># TODO or is x&lt;--&gt;y??</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span> <span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
-=======
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span> <span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="c1"># TODO or is x&lt;--&gt;y??</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="k">return</span> <span class="n">out</span>
 
@@ -1123,12 +945,8 @@
     <span class="n">grad_arr</span> <span class="o">=</span> <span class="n">grad_arr</span> <span class="o">*</span> <span class="p">(</span><span class="n">im_info</span><span class="o">.</span><span class="n">npad</span> <span class="o">*</span> <span class="n">im_info</span><span class="o">.</span><span class="n">npad</span><span class="p">)</span>
 
     <span class="c1"># extract relevent cells and flatten</span>
-<<<<<<< HEAD
     <span class="c1"># TODO or is x&lt;--&gt;y??</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
-=======
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="c1"># TODO or is x&lt;--&gt;y??</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="k">return</span> <span class="n">out</span>
 
@@ -1163,23 +981,14 @@
     <span class="n">grad_arr</span> <span class="o">=</span> <span class="n">grad_arr</span> <span class="o">*</span> <span class="p">(</span><span class="n">im_info</span><span class="o">.</span><span class="n">npad</span> <span class="o">*</span> <span class="n">im_info</span><span class="o">.</span><span class="n">npad</span><span class="p">)</span>
 
     <span class="c1"># extract relevant cells and flatten</span>
-<<<<<<< HEAD
     <span class="c1"># TODO or is x&lt;--&gt;y??</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> 
-=======
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="c1"># TODO or is x&lt;--&gt;y??</span>
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">return</span> <span class="n">out</span>
 
 <span class="k">def</span> <span class="nf">chisq_cphase_fft</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Closure Phases (normalized) chi-squared from fft</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphase</span> <span class="o">*</span> <span class="n">DEGREE</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">DEGREE</span>
 
@@ -1213,12 +1022,8 @@
     <span class="n">grad_arr</span> <span class="o">=</span> <span class="n">grad_arr</span> <span class="o">*</span> <span class="p">(</span><span class="n">im_info</span><span class="o">.</span><span class="n">npad</span> <span class="o">*</span> <span class="n">im_info</span><span class="o">.</span><span class="n">npad</span><span class="p">)</span>
 
     <span class="c1"># extract relevant cells and flatten</span>
-<<<<<<< HEAD
     <span class="c1"># TODO or is x&lt;--&gt;y??</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
-=======
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="c1"># TODO or is x&lt;--&gt;y??</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="k">return</span> <span class="n">out</span>
 
@@ -1258,12 +1063,8 @@
     <span class="n">grad_arr</span> <span class="o">=</span> <span class="n">grad_arr</span> <span class="o">*</span> <span class="p">(</span><span class="n">im_info</span><span class="o">.</span><span class="n">npad</span> <span class="o">*</span> <span class="n">im_info</span><span class="o">.</span><span class="n">npad</span><span class="p">)</span>
 
     <span class="c1"># extract relevant cells and flatten</span>
-<<<<<<< HEAD
     <span class="c1"># TODO or is x&lt;--&gt;y??</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> 
-=======
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="c1"># TODO or is x&lt;--&gt;y??</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="k">return</span> <span class="n">out</span>
 
@@ -1306,7 +1107,6 @@
     <span class="n">grad_arr</span> <span class="o">=</span> <span class="n">grad_arr</span> <span class="o">*</span> <span class="p">(</span><span class="n">im_info</span><span class="o">.</span><span class="n">npad</span> <span class="o">*</span> <span class="n">im_info</span><span class="o">.</span><span class="n">npad</span><span class="p">)</span>
 
     <span class="c1"># extract relevant cells and flatten</span>
-<<<<<<< HEAD
     <span class="c1"># TODO or is x&lt;--&gt;y??</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> 
 
@@ -1801,13 +1601,6 @@
 
     <span class="n">out</span> <span class="o">=</span> <span class="n">out1</span> <span class="o">+</span> <span class="n">out2</span> <span class="o">+</span> <span class="n">out3</span> <span class="o">+</span> <span class="n">out4</span>
     <span class="k">return</span> <span class="n">out</span>
-=======
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">grad_arr</span><span class="p">[</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvalx2</span><span class="p">,</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly1</span><span class="p">:</span><span class="o">-</span><span class="n">im_info</span><span class="o">.</span><span class="n">padvaly2</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span> <span class="c1"># TODO or is x&lt;--&gt;y??</span>
-
-    <span class="k">return</span> <span class="n">out</span>
-
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="c1">##################################################################################################</span>
 <span class="c1"># Regularizer and Gradient Functions</span>
 <span class="c1">##################################################################################################</span>
@@ -1831,24 +1624,16 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">#norm = flux</span>
     <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
-<<<<<<< HEAD
     <span class="c1">#return -np.sum(np.abs(imvec - priorvec))/norm</span>
     <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span><span class="o">/</span><span class="n">norm</span>
-=======
-    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">priorvec</span><span class="p">))</span><span class="o">/</span><span class="n">norm</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="k">def</span> <span class="nf">sl1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;L1 norm gradient</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">#norm = flux</span>
     <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
-<<<<<<< HEAD
     <span class="c1">#return -np.sign(imvec - priorvec)/norm</span>
     <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span><span class="o">/</span><span class="n">norm</span>
-=======
-    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">imvec</span> <span class="o">-</span> <span class="n">priorvec</span><span class="p">)</span><span class="o">/</span><span class="n">norm</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="k">def</span> <span class="nf">sgs</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Gull-skilling entropy</span>
@@ -1889,7 +1674,6 @@
     <span class="n">im_l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">im_r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">im_r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-<<<<<<< HEAD
 
     <span class="c1">#rotate images</span>
     <span class="n">im_r1l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span>  <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
@@ -1909,14 +1693,6 @@
     <span class="n">g3</span><span class="p">[</span><span class="n">mask2</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1"># add terms together and return</span>
-=======
-    <span class="n">im_r1l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">im_l1r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-
-    <span class="n">g1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_l1</span> <span class="o">-</span> <span class="n">im_l2</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">im_l1</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">im_l2</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">g2</span> <span class="o">=</span> <span class="p">(</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_r1</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">im_r1</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">im_r1l2</span> <span class="o">-</span> <span class="n">im_r1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">g3</span> <span class="o">=</span> <span class="p">(</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_r2</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">im_r2</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">im_l1r2</span> <span class="o">-</span> <span class="n">im_r2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="n">out</span><span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">g1</span> <span class="o">+</span> <span class="n">g2</span> <span class="o">+</span> <span class="n">g3</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
 
@@ -1929,11 +1705,7 @@
     <span class="n">impad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
     <span class="n">im_l1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">im_l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-<<<<<<< HEAD
     <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">im_l1</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">im_l2</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-=======
-    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">im_l1</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">im_l2</span> <span class="o">-</span> <span class="n">im</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
 
 <span class="k">def</span> <span class="nf">stv2grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
@@ -1947,16 +1719,10 @@
     <span class="n">im_l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">im_r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
     <span class="n">im_r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-<<<<<<< HEAD
-=======
-    <span class="n">im_r1l2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">im_l1r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">impad</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">nx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">g1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_l1</span> <span class="o">-</span> <span class="n">im_l2</span><span class="p">)</span>
     <span class="n">g2</span> <span class="o">=</span> <span class="p">(</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_r1</span><span class="p">)</span>
     <span class="n">g3</span> <span class="o">=</span> <span class="p">(</span><span class="n">im</span> <span class="o">-</span> <span class="n">im_r2</span><span class="p">)</span>
-<<<<<<< HEAD
 
     <span class="c1">#mask the first row column gradient terms that don&#39;t exist</span>
     <span class="n">mask1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
@@ -1967,8 +1733,6 @@
     <span class="n">g3</span><span class="p">[</span><span class="n">mask2</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1">#add together terms and return </span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="n">out</span><span class="o">=</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">g1</span> <span class="o">+</span> <span class="n">g2</span> <span class="o">+</span> <span class="n">g3</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
 
@@ -1988,7 +1752,6 @@
     <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">imvec</span>  <span class="o">-</span> <span class="n">priorvec</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span><span class="o">/</span><span class="n">norm</span>
 
-<<<<<<< HEAD
 
 <span class="k">def</span> <span class="nf">stvuniso</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Univarite Isotropic Total variation regularizer</span>
@@ -2039,40 +1802,10 @@
     <span class="c1">#sigma = ampdata[&#39;sigma&#39;]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">systematic_noise</span><span class="o">*</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
-=======
-<span class="c1">##################################################################################################</span>
-<span class="c1"># Embedding and Chi^2 Data functions</span>
-<span class="c1">##################################################################################################</span>
-<span class="k">def</span> <span class="nf">embed</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">randomfloor</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Embeds a 1d image array into the size of boolean embed mask</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">j</span><span class="o">=</span><span class="mi">0</span>
-    <span class="n">out</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
-            <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># prevent total variation gradient singularities</span>
-            <span class="k">if</span> <span class="n">randomfloor</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">clipfloor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">()</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">clipfloor</span>
-
-    <span class="k">return</span> <span class="n">out</span>
-
-<span class="k">def</span> <span class="nf">chisqdata_vis</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">data_arr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
-    <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">vis</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="n">A</span> <span class="o">=</span> <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2085,16 +1818,6 @@
     <span class="c1">#sigma = ampdata[&#39;sigma&#39;]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">systematic_noise</span><span class="o">*</span><span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
-=======
-<span class="k">def</span> <span class="nf">chisqdata_amp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">ampdata</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">amp</span> <span class="o">=</span> <span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">ampdata</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="n">A</span> <span class="o">=</span> <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
@@ -2134,7 +1857,6 @@
          <span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A3</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_camp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2147,19 +1869,6 @@
     <span class="n">uv4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))[</span><span class="n">snrmask</span><span class="p">]</span>
     <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">][</span><span class="n">snrmask</span><span class="p">]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">][</span><span class="n">snrmask</span><span class="p">]</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_camp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">clamparr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">uv1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">]</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">A4</span> <span class="o">=</span> <span class="p">(</span><span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
           <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv2</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
@@ -2169,7 +1878,6 @@
 
     <span class="k">return</span> <span class="p">(</span><span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A4</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_logcamp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the log closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2183,19 +1891,6 @@
     <span class="n">uv4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))[</span><span class="n">snrmask</span><span class="p">]</span>
     <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">][</span><span class="n">snrmask</span><span class="p">]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">][</span><span class="n">snrmask</span><span class="p">]</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_logcamp</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the log closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">clamparr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">uv1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">]</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">A4</span> <span class="o">=</span> <span class="p">(</span><span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv1</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
           <span class="n">ftmatrix</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv2</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">),</span>
@@ -2206,7 +1901,6 @@
     <span class="k">return</span> <span class="p">(</span><span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A4</span><span class="p">)</span>
 
 
-<<<<<<< HEAD
 <span class="c1">##################################################################################################</span>
 <span class="c1"># FFT Chi^2 Data functions</span>
 <span class="c1">##################################################################################################</span>
@@ -2225,19 +1919,6 @@
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">systematic_noise</span><span class="o">*</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_vis_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                      <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the visibilities, sigmas, uv points, and image info</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">data_arr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
-    <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">vis</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
-
-    <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_frac</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">im_info</span> <span class="o">=</span> <span class="n">ImInfo</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -2249,7 +1930,6 @@
 
     <span class="k">return</span> <span class="p">(</span><span class="n">vis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_amp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                       <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span>
                       <span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
@@ -2265,19 +1945,6 @@
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">([</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">systematic_noise</span><span class="o">*</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_amp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                      <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the amplitudes, sigmas, uv points, and image info</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">data_arr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">amp</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>
-
-    <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_frac</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">im_info</span> <span class="o">=</span> <span class="n">ImInfo</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -2288,11 +1955,7 @@
     <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">amp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_bs_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_bs_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
                      <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the bispectra, sigmas, uv points, and image info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2303,11 +1966,7 @@
     <span class="n">bi</span> <span class="o">=</span> <span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;bispec&#39;</span><span class="p">]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">biarr</span><span class="p">[</span><span class="s1">&#39;sigmab&#39;</span><span class="p">]</span>
 
-<<<<<<< HEAD
     <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
-=======
-    <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_frac</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">im_info</span> <span class="o">=</span> <span class="n">ImInfo</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -2320,11 +1979,7 @@
     <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">bi</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_cphase_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_cphase_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
                          <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, uv points, and image info</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2335,11 +1990,7 @@
     <span class="n">clphase</span> <span class="o">=</span> <span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">clphasearr</span><span class="p">[</span><span class="s1">&#39;sigmacp&#39;</span><span class="p">]</span>
 
-<<<<<<< HEAD
     <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
-=======
-    <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_frac</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">im_info</span> <span class="o">=</span> <span class="n">ImInfo</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -2352,7 +2003,6 @@
     <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">clphase</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_camp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                        <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, uv points, and image info</span>
@@ -2367,21 +2017,6 @@
     <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
     <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_camp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                       <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, uv points, and image info</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">clamparr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">uv1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">]</span>
-
-    <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_frac</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">im_info</span> <span class="o">=</span> <span class="n">ImInfo</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -2395,7 +2030,6 @@
     <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">chisqdata_logcamp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                       <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, uv points, and image info</span>
@@ -2410,21 +2044,6 @@
     <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
     <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
     <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
-=======
-<span class="k">def</span> <span class="nf">chisqdata_logcamp_fft</span><span class="p">(</span><span class="n">Obsdata</span><span class="p">,</span> <span class="n">Prior</span><span class="p">,</span> <span class="n">fft_pad_frac</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                      <span class="n">order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span><span class="n">conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span><span class="n">p_rad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return the closure phases, sigmas, uv points, and image info</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">clamparr</span> <span class="o">=</span> <span class="n">Obsdata</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">uv1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">uv4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;u4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;v4&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-    <span class="n">clamp</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span>
-    <span class="n">sigma</span> <span class="o">=</span> <span class="n">clamparr</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">]</span>
-
-    <span class="n">npad</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">fft_pad_frac</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">)))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
     <span class="n">im_info</span> <span class="o">=</span> <span class="n">ImInfo</span><span class="p">(</span><span class="n">Prior</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">Prior</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -2438,7 +2057,6 @@
     <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">clamp</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
 
-<<<<<<< HEAD
 
 <span class="c1">##################################################################################################</span>
 <span class="c1"># NFFT Chi^2 Data functions</span>
@@ -2614,11 +2232,6 @@
         <span class="n">pulses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">pulse</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">uv_scaled</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">uv_scaled</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="mf">1.</span><span class="p">,</span> <span class="n">dom</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span> 
                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uvdim</span><span class="p">)])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pulsefac</span> <span class="o">=</span> <span class="p">(</span><span class="n">pulses</span><span class="o">*</span><span class="n">phases</span><span class="p">)</span>
-=======
-<span class="c1">##################################################################################################</span>
-<span class="c1"># FFT functions</span>
-<span class="c1">##################################################################################################</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="k">class</span> <span class="nc">SamplerInfo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">pulsefac</span><span class="p">):</span>
@@ -2681,12 +2294,7 @@
 
     <span class="k">return</span> <span class="n">fx</span><span class="o">*</span><span class="n">fy</span>
 
-<<<<<<< HEAD
 <span class="c1">##There&#39;s a bug in scipy spheroidal function of order 0! - gives nans for eta&lt;1</span>
-=======
-
-<span class="c1"># There&#39;s a bug in my version of scipy with spheroidal function of order 0! - gives nans for eta&lt;1</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="c1">#def conv_func_spheroidal(x,y,p,m):</span>
 <span class="c1">#    etax = 2.*x/float(p)</span>
 <span class="c1">#    etay = 2.*x/float(p)</span>
@@ -2813,7 +2421,6 @@
     <span class="n">dcoords</span> <span class="o">=</span> <span class="n">vu2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">vu2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
     <span class="n">vu2</span>  <span class="o">=</span> <span class="n">vu2</span><span class="o">.</span><span class="n">T</span>
 
-<<<<<<< HEAD
     <span class="c1"># TODO: phase rotations should be done separately for x and y if the image isn&#39;t square</span>
     <span class="c1"># e.g., </span>
     <span class="n">phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">psize</span><span class="o">*</span><span class="p">((</span><span class="mi">1</span><span class="o">+</span><span class="n">im_info</span><span class="o">.</span><span class="n">xdim</span><span class="o">%</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">uv</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">im_info</span><span class="o">.</span><span class="n">ydim</span><span class="o">%</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">uv</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]))</span> 
@@ -2823,10 +2430,6 @@
 <span class="c1">#    if im_info.ydim%2: </span>
 <span class="c1">#        phase *= np.exp(-1j*np.pi*psize*uv[:,1])</span>
 
-=======
-    <span class="c1">#compute pulse &amp; grid phase factor</span>
-    <span class="n">phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">psize</span><span class="o">*</span><span class="p">(</span><span class="n">uv</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">uv</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="n">pulsefac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">pulse</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">uvpt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">uvpt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">psize</span><span class="p">,</span> <span class="n">dom</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">uvpt</span> <span class="ow">in</span> <span class="n">uv</span><span class="p">])</span>
     <span class="n">pulsefac</span> <span class="o">=</span> <span class="n">pulsefac</span> <span class="o">*</span> <span class="n">phase</span>
 
@@ -2847,11 +2450,7 @@
 
             <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
-<<<<<<< HEAD
     <span class="c1">#compute weights for gridding</span>
-=======
-    <span class="c1">#compute weights</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">p_rad</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
         <span class="n">dy</span> <span class="o">=</span> <span class="n">i</span> <span class="o">-</span> <span class="n">p_rad</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">p_rad</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
@@ -2917,11 +2516,7 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Samples griddata (e.g. the FFT of an image) at uv points </span>
 <span class="sd">    the griddata should already be rotated so u,v = 0,0 is in the center</span>
-<<<<<<< HEAD
 <span class="sd">    im_info tuple contains (xdim, ydim, , psize, pulse) of the grid</span>
-=======
-<span class="sd">    im_info tuple contains (xdim, ydim, npad, psize, pulse) of the grid</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="sd">    order is the order of the spline interpolation</span>
 <span class="sd">    sample_type gives the type of sample returned: options are &#39;vis&#39;,&#39;bs&#39;,&#39;camp&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2964,7 +2559,6 @@
         <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">dataset</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">dataset</span><span class="p">[</span><span class="mi">3</span><span class="p">]))</span>
     <span class="k">return</span> <span class="n">out</span>
 
-<<<<<<< HEAD
 <span class="k">def</span> <span class="nf">scompact</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
     <span class="n">im</span> <span class="o">=</span> <span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">)</span> 
     <span class="n">im</span> <span class="o">=</span> <span class="n">im</span> <span class="o">/</span> <span class="n">flux</span>
@@ -3044,11 +2638,6 @@
 
     <span class="k">return</span> <span class="n">out</span>
 
-=======
-<span class="c1">##################################################################################################</span>
-<span class="c1"># Restoring and Plotting Functions</span>
-<span class="c1">##################################################################################################</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">frac_i</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">frac_pol</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Apply a hard threshold to the image.</span>
 <span class="sd">    &quot;&quot;&quot;</span>

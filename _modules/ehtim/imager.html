@@ -180,7 +180,6 @@
 <span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
 
-<<<<<<< HEAD
 <span class="n">NHIST</span> <span class="o">=</span> <span class="mi">50</span> <span class="c1"># number of steps to store for hessian approx</span>
 <span class="n">STOP</span> <span class="o">=</span> <span class="mf">1e-6</span> <span class="c1"># convergence criterion</span>
 
@@ -191,45 +190,28 @@
 <span class="n">GRIDDER_CONV_FUNC_DEFAULT</span> <span class="o">=</span> <span class="s1">&#39;gaussian&#39;</span>
 <span class="n">FFT_PAD_DEFAULT</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">FFT_INTERP_DEFAULT</span> <span class="o">=</span> <span class="mi">3</span>
-=======
-<span class="n">NHIST</span> <span class="o">=</span> <span class="mi">100</span> <span class="c1"># number of steps to store for hessian approx</span>
-<span class="n">STOP</span> <span class="o">=</span> <span class="mf">1e-10</span> <span class="c1"># convergence criterion</span>
-
-<span class="n">DATATERMS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">]</span>
-<span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span><span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;flux&#39;</span><span class="p">,</span><span class="s1">&#39;cm&#39;</span><span class="p">]</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
 <span class="c1">###########################################################################################################################################</span>
 <span class="c1">#Imager object</span>
 <span class="c1">###########################################################################################################################################</span>
-<<<<<<< HEAD
 <span class="c1">#TODO can we streamline parameters into a dictionary? </span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <div class="viewcode-block" id="Imager"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager">[docs]</a><span class="k">class</span> <span class="nc">Imager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A general interferometric imager.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<<<<<<< HEAD
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">init_im</span><span class="p">,</span> <span class="n">prior_im</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">maxit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> 
                        <span class="n">transform</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;fast&#39;</span><span class="p">,</span> <span class="n">data_term</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;vis&#39;</span><span class="p">:</span><span class="mi">100</span><span class="p">},</span> <span class="n">reg_term</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;simple&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">},</span> 
                        <span class="n">scattering_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha_phi</span><span class="o">=</span><span class="mf">1e4</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                        <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">FFT_PAD_DEFAULT</span><span class="p">,</span> <span class="n">fft_interp_order</span><span class="o">=</span><span class="n">FFT_INTERP_DEFAULT</span><span class="p">,</span> 
                        <span class="n">fft_conv_func</span><span class="o">=</span><span class="n">GRIDDER_CONV_FUNC_DEFAULT</span><span class="p">,</span> <span class="n">fft_gridder_prad</span><span class="o">=</span><span class="n">GRIDDER_P_RAD_DEFAULT</span><span class="p">):</span>
-=======
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">init_im</span><span class="p">,</span> <span class="n">prior_im</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="n">flux</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clipfloor</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">maxit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">data_term</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;vis&#39;</span><span class="p">:</span><span class="mi">100</span><span class="p">},</span> <span class="n">reg_term</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;simple&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">},</span> <span class="n">scattering_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha_phi</span><span class="o">=</span><span class="mf">1e4</span><span class="p">):</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="bp">self</span><span class="o">.</span><span class="n">logstr</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_obs_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_prior_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_out_list</span> <span class="o">=</span> <span class="p">[]</span>
-<<<<<<< HEAD
         <span class="bp">self</span><span class="o">.</span><span class="n">_out_list_epsilon</span>   <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_out_list_scattered</span> <span class="o">=</span> <span class="p">[]</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="bp">self</span><span class="o">.</span><span class="n">_flux_list</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_reg_term_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dat_term_list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -237,27 +219,18 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_maxit_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_flux_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transform_list</span> <span class="o">=</span> <span class="p">[]</span>
-<<<<<<< HEAD
         <span class="bp">self</span><span class="o">.</span><span class="n">_ttype_list</span> <span class="o">=</span> <span class="p">[]</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="c1"># Parameters for the next imaging iteration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span> <span class="o">=</span> <span class="n">reg_term</span> <span class="c1">#e.g. [(&#39;simple&#39;,1), (&#39;l1&#39;,10), (&#39;flux&#39;,500), (&#39;cm&#39;,500)]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span> <span class="o">=</span> <span class="n">data_term</span> <span class="c1">#e.g. [(&#39;amp&#39;, 1000), (&#39;cphase&#39;,100)]</span>
-<<<<<<< HEAD
         <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise</span> <span class="o">=</span> <span class="n">systematic_noise</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span> <span class="o">=</span> <span class="n">obsdata</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span> <span class="o">=</span> <span class="n">init_im</span>
 
-<<<<<<< HEAD
         <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_list_next</span> <span class="o">=</span> <span class="p">[]</span>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="k">if</span> <span class="n">prior_im</span><span class="o">==</span><span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span>
         <span class="k">else</span><span class="p">:</span>
@@ -268,7 +241,6 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">=</span> <span class="n">flux</span>
 
-<<<<<<< HEAD
         <span class="c1"># FFT parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ttype_next</span> <span class="o">=</span> <span class="n">ttype</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_gridder_prad</span> <span class="o">=</span> <span class="n">fft_gridder_prad</span>
@@ -276,8 +248,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_pad_factor</span> <span class="o">=</span> <span class="n">fft_pad_factor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_interp_order</span> <span class="o">=</span> <span class="n">fft_interp_order</span>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="c1"># Parameters related to scattering</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span> <span class="o">=</span> <span class="n">scattering_model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span> <span class="o">=</span> <span class="kc">None</span>
@@ -293,14 +263,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">=</span> <span class="mi">0</span>
 
-<<<<<<< HEAD
 
         <span class="c1">#closure amplitude debiasing/snr cut</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">debias</span><span class="o">=</span><span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">camp_snrcut</span><span class="o">=</span><span class="mi">0</span>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="c1">#set embedding matrices and prepare imager</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span>
@@ -354,24 +321,18 @@
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image does not match dimensions of the prior image!&quot;</span><span class="p">)</span>
-<<<<<<< HEAD
     
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttype_next</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fast&#39;</span><span class="p">,</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span><span class="s1">&#39;nfft&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Possible ttype_next values are &#39;fast&#39;, &#39;direct&#39;,&#39;nfft&#39;!&quot;</span><span class="p">)</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="c1"># determine if we need to change the saved imager parameters on the next imager run</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span>
 
-<<<<<<< HEAD
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttype_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ttype_last</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_terms_last</span><span class="p">()):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
@@ -458,7 +419,6 @@
             <span class="k">return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_out_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-<<<<<<< HEAD
 <div class="viewcode-block" id="Imager.out_scattered_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.out_scattered_last">[docs]</a>    <span class="k">def</span> <span class="nf">out_scattered_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return last result with scattering.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -475,8 +435,6 @@
             <span class="k">return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_out_list_epsilon</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <div class="viewcode-block" id="Imager.init_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_last">[docs]</a>    <span class="k">def</span> <span class="nf">init_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return last initial image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -517,7 +475,6 @@
             <span class="k">return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-<<<<<<< HEAD
 <div class="viewcode-block" id="Imager.ttype_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.ttype_last">[docs]</a>    <span class="k">def</span> <span class="nf">ttype_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return last fourier transform type used.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -526,8 +483,6 @@
             <span class="k">return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttype_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 <div class="viewcode-block" id="Imager.init_imager_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_imager_I">[docs]</a>    <span class="k">def</span> <span class="nf">init_imager_I</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set up Stokes I imager.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -541,14 +496,10 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-<<<<<<< HEAD
                 <span class="n">tup</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> 
                                 <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype_next</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_interp_order</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_pad_factor</span><span class="p">,</span> 
                                 <span class="n">conv_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_conv_func</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_gridder_prad</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias</span><span class="p">,</span> 
                                 <span class="n">snrcut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">camp_snrcut</span><span class="p">,</span><span class="n">systematic_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise</span><span class="p">)</span>
-=======
-                <span class="n">tup</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
                 <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tup</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -566,10 +517,6 @@
         <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span>
         <span class="n">FOV</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">observer_screen_distance</span> <span class="c1">#Field of view, in cm, at the scattering screen</span>
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="c1"># The ensemble-average convolution kernel and its gradients</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Ensemble_Average_Kernel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="n">wavelength_cm</span> <span class="o">=</span> <span class="n">wavelength</span><span class="p">)</span>
         <span class="n">ea_ker_gradient</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">Wrapped_Gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="o">/</span><span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="n">N</span><span class="p">))</span>
@@ -589,11 +536,7 @@
             <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
 
-<<<<<<< HEAD
             <span class="n">chi2</span> <span class="o">=</span> <span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype_next</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
-=======
-            <span class="n">chi2</span> <span class="o">=</span> <span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
             <span class="n">chi2_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">chi2</span>
 
         <span class="k">return</span> <span class="n">chi2_dict</span></div>
@@ -607,11 +550,7 @@
             <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
 
-<<<<<<< HEAD
             <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype_next</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
-=======
-            <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">)</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
             <span class="n">chi2grad_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">chi2grad</span>
 
         <span class="k">return</span> <span class="n">chi2grad_dict</span></div>
@@ -700,7 +639,6 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
 
-<<<<<<< HEAD
         <span class="n">IM</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> 
                                <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> 
                                <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
@@ -709,10 +647,6 @@
         <span class="n">scatt_im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">IM</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">EpsilonList</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> 
                                                  <span class="n">ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span><span class="p">,</span> 
                                                  <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">imvec</span> 
-=======
-        <span class="n">IM</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
-        <span class="n">scatt_im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">IM</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">EpsilonList</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">imvec</span> <span class="c1">#the scattered image vector</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="c1"># Calculate the chi^2 using the scattered image</span>
         <span class="n">datterm</span> <span class="o">=</span> <span class="mf">0.</span>
@@ -762,12 +696,8 @@
         <span class="n">wavelength</span> <span class="o">=</span> <span class="n">C</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="o">*</span><span class="mf">100.0</span> <span class="c1">#Observing wavelength [cm]</span>
         <span class="n">wavelengthbar</span> <span class="o">=</span> <span class="n">wavelength</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="c1">#lambda/(2pi) [cm]</span>
         <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span>
-<<<<<<< HEAD
         <span class="c1">#Field of view, in cm, at the scattering screen</span>
         <span class="n">FOV</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">observer_screen_distance</span> 
-=======
-        <span class="n">FOV</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">observer_screen_distance</span> <span class="c1">#Field of view, in cm, at the scattering screen</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="n">rF</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">rF</span><span class="p">(</span><span class="n">wavelength</span><span class="p">)</span>
 
         <span class="n">imvec</span>       <span class="o">=</span> <span class="n">minvec</span><span class="p">[:</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="p">]</span>
@@ -775,7 +705,6 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
             <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
 
-<<<<<<< HEAD
         <span class="n">IM</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> 
                                <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> 
                                <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
@@ -783,10 +712,6 @@
         <span class="n">scatt_im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">IM</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">EpsilonList</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span>
                                                  <span class="n">ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span><span class="p">,</span> 
                                                  <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">imvec</span> 
-=======
-        <span class="n">IM</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
-        <span class="n">scatt_im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">IM</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">EpsilonList</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">imvec</span> <span class="c1">#the scattered image vector</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="n">EA_Image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Ensemble_Average_Blur</span><span class="p">(</span><span class="n">IM</span><span class="p">,</span> <span class="n">ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">)</span>
         <span class="n">EA_Gradient</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">Wrapped_Gradient</span><span class="p">((</span><span class="n">EA_Image</span><span class="o">.</span><span class="n">imvec</span><span class="o">/</span><span class="p">(</span><span class="n">FOV</span><span class="o">/</span><span class="n">N</span><span class="p">))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
@@ -891,15 +816,9 @@
             <span class="n">outstr</span> <span class="o">=</span> <span class="s2">&quot;i: </span><span class="si">%d</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span>
 
             <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-<<<<<<< HEAD
                 <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
             <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
                 <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regname</span><span class="p">,</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">])</span>
-=======
-                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regname</span><span class="p">,</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">])</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)):</span> <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
             <span class="n">plot_i</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span><span class="p">,</span> <span class="n">chi2_1</span><span class="p">,</span> <span class="n">chi2_2</span><span class="p">,</span> <span class="n">ipynb</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -916,17 +835,12 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
                 <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
 
-<<<<<<< HEAD
             <span class="n">IM</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> 
                                    <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> 
                                    <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
             <span class="c1">#the scattered image vector</span>
             <span class="n">scatt_im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">IM</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">EpsilonList</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span>
                                                      <span class="n">ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">imvec</span> 
-=======
-            <span class="n">IM</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
-            <span class="n">scatt_im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">IM</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">EpsilonList</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> <span class="n">ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">imvec</span> <span class="c1">#the scattered image vector</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
             <span class="c1"># Calculate the chi^2 using the scattered image</span>
             <span class="n">datterm</span> <span class="o">=</span> <span class="mf">0.</span>
@@ -1041,18 +955,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">xinit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ninit_I</span>
 
-<<<<<<< HEAD
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon_list_next</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">xinit</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">xinit</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon_list_next</span><span class="p">))</span>
         
-=======
-        <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">xinit</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">xinit</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">xinit</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">xinit</span><span class="p">))</span>
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">=</span> <span class="mi">0</span>
 
@@ -1086,13 +993,10 @@
                             <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span>
                             <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
                             <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
-<<<<<<< HEAD
         <span class="n">outep</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="p">:]</span>
         <span class="n">outscatt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">outim</span><span class="p">,</span> <span class="n">Epsilon_Screen</span><span class="o">=</span><span class="n">so</span><span class="o">.</span><span class="n">MakeEpsilonScreenFromList</span><span class="p">(</span><span class="n">outep</span><span class="p">,</span> <span class="n">N</span><span class="p">),</span> 
                                                  <span class="n">ea_ker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span><span class="p">,</span> 
                                                  <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
 
         <span class="c1"># Preserving image complex polarization fractions</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
@@ -1109,12 +1013,9 @@
         <span class="c1"># Append to history</span>
         <span class="n">logstr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: make_image_I_stochastic_optics()&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_append_image_history</span><span class="p">(</span><span class="n">outim</span><span class="p">,</span> <span class="n">logstr</span><span class="p">)</span>
-<<<<<<< HEAD
         <span class="bp">self</span><span class="o">.</span><span class="n">_out_list_epsilon</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="p">:])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_out_list_scattered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outscatt</span><span class="p">)</span>
 
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">+=</span> <span class="mi">1</span>
 
         <span class="c1"># Return Image object</span>
@@ -1130,10 +1031,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_maxit_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transform_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_reg_term_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">)</span>
-<<<<<<< HEAD
         <span class="bp">self</span><span class="o">.</span><span class="n">_ttype_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ttype_next</span><span class="p">)</span>
-=======
->>>>>>> 0eb72cbdb5ebb580014364605cfee7aeacb6c514
         <span class="bp">self</span><span class="o">.</span><span class="n">_dat_term_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_alpha_phi_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_phi_next</span><span class="p">)</span>
 
