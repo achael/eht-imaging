@@ -49,3 +49,8 @@ The oifits_new code used for reading/writing .oifits files is a slightly modifie
 The jdcal.py module is from Prasanth Nair at `<http://github.com/phn/jdcal>`_.
 
 The documentation is styled after `dfm's projects <https://github.com/dfm>`_ and the documentation for `scatterbrane <https://github.com/krosenfeld/scatterbrane>`_
+
+License
+-------
+ehtim is licensed under GPLv3. See LICENSE.txt for more details.
+
