@@ -13,7 +13,7 @@ if __name__ == "__main__":
         author_email = "achael@cfa.harvard.edu",
         description = ("Python code to load, simulate, and manipulate VLBI datasets" +
                        "and a collection of imaging functions in total intensity and polarization."),
-        license = "MIT",
+        license = "GPLv3",
         keywords = "imaging astronomy EHT polarimetry",
         url = "https://github.com/achael/eht-imaging",
         packages = ["ehtim","ehtim.calibrating","ehtim.plotting","ehtim.imaging","ehtim.observing","ehtim.io","ehtim.scattering"],
