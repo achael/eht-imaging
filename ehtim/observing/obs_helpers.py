@@ -461,10 +461,9 @@ def blnoise(sefd1, sefd2, tint, bw):
        2-bit quantization is responsible for the 0.88 factor
     """
 
-    #TODO Is the factor of sqrt(2) correct?
-    #noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
 
-    noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
+    noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
+    #noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
 
     return noise
 

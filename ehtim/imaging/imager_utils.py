@@ -1,4 +1,4 @@
-# obsdata.py
+# imager_utils.py
 # General imager functions for total intensity VLBI data
 #
 #    Copyright (C) 2018 Andrew Chael
@@ -215,12 +215,12 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         return 2*(np.sum(imvec) - flux) / norm
 
     def cm_constraint(imvec):
-        #norm = flux**2 * Prior.psize**2
+        #norm = beamsize**2 * flux**2
         norm = 1
         return (np.sum(imvec*coord[:,0])**2 + np.sum(imvec*coord[:,1])**2)/norm
 
     def cm_constraint_grad(imvec):
-        #norm = flux**2 * Prior.psize**2
+        #norm = beamsize**2 * flux**2
         norm = 1
         return 2*(np.sum(imvec*coord[:,0])*coord[:,0] + np.sum(imvec*coord[:,1])*coord[:,1]) / norm
 
@@ -373,6 +373,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     elif ttype== 'nfft':
         if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
+
         if dtype == 'vis':            
             chisq = chisq_vis_nfft(imvec, A, data, sigma)
         elif dtype == 'amp':            
@@ -523,7 +524,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
 
     return s
 
-def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
+def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True, snrcut=0,
               fft_pad_factor=2, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT,
               order=FFT_INTERP_DEFAULT, systematic_noise=0.0):
     """Return the data, sigma, and matrices for the appropriate dtype
@@ -537,7 +538,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
         if dtype == 'vis':
             (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, systematic_noise=systematic_noise)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask,debias=debias, systematic_noise=systematic_noise)
+            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, debias=debias, systematic_noise=systematic_noise)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask)
         elif dtype == 'cphase':
@@ -545,7 +546,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True,snrcut=0,
         elif dtype == 'camp':
             (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask,debias=debias,snrcut=snrcut)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask,debias=debias,snrcut=snrcut)
+            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, debias=debias,snrcut=snrcut)
 
     elif ttype=='fast':
         if dtype=='vis':
@@ -1499,11 +1500,10 @@ def sgsgrad(imvec, priorvec, flux):
     norm = 1
     return -np.log(imvec/priorvec)/norm
 
-
 def stv(imvec, nx, ny, flux):
     """Total variation regularizer
     """
-    #norm = flux
+    #norm = flux*psize/beamsize
     norm = 1
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -1515,7 +1515,7 @@ def stv(imvec, nx, ny, flux):
 def stvgrad(imvec, nx, ny, flux):
     """Total variation gradient
     """
-    #norm = flux
+    #norm = flux*psize/beamsize
     norm = 1
     im = imvec.reshape(ny,nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -1548,7 +1548,7 @@ def stvgrad(imvec, nx, ny, flux):
 def stv2(imvec, nx, ny, flux):
     """Squared Total variation regularizer
     """
-    #norm = flux
+    #norm = psize**4 * flux**2 / beamsize**4
     norm = 1
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -1560,7 +1560,7 @@ def stv2(imvec, nx, ny, flux):
 def stv2grad(imvec, nx, ny, flux):
     """Squared Total variation gradient
     """
-    #norm = flux
+    #norm = psize**4 * flux**2 / beamsize**4
     norm = 1
     im = imvec.reshape(ny,nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
@@ -1625,7 +1625,7 @@ def sl0norm(imvec, f_thre):
     Args:
       f_thre (float): a threshold.
     """
-
+    #norm = psize**2 #?? 
     image_vec_srt = np.sort(np.abs(imvec))
     x = np.where(image_vec_srt==image_vec_srt.max())
     image_cumsum = np.cumsum(image_vec_srt)

@@ -90,6 +90,11 @@ def make_uvpoints(array,
 
                 blpairs.append((i1,i2))
                 
+                #sites
+                site1 = array.tarr[i1]['site']
+                site2 = array.tarr[i2]['site']
+                coord1 = ((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z']))
+                coord2 = ((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z']))
                 # Optical Depth
                 if type(tau) == dict:
                     try:
@@ -99,6 +104,9 @@ def make_uvpoints(array,
                         tau1 = tau2 = TAUDEF
                 else:
                     tau1 = tau2 = tau
+                #no optical depth for space sites
+                if coord1 == (0.,0.,0.): tau1 = 0.
+                if coord2 == (0.,0.,0.): tau2 = 0.
 
                 # Noise on the correlations
                 sig_rr = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdr'], tint, bw)
@@ -108,8 +116,7 @@ def make_uvpoints(array,
                 sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
                 sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
 
-                site1 = array.tarr[i1]['site']
-                site2 = array.tarr[i2]['site']
+
                 (timesout,uout,vout) = compute_uv_coordinates(array, site1, site2, times, mjd, 
                                                               ra, dec, rf, timetype=timetype, 
                                                               elevmin=elevmin, elevmax=elevmax,
@@ -146,8 +153,6 @@ def make_uvpoints(array,
 ##################################################################################################
 # Observe w/o noise
 ##################################################################################################
-
-
 
 def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor=1):
     """Observe a image on the same baselines as an existing observation object with no noise.
@@ -880,10 +885,10 @@ def add_jones_and_noise(obs, add_th_noise=True,
     lr = obsdata['qvis'] - 1j*obsdata['uvis']
 
     # Recompute the noise std. deviations from the SEFDs
-    sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
-    sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
-    sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
-    sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
+    sig_rr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
+    sig_ll = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
+    sig_rl = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
+    sig_lr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal:
@@ -1093,9 +1098,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     vvis = obsdata['vvis']
 
     # Recompute perfect sigmas from SEFDs
-    # Multiply 1/sqrt(2) for sum of polarizations
     bw = obs.bw
-    sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)/np.sqrt(2.0)
+    sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                             for i in range(len(tint))])
 
 

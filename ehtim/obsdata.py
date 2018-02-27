@@ -717,7 +717,7 @@ class Obsdata(object):
 
         xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
 
-        im = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
+        im = np.array([[np.mean(np.cos(-2*np.pi*(i*u + j*v)))
                   for i in xlist]
                   for j in xlist])
 
@@ -819,24 +819,24 @@ class Obsdata(object):
         # Take the DFTS
         #TODO verify if is this right?
         # Shouldn't need to real about conjugate baselines b/c unpack does not return them
-        im  = np.array([[np.mean(np.real(vis)*np.cos(2*np.pi*(i*u + j*v)) -
-                                 np.imag(vis)*np.sin(2*np.pi*(i*u + j*v)))
+        im  = np.array([[np.mean(np.real(vis)*np.cos(-2*np.pi*(i*u + j*v)) -
+                                 np.imag(vis)*np.sin(-2*np.pi*(i*u + j*v)))
                   for i in xlist]
                   for j in xlist])
-        qim = np.array([[np.mean(np.real(qvis)*np.cos(2*np.pi*(i*u + j*v)) -
-                                 np.imag(qvis)*np.sin(2*np.pi*(i*u + j*v)))
+        qim = np.array([[np.mean(np.real(qvis)*np.cos(-2*np.pi*(i*u + j*v)) -
+                                 np.imag(qvis)*np.sin(-2*np.pi*(i*u + j*v)))
                   for i in xlist]
                   for j in xlist])
-        uim = np.array([[np.mean(np.real(uvis)*np.cos(2*np.pi*(i*u + j*v)) -
-                                 np.imag(uvis)*np.sin(2*np.pi*(i*u + j*v)))
+        uim = np.array([[np.mean(np.real(uvis)*np.cos(-2*np.pi*(i*u + j*v)) -
+                                 np.imag(uvis)*np.sin(-2*np.pi*(i*u + j*v)))
                   for i in xlist]
                   for j in xlist])
-        vim = np.array([[np.mean(np.real(vvis)*np.cos(2*np.pi*(i*u + j*v)) -
-                                 np.imag(vvis)*np.sin(2*np.pi*(i*u + j*v)))
+        vim = np.array([[np.mean(np.real(vvis)*np.cos(-2*np.pi*(i*u + j*v)) -
+                                 np.imag(vvis)*np.sin(-2*np.pi*(i*u + j*v)))
                   for i in xlist]
                   for j in xlist])
 
-        dim = np.array([[np.mean(np.cos(2*np.pi*(i*u + j*v)))
+        dim = np.array([[np.mean(np.cos(-2*np.pi*(i*u + j*v)))
                   for i in xlist]
                   for j in xlist])
 
