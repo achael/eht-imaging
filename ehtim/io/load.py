@@ -617,7 +617,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 #TODO can we save new telescope array terms and flags to uvfits and load them?
 def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, IF=all):
     """Load uvfits data from a uvfits file.
-       To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R' or 'L'
+       To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R', 'L', 'RL', or 'LR'
     """
 
     # Load the uvfits file
@@ -740,6 +740,14 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     elif force_singlepol == 'R':
         llweight = llweight * 0.0
         rlweight = rlweight * 0.0
+        lrweight = lrweight * 0.0
+    elif force_singlepol == 'LR':
+        rrweight = rrweight * 0.0
+        llweight = llweight * 0.0
+        rlweight = rlweight * 0.0
+    elif force_singlepol == 'RL':
+        rrweight = rrweight * 0.0
+        llweight = llweight * 0.0
         lrweight = lrweight * 0.0
         
     #TODO less than or equal to?
