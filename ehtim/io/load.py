@@ -742,12 +742,16 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
     elif force_singlepol == 'LR':
-        rrweight = rrweight * 0.0
+        print('WARNING: Putting LR data in Stokes I')
+        rrweight = copy.deepcopy(lrweight)
         llweight = llweight * 0.0
         rlweight = rlweight * 0.0
+        lrweight = lrweight * 0.0
     elif force_singlepol == 'RL':
-        rrweight = rrweight * 0.0
+        print('WARNING: Putting RL data in Stokes I')
+        rrweight = copy.deepcopy(rlweight)
         llweight = llweight * 0.0
+        rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
         
     #TODO less than or equal to?
@@ -850,6 +854,11 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         lr_2d = lr_2d.reshape(nvis, nifs, nchannels)
     else:
         lr_2d = rr_2d*0.0
+    
+    if force_singlepol == 'LR':
+        rr_2d = copy.deepcopy(lr_2d)
+    elif force_singlepol == 'RL':
+        rr_2d = copy.deepcopy(rl_2d)
 
     rr_2d[~rrmask_2d] = np.nan
     ll_2d[~llmask_2d] = np.nan
