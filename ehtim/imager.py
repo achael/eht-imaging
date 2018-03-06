@@ -33,6 +33,7 @@ from ehtim.imaging.imager_utils import *
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+MAXIT = 100 # number of iterations
 NHIST = 50 # number of steps to store for hessian approx
 STOP = 1e-6 # convergence criterion
 
@@ -44,6 +45,8 @@ GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
 FFT_PAD_DEFAULT = 2
 FFT_INTERP_DEFAULT = 3
 
+REG_DEFAULT = {'simple':1}
+DAT_DEFAULT = {'vis':100}
 ###########################################################################################################################################
 #Imager object
 ###########################################################################################################################################
@@ -51,11 +54,12 @@ class Imager(object):
     """A general interferometric imager.
     """
 
-    def __init__(self, obsdata, init_im, prior_im=None, flux=None, clipfloor=0., maxit=50, 
-                       transform='log', ttype='fast', data_term={'vis':100}, reg_term={'simple':1}, 
-                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0,
-                       fft_pad_factor=FFT_PAD_DEFAULT, fft_interp_order=FFT_INTERP_DEFAULT, 
-                       fft_conv_func=GRIDDER_CONV_FUNC_DEFAULT, fft_gridder_prad=GRIDDER_P_RAD_DEFAULT):
+    def __init__(self, obsdata, init_im, prior_im=None, flux=None, data_term=DAT_DEFAULT, reg_term=REG_DEFAULT, **kwargs):
+#                       clipfloor=0., maxit=MAXIT, 
+#                       transform='log', ttype='fast', 
+#                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0,
+#                       fft_pad_factor=FFT_PAD_DEFAULT, fft_interp_order=FFT_INTERP_DEFAULT, 
+#                       fft_conv_func=GRIDDER_CONV_FUNC_DEFAULT, fft_gridder_prad=GRIDDER_P_RAD_DEFAULT):
 
         self.logstr = ""
         self._obs_list = []
@@ -69,56 +73,62 @@ class Imager(object):
         self._dat_term_list = []
         self._clipfloor_list = []
         self._maxit_list = []
+        self._stop_list = []
         self._flux_list = []
         self._transform_list = []
         self._ttype_list = []
 
         # Parameters for the next imaging iteration
-        self.reg_term_next = reg_term #e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
+        self.reg_term_next = reg_term  #e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
         self.dat_term_next = data_term #e.g. [('amp', 1000), ('cphase',100)]
-        self.systematic_noise = systematic_noise
+        self.systematic_noise = kwargs.get('systematic_noise',0.)
 
         self.obs_next = obsdata
         self.init_next = init_im
 
         self.epsilon_list_next = []
 
-        if prior_im==None:
+        if prior_im is None:
             self.prior_next = self.init_next
         else:
             self.prior_next = prior_im
 
-        if flux==None:
+        if flux is None:
             self.flux_next = self.prior_next.total_flux()
         else:
             self.flux_next = flux
 
         # FFT parameters
-        self.ttype_next = ttype
-        self.fft_gridder_prad = fft_gridder_prad
-        self.fft_conv_func = fft_conv_func
-        self.fft_pad_factor = fft_pad_factor
-        self.fft_interp_order = fft_interp_order
+        self.ttype_next = kwargs.get('ttype','nfft')
+        self.fft_gridder_prad = kwargs.get('fft_gridder_prad',GRIDDER_P_RAD_DEFAULT)
+        self.fft_conv_func = kwargs.get('fft_conv_func',GRIDDER_CONV_FUNC_DEFAULT)
+        self.fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+        self.fft_interp_order = kwargs.get('fft_interp_order',FFT_INTERP_DEFAULT)
+
+        #debiasing/snr cut
+        self.debias=kwargs.get('debias',True)
+        self.snrcut=kwargs.get('snrcut',0.)
+        self.norm_init=kwargs.get('norm_init',True)
+        self.norm_reg=kwargs.get('norm_regs',False)
+        self.beam_size=self.obs_next.res()
 
         # Parameters related to scattering
-        self.scattering_model = scattering_model
+        self.scattering_model = kwargs.get('scattering_model', None)
         self._sqrtQ = None
         self._ea_ker = None
         self._ea_ker_gradient_x = None
         self._ea_ker_gradient_y = None
         self._alpha_phi_list = []
-        self.alpha_phi_next = alpha_phi
+        self.alpha_phi_next = kwargs.get('alpha_phi',None)
 
-        self.clipfloor_next = clipfloor
-        self.maxit_next = maxit
-        self.transform_next = transform
+        self.clipfloor_next = kwargs.get('clipfloor',0.)
+        self.maxit_next = kwargs.get('maxit',MAXIT)
+        self.stop_next = kwargs.get('stop',STOP)
+        self.transform_next = kwargs.get('maxit','log')
         self._change_imgr_params = True
         self.nruns = 0
 
 
-        #closure amplitude debiasing/snr cut
-        self.debias=True
-        self.camp_snrcut=0
 
         #set embedding matrices and prepare imager
         self.check_params()
@@ -129,7 +139,6 @@ class Imager(object):
     def set_embed(self):
         """Set embedding matrix.
         """
-
 
         self._embed_mask = self.prior_next.imvec > self.clipfloor_next
         coord = np.array([[[x,y] for x in np.arange(self.prior_next.xdim//2,-self.prior_next.xdim//2,-1)]
@@ -319,6 +328,14 @@ class Imager(object):
             return
         return self._maxit_list[-1]
 
+    def stop_last(self):
+        """Return last convergence value.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._stop_list[-1]
+
     def transform_last(self):
         """Return last image transfrom used.
         """
@@ -341,8 +358,12 @@ class Imager(object):
 
         # embedding, prior & initial image vectors
         self.set_embed()
-        self._nprior_I = (self.flux_next * self.prior_next.imvec / np.sum((self.prior_next.imvec)[self._embed_mask]))[self._embed_mask]
-        self._ninit_I = (self.flux_next * self.init_next.imvec / np.sum((self.init_next.imvec)[self._embed_mask]))[self._embed_mask]
+        if self.norm_init:
+            self._nprior_I = (self.flux_next * self.prior_next.imvec / np.sum((self.prior_next.imvec)[self._embed_mask]))[self._embed_mask]
+            self._ninit_I = (self.flux_next * self.init_next.imvec / np.sum((self.init_next.imvec)[self._embed_mask]))[self._embed_mask]
+        else:
+            self._nprior_I = self.prior_next.imvec[self._embed_mask]
+            self._ninit_I = self.init_next.imvec[self._embed_mask]
 
         # data term tuples
         if self._change_imgr_params:
@@ -351,7 +372,7 @@ class Imager(object):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
                                 ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_factor=self.fft_pad_factor, 
                                 conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, 
-                                snrcut=self.camp_snrcut,systematic_noise=self.systematic_noise)
+                                snrcut=self.snrcut,systematic_noise=self.systematic_noise)
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
 
@@ -412,25 +433,26 @@ class Imager(object):
         """
         reg_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
-            # incorporate flux and cm into the generic "regularizer"  function!
-            if regname == 'flux':
-                #norm = flux**2
-                norm = 1
-                reg = (np.sum(imvec) - self.flux_next)**2
-                reg /= norm
+            # TODO incorporate flux and cm into the generic "regularizer"  function!
+#            if regname == 'flux':
+#                #norm = flux**2
+#                norm = 1
+#                reg = (np.sum(imvec) - self.flux_next)**2
+#                reg /= norm
 
-            elif regname == 'cm':
-                #norm = flux**2 * self.prior_next.psize**2
-                norm = 1
-                reg = (np.sum(imvec*self._coord_matrix[:,0])**2 +
-                       np.sum(imvec*self._coord_matrix[:,1])**2)
-                reg /= norm
+#            elif regname == 'cm':
+#                #norm = flux**2 * self.prior_next.psize**2
+#                norm = 1
+#                reg = (np.sum(imvec*self._coord_matrix[:,0])**2 +
+#                       np.sum(imvec*self._coord_matrix[:,1])**2)
+#                reg /= norm
 
-            else:
-                reg = regularizer(imvec, self._nprior_I, self._embed_mask,
-                                  self.flux_next, self.prior_next.xdim,
-                                  self.prior_next.ydim, self.prior_next.psize,
-                                  regname)
+#            else:
+            reg = regularizer(imvec, self._nprior_I, self._embed_mask,
+                              self.flux_next, self.prior_next.xdim,
+                              self.prior_next.ydim, self.prior_next.psize,
+                              regname,
+                              norm_reg=self.norm_reg, beam_size=self.beam_size)
             reg_dict[regname] = reg
 
         return reg_dict
@@ -440,25 +462,26 @@ class Imager(object):
         """
         reggrad_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
-            # incorporate flux and cm into the generic "regularizer"  function!
-            if regname == 'flux':
-                #norm = flux**2
-                norm = 1
-                reg = 2*(np.sum(imvec) - self.flux_next)
-                reg /= norm
+            # TODO incorporate flux and cm into the generic "regularizer"  function!
+#            if regname == 'flux':
+#                #norm = flux**2
+#                norm = 1
+#                reg = 2*(np.sum(imvec) - self.flux_next)
+#                reg /= norm
 
-            elif regname == 'cm':
-                #norm = flux**2 * self.prior_next.psize**2
-                norm = 1
-                reg = 2*(np.sum(imvec*self._coord_matrix[:,0])*self._coord_matrix[:,0] +
-                         np.sum(imvec*self._coord_matrix[:,1])*self._coord_matrix[:,1])
-                reg /= norm
+#            elif regname == 'cm':
+#                #norm = flux**2 * self.prior_next.psize**2
+#                norm = 1
+#                reg = 2*(np.sum(imvec*self._coord_matrix[:,0])*self._coord_matrix[:,0] +
+#                         np.sum(imvec*self._coord_matrix[:,1])*self._coord_matrix[:,1])
+#                reg /= norm
 
-            else:
-                reg = regularizergrad(imvec, self._nprior_I, self._embed_mask,
-                                      self.flux_next, self.prior_next.xdim,
-                                      self.prior_next.ydim, self.prior_next.psize,
-                                      regname)
+#            else:
+            reg = regularizergrad(imvec, self._nprior_I, self._embed_mask,
+                                  self.flux_next, self.prior_next.xdim,
+                                  self.prior_next.ydim, self.prior_next.psize,
+                                  regname,
+                                  norm_reg=self.norm_reg, beam_size=self.beam_size)
             reggrad_dict[regname] = reg
 
         return reggrad_dict
@@ -741,7 +764,7 @@ class Imager(object):
         self.plotcur(xinit)
 
         # Minimize
-        optdict = {'maxiter':self.maxit_next, 'ftol':STOP, 'maxcor':NHIST}
+        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next, 'maxcor':NHIST}
         tstart = time.time()
         if grads:
             res = opt.minimize(self.objfunc, xinit, method='L-BFGS-B', jac=self.objgrad,
@@ -824,7 +847,7 @@ class Imager(object):
         self.plotcur_scattering(xinit)
 
         # Minimize
-        optdict = {'maxiter':self.maxit_next, 'ftol':STOP, 'maxcor':NHIST}
+        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next, 'maxcor':NHIST}
         tstart = time.time()
         if grads:
             res = opt.minimize(self.objfunc_scattering, xinit, method='L-BFGS-B', jac=self.objgrad_scattering,
@@ -881,6 +904,7 @@ class Imager(object):
         self._flux_list.append(self.flux_next)
         self._clipfloor_list.append(self.clipfloor_next)
         self._maxit_list.append(self.maxit_next)
+        self._stop_list.append(self.stop_next)
         self._transform_list.append(self.transform_next)
         self._reg_term_list.append(self.reg_term_next)
         self._ttype_list.append(self.ttype_next)

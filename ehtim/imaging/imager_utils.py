@@ -47,13 +47,16 @@ from IPython import display
 # Constants & Definitions
 ##################################################################################################
 
+NORM_REGULARIZER = False #ANDREW TODO change this default in the future
 
 NHIST = 50 # number of steps to store for hessian approx
-MAXIT = 100
+MAXIT = 100 # maximum number of iterations
+STOP = 1.e-8 # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'compact', 'compact2']
 
+# FFT & NFFT options
 NFFT_KERSIZE_DEFAULT = 20
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
@@ -69,12 +72,12 @@ def imager_func(Obsdata, InitIm, Prior, flux,
                    d1='vis', d2=False, s1='simple', s2=False,
                    alpha_s1=1, alpha_s2=1,
                    alpha_d1=100, alpha_d2=100,
-                   alpha_flux=500, alpha_cm=500,
-                   ttype='direct', 
-                   fft_pad_factor=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
-                   grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
-                   clipfloor=0., grads=True, logim=True, debias=True, snrcut=0,
-                   maxit=MAXIT, stop=1e-10, ipynb=False, show_updates=True, print_objfunc=False, norm_init=True):
+                   alpha_flux=500, alpha_cm=500, **kwargs):
+#                   ttype='direct', 
+#                   fft_pad_factor=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
+#                   grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
+#                   clipfloor=0., grads=True, logim=True, debias=True, snrcut=0, systematic_noise=0.,
+#                   maxit=MAXIT, stop=STOP, show_updates=True, norm_init=True, norm_reg=False):
 
     """Run a general interferometric imager.
 
@@ -94,42 +97,45 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            alpha_flux (float): The weighting for the total flux constraint
            alpha_cm (float): The weighting for the center of mass constraint
 
+           maxit (int): Maximum number of minimizer iterations
+           stop (float): The convergence criterion
+
+           clipfloor (float): The Jy/pixel level above which prior image pixels are varied
+           systematic_noise (float): Fractional systematic noise tolerance to add to sigmas
+           beam_size (float): beam size in radians for normalizing the regularizers
+           grads (bool): If True, analytic gradients are used
+           logim (bool): If True, uses I = exp(I') change of variables
+           norm_reg (bool): If True, normalizes regularizer terms 
+           norm_init (bool): If True, normalizes initial image to given total flux
+           show_updates (bool): If True, displays the progress of the minimizer
+
            ttype (str): The Fourier transform type; options are 'fast', 'direct', 'nfft'
            fft_pad_factor (float): The FFT will pre-pad the image by this factor x the original size
            fft_interp (int): Interpolation order for sampling the FFT
            grid_conv (str): The convolving function for gridding; options are 'gaussian', 'pill', and 'cubic'
            grid_prad (int): The pixel radius for the convolving function in gridding for FFTs
-
-           clipfloor (float): The Jy/pixel level above which prior image pixels are varied
-           grads (bool): If True, analytic gradients are used
-           logim (bool): If True, uses I = exp(I') change of variables
-
-           maxit (int): Maximum number of minimizer iterations
-           stop (float): The convergence criterion
-           show_updates (bool): If True, displays the progress of the minimizer
-           ipynb (bool): If True, adjusts the plotting for the ipython/jupyter notebook
            
-           print_objfunc (bool): If True,  prints current data and regularizer terms and exits
        Returns:
            Image: Image object with result
     """
 
-    #print ("Imaging observation with %s Fourier transform" % ttype)
-    #print ("Data terms: %s , %s" %  (d1,d2))
-    #print ("Regularizer terms: %s, %s\n" % (s1,s2))
-
+    # some kwarg default values
+    maxit = kwargs.get('maxit', MAXIT)
+    stop = kwargs.get('stop', STOP)
+    clipfloor = kwargs.get('clipfloor', 0)
+    ttype = kwargs.get('ttype','direct')
+    grads = kwargs.get('grads',True)
+    logim = kwargs.get('logim',True)
+    norm_init = kwargs.get('norm_init',False)
+    show_updates = kwargs.get('show_updates',True)
+    
     # Make sure data and regularizer options are ok
-    if ttype not in ['fast','direct','nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct'!, 'nfft!'")
     if not d1 and not d2:
         raise Exception("Must have at least one data term!")
-
     if not s1 and not s2:
         raise Exception("Must have at least one regularizer term!")
-
     if (not ((d1 in DATATERMS) or d1==False)) or (not ((d2 in DATATERMS) or d2==False)):
         raise Exception("Invalid data term: valid data terms are: " + ' '.join(DATATERMS))
-
     if (not ((s1 in REGULARIZERS) or s1==False)) or (not ((s2 in REGULARIZERS) or s2==False)):
         raise Exception("Invalid regularizer: valid regularizers are: " + ' '.join(REGULARIZERS))
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
@@ -153,9 +159,11 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     if flux < .8*maxamp:
         print("Warning! Specified flux is < 80% of maximum visibility amplitude!")
 
-    # Normalize prior image to total flux and limit imager range to prior values > clipfloor
+    # Define embedding mask
     embed_mask = Prior.imvec > clipfloor
-    if (not norm_init) or print_objfunc:
+
+    # Normalize prior image to total flux and limit imager range to prior values > clipfloor
+    if (not norm_init):
         nprior = Prior.imvec[embed_mask]
         ninit = InitIm.imvec[embed_mask]
     else:
@@ -164,16 +172,14 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
 
     # Get data and fourier matrices for the data terms
-    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, ttype=ttype, fft_pad_factor=fft_pad_factor,
-                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
-    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, ttype=ttype, fft_pad_factor=fft_pad_factor,
-                                    conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
+    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, **kwargs)#ttype=ttype, fft_pad_factor=fft_pad_factor, conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
+    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, **kwargs)#ttype=ttype, fft_pad_factor=fft_pad_factor, conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
 
     # Coordinate matrix for center-of-mass constraint
-    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim//2,-Prior.xdim//2,-1)]
-                                           for y in np.arange(Prior.ydim//2,-Prior.ydim//2,-1)])
-    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
-    coord = coord[embed_mask]
+#    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim//2,-Prior.xdim//2,-1)]
+#                                           for y in np.arange(Prior.ydim//2,-Prior.ydim//2,-1)])
+#    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
+#    coord = coord[embed_mask]
 
     # Define the chi^2 and chi^2 gradient
     def chisq1(imvec):
@@ -192,37 +198,41 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     # Define the regularizer and regularizer gradient
     def reg1(imvec):
-        return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s1)
+        return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s1, **kwargs)
 
     def reg1grad(imvec):
-        return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s1)
+        return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s1, **kwargs)
 
     def reg2(imvec):
-        return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s2)
+        return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s2, **kwargs)
 
     def reg2grad(imvec):
-        return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s2)
+        return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s2, **kwargs)
 
     # Define constraint functions
     def flux_constraint(imvec):
-        #norm = flux**2
-        norm = 1
-        return (np.sum(imvec) - flux)**2/norm
+        return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "flux", **kwargs)
+#        #norm = flux**2
+#        norm = 1
+#        return (np.sum(imvec) - flux)**2/norm
 
     def flux_constraint_grad(imvec):
-        #norm = flux**2
-        norm = 1
-        return 2*(np.sum(imvec) - flux) / norm
+        return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "flux", **kwargs)
+#        #norm = flux**2
+#        norm = 1
+#        return 2*(np.sum(imvec) - flux) / norm
 
     def cm_constraint(imvec):
-        #norm = beamsize**2 * flux**2
-        norm = 1
-        return (np.sum(imvec*coord[:,0])**2 + np.sum(imvec*coord[:,1])**2)/norm
+        return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "cm", **kwargs)
+#        #norm = beamsize**2 * flux**2
+#        norm = 1
+#        return (np.sum(imvec*coord[:,0])**2 + np.sum(imvec*coord[:,1])**2)/norm
 
     def cm_constraint_grad(imvec):
-        #norm = beamsize**2 * flux**2
-        norm = 1
-        return 2*(np.sum(imvec*coord[:,0])*coord[:,0] + np.sum(imvec*coord[:,1])*coord[:,1]) / norm
+        return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "cm", **kwargs)
+#        #norm = beamsize**2 * flux**2
+#        norm = 1
+#        return 2*(np.sum(imvec*coord[:,0])*coord[:,0] + np.sum(imvec*coord[:,1])*coord[:,1]) / norm
 
     # Define the objective function and gradient
     def objfunc(imvec):
@@ -260,7 +270,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
             s_1 = reg1(im_step)
             s_2 = reg2(im_step)
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
-            plot_i(im_step, Prior, nit, chi2_1, chi2_2, ipynb=ipynb)
+            plot_i(im_step, Prior, nit, chi2_1, chi2_2)
             print("i: %d chi2_1: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1, chi2_2,s_1,s_2))
         nit += 1
 
@@ -274,8 +284,6 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     print("Initial S_1: %f S_2: %f" % (reg1(ninit), reg2(ninit)))
     print("Initial Chi^2_1: %f Chi^2_2: %f" % (chisq1(ninit), chisq2(ninit)))
     print("Initial Objective Function: %f" % (objfunc(xinit)))
-    if print_objfunc:
-        return objfunc(xinit)
 
     if d1 in DATATERMS:
         print("Total Data 1: ", (len(data1)))
@@ -327,10 +335,11 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 # Wrapper Functions
 ##################################################################################################
 
-def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
+def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
     """return the chi^2 for the appropriate dtype
     """
 
+    if mask is None: mask=[]
     chisq = 1 
     if not dtype in DATATERMS:
         return chisq
@@ -389,10 +398,11 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
 
     return chisq
 
-def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
+def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
     """return the chi^2 gradient for the appropriate dtype
     """
 
+    if mask is None: mask=[]
     chisqgrad = np.zeros(len(imvec))
     if not dtype in DATATERMS:
         return chisqgrad
@@ -458,140 +468,161 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=[]):
     return chisqgrad
 
 
-def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
+def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
     """return the regularizer value
     """
 
-    if stype == "simple":
-        s = -ssimple(imvec, nprior, flux)
+    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
+    beam_size = kwargs.get('beam_size', psize)
+
+    if stype == "flux":
+        s = -sflux(imvec, nprior, flux, norm_reg=norm_reg)
+    elif stype == "cm":
+        s = -scm(imvec, xdim, ydim, psize, flux, mask, norm_reg=norm_reg, beam_size=beam_size)
+    elif stype == "simple":
+        s = -ssimple(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "l1":
-        s = -sl1(imvec, nprior, flux)
+        s = -sl1(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "gs":
-        s = -sgs(imvec, nprior, flux)
+        s = -sgs(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "patch":
-        s = -spatch(imvec, nprior, flux)
+        s = -spatch(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "tv":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv(imvec, xdim, ydim, flux)
+        s = -stv(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv2(imvec, xdim, ydim, flux)
+        s = -stv2(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
     elif stype == "compact":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompact(imvec, xdim, ydim, psize, flux)
+        s = -scompact(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
     elif stype == "compact2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompact2(imvec, xdim, ydim, psize, flux)
+        s = -scompact2(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
     else:
         s = 0
 
     return s
 
-def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype):
+def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
     """return the regularizer gradient
     """
 
-    if stype == "simple":
-        s = -ssimplegrad(imvec, nprior, flux)
+    norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
+    beam_size = kwargs.get('beam_size', psize)
+
+    if stype == "flux":
+        s = -sfluxgrad(imvec, nprior, flux, norm_reg=norm_reg)
+    elif stype == "cm":
+        s = -scmgrad(imvec, xdim, ydim, psize, flux, mask, norm_reg=norm_reg, beam_size=beam_size)
+    elif stype == "simple":
+        s = -ssimplegrad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "l1":
-        s = -sl1grad(imvec, nprior, flux)
+        s = -sl1grad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "gs":
-        s = -sgsgrad(imvec, nprior, flux)
+        s = -sgsgrad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "patch":
-        s = -spatchgrad(imvec, nprior, flux)
+        s = -spatchgrad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "tv":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -stvgrad(imvec, xdim, ydim, flux)[mask]
+        s = -stvgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
+        s = s[mask]
     elif stype == "tv2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -stv2grad(imvec, xdim, ydim, flux)[mask]
+        s = -stv2grad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg, beam_size=beam_size)
+        s = s[mask]
     elif stype == "compact":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompactgrad(imvec, xdim, ydim, psize, flux)[mask]
+        s = -scompactgrad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
+        s = s[mask]
     elif stype == "compact2":
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        s = -scompact2grad(imvec, xdim, ydim, psize, flux)[mask]
+        s = -scompact2grad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
+        s = s[mask]
     else:
         s = np.zeros(len(imvec))
 
     return s
 
-def chisqdata(Obsdata, Prior, mask, dtype, ttype='direct', debias=True, snrcut=0,
-              fft_pad_factor=2, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT,
-              order=FFT_INTERP_DEFAULT, systematic_noise=0.0):
+def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
+#              ttype='direct', debias=True, snrcut=0,
+#              fft_pad_factor=2, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT,
+#              order=FFT_INTERP_DEFAULT, systematic_noise=0.0):
+
     """Return the data, sigma, and matrices for the appropriate dtype
     """
 
+    ttype=kwargs.get('ttype','direct')
     (data, sigma, A) = (False, False, False)
     if ttype not in ['fast','direct','nfft']:
         raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
 
     if ttype=='direct':
         if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, systematic_noise=systematic_noise)
+            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, **kwargs)#systematic_noise=systematic_noise)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, debias=debias, systematic_noise=systematic_noise)
+            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, **kwargs)#debias=debias, systematic_noise=systematic_noise)
         elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask)
+            (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask)
+            (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask,debias=debias,snrcut=snrcut)
+            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, **kwargs)#debias=debias,snrcut=snrcut)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, debias=debias,snrcut=snrcut)
+            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, **kwargs)#debias=debias,snrcut=snrcut)
 
     elif ttype=='fast':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, systematic_noise=systematic_noise,
-                               fft_pad_factor=fft_pad_factor,order=order,
-                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, **kwargs)#systematic_noise=systematic_noise,
+#                               fft_pad_factor=fft_pad_factor,order=order,
+#                               conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, debias=debias, systematic_noise=systematic_noise,
-                               fft_pad_factor=fft_pad_factor,order=order,
-                               conv_func=conv_func, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, **kwargs)# debias=debias, systematic_noise=systematic_noise,
+#                               fft_pad_factor=fft_pad_factor,order=order,
+#                               conv_func=conv_func, p_rad=p_rad)
         elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior,
-                               fft_pad_factor=fft_pad_factor,order=order,
-                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, **kwargs)
+#                               fft_pad_factor=fft_pad_factor,order=order,
+#                               conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, 
-                               fft_pad_factor=fft_pad_factor,order=order,
-                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, **kwargs)
+#                               fft_pad_factor=fft_pad_factor,order=order,
+#                               conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, debias=debias, snrcut=snrcut,
-                               fft_pad_factor=fft_pad_factor,order=order,
-                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, **kwargs)#debias=debias, snrcut=snrcut,
+#                               fft_pad_factor=fft_pad_factor,order=order,
+#                               conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior,debias=debias,snrcut=snrcut,
-                               fft_pad_factor=fft_pad_factor,order=order,
-                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, **kwargs)#debias=debias,snrcut=snrcut,
+#                               fft_pad_factor=fft_pad_factor,order=order,
+#                               conv_func=conv_func,p_rad=p_rad)
     elif ttype=='nfft':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, systematic_noise=systematic_noise,
-                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, **kwargs)#systematic_noise=systematic_noise,
+#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'amp':
-            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, debias=debias, systematic_noise=systematic_noise,
-                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, **kwargs)# debias=debias, systematic_noise=systematic_noise,
+#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior,
-                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior, **kwargs)
+#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, 
-                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, **kwargs)
+#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, debias=debias, snrcut=snrcut,
-                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, **kwargs)#debias=debias, snrcut=snrcut,
+#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior,debias=debias,snrcut=snrcut,
-                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs)#debias=debias,snrcut=snrcut,
+#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         
         
     return (data, sigma, A)
@@ -1389,6 +1420,7 @@ def chisqgrad_logcamp_nfft(imvec, A, log_clamp, sigma):
 
     """The gradient of the closure amplitude chi-squared from fft
     """
+
     #get nfft objects
     nfft_info1 = A[0]
     plan1 = nfft_info1.plan
@@ -1451,60 +1483,122 @@ def chisqgrad_logcamp_nfft(imvec, A, log_clamp, sigma):
 
     out = out1 + out2 + out3 + out4
     return out
+
 ##################################################################################################
 # Regularizer and Gradient Functions
 ##################################################################################################
 
-def ssimple(imvec, priorvec, flux):
+def sflux(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+    """Total flux constraint
+    """
+    if norm_reg: norm = flux**2
+    else: norm = 1
+
+    out = -(np.sum(imvec) - flux)**2
+    return out/norm
+
+def sfluxgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+    """Total flux constraint gradient
+    """
+    if norm_reg: norm = flux**2
+    else: norm = 1
+
+    out = -2*(np.sum(imvec) - flux) 
+    return out/ norm
+
+def scm(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Center-of-mass constraint
+    """
+    if beam_size is None: beam_size = psize
+    if norm_reg: beamsize**2 * flux**2
+    else: norm = 1
+
+    xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
+    xx = psize*xx.flatten()[embed_mask]
+    yy = psize*yy.flatten()[embed_mask]
+
+    out = -(np.sum(imvec*xx)**2 + np.sum(imvec*yy)**2)
+    return out/norm
+
+
+def scmgrad(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Center-of-mass constraint gradient
+    """
+    if beam_size is None: beam_size = psize
+    if norm_reg: beamsize**2 * flux**2
+    else: norm = 1
+
+    xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
+    xx = psize*xx.flatten()[embed_mask]
+    yy = psize*yy.flatten()[embed_mask]
+
+    out = -2*(np.sum(imvec*xx)*xx + np.sum(imvec*yy)*yy)
+    return out/norm
+
+def ssimple(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Simple entropy
     """
-    #norm = flux
-    norm = 1
-    return -np.sum(imvec*np.log(imvec/priorvec))/norm
+    if norm_reg: norm = flux
+    else: norm = 1
 
-def ssimplegrad(imvec, priorvec, flux):
+    entropy = -np.sum(imvec*np.log(imvec/priorvec))/norm
+    return entropy/norm
+
+def ssimplegrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Simple entropy gradient
     """
-    #norm = flux
-    norm =1
-    return (-np.log(imvec/priorvec) - 1)/norm
+    if norm_reg: norm = flux
+    else: norm = 1
 
-def sl1(imvec, priorvec, flux):
+    entropygrad = -np.log(imvec/priorvec) - 1
+    return entropygrad/norm
+
+def sl1(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """L1 norm regularizer
     """
-    #norm = flux
-    norm = 1
-    #return -np.sum(np.abs(imvec - priorvec))/norm
-    return -np.sum(np.abs(imvec))/norm
+    if norm_reg: norm = flux
+    else: norm = 1
 
-def sl1grad(imvec, priorvec, flux):
+    #l1 = -np.sum(np.abs(imvec - priorvec))
+    l1 =  -np.sum(np.abs(imvec))
+    return l1/norm
+
+def sl1grad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """L1 norm gradient
     """
-    #norm = flux
-    norm = 1
-    #return -np.sign(imvec - priorvec)/norm
-    return -np.sign(imvec)/norm
+    if norm_reg: norm = flux
+    else: norm = 1
 
-def sgs(imvec, priorvec, flux):
+    #l1grad = -np.sign(imvec - priorvec)
+    ligrad = -np.sign(imvec)
+    return l1grad/norm
+
+def sgs(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Gull-skilling entropy
     """
-    #norm = flux
-    norm =1
-    return np.sum(imvec - priorvec - imvec*np.log(imvec/priorvec))/norm
+    if norm_reg: norm = flux
+    else: norm = 1
+
+    entropy = np.sum(imvec - priorvec - imvec*np.log(imvec/priorvec))
+    return entropy/norm
 
 
-def sgsgrad(imvec, priorvec, flux):
+def sgsgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Gull-Skilling gradient
     """
-    #norm = flux
-    norm = 1
-    return -np.log(imvec/priorvec)/norm
+    if norm_reg: norm = flux
+    else: norm = 1
 
-def stv(imvec, nx, ny, flux):
+    entropygrad= -np.log(imvec/priorvec)
+    return entropygrad/norm
+
+def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation regularizer
     """
-    #norm = flux*psize/beamsize
-    norm = 1
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux*psize / beamsize
+    else: norm = 1
+
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1512,11 +1606,13 @@ def stv(imvec, nx, ny, flux):
     out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2))
     return out/norm
 
-def stvgrad(imvec, nx, ny, flux):
+def stvgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation gradient
     """
-    #norm = flux*psize/beamsize
-    norm = 1
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux*psize / beamsize
+    else: norm = 1
+
     im = imvec.reshape(ny,nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1545,11 +1641,13 @@ def stvgrad(imvec, nx, ny, flux):
     out= -(g1 + g2 + g3).flatten()
     return out/norm
 
-def stv2(imvec, nx, ny, flux):
+def stv2(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Squared Total variation regularizer
     """
-    #norm = psize**4 * flux**2 / beamsize**4
-    norm = 1
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = psize**4 * flux**2 / beamsize**4
+    else: norm = 1
+
     im = imvec.reshape(ny, nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1557,11 +1655,13 @@ def stv2(imvec, nx, ny, flux):
     out = -np.sum((im_l1 - im)**2 + (im_l2 - im)**2)
     return out/norm
 
-def stv2grad(imvec, nx, ny, flux):
+def stv2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Squared Total variation gradient
     """
-    #norm = psize**4 * flux**2 / beamsize**4
-    norm = 1
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = psize**4 * flux**2 / beamsize**4
+    else: norm = 1
+
     im = imvec.reshape(ny,nx)
     impad = np.pad(im, 1, mode='constant', constant_values=0)
     im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
@@ -1585,103 +1685,155 @@ def stv2grad(imvec, nx, ny, flux):
     out= -2*(g1 + g2 + g3).flatten()
     return out/norm
 
-def spatch(imvec, priorvec, flux):
+def spatch(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Patch prior regularizer
     """
-    #norm = flux**2
-    norm = 1
+    if norm_reg: norm = flux**2
+    else: norm = 1
+
     out = -0.5*np.sum( ( imvec - priorvec) ** 2)
     return out/norm
 
-def spatchgrad(imvec, priorvec, flux):
+def spatchgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Patch prior gradient
     """
-    #norm = flux**2
-    norm = 1
+    if norm_reg: norm = flux**2
+    else: norm = 1
+
     out = -(imvec  - priorvec)
     return out/norm
 
 
-def stvuniso(imvec, nx, ny, flux):
-    """Univarite Isotropic Total variation regularizer
-    """
-    #norm = flux
-    norm = 1
+#TODO FIGURE OUT NORMALIZATIONS FOR COMPACT 1 & 2 REGULARIZERS
+def scompact(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    im = imvec.reshape(ny, nx) 
+    im = im / flux
+    
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
+    
+    out = np.sum(np.sum(im * ( (xxpsize - np.sum(np.sum(im * xxpsize)) )**2 + (yypsize - np.sum(np.sum(im * yypsize)) )**2 ) ) )
+    return -out
+
+    
+def scompactgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     im = imvec.reshape(ny, nx)
-    impad = np.pad(im, 1, mode='constant', constant_values=0)
-    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
-    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
-    out = -np.sum(np.abs(im_l1 - im) + np.abs(im_l2 - im))
-    return out/norm
-
-
-def sl0norm(imvec, f_thre):
-    """
-    calculate l0-norm of the image. This method counts up the number of
-    the brightes pixels contributing to (1-f_thre) of the totalflux.
+    im = im / flux
     
-    This code is a modification of code contributed from the Sparse Lab library by Kazu and Mareki
-
-    Args:
-      f_thre (float): a threshold.
-    """
-    #norm = psize**2 #?? 
-    image_vec_srt = np.sort(np.abs(imvec))
-    x = np.where(image_vec_srt==image_vec_srt.max())
-    image_cumsum = np.cumsum(image_vec_srt)
-    i_thre = np.min(np.where(image_cumsum > (1.0-f_thre)*image_vec_srt.sum()))
-    L0 = image_vec_srt.shape[0] - i_thre
-    L0_nrm = L0/(1.0*len(imvec))
-    out = -L0_nrm
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
     
-    return out
+    xcom = np.sum(np.sum( im * xxpsize))
+    ycom = np.sum(np.sum( im * yypsize))
+    
+    term1 = np.sum(np.sum( im * ( (xxpsize - xcom) ) ) )
+    term2 = np.sum(np.sum( im * ( (yypsize - ycom) ) ) )
+    
+    grad = -2*xxpsize*term1 - 2*yypsize*term2  + (xxpsize - xcom )**2 + (yypsize - ycom)**2 
+    
+    return -grad.reshape(-1)
+
+def scompact2(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    im = imvec.reshape(ny, nx) 
+    
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
+    
+    out = np.sum(np.sum(im**2 * ( xxpsize**2 + yypsize**2 ) ) )
+    return -out
+    
+def scompact2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    im = imvec.reshape(ny, nx)
+    
+    xx, yy = np.meshgrid(range(nx), range(ny))
+    xx = xx - (nx-1)/2.0
+    yy = yy - (ny-1)/2.0
+    xxpsize = xx * psize
+    yypsize = yy * psize
+
+    grad = 2*im*(xxpsize**2 + yypsize**2) 
+    
+    return -grad.reshape(-1)
+
 
 ##################################################################################################
 # Chi^2 Data functions
 ##################################################################################################
-def chisqdata_vis(Obsdata, Prior, mask, systematic_noise=0.0):
-    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
+def chisqdata_vis(Obsdata, Prior, mask, **kwargs):#systematic_noise=0.0):
+    """Return the data, sigmas, and fourier matrix for visibilities
     """
 
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+
+    # unpack data
     data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
-    vis = data_arr['vis']
+    snrmask = np.abs(data_arr['vis']/data_arr['sigma']) > snrcut
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
+    vis = data_arr['vis'][snrmask]
 
-    #add systematic noise
-    #sigma = ampdata['sigma']
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
+    # add systematic noise
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
 
+    # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (vis, sigma, A)
 
-def chisqdata_amp(Obsdata, Prior, mask,debias=True, systematic_noise=0.0):
-    """Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
+def chisqdata_amp(Obsdata, Prior, mask, **kwargs):#debias=True, systematic_noise=0.0):
+    """Return the data, sigmas, and fourier matrix for visibility amplitudes
     """
 
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+
+    # unpack data
     ampdata = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
-    uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))
-    amp = ampdata['amp']
+    snrmask = np.abs(ampdata['amp']/data_arr['sigma']) > snrcut
+    uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))[snrmask]
+    amp = ampdata['amp'][snrmask]
 
     #add systematic noise
-    #sigma = ampdata['sigma']
-    sigma = np.linalg.norm([ampdata['sigma'], systematic_noise*ampdata['amp']],axis=0)
+    sigma = np.linalg.norm([ampdata['sigma'], systematic_noise*ampdata['amp']],axis=0)[snrmask]
 
+    # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (amp, sigma, A)
 
-def chisqdata_bs(Obsdata, Prior, mask):
-    """return the bispectra, sigmas, and fourier matrices for and observation, prior, mask
+def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
+    """return the data, sigmas, and fourier matrices for bispectra
     """
 
-    biarr = Obsdata.bispectra(mode="all", count="min")
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bi = biarr['bispec']
-    sigma = biarr['sigmab']
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
 
+    # unpack data
+    biarr = Obsdata.bispectra(mode="all", count="min")
+    snrmask = np.abs(biarr['bispec']/data_arr['sigmab']) > snrcut
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
+    bi = biarr['bispec'][snrmask]
+
+    #add systematic noise
+    sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+
+    # make fourier matrices
     A3 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask)
@@ -1689,27 +1841,37 @@ def chisqdata_bs(Obsdata, Prior, mask):
 
     return (bi, sigma, A3)
 
-def chisqdata_cphase(Obsdata, Prior, mask):
-    """Return the closure phases, sigmas, and fourier matrices for and observation, prior, mask
+def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
+    """Return the data, sigmas, and fourier matrices for closure phases
     """
 
-    clphasearr = Obsdata.c_phases(mode="all", count="min")
-    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
-    clphase = clphasearr['cphase']
-    sigma = clphasearr['sigmacp']
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
 
+    # unpack data
+    clphasearr = Obsdata.c_phases(mode="all", count="min")
+    snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))[snrmask]
+    clphase = clphasearr['cphase'][snrmask]
+    sigma = clphasearr['sigmacp'][snrmask]
+
+    # make fourier matrices
     A3 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask)
          )
     return (clphase, sigma, A3)
 
-def chisqdata_camp(Obsdata, Prior, mask, debias=True,snrcut=0):
-    """Return the closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
+def chisqdata_camp(Obsdata, Prior, mask, **kwargs): #debias=True,snrcut=0):
+    """Return the data, sigmas, and fourier matrices for closure amplitudes
     """
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
 
+    # unpack data & mask low snr points
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
@@ -1719,6 +1881,7 @@ def chisqdata_camp(Obsdata, Prior, mask, debias=True,snrcut=0):
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
 
+    # make fourier matrices
     A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask),
@@ -1727,13 +1890,16 @@ def chisqdata_camp(Obsdata, Prior, mask, debias=True,snrcut=0):
 
     return (clamp, sigma, A4)
 
-def chisqdata_logcamp(Obsdata, Prior, mask, debias=True, snrcut=0):
-    """Return the log closure amplitudes, sigmas, and fourier matrices for and observation, prior, mask
+def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs): #debias=True, snrcut=0):
+    """Return the data, sigmas, and fourier matrices for log closure amplitudes
     """
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
 
+    # unpack data & mask low snr points
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
@@ -1741,6 +1907,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, debias=True, snrcut=0):
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
 
+    # make fourier matrices
     A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask),
@@ -1753,222 +1920,314 @@ def chisqdata_logcamp(Obsdata, Prior, mask, debias=True, snrcut=0):
 ##################################################################################################
 # FFT Chi^2 Data functions
 ##################################################################################################
-def chisqdata_vis_fft(Obsdata, Prior, fft_pad_factor=2,
-                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
-                      p_rad=GRIDDER_P_RAD_DEFAULT,systematic_noise=0.0):
-    """Return the visibilities, sigmas, uv points, and image info
+def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
+#                      fft_pad_factor=FFT_PAD_DEFAULT,
+#                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
+#                      p_rad=GRIDDER_P_RAD_DEFAULT,systematic_noise=0.0):
+    """Return the data, sigmas, uv points, and FFT info for visibilities
     """
 
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data
     data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
-    vis = data_arr['vis']
+    snrmask = np.abs(data_arr['vis']/data_arr['sigma']) > snrcut
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
+    vis = data_arr['vis'][snrmask]
 
-    #add systematic noise
-    #sigma = data_arr['sigma']
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
+    # add systematic noise
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
 
+    # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
-
     gs_info = make_gridder_and_sampler_info(im_info, uv, conv_func=conv_func, p_rad=p_rad, order=order)
+
     sampler_info_list = [gs_info[0]]
     gridder_info_list = [gs_info[1]]
-
     A = (im_info, sampler_info_list, gridder_info_list)
 
     return (vis, sigma, A)
 
-def chisqdata_amp_fft(Obsdata, Prior, fft_pad_factor=2,
-                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
-                      p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,systematic_noise=0.0):
-    """Return the amplitudes, sigmas, uv points, and image info
+def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
+#                      fft_pad_factor=2,
+#                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
+#                      p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,systematic_noise=0.0):
+    """Return the data, sigmas, uv points, and FFT info for visibility amplitudes
     """
 
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data
     data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
-    amp = data_arr['amp']
+    snrmask = np.abs(data_arr['amp']/data_arr['sigma']) > snrcut
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
+    amp = data_arr['amp'][snrmask]
 
     #add systematic noise
-    #sigma = data_arr['sigma']
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
 
+    # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
-
     gs_info = make_gridder_and_sampler_info(im_info, uv, conv_func=conv_func, p_rad=p_rad, order=order)
+
     sampler_info_list = [gs_info[0]]
     gridder_info_list = [gs_info[1]]
-
     A = (im_info, sampler_info_list, gridder_info_list)
+
     return (amp, sigma, A)
 
-def chisqdata_bs_fft(Obsdata, Prior, fft_pad_factor=2,
-                     order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
-    """Return the bispectra, sigmas, uv points, and image info
+def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
+#                     fft_pad_factor=2,
+#                     order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+    """Return the data, sigmas, uv points, and FFT info for bispectra
     """
+
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data
     biarr = Obsdata.bispectra(mode="all", count="min")
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bi = biarr['bispec']
-    sigma = biarr['sigmab']
+    snrmask = np.abs(biarr['bspec']/data_arr['sigmab']) > snrcut
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
+    bi = biarr['bispec'][snrmask]
 
+    #add systematic noise
+    sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+
+    # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
-
     gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+
     sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0]]
     gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1]]
-
     A = (im_info, sampler_info_list, gridder_info_list)
+
     return (bi, sigma, A)
 
-def chisqdata_cphase_fft(Obsdata, Prior, fft_pad_factor=2,
-                         order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
-    """Return the closure phases, sigmas, uv points, and image info
+def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
+#                         fft_pad_factor=2,
+#                         order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+    """Return the data, sigmas, uv points, and FFT info for closure phases
     """
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data
     clphasearr = Obsdata.c_phases(mode="all", count="min")
-    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
-    clphase = clphasearr['cphase']
-    sigma = clphasearr['sigmacp']
+    snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))[snrmask]
+    clphase = clphasearr['cphase'][snrmask]
+    sigma = clphasearr['sigmacp'][snrmask]
 
+    # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
-
     gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+ 
     sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0]]
     gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1]]
-
     A = (im_info, sampler_info_list, gridder_info_list)
+
     return (clphase, sigma, A)
 
-def chisqdata_camp_fft(Obsdata, Prior, fft_pad_factor=2,
-                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
-    """Return the closure phases, sigmas, uv points, and image info
+def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
+#                       fft_pad_factor=2,
+#                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
+    """Return the data, sigmas, uv points, and FFT info for closure amplitudes
     """
+
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
-    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
+    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
+    clamp = clamparr['camp'][snrmask]
+    sigma = clamparr['sigmaca'][snrmask]
 
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[mask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
-    clamp = clamparr['camp'][mask]
-    sigma = clamparr['sigmaca'][mask]
+    # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
-
     gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info4 = make_gridder_and_sampler_info(im_info, uv4, conv_func=conv_func, p_rad=p_rad, order=order)
+
     sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0],gs_info4[0]]
     gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1],gs_info4[1]]
-
     A = (im_info, sampler_info_list, gridder_info_list)
+
     return (clamp, sigma, A)
 
-def chisqdata_logcamp_fft(Obsdata, Prior, fft_pad_factor=2,
-                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
-    """Return the closure phases, sigmas, uv points, and image info
+def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
+#                      fft_pad_factor=2,
+#                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
+    """Return the data, sigmas, uv points, and FFT info for log closure amplitudes
     """
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
-    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
+    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
+    clamp = clamparr['camp'][snrmask]
+    sigma = clamparr['sigmaca'][snrmask]
 
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[mask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
-    clamp = clamparr['camp'][mask]
-    sigma = clamparr['sigmaca'][mask]
+    # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
-
     gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
     gs_info4 = make_gridder_and_sampler_info(im_info, uv4, conv_func=conv_func, p_rad=p_rad, order=order)
+  
     sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0],gs_info4[0]]
     gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1],gs_info4[1]]
-
     A = (im_info, sampler_info_list, gridder_info_list)
-    return (clamp, sigma, A)
 
+    return (clamp, sigma, A)
 
 ##################################################################################################
 # NFFT Chi^2 Data functions
 ##################################################################################################
-def chisqdata_vis_nfft(Obsdata, Prior, systematic_noise=0., 
-                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
+#                       systematic_noise=0., 
+#                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the visibilities, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
     data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
-    vis = data_arr['vis']
+    snrmask = np.abs(data_arr['vis']/data_arr['sigma']) > snrcut
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
+    vis = data_arr['vis'][snrmask]
 
     #add systematic noise
-    #sigma = data_arr['sigma']
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
 
+    # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
     A = [A1]
 
     return (vis, sigma, A)
 
-def chisqdata_amp_nfft(Obsdata, Prior, debias=True, systematic_noise=0.,
-                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
+#                       debias=True, systematic_noise=0.,
+#                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the amplitudes, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
     data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
-    amp = data_arr['amp']
+    snrmask = np.abs(data_arr['amp']/data_arr['sigma']) > snrcut
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
+    amp = data_arr['amp'][snrmask]
 
-    #add systematic noise
-    #sigma = data_arr['sigma']
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)
+    # add systematic noise
+    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
 
+    # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
     A = [A1]
 
     return (amp, sigma, A)
 
-def chisqdata_bs_nfft(Obsdata, Prior, 
-                      fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
+#                      fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the bispectra, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
+    # unpack keyword args
+    systematic_noise = kwargs.get('systematic_noise',0.)
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
     biarr = Obsdata.bispectra(mode="all", count="min")
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bi = biarr['bispec']
-    sigma = biarr['sigmab']
+    snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
+    bi = biarr['bispec'][snrmask]
 
+    #add systematic noise
+    sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+
+    # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
     A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
     A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
@@ -1976,22 +2235,30 @@ def chisqdata_bs_nfft(Obsdata, Prior,
 
     return (bi, sigma, A)
 
-def chisqdata_cphase_nfft(Obsdata, Prior,
-                          fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
+#                          fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
     clphasearr = Obsdata.c_phases(mode="all", count="min")
-    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
-    clphase = clphasearr['cphase']
-    sigma = clphasearr['sigmacp']
+    snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
 
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))[snrmask]
+    clphase = clphasearr['cphase'][snrmask]
+    sigma = clphasearr['sigmacp'][snrmask]
+
+    # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
     A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
     A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
@@ -1999,25 +2266,33 @@ def chisqdata_cphase_nfft(Obsdata, Prior,
 
     return (clphase, sigma, A)
 
-def chisqdata_camp_nfft(Obsdata, Prior, debias=True,snrcut=0,
-                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
+#                       debias=True,snrcut=0,
+#                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
-    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
+    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[mask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
-    clamp = clamparr['camp'][mask]
-    sigma = clamparr['sigmaca'][mask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
+    clamp = clamparr['camp'][snrmask]
+    sigma = clamparr['sigmaca'][snrmask]
 
+    # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
     A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
     A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
@@ -2026,26 +2301,33 @@ def chisqdata_camp_nfft(Obsdata, Prior, debias=True,snrcut=0,
 
     return (clamp, sigma, A)
 
-def chisqdata_logcamp_nfft(Obsdata, Prior, debias=True,snrcut=0,
-                           fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
+#                           debias=True,snrcut=0,
+#                           fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
+    # unpack keyword args
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
     clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
-    mask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
+    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[mask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[mask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[mask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[mask]
-    clamp = clamparr['camp'][mask]
-    sigma = clamparr['sigmaca'][mask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
+    clamp = clamparr['camp'][snrmask]
+    sigma = clamparr['sigmaca'][snrmask]
 
+    # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-
-
     A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
     A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
     A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
@@ -2053,6 +2335,89 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, debias=True,snrcut=0,
     A = [A1,A2,A3,A4]
 
     return (clamp, sigma, A)
+
+
+##################################################################################################
+# Restoring ,Embedding, and Plotting Functions
+##################################################################################################
+def plot_i(im, Prior, nit, chi2_1, chi2_2, **kwargs):
+    """Plot the total intensity image at each iteration
+    """
+
+    cmap = kwargs.get('cmap','afmhot')
+    interpolation = kwargs.get('interpolation', 'gaussian')
+
+    plt.ion()
+    plt.pause(0.00001)
+    plt.clf()
+
+    plt.imshow(im.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap(cmap), interpolation=interpolation)
+    xticks = ticks(Prior.xdim, Prior.psize/RADPERAS/1e-6)
+    yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
+    plt.xticks(xticks[0], xticks[1])
+    plt.yticks(yticks[0], yticks[1])
+    plt.xlabel('Relative RA ($\mu$as)')
+    plt.ylabel('Relative Dec ($\mu$as)')
+    plt.title("step: %i  $\chi^2_1$: %f  $\chi^2_2$: %f" % (nit, chi2_1, chi2_2), fontsize=20)
+    #plt.draw()
+
+
+def embed(im, mask, clipfloor=0., randomfloor=False):
+    """Embeds a 1d image array into the size of boolean embed mask
+    """
+
+    out=np.zeros(len(mask))
+
+    # Here's a much faster version than before 
+    out[mask.nonzero()] = im
+
+    if clipfloor != 0.0:       
+        if randomfloor: # prevent total variation gradient singularities
+            out[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
+        else:
+            out[(mask-1).nonzero()] = clipfloor
+
+    return out
+
+def threshold(image, frac_i=1.e-5, frac_pol=1.e-3):
+    """Apply a hard threshold to the image.
+    """
+
+    imvec = np.copy(image.imvec)
+
+    thresh = frac_i*np.abs(np.max(imvec))
+    lowval = thresh
+    flux = np.sum(imvec)
+
+    for j in range(len(imvec)):
+        if imvec[j] < thresh:
+            imvec[j]=lowval
+
+    imvec = flux*imvec/np.sum(imvec)
+    out = image.Image(imvec.reshape(image.ydim,image.xdim), image.psize,
+                   image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
+    return out
+
+def blur_circ(image, fwhm_i, fwhm_pol=0):
+    """Apply a circular gaussian filter to the image.
+       fwhm_i and fwhm_pol are in radians
+    """
+
+    # Blur Stokes I
+    sigma = fwhm_i/(2. * np.sqrt(2. * np.log(2.)))
+    sigmap = sigma/image.psize
+    im = filt.gaussian_filter(image.imvec.reshape(image.ydim, image.xdim), (sigmap, sigmap))
+    out = image.Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
+
+    # Blur Stokes Q and U
+    if len(image.qvec) and fwhm_pol:
+        sigma = fwhm_pol/(2. * np.sqrt(2. * np.log(2.)))
+        sigmap = sigma/image.psize
+        imq = filt.gaussian_filter(image.qvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
+        imu = filt.gaussian_filter(image.uvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
+        out.add_qu(imq, imu)
+
+    return out
 
 ##################################################################################################
 # FFT & NFFT helper functions
@@ -2319,233 +2684,3 @@ def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAU
     return (sampler_info, gridder_info)
 
 
-def gridder_old(data, im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT):
-    """
-    Grid data sampled at uv points on a square array
-    im_info tuple contains (xdim, ydim, npad, psize, pulse) of the grid
-    conv_func is the convolution function: current options are "pillbox", "gaussian"
-    p_rad is the pixel radius inside wich the conv_func is nonzero
-    """
-
-    (xdim, ydim, npad, psize, pulse) = im_info
-
-    if len(uv) != len(data):
-        raise Exception("uv and data are not the same length!")
-    if not (conv_func in ['pillbox','gaussian']):
-        raise Exception("conv_func must be either 'pillbox' or 'gaussian'")
-
-    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-    du  = 1.0/(npad*psize)
-    vu2 = (vu2/du + 0.5*npad)
-
-    datagrid = np.zeros((npad, npad)).astype('c16')
-    coords = np.round(vu2).astype(int)
-    dcoords = vu2 - np.round(vu2).astype(int)
-    norm = np.zeros_like(len(coords))
-
-    for dy in range(-p_rad, p_rad+1): 
-        for dx in range(-p_rad, p_rad+1):
-            if conv_func == 'gaussian':
-                norm = norm + conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1]) 
-            elif conv_func == 'pillbox':
-                norm = norm + conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1]) 
-
-    for dy in range(-p_rad, p_rad+1): 
-        for dx in range(-p_rad, p_rad+1):
-            if conv_func == 'gaussian':
-                weight = conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1])/norm
-            elif conv_func == 'pillbox':
-                weight = conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])/norm
-            np.add.at(datagrid, tuple(map(tuple, (coords + [dy, dx]).transpose())), data*weight)
-    
-    return datagrid
-
-
-def sampler_old(griddata, im_info, uvset, sample_type="vis", order=3):
-    """
-    Samples griddata (e.g. the FFT of an image) at uv points 
-    the griddata should already be rotated so u,v = 0,0 is in the center
-    im_info tuple contains (xdim, ydim, , psize, pulse) of the grid
-    order is the order of the spline interpolation
-    sample_type gives the type of sample returned: options are 'vis','bs','camp'
-    """
-
-    (xdim, ydim, npad, psize, pulse) = im_info
-
-    if sample_type not in ["vis","bs","camp"]:
-        raise Exception("sampler sample_type should be either 'vis','bs',or 'camp'!")
-    if griddata.shape[0] != griddata.shape[0]:
-        raise Exception("griddata should be a square array!")
-
-    npix = griddata.shape[0]
-
-    dataset = []
-    for uv in uvset:
-        vu2  = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
-        du   = 1.0/(npix*psize)
-        vu2  = (vu2/du + 0.5*npix).T
-
-        datare = nd.map_coordinates(np.real(griddata), vu2, order=order)
-        dataim = nd.map_coordinates(np.imag(griddata), vu2, order=order)
-        data = datare + 1j*dataim
-
-        # Extra phase to match centroid convention -- right??
-        phase = np.exp(-1j*np.pi*psize*(uv[:,0] + uv[:,1]))
-        data = data * phase
-
-        # Multiply by the pulse function
-        # TODO make faster?
-        pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
-        data = data * pulsefac
-
-        dataset.append(data)
- 
-    if sample_type=="vis":
-        out = dataset[0]
-    if sample_type=="bs":
-        out = dataset[0]*dataset[1]*dataset[2]
-    if sample_type=="camp":
-        out = np.abs((dataset[0]*dataset[1])/(dataset[2]*dataset[3]))
-    return out
-
-def scompact(imvec, nx, ny, psize, flux):
-    im = imvec.reshape(ny, nx) 
-    im = im / flux
-    
-    xx, yy = np.meshgrid(range(nx), range(ny))
-    xx = xx - (nx-1)/2.0
-    yy = yy - (ny-1)/2.0
-    xxpsize = xx * psize
-    yypsize = yy * psize
-    
-    out = np.sum(np.sum(im * ( (xxpsize - np.sum(np.sum(im * xxpsize)) )**2 + (yypsize - np.sum(np.sum(im * yypsize)) )**2 ) ) )
-    return -out
-
-    
-def scompactgrad(imvec, nx, ny, psize, flux):
-    im = imvec.reshape(ny, nx)
-    im = im / flux
-    
-    xx, yy = np.meshgrid(range(nx), range(ny))
-    xx = xx - (nx-1)/2.0
-    yy = yy - (ny-1)/2.0
-    xxpsize = xx * psize
-    yypsize = yy * psize
-    
-    xcom = np.sum(np.sum( im * xxpsize))
-    ycom = np.sum(np.sum( im * yypsize))
-    
-    term1 = np.sum(np.sum( im * ( (xxpsize - xcom) ) ) )
-    term2 = np.sum(np.sum( im * ( (yypsize - ycom) ) ) )
-    
-    grad = -2*xxpsize*term1 - 2*yypsize*term2  + (xxpsize - xcom )**2 + (yypsize - ycom)**2 
-    
-    return -grad.reshape(-1)
-
-def scompact2(imvec, nx, ny, psize, flux):
-    im = imvec.reshape(ny, nx) 
-    
-    xx, yy = np.meshgrid(range(nx), range(ny))
-    xx = xx - (nx-1)/2.0
-    yy = yy - (ny-1)/2.0
-    xxpsize = xx * psize
-    yypsize = yy * psize
-    
-    out = np.sum(np.sum(im**2 * ( xxpsize**2 + yypsize**2 ) ) )
-    return -out
-    
-def scompact2grad(imvec, nx, ny, psize, flux):
-    im = imvec.reshape(ny, nx)
-    
-    xx, yy = np.meshgrid(range(nx), range(ny))
-    xx = xx - (nx-1)/2.0
-    yy = yy - (ny-1)/2.0
-    xxpsize = xx * psize
-    yypsize = yy * psize
-
-    grad = 2*im*(xxpsize**2 + yypsize**2) 
-    
-    return -grad.reshape(-1)
-
-##################################################################################################
-# Restoring ,Embedding, and Plotting Functions
-##################################################################################################
-def embed(im, mask, clipfloor=0., randomfloor=False):
-    """Embeds a 1d image array into the size of boolean embed mask
-    """
-
-    out=np.zeros(len(mask))
-
-    # Here's a much faster version than before 
-    out[mask.nonzero()] = im
-
-    if clipfloor != 0.0:       
-        if randomfloor: # prevent total variation gradient singularities
-            out[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
-        else:
-            out[(mask-1).nonzero()] = clipfloor
-
-    return out
-
-def threshold(image, frac_i=1.e-5, frac_pol=1.e-3):
-    """Apply a hard threshold to the image.
-    """
-
-    imvec = np.copy(image.imvec)
-
-    thresh = frac_i*np.abs(np.max(imvec))
-    lowval = thresh
-    flux = np.sum(imvec)
-
-    for j in range(len(imvec)):
-        if imvec[j] < thresh:
-            imvec[j]=lowval
-
-    imvec = flux*imvec/np.sum(imvec)
-    out = image.Image(imvec.reshape(image.ydim,image.xdim), image.psize,
-                   image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
-    return out
-
-def blur_circ(image, fwhm_i, fwhm_pol=0):
-    """Apply a circular gaussian filter to the image.
-       fwhm_i and fwhm_pol are in radians
-    """
-
-    # Blur Stokes I
-    sigma = fwhm_i/(2. * np.sqrt(2. * np.log(2.)))
-    sigmap = sigma/image.psize
-    im = filt.gaussian_filter(image.imvec.reshape(image.ydim, image.xdim), (sigmap, sigmap))
-    out = image.Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
-
-    # Blur Stokes Q and U
-    if len(image.qvec) and fwhm_pol:
-        sigma = fwhm_pol/(2. * np.sqrt(2. * np.log(2.)))
-        sigmap = sigma/image.psize
-        imq = filt.gaussian_filter(image.qvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
-        imu = filt.gaussian_filter(image.uvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
-        out.add_qu(imq, imu)
-
-    return out
-
-
-def plot_i(im, Prior, nit, chi2_1, chi2_2, ipynb=False):
-    """Plot the total intensity image at each iteration
-    """
-
-    plt.ion()
-    plt.pause(0.00001)
-    plt.clf()
-
-    plt.imshow(im.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
-    xticks = ticks(Prior.xdim, Prior.psize/RADPERAS/1e-6)
-    yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
-    plt.xticks(xticks[0], xticks[1])
-    plt.yticks(yticks[0], yticks[1])
-    plt.xlabel('Relative RA ($\mu$as)')
-    plt.ylabel('Relative Dec ($\mu$as)')
-    plt.title("step: %i  $\chi^2_1$: %f  $\chi^2_2$: %f" % (nit, chi2_1, chi2_2), fontsize=20)
-    #plt.draw()
-
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())
