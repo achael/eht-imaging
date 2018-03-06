@@ -617,7 +617,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 #TODO can we save new telescope array terms and flags to uvfits and load them?
 def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, IF=all):
     """Load uvfits data from a uvfits file.
-       To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R' or 'L'
+       To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R', 'L', 'RL', or 'LR'
     """
 
     # Load the uvfits file
@@ -741,6 +741,18 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         llweight = llweight * 0.0
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
+    elif force_singlepol == 'LR':
+        print('WARNING: Putting LR data in Stokes I')
+        rrweight = copy.deepcopy(lrweight)
+        llweight = llweight * 0.0
+        rlweight = rlweight * 0.0
+        lrweight = lrweight * 0.0
+    elif force_singlepol == 'RL':
+        print('WARNING: Putting RL data in Stokes I')
+        rrweight = copy.deepcopy(rlweight)
+        llweight = llweight * 0.0
+        rlweight = rlweight * 0.0
+        lrweight = lrweight * 0.0
         
     #TODO less than or equal to?
     rrmask_2d = (rrweight > 0.)
@@ -842,6 +854,11 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         lr_2d = lr_2d.reshape(nvis, nifs, nchannels)
     else:
         lr_2d = rr_2d*0.0
+    
+    if force_singlepol == 'LR':
+        rr_2d = copy.deepcopy(lr_2d)
+    elif force_singlepol == 'RL':
+        rr_2d = copy.deepcopy(rl_2d)
 
     rr_2d[~rrmask_2d] = np.nan
     ll_2d[~llmask_2d] = np.nan
