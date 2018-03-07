@@ -75,18 +75,18 @@ class Imager(object):
         self._maxit_list = []
         self._stop_list = []
         self._flux_list = []
+        self._snrcut_list = []
+        self._debias_list = []
+        self._systematic_noise_list = []
         self._transform_list = []
-        self._ttype_list = []
 
-        # Parameters for the next imaging iteration
+        # regularizer/data terms for the next imaging iteration
         self.reg_term_next = reg_term  #e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
         self.dat_term_next = data_term #e.g. [('amp', 1000), ('cphase',100)]
-        self.systematic_noise = kwargs.get('systematic_noise',0.)
 
+        # obs, prior, flux, init
         self.obs_next = obsdata
         self.init_next = init_im
-
-        self.epsilon_list_next = []
 
         if prior_im is None:
             self.prior_next = self.init_next
@@ -98,21 +98,31 @@ class Imager(object):
         else:
             self.flux_next = flux
 
-        # FFT parameters
-        self.ttype_next = kwargs.get('ttype','fast')
-        self.fft_gridder_prad = kwargs.get('fft_gridder_prad',GRIDDER_P_RAD_DEFAULT)
-        self.fft_conv_func = kwargs.get('fft_conv_func',GRIDDER_CONV_FUNC_DEFAULT)
-        self.fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
-        self.fft_interp_order = kwargs.get('fft_interp_order',FFT_INTERP_DEFAULT)
+        #debiasing/snr cut/systematic noise
+        self.debias_next=kwargs.get('debias',True)
+        self.snrcut_next=kwargs.get('snrcut',0.)
+        self.systematic_noise_next = kwargs.get('systematic_noise',0.)
 
-        #debiasing/snr cut
-        self.debias=kwargs.get('debias',True)
-        self.snrcut=kwargs.get('snrcut',0.)
+        # clippping
+        self.clipfloor_next = kwargs.get('clipfloor',0.)
+        self.maxit_next = kwargs.get('maxit',MAXIT)
+        self.stop_next = kwargs.get('stop',STOP)
+        self.transform_next = kwargs.get('transform','log')
+
+        # normalize or not
         self.norm_init=kwargs.get('norm_init',True)
         self.norm_reg=kwargs.get('norm_reg',False)
         self.beam_size=self.obs_next.res()
 
+        # FFT parameters
+        self._ttype = kwargs.get('ttype','fast')
+        self._fft_gridder_prad = kwargs.get('fft_gridder_prad',GRIDDER_P_RAD_DEFAULT)
+        self._fft_conv_func = kwargs.get('fft_conv_func',GRIDDER_CONV_FUNC_DEFAULT)
+        self._fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+        self._fft_interp_order = kwargs.get('fft_interp_order',FFT_INTERP_DEFAULT)
+        
         # Parameters related to scattering
+        self.epsilon_list_next = []
         self.scattering_model = kwargs.get('scattering_model', None)
         self._sqrtQ = None
         self._ea_ker = None
@@ -121,14 +131,9 @@ class Imager(object):
         self._alpha_phi_list = []
         self.alpha_phi_next = kwargs.get('alpha_phi',None)
 
-        self.clipfloor_next = kwargs.get('clipfloor',0.)
-        self.maxit_next = kwargs.get('maxit',MAXIT)
-        self.stop_next = kwargs.get('stop',STOP)
-        self.transform_next = kwargs.get('maxit','log')
+        # imager history
         self._change_imgr_params = True
         self.nruns = 0
-
-
 
         #set embedding matrices and prepare imager
         self.check_params()
@@ -183,14 +188,14 @@ class Imager(object):
             (self.prior_next.ydim != self.prior_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
     
-        if self.ttype_next not in ['fast','direct','nfft']:
-            raise Exception("Possible ttype_next values are 'fast', 'direct','nfft'!")
+        if self._ttype not in ['fast','direct','nfft']:
+            raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
 
-        # determine if we need to change the saved imager parameters on the next imager run
+        # determine if we need to recompute the saved imager parameters on the next imager run
         if self.nruns == 0:
             return
 
-        if self.ttype_next != self.ttype_last():
+        if self.obs_next != self.obs_last():
             self._change_imgr_params = True
             return
 
@@ -215,14 +220,22 @@ class Imager(object):
         if ((self.prior_next.psize != self.prior_last().psize) or
             (self.prior_next.xdim != self.prior_last().xdim) or
             (self.prior_next.ydim != self.prior_last().ydim)):
-            self.change_imgr_params = True
+            self._change_imgr_params = True
+
+        if self.debias_next != self.debias_last():
+            self._change_imgr_params = True
+            return
+        if self.snrcut_next != self.snrcut_last():
+            self._change_imgr_params = True
+            return
+        if self.systematic_noise_next != self.systematic_noise_last():
+            self._change_imgr_params = True
             return
 
     def check_limits(self):
         """Check image parameter consistency with observation.
         """
 
-        imsize = np.max([self.prior_next.xdim, self.prior_next.ydim]) * self.prior_next.psize
         uvmax = 1.0/self.prior_next.psize
         uvmin = 1.0/imsize
         uvdists = self.obs_next.unpack('uvdist')['uvdist']
@@ -328,6 +341,31 @@ class Imager(object):
             return
         return self._maxit_list[-1]
 
+    def debias_last(self):
+        """Return last debias value.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._debias_list[-1]
+
+    def snrcut_last(self):
+        """Return last snrcut value.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._snrcut_list[-1]
+
+    def systematic_noise_last(self):
+        """Return last snrcut value.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._systematic_noise_list[-1]
+
+
     def stop_last(self):
         """Return last convergence value.
         """
@@ -343,14 +381,6 @@ class Imager(object):
             print("No imager runs yet!")
             return
         return self._transform_list[-1]
-
-    def ttype_last(self):
-        """Return last fourier transform type used.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._ttype_list[-1]
 
     def init_imager_I(self):
         """Set up Stokes I imager.
@@ -370,9 +400,10 @@ class Imager(object):
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
-                                ttype=self.ttype_next, order=self.fft_interp_order, fft_pad_factor=self.fft_pad_factor, 
-                                conv_func=self.fft_conv_func, p_rad=self.fft_gridder_prad, debias=self.debias, 
-                                snrcut=self.snrcut,systematic_noise=self.systematic_noise)
+                                debias=self.debias_next, snrcut=self.snrcut_next,systematic_noise=self.systematic_noise_next,
+                                ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor, 
+                                conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad)
+
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
 
@@ -409,7 +440,7 @@ class Imager(object):
             sigma = self._data_tuples[dname][1]
             A = self._data_tuples[dname][2]
 
-            chi2 = chisq(imvec, A, data, sigma, dname, ttype=self.ttype_next, mask=self._embed_mask)
+            chi2 = chisq(imvec, A, data, sigma, dname, ttype=self._ttype, mask=self._embed_mask)
             chi2_dict[dname] = chi2
 
         return chi2_dict
@@ -423,7 +454,7 @@ class Imager(object):
             sigma = self._data_tuples[dname][1]
             A = self._data_tuples[dname][2]
 
-            chi2grad = chisqgrad(imvec, A, data, sigma, dname, ttype=self.ttype_next, mask=self._embed_mask)
+            chi2grad = chisqgrad(imvec, A, data, sigma, dname, ttype=self._ttype, mask=self._embed_mask)
             chi2grad_dict[dname] = chi2grad
 
         return chi2grad_dict
@@ -675,7 +706,7 @@ class Imager(object):
 
         return np.concatenate(((regterm + chisq_grad_im),(chisq_grad_epsilon + chisq_epsilon_grad)))
 
-    def plotcur(self, imvec):
+    def plotcur(self, imvec, **kwargs):
         if self._show_updates:
             if self.transform_next == 'log':
                 imvec = np.exp(imvec)
@@ -696,7 +727,7 @@ class Imager(object):
                 outstr += "%s : %0.2f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
 
             if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
-            plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, ipynb=False)
+            plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, **kwargs)
 
             print(outstr)
         self._nit += 1
@@ -901,13 +932,15 @@ class Imager(object):
         self._obs_list.append(self.obs_next)
         self._init_list.append(self.init_next)
         self._prior_list.append(self.prior_next)
+        self._debias_list.append(self.flux_next)
+        self._systematic_noise_list.append(self.flux_next)
+        self._snrcut_list.append(self.flux_next)
         self._flux_list.append(self.flux_next)
         self._clipfloor_list.append(self.clipfloor_next)
         self._maxit_list.append(self.maxit_next)
         self._stop_list.append(self.stop_next)
         self._transform_list.append(self.transform_next)
         self._reg_term_list.append(self.reg_term_next)
-        self._ttype_list.append(self.ttype_next)
         self._dat_term_list.append(self.dat_term_next)
         self._alpha_phi_list.append(self.alpha_phi_next)
 

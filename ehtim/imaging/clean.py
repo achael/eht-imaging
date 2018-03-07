@@ -1166,7 +1166,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
 #amplitude and "closure phase" term
 def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, loop_gain_init=1,phaseweight=1,
                         weighting='uniform', bscount="min",no_neg_comps=False,
-                        fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
+                        fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT, show_updates=True):
 
  
     # limit imager range to prior values > clipfloor
@@ -1496,10 +1496,12 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
             #plot deltas and chi^2 map
             DeltasIm.imvec = deltas
-            #plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
+            if show_updates:
+                plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
 
-            ChisqIm.imvec = -chisq_map          
-            #plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
+            ChisqIm.imvec = -chisq_map   
+            if show_updates:       
+                plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
 #            #######
 #            #print ("step time %i: %f s" % (it+1, time.time() -t))
@@ -1550,7 +1552,8 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
         OutputIm.imvec = imvec_current          
         OutputImBlur = OutputIm.blur_gauss(beamparams)
-        #plot_i(OutputImBlur, it, chisq_current, fig=2)
+        if show_updates:       
+            plot_i(OutputImBlur, it, chisq_current, fig=2)
 
     return OutputIm
 

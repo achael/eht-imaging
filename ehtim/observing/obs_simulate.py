@@ -154,12 +154,12 @@ def make_uvpoints(array,
 # Observe w/o noise
 ##################################################################################################
 
-def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor=1):
-    """Observe a image on the same baselines as an existing observation object with no noise.
+def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
+    """Observe a image on given baselines with no noise.
 
        Args:
            im (Image): the image to be observed
-           obs (Obsdata): The empty observation object OR a list of u,v coordinates
+           uv (ndarray): an array of u,v coordinates
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
            ttype (str): if "fast" or 'nfft', use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
@@ -172,29 +172,30 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
     #it may be redundant and all imports should go at the top
     from ehtim.obsdata import Obsdata 
 
-    if type(obs) == Obsdata:
-        # Check for agreement in coordinates and frequency
-        tolerance = 1e-8
-        if (np.abs(im.ra - obs.ra) > tolerance) or (np.abs(im.dec - obs.dec) > tolerance):
-            raise Exception("Image coordinates are not the same as observtion coordinates!")
-        if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
-            raise Exception("Image frequency is not the same as observation frequency!")
+#    if type(obs) == Obsdata:
+#        # Check for agreement in coordinates and frequency
+#        tolerance = 1e-8
+#        if (np.abs(im.ra - obs.ra) > tolerance) or (np.abs(im.dec - obs.dec) > tolerance):
+#            raise Exception("Image coordinates are not the same as observtion coordinates!")
+#        if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
+#            raise Exception("Image frequency is not the same as observation frequency!")
 
-        if ttype=='direct' or ttype=='fast' or ttype=='nfft':
-            print("Producing clean visibilities from image with " + ttype + " FT . . . ")
-        else:
-            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
+#        if ttype=='direct' or ttype=='fast' or ttype=='nfft':
+#            print("Producing clean visibilities from image with " + ttype + " FT . . . ")
+#        else:
+#            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
 
-        # Copy data to be safe 
-        obsdata = obs.copy().data
+#        # Copy data to be safe 
+#        obsdata = obs.copy().data
 
-        # Extract uv data
-        #uv = obsdata[['u','v']].view(('f8',2))
-        uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
-    else:
-        uv = np.array(obs)
-        if uv.shape[1] != 2:
-            raise Exception("When given as a list of uv points, the obs should be a list of pairs of u-v coordinates!")
+#        # Extract uv data
+#        #uv = obsdata[['u','v']].view(('f8',2))
+#        uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
+#    else:
+    uv = np.array(uv)
+    print (uv.shape)
+    if uv.shape[1] != 2:
+        raise Exception("When given as a list of uv points, the obs should be a list of pairs of u-v coordinates!")
 
     umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
     umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
@@ -289,7 +290,6 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
 
     #visibilities from NFFT
     elif ttype=="nfft":
-
         uvdim = len(uv)
         if (im.xdim%2 or im.ydim%2):
             raise Exception("NFFT doesn't work with odd image dimensions!")
@@ -328,6 +328,7 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
             plan.f_hat = im.uvec.copy().reshape((im.ydim,im.xdim)).T
             plan.trafo()
             uvis = plan.f.copy()*phase*pulsefac
+
         if len(im.vvec):
             plan.f_hat = im.vvec.copy().reshape((im.ydim,im.xdim)).T
             plan.trafo()
@@ -355,20 +356,21 @@ def observe_image_nonoise(im, obs, sgrscat=False, ttype="direct", fft_pad_factor
             vvis[i] *= ker
 
     # Put the visibilities back in the obsdata array
-    if type(obs) == Obsdata:
-        obsdata['vis'] = vis
-        obsdata['qvis'] = qvis
-        obsdata['uvis'] = uvis
-        obsdata['vvis'] = vvis
+#    if type(obs) == Obsdata:
+#        obsdata['vis'] = vis
+#        obsdata['qvis'] = qvis
+#        obsdata['uvis'] = uvis
+#        obsdata['vvis'] = vvis
+#    else:
+    if len(im.qvec):
+        obsdata = [vis, qvis, uvis, vvis]
     else:
-        if len(im.qvec):
-            obsdata = [vis, qvis, uvis, vvis]
-        else:
-            obsdata = vis
+        obsdata = [vis, None, None, None]
 
     return obsdata
 
-def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_factor=1, repeat=False):
+#TODO MAKE THIS COMPATIBLE WITH ABOVE FOR IMAGE
+def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_factor=2, repeat=False):
 
     """Observe a movie on the same baselines as an existing observation object with no noise.
 
