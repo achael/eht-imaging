@@ -1,15 +1,20 @@
 import ehtim as eh
+from ehtim.imaging.clean import *
 #from clean import *
 
 # trial image 1 -- Sgr A* image
 im = eh.image.load_txt('./models/avery_sgra_eofn.txt')
-#arr = eh.array.load_txt('./arrays/EHT2017_noRedundant.txt')
-arr = eh.array.load_txt('./arrays/EHT2025.txt')
-obs = im.observe(arr, 1000, 600, 0, 24., 4.e10, add_th_noise=False, phasecal=False)
+arr = eh.array.load_txt('./arrays/EHT2017.txt')
+#arr = eh.array.load_txt('./arrays/EHT2025.txt')
+obs = im.observe(arr, 1000, 600, 0, 24., 4.e10, add_th_noise=False, phasecal=True)
 prior = eh.image.make_square(obs, 128, 1.5*im.fovx())
 
 # data domain clean with visibilities
 outvis = dd_clean_vis(obs, prior, niter=100, loop_gain=0.1, method='min_chisq',weighting='uniform')
+
+# closure phase and amplitudes
+outbs = dd_clean_amp_cphase(obs, prior, niter=100, loop_gain=0.1, loop_gain_init=.1,phaseweight=3.e7, weighting='uniform', bscount="min",
+)
 
 # data domain clean with bispectrum
 # bispectrum dd clean doesn't seem to work well with the Sgr A* image !!
@@ -17,7 +22,7 @@ outbs = dd_clean_bispec_full(obs, prior, niter=2, loop_gain=0.1, order=1, weight
 
 
 #outbs = dd_clean_bispec_imweight(obs, prior, niter=100, loop_gain=0.1,imweight=2, weighting='uniform', bscount="max")
-outbs = dd_clean_amp_cphase(obs, prior, niter=1000, loop_gain=0.05, loop_gain_init=.05,phaseweight=3.e7, weighting='uniform', bscount="min")
+
 obs_sc = eh.self_cal.self_cal(obs, outbs, method='phase')
 obs_sc = eh.self_cal.self_cal(obs_sc, outbs, method='phase')
 

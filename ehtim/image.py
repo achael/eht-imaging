@@ -229,6 +229,22 @@ class Image(object):
         self.qvec = - self.qvec
         return
 
+    def sample_uv(self, uv, ttype='direct',fft_pad_factor=2,sgrscat=False):
+        """Sample the image on the selected uv points without adding noise.
+
+           Args:
+               uv (ndarray): an array of uv points
+               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+
+           Returns:
+               (list): a list of [I,Q,U,V] visibilities
+        """
+
+        data = simobs.sample_vis(self, uv, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
+        return data
+
     def observe_same_nonoise(self, obs, 
                                    ttype="direct", fft_pad_factor=2, 
                                    sgrscat=False):
@@ -245,9 +261,34 @@ class Image(object):
                (Obsdata): an observation object with no noise
         """
 
-        data = simobs.observe_image_nonoise(self, obs, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
+        # Check for agreement in coordinates and frequency
+        tolerance = 1e-8
+        if (np.abs(self.ra - obs.ra) > tolerance) or (np.abs(self.dec - obs.dec) > tolerance):
+            raise Exception("Image coordinates are not the same as observtion coordinates!")
+        if (np.abs(self.rf - obs.rf)/obs.rf > tolerance):
+            raise Exception("Image frequency is not the same as observation frequency!")
 
-        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, data,
+        if ttype=='direct' or ttype=='fast' or ttype=='nfft':
+            print("Producing clean visibilities from image with " + ttype + " FT . . . ")
+        else:
+            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
+
+        # Copy data to be safe 
+        obsdata = obs.copy().data
+
+        # Extract uv datasample
+        uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
+
+        data = simobs.sample_vis(self, uv, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
+
+        # put visibilities into the obsdata
+        obsdata['vis'] = data[0]
+        if not(data[1] is None):
+            obsdata['qvis'] = data[1]
+            obsdata['uvis'] = data[2]
+            obsdata['vvis'] = data[3]        
+
+        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata,
                                              obs.tarr, source=self.source, mjd=obs.mjd)
         return obs_no_noise
 
@@ -994,8 +1035,6 @@ class Image(object):
                        image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
         return out
 
-
-
     def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), export_pdf="", show=True):
         """Display the image.
 
@@ -1206,8 +1245,6 @@ class Image(object):
         ehtim.io.save.save_im_fits(self, fname)
         return
 
-
-
     def overlay_display(self, im_array, f=False, aligned=True, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=1.e3, color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
         """Display the image.
 
@@ -1305,7 +1342,6 @@ class Image(object):
 
         return (f, shift)
 
-
     def save_txt(self, fname):
         """Save image data to text file.
 
@@ -1325,6 +1361,7 @@ class Image(object):
         """
         ehtim.io.save.save_im_fits(self, fname)
         return
+
 ###########################################################################################################################################
 #Image creation functions
 ###########################################################################################################################################
