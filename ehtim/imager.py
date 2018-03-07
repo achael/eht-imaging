@@ -99,7 +99,7 @@ class Imager(object):
             self.flux_next = flux
 
         # FFT parameters
-        self.ttype_next = kwargs.get('ttype','nfft')
+        self.ttype_next = kwargs.get('ttype','fast')
         self.fft_gridder_prad = kwargs.get('fft_gridder_prad',GRIDDER_P_RAD_DEFAULT)
         self.fft_conv_func = kwargs.get('fft_conv_func',GRIDDER_CONV_FUNC_DEFAULT)
         self.fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -109,7 +109,7 @@ class Imager(object):
         self.debias=kwargs.get('debias',True)
         self.snrcut=kwargs.get('snrcut',0.)
         self.norm_init=kwargs.get('norm_init',True)
-        self.norm_reg=kwargs.get('norm_regs',False)
+        self.norm_reg=kwargs.get('norm_reg',False)
         self.beam_size=self.obs_next.res()
 
         # Parameters related to scattering
