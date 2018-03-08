@@ -1516,7 +1516,7 @@ def scm(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_
     """Center-of-mass constraint
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: beam_size**2 * flux**2
+    if norm_reg: norm = beam_size**2 * flux**2
     else: norm = 1
 
     xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
@@ -1531,7 +1531,7 @@ def scmgrad(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, b
     """Center-of-mass constraint gradient
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: beam_size**2 * flux**2
+    if norm_reg: norm = beam_size**2 * flux**2
     else: norm = 1
 
     xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
