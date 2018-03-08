@@ -1510,7 +1510,7 @@ def scm(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_
     """Center-of-mass constraint
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: beamsize**2 * flux**2
+    if norm_reg: beam_size**2 * flux**2
     else: norm = 1
 
     xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
@@ -1525,7 +1525,7 @@ def scmgrad(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, b
     """Center-of-mass constraint gradient
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: beamsize**2 * flux**2
+    if norm_reg: beam_size**2 * flux**2
     else: norm = 1
 
     xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
@@ -1541,7 +1541,7 @@ def ssimple(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     if norm_reg: norm = flux
     else: norm = 1
 
-    entropy = -np.sum(imvec*np.log(imvec/priorvec))/norm
+    entropy = -np.sum(imvec*np.log(imvec/priorvec))
     return entropy/norm
 
 def ssimplegrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
@@ -1570,7 +1570,7 @@ def sl1grad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     else: norm = 1
 
     #l1grad = -np.sign(imvec - priorvec)
-    ligrad = -np.sign(imvec)
+    l1grad = -np.sign(imvec)
     return l1grad/norm
 
 def sgs(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
@@ -1596,7 +1596,7 @@ def stv(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Total variation regularizer
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = flux*psize / beamsize
+    if norm_reg: norm = flux*psize / beam_size
     else: norm = 1
 
     im = imvec.reshape(ny, nx)
@@ -1610,7 +1610,7 @@ def stvgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=Non
     """Total variation gradient
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = flux*psize / beamsize
+    if norm_reg: norm = flux*psize / beam_size
     else: norm = 1
 
     im = imvec.reshape(ny,nx)
@@ -1645,7 +1645,7 @@ def stv2(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Squared Total variation regularizer
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = psize**4 * flux**2 / beamsize**4
+    if norm_reg: norm = psize**4 * flux**2 / beam_size**4
     else: norm = 1
 
     im = imvec.reshape(ny, nx)
@@ -1659,7 +1659,7 @@ def stv2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=No
     """Squared Total variation gradient
     """
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = psize**4 * flux**2 / beamsize**4
+    if norm_reg: norm = psize**4 * flux**2 / beam_size**4
     else: norm = 1
 
     im = imvec.reshape(ny,nx)
