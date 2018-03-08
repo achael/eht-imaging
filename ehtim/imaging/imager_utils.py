@@ -54,7 +54,7 @@ MAXIT = 100 # maximum number of iterations
 STOP = 1.e-8 # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'compact', 'compact2']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'simple', 'compact', 'compact2']
 
 # FFT & NFFT options
 NFFT_KERSIZE_DEFAULT = 20
@@ -474,6 +474,7 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
 
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size', psize)
+    alpha_A = kwargs.get('alpha_A', 1.0)
 
     if stype == "flux":
         s = -sflux(imvec, nprior, flux, norm_reg=norm_reg)
@@ -483,6 +484,8 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
         s = -ssimple(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "l1":
         s = -sl1(imvec, nprior, flux, norm_reg=norm_reg)
+    elif stype == "lA":
+        s = -slA(imvec, nprior, psize, flux, beam_size, alpha_A, norm_reg)
     elif stype == "gs":
         s = -sgs(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "patch":
@@ -514,6 +517,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
 
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     beam_size = kwargs.get('beam_size', psize)
+    alpha_A = kwargs.get('alpha_A', 1.0)
 
     if stype == "flux":
         s = -sfluxgrad(imvec, nprior, flux, norm_reg=norm_reg)
@@ -523,6 +527,8 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         s = -ssimplegrad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "l1":
         s = -sl1grad(imvec, nprior, flux, norm_reg=norm_reg)
+    elif stype == "lA":
+        s = -slAgrad(imvec, nprior, psize, flux, beam_size, alpha_A, norm_reg)
     elif stype == "gs":
         s = -sgsgrad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "patch":
@@ -1572,6 +1578,54 @@ def sl1grad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     #l1grad = -np.sign(imvec - priorvec)
     l1grad = -np.sign(imvec)
     return l1grad/norm
+
+def fA(imvec, I_ref = 1.0, alpha_A = 1.0):
+    """Function to take imvec to itself in the limit alpha_A -> 0 and to a binary representation in the limit alpha_A -> infinity
+    """
+    return 2.0/np.pi * (1.0 + alpha_A)/alpha_A * np.arctan( np.pi*alpha_A/2.0*np.abs(imvec)/I_ref)
+
+def fAgrad(imvec, I_ref = 1.0, alpha_A = 1.0):
+    """Function to take imvec to itself in the limit alpha_A -> 0 and to a binary representation in the limit alpha_A -> infinity
+    """
+    return (1.0 + alpha_A) / ( I_ref * (1.0 + (np.pi*alpha_A/2.0*imvec/I_ref)**2))
+
+def slA(imvec, priorvec, psize, flux, beam_size=None, alpha_A = 1.0, norm_reg=NORM_REGULARIZER):
+    """\ell_A regularizer
+    """
+
+    # The appropriate I_ref is something like the total flux divided by the number of pixels per beam
+    if beam_size is None: beam_size = psize
+    I_ref = flux
+
+    if norm_reg: 
+        norm_l1 = 1.0                  # as alpha_A ->0
+        norm_l0 = (beam_size/psize)**2 # as alpha_A ->\infty
+        weight_l1 = 1.0/(1.0 + alpha_A)
+        weight_l0 = alpha_A
+        norm = (norm_l1 * weight_l1 + norm_l0 * weight_l0)/(weight_l0 + weight_l1)
+    else: 
+        norm = 1
+
+    return -np.sum(fA(imvec, I_ref, alpha_A))/norm
+
+def slAgrad(imvec, priorvec, psize, flux, beam_size=None, alpha_A = 1.0, norm_reg=NORM_REGULARIZER):
+    """\ell_A gradient
+    """
+
+    # The appropriate I_ref is something like the total flux divided by the number of pixels per beam
+    if beam_size is None: beam_size = psize
+    I_ref = flux
+
+    if norm_reg: 
+        norm_l1 = 1.0                  # as alpha_A ->0
+        norm_l0 = (beam_size/psize)**2 # as alpha_A ->\infty
+        weight_l1 = 1.0/(1.0 + alpha_A)
+        weight_l0 = alpha_A
+        norm = (norm_l1 * weight_l1 + norm_l0 * weight_l0)/(weight_l0 + weight_l1)
+    else: 
+        norm = 1
+
+    return -fAgrad(imvec, I_ref, alpha_A)/norm
 
 def sgs(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     """Gull-skilling entropy
