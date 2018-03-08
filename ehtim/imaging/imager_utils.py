@@ -128,7 +128,10 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     logim = kwargs.get('logim',True)
     norm_init = kwargs.get('norm_init',False)
     show_updates = kwargs.get('show_updates',True)
-    
+
+    beam_size = kwargs.get('beam_size',Obsdata.res())
+    kwargs['beam_size'] = beam_size
+
     # Make sure data and regularizer options are ok
     if not d1 and not d2:
         raise Exception("Must have at least one data term!")
