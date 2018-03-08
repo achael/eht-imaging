@@ -1855,7 +1855,7 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):#debias=True, systematic_noise
 
     # unpack data
     ampdata = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
-    snrmask = np.abs(ampdata['amp']/data_arr['sigma']) > snrcut
+    snrmask = np.abs(ampdata['amp']/ampdata['sigma']) > snrcut
     uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))[snrmask]
     amp = ampdata['amp'][snrmask]
 
