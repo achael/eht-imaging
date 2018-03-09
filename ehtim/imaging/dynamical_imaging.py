@@ -852,7 +852,13 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     # Get data and Fourier matrices for the data terms
     for i in range(N_frame):  
         pixel_max = np.max(InitIm_List[i].imvec)
-        nprior_embed_List[i] = Prior.imvec
+        prior_flux_rescale = 1.0
+        if len(flux_List) > 0:
+            prior_flux_rescale = flux_List[i]/Prior.total_flux()
+
+
+        nprior_embed_List[i] = Prior.imvec * prior_flux_rescale
+
         nprior_List[i] = nprior_embed_List[i][embed_mask_List[i]]
         logprior_List[i] = np.log(nprior_List[i])    
         loginit_List[i] = np.log(ninit_List[i] + pixel_max/Target_Dynamic_Range/1.e6)  #add the dynamic range floor here  
