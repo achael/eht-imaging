@@ -274,6 +274,29 @@ def average_im_list(im_List):
     avg_im.imvec = np.mean([im.imvec for im in im_List],axis=0)
     return avg_im
 
+def blur_im_list(im_List, fwhm_x, fwhm_t):
+    """Apply a gaussian filter to a list of images, with fwhm_x in radians and fwhm_t in frames.
+
+       Args:
+           fwhm_x (float): circular beam size for spatial blurring in radians
+           fwhm_t (float): temporal blurring in frames
+       Returns:
+           (Image): output image list
+    """
+
+    # Blur Stokes I
+    sigma_x = fwhm_x / (2. * np.sqrt(2. * np.log(2.)))
+    sigma_t = fwhm_t / (2. * np.sqrt(2. * np.log(2.)))
+
+    arr = np.array([im.imvec.reshape(im.ydim, im.xdim) for im in im_List])
+    arr = filt.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
+
+    ret = []
+    for j in range(len(im_List)):
+        ret.append(image.Image(arr[j], im_List[0].psize, im_List[0].ra, im_List[0].dec, rf=im_List[0].rf, source=im_List[0].source, mjd=im_List[0].mjd))
+
+    return ret
+
 ##################################################################################################
 # Convenience Functions for Analytical Work
 ##################################################################################################
