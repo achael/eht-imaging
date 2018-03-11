@@ -192,6 +192,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
 #        #uv = obsdata[['u','v']].view(('f8',2))
 #        uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
 #    else:
+
     uv = np.array(uv)
     print (uv.shape)
     if uv.shape[1] != 2:
@@ -369,7 +370,8 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
 
     return obsdata
 
-#TODO MAKE THIS COMPATIBLE WITH ABOVE FOR IMAGE
+#TODO MAKE THIS COMPATIBLE WITH ABOVE FOR IMAGE ??
+#TODO is it even possible given that we need time information? 
 def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_factor=2, repeat=False):
 
     """Observe a movie on the same baselines as an existing observation object with no noise.
