@@ -237,7 +237,7 @@ class Imager(object):
         """
 
         uvmax = 1.0/self.prior_next.psize
-        uvmin = 1.0/imsize
+        uvmin = 1.0/(self.prior_next.psize*np.max((self.prior_next.xdim, self.prior_next.ydim)))
         uvdists = self.obs_next.unpack('uvdist')['uvdist']
         maxbl = np.max(uvdists)
         minbl = np.max(uvdists[uvdists > 0])

@@ -61,294 +61,9 @@ def plot_i(Image, nit, chi2, fig=1, cmap='afmhot'):
     plt.ylabel('Relative Dec ($\mu$as)')
     plt.title("step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
     
-#TODO enforce no imaginary components? 
-#TODO enforce no negative components? 
-#TODO arbitrary mask?? -- need embedding!       
-def dd_clean_bispec(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=1, order=1, 
-                        weighting='uniform', bscount="min",
-                        fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
-
- 
-    # limit imager range to prior values > clipfloor
-    embed_mask = InitIm.imvec >= clipfloor
-    
-    # get data
-    biarr = Obsdata.bispectra(mode="all", count=bscount)
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bs = biarr['bispec']
-    sigma = biarr['sigmab']
-
-    # necessary nfft infos
-    npad = int(fft_pad_factor * np.max((InitIm.xdim, InitIm.ydim)))
-    nfft_info1 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv1)
-    nfft_info2 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv2)
-    nfft_info3 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv3)
-
-    nfft_info11 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, -2*uv1)
-    nfft_info22 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, -2*uv2)
-    nfft_info33 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, -2*uv3)
-
-    nfft_info12 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv1-uv2)
-    nfft_info23 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv2-uv3)
-    nfft_info31 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv3-uv1)
-
-    # TODO do we use pulse factors? 
-    plan1 = nfft_info1.plan
-    pulsefac1 = nfft_info1.pulsefac
-    plan2 = nfft_info2.plan
-    pulsefac2 = nfft_info2.pulsefac
-    plan3 = nfft_info3.plan
-    pulsefac3 = nfft_info3.pulsefac
-
-    plan11 = nfft_info11.plan
-    pulsefac11 = nfft_info11.pulsefac
-    plan22 = nfft_info22.plan
-    pulsefac22 = nfft_info22.pulsefac
-    plan33 = nfft_info33.plan
-    pulsefac33 = nfft_info33.pulsefac
-
-    plan12 = nfft_info12.plan
-    pulsefac12 = nfft_info12.pulsefac
-    plan23 = nfft_info23.plan
-    pulsefac23 = nfft_info23.pulsefac
-    plan31 = nfft_info31.plan
-    pulsefac31 = nfft_info31.pulsefac
-
-    # Weights
-    weights_nat = 1./(sigma**2)
-    if weighting=='uniform':
-        weights = np.ones(len(weights_nat))
-    elif weighting=='natural':
-        weights=weights_nat
-    else:
-        raise Exception("weighting must be 'uniform' or 'natural'")
-    weights_norm = np.sum(weights)
-
-    # Coordinate matrix 
-    # TODO do we need to make sure this corresponds exactly with what NFFT is doing? 
-    # TODO what if the image is odd? 
-    coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
-                                            for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
-    coord = coord.reshape(InitIm.ydim*InitIm.xdim, 2)
-    coord = coord[embed_mask]
-
-    # Initial imvec and visibilities 
-    # TODO currently initialized to zero!!
-    OutputIm = InitIm.copy()
-    DeltasIm = InitIm.copy()
-    ChisqIm = InitIm.copy()
-
-    res = Obsdata.res()
-    beamparams = Obsdata.fit_beam()
-
-    imvec_init = 0*InitIm.imvec
-    vis1_init = np.zeros(len(bs), dtype='complex128')
-    vis2_init = np.zeros(len(bs), dtype='complex128')
-    vis3_init = np.zeros(len(bs), dtype='complex128')
-    bs_init = vis1_init*vis2_init*vis3_init
-    chisq_init =  np.sum(weights*np.abs(bs - bs_init)**2)
-    rchisq_init =  np.sum(weights_nat*np.abs(bs - bs_init)**2)/(2*len(weights_nat))
-
-    imvec_current = imvec_init
-    vis1_current = vis1_init
-    vis2_current = vis2_init
-    vis3_current = vis3_init
-    bs_current = bs_init
-    chisq_current = chisq_init
-    rchisq_current = rchisq_init
-
-    # clean loop
-    print("\n")
-    for it in range(niter):
-
-        # compute delta at each location
-        resid_current = bs - bs_current
-        vis12_current = vis1_current*vis2_current
-        vis13_current = vis1_current*vis3_current
-        vis23_current = vis2_current*vis3_current
-
-        # center the first component automatically
-        # since initial image is empty, must go to higher order in delta in solution
-        # TODO generalize to non-empty initial image!
-        if it==0:
-
-            A = np.sum(weights*np.real(resid_current))
-            B = np.sum(weights)
-
-            component_strength = np.cbrt(A/B)
-            component_loc_idx = (InitIm.ydim//2)*InitIm.xdim  + InitIm.xdim//2 #TODO is this right for odd images??+/- 1??
-
-        else:
-            # First calculate P
-            plan1.f =  weights * resid_current * vis23_current.conj()
-            plan1.adjoint()
-            out1 = np.real((plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim))
-
-            plan2.f =  weights * resid_current * vis13_current.conj()
-            plan2.adjoint()
-            out2 = np.real((plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim))
-
-            plan3.f =  weights * resid_current * vis12_current.conj()
-            plan3.adjoint()
-            out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
-
-            P = -2 * (out1 + out2 + out3)
-
-            # Then calculate Q
-            plan12.f =  weights * vis13_current*vis23_current.conj()
-            plan12.adjoint()
-            out12 = np.real((plan12.f_hat.copy().T).reshape(nfft_info12.xdim*nfft_info12.ydim))
-
-            plan23.f =  weights * vis12_current*vis13_current.conj()
-            plan23.adjoint()
-            out23 = np.real((plan23.f_hat.copy().T).reshape(nfft_info23.xdim*nfft_info23.ydim))
-
-            plan31.f =  weights * vis23_current*vis12_current.conj()
-            plan31.adjoint()
-            out31 = np.real((plan31.f_hat.copy().T).reshape(nfft_info31.xdim*nfft_info31.ydim))
-
-            plan1.f =  weights * resid_current.conj() * vis1_current
-            plan1.adjoint()
-            out1 = np.real((plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim))
-
-            plan2.f =  weights * resid_current.conj() * vis2_current
-            plan2.adjoint()
-            out2 = np.real((plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim))
-
-            plan3.f =  weights * resid_current.conj() * vis3_current
-            plan3.adjoint()
-            out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
-
-            Q0 = np.sum(weights*(np.abs(vis12_current)**2 + np.abs(vis23_current)**2 + np.abs(vis13_current)**2))
-            Q1 = 2  * (out12 + out23 + out31)
-            Q2 = -2 * (out1 + out2 + out3)
-            Q = 2*(Q0 + Q1 + Q2)
-
-            if order==1:
-                # first order solution
-                deltas = -P/Q
-
-                # take chi^2 only to same order as solution
-                chisq_map = chisq_current + deltas*P + 0.5*(deltas**2)*Q
-
-                # find component that minimizes new chi^2
-                component_loc_idx = np.argmin(chisq_map)
-                component_strength = loop_gain*deltas[component_loc_idx]
-
-            elif order==2:
-                #Calculate R
-                plan11.f =  weights * vis1_current.conj() * vis23_current
-                plan11.adjoint()
-                out11 = np.real((plan11.f_hat.copy().T).reshape(nfft_info11.xdim*nfft_info11.ydim))
-
-                plan22.f =  weights * vis2_current.conj() * vis13_current 
-                plan22.adjoint()
-                out22 = np.real((plan22.f_hat.copy().T).reshape(nfft_info22.xdim*nfft_info22.ydim))
-
-                plan33.f =  weights * vis3_current.conj() * vis12_current
-                plan33.adjoint()
-                out33 = np.real((plan33.f_hat.copy().T).reshape(nfft_info33.xdim*nfft_info33.ydim))
-
-                plan1.f =  weights * vis1_current * (np.abs(vis2_current)**2 + np.abs(vis3_current)**2)
-                plan1.adjoint()
-                out1 = np.real((plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim))
-
-                plan2.f =  weights * vis2_current * (np.abs(vis1_current)**2 + np.abs(vis3_current)**2)
-                plan2.adjoint()
-                out2 = np.real((plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim))
-
-                plan3.f =  weights * vis3_current * (np.abs(vis1_current)**2 + np.abs(vis2_current)**2)
-                plan3.adjoint()
-                out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
-
-                R0 = -np.sum(weights*np.real(resid_current))
-                R1 = np.real(out11 + out22 + out33)
-                R2 = np.real(out1 + out2 + out3)
-                R = 6*(R0 + R1 + R2)
-
-                # find global reduction in chi^2 of two solutions to quadratic
-                # enforce no negative roots
-                rt = Q**2 - 4*P*R
-                mask = rt<0.
-                rt[mask] = 0.
-
-                # plus solution
-                deltas_plus = (-Q + np.sqrt(rt)) / (2*R)
-
-                # take chi^2 only to same order as solution
-                chisq_map_plus = chisq_current + deltas_plus*P + 0.5*(deltas_plus**2)*Q + (1./3.)*(deltas_plus**3)*R
-                chisq_map_plus[mask] = chisq_current
-
-                # find component that minimizes chi^2
-                component_loc_idx_plus = np.argmin(chisq_map_plus)
-                component_strength_plus = loop_gain*deltas_plus[component_loc_idx_plus]
-
-                newchisq_plus = chisq_map_plus[component_loc_idx_plus]
-
-                # minus solution
-                deltas_minus = (-Q - np.sqrt(rt)) / (2*R)
-
-                # take chi^2 only to same order as solution
-                chisq_map_minus = chisq_current + deltas_minus*P + 0.5*(deltas_minus**2)*Q + (1./3.)*(deltas_minus**3)*R
-                chisq_map_minus[mask] = chisq_current
-
-                # find component that minimizes chi^2
-                component_loc_idx_minus = np.argmin(chisq_map_minus)
-                component_strength_minus = loop_gain*deltas_minus[component_loc_idx_minus]
-                newchisq_minus = chisq_map_minus[component_loc_idx_minus]
-
-                if newchisq_minus < newchisq_plus:
-                    deltas = deltas_minus
-                    chisq_map = chisq_map_minus
-                    component_loc_idx = component_loc_idx_minus
-                    component_strength = component_strength_minus
-
-                else:
-                    deltas = deltas_plus
-                    chisq_map = chisq_map_plus
-                    component_loc_idx = component_loc_idx_plus
-                    component_strength = component_strength_plus
-
-            else:
-                raise Exception("order can only be 1 or 2!!")
-
-            # display images of delta and chisq
-            #DeltasIm.imvec = deltas          
-            #plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
-
-            ChisqIm.imvec = -chisq_map          
-            plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
-
-        # clean component location
-        component_loc_x = coord[component_loc_idx][0]
-        component_loc_y = coord[component_loc_idx][1]
-
-        # update imvec, vis, bispec
-        imvec_current[component_loc_idx] += component_strength
-
-        #TODO how to incorporate pulse function? 
-        vis1_current += component_strength*np.exp(2*np.pi*1j*(uv1[:,0]*component_loc_x + uv1[:,1]*component_loc_y)) 
-        vis2_current += component_strength*np.exp(2*np.pi*1j*(uv2[:,0]*component_loc_x + uv2[:,1]*component_loc_y)) 
-        vis3_current += component_strength*np.exp(2*np.pi*1j*(uv3[:,0]*component_loc_x + uv3[:,1]*component_loc_y)) 
-        bs_current = vis1_current * vis2_current * vis3_current
-
-        # update chi^2 and output image
-        chisq_current = np.sum(weights*np.abs(bs - bs_current)**2)
-        rchisq_current = np.sum(weights_nat*np.abs(bs - bs_current)**2)/(2*len(weights_nat))
-
-        print(it+1, component_strength, chisq_current, rchisq_current, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS)
-
-        OutputIm.imvec = imvec_current          
-        OutputImBlur = OutputIm.blur_gauss(beamparams)
-        plot_i(OutputImBlur, it, rchisq_current,fig=2)
-
-    return OutputIm
-
 #TODO arbitrary mask?? -- need embedding!
 def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=1, method='min_chisq', weighting='uniform',          
-                      fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
+                 fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT, show_updates=False):
 
     # limit imager range to prior values > clipfloor
     embed_mask = InitIm.imvec >= clipfloor
@@ -390,7 +105,7 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
     res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
-    imvec_init = 0*InitIm.imvec
+    imvec_init = 0*InitIm.imvec[embed_mask]
     vis_init = np.zeros(len(vis),dtype='complex128')
 
     imvec_current = imvec_init
@@ -413,11 +128,13 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
         plan.f =  weights * resid_current
         plan.adjoint()
         out = np.real((plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim))
-        deltas = out/ weights_norm
+        deltas_all = out/ weights_norm
+        deltas = deltas_all[embed_mask]
 
         #chisq_map = np.array([np.sum(weights*np.abs(resid_current - deltas[i]*f_comps[i].conj()))**2)
         #                   for i in xrange(len(coord))])
-        chisq_map = chisq_current - (deltas**2)*weights_norm
+        chisq_map_all = chisq_current - (deltas_all**2)*weights_norm
+        chisq_map = chisq_map_all[embed_mask]
 
         # Visibility space clean
         if method=='min_chisq':
@@ -431,11 +148,12 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
             raise Exception("method should be 'min_chisq' or 'max_delta'!")
 
         # display images of delta and chisq
-        DeltasIm.imvec = deltas          
-        plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
+        if show_updates:
+            DeltasIm.imvec = deltas_all         
+            plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
 
-        ChisqIm.imvec = -chisq_map          
-        plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
+            ChisqIm.imvec = -chisq_map_all          
+            plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
         # clean component location
         component_loc_x = coord[component_loc_idx][0]
@@ -454,15 +172,19 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
 
         print(it+1,component_strength, chisq_current, rchisq_current, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS)
 
-        OutputIm.imvec = imvec_current          
-        OutputImBlur = OutputIm.blur_gauss(beamparams)
-        plot_i(OutputImBlur, it, rchisq_current, fig=2)
+        OutputIm.imvec = imvec_current
+        if show_updates:
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                             
+            OutputImBlur = OutputIm.blur_gauss(beamparams)
+            plot_i(OutputImBlur, it, rchisq_current, fig=2)
 
+    OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)
     return OutputIm
+
 
 #solve full 5th order polynomial
 def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, 
-                        weighting='uniform', bscount="min",
+                        weighting='uniform', bscount="min",show_updates=True
                         fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
 
  
@@ -540,7 +262,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
     res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
-    imvec_init = 0*InitIm.imvec
+    imvec_init = 0*InitIm.imvec[embed_mask]
     vis1_init = np.zeros(len(bs), dtype='complex128')
     vis2_init = np.zeros(len(bs), dtype='complex128')
     vis3_init = np.zeros(len(bs), dtype='complex128')
@@ -711,8 +433,18 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
             #print ("step time %i: %f s" % (it+1, time.time() -t))
 
             #chisq_map = chisq_current + P*deltas + 0.5*Q*deltas**2 + (1./3.)*R*deltas**3 + 0.25*S*deltas**4 + 0.2*T*deltas**5 + (1./6.)*U*deltas**6
-            component_loc_idx = np.argmin(chisq_map)
-            component_strength = loop_gain*deltas[component_loc_idx]
+
+            #plot deltas and chi^2 map
+            if show_updates:          
+                DeltasIm.imvec = deltas
+                plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
+
+                ChisqIm.imvec = -chisq_map          
+                plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
+
+
+            component_loc_idx = np.argmin(chisq_map[embed_mask])
+            component_strength = loop_gain*(deltas[embed_mask])[component_loc_idx]
 
 #            # PRINT ALL ROOTS AT delta location
 #            polynomial_params = np.array([P[component_loc_idx], Q[component_loc_idx], R[component_loc_idx], S[component_loc_idx], T[component_loc_idx], U[component_loc_idx]])
@@ -731,12 +463,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
 #            print("\n")
 #            #######
 
-            #plot deltas and chi^2 map
-            DeltasIm.imvec = deltas
-            plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
 
-            ChisqIm.imvec = -chisq_map          
-            plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
         # clean component location
         component_loc_x = coord[component_loc_idx][0]
@@ -757,10 +484,13 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
 
         print("it %i: %f (%.2f , %.2f) %.4f" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_current))
 
-        OutputIm.imvec = imvec_current          
-        OutputImBlur = OutputIm.blur_gauss(beamparams)
-        plot_i(OutputImBlur, it, rchisq_current,fig=2)
+        OutputIm.imvec = imvec_current 
+        if show_updates:
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                   
+            OutputImBlur = OutputIm.blur_gauss(beamparams)
+            plot_i(OutputImBlur, it, rchisq_current,fig=2)
 
+    OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)
     return OutputIm
 
         
@@ -769,7 +499,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
 #solve full 5th order polynomial
 #weight imaginary term differently
 def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=.1, loop_gain_init=1,
-                             weighting='uniform', bscount="min", imweight=1,
+                             weighting='uniform', bscount="min", imweight=1, show_updates=True,
                              fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
 
  
@@ -837,6 +567,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
     coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
                                             for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
     coord = coord.reshape(InitIm.ydim*InitIm.xdim, 2)
+    coord = coord[embed_mask]
 
     # Initial imvec and visibilities 
     # TODO currently initialized to zero!!
@@ -847,7 +578,8 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
     res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
-    imvec_init = 0*InitIm.imvec
+    imvec_init = 0*InitIm.imvec[embed_mask]
+
     vis1_init = np.zeros(len(bs), dtype='complex128')
     vis2_init = np.zeros(len(bs), dtype='complex128')
     vis3_init = np.zeros(len(bs), dtype='complex128')
@@ -1110,8 +842,16 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
             #print ("step time %i: %f s" % (it+1, time.time() -t))
             #chisq_map = chisq_current + P*deltas + 0.5*Q*deltas**2 + (1./3.)*R*deltas**3 + 0.25*S*deltas**4 + 0.2*T*deltas**5 + (1./6.)*U*deltas**6
 
-            component_loc_idx = np.argmin(chisq_map)
-            component_strength = loop_gain*deltas[component_loc_idx]
+            #Plot delta and chi^2 map
+            if show_updates:
+                DeltasIm.imvec = deltas
+                plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
+
+                ChisqIm.imvec = -chisq_map          
+                plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
+
+            component_loc_idx = np.argmin(chisq_map[embed_mask])
+            component_strength = loop_gain*(deltas[embed_mask])[component_loc_idx]
 
 #            # PRINT ALL ROOTS AT delta location
 #            polynomial_params = np.array([P[component_loc_idx], Q[component_loc_idx], R[component_loc_idx], S[component_loc_idx], T[component_loc_idx], U[component_loc_idx]])
@@ -1130,12 +870,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
 #            print("\n")
 #            #######
 
-            #Plot delta and chi^2 map
-            DeltasIm.imvec = deltas
-            plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
 
-            ChisqIm.imvec = -chisq_map          
-            plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
         # clean component location
         component_loc_x = coord[component_loc_idx][0]
@@ -1156,9 +891,11 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
 
         print("it %i: %f (%.2f , %.2f) %.4f" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_current))
 
-        OutputIm.imvec = imvec_current          
-        OutputImBlur = OutputIm.blur_gauss(beamparams)
-        plot_i(OutputImBlur, it, rchisq_current,fig=2)
+        OutputIm.imvec = imvec_current
+        if show_updates:
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                             
+            OutputImBlur = OutputIm.blur_gauss(beamparams)
+            plot_i(OutputImBlur, it, rchisq_current,fig=2)
 
     return OutputIm
 
@@ -1257,6 +994,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
     coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
                                             for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
     coord = coord.reshape(InitIm.ydim*InitIm.xdim, 2)
+    coord = coord[embed_mask]
 
     # Initial imvec and visibilities 
     # TODO currently initialized to zero!!
@@ -1267,7 +1005,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
     res = Obsdata.res()
     beamparams = Obsdata.fit_beam()
 
-    imvec_init = 0*InitIm.imvec
+    imvec_init = 0*InitIm.imvec[embed_mask]
     vis_init =  np.zeros(len(amp2), dtype='complex128')
     chisq_amp2_init = np.sum(weights_amp2*(amp2 - np.abs(vis_init)**2)**2)
     rchisq_amp2_init = np.sum(weights_amp2_nat*(amp2 - np.abs(vis_init)**2)**2)
@@ -1489,19 +1227,17 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
                 deltas[i] = delta
                 chisq_map[i] = newchisq  
 
+            #plot deltas and chi^2 map
+            if show_updates:
+                DeltasIm.imvec = deltas
+                plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
+                ChisqIm.imvec = -chisq_map   
+                plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
             #chisq_map = chisq_current + P*deltas + 0.5*Q*deltas**2 + (1./3.)*R*deltas**3 + 0.25*S*deltas**4 + 0.2*T*deltas**5 + (1./6.)*U*deltas**6
-            component_loc_idx = np.argmin(chisq_map)
-            component_strength = loop_gain*deltas[component_loc_idx]
+            component_loc_idx = np.argmin(chisq_map[embed_mask])
+            component_strength = loop_gain*(deltas[embed_mask])[component_loc_idx]
 
-            #plot deltas and chi^2 map
-            DeltasIm.imvec = deltas
-            if show_updates:
-                plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
-
-            ChisqIm.imvec = -chisq_map   
-            if show_updates:       
-                plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
 #            #######
 #            #print ("step time %i: %f s" % (it+1, time.time() -t))
@@ -1550,9 +1286,10 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
         print("it %i| %.4e (%.1f , %.1f) | %.4e %.4e | %.4e" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_amp2_current, chisq_bs_current, chisq_current))
 
-        OutputIm.imvec = imvec_current          
-        OutputImBlur = OutputIm.blur_gauss(beamparams)
-        if show_updates:       
+        OutputIm.imvec = imvec_current   
+        if show_updates:
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                                    
+            OutputImBlur = OutputIm.blur_gauss(beamparams)
             plot_i(OutputImBlur, it, chisq_current, fig=2)
 
     return OutputIm
