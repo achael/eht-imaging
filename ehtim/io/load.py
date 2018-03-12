@@ -673,8 +673,13 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         nchan = header['NAXIS4']
 
     else: raise Exception('Cannot find observing frequencies!')
-    if header['CTYPE5'] == 'IF':
-        nif = header['NAXIS5']
+
+    nif = 1
+    try:
+        if header['CTYPE5'] == 'IF':
+            nif = header['NAXIS5']
+    except KeyError: 
+        print ("no IF in uvfits header!")
 
     #determine the bandwidth
     bw = ch_bw * nchan * nif
