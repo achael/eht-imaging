@@ -671,9 +671,18 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         ch1_freq = header['CRVAL4']
         ch_bw = header['CDELT4']
         nchan = header['NAXIS4']
-        bw = ch_bw * nchan
+
     else: raise Exception('Cannot find observing frequencies!')
 
+    nif = 1
+    try:
+        if header['CTYPE5'] == 'IF':
+            nif = header['NAXIS5']
+    except KeyError: 
+        print ("no IF in uvfits header!")
+
+    #determine the bandwidth
+    bw = ch_bw * nchan * nif
 
     # Determine the number of correlation products in the data
     num_corr = data['DATA'].shape[5]
