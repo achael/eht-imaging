@@ -293,7 +293,7 @@ def blur_im_list(im_List, fwhm_x, fwhm_t):
 
     ret = []
     for j in range(len(im_List)):
-        ret.append(image.Image(arr[j], im_List[0].psize, im_List[0].ra, im_List[0].dec, rf=im_List[0].rf, source=im_List[0].source, mjd=im_List[0].mjd))
+        ret.append(image.Image(arr[j], im_List[0].psize, im_List[0].ra, im_List[0].dec, rf=im_List[0].rf, source=im_List[0].source, mjd=im_List[j].mjd))
 
     return ret
 
@@ -878,7 +878,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         prior_flux_rescale = 1.0
         if len(flux_List) > 0:
             prior_flux_rescale = flux_List[i]/Prior.total_flux()
-
 
         nprior_embed_List[i] = Prior.imvec * prior_flux_rescale
 
