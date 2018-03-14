@@ -137,7 +137,7 @@ class Movie(object):
         self.qframes = [-qvec for qvec in self.qframes]
         return
 
-    def observe_same_nonoise(self, obs, sgrscat=False, ttype="direct", fft_pad_factor=True, repeat=False):
+    def observe_same_nonoise(self, obs, sgrscat=False, ttype="direct", fft_pad_factor=2.0, repeat=False):
         """Observe the movie on the same baselines as an existing observation object without adding noise.
 
            Args:
@@ -157,7 +157,7 @@ class Movie(object):
                                              obs.tarr, source=self.source, mjd=np.floor(obs.mjd))
         return obs_no_noise
 
-    def observe_same(self, obsin, ttype='direct', fft_pad_factor=0.5,  repeat=False,
+    def observe_same(self, obsin, ttype='direct', fft_pad_factor=2.0,  repeat=False,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
                            jones=False, inv_jones=False,
@@ -167,7 +167,7 @@ class Movie(object):
            Args:
                obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
                ttype (str): if "fast" or "nfft", use FFT to produce visibilities. Else "direct" for DTFT
-               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                repeat (bool): if True, repeat the movie to fill up the observation interval
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
@@ -189,7 +189,7 @@ class Movie(object):
         """
 
         print("Producing clean visibilities from movie . . . ")
-        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ttype=ttype, pad_frac=pad_frac, repeat=repeat)
+        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat)
 
         # Jones Matrix Corruption & Calibration
         if jones:
@@ -230,7 +230,7 @@ class Movie(object):
 
     def observe(self, array, tint, tadv, tstart, tstop, bw, repeat=False,
                       mjd=None, timetype='UTC', elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ttype='direct', pad_frac=0.5, sgrscat=False, add_th_noise=True,
+                      ttype='direct', fft_pad_factor=2.0, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, fix_theta_GMST = False):
@@ -250,7 +250,7 @@ class Movie(object):
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                ttype (str): if "fast" or "nfft", use FFT to produce visibilities. Else "direct" for DTFT
-               pad_frac (float): zero pad the image so that pad_frac*shortest baseline is captured in FFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
                opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
