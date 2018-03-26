@@ -1010,6 +1010,15 @@ class Image(object):
 
         return out
 
+    def centroid(self):
+        pdim = self.psize
+        im = self.imvec
+        xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
+        ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
+        x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
+        y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
+        return np.array((x0,y0))
+      
     def threshold(self, frac_i=1.e-5):
         """Apply a hard threshold to the image.
 
