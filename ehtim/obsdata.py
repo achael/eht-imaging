@@ -231,7 +231,7 @@ class Obsdata(object):
         for key, group in it.groupby(data, lambda x: x['time']):
             datalist.append(np.array([obs for obs in group]))
 
-        return np.array(datalist)
+        return datalist
 
     def bllist(self,conj=False):
 
@@ -343,7 +343,7 @@ class Obsdata(object):
                 out = self.unpack_dat(bl, fields, ang_unit=ang_unit, debias=debias)
                 allout.append(out)
 
-        return np.array(allout)
+        return allout
 
 
     def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False):
@@ -1205,7 +1205,7 @@ class Obsdata(object):
 
         # Generate the time-sorted data with conjugate baselines
         tlist = self.tlist(conj=True)
-        outlist = []
+        out = []
         bis = []
         tt = 1
         for tdata in tlist:
@@ -1272,13 +1272,13 @@ class Obsdata(object):
 
             # Append to outlist
             if mode=='time' and len(bis) > 0:
-                outlist.append(np.array(bis))
+                out.append(np.array(bis))
                 bis = []
 
-            elif mode=='all':
-                outlist = np.array(bis)
+        if mode=='all':
+            out = np.array(bis)
 
-        return np.array(outlist)
+        return out
 
     def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg', timetype=False):
 
@@ -1313,7 +1313,7 @@ class Obsdata(object):
         bispecs = self.bispectra(vtype=vtype, mode='time', count=count, timetype=timetype)
 
         # Reformat into a closure phase list/array
-        outlist = []
+        out = []
         cps = []
         sys.stdout.write('\rReformatting bispectra to closure phase...')
         for bis in bispecs:
@@ -1324,12 +1324,12 @@ class Obsdata(object):
                 bi['cphase'] = np.real((np.angle(bi['cphase'])/angle))
                 cps.append(bi.astype(np.dtype(DTCPHASE)))
             if mode == 'time' and len(cps) > 0:
-                outlist.append(np.array(cps))
+                out.append(np.array(cps))
                 cps = []
 
         if mode == 'all':
-            outlist = np.array(cps)
-        return np.array(outlist)
+            out = np.array(cps)
+        return out
 
     def bispectra_tri(self, site1, site2, site3, vtype='vis',timetype=False):
 
@@ -1462,7 +1462,7 @@ class Obsdata(object):
 
         # Get data sorted by time
         tlist = self.tlist(conj=True)
-        outlist = []
+        out = []
         cas = []
         tt = 1
         for tdata in tlist:
@@ -1568,13 +1568,13 @@ class Obsdata(object):
 
             # Append all equal time closure amps to outlist
             if mode=='time':
-                outlist.append(np.array(cas))
+                out.append(np.array(cas))
                 cas = []
 
-            elif mode=='all':
-                outlist = np.array(cas)
+        if mode=='all':
+            out = np.array(cas)
 
-        return np.array(outlist)
+        return out
 
     def camp_quad(self, site1, site2, site3, site4, vtype='vis', ctype='camp', debias=True, timetype=False, camps=[]):
 
