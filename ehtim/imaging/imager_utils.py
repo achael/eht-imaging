@@ -1881,7 +1881,7 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
 
     # unpack data
     biarr = Obsdata.bispectra(mode="all", count="min")
-    snrmask = np.abs(biarr['bispec']/data_arr['sigmab']) > snrcut
+    snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
