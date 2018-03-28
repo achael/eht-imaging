@@ -1,3 +1,23 @@
+# clean.py
+# Clean-like imagers
+#
+#    Copyright (C) 2018 Andrew Chael
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -61,7 +81,6 @@ def plot_i(Image, nit, chi2, fig=1, cmap='afmhot'):
     plt.ylabel('Relative Dec ($\mu$as)')
     plt.title("step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
     
-#TODO arbitrary mask?? -- need embedding!
 def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=1, method='min_chisq', weighting='uniform',          
                  fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT, show_updates=False):
 
@@ -97,7 +116,7 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
     coord = coord[embed_mask]
 
     # Initial imvec and visibilities 
-    # TODO currently initialized to zero!!
+    # TODO currently always initialized to zero!!
     OutputIm = InitIm.copy()
     DeltasIm = InitIm.copy()
     ChisqIm = InitIm.copy()
@@ -122,17 +141,12 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
 
         resid_current = vis - vis_current
 
-        # delta at each location
-        #deltas = np.array([(np.sum(weights*np.real((vis - vis_current)*f_comps[i])) / weights_norm) for i in xrange(len(coord))])  
-
         plan.f =  weights * resid_current
         plan.adjoint()
         out = np.real((plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim))
         deltas_all = out/ weights_norm
         deltas = deltas_all[embed_mask]
 
-        #chisq_map = np.array([np.sum(weights*np.abs(resid_current - deltas[i]*f_comps[i].conj()))**2)
-        #                   for i in xrange(len(coord))])
         chisq_map_all = chisq_current - (deltas_all**2)*weights_norm
         chisq_map = chisq_map_all[embed_mask]
 
@@ -184,7 +198,7 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
 
 #solve full 5th order polynomial
 def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, 
-                        weighting='uniform', bscount="min",show_updates=True
+                        weighting='uniform', bscount="min",show_updates=True,
                         fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
 
  
@@ -246,7 +260,6 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
     weights_norm = np.sum(weights)
 
     # Coordinate matrix 
-    # TODO do we need to make sure this corresponds exactly with what NFFT is doing? 
     # TODO what if the image is odd? 
     coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
                                             for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
@@ -430,10 +443,6 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
                 deltas[i] = delta
                 chisq_map[i] = newchisq  
 
-            #print ("step time %i: %f s" % (it+1, time.time() -t))
-
-            #chisq_map = chisq_current + P*deltas + 0.5*Q*deltas**2 + (1./3.)*R*deltas**3 + 0.25*S*deltas**4 + 0.2*T*deltas**5 + (1./6.)*U*deltas**6
-
             #plot deltas and chi^2 map
             if show_updates:          
                 DeltasIm.imvec = deltas
@@ -445,25 +454,6 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
 
             component_loc_idx = np.argmin(chisq_map[embed_mask])
             component_strength = loop_gain*(deltas[embed_mask])[component_loc_idx]
-
-#            # PRINT ALL ROOTS AT delta location
-#            polynomial_params = np.array([P[component_loc_idx], Q[component_loc_idx], R[component_loc_idx], S[component_loc_idx], T[component_loc_idx], U[component_loc_idx]])
-#            allroots = p.polyroots(polynomial_params)
-#            allchisq = np.zeros(len(allroots))
-#            for j in xrange(len(allroots)):
-#                root = allroots[j]
-#                if np.imag(root)!=0:
-#                    allchisq[j] = np.nan
-#                else:                
-#                    allchisq[j] = (chisq_current + P[component_loc_idx]*root + 0.5*Q[component_loc_idx]*(root**2) + (1./3.)*R[component_loc_idx]*(root**3)
-#                                  + 0.25*S[component_loc_idx]*(root**4) + 0.2*T[component_loc_idx]*(root**5) + (1./6.)*U[component_loc_idx]*(root**6))
-#            print("roots and chi^2 at component location\n")            
-#            print(allroots)
-#            print(allchisq)
-#            print("\n")
-#            #######
-
-
 
         # clean component location
         component_loc_x = coord[component_loc_idx][0]
@@ -853,25 +843,6 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
             component_loc_idx = np.argmin(chisq_map[embed_mask])
             component_strength = loop_gain*(deltas[embed_mask])[component_loc_idx]
 
-#            # PRINT ALL ROOTS AT delta location
-#            polynomial_params = np.array([P[component_loc_idx], Q[component_loc_idx], R[component_loc_idx], S[component_loc_idx], T[component_loc_idx], U[component_loc_idx]])
-#            allroots = p.polyroots(polynomial_params)
-#            allchisq = np.zeros(len(allroots))
-#            for j in xrange(len(allroots)):
-#                root = allroots[j]
-#                if np.imag(root)!=0:
-#                    allchisq[j] = np.nan
-#                else:                
-#                    allchisq[j] = (chisq_current + P[component_loc_idx]*root + 0.5*Q[component_loc_idx]*(root**2) + (1./3.)*R[component_loc_idx]*(root**3)
-#                                  + 0.25*S[component_loc_idx]*(root**4) + 0.2*T[component_loc_idx]*(root**5) + (1./6.)*U[component_loc_idx]*(root**6))
-#            print("roots and chi^2 at component location\n")            
-#            print(allroots)
-#            print(allchisq)
-#            print("\n")
-#            #######
-
-
-
         # clean component location
         component_loc_x = coord[component_loc_idx][0]
         component_loc_y = coord[component_loc_idx][1]
@@ -1048,9 +1019,6 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             component_strength = loop_gain_init*np.sqrt(A/B)
             component_loc_idx = (InitIm.ydim//2)*InitIm.xdim  + InitIm.xdim//2 #TODO is this right for odd images??+/- 1??
 
-#            chisq_bs_test=0
-#            root = np.sqrt(A/B)
-#            chisq_amp2_test=chisq_amp2_init - 2*A*(root**2) + B*(root**4)
         else:
 
             #Amplitude part
@@ -1078,8 +1046,6 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
             # Now find D (4th order)
             D = 4*weights_amp2_norm * np.ones(C.shape) 
-
-###########################################################################################################################################
 
             #"Closure Phase" part
             resid_current = bs - bs_current
@@ -1194,7 +1160,6 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             # Finally U (6th order)
             U = 6*weights_bs_norm * np.ones(T.shape) 
 
-###########################################################################################################################################
             # Find Component based on minimizing chi^2
             deltas = np.zeros(len(A))
             chisq_map = np.zeros(len(A))
@@ -1238,20 +1203,6 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             component_loc_idx = np.argmin(chisq_map[embed_mask])
             component_strength = loop_gain*(deltas[embed_mask])[component_loc_idx]
 
-
-#            #######
-#            #print ("step time %i: %f s" % (it+1, time.time() -t))
-#            # TEST CHISQS
-#            root = loop_gain*deltas[component_loc_idx]
-#            chisq_bs_test = (chisq_bs_current + P[component_loc_idx]*root + 0.5*Q[component_loc_idx]*(root**2) + (1./3.)*R[component_loc_idx]*(root**3)
-#                          + 0.25*S[component_loc_idx]*(root**4) + 0.2*T[component_loc_idx]*(root**5) + (1./6.)*U[component_loc_idx]*(root**6))
-#            
-#            chisq_amp2_test = (chisq_amp2_current + A[component_loc_idx]*root + 0.5*B[component_loc_idx]*(root**2) + (1./3.)*C[component_loc_idx]*(root**3)
-#                          + 0.25*D[component_loc_idx]*(root**4))
-#            print(chisq_amp2_current,A[component_loc_idx],B0, B1[component_loc_idx],C[component_loc_idx], D[component_loc_idx])
-#            #######
-
-
         # clean component location
         component_loc_x = coord[component_loc_idx][0]
         component_loc_y = coord[component_loc_idx][1]
@@ -1274,13 +1225,6 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
         chisq_bs_current =  np.sum(weights_bs*np.abs(bs - bs_current)**2)
         rchisq_bs_current =  np.sum(weights_bs_nat*np.abs(bs - bs_current)**2)
-
-        ###########
-#        print(component_strength)
-#        print(chisq_bs_test, chisq_bs_current)
-#        print(chisq_amp2_test, chisq_amp2_current)
-#        print("\n")
-        ###########
 
         chisq_current = chisq_amp2_current + phaseweight*chisq_bs_current
 
