@@ -25,6 +25,7 @@ import scipy.special as spec
 import scipy.optimize as opt
 import sys
 import itertools as it
+import copy
 
 import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
@@ -65,7 +66,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
 
     # loop over scans and calibrate
     scans     = obs.tlist()
-    scans_cal = scans.copy()
+    scans_cal = copy.copy(scans)
 
     if processes > 0:
         scans_cal = np.array(filter(lambda x: x,
@@ -331,7 +332,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
 
     # loop over scans and calibrate
     scans     = obs.tlist()
-    scans_cal = scans.copy()
+    scans_cal = copy.copy(scans)
 
     if processes > 0:
         scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method, show_solution, pad_amp, gain_tol, caltable] for i in range(len(scans))]))

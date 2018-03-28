@@ -6,7 +6,7 @@ from ehtim.imaging.clean import *
 #################################################################
 # Data domain clean with complex visibilities
 im = eh.image.load_txt('./models/avery_sgra_eofn.txt')
-arr = eh.array.load_txt('./arrays/EHT2017.txt')
+arr = eh.array.load_txt('./arrays/EHT2017.txt') 
 #arr = eh.array.load_txt('./arrays/EHT2025.txt')
 obs = im.observe(arr, 1000, 600, 0, 24., 4.e10, add_th_noise=False, phasecal=True)
 prior = eh.image.make_square(obs, 128, 1.5*im.fovx())

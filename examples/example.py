@@ -3,6 +3,7 @@
 
 # Note: must import ehtim outside the ehtim directory
 # either in parent eht-imaging directory or after installing with setuptools
+
 from __future__ import division
 from __future__ import print_function
 
