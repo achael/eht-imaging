@@ -768,6 +768,30 @@ def chisqgrad_logcamp(imvec, Amatrices, log_clamp, sigma):
     out = (-2.0/len(log_clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
     return out
 
+def chisq_logamp(imvec, A, amp, sigma):
+    """Log Visibility Amplitudes (normalized) chi-squared"""
+
+    # to lowest order the variance on the logarithm of a quantity x is 
+    # sigma^2_log(x) = sigma^2/x^2
+    logsigma = sigma / amp
+    
+    amp_samples = np.abs(np.dot(A, imvec))
+    return np.sum(np.abs((np.log(amp) - np.log(amp_samples))/logsigma)**2)/len(amp)
+
+def chisqgrad_logamp(imvec, A, amp, sigma):
+    """The gradient of the Log amplitude chi-squared"""
+
+    # to lowest order the variance on the logarithm of a quantity x is 
+    # sigma^2_log(x) = sigma^2/x^2
+    logsigma = sigma / amp 
+    
+    i1 = np.dot(A, imvec)
+    amp_samples = np.abs(i1)
+
+    pp = ((np.log(amp) - np.log(amp_samples))) / (logsigma**2) / i1
+    out = (-2.0/len(amp)) * np.real(np.dot(pp, A))
+    return out
+
 ##################################################################################################
 # FFT Chi-squared and Gradient Functions
 ##################################################################################################
