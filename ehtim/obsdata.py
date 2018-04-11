@@ -2196,7 +2196,7 @@ class Obsdata(object):
         df['source'] = sour
         df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
         if pathVex!='':
-            scans = make_scan_list(pathVex)
+            scans = make_scan_list_EHT2017(pathVex)
             df = match_scans(scans,df)
         self.df = df
 
