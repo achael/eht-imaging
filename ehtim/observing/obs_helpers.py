@@ -881,3 +881,100 @@ def match_scans(scans,data):
     data['scan_id'] = data['scan_no_tot']
     data.drop('scan_no_tot',axis=1,inplace=True)
     return data
+
+def make_cphase_df(obsdata,pathVex=''):
+    '''
+    adds cphase data in form of pandas dataframe to enable easier exploration
+    '''
+    data = obsdata.c_phases(mode='all')
+    import pandas as pd
+    from astropy.time import Time
+    AZ2Z = {'AZ': 'Z', 'PV': 'P', 'SM':'S', 'SR':'R','JC':'J', 'AA':'A','AP':'X', 'LM':'L','SP':'Y'}
+    polar = 'unknown'; band = 'unknown' #for now fixed
+    sour=obsdata.source
+    df = pd.DataFrame(data=data)
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obsdata.mjd + df['fmjd']
+    df['triangle'] = list(map(lambda x: AZ2Z[x[0].decode('unicode_escape')]+AZ2Z[x[1].decode('unicode_escape')]+AZ2Z[x[2].decode('unicode_escape')],zip(df['t1'],df['t2'],df['t3'])))
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] =list(map(lambda x: roundTime(x,roundTo=1),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polar
+    df['band'] = band
+    df['expt_no'] = list(map(jd2expt2017,df['jd']))
+    df['source'] = sour
+    if pathVex!='':
+        scans = make_scan_list_EHT2017(pathVex)
+        df = match_scans(scans,df)
+    return df
+
+def scan_average_cphases_bs(cdf,return_type='rec',num_samples=int(1e3),robust=False):
+    '''
+    averages cphases across scan (circular mean), with bootstrapped sigma
+    '''
+    import pandas as pd
+    groupV=['scan_id','expt_no','polarization','band','triangle','t1','t2','t3']
+    cdf['number'] = cdf['cphase']
+    cdf = cdf.groupby(groupV).agg({'cphase': lambda x: circular_mean(x, robust=robust), 'sigmacp': lambda x: bootstrap(x, lambda y: std_stat(y,robust=robust), num_samples=num_samples), 'time': np.mean,
+    'number': lambda x: len(x), 'u1':np.mean, 'u2': np.mean, 'u3':np.mean,'v1':np.mean, 'v2': np.mean, 'v3':np.mean}).reset_index()
+    cdf.drop(cdf[cdf.number < 5.].index, inplace=True)
+    cdf.drop(cdf[cdf.sigmacp < 0.1].index, inplace=True)
+    if return_type=='rec':
+        return cphase_df_to_rec(cdf)
+    elif return_type=='df':
+        return cdf
+
+def cphase_df_to_rec(cdf):
+    '''
+    converts cphase pandas dataframe to cphase numpy recarray
+    '''
+    import pandas as pd
+    return cdf[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
+
+def circular_mean(theta,robust=False):
+    '''
+    circular mean statistics
+    theta in deg, returns deg, may use robust statistics
+    '''
+    theta = np.asarray(theta, dtype=np.float32)*np.pi/180.
+    theta = theta[theta==theta]
+    if len(theta)==0:
+        return None
+    else:
+        if robust==False:
+            C = np.mean(np.cos(theta))
+            S = np.mean(np.sin(theta))
+        else:
+            C = np.median(np.cos(theta))
+            S = np.median(np.sin(theta))
+        mt = np.arctan2(S,C)*180./np.pi
+        return np.mod(mt,360)
+    
+def std_stat(theta,robust=False):
+    '''
+    mean variability of mean
+    theta in deg, returns deg, may use robust statistics
+    '''
+    if robust==False:
+        return np.std(theta)/np.sqrt(len(theta))
+    else:
+        theta = np.asarray(theta,dtype=np.float32)
+        m = circular_mean(theta,robust=True)
+        foo = np.exp(1j*theta*np.pi/180)*np.exp(-1j*m*np.pi/180)
+        foo = np.angle(foo)*180/np.pi
+        madev = 1.4826*np.median(np.abs(foo))/np.sqrt(len(foo))
+        return madev
+
+def bootstrap(data, statistic, num_samples=int(1e3)):
+    """bootstrap estimator of a given statistic"""
+    import numpy.random as npr
+    stat = np.zeros(num_samples)
+    data = np.asarray(data)
+    n = len(data)
+    idx = npr.randint(0, n, (num_samples, n))
+    samples = data[idx]
+    for cou in range(num_samples):
+        stat[cou] = statistic(samples[cou,:])
+    stat = np.sort(stat)
+    return np.median(stat)
+
