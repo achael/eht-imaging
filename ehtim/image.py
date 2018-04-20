@@ -943,8 +943,35 @@ class Image(object):
             out.add_v(vim)
         return out
 
-    def fit_gauss(self, paramguess=None):
-        """Determine the Gaussian parameters that short baselines would measure for the source.
+    def fit_gauss(self, units='rad'):
+        """Determine the Gaussian parameters that short baselines would measure for the source by diagonalizing the image covariance matrix. 
+
+           Args:
+               units (string): 'rad' returns values in radians, 'natural' returns FWHM in uas and PA in degrees
+           Returns:
+               (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians or natural units.
+        """        
+        (x1,y1) = self.centroid()
+        pdim = self.psize
+        im = self.imvec
+
+        xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
+        ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
+        x2 = (np.sum(np.outer(0.0*ylist+1.0, (xlist - x1)**2).ravel()*im)/np.sum(im))
+        y2 = (np.sum(np.outer((ylist - y1)**2, 0.0*xlist+1.0).ravel()*im)/np.sum(im))
+        xy = (np.sum(np.outer(ylist - y1, xlist - x1).ravel()*im)/np.sum(im))
+      
+        eig = np.linalg.eigh(np.array(((x2,xy),(xy,y2))))
+        gauss_params = np.array((eig[0][1]**0.5*(8.*np.log(2.))**0.5, eig[0][0]**0.5*(8.*np.log(2.))**0.5, np.mod(np.arctan2(eig[1][1][0],eig[1][1][1]) + np.pi, np.pi)))
+        if units == 'natural':
+            gauss_params[0] /= RADPERUAS
+            gauss_params[1] /= RADPERUAS
+            gauss_params[2] *= 180./np.pi
+
+        return gauss_params
+
+    def fit_gauss_empirical(self, paramguess=None):
+        """Determine the Gaussian parameters that short baselines would measure for the source by fitting short baselines.
 
            Args:
            Returns:
