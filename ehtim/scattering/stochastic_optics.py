@@ -56,7 +56,7 @@ class ScatteringModel(object):
             rF (function): The Fresnel scale of the scattering screen at the specific wavelength.
     """
 
-    def __init__(self, model = 'von_Mises', scatt_alpha = 5.0/3.0, observer_screen_distance = 8.023*10**21, source_screen_distance = 1.790*10**22, theta_maj_mas_ref = 1.309, theta_min_mas_ref = 0.64, POS_ANG = 78, wavelength_reference_cm = 1.0, r_in = 10000*10**5, r_out = 10**20):
+    def __init__(self, model = 'dipole', scatt_alpha = 1.38, observer_screen_distance = 2.82 * 3.086e21, source_screen_distance = 5.53 * 3.086e21, theta_maj_mas_ref = 1.380, theta_min_mas_ref = 0.703, POS_ANG = 81.9, wavelength_reference_cm = 1.0, r_in = 800e5, r_out = 1e20):
         """To initialize the scattering model, specify:
 
            Attributes:
