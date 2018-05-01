@@ -2626,7 +2626,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
 def plot_i(im, Prior, nit, chi2_1, chi2_2, **kwargs):
     """Plot the total intensity image at each iteration
     """
-    imarr = im.reshape(Prior.ydim,Prior.xdim),
+    imarr = im.reshape(Prior.ydim,Prior.xdim)
     cmap = kwargs.get('cmap','afmhot')
     interpolation = kwargs.get('interpolation', 'gaussian')
 
