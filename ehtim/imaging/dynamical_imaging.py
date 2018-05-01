@@ -717,40 +717,66 @@ def movie_flux_constraint_grad(Frame_List, flux_List): #Includes Jacobian factor
 # chi^2 estimation routines
 ##################################################################################################
 
-def get_chisq(i, imvec_embed, d1, d2, d3, ttype, mask):
+def get_chisq(i, imvec_embed, d1, d2, d3, ttype, mask, model_list=None):
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
     chisq1 = chisq2 = chisq3 = 1.0
 
     if d1 != False and len(data1_List[i])>0:
-        chisq1 = chisq(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask)
+        chisq1 = chisq(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask, model_list=model_list)
 
     if d2 != False and len(data2_List[i])>0:
-        chisq2 = chisq(imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], d2, ttype=ttype, mask=mask)
+        chisq2 = chisq(imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], d2, ttype=ttype, mask=mask, model_list=model_list)
 
     if d3 != False and len(data3_List[i])>0:
-        chisq3 = chisq(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask)
+        chisq3 = chisq(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask, model_list=model_list)
     
     return [chisq1, chisq2, chisq3]
 
 def get_chisq_wrap(args):
     return get_chisq(*args)
 
-def get_chisqgrad(i, imvec_embed, d1, d2, d3, ttype, mask):
+def get_chisqgrad(i, imvec_embed, d1, d2, d3, ttype, mask, model_list=None):
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
     chisqgrad1 = chisqgrad2 = chisqgrad3 = 0.0*imvec_embed
 
     if d1 != False and len(data1_List[i])>0:
-        chisqgrad1 = chisqgrad(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
+        chisqgrad1 = chisqgrad(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask, model_list=model_list) #This *does not* include the Jacobian factor
 
     if d2 != False and len(data2_List[i])>0:
-        chisqgrad2 = chisqgrad(imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], d2, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
+        chisqgrad2 = chisqgrad(imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], d2, ttype=ttype, mask=mask, model_list=model_list) #This *does not* include the Jacobian factor
 
     if d3 != False and len(data3_List[i])>0:
-        chisqgrad3 = chisqgrad(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor  
+        chisqgrad3 = chisqgrad(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask, model_list=model_list) #This *does not* include the Jacobian factor  
   
     return [chisqgrad1, chisqgrad2, chisqgrad3]
 
 def get_chisqgrad_wrap(args):
+    return get_chisqgrad(*args)
+
+
+def get_chisqgrad_model(i, imvec_embed, d1, d2, d3, ttype, mask, model_list=None):
+    global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
+
+    if model_list is None: return []
+
+    template = []
+    for model in model_list:
+        for param in model[0]: template.append(0)
+
+    chisqgrad1 = chisqgrad2 = chisqgrad3 = 0.0*np.array(template)
+
+    if d1 != False and len(data1_List[i])>0:
+        chisqgrad1 = gradmodel(model_list, imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], dtype=d1, ttype=ttype)
+
+    if d2 != False and len(data2_List[i])>0:
+        chisqgrad2 = gradmodel(model_list, imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], dtype=d2, ttype=ttype)
+
+    if d3 != False and len(data3_List[i])>0:
+        chisqgrad3 = gradmodel(model_list, imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], dtype=d3, ttype=ttype)
+  
+    return [chisqgrad1, chisqgrad2, chisqgrad3]
+
+def get_chisqgrad_model_wrap(args):
     return get_chisqgrad(*args)
 
 ##################################################################################################
@@ -769,6 +795,7 @@ R_flow={'alpha':0.0, 'metric':'SymKL', 'p':2.0, 'alpha_flow_tv':50.0},
 alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers 
 stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for scattering 
 Target_Dynamic_Range = 10000.0, 
+shared_model=None,
 maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
     """Run dynamic imager 
        Uses I = exp(I') change of variables.
@@ -932,7 +959,19 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         if stochastic_optics == True:
             EpsilonList = x[init_i:(init_i + N**2-1)]
             im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
-            scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List] #the list of scattered image vectors
+            #the list of scattered image vectors
+            scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List] 
+            init_i += len(EpsilonList)
+
+        model_list = None
+        if (not shared_model is None):
+            model_list = []
+            for modeltype in shared_model:
+                if modeltype=='ring': 
+                    model_terms = x[init_i:init_i+4]
+                    model_list.append(['ring',model_terms])
+                    init_i += 4
+                else: raise Exception('only ring analytic model implemented now!')
 
         s1 = s2 = 0.0
 
@@ -958,14 +997,14 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
         if stochastic_optics == False:
             if processes > 0:
-                chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
+                chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list] for j in range(N_frame)]))
             else:
-                chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+                chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list) for j in range(N_frame)])
         else:
             if processes > 0:
-                chisq = np.array(pool.map(get_chisq_wrap, [[j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
+                chisq = np.array(pool.map(get_chisq_wrap, [[j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list] for j in range(N_frame)]))
             else:
-                chisq = np.array([get_chisq(j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+                chisq = np.array([get_chisq(j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list) for j in range(N_frame)])
 
         chisq = ((np.sum(chisq[:,0])/N_frame - 1.0)*alpha_d1 +
                  (np.sum(chisq[:,1])/N_frame - 1.0)*alpha_d2 +
@@ -1012,6 +1051,18 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             phi_Gradient = so.Wrapped_Gradient(phi/(FOV/N))
             phi_Gradient_x = -phi_Gradient[1]
             phi_Gradient_y = -phi_Gradient[0]
+            init_i += len(EpsilonList)
+
+        #analytic model in common
+        model_list = None
+        if (not shared_model is None):
+            model_list = []
+            for modeltype in shared_model:
+                if modeltype=='ring': 
+                    model_terms = x[init_i:init_i+4]
+                    model_list.append(['ring',model_terms])
+                    init_i += 4
+                else: raise Exception('only ring analytic model implemented now!')
 
         s1 = s2 = 0.0
 
@@ -1036,16 +1087,18 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
         dchisq_dIa_List = []
 
+        # ANDREW -- the analytic model is being added directly to the already scattered image if stochastic optics is on, be aware.
+        # Michael -- can we do something about this
         if stochastic_optics == False:
             if processes > 0:
-                chisq_grad = np.array(pool.map(get_chisqgrad_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
+                chisq_grad = np.array(pool.map(get_chisqgrad_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list] for j in range(N_frame)]))
             else:
-                chisq_grad = np.array([get_chisqgrad(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+                chisq_grad = np.array([get_chisqgrad(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list) for j in range(N_frame)])
         else:
             if processes > 0:
-                chisq_grad = np.array(pool.map(get_chisqgrad_wrap, [[j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
+                chisq_grad = np.array(pool.map(get_chisqgrad_wrap, [[j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j],model_list] for j in range(N_frame)]))
             else:
-                chisq_grad = np.array([get_chisqgrad(j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+                chisq_grad = np.array([get_chisqgrad(j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j],model_list) for j in range(N_frame)])
 
             # Now, the chi^2 gradient must be modified so that it corresponds to the gradient wrt the unscattered image
             for j in range(N_frame):
@@ -1155,7 +1208,24 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         if stochastic_optics == True:
             chisq_epsilon_grad = alpha_phi * 2.0*EpsilonList/((N*N-1)/2.0)
 
-        return (np.concatenate((s1 + s2 + s_dF + s_dS + (s_dynamic_grad + chisq_grad + cm_grad + cm_grad + flux_grad)[embed_mask_All], flow_grad, chisq_grad_epsilon + chisq_epsilon_grad))*J_factor)
+        # Gradient for analytic model
+        #ANDREW -- no idea how this interacts with scattering, keep scattering off for now
+        chisq_grad_model= np.array([])
+        if (not shared_model is None):
+
+            if processes > 0:
+                chisq_grad_model = np.array(pool.map(get_chisqgrad_model_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list] for j in range(N_frame)]))
+            else:
+                chisq_grad_model = np.array([get_chisqgrad_model(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j], model_list) for j in range(N_frame)])
+
+            # sum them up
+
+            chisq_grad_model = (  np.sum(np.array([chisq_grad_model[i,0] for i in range(N_frame)]),axis=0)/N_frame*alpha_d1
+                                + np.sum(np.array([chisq_grad_model[i,1] for i in range(N_frame)]),axis=0)/N_frame*alpha_d2
+                                + np.sum(np.array([chisq_grad_model[i,2] for i in range(N_frame)]),axis=0)/N_frame*alpha_d3)
+
+
+        return (np.concatenate((s1 + s2 + s_dF + s_dS + (s_dynamic_grad + chisq_grad + cm_grad + cm_grad + flux_grad)[embed_mask_All], flow_grad, chisq_grad_epsilon + chisq_epsilon_grad, chisq_grad_model))*J_factor)
 
     # Plotting function for each iteration
     global nit
@@ -1281,6 +1351,15 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     if stochastic_optics == True:
         x0 = np.concatenate((x0,np.zeros(N**2-1)))
 
+    #ANDREW THE INITIAL RING PARAMETERS ARE FIXED HERE
+    if (not shared_model is None):
+        for modeltype in shared_model:
+            if modeltype=='ring': 
+                model_terms_init = [.01 * Prior.total_flux(), .1*Prior.fovx(), 0 , 0]
+                x0 = np.concatenate((x0, model_terms_init))
+            else: raise Exception('only ring analytic model implemented now!')
+
+
     print "Total Pixel #: ",(N_pixel*N_pixel*N_frame)
     print "Clipped Pixel #: ",(len(loginit))
 
@@ -1316,7 +1395,18 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     if stochastic_optics == True:
         EpsilonList = res.x[init_i:(init_i + N**2-1)]
-    
+        init_i += len(EpsilonList)
+
+
+    if (not shared_model is None):
+        model_list_out =  []
+        for modeltype in shared_model:
+            if modeltype=='ring': 
+                model_terms = res.x[init_i:init_i+4]
+                model_list_out.append(['ring',model_terms])
+                init_i += 4
+            else: raise Exception('only ring analytic model implemented now!')
+
     plotcur(res.x, final=True)   
 
     # Print stats
@@ -1331,10 +1421,18 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     #Return Frames
     outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
 
-    if R_flow['alpha'] == 0.0 and stochastic_optics == False:
-        return outim
+    #ANDREW add the ring to the image? 
+
+    if (shared_model is None):
+        if R_flow['alpha'] == 0.0 and stochastic_optics == False:
+            return outim
+        else:
+            return {'Frames':outim, 'Flow':Flow, 'EpsilonList':EpsilonList }
     else:
-        return {'Frames':outim, 'Flow':Flow, 'EpsilonList':EpsilonList }
+        if R_flow['alpha'] == 0.0 and stochastic_optics == False:
+            return {'Frames':outim, 'Model':model_list_out}
+        else:
+            return {'Frames':outim, 'Flow':Flow, 'EpsilonList':EpsilonList,'Model':model_list_out }
 
 ##################################################################################################
 # Plotting Functions
