@@ -830,7 +830,7 @@ class Image(object):
                x (float): the center x coordinate of the larger disk in radians
                y (float): the center y coordinate of the larger disk in radians
            Returns:
-               (Image): output image 
+               (Image): output image add_gaus
         """
 
         im = self

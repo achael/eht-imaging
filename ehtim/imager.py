@@ -776,7 +776,7 @@ class Imager(object):
 
         self._nit += 1
 
-    def make_image_I(self, grads=True, show_updates=True):
+    def make_image_I(self, grads=True, show_updates=True, **kwargs):
         """Make Stokes I image using current imager settings.
         """
         # Checks and initialize
@@ -792,7 +792,7 @@ class Imager(object):
         # Print stats
         if show_updates: self._show_updates=True
         else: self._show_updates=False
-        self.plotcur(xinit)
+        self.plotcur(xinit, **kwargs)
 
         # Minimize
         optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next, 'maxcor':NHIST}

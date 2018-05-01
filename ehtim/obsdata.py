@@ -935,7 +935,7 @@ class Obsdata(object):
             if len(s_list) > min_num:
                 std_list.append(np.std(s_list))
                 if print_std == True:
-                    print(tri,np.std(s_list))
+                    print(tri, np.std(s_list))
 
         return np.median(std_list)
 
