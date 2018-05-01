@@ -359,3 +359,26 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
             outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float(lreal)) + ' ' + str(float(limag)) + '\n'
             outfile.write(outline)
         outfile.close()
+
+
+def make_caltable(obs, gains, sites, times):
+
+    ntele = len(sites)
+    ntimes = len(times)
+    
+    datatables = {}
+    for s in range(0,ntele):
+        datatable = []
+        for t in range(0,ntimes):
+            gain = gains[s*ntele + t] 
+            datatable.append(np.array((times[t], gain, gain), dtype=DTCAL))
+        datatables[sites[s]] = np.array(datatable)
+    if len(datatables)>0:
+        caltable = Caltable(obs.ra, obs.dec, obs.rf, 
+                        obs.bw, datatables, obs.tarr, source=obs.source, 
+                        mjd=obs.mjd, timetype=obs.timetype)
+    else:
+        caltable=False
+    
+    return caltable
+    

@@ -54,7 +54,7 @@ NHIST = 50 # number of steps to store for hessian approx
 MAXIT = 100 # maximum number of iterations
 STOP = 1.e-8 # convergence criterion
 
-DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
+DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'logamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'simple', 'compact', 'compact2']
 
 # FFT & NFFT options
@@ -356,6 +356,8 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None,model_list=Non
             chisq = chisq_vis(imvec, A, data, sigma)
         elif dtype == 'amp':
             chisq = chisq_amp(imvec, A, data, sigma)
+        elif dtype == 'logamp':
+            chisq = chisq_logamp(imvec, A, data, sigma)
         elif dtype == 'bs':
             chisq = chisq_bs(imvec, A, data, sigma)
         elif dtype == 'cphase':
@@ -374,6 +376,8 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None,model_list=Non
             chisq = chisq_vis_fft(vis_arr, A, data, sigma)
         elif dtype == 'amp':            
             chisq = chisq_amp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'logamp':            
+            chisq = chisq_logamp_fft(vis_arr, A, data, sigma)
         elif dtype == 'bs':            
             chisq = chisq_bs_fft(vis_arr, A, data, sigma)
         elif dtype == 'cphase':            
@@ -391,6 +395,8 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None,model_list=Non
             chisq = chisq_vis_nfft(imvec, A, data, sigma, model_list=model_list)
         elif dtype == 'amp':            
             chisq = chisq_amp_nfft(imvec, A, data, sigma)
+        elif dtype == 'logamp':            
+            chisq = chisq_logamp_nfft(imvec, A, data, sigma)
         elif dtype == 'bs':            
             chisq = chisq_bs_nfft(imvec, A, data, sigma)
         elif dtype == 'cphase':            
@@ -419,6 +425,8 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None, model_lis
             chisqgrad = chisqgrad_vis(imvec, A, data, sigma)
         elif dtype == 'amp':
             chisqgrad = chisqgrad_amp(imvec, A, data, sigma)
+        elif dtype == 'logamp':
+            chisqgrad = chisqgrad_logamp(imvec, A, data, sigma)
         elif dtype == 'bs':
             chisqgrad = chisqgrad_bs(imvec, A, data, sigma)
         elif dtype == 'cphase':
@@ -437,6 +445,8 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None, model_lis
             chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma)
         elif dtype == 'amp':            
             chisqgrad = chisqgrad_amp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'logamp':            
+            chisqgrad = chisqgrad_logamp_fft(vis_arr, A, data, sigma)
         elif dtype == 'bs':            
             chisqgrad = chisqgrad_bs_fft(vis_arr, A, data, sigma)
         elif dtype == 'cphase':            
@@ -457,6 +467,8 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None, model_lis
             chisqgrad = chisqgrad_vis_nfft(imvec, A, data, sigma, model_list=model_list)
         elif dtype == 'amp':            
             chisqgrad = chisqgrad_amp_nfft(imvec, A, data, sigma)
+        elif dtype == 'logamp':            
+            chisqgrad = chisqgrad_logamp_nfft(imvec, A, data, sigma)
         elif dtype == 'bs':            
             chisqgrad = chisqgrad_bs_nfft(imvec, A, data, sigma)
         elif dtype == 'cphase':            
@@ -578,7 +590,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
     if ttype=='direct':
         if dtype == 'vis':
             (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, **kwargs)#systematic_noise=systematic_noise)
-        elif dtype == 'amp':
+        elif dtype == 'amp' or dtype == 'logamp':
             (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, **kwargs)#debias=debias, systematic_noise=systematic_noise)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, **kwargs)
@@ -594,7 +606,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
             (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, **kwargs)#systematic_noise=systematic_noise,
 #                               fft_pad_factor=fft_pad_factor,order=order,
 #                               conv_func=conv_func,p_rad=p_rad)
-        elif dtype == 'amp':
+        elif dtype == 'amp' or dtype == 'logamp':
             (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, **kwargs)# debias=debias, systematic_noise=systematic_noise,
 #                               fft_pad_factor=fft_pad_factor,order=order,
 #                               conv_func=conv_func, p_rad=p_rad)
@@ -618,7 +630,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
         if dtype=='vis':
             (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, **kwargs)#systematic_noise=systematic_noise,
 #                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
-        elif dtype == 'amp':
+        elif dtype == 'amp' or dtype == 'logamp':
             (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, **kwargs)# debias=debias, systematic_noise=systematic_noise,
 #                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'bs':
@@ -767,6 +779,30 @@ def chisqgrad_logcamp(imvec, Amatrices, log_clamp, sigma):
     pt3 = -pp / i3
     pt4 = -pp / i4
     out = (-2.0/len(log_clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    return out
+
+def chisq_logamp(imvec, A, amp, sigma):
+    """Log Visibility Amplitudes (normalized) chi-squared"""
+
+    # to lowest order the variance on the logarithm of a quantity x is 
+    # sigma^2_log(x) = sigma^2/x^2
+    logsigma = sigma / amp
+    
+    amp_samples = np.abs(np.dot(A, imvec))
+    return np.sum(np.abs((np.log(amp) - np.log(amp_samples))/logsigma)**2)/len(amp)
+
+def chisqgrad_logamp(imvec, A, amp, sigma):
+    """The gradient of the Log amplitude chi-squared"""
+
+    # to lowest order the variance on the logarithm of a quantity x is 
+    # sigma^2_log(x) = sigma^2/x^2
+    logsigma = sigma / amp 
+    
+    i1 = np.dot(A, imvec)
+    amp_samples = np.abs(i1)
+
+    pp = ((np.log(amp) - np.log(amp_samples))) / (logsigma**2) / i1
+    out = (-2.0/len(amp)) * np.real(np.dot(pp, A))
     return out
 
 ##################################################################################################
@@ -1000,6 +1036,47 @@ def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma):
     # extract relevant cells and flatten
     # TODO or is x<-->y??
     out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten()) 
+
+    return out
+
+
+def chisq_logamp_fft(vis_arr, A, amp, sigma):
+    """Visibility amplitude chi-squared from fft
+    """
+
+    # to lowest order the variance on the logarithm of a quantity x is 
+    # sigma^2_log(x) = sigma^2/x^2
+    logsigma = sigma / amp
+    
+    im_info, sampler_info_list, gridder_info_list = A
+    amp_samples = np.abs(sampler(vis_arr, sampler_info_list, sample_type="vis"))
+    chisq = np.sum(np.abs((np.log(amp_samples)-np.log(amp))/logsigma)**2)/(len(amp))
+    return chisq
+
+def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
+
+    """The gradient of the amplitude chi-kernesquared
+    """
+
+    im_info, sampler_info_list, gridder_info_list = A
+
+    # samples
+    samples = sampler(vis_arr, sampler_info_list, sample_type="vis")
+    amp_samples = np.abs(samples)
+
+    # gradient FT
+    logsigma = sigma / amp
+    pulsefac = sampler_info_list[0].pulsefac
+    wdiff_vec = (-2.0/len(amp)*((np.log(amp) - np.log(amp_samples))) / (logsigma**2) / samples.conj()) * pulsefac.conj()
+
+    # Setup and perform the inverse FFT
+    wdiff_arr = gridder([wdiff_vec], gridder_info_list)       
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff_arr)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
+
+    # extract relevent cells and flatten
+    # TODO or is x<-->y??
+    out = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten())
 
     return out
 
@@ -1589,6 +1666,58 @@ def chisqgrad_logcamp_nfft(imvec, A, log_clamp, sigma):
 
     out = out1 + out2 + out3 + out4
     return out
+
+
+
+def chisq_logamp_nfft(imvec, A, amp, sigma):
+    """Visibility log amplitude chi-squared from nfft
+    """
+        
+    #get nfft object
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    plan.f_hat = imvec.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    samples = plan.f.copy()*pulsefac
+    
+    # to lowest order the variance on the logarithm of a quantity x is 
+    # sigma^2_log(x) = sigma^2/x^2
+    logsigma = sigma / amp
+    
+    #compute chi^2
+    amp_samples = np.abs(samples)
+    chisq = np.sum(np.abs((np.log(amp_samples)-np.log(amp))/logsigma)**2)/(len(amp))
+
+    return chisq
+
+def chisqgrad_logamp_nfft(imvec, A, amp, sigma):
+
+    """The gradient of the log amplitude chi-squared from nfft
+    """
+
+    #get nfft object    
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    plan.f_hat = imvec.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    samples = plan.f.copy()*pulsefac
+    amp_samples=np.abs(samples)
+
+    # gradient vec for adjoint FT
+    logsigma = sigma / amp
+    wdiff_vec = (-2.0/len(amp)*((np.log(amp) - np.log(amp_samples))) / (logsigma**2) / samples.conj()) * pulsefac.conj()
+    plan.f = wdiff_vec
+    plan.adjoint()
+    out = np.real((plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim))
+
+    return out
+
 
 ##################################################################################################
 # Regularizer and Gradient Functions
