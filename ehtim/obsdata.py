@@ -2081,6 +2081,28 @@ class Obsdata(object):
 
         return cas
 
+    def baseline_crossings(self, delta_uvdist):
+ 
+        for d in self.data:
+            mask = (((self.data['u']-d['u'])**2 + (self.data['v']-d['v'])**2)**0.5 < delta_uvdist) + (((self.data['u']+d['u'])**2 + (self.data['v']+d['v'])**2)**0.5 < delta_uvdist) 
+            data_cross = self.data[mask]
+            if len(data_cross) == 0: continue
+
+            el1 = self.unpack('el1')[mask]
+            el2 = self.unpack('el2')[mask]
+
+            bases = sorted(set([(d2[2], d2[3]) for d2 in self.data[mask]]))
+            if len(bases) < 2: continue
+            
+            for b in bases:
+                mask3 = (data_cross['t1'] == b[0])*(data_cross['t2'] == b[1])
+                data_cross_b = data_cross[mask3]
+                el1_b = el1[mask3]
+                el2_b = el2[mask3]
+                print(self.source,data_cross_b[0]['time'],data_cross_b[0]['u'],data_cross_b[0]['v'],data_cross_b[0]['t1'],data_cross_b[0]['t2'],el1_b[0][0],el2_b[0][0],np.abs(data_cross_b[0]['vis']),data_cross_b[0]['sigma'])
+
+            print("\n")
+
 # Observation creation functions
 ##################################################################################################
 def merge_obs(obs_List):
