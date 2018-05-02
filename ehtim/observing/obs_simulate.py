@@ -29,7 +29,10 @@ import datetime
 import ephem
 import astropy.coordinates as coords
 import copy 
-from pynfft.nfft import NFFT
+try:
+    from pynfft.nfft import NFFT
+except ImportError:
+    print("Warning: No NFFT installed!")
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
@@ -291,6 +294,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
 
     #visibilities from NFFT
     elif ttype=="nfft":
+        
         uvdim = len(uv)
         if (im.xdim%2 or im.ydim%2):
             raise Exception("NFFT doesn't work with odd image dimensions!")

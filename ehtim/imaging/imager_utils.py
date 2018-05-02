@@ -33,7 +33,10 @@ import scipy.optimize as opt
 import scipy.ndimage as nd
 import scipy.ndimage.filters as filt
 import matplotlib.pyplot as plt
-from pynfft.nfft import NFFT
+try:
+    from pynfft.nfft import NFFT
+except ImportError:
+    print("Warning: No NFFT installed!")
 from  scipy.special import jv
 
 import ehtim.image as image
