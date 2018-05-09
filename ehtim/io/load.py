@@ -38,7 +38,7 @@ import ehtim.movie
 import ehtim.vex
 
 import ehtim.io.oifits
-
+from astropy.time import Time
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
@@ -794,14 +794,18 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         nxtable = hdulist['AIPS NX']
         for scan in nxtable.data: 
             
-            reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').mjd
-            scantime = (scan['TIME'] + reftime  - mjd)
-            scanint = scan['TIME INTERVAL']
+            reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').jd
+            #scantime = (scan['TIME'] + reftime  - mjd)
+            scan_start = scan['TIME'] #in days since reference date
+            scan_dur = scan['TIME INTERVAL']
             startvis = scan['START VIS'] - 1
             endvis = scan['END VIS'] - 1 
-            scantable.append(np.array((scantime, scanint, startvis, endvis), dtype=DTSCANS))
-        scantable = np.array(scantable)
-        
+            #scantable.append(np.array((scantime, scanint, startvis, endvis), dtype=DTSCANS))
+            scantable.append([scan_start - 0.5*scan_dur, 
+                              scan_start + 0.5*scan_dur])
+
+        scantable = np.array(scantable*24)
+            
     except: 
         print("No NX table exists")
         scantable = None

@@ -28,7 +28,7 @@ import os
 
 import ehtim.io.writeData
 import ehtim.io.oifits
-
+from astropy.time import Time
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
@@ -297,21 +297,29 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     hdulist_new = fits.HDUList()
     hdulist_new.append(fits.GroupsHDU())
 
-    ########################################################################
+    ##################### AIPS Data TABLE #####################################################################################################
     # Data table
     # Data header (based on the BU format)
     #header = fits.Header()
     #header = hdulist[0].header
+    MJD_0 = 2400000.5
     header = hdulist_new['PRIMARY'].header
     header['OBSRA'] = obs.ra * 180./12.
     header['OBSDEC'] = obs.dec
     header['OBJECT'] = obs.source
     header['MJD'] = float(obs.mjd)
+    header['DATE-OBS'] = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date').iso
+    header['BSCALE'] = 1.0
+    header['BZERO'] = 0.0  
     header['BUNIT'] = 'JY'
     header['VELREF'] = 3        # TODO ??
-    header['ALTRPIX'] = 1.e0
-    header['TELESCOP'] = 'ALMA' # TODO Can we change this field?
-    header['INSTRUME'] = 'ALMA'
+    header['EQUINOX'] = 'J2000'
+    header['ALTRPIX'] = 1.e0 
+    header['ALTRVAL'] = 0.e0 
+    header['TELESCOP'] = 'VLBA' # TODO Can we change this field?
+    header['INSTRUME'] = 'VLBA'
+    header['OBSERVER'] = 'EHT'
+
     header['CTYPE2'] = 'COMPLEX'
     header['CRVAL2'] = 1.e0
     header['CDELT2'] = 1.e0
@@ -364,6 +372,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     header['PTYPE9'] = 'TAU2'
     header['PSCAL9'] = 1.e0
     header['PZERO9'] = 0.e0
+    header['history'] = "AIPS SORT ORDER='TB'"
 
     # Get data
     obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
@@ -450,7 +459,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     hdulist_new['PRIMARY'].data = x
     hdulist_new['PRIMARY'].header = header # TODO necessary, or is it a pointer?
 
-    ########################################################################
+    ##################### AIPS AN TABLE #####################################################################################################
     # Antenna table
 
     # Load the array data
@@ -486,38 +495,48 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     #head = hdulist['AIPS AN'].header
     head = hdulist_new['AIPS AN'].header
 
-    head['EXTNAME'] = 'AIPS AN'
     head['EXTVER'] = 1
-    head['RDATE'] = '2000-01-01T00:00:00.0'
-    head['GSTIA0'] = 114.38389781355     # TODO ?? for jan 1 2000
-    head['UT1UTC'] = 0.e0
-    head['DATUTC'] = 0.e0
-    head['TIMESYS'] = 'UTC'
-    head['DEGPDY'] = 360.9856
-
-    head['FREQ']= obs.rf
-    head['FREQID'] = 1
-
-    head['ARRNAM'] = 'ALMA'     # TODO Can we change this field?
-    head['XYZHAND'] = 'RIGHT'
     head['ARRAYX'] = 0.e0
     head['ARRAYY'] = 0.e0
     head['ARRAYZ'] = 0.e0
+
+    # TODO change the reference date
+    #rdate_out = '2000-01-01T00:00:00.0'
+    #rdate_gstiao_out = 114.38389781355
+    #rdate_offset_out = 0.e0
+
+
+    rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
+    rdate_out = rdate_tt_new.iso
+    rdate_jd_out = rdate_tt_new.jd
+    rdate_gstiao_out = rdate_tt_new.sidereal_time('apparent','greenwich').degree
+    rdate_offset_out = (rdate_tt_new.ut1.datetime.second - rdate_tt_new.utc.datetime.second)
+    rdate_offset_out += 1.e-6*(rdate_tt_new.ut1.datetime.microsecond - rdate_tt_new.utc.datetime.microsecond)
+
+    head['RDATE'] = rdate_out
+    head['GSTIA0'] = rdate_gstiao_out
+    head['DEGPDY'] = 360.9856
+    head['UT1UTC'] = rdate_offset_out   #difference between UT1 and UTC ?
+    head['DATUTC'] = 0.e0
+    head['TIMESYS'] = 'UTC'
+
+    head['FREQ']= obs.rf
     head['POLARX'] = 0.e0
     head['POLARY'] = 0.e0
 
+
+    head['ARRNAM'] = 'VLBA'  # TODO must be recognized by aips/casa
+    head['XYZHAND'] = 'RIGHT'
+    head['FRAME'] = '????'
     head['NUMORB'] = 0
-    head['NO_IF'] = 1
-    head['NOPCAL'] = 0            #!AC changed from 1
-    head['POLTYPE'] = 'APPROX'
+    head['NO_IF'] = 1 #TODO nchan
+    head['NOPCAL'] = 0  #TODO add pol cal information
+    head['POLTYPE'] = 'VLBI'
+    head['FREQID'] = 1
 
     hdulist_new['AIPS AN'].header = head # TODO necessary, or is it a pointer?
 
-    #tbhdu = fits.BinTableHDU.from_columns(fits.ColDefs([col1,col2,col25,col3,col4,col5,col6,col7,col8,col9,col10,col11,colfin]), name='AIPS AN', header=head)
-    #hdulist['AIPS AN'] = tbhdu
-
-    ##################################################################################
-    # AIPS FQ TABLE -- Thanks to Kazu
+    ##################### AIPS FQ TABLE #####################################################################################################
     # Convert types & columns
 
     nif=1
@@ -540,8 +559,73 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     # add header information
     tbhdu.header.append(("NO_IF", nif, "Number IFs"))
     tbhdu.header.append(("EXTNAME","AIPS FQ"))
-    #hdulist.append(tbhdu)
+    tbhdu.header.append(("EXTVER",1))
     hdulist_new.append(tbhdu)
+
+    ##################### AIPS NX TABLE #####################################################################################################
+
+    scan_times = []
+    scan_time_ints = []
+    start_vis = []
+    stop_vis = []
+    
+    #TODO make sure jds AND scan_info MUST be time sorted!!
+    jj = 0
+
+    ROUND_SCAN_INT = 5
+    comp_fac = 3600*24*100 # compare to 100th of a second
+    
+    print ('Building NX table')
+    scan_arr = obs.scans/24.
+    if (scan_arr is None):
+        print ("No NX table in saved uvfits")
+    else:
+        for scan in  scan_arr:
+            scan_start = round(scan[0], ROUND_SCAN_INT)
+            scan_stop = round(scan[1], ROUND_SCAN_INT)
+            scan_dur = (scan_stop - scan_start)
+
+            if jj>=len(fractimes):
+                #print start_vis, stop_vis
+                break
+
+            print ("%.12f %.12f %.12f" % (fractimes[jj], scan_start, scan_stop)) 
+            jd = round(fractimes[jj], ROUND_SCAN_INT)*comp_fac # ANDREW TODO precision??   
+
+            if (np.floor(jd) >= np.floor(scan_start*comp_fac)) and (np.ceil(jd) <= np.ceil(comp_fac*scan_stop)):
+                start_vis.append(jj)
+
+                # TODO AIPS MEMO 117 says scan_times should be midpoint!, but AIPS data looks likes it's at the start? 
+                scan_times.append(scan_start + 0.5*scan_dur)# - rdate_jd_out)
+                scan_time_ints.append(scan_dur)
+                while (jj < len(fractimes) and np.floor(round(fractimes[jj],ROUND_SCAN_INT)*comp_fac) <= np.ceil(comp_fac*scan_stop)):
+                    jj += 1
+                stop_vis.append(jj-1)
+            else: 
+                continue
+
+        if jj < len(fractimes):
+            print (scan_arr[-1])
+            print (round(scan_arr[-1][0],ROUND_SCAN_INT),round(scan_arr[-1][1],ROUND_SCAN_INT))
+            print (jj, len(jds), round(jds[jj], ROUND_SCAN_INT))
+            print("WARNING!!!: in save_uvfits NX table, didn't get to all entries when computing scan start/stop!")
+            print (scan_times)
+        time_nx = fits.Column(name="TIME", format="1D", unit='DAYS', array=np.array(scan_times))
+        timeint_nx = fits.Column(name="TIME INTERVAL", format="1E", unit='DAYS', array=np.array(scan_time_ints))
+        sourceid_nx = fits.Column(name="SOURCE ID",format="1J", unit='', array=np.ones(len(scan_times)))
+        subarr_nx = fits.Column(name="SUBARRAY",format="1J", unit='', array=np.ones(len(scan_times)))
+        freqid_nx = fits.Column(name="FREQ ID",format="1J", unit='', array=np.ones(len(scan_times)))
+        startvis_nx = fits.Column(name="START VIS",format="1J", unit='', array=np.array(start_vis)+1)
+        endvis_nx = fits.Column(name="END VIS",format="1J", unit='', array=np.array(stop_vis)+1)
+        cols = fits.ColDefs([time_nx, timeint_nx, sourceid_nx, subarr_nx, freqid_nx, startvis_nx, endvis_nx])
+
+        tbhdu = fits.BinTableHDU.from_columns(cols)
+     
+        # header information
+        tbhdu.header.append(("EXTNAME","AIPS NX"))
+        tbhdu.header.append(("EXTVER",1))
+
+        hdulist_new.append(tbhdu) 
 
     # Write final HDUList to file
     #hdulist.writeto(fname, overwrite=True)
