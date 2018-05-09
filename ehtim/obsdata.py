@@ -899,6 +899,7 @@ class Obsdata(object):
 
         if max_diff_sec == 0.0:
             max_diff_sec = 5 * np.median(self.unpack('tint')['tint'])
+            print("estimated max_diff_sec: ", max_diff_sec)
 
         # Now check the noise statistics on all closure phase triangles
         c_phases = self.c_phases(vtype='vis', mode='time', count=count, ang_unit='')
