@@ -15,7 +15,7 @@ def pick(obs, req_sites):
     """
     Pick out observations with only certain sites
     """
-    tlists = obs.tlist()
+    tlists = np.array(obs.tlist())
     mask   = np.array([req_sites.issubset(set(tlist['t1']).union(tlist['t2']))
                        for tlist in tlists])
     out    = obs.copy()
