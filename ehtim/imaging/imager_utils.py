@@ -17,10 +17,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#TODO
-# add more general linearized energy functions
-# closure amplitude and phase covariance
-
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -592,62 +588,44 @@ def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
 
     if ttype=='direct':
         if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, **kwargs)#systematic_noise=systematic_noise)
+            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, **kwargs)#debias=debias, systematic_noise=systematic_noise)
+            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, **kwargs)#debias=debias,snrcut=snrcut)
+            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, **kwargs)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, **kwargs)#debias=debias,snrcut=snrcut)
+            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, **kwargs)
 
     elif ttype=='fast':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, **kwargs)#systematic_noise=systematic_noise,
-#                               fft_pad_factor=fft_pad_factor,order=order,
-#                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, **kwargs)
         elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, **kwargs)# debias=debias, systematic_noise=systematic_noise,
-#                               fft_pad_factor=fft_pad_factor,order=order,
-#                               conv_func=conv_func, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, **kwargs)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, **kwargs)
-#                               fft_pad_factor=fft_pad_factor,order=order,
-#                               conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, **kwargs)
-#                               fft_pad_factor=fft_pad_factor,order=order,
-#                               conv_func=conv_func,p_rad=p_rad)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, **kwargs)#debias=debias, snrcut=snrcut,
-#                               fft_pad_factor=fft_pad_factor,order=order,
-#                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, **kwargs)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, **kwargs)#debias=debias,snrcut=snrcut,
-#                               fft_pad_factor=fft_pad_factor,order=order,
-#                               conv_func=conv_func,p_rad=p_rad)
+            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, **kwargs)
     elif ttype=='nfft':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, **kwargs)#systematic_noise=systematic_noise,
-#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, **kwargs)
         elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, **kwargs)# debias=debias, systematic_noise=systematic_noise,
-#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, **kwargs)
         elif dtype == 'bs':
             (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior, **kwargs)
-#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, **kwargs)
-#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, **kwargs)#debias=debias, snrcut=snrcut,
-#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, **kwargs)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs)#debias=debias,snrcut=snrcut,
-#                               fft_pad_factor=fft_pad_factor, p_rad=p_rad)
+            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs)
         
         
     return (data, sigma, A)
@@ -1989,7 +1967,6 @@ def spatchgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     out = -(imvec  - priorvec)
     return out/norm
 
-
 #TODO FIGURE OUT NORMALIZATIONS FOR COMPACT 1 & 2 REGULARIZERS
 def scompact(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     im = imvec.reshape(ny, nx) 
@@ -2941,11 +2918,6 @@ def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAU
     # TODO: phase rotations should be done separately for x and y if the image isn't square
     # e.g., 
     phase = np.exp(-1j*np.pi*psize*((1+im_info.xdim%2)*uv[:,0] + (1+im_info.ydim%2)*uv[:,1])) 
-##   Andrew prefers the less elegant:
-#    if im_info.xdim%2: 
-#        phase *= np.exp(-1j*np.pi*psize*uv[:,0])
-#    if im_info.ydim%2: 
-#        phase *= np.exp(-1j*np.pi*psize*uv[:,1])
 
     pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
     pulsefac = pulsefac * phase
