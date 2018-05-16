@@ -177,7 +177,8 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     # normalize the flux
     normalizer = 1.0;
     if 'BUNIT' in list(header.keys()):
-        if header['BUNIT'] == 'JY/BEAM':
+        if header['BUNIT'].lower() == 'JY/BEAM'.lower():
+            print("converting Jy/Beam --> Jy/pixel")
             beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
             normalizer = (header['CDELT2'])**2/beamarea
     image *= normalizer
@@ -192,15 +193,15 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
             try: 
                 qdata = stokesdata[1,0].reshape((data.shape[-2],data.shape[-1]))
                 qimage = normalizer*qdata[::-1,:] # flip y-axis!
-            except IndexError: continue
+            except IndexError: pass
             try: 
                 udata = stokesdata[2,0].reshape((data.shape[-2],data.shape[-1]))
                 uimage = normalizer*udata[::-1,:] # flip y-axis!
-            except IndexError: continue
+            except IndexError: pass
             try: 
                 vdata = stokesdata[3,0].reshape((data.shape[-2],data.shape[-1]))
                 vimage = normalizer*vdata[::-1,:] # flip y-axis!
-            except IndexError: continue
+            except IndexError: pass
 
     else: #stokes in different HDUS
         for hdu in hdulist[1:]:
