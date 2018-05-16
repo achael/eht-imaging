@@ -2031,6 +2031,49 @@ def scompact2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_si
 ##################################################################################################
 # Chi^2 Data functions
 ##################################################################################################
+def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut):
+    """apply systematic noise and snrcut to VISIBILITIES AND AMPLITUDES
+       data_arr should have fields 't1','t2','u','v','vis','amp','sigma'
+
+       returns: (uv, vis, amp, sigma)
+    """
+
+    sigma = data_arr['sigma']
+    vis = data_arr['vis']
+    amp = data_arr['amp']
+    t1 = data_arr['t1']
+    t2 = data_arr['t2']
+
+    snrmask = np.abs(amp/sigma) > snrcut
+
+    if type(systematic_noise)==dict:
+        sys_level = np.zeros(len(t1))
+        for i in xrange(len(t1)):
+            if t1[i] in systematic_noise.keys():
+                t1sys = systematic_noise[t1[i]]
+            else:
+                t1sys = 0.
+            if t2[i] in systematic_noise.keys():
+                t2sys = systematic_noise[t2[i]]
+            else:
+                t2sys = 0.
+
+            if t1sys<0 or t2sys<0:
+                sys_level[i] = -1
+            else:
+                sys_level[i] = np.sqrt(t1sys**2 + t2sys**2)
+    else:
+        sys_level = systematic_noise*np.ones(len(t1))
+
+    sysmask = sys_level>=0.
+    mask = snrmask * sysmask
+
+    sigma = np.linalg.norm([sigma, sys_level*np.abs(amp)], axis=0)[mask]
+    vis = vis[mask]
+    amp = amp[mask]
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[mask]
+    return (uv, vis, amp, sigma)
+
 def chisqdata_vis(Obsdata, Prior, mask, **kwargs):#systematic_noise=0.0):
     """Return the data, sigmas, and fourier matrix for visibilities
     """
@@ -2040,13 +2083,8 @@ def chisqdata_vis(Obsdata, Prior, mask, **kwargs):#systematic_noise=0.0):
     snrcut = kwargs.get('snrcut',0.)
 
     # unpack data
-    data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
-    snrmask = np.abs(data_arr['vis']/data_arr['sigma']) > snrcut
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
-    vis = data_arr['vis'][snrmask]
-
-    # add systematic noise
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
+    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'])
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
     # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
@@ -2063,13 +2101,8 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):#debias=True, systematic_noise
     debias = kwargs.get('debias',True)
 
     # unpack data
-    ampdata = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
-    snrmask = np.abs(ampdata['amp']/ampdata['sigma']) > snrcut
-    uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))[snrmask]
-    amp = ampdata['amp'][snrmask]
-
-    #add systematic noise
-    sigma = np.linalg.norm([ampdata['sigma'], systematic_noise*ampdata['amp']],axis=0)[snrmask]
+    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
     # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
