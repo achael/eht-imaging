@@ -128,11 +128,14 @@ else:
     obs_cal = obs.copy()
 
 # Coherently average the input data with a specified coherence time
-obs_cal_avg = obs_cal.avg_coherent(args.tavg)
-# Flag for anomalous snr in the averaged data
-#obs_cal_avg = obs_cal_avg.flag_anomalous('snr', robust_nsigma_cut=3.0)
-# Save the averaged data
-obs_cal_avg.save_uvfits(os.path.basename(args.input[:-14])+args.pol+args.pol+'+avg.uvfits')
+if args.tavg > 0.0:
+    obs_cal_avg = obs_cal.avg_coherent(args.tavg)
+    # Flag for anomalous snr in the averaged data
+    #obs_cal_avg = obs_cal_avg.flag_anomalous('snr', robust_nsigma_cut=3.0)
+    # Save the averaged data
+    obs_cal_avg.save_uvfits(os.path.basename(args.input[:-14])+args.pol+args.pol+'+avg.uvfits')
+else:
+    obs_cal_avg = obs.copy()
 
 # Speed up testing
 if args.prune > 1:
