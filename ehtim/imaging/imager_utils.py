@@ -2081,9 +2081,10 @@ def chisqdata_vis(Obsdata, Prior, mask, **kwargs):#systematic_noise=0.0):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
 
     # unpack data
-    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'])
+    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
     # make fourier matrix
@@ -2226,19 +2227,15 @@ def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
-    snrmask = np.abs(data_arr['vis']/data_arr['sigma']) > snrcut
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
-    vis = data_arr['vis'][snrmask]
-
-    # add systematic noise
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
+    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2268,13 +2265,8 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
-    snrmask = np.abs(data_arr['amp']/data_arr['sigma']) > snrcut
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
-    amp = data_arr['amp'][snrmask]
-
-    #add systematic noise
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
+    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2448,17 +2440,13 @@ def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    data_arr = Obsdata.unpack(['u','v','vis','amp','sigma'])
-    snrmask = np.abs(data_arr['vis']/data_arr['sigma']) > snrcut
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
-    vis = data_arr['vis'][snrmask]
-
-    #add systematic noise
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
+    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2483,13 +2471,8 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    data_arr = Obsdata.unpack(['u','v','amp','sigma'], debias=debias)
-    snrmask = np.abs(data_arr['amp']/data_arr['sigma']) > snrcut
-    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[snrmask]
-    amp = data_arr['amp'][snrmask]
-
-    # add systematic noise
-    sigma = np.linalg.norm([data_arr['sigma'], systematic_noise*data_arr['amp']],axis=0)[snrmask]
+    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
