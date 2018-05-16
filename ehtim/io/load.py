@@ -162,13 +162,23 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
 
     # Get the image and create the object
     data = hdulist[0].data
+
+    # Check for multiple stokes in top hdu
+    stokes_in_hdu0 = False
+    if len(data.shape) == 4:
+        print("reading stokes images from top HDU -- assuming IQUV")
+        stokesdata = data
+        data = stokesdata[0,0]
+        stokes_in_hdu0 = True
+
     data = data.reshape((data.shape[-2],data.shape[-1]))
     image = data[::-1,:] # flip y-axis!
 
     # normalize the flux
     normalizer = 1.0;
     if 'BUNIT' in list(header.keys()):
-        if header['BUNIT'] == 'JY/BEAM':
+        if header['BUNIT'].lower() == 'JY/BEAM'.lower():
+            print("converting Jy/Beam --> Jy/pixel")
             beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
             normalizer = (header['CDELT2'])**2/beamarea
     image *= normalizer
@@ -178,18 +188,34 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
 
     # Look for Stokes Q and U
     qimage = uimage = vimage = np.array([])
-    for hdu in hdulist[1:]:
-        header = hdu.header
-        data = hdu.data
-        try: data = data.reshape((data.shape[-2],data.shape[-1]))
-        except IndexError: continue
 
-        if 'STOKES' in list(header.keys()) and header['STOKES'] == 'Q':
-            qimage = normalizer*data[::-1,:] # flip y-axis!
-        if 'STOKES' in list(header.keys()) and header['STOKES'] == 'U':
-            uimage = normalizer*data[::-1,:] # flip y-axis!
-        if 'STOKES' in list(header.keys()) and header['STOKES'] == 'V':
-            vimage = normalizer*data[::-1,:] # flip y-axis!
+    if stokes_in_hdu0: #stokes in top HDU
+            try: 
+                qdata = stokesdata[1,0].reshape((data.shape[-2],data.shape[-1]))
+                qimage = normalizer*qdata[::-1,:] # flip y-axis!
+            except IndexError: pass
+            try: 
+                udata = stokesdata[2,0].reshape((data.shape[-2],data.shape[-1]))
+                uimage = normalizer*udata[::-1,:] # flip y-axis!
+            except IndexError: pass
+            try: 
+                vdata = stokesdata[3,0].reshape((data.shape[-2],data.shape[-1]))
+                vimage = normalizer*vdata[::-1,:] # flip y-axis!
+            except IndexError: pass
+
+    else: #stokes in different HDUS
+        for hdu in hdulist[1:]:
+            header = hdu.header
+            data = hdu.data
+            try: data = data.reshape((data.shape[-2],data.shape[-1]))
+            except IndexError: continue
+
+            if 'STOKES' in list(header.keys()) and header['STOKES'] == 'Q':
+                qimage = normalizer*data[::-1,:] # flip y-axis!
+            if 'STOKES' in list(header.keys()) and header['STOKES'] == 'U':
+                uimage = normalizer*data[::-1,:] # flip y-axis!
+            if 'STOKES' in list(header.keys()) and header['STOKES'] == 'V':
+                vimage = normalizer*data[::-1,:] # flip y-axis!
 
     if qimage.shape == uimage.shape == vimage.shape == image.shape:
         #print('Loaded Stokes I, Q, U, and V Images')
