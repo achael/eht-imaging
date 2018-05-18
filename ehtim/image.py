@@ -1360,36 +1360,8 @@ class Image(object):
         if len(dynamic_range)==1:
             dynamic_range = dynamic_range * np.ones(len(im_array)+1)
                 
-        (im_array_shift, shifts, im0_pad) = self.align_images(im_array, f=False, shift=False, final_fov=False, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+        (im_array_shift, shifts, im0_pad) = self.align_images(im_array, shift=False, final_fov=False, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
         
-#         if len(dynamic_range)==1:
-#             dynamic_range = dynamic_range * np.ones(len(im_array)+1)
-#         
-#         psize = im0.psize
-#         max_fov = np.max([im0.xdim*im0.psize, im0.ydim*im0.psize])
-#         for i in range(0, len(im_array)):
-#             psize = np.min([psize, im_array[i].psize])
-#             max_fov = np.max([max_fov, im_array[i].xdim*im_array[i].psize, im_array[i].ydim*im_array[i].psize]) 
-#             
-#         if not final_fov:
-#             final_fov = max_fov
-#             
-#         useshift = True
-#         if not shift:
-#             useshift = False
-# 
-#         im_array_shift = []
-#         for i in range(0, len(im_array)):
-#             (idx, _, im0_pad, im_pad) = im0.findShift(im_array[i], target_fov=2*max_fov, psize=psize, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
-#             if i==0:
-#                     npix = int(im0_pad.xdim/2)
-#                     im0_pad = im0_pad.regrid_image(final_fov, npix) 
-#             if useshift:
-#                 idx = shift[i]
-#             tmp = im_pad.shiftImg(idx)
-#             im_array_shift.append( tmp.regrid_image(final_fov, npix) )
-                
-               
         unit = 'Jy/pixel'
         if scale=='log':
             unit = 'log(Jy/pixel)'
