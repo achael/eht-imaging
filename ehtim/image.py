@@ -1300,6 +1300,14 @@ class Image(object):
         return
         
     def align_images(self, im_array, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3]):
+        """Align the images in im_array to the image in self
+
+           Args:
+
+           Returns:
+               
+
+        """
     
         im0 = self.copy()
         
@@ -1336,21 +1344,9 @@ class Image(object):
         return (im_array_shift, shifts, im0_pad)
 
     def overlay_display(self, im_array, f=False, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3], color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
-        """Display the image.
+        """Display the overlay_display image.
 
            Args:
-               cfun (str): matplotlib.pyplot color function
-               scale (str): image scaling in ['log','gamma','lin']
-               interp (str): image interpolation 'gauss' or 'lin'
-
-               gamma (float): index for gamma scaling
-               dynamic_range (float): dynamic range for log and gamma scaling
-
-               plotp (bool): True to plot linear polarimetic image
-               nvec (int): number of polarimetric vectors to plot
-               pcut (float): minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel
-               export_pdf (str): path to exported PDF with plot
-               show (bool): Display the plot if true
 
            Returns:
                (matplotlib.figure.Figure): figure object with image
