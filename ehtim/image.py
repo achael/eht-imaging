@@ -612,10 +612,7 @@ class Image(object):
         im_shift = Image( im_shift, self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         return im_shift
         
-    def findShift(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, blursmall=False, scale='lin', gamma=0.5, dynamic_range=[1.e3]):
-    
-        if len(dynamic_range)==1:
-            dynamic_range = dynamic_range * np.ones(len(im_array)+1)
+    def findShift(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, blursmall=False, scale='lin', gamma=0.5, dynamic_range=1.e3):
             
         im1 = self.copy()
         if target_fov==None:
@@ -642,14 +639,14 @@ class Image(object):
         im2_pad_vec = im2_pad.imvec
         if scale=='log':
             im1_pad_vec[im1_pad_vec<0.0] = 0.0
-            im1_pad_vec = np.log(im1_pad_vec + np.max(im1_pad_vec)/dynamic_range[0])
+            im1_pad_vec = np.log(im1_pad_vec + np.max(im1_pad_vec)/dynamic_range)
             im2_pad_vec[im2_pad_vec<0.0] = 0.0
-            im2_pad_vec = np.log(im2_pad_vec + np.max(im2_pad_vec)/dynamic_range[1])
+            im2_pad_vec = np.log(im2_pad_vec + np.max(im2_pad_vec)/dynamic_range)
         if scale=='gamma':
             im1_pad_vec[im1_pad_vec<0.0] = 0.0
-            im1_pad_vec = (im1_pad_vec + np.max(im1_pad_vec)/dynamic_range[0])**(gamma)
+            im1_pad_vec = (im1_pad_vec + np.max(im1_pad_vec)/dynamic_range)**(gamma)
             im2_pad_vec[im2_pad_vec<0.0] = 0.0
-            im2_pad_vec = (im2_pad_vec + np.max(im2_pad_vec)/dynamic_range[1])**(gamma)
+            im2_pad_vec = (im2_pad_vec + np.max(im2_pad_vec)/dynamic_range)**(gamma)
             
 
         im1_norm = ( im1_pad_vec.reshape(im1_pad.ydim, im1_pad.xdim) - np.mean(im1_pad_vec) ) / np.std(im1_pad_vec)
@@ -1330,10 +1327,10 @@ class Image(object):
         im_array_shift = []
         shifts = []
         for i in range(0, len(im_array)):
-            (idx, _, im0_pad, im_pad) = im0.findShift(im_array[i], target_fov=2*max_fov, psize=psize, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+            (idx, _, im0_pad_orig, im_pad) = im0.findShift(im_array[i], target_fov=2*max_fov, psize=psize, scale=scale, gamma=gamma,  dynamic_range=dynamic_range[i+1])
             if i==0:
-                    npix = int(im0_pad.xdim/2)
-                    im0_pad = im0_pad.regrid_image(final_fov, npix) 
+                    npix = int(im0_pad_orig.xdim/2)
+                    im0_pad = im0_pad_orig.regrid_image(final_fov, npix) 
             if useshift:
                 idx = shift[i]
             tmp = im_pad.shiftImg(idx)
@@ -1359,8 +1356,19 @@ class Image(object):
         
         if len(dynamic_range)==1:
             dynamic_range = dynamic_range * np.ones(len(im_array)+1)
+            
+        psize = self.psize
+        max_fov = np.max([self.xdim*self.psize, self.ydim*self.psize])
+        for i in range(0, len(im_array)):
+            psize = np.min([psize, im_array[i].psize])
+            max_fov = np.max([max_fov, im_array[i].xdim*im_array[i].psize, im_array[i].ydim*im_array[i].psize]) 
+            
+        if not final_fov:
+            final_fov = max_fov
+            
                 
-        (im_array_shift, shifts, im0_pad) = self.align_images(im_array, shift=False, final_fov=False, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+        (im_array_shift, shifts, im0_pad) = self.align_images(im_array, shift=False, final_fov=final_fov, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+        
         
         unit = 'Jy/pixel'
         if scale=='log':
