@@ -32,7 +32,7 @@ COLORLIST = ['b','m','g','c','y','k','r']
 ##################################################################################################
 # Plotters: Compare Observations
 ##################################################################################################
-def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST, ebar=True):
+def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST, ebar=True, export_pdf=""):
     """Plot data from multiple observations on the same axes.
         """
     
@@ -50,9 +50,13 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis
 
-def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True):
+def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True, export_pdf=""):
     """Plot data from multiple observations vs time on a single baseline on the same axes.
         """
     
@@ -70,11 +74,15 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=Fals
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis
 
 
 
-def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True, cphases=[]):
+def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True, cphases=[], export_pdf=""):
 
     """Plot closure phase on a triangle vs time from multiple observations on the same axes.
         """
@@ -98,11 +106,15 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis
 
 
 
-def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True, camps=[]):
+def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True, camps=[], export_pdf=""):
 
     """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
         """
@@ -127,12 +139,16 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis
 
 ##################################################################################################
 # Plotters: Compare Observations to Image
 ##################################################################################################
-def plotall_obs_im_compare(obslist, image, field1, field2, ttype='direct', sgrscat=False, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST, ebar=True):
+def plotall_obs_im_compare(obslist, image, field1, field2, ttype='direct', sgrscat=False, rangex=False, rangey=False, conj=False, show=True, clist=COLORLIST, ebar=True, export_pdf=""):
     """Plot data from observations compared to ground truth from an image on the same axes.
         """
     
@@ -156,9 +172,13 @@ def plotall_obs_im_compare(obslist, image, field1, field2, ttype='direct', sgrsc
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis
 
-def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True):
+def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True, export_pdf=""):
     """Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
         """
     
@@ -183,11 +203,15 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', 
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis
 
 
 
-def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True):
+def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True, export_pdf=""):
 
     """Plot closure phase on a triangle compared to ground truth from an image on the same axes.
         """
@@ -212,11 +236,15 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direc
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis
 
 
 
-def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True):
+def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True, export_pdf=""):
 
 
     """Plot closure amplitude on a quadrangle compared to ground truth from an image on the same axes.
@@ -242,4 +270,8 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
 
     if show:
         plt.show(block=False)
+
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+
     return axis

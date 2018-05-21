@@ -175,14 +175,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
 
     # Get data and fourier matrices for the data terms
-    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, **kwargs)#ttype=ttype, fft_pad_factor=fft_pad_factor, conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
-    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, **kwargs)#ttype=ttype, fft_pad_factor=fft_pad_factor, conv_func=grid_conv, p_rad=grid_prad, order=fft_interp, debias=debias,snrcut=snrcut)
-
-    # Coordinate matrix for center-of-mass constraint
-#    coord = Prior.psize * np.array([[[x,y] for x in np.arange(Prior.xdim//2,-Prior.xdim//2,-1)]
-#                                           for y in np.arange(Prior.ydim//2,-Prior.ydim//2,-1)])
-#    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
-#    coord = coord[embed_mask]
+    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, **kwargs)
+    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, **kwargs)
 
     # Define the chi^2 and chi^2 gradient
     def chisq1(imvec):
@@ -215,27 +209,16 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     # Define constraint functions
     def flux_constraint(imvec):
         return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "flux", **kwargs)
-#        #norm = flux**2
-#        norm = 1
-#        return (np.sum(imvec) - flux)**2/norm
 
     def flux_constraint_grad(imvec):
         return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "flux", **kwargs)
-#        #norm = flux**2
-#        norm = 1
-#        return 2*(np.sum(imvec) - flux) / norm
 
     def cm_constraint(imvec):
         return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "cm", **kwargs)
-#        #norm = beamsize**2 * flux**2
-#        norm = 1
-#        return (np.sum(imvec*coord[:,0])**2 + np.sum(imvec*coord[:,1])**2)/norm
+
 
     def cm_constraint_grad(imvec):
         return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "cm", **kwargs)
-#        #norm = beamsize**2 * flux**2
-#        norm = 1
-#        return 2*(np.sum(imvec*coord[:,0])*coord[:,0] + np.sum(imvec*coord[:,1])*coord[:,1]) / norm
 
     # Define the objective function and gradient
     def objfunc(imvec):

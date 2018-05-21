@@ -229,7 +229,7 @@ class Image(object):
         self.qvec = - self.qvec
         return
 
-    def sample_uv(self, uv, ttype='direct',fft_pad_factor=2,sgrscat=False):
+    def sample_uv(self, uv, ttype='nfft',fft_pad_factor=2,sgrscat=False):
         """Sample the image on the selected uv points without adding noise.
 
            Args:
@@ -246,7 +246,7 @@ class Image(object):
         return data
 
     def observe_same_nonoise(self, obs, 
-                                   ttype="direct", fft_pad_factor=2, 
+                                   ttype="nfft", fft_pad_factor=2, 
                                    sgrscat=False):
 
         """Observe the image on the same baselines as an existing observation object without adding noise.
@@ -293,7 +293,7 @@ class Image(object):
         return obs_no_noise
 
     def observe_same(self, obsin, 
-                           ttype='direct', fft_pad_factor=2,
+                           ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                            jones=False, inv_jones=False,
@@ -370,7 +370,7 @@ class Image(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                       mjd=None, timetype='UTC',
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ttype='direct', fft_pad_factor=2, 
+                      ttype='nfft', fft_pad_factor=2, 
                       sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                       jones=False, inv_jones=False,
@@ -433,7 +433,7 @@ class Image(object):
         return obs
 
     def observe_vex(self, vex, source, t_int=0.0, tight_tadv = False,
-                      ttype='direct', fft_pad_factor=2, sgrscat=False, add_th_noise=True,
+                      ttype='nfft', fft_pad_factor=2, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, 
@@ -771,7 +771,7 @@ class Image(object):
         xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
         ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
 
-        hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else EP
+        hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else 0.#EP
                           for i in xlist]
                           for j in ylist])
 

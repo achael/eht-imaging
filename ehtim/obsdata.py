@@ -1251,6 +1251,7 @@ class Obsdata(object):
             # Generate bispectra for each triangle
             for tri in tris:
                 # The ordering is north-south
+                # ANDREW what if there is no geographic information???
                 a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
                 a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
                 a2 = 3 - a1 - a3

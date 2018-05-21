@@ -1257,14 +1257,18 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             if stochastic_optics == True:
                 EpsilonList = x[init_i:(init_i + N**2-1)]
                 im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
-                scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List] #the list of scattered image vectors
+                scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), 
+                                                          ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec 
+                                 for im in im_List] #the list of scattered image vectors
 
             s1 = s2 = 0.0
 
             if alpha_s1 != 0.0:
-                s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+                s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), 
+                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
             if alpha_s2 != 0.0:
-                s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+                s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
+                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
 
             s_dynamic = cm = s_dS = s_dF = 0.0
 
@@ -1280,14 +1284,18 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             
             if stochastic_optics == False:
                 if processes > 0:
-                    chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
+                    chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], 
+                                              d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
                 else:
-                    chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+                    chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], 
+                                      d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
             else:
                 if processes > 0:
-                    chisq = np.array(pool.map(get_chisq_wrap, [[j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
+                    chisq = np.array(pool.map(get_chisq_wrap, [[j, scatt_im_List[j][embed_mask_List[j]], 
+                                              d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
                 else:
-                    chisq = np.array([get_chisq(j, scatt_im_List[j][embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+                    chisq = np.array([get_chisq(j, scatt_im_List[j][embed_mask_List[j]], 
+                                      d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
 
             chisq1_List = chisq[:,0]
             chisq2_List = chisq[:,1]
@@ -1419,7 +1427,9 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         pool.close()
 
     #Return Frames
-    outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
+    outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
+                         Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, 
+                         mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
 
     #ANDREW add the ring to the image? 
 
@@ -1844,7 +1854,8 @@ def Cont(imG):
     pov_mas = pov/(RADPERUAS*1.e3)
     Zmax = np.amax(Z)
     print(Zmax)
-    levels = np.array((-0.00125*Zmax,0.00125*Zmax,0.0025*Zmax, 0.005*Zmax, 0.01*Zmax, 0.02*Zmax, 0.04*Zmax, 0.08*Zmax, 0.16*Zmax, 0.32*Zmax, 0.64*Zmax))
+    levels = np.array((-0.00125*Zmax,0.00125*Zmax,0.0025*Zmax, 0.005*Zmax, 0.01*Zmax,
+                        0.02*Zmax, 0.04*Zmax, 0.08*Zmax, 0.16*Zmax, 0.32*Zmax, 0.64*Zmax))
     CS = plt.contour(Z, levels,
                      origin='lower',
                      linewidths=2,
