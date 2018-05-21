@@ -612,8 +612,8 @@ class Image(object):
         im_shift = Image( im_shift, self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         return im_shift
         
-    def findShift(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, blursmall=False):
-    
+    def findShift(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, blursmall=False, scale='lin', gamma=0.5, dynamic_range=1.e3):
+            
         im1 = self.copy()
         if target_fov==None:
             max_fov = np.max([im1.xdim * im1.psize, im1.ydim * im1.psize, im2.xdim * im2.psize, im2.ydim * im2.psize])
@@ -633,9 +633,24 @@ class Image(object):
         if ((blur_frac > 0.0) * (blursmall==False)):
             im1_pad = im1_pad.blur_gauss(beamparams, blur_frac)
             im2_pad = im2_pad.blur_gauss(beamparams, blur_frac)
+                
 
-        im1_norm = ( im1_pad.imvec.reshape(im1_pad.ydim, im1_pad.xdim) - np.mean(im1_pad.imvec) ) / np.std(im1_pad.imvec)
-        im2_norm = ( im2_pad.imvec.reshape(im2_pad.ydim, im2_pad.xdim) - np.mean(im2_pad.imvec) ) / np.std(im2_pad.imvec)
+        im1_pad_vec = im1_pad.imvec
+        im2_pad_vec = im2_pad.imvec
+        if scale=='log':
+            im1_pad_vec[im1_pad_vec<0.0] = 0.0
+            im1_pad_vec = np.log(im1_pad_vec + np.max(im1_pad_vec)/dynamic_range)
+            im2_pad_vec[im2_pad_vec<0.0] = 0.0
+            im2_pad_vec = np.log(im2_pad_vec + np.max(im2_pad_vec)/dynamic_range)
+        if scale=='gamma':
+            im1_pad_vec[im1_pad_vec<0.0] = 0.0
+            im1_pad_vec = (im1_pad_vec + np.max(im1_pad_vec)/dynamic_range)**(gamma)
+            im2_pad_vec[im2_pad_vec<0.0] = 0.0
+            im2_pad_vec = (im2_pad_vec + np.max(im2_pad_vec)/dynamic_range)**(gamma)
+            
+
+        im1_norm = ( im1_pad_vec.reshape(im1_pad.ydim, im1_pad.xdim) - np.mean(im1_pad_vec) ) / np.std(im1_pad_vec)
+        im2_norm = ( im2_pad_vec.reshape(im2_pad.ydim, im2_pad.xdim) - np.mean(im2_pad_vec) ) / np.std(im2_pad_vec)
 
         fft_im1 = np.fft.fft2( im1_norm )
         fft_im2 = np.fft.fft2( im2_norm )
@@ -1280,33 +1295,17 @@ class Image(object):
         """
         ehtim.io.save.save_im_fits(self, fname)
         return
-
-    def overlay_display(self, im_array, f=False, aligned=True, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=1.e3, color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
-        """Display the image.
+        
+    def align_images(self, im_array, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3]):
+        """Align the images in im_array to the image in self
 
            Args:
-               cfun (str): matplotlib.pyplot color function
-               scale (str): image scaling in ['log','gamma','lin']
-               interp (str): image interpolation 'gauss' or 'lin'
-
-               gamma (float): index for gamma scaling
-               dynamic_range (float): dynamic range for log and gamma scaling
-
-               plotp (bool): True to plot linear polarimetic image
-               nvec (int): number of polarimetric vectors to plot
-               pcut (float): minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel
-               export_pdf (str): path to exported PDF with plot
-               show (bool): Display the plot if true
 
            Returns:
-               (matplotlib.figure.Figure): figure object with image
+               
 
         """
-
-        if not f:
-            f = plt.figure()
-        plt.clf()
-        
+    
         im0 = self.copy()
         
         if len(dynamic_range)==1:
@@ -1320,29 +1319,67 @@ class Image(object):
             
         if not final_fov:
             final_fov = max_fov
+            
+        useshift = True
+        if not shift:
+            useshift = False
 
         im_array_shift = []
+        shifts = []
         for i in range(0, len(im_array)):
-            (idx, _, im0_pad, im_pad) = im0.findShift(im_array[i], target_fov=2*max_fov, psize=psize)
+            (idx, _, im0_pad_orig, im_pad) = im0.findShift(im_array[i], target_fov=2*max_fov, psize=psize, scale=scale, gamma=gamma,  dynamic_range=dynamic_range[i+1])
             if i==0:
-                    npix = int(im0_pad.xdim/2)
-                    im0_pad = im0_pad.regrid_image(final_fov, npix) 
-            if not shift:
-                shift=idx
-            tmp = im_pad.shiftImg(shift)
+                    npix = int(im0_pad_orig.xdim/2)
+                    im0_pad = im0_pad_orig.regrid_image(final_fov, npix) 
+            if useshift:
+                idx = shift[i]
+            tmp = im_pad.shiftImg(idx)
+            shifts.append(idx)
             im_array_shift.append( tmp.regrid_image(final_fov, npix) )
+            
+        
+        return (im_array_shift, shifts, im0_pad)
+
+    def overlay_display(self, im_array, f=False, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3], color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
+        """Display the overlay_display image.
+
+           Args:
+
+           Returns:
+               (matplotlib.figure.Figure): figure object with image
+
+        """
+
+        if not f:
+            f = plt.figure()
+        plt.clf()
+        
+        if len(dynamic_range)==1:
+            dynamic_range = dynamic_range * np.ones(len(im_array)+1)
+            
+        psize = self.psize
+        max_fov = np.max([self.xdim*self.psize, self.ydim*self.psize])
+        for i in range(0, len(im_array)):
+            psize = np.min([psize, im_array[i].psize])
+            max_fov = np.max([max_fov, im_array[i].xdim*im_array[i].psize, im_array[i].ydim*im_array[i].psize]) 
+            
+        if not final_fov:
+            final_fov = max_fov
+            
                 
-               
+        (im_array_shift, shifts, im0_pad) = self.align_images(im_array, shift=False, final_fov=final_fov, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+        
+        
         unit = 'Jy/pixel'
         if scale=='log':
             unit = 'log(Jy/pixel)'
-            im0_pad.imvec = np.log(im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[i])
+            im0_pad.imvec = np.log(im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[0])
             for i in range(0, len(im_array)):
                 im_array_shift[i].imvec = np.log(im_array_shift[i].imvec + np.max(im_array_shift[i].imvec)/dynamic_range[i+1])
 
         if scale=='gamma':
             unit = '(Jy/pixel)^gamma'
-            im0_pad.imvec = (im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[i])**(gamma)
+            im0_pad.imvec = (im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[0])**(gamma)
             for i in range(0, len(im_array)):
                 im_array_shift[i].imvec = (im_array_shift[i].imvec + np.max(im_array_shift[i].imvec)/dynamic_range[i+1])**(gamma)
          
