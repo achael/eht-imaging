@@ -321,7 +321,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 # Wrapper Functions
 ##################################################################################################
 
-def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None,model_list=None):
+def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
     """return the chi^2 for the appropriate dtype
     """
 
@@ -374,7 +374,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None,model_list=Non
             imvec = embed(imvec, mask, randomfloor=True)
 
         if dtype == 'vis':            
-            chisq = chisq_vis_nfft(imvec, A, data, sigma, model_list=model_list)
+            chisq = chisq_vis_nfft(imvec, A, data, sigma)
         elif dtype == 'amp':            
             chisq = chisq_amp_nfft(imvec, A, data, sigma)
         elif dtype == 'logamp':            
@@ -390,7 +390,7 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None,model_list=Non
 
     return chisq
 
-def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None, model_list=None):
+def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
     """return the chi^2 gradient for the appropriate dtype
     """
 
@@ -446,7 +446,7 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None, model_lis
             imvec = embed(imvec, mask, randomfloor=True)
 
         if dtype == 'vis':                        
-            chisqgrad = chisqgrad_vis_nfft(imvec, A, data, sigma, model_list=model_list)
+            chisqgrad = chisqgrad_vis_nfft(imvec, A, data, sigma)
         elif dtype == 'amp':            
             chisqgrad = chisqgrad_amp_nfft(imvec, A, data, sigma)
         elif dtype == 'logamp':            
@@ -1047,87 +1047,7 @@ def chisqgrad_logamp_fft(vis_arr, A, amp, sigma):
 ##################################################################################################
 # NFFT Chi-squared and Gradient Functions
 ##################################################################################################
-def samplemodel(model_list, u, v):
-    """sample models defined by the model list at uv points u,v
-    """
-
-    samples = 1j*np.zeros(len(u)).astype('complex128')
-    for model in model_list:
-        if model[0]=='ring':
-            samples += sample_ring(model[1], u, v)
-                        
-        else: raise Exception("only ring model currently implemented")
-    return samples
-
-def gradmodel(model_list, imvec, A, data, sigma, dtype='vis',ttype='nfft'):
-    """gradient for models defined by the model list
-       dtype is the chi^2 data type -- only complex vis implemented now!
-    """
-    grads_all = []
-    for model in model_list:
-        if model[0]=='ring':
-            if dtype=='vis':
-                if ttype!='nfft': raise Exception("analytic model only works with nfft for image right now!")
-
-                #recompute image samples
-                nfft_info = A[0]
-                plan = nfft_info.plan
-                pulsefac = nfft_info.pulsefac
-                plan.f_hat = imvec.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-                plan.trafo()
-                samples = plan.f.copy()*pulsefac
-
-                uv = nfft_info.uv
-                u = uv[:,0]
-                v = uv[:,1]
-                samples_model = samplemodel(model_list, u, v)
-                samples = samples + samples_model
-
-                grad = gradient_ring_vis(model[1], u, v, data, samples, sigma)
-            else: raise Exception("only complex visibility chi^2 currently implemented for analytic models!")               
-        else: raise Exception("only ring model currently implemented")
-
-        grads_all.append(grad)
-
-
-    return list(np.array(grads_all).flatten())
-
-def sample_ring(ringparams, u, v):
-    """visibility samples from an infinitely thin ring
-       ringparams: ring flux, ring radius, x offset, y offset
-    """
-    uvdist = np.sqrt(u**2 + v**2)
-    I0 = ringparams[0]
-    R = ringparams[1]
-    x0 = ringparams[2]
-    y0 = ringparams[3]
-    samples = np.exp(2j*np.pi*(u*x0+v*y0)) * jv(0, 2*np.pi*R*uvdist)
-    return samples    
-
-def gradient_ring_vis(ringparams, u, v, data, samples, sigma):
-    """visibility samples from an infinitely thin ring
-       ringparams: ring flux, ring radius, x offset, y offset
-       samples: sampled visibilities including all models and image
-    """
-    uvdist = np.sqrt(u**2 + v**2)
-    I0 = ringparams[0]
-    R = ringparams[1]
-    x0 = ringparams[2]
-    y0 = ringparams[3]
-    phases_ring =  np.exp(2j*np.pi*(u*x0+v*y0))
-    samples_ring = phases_ring * jv(0, 2*np.pi*R*uvdist)
-
-    pref = (-1./len(samples)) * (data-samples).conj() / (sigma**2)
-    dchi2_dI0 = np.sum(np.real(pref*samples_ring))
-    dchi2_dR = np.sum(np.real(pref*-2*np.pi*uvdist*phases_ring * jv(1, 2*np.pi*R*uvdist)))
-    dchi2_dx0 = np.sum(np.real(pref*samples_ring*2j*np.pi*u))
-    dchi2_dy0 = np.sum(np.real(pref*samples_ring*2j*np.pi*v))
-
-    grad = [dchi2_dI0,dchi2_dR,dchi2_dx0,dchi2_dy0]
-
-    return grad    
-
-def chisq_vis_nfft(imvec, A, vis, sigma, model_list=None):
+def chisq_vis_nfft(imvec, A, vis, sigma):
     """Visibility chi-squared from nfft
     """
 
@@ -1141,20 +1061,12 @@ def chisq_vis_nfft(imvec, A, vis, sigma, model_list=None):
     plan.trafo()
     samples = plan.f.copy()*pulsefac
 
-    # add analytic model visibilities
-    if not (model_list is None):
-        uv = nfft_info.uv
-        u = uv[:,0]
-        v = uv[:,1]
-        samples_model = samplemodel(model_list, u, v)
-        samples = samples + samples_model
-
     #compute chi^2
     chisq = np.sum(np.abs((samples-vis)/sigma)**2)/(2*len(vis))
 
     return chisq
 
-def chisqgrad_vis_nfft(imvec, A, vis, sigma, model_list=None):
+def chisqgrad_vis_nfft(imvec, A, vis, sigma):
 
     """The gradient of the visibility chi-squared from nfft
     """
@@ -1168,14 +1080,6 @@ def chisqgrad_vis_nfft(imvec, A, vis, sigma, model_list=None):
     plan.f_hat = imvec.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
     plan.trafo()
     samples = plan.f.copy()*pulsefac
-
-    # add analytic model visibilities
-    if not (model_list is None):
-        uv = nfft_info.uv
-        u = uv[:,0]
-        v = uv[:,1]
-        samples_model = samplemodel(model_list, u, v)
-        samples = samples + samples_model
 
     # gradient vec for adjoint FT
     wdiff_vec = (-1.0/len(vis)*(vis - samples)/(sigma**2)) * pulsefac.conj()

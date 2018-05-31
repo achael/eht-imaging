@@ -870,6 +870,50 @@ class Image(object):
         out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
         return out
 
+    def add_ring_m1(self, I0, I1, r0, phi, sigma, x=0, y=0):
+        """Add a ring to an image with an m=1 mode
+
+           Args:
+               I0 (float): 
+               I1 (float): 
+               r0 (float): the radius
+               phi (float): angle of m1 mode
+               sigma (float): the blurring size
+               x (float): the center x coordinate of the larger disk in radians
+               y (float): the center y coordinate of the larger disk in radians
+
+           Returns:
+               (Image): output image add_gaus
+        """
+
+        im = self
+        flux = I0 - 0.5*I1
+        phi = phi + np.pi #ANDREW: angle 
+        psize = im.psize
+        xfov = im.xdim * im.psize
+        yfov = im.ydim * im.psize
+        xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+        ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
+
+        def mask(x2, y2):
+            if (x2**2 + y2**2) > (r0-psize)**2 and (x2**2 + y2**2) < (r0+psize)**2:
+                theta = np.arctan2(y2,x2)
+                flux = (I0-0.5*I1*(1+np.cos(theta-phi)))/(2*np.pi*r0)
+                return flux
+            else:
+                return 0.0
+
+        crescent = np.array([[mask(i-x, j-y)
+                          for i in xlist]
+                          for j in ylist])
+
+        crescent = crescent[0:im.ydim, 0:im.xdim]
+        out = Image(crescent, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+        out = out.blur_circ(sigma)
+        out.imvec *= flux/(out.total_flux())
+        out.imvec += im.imvec
+        return out
+
     def add_const_m(self, mag, angle):
         """Add a constant fractional linear polarization to image
 
@@ -1367,7 +1411,7 @@ class Image(object):
             final_fov = max_fov
             
                 
-        (im_array_shift, shifts, im0_pad) = self.align_images(im_array, shift=False, final_fov=final_fov, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+        (im_array_shift, shifts, im0_pad) = self.align_images(im_array, shift=shift, final_fov=final_fov, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
         
         
         unit = 'Jy/pixel'

@@ -56,7 +56,7 @@ class Caltable(object):
     """
 
     def __init__(self, ra, dec, rf, bw, datatables, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, timetype='UTC'):
-        """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
+        """A Calibration Table.
 
            Args:
 
@@ -98,7 +98,7 @@ class Caltable(object):
         return new_caltable
 
     #TODO default extrapolation?
-    def merge(self, caltablelist, interp='linear', extrapolate=1):
+    def merge(self, caltablelist, interp=None, extrapolate=1):
         """Merge the calibration table with a list of other calibration tables"""
 
         if extrapolate is True: # extrapolate can be a tuple or numpy array
@@ -119,8 +119,7 @@ class Caltable(object):
         for caltable in caltablelist:
 
             #TODO check metadata!
-            #TODO ARE THEY ALL REFERENCED TO SAME MJD???
-
+            #TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
             tarr2 = caltable.tarr.copy() 
             tkey2 = caltable.tkey.copy()
             data2 = caltable.data.copy()
@@ -286,15 +285,8 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
         except IOError:
             continue
 
-        #print ("filename)
         datatable = []
 
-        # TODO hacky way to make it work with only one entry
-#        onerowonly=False
-#        try: data.shape[1]
-#        except IndexError:
-#            data = data.reshape(1,len(data))
-#            onerowonly = True
         for row in data:
 
             time = (float(row[0]) - obs.mjd) * 24.0 # time is given in mjd
@@ -315,8 +307,6 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
                 rscale = rscale**.5
                 lscale = lscale**.5
             datatable.append(np.array((time, rscale, lscale), dtype=DTCAL))
-            #if onerowonly:
-            #    datatable.append(np.array((1.1*time, rscale, lscale), dtype=DTCAL))
 
         datatables[site] = np.array(datatable)
     if len(datatables)>0:

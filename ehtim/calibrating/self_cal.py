@@ -102,6 +102,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
         caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
+
     else:
         obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
                                         np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
