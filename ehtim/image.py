@@ -571,7 +571,7 @@ class Image(object):
 
         return outim
     
-    def compare_images(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, metric = ['nxcorr', 'nrmse', 'rssd'], blursmall=False, shift=False):
+    def compare_images(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, metric = ['nxcorr', 'nrmse', 'rssd'], blursmall=False, shift=True):
         """Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.
 
          Args:
@@ -591,7 +591,7 @@ class Image(object):
         im1 = self.copy()
         (idx, xcorr, im1_pad, im2_pad) = im1.findShift(im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
 
-        if shift:
+        if type(shift)!=bool:
             idx = shift
 
         im2_shift = im2_pad.shiftImg(idx)
@@ -1340,7 +1340,7 @@ class Image(object):
         ehtim.io.save.save_im_fits(self, fname)
         return
         
-    def align_images(self, im_array, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3]):
+    def align_images(self, im_array, shift=True, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3]):
         """Align the images in im_array to the image in self
 
            Args:
@@ -1365,7 +1365,7 @@ class Image(object):
             final_fov = max_fov
             
         useshift = True
-        if not shift:
+        if type(shift)==bool:
             useshift = False
 
         im_array_shift = []
@@ -1377,6 +1377,7 @@ class Image(object):
                     im0_pad = im0_pad_orig.regrid_image(final_fov, npix) 
             if useshift:
                 idx = shift[i]
+
             tmp = im_pad.shiftImg(idx)
             shifts.append(idx)
             im_array_shift.append( tmp.regrid_image(final_fov, npix) )
@@ -1384,7 +1385,7 @@ class Image(object):
         
         return (im_array_shift, shifts, im0_pad)
 
-    def overlay_display(self, im_array, f=False, shift=False, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3], color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
+    def overlay_display(self, im_array, f=False, shift=[0,0], final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3], color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
         """Display the overlay_display image.
 
            Args:
@@ -1400,6 +1401,10 @@ class Image(object):
         
         if len(dynamic_range)==1:
             dynamic_range = dynamic_range * np.ones(len(im_array)+1)
+            
+
+        if type(shift) != np.ndarray and type(shift) != bool:
+            shift = np.matlib.repmat(shift, len(im_array), 1)
             
         psize = self.psize
         max_fov = np.max([self.xdim*self.psize, self.ydim*self.psize])
