@@ -765,3 +765,216 @@ def xyz_2_latlong(obsvecs):
 
     #if out.shape[0]==1: out = out[0]
     return out
+
+def roundTime(dt=None, roundTo=60):
+    from astropy.time import Time
+    import datetime as datetime
+    if dt == None: 
+        dt = datetime.datetime.now()
+    seconds = (dt.replace(tzinfo=None) - dt.min).seconds
+    rounding = (seconds+roundTo/2) // roundTo * roundTo
+    return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
+
+def jd2expt2017(jd):
+    '''
+    Function translating from jd to expt for April 2017 EHT
+    '''
+    if (jd > 2457853.470)&(jd < 2457854.132 ):
+        return 3600
+    elif (jd > 2457849.531)&(jd < 2457850.177):
+        return 3598
+    elif (jd > 2457850.667)&(jd < 2457851.363):
+        return 3599
+    elif (jd > 2457848.438)&(jd < 2457849.214):
+        return 3597
+    elif (jd > 2457854.427)&(jd < 2457855.141):
+        return 3601
+    else:
+        return None
+
+def make_scan_list_EHT2017(fpath):
+    '''
+    generates data frame with information about scans for EHT2017
+    '''
+    import ehtim.vex as vex
+    import os
+    import pandas as pd
+    from astropy.time import Time, TimeDelta
+    import datetime as datetime
+    nam2lett = {'ALMA':'A','APEX':'X','LMT':'L','PICOVEL':'P','SMTO':'Z','SPT':'T','JCMT':'J','SMAP':'S'}
+    track2expt ={'D':3597,'B':3598, 'C':3599,'A':3600,'E':3601}
+    list_files = os.listdir(fpath)
+    scans = pd.DataFrame({'source' : []})
+
+    for fi in list_files:#loop over vex files in folder
+        track_loc = fi[3].upper()
+        vpath = fpath+fi
+        aa = vex.Vex(vpath)
+        dec = []
+        for cou in range(len(aa.source)):
+            dec_h = float(aa.source[cou]['dec'].split('d')[0])
+            dec_m = float((aa.source[cou]['dec'].split('d')[1])[0:2])
+            dec_s = float((aa.source[cou]['dec'].split('d')[1])[3:-1])
+            dec.append(tuple((dec_h,dec_m,dec_s)))    
+        ra = []
+        for cou in range(len(aa.source)):
+            ra_d = float(aa.source[cou]['ra'].split('h')[0])
+            ra_m = float(aa.source[cou]['ra'].split('h')[1].split('m')[0])
+            ra_s = float(aa.source[cou]['ra'].split('h')[1].split('m')[1][:-1])
+            ra.append(tuple((ra_d,ra_m,ra_s)))      
+        sour_name = [aa.source[x]['source'] for x in range(len(aa.source))]
+        dict_ra = dict(zip(sour_name,ra))
+        dict_dec = dict(zip(sour_name,dec))
+        t_min = [aa.sched[x]['start_hr'] for x in range(len(aa.sched))]
+        sour = [aa.sched[x]['source'] for x in range(len(aa.sched))]
+        datet = []
+        elev = []
+        antenas = []
+        duration=[]
+        for x in range(len(aa.sched)):#loop over scans in given file
+            t = Time(aa.sched[x]['mjd_floor'], format='mjd', scale='utc')
+            tiso = Time(t, format='iso', scale='utc')
+            tiso = tiso + TimeDelta(t_min[x]*3600., format='sec')
+            datet.append(tiso)
+            ant_foo = set([nam2lett[aa.sched[x]['scan'][y]['site']] for y in range(len(aa.sched[x]['scan']))])
+            antenas.append(ant_foo)
+            duration_foo =max([aa.sched[x]['scan'][y]['scan_sec'] for y in range(len(aa.sched[x]['scan']))])
+            duration.append(duration_foo)
+        #time_min = [pd.tslib.Timestamp(datet[x].datetime) for x in range(len(datet))]
+        time_min = [pd.Timestamp(datet[x].datetime) for x in range(len(datet))]
+        time_max = [time_min[x] + datetime.timedelta(seconds=duration[x]) for x in range(len(aa.sched))]
+        foo = pd.DataFrame(aa.sched)
+        foo = foo[['source','mjd_floor','start_hr']]
+        foo['time_min']=time_min
+        foo['time_max']=time_max
+        foo['scan_no'] = foo.index
+        foo['scan_no'] = list(map(int,foo['scan_no']))
+        foo['track'] = [track_loc]*foo.shape[0]
+        foo['expt'] = [int(track2expt[track_loc])]*foo.shape[0]
+        foo['antenas'] = antenas
+        foo['duration'] = duration
+        scans = pd.concat([scans,foo], ignore_index=True)
+    scans = scans.reindex_axis(['mjd_floor','expt','track','scan_no','source','time_min','time_max','duration','antenas'],axis=1)
+    scans = scans.sort_values('time_max')
+    scans = scans.reset_index(drop=True)
+    scans['scan_no_tot'] = scans.index
+    return scans
+
+def match_scans(scans,data):
+    '''
+    matches data with scans
+    '''
+    import pandas as pd
+    from astropy.time import Time, TimeDelta
+    import datetime as datetime
+    bins_labels = [None]*(2*scans.shape[0]-1)
+    bins_labels[1::2] = map(lambda x: -x-1,list(scans['scan_no_tot'])[:-1])
+    bins_labels[::2] = list(scans['scan_no_tot'])
+    dtmin = datetime.timedelta(seconds = 2.) 
+    dtmax = datetime.timedelta(seconds = 2.) 
+    binsT = [None]*(2*scans.shape[0])
+    binsT[::2] = list(map(lambda x: x - dtmin,list(scans.time_min)))
+    binsT[1::2] = list(map(lambda x: x + dtmax,list(scans.time_max))) 
+    ordered_labels = pd.cut(data.datetime, binsT,labels = bins_labels)
+    data['scan_no_tot'] = ordered_labels
+    data = data[list(map(lambda x: x >= 0, data['scan_no_tot']))]
+    data['scan_id'] = data['scan_no_tot']
+    data.drop('scan_no_tot',axis=1,inplace=True)
+    return data
+
+def make_cphase_df(obsdata,pathVex=''):
+    '''
+    adds cphase data in form of pandas dataframe to enable easier exploration
+    '''
+    data = obsdata.c_phases(mode='all')
+    import pandas as pd
+    from astropy.time import Time
+    AZ2Z = {'AZ': 'Z', 'PV': 'P', 'SM':'S', 'SR':'R','JC':'J', 'AA':'A','AP':'X', 'LM':'L','SP':'Y'}
+    polar = 'unknown'; band = 'unknown' #for now fixed
+    sour=obsdata.source
+    df = pd.DataFrame(data=data)
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obsdata.mjd + df['fmjd']
+    df['triangle'] = list(map(lambda x: AZ2Z[x[0].decode('unicode_escape')]+AZ2Z[x[1].decode('unicode_escape')]+AZ2Z[x[2].decode('unicode_escape')],zip(df['t1'],df['t2'],df['t3'])))
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] =list(map(lambda x: roundTime(x,roundTo=1),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polar
+    df['band'] = band
+    df['expt_no'] = list(map(jd2expt2017,df['jd']))
+    df['source'] = sour
+    if pathVex!='':
+        scans = make_scan_list_EHT2017(pathVex)
+        df = match_scans(scans,df)
+    return df
+
+def scan_average_cphases_bs(cdf,return_type='rec',num_samples=int(1e3),robust=False):
+    '''
+    averages cphases across scan (circular mean), with bootstrapped sigma
+    '''
+    import pandas as pd
+    groupV=['scan_id','expt_no','polarization','band','triangle','t1','t2','t3']
+    cdf['number'] = cdf['cphase']
+    cdf = cdf.groupby(groupV).agg({'cphase': lambda x: circular_mean(x, robust=robust), 'sigmacp': lambda x: bootstrap(x, lambda y: std_stat(y,robust=robust), num_samples=num_samples), 'time': np.mean,
+    'number': lambda x: len(x), 'u1':np.mean, 'u2': np.mean, 'u3':np.mean,'v1':np.mean, 'v2': np.mean, 'v3':np.mean}).reset_index()
+    cdf.drop(cdf[cdf.number < 5.].index, inplace=True)
+    cdf.drop(cdf[cdf.sigmacp < 0.1].index, inplace=True)
+    if return_type=='rec':
+        return cphase_df_to_rec(cdf)
+    elif return_type=='df':
+        return cdf
+
+def cphase_df_to_rec(cdf):
+    '''
+    converts cphase pandas dataframe to cphase numpy recarray
+    '''
+    import pandas as pd
+    return cdf[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
+
+def circular_mean(theta,robust=False):
+    '''
+    circular mean statistics
+    theta in deg, returns deg, may use robust statistics
+    '''
+    theta = np.asarray(theta, dtype=np.float32)*np.pi/180.
+    theta = theta[theta==theta]
+    if len(theta)==0:
+        return None
+    else:
+        if robust==False:
+            C = np.mean(np.cos(theta))
+            S = np.mean(np.sin(theta))
+        else:
+            C = np.median(np.cos(theta))
+            S = np.median(np.sin(theta))
+        mt = np.arctan2(S,C)*180./np.pi
+        return np.mod(mt,360)
+    
+def std_stat(theta,robust=False):
+    '''
+    mean variability of mean
+    theta in deg, returns deg, may use robust statistics
+    '''
+    if robust==False:
+        return np.std(theta)/np.sqrt(len(theta))
+    else:
+        theta = np.asarray(theta,dtype=np.float32)
+        m = circular_mean(theta,robust=True)
+        foo = np.exp(1j*theta*np.pi/180)*np.exp(-1j*m*np.pi/180)
+        foo = np.angle(foo)*180/np.pi
+        madev = 1.4826*np.median(np.abs(foo))/np.sqrt(len(foo))
+        return madev
+
+def bootstrap(data, statistic, num_samples=int(1e3)):
+    """bootstrap estimator of a given statistic"""
+    import numpy.random as npr
+    stat = np.zeros(num_samples)
+    data = np.asarray(data)
+    n = len(data)
+    idx = npr.randint(0, n, (num_samples, n))
+    samples = data[idx]
+    for cou in range(num_samples):
+        stat[cou] = statistic(samples[cou,:])
+    stat = np.sort(stat)
+    return np.median(stat)
+

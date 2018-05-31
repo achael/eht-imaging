@@ -2138,15 +2138,22 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
 
     return (bi, sigma, A3)
 
-def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
+def chisqdata_cphase(Obsdata, Prior, mask, scan_avg_vex='', **kwargs):
     """Return the data, sigmas, and fourier matrices for closure phases
+    if scan_avg_vex is a nonempty string, it's assumed to be a path to vex
+    file used to perform scan-wise averaging
     """
 
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
-
+    scan_avg_vex=kwargs.get('scan_avg_vex','')
+    robust=kwargs.get('robust',False)
     # unpack data
-    clphasearr = Obsdata.c_phases(mode="all", count="min")
+    if scan_avg_vex=='':
+        clphasearr = Obsdata.c_phases(mode="all", count="min")
+    else:
+        cdf = make_cphase_df(Obsdata,scan_avg_vex)
+        clphasearr = scan_average_cphases_bs(cdf,robust=robust)
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
@@ -2328,9 +2335,14 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
-
+    scan_avg_vex=kwargs.get('scan_avg_vex','')
+    robust=kwargs.get('robust',False)
     # unpack data
-    clphasearr = Obsdata.c_phases(mode="all", count="min")
+    if scan_avg_vex=='':
+        clphasearr = Obsdata.c_phases(mode="all", count="min")
+    else:
+        cdf = make_cphase_df(Obsdata,scan_avg_vex)
+        clphasearr = scan_average_cphases_bs(cdf,robust=robust)
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
@@ -2525,9 +2537,16 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
     snrcut = kwargs.get('snrcut',0.)
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    scan_avg_vex=kwargs.get('scan_avg_vex','')
+    robust=kwargs.get('robust',False)
 
     # unpack data
-    clphasearr = Obsdata.c_phases(mode="all", count="min")
+    if scan_avg_vex=='':
+        clphasearr = Obsdata.c_phases(mode="all", count="min")
+    else:
+        cdf = make_cphase_df(Obsdata,scan_avg_vex)
+        clphasearr = scan_average_cphases_bs(cdf,robust=robust)
+
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
 
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]

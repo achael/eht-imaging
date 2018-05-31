@@ -1753,6 +1753,77 @@ class Obsdata(object):
 
         return x
 
+
+    def plot_uv_coverage(self, show=True, export_pdf="", baseL=""):
+        #redundant baseilibnes
+        """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
+        """
+        import seaborn as sns
+        import pandas as pd
+        if not hasattr(self, 'df'):
+            self.add_df()
+        
+        sns.set_style('darkgrid')
+        data = self.df
+        sour = self.source
+        sns.set_context("talk")
+        t= np.linspace(0,2*np.pi,256)
+        uas = np.pi/180/60/60/1e6
+        w0 = 1/(50*uas)
+        w1 = 1/(25*uas)
+        data2 = data.copy()
+        data2['u'] = -data['u']
+        data2['v'] = -data['v']
+        dataF = pd.concat([data,data2],ignore_index=True)
+
+        #palette and markers
+        baseLFull = ['AX','AZ','AP','AS','AL','AY','LZ','LP','LS','PZ','SZ','PS','LY','PY','SY','YZ','LX','PX','SX','XY','XZ','AJ','JL','JS','JP','JX','JY','JZ']  
+        if baseL=="":
+            baseL = baseLFull[:16]
+        elif baseL=='full':
+            baseL = baseLFull
+        
+        baseL = [''.join(sorted([x[0],x[1]])) for x in baseL]
+        fooRR = dataF[(dataF.source==sour)&list(map(lambda x: x in baseL,dataF.baseline))]
+
+        colors=['k','mediumblue','red','darkgreen','lime','magenta','blueviolet','orange','yellow','cyan','olivedrab','salmon','saddlebrown','dodgerblue','tomato','tan']
+        colors = colors+['darkblue','green','darkred','purple','crimson','darkgray','beige','blue','pink','saddlebrown','goldenrod','coral','lightgreen','khaki','deeppink']
+        current_palette=dict(zip(baseLFull,colors))
+        markers=["o"]*8+["o"]*8+["x"]*8+["x"]*8
+        Nb = len(set(fooRR.baseline.unique())&set(baseL))
+        markers = markers[:Nb]
+
+        #fooRR['ratio_RL2RR'] = np.asarray(fooRL.amp)/np.asarray(fooRR.amp)
+        #sns.lmplot(x='mu',y='mv',data=fooRR,hue='expt_no',fit_reg=False,size = 5,aspect = 1)
+        #baseL = ['AX','AZ','AP','AS','AL','AY','ZL','LP','LS','ZP','ZS','PS','LY','PY','SY','ZY']
+        #current_palette={'AX':'k','AZ':'b'}
+        #current_palette = sns.color_palette("Dark2", Nb)
+        #sns.set_palette(current_palette)
+        #markers=["o"]*8+["o"]*8+["v"]*8
+        #markers = markers[:Nb]
+        sns.lmplot(x='u',y='v',data=fooRR,hue='baseline',fit_reg=False,size = 6,aspect=1.,scatter_kws={"s": 80},markers=markers,palette=current_palette)
+    
+        plt.axvline(0,linestyle='--',color= (0.5, 0.5, 0.5))
+        plt.axhline(0,linestyle='--',color= (0.5, 0.5, 0.5))
+        plt.grid()
+        plt.plot(w0*np.sin(t),w0*np.cos(t),'--',color= (0.5, 0.5, 0.5))
+        plt.plot(w1*np.sin(t),w1*np.cos(t),'--',color= (0.5, 0.5, 0.5))
+        plt.xlabel('u [$\lambda$]',fontsize=13)
+        plt.ylabel('v [$\lambda$]',fontsize=13)
+        #plt.title(sour,fontsize=13)
+        plt.title(sour,fontsize=13)
+        r1 = 7.4e9; a1 = np.pi*0.3
+        r2=3.3e9; a2=np.pi*0.35
+        plt.text(r1*np.cos(a1),r1*np.sin(a1), '25 $\mu$as', fontsize=12,rotation=-42)
+        plt.text(r2*np.cos(a2),r2*np.sin(a2), '50 $\mu$as', fontsize=12,rotation=-42)
+        plt.grid()
+
+        if export_pdf != "":
+            fig.savefig(export_pdf, bbox_inches='tight')
+
+        if show:
+            plt.show(block=False)
+
     def plot_bl(self, site1, site2, field, ebar=True, rangex=False, rangey=False,
                 show=True, axis=False, color='b', ang_unit='deg', debias=True, timetype=False):
 
@@ -2083,7 +2154,7 @@ class Obsdata(object):
         return cas
 
     def baseline_crossings(self, delta_uvdist):
- 
+
         for d in self.data:
             mask = (((self.data['u']-d['u'])**2 + (self.data['v']-d['v'])**2)**0.5 < delta_uvdist) + (((self.data['u']+d['u'])**2 + (self.data['v']+d['v'])**2)**0.5 < delta_uvdist) 
             data_cross = self.data[mask]
@@ -2103,6 +2174,38 @@ class Obsdata(object):
                 print(self.source,data_cross_b[0]['time'],data_cross_b[0]['u'],data_cross_b[0]['v'],data_cross_b[0]['t1'],data_cross_b[0]['t2'],el1_b[0][0],el2_b[0][0],np.abs(data_cross_b[0]['vis']),data_cross_b[0]['sigma'])
 
             print("\n")
+
+    def add_df(self,pathVex=''):
+        '''
+        adds data in form of pandas dataframe to enable easier exploration
+        '''
+        import pandas as pd
+        from astropy.time import Time
+        AZ2Z = {'AZ': 'Z', 'PV': 'P', 'SM':'S', 'SR':'R','JC':'J', 'AA':'A','AP':'X', 'LM':'L','SP':'Y'}
+        polar = 'unknown'; band = 'unknown' #for now fixed
+        sour=self.source
+        df = pd.DataFrame(data=self.data)
+        df['fmjd'] = df['time']/24.
+        df['mjd'] = self.mjd + df['fmjd']
+        df['baseline'] = list(map(lambda x: AZ2Z[x[0].decode('unicode_escape')]+AZ2Z[x[1].decode('unicode_escape')],zip(df['t1'],df['t2'])))
+        is_alphabetic = list(map(lambda x: float(x== ''.join(sorted([x[0],x[1]]))),df['baseline']))
+        df['amp'] = list(map(np.abs,df['vis']))
+        df['phase'] = list(map(lambda x: (2.*x[1]-1.)*(180./np.pi)*np.angle(x[0]),zip(df['vis'],is_alphabetic)))
+        df['baseline'] = list(map(lambda x: ''.join(sorted([x[0],x[1]])),df['baseline']))
+        df['datetime'] = Time(df['mjd'], format='mjd').datetime
+        df['datetime'] =list(map(lambda x: roundTime(x,roundTo=1),df['datetime']))
+        df['jd'] = Time(df['mjd'], format='mjd').jd
+        df['polarization'] = polar
+        df['band'] = band
+        df['expt_no'] = list(map(jd2expt2017,df['jd']))
+        df['snr'] = df['amp']/df['sigma']
+        df['source'] = sour
+        df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
+        if pathVex!='':
+            scans = make_scan_list_EHT2017(pathVex)
+            df = match_scans(scans,df)
+        self.df = df
+
 
 # Observation creation functions
 ##################################################################################################
