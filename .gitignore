@@ -8,6 +8,7 @@ local/*
 *test*
 imagingChallenge*
 tmp/*
+*.uvfits
 
 data/3C279JUN16.UVP
 data/OJ287AUG10B.UVP
