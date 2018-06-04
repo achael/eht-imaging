@@ -38,6 +38,8 @@ import ehtim.observing.obs_simulate as simobs
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
+from ehtim.statistics.statistics import *
+from ehtim.statistics.DataFrames import *
 
 import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
@@ -697,6 +699,160 @@ class Obsdata(object):
         print(len(datatable))
 
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd)
+
+
+    def avg_incoherent(self, inttime,debias=True,err_type='predicted'):
+
+        """Incoherently average data along u,v tracks in chunks of length inttime (sec).
+
+            Args:
+                inttime (float): incoherent integration time in seconds
+                debias (bool): if True then apply debiasing
+            Returns:
+                (Obsdata): Obsdata object containing averaged data
+        """
+
+        alldata_list = ['vis', 'u', 'v',
+                        'sigma', 't1', 't2', 'tau1', 'tau2',
+                        'uvis', 'qvis', 'vvis', 'qsigma',
+                        'usigma', 'vsigma', 'tint', 'time']
+
+        timesplit = self.unpack(alldata_list, mode='time')
+
+        inttime_hr = inttime/3600.
+        datatable = []
+        timeregion =  []
+        time_current = timesplit[0]['time'][0]
+        tavg = 1
+
+        for t in range(0, len(timesplit)):
+            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
+                                % (t,len(timesplit),inttime, tavg,t)
+                            )
+            sys.stdout.flush()
+
+            # accumulate data in a time region
+            if (timesplit[t]['time'][0] - time_current < inttime_hr):
+
+                for i in range(0,len(timesplit[t]['time'])):
+                    timeregion.append(np.array
+                                ((
+                                timesplit[t]['time'][i],
+                                timesplit[t]['tint'][i],
+                                timesplit[t]['t1'][i],
+                                timesplit[t]['t2'][i],
+                                timesplit[t]['tau1'][i],
+                                timesplit[t]['tau2'][i],
+                                timesplit[t]['u'][i],
+                                timesplit[t]['v'][i],
+                                timesplit[t]['vis'][i],
+                                timesplit[t]['qvis'][i],
+                                timesplit[t]['uvis'][i],
+                                timesplit[t]['vvis'][i],
+                                timesplit[t]['sigma'][i],
+                                timesplit[t]['qsigma'][i],
+                                timesplit[t]['usigma'][i],
+                                timesplit[t]['vsigma'][i]
+                                ), dtype=DTPOL
+                                ))
+
+            # average data in a time region
+            else:
+                tavg += 1
+                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion),
+                                            self.tarr, source=self.source, mjd=self.mjd)
+
+                blsplit = obs_timeregion.unpack(alldata_list, mode='bl')
+                for bl in range(0,len(blsplit)):
+
+                    bldata = blsplit[bl]
+                    amp_vis, sig_vis = mean_incoh_amp_from_vis(bldata['vis'],bldata['sigma'],debias=debias,err_type=err_type)
+                    amp_qvis, sig_qvis = mean_incoh_amp_from_vis(bldata['qvis'],bldata['qsigma'],debias=debias,err_type=err_type)
+                    amp_uvis, sig_uvis = mean_incoh_amp_from_vis(bldata['uvis'],bldata['usigma'],debias=debias,err_type=err_type)
+                    amp_vvis, sig_vvis = mean_incoh_amp_from_vis(bldata['vvis'],bldata['vsigma'],debias=debias,err_type=err_type)
+                    
+                    datatable.append(np.array
+                                ((
+                                np.mean(obs_timeregion.data['time']),
+                                np.mean(bldata['tint']),
+                                bldata['t1'][0],
+                                bldata['t2'][0],
+                                np.mean(bldata['tau1']),
+                                np.mean(bldata['tau2']),
+                                np.mean(bldata['u']),
+                                np.mean(bldata['v']),
+                                amp_vis, amp_qvis, amp_uvis, amp_vvis,
+                                sig_vis, sig_qvis, sig_uvis, sig_vvis
+                                ), dtype=DTPOL
+                                ))
+
+
+                # start a new time region
+                timeregion = []
+                time_current = timesplit[t]['time'][0]
+                for i in range(0, len(timesplit[t]['time'])):
+                    timeregion.append(np.array
+                                ((
+                                timesplit[t]['time'][i], timesplit[t]['tint'][i],
+                                timesplit[t]['t1'][i], timesplit[t]['t2'][i], timesplit[t]['tau1'][i], timesplit[t]['tau2'][i],
+                                timesplit[t]['u'][i], timesplit[t]['v'][i],
+                                timesplit[t]['vis'][i], timesplit[t]['qvis'][i], timesplit[t]['uvis'][i], timesplit[t]['vvis'][i],
+                                timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
+                                ), dtype=DTPOL
+                                ))
+        print(len(datatable))
+
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd)
+
+    def add_vis_df(self,polarization='unknown',band='unknown',round_s=1.):
+        """Adds attribute: visibility data in data frame format
+        Args:
+            round_s: accuracy of datetime object in seconds
+        """
+        df=make_df(self,polarization=polarization,band=band,round_s=round_s)
+        self.vis_df = df
+
+    def add_cphase(self,dt=0,return_type='df',err_type='predicted',polarization='unknown',band='unknown',mode='all',round_s=1.,num_samples=int(1e3)):
+        """Adds attribute: closure phases table with cphases averaged for dt
+        Args:
+            dt: closure phase averaging timescale
+            return_type: data frame ('df') or recarray ('rec')
+            round_s: accuracy of datetime object in seconds
+        """
+        cdf = make_cphase_df(self,band=band,polarization=polarization,mode=mode,round_s=round_s)
+        if dt>0:
+            cdf_av = average_cphases(cdf,dt,return_type=return_type,err_type=err_type,num_samples=num_samples)
+            self.cphase = cdf_av
+        else:
+            self.cphase = cdf
+
+    def add_bsp(self,dt=0,return_type='df',polarization='unknown',band='unknown',mode='all',round_s=1.,num_samples=int(1e3)):
+        """Adds attribute: bispectra table with bispectra averaged for dt
+        Args:
+            dt: closure phase averaging timescale
+            return_type: data frame ('df') or recarray ('rec')
+            round_s: accuracy of datetime object in seconds
+        """
+        cdf = make_bsp_df(self,band=band,polarization=polarization,mode=mode,round_s=round_s)
+        if dt>0:
+            cdf_av = average_bispectra(cdf,dt,return_type=return_type,num_samples=num_samples)
+            self.bsp = cdf_av
+        else:
+            self.bsp = cdf
+    
+    def add_camp(self,dt=0,return_type='df',ctype='logcamp',err_type='predicted',polarization='unknown',band='unknown',mode='all',round_s=1.,debias=False,num_samples=int(1e3)):
+        """Adds attribute: closure amplitudes table
+        Args:
+            round_s: accuracy of datetime object in seconds
+        """
+        if dt>0:
+            #foo = self.copy()
+            foo = self.avg_incoherent(dt,debias=debias,err_type=err_type)
+        else: foo = self
+        cdf = make_camp_df(foo,ctype=ctype,debias=False,band=band,polarization=polarization,mode=mode,round_s=round_s)
+        if return_type=='rec':
+            cdf = df_to_rec(cdf,'camp')
+        self.camp = cdf
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
 
