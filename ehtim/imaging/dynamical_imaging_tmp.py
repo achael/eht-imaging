@@ -717,13 +717,11 @@ def movie_flux_constraint_grad(Frame_List, flux_List): #Includes Jacobian factor
 # chi^2 estimation routines
 ##################################################################################################
 
-
 def get_chisq(i, imvec_embed, d1, d2, d3, ttype, mask):
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
     chisq1 = chisq2 = chisq3 = 1.0
 
     if d1 != False and len(data1_List[i])>0:
-
         chisq1 = chisq(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask)
 
     if d2 != False and len(data2_List[i])>0:
@@ -737,13 +735,11 @@ def get_chisq(i, imvec_embed, d1, d2, d3, ttype, mask):
 def get_chisq_wrap(args):
     return get_chisq(*args)
 
-
 def get_chisqgrad(i, imvec_embed, d1, d2, d3, ttype, mask):
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
     chisqgrad1 = chisqgrad2 = chisqgrad3 = 0.0*imvec_embed
 
     if d1 != False and len(data1_List[i])>0:
-
         chisqgrad1 = chisqgrad(imvec_embed, A1_List[i], data1_List[i], sigma1_List[i], d1, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
 
     if d2 != False and len(data2_List[i])>0:
@@ -756,6 +752,7 @@ def get_chisqgrad(i, imvec_embed, d1, d2, d3, ttype, mask):
 
 def get_chisqgrad_wrap(args):
     return get_chisqgrad(*args)
+
 
 ##################################################################################################
 # Imagers
@@ -773,7 +770,6 @@ R_flow={'alpha':0.0, 'metric':'SymKL', 'p':2.0, 'alpha_flow_tv':50.0},
 alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers 
 stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for scattering 
 Target_Dynamic_Range = 10000.0, 
-
 maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
     """Run dynamic imager 
        Uses I = exp(I') change of variables.
@@ -941,7 +937,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List] 
             init_i += len(EpsilonList)
 
-
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
@@ -966,7 +961,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
         if stochastic_optics == False:
             if processes > 0:
-
                 chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
             else:
                 chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
@@ -1024,7 +1018,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             init_i += len(EpsilonList)
 
 
-
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
@@ -1047,7 +1040,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             flux_grad = alpha_flux * movie_flux_constraint_grad(Frames, flux_List)
 
         dchisq_dIa_List = []
-
 
         # Michael -- can we do something about this
         if stochastic_optics == False:
@@ -1169,6 +1161,8 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         if stochastic_optics == True:
             chisq_epsilon_grad = alpha_phi * 2.0*EpsilonList/((N*N-1)/2.0)
 
+
+
         return (np.concatenate((s1 + s2 + s_dF + s_dS + (s_dynamic_grad + chisq_grad + cm_grad + cm_grad + flux_grad)[embed_mask_All], flow_grad, chisq_grad_epsilon + chisq_epsilon_grad))*J_factor)
 
     # Plotting function for each iteration
@@ -1201,7 +1195,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             if stochastic_optics == True:
                 EpsilonList = x[init_i:(init_i + N**2-1)]
                 im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
-
                 scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), 
                                                           ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec 
                                  for im in im_List] #the list of scattered image vectors
@@ -1209,7 +1202,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             s1 = s2 = 0.0
 
             if alpha_s1 != 0.0:
-
                 s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), 
                                         Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
             if alpha_s2 != 0.0:
@@ -1230,7 +1222,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             
             if stochastic_optics == False:
                 if processes > 0:
-
                     chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], 
                                               d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
                 else:
@@ -1307,6 +1298,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         x0 = np.concatenate((x0,np.zeros(N**2-1)))
 
 
+
     print "Total Pixel #: ",(N_pixel*N_pixel*N_frame)
     print "Clipped Pixel #: ",(len(loginit))
 
@@ -1357,7 +1349,6 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         pool.close()
 
     #Return Frames
-
     outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
                          Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, 
                          mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
@@ -1778,7 +1769,6 @@ def Cont(imG):
     pov_mas = pov/(RADPERUAS*1.e3)
     Zmax = np.amax(Z)
     print(Zmax)
-
     levels = np.array((-0.00125*Zmax,0.00125*Zmax,0.0025*Zmax, 0.005*Zmax, 0.01*Zmax,
                         0.02*Zmax, 0.04*Zmax, 0.08*Zmax, 0.16*Zmax, 0.32*Zmax, 0.64*Zmax))
     CS = plt.contour(Z, levels,

@@ -78,7 +78,7 @@ out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
                       d1='bs', s1='simple',
                       alpha_s1=1, alpha_d1=100,
                       alpha_flux=100, alpha_cm=50,
-                      maxit=100)
+                      maxit=100, ttype='nfft')
 
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
@@ -86,14 +86,14 @@ out = eh.imager_func(obs, out, out, flux,
                 d1='bs', s1='tv',
                 alpha_s1=1, alpha_d1=50,
                 alpha_flux=100, alpha_cm=50,
-                maxit=100)
+                maxit=100,ttype='nfft')
 
 out = out.blur_circ(res/2.0)
 out = eh.imager_func(obs, out, out, flux,
                 d1='bs', s1='tv',
                 alpha_s1=1, alpha_d1=10,
                 alpha_flux=100, alpha_cm=50,
-                maxit=100)
+                maxit=100,ttype='nfft')
 
 # Self - calibrate and image with vis amplitudes
 obs_sc = sc.self_cal(obs, out)
@@ -103,7 +103,7 @@ out_sc = eh.imager_func(obs_sc, out_sc, out_sc, flux,
                    d1='vis', s1='simple',
                    alpha_s1=1, alpha_d1=100,
                    alpha_flux=100, alpha_cm=50,
-                   maxit=50)
+                   maxit=50,ttype='nfft')
 
 
 # Compare the visibility amplitudes to the data

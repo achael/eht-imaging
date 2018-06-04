@@ -229,7 +229,8 @@ class Image(object):
         self.qvec = - self.qvec
         return
 
-    def sample_uv(self, uv, ttype='direct',fft_pad_factor=2,sgrscat=False):
+
+    def sample_uv(self, uv, ttype='nfft',fft_pad_factor=2,sgrscat=False):
         """Sample the image on the selected uv points without adding noise.
 
            Args:
@@ -246,7 +247,7 @@ class Image(object):
         return data
 
     def observe_same_nonoise(self, obs, 
-                                   ttype="direct", fft_pad_factor=2, 
+                                   ttype="nfft", fft_pad_factor=2, 
                                    sgrscat=False):
 
         """Observe the image on the same baselines as an existing observation object without adding noise.
@@ -276,6 +277,7 @@ class Image(object):
         # Copy data to be safe 
         obsdata = obs.copy().data
 
+
         # Extract uv datasample
         uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
 
@@ -293,7 +295,7 @@ class Image(object):
         return obs_no_noise
 
     def observe_same(self, obsin, 
-                           ttype='direct', fft_pad_factor=2,
+                           ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                            jones=False, inv_jones=False,
@@ -370,7 +372,7 @@ class Image(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                       mjd=None, timetype='UTC',
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ttype='direct', fft_pad_factor=2, 
+                      ttype='nfft', fft_pad_factor=2, 
                       sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                       jones=False, inv_jones=False,
@@ -433,7 +435,7 @@ class Image(object):
         return obs
 
     def observe_vex(self, vex, source, t_int=0.0, tight_tadv = False,
-                      ttype='direct', fft_pad_factor=2, sgrscat=False, add_th_noise=True,
+                      ttype='nfft', fft_pad_factor=2, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF, 
@@ -786,7 +788,7 @@ class Image(object):
         xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
         ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
 
-        hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else EP
+        hat = np.array([[1.0 if np.sqrt(i**2+j**2) <= radius else 0.#EP
                           for i in xlist]
                           for j in ylist])
 
@@ -868,6 +870,50 @@ class Image(object):
 
         imout = im.imvec.reshape(im.ydim, im.xdim) + (crescent * flux/np.sum(crescent))
         out = Image(imout, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+        return out
+
+    def add_ring_m1(self, I0, I1, r0, phi, sigma, x=0, y=0):
+        """Add a ring to an image with an m=1 mode
+
+           Args:
+               I0 (float): 
+               I1 (float): 
+               r0 (float): the radius
+               phi (float): angle of m1 mode
+               sigma (float): the blurring size
+               x (float): the center x coordinate of the larger disk in radians
+               y (float): the center y coordinate of the larger disk in radians
+
+           Returns:
+               (Image): output image add_gaus
+        """
+
+        im = self
+        flux = I0 - 0.5*I1
+        phi = phi + np.pi #ANDREW: angle 
+        psize = im.psize
+        xfov = im.xdim * im.psize
+        yfov = im.ydim * im.psize
+        xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
+        ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
+
+        def mask(x2, y2):
+            if (x2**2 + y2**2) > (r0-psize)**2 and (x2**2 + y2**2) < (r0+psize)**2:
+                theta = np.arctan2(y2,x2)
+                flux = (I0-0.5*I1*(1+np.cos(theta-phi)))/(2*np.pi*r0)
+                return flux
+            else:
+                return 0.0
+
+        crescent = np.array([[mask(i-x, j-y)
+                          for i in xlist]
+                          for j in ylist])
+
+        crescent = crescent[0:im.ydim, 0:im.xdim]
+        out = Image(crescent, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
+        out = out.blur_circ(sigma)
+        out.imvec *= flux/(out.total_flux())
+        out.imvec += im.imvec
         return out
 
     def add_const_m(self, mag, angle):
