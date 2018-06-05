@@ -30,12 +30,15 @@ Here are some ways to learn to use the code:
 
 Publications that use ehtim
 ------------
-Produces polarimetric VLBI images using robust polarimetric ratio data products and entropy+total variation priors. (Andrew A. Chael et al 2016 ApJ 829 11)
 
 `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_
+
 `Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_
+
 _`Johnson 2016 <https://arxiv.org/abs/1610.05326>`__
+
 `Roelofs et al. 2017 <https://arxiv.org/abs/1708.01056>`_
+
 `Bouman et al. 2017 <https://arxiv.org/abs/1711.01357>`_
 `Johnson et al. 2017 <https://arxiv.org/abs/1711.01286>`_
 `Chael et al. 2018 <https://arxiv.org/abs/1803.07088>`_
