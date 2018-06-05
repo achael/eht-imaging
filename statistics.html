@@ -166,6 +166,114 @@
             
   <span class="target" id="module-statistics"></span><div class="section" id="statistics">
 <span id="id1"></span><h1>Statistics<a class="headerlink" href="#statistics" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.stats.statistics"></span><dl class="function">
+<dt id="ehtim.stats.statistics.bootstrap">
+<code class="descclassname">ehtim.stats.statistics.</code><code class="descname">bootstrap</code><span class="sig-paren">(</span><em>data</em>, <em>statistic</em>, <em>num_samples=1000</em>, <em>alpha='1sig'</em>, <em>wrapping_variable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/stats/statistics.html#bootstrap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.stats.statistics.bootstrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>bootstrap estimate of 100.0*(1-alpha) confidence interval for a given statistic
+:param data: vector of data to estimate bootstrap statistic on
+:param statistic: function representing the statistic to be evaluated
+:param num_samples: number of bootstrap (re)samples
+:param alpha: parameter of the confidence interval, &#8216;1s&#8217; gets an analog of 1 sigma confidence for a normal variable
+:param wrapping_variable: True for circular variables, attempts to avoid problem related to estimating variablity of wrapping variable</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">bootstrap-estimated value of the statistic
+bootstrap_CI: bootstrap-estimated confidence interval</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">bootstrap_value</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.stats.statistics.circular_mean">
+<code class="descclassname">ehtim.stats.statistics.</code><code class="descname">circular_mean</code><span class="sig-paren">(</span><em>theta</em>, <em>unit='deg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/stats/statistics.html#circular_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.stats.statistics.circular_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>circular mean for averaging angular quantities
+:param theta: list/vector of angles to average
+:param unit: degrees (&#8216;deg&#8217;) or radians (any other string)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">circular mean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.stats.statistics.circular_std">
+<code class="descclassname">ehtim.stats.statistics.</code><code class="descname">circular_std</code><span class="sig-paren">(</span><em>theta</em>, <em>unit='deg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/stats/statistics.html#circular_std"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.stats.statistics.circular_std" title="Permalink to this definition">¶</a></dt>
+<dd><p>standard deviation of a circular distribution
+:param theta: list/vector of angles
+:param unit: degrees (&#8216;deg&#8217;) or radians (any other string)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">circular standard deviation</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.stats.statistics.circular_std_of_mean">
+<code class="descclassname">ehtim.stats.statistics.</code><code class="descname">circular_std_of_mean</code><span class="sig-paren">(</span><em>theta</em>, <em>unit='deg'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/stats/statistics.html#circular_std_of_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.stats.statistics.circular_std_of_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>standard deviation of mean for a circular distribution
+:param theta: list/vector of angles
+:param unit: degrees (&#8216;deg&#8217;) or radians (any other string)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">circular standard deviation of mean</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.stats.statistics.mean_incoh_amp">
+<code class="descclassname">ehtim.stats.statistics.</code><code class="descname">mean_incoh_amp</code><span class="sig-paren">(</span><em>amp</em>, <em>sigma</em>, <em>debias=True</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/stats/statistics.html#mean_incoh_amp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.stats.statistics.mean_incoh_amp" title="Permalink to this definition">¶</a></dt>
+<dd><p>amplitude from ensemble of Rice-distributed measurements with debiasing
+:param amp: vector of (biased) amplitudes
+:param sigma: vector of errors
+:param debias: whether debiasing is applied</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">estimator of unbiased amplitude</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">amp0</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.stats.statistics.mean_incoh_amp_from_vis">
+<code class="descclassname">ehtim.stats.statistics.</code><code class="descname">mean_incoh_amp_from_vis</code><span class="sig-paren">(</span><em>vis</em>, <em>sigma</em>, <em>debias=True</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/stats/statistics.html#mean_incoh_amp_from_vis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.stats.statistics.mean_incoh_amp_from_vis" title="Permalink to this definition">¶</a></dt>
+<dd><p>amplitude from ensemble of visibility measurements with debiasing
+:param amp: vector of (biased) amplitudes
+:param sigma: vector of errors
+:param debias: whether debiasing is applied</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">estimator of unbiased amplitude</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">amp0</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 
