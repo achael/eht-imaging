@@ -44,6 +44,7 @@ Documentation
    calibration
    plotting
    scattering
+   statistics
 
 
 The documentation is in progress, but here are some other ways to learn to use the code: 
