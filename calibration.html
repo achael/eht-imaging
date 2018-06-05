@@ -101,6 +101,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Self Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Comparison Plots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
 </ul>
 
             
@@ -164,39 +165,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="module-calibration"></span><div class="section" id="module-ehtim.calibrating.self_cal">
-<span id="self-calibration"></span><span id="calibration"></span><h1>Self Calibration<a class="headerlink" href="#module-ehtim.calibrating.self_cal" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="ehtim.calibrating.self_cal.network_cal">
-<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>processes=-1</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.network_cal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Network-calibrate a dataset with zbl constraints</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.calibrating.self_cal.network_cal_scan">
-<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">network_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>zbl</em>, <em>sites</em>, <em>clustered_sites</em>, <em>zbl_uvidst_max=10000000.0</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#network_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.network_cal_scan" title="Permalink to this definition">¶</a></dt>
-<dd><p>Network-calibrate a scan with zbl constraints</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.calibrating.self_cal.norm_zbl">
-<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">norm_zbl</code><span class="sig-paren">(</span><em>obs</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#norm_zbl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.norm_zbl" title="Permalink to this definition">¶</a></dt>
-<dd><p>Normalize scans to zero baseline</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.calibrating.self_cal.self_cal">
-<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>im</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>ttype='direct'</em>, <em>fft_pad_factor=2</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em>, <em>processes=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Self-calibrate a dataset to a fixed image.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.calibrating.self_cal.self_cal_scan">
-<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>im</em>, <em>V_scan=[]</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition">¶</a></dt>
-<dd><p>Self-calibrate a scan to a fixed  image.
-if caltable==True, returns a caltable dictionary. If False, returns the  scan.</p>
-</dd></dl>
-
+  <span class="target" id="module-calibration"></span><div class="section" id="self-calibration">
+<span id="calibration"></span><h1>Self Calibration<a class="headerlink" href="#self-calibration" title="Permalink to this headline">¶</a></h1>
 </div>
 
 

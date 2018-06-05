@@ -16,14 +16,16 @@ The package contains several primary classes for loading, simulating, and manipu
 
 Installation
 ------------
-Download the latest version from the `GitHub repository <https://github.com/achael/eht-imaging>`_
-, change to the main directory and run:
+
+Download the latest version from the `GitHub repository <https://github.com/achael/eht-imaging>`_, change to the main directory and run:
 
 .. code-block:: bash
 
-    python setup.py install
+    pip install .
 
-You will need working installations of `numpy <http://www.numpy.org/>`_, `matplotlib <http://www.matplotlib.org/>`_, `scipy <http://www.scipy.org/>`_, and `astropy <http://www.astropy.org/>`_. 
+It should install the depended libraries `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `matplotlib <http://www.matplotlib.org/>`_, `numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `pandas <http://www.pandas.pydata.org/>`_ automatically.
+
+You will need to install `NFFT <https://github.com/NFFT/nfft>`_ and the `pynnft wrapper <https://github.com/ghisvail/pyNFFT/>`_ . You can use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to to install both NFFT and the pynfft wrapper Alternatively, first install NFFT following the instructions on the `github readme <https://github.com/NFFT/nfft>`_, making sure to use the --enable-openmp flag in compilation. Then install `pynnft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. 
 
 Documentation
 -------------
@@ -42,6 +44,7 @@ Documentation
    calibration
    plotting
    scattering
+   statistics
 
 
 The documentation is in progress, but here are some other ways to learn to use the code: 
@@ -57,6 +60,11 @@ The oifits_new code used for reading/writing .oifits files is a slightly modifie
 The jdcal.py module is from Prasanth Nair at `<http://github.com/phn/jdcal>`_.
 
 This documentation is styled after `dfm's projects <https://github.com/dfm>`_ and the documentation for `scatterbrane <https://github.com/krosenfeld/scatterbrane>`_
+
+
+License
+-------
+ehtim is licensed under GPLv3. See LICENSE.txt for more details.
 
 Indices and tables
 ------------------
