@@ -165,8 +165,86 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="module-calibration"></span><div class="section" id="self-calibration">
-<span id="calibration"></span><h1>Self Calibration<a class="headerlink" href="#self-calibration" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-calibration"></span><div class="section" id="module-ehtim.caltable">
+<span id="self-calibration"></span><span id="calibration"></span><h1>Self Calibration<a class="headerlink" href="#module-ehtim.caltable" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="ehtim.caltable.Caltable">
+<em class="property">class </em><code class="descclassname">ehtim.caltable.</code><code class="descname">Caltable</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatables</em>, <em>tarr</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attributes:</p>
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy the observation object.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a copy of the Caltable object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.merge">
+<code class="descname">merge</code><span class="sig-paren">(</span><em>caltablelist</em>, <em>interp=None</em>, <em>extrapolate=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.merge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge the calibration table with a list of other calibration tables</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.save_txt">
+<code class="descname">save_txt</code><span class="sig-paren">(</span><em>obs</em>, <em>datadir='.'</em>, <em>sqrt_gains=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.save_txt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves a Caltable object to text files in the format src_site.txt given by Maciek&#8217;s tables</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.caltable.load_caltable">
+<code class="descclassname">ehtim.caltable.</code><code class="descname">load_caltable</code><span class="sig-paren">(</span><em>obs</em>, <em>datadir</em>, <em>sqrt_gains=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#load_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.load_caltable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load apriori cal tables</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.caltable.save_caltable">
+<code class="descclassname">ehtim.caltable.</code><code class="descname">save_caltable</code><span class="sig-paren">(</span><em>caltable</em>, <em>obs</em>, <em>datadir='.'</em>, <em>sqrt_gains=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#save_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.save_caltable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves a Caltable object to text file</p>
+</dd></dl>
+
+<span class="target" id="module-ehtim.calibrating.self_cal"></span><dl class="function">
+<dt id="ehtim.calibrating.self_cal.network_cal">
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>processes=-1</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.network_cal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Network-calibrate a dataset with zbl constraints</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.self_cal.network_cal_scan">
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">network_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>zbl</em>, <em>sites</em>, <em>clustered_sites</em>, <em>zbl_uvidst_max=10000000.0</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#network_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.network_cal_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Network-calibrate a scan with zbl constraints</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.self_cal.norm_zbl">
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">norm_zbl</code><span class="sig-paren">(</span><em>obs</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#norm_zbl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.norm_zbl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize scans to zero baseline</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.self_cal.self_cal">
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>im</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>ttype='direct'</em>, <em>fft_pad_factor=2</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em>, <em>processes=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Self-calibrate a dataset to a fixed image.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.self_cal.self_cal_scan">
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>im</em>, <em>V_scan=[]</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Self-calibrate a scan to a fixed  image.
+if caltable==True, returns a caltable dictionary. If False, returns the  scan.</p>
+</dd></dl>
+
 </div>
 
 

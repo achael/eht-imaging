@@ -1,0 +1,612 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ehtim.caltable &mdash; ehtim 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="ehtim 1.0.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> ehtim
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../imager.html">Stokes I Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../calibration.html">Self Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../plotting.html">Comparison Plots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scattering.html">Scattering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../statistics.html">Statistics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ehtim</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>ehtim.caltable</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ehtim.caltable</h1><div class="highlight"><pre>
+<span></span><span class="c1"># caltable.py</span>
+<span class="c1"># a calibration table class</span>
+<span class="c1">#</span>
+<span class="c1">#    Copyright (C) 2018 Andrew Chael</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
+<span class="c1">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c1">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1">#    (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is distributed in the hope that it will be useful,</span>
+<span class="c1">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1">#    GNU General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1">#    You should have received a copy of the GNU General Public License</span>
+<span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">str</span>
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">range</span>
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">object</span>
+
+<span class="kn">import</span> <span class="nn">string</span><span class="o">,</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.lib.recfunctions</span> <span class="k">as</span> <span class="nn">rec</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">opt</span>
+<span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">it</span>
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">ehtim.image</span>
+<span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span>
+<span class="kn">import</span> <span class="nn">ehtim.io.save</span>
+<span class="kn">import</span> <span class="nn">ehtim.io.load</span>
+
+<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="kn">import</span> <span class="nn">scipy</span>
+
+<span class="k">def</span> <span class="nf">relaxed_interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Caltable object</span>
+<span class="c1">##################################################################################################</span>
+<div class="viewcode-block" id="Caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable">[docs]</a><span class="k">class</span> <span class="nc">Caltable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">       Attributes:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">datatables</span><span class="p">,</span> <span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A Calibration Table.</span>
+
+<span class="sd">           Args:</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               caltable (Caltable): an Caltable object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatables</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No data in input table!&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Set the various parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ra</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ra</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dec</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bw</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">bw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mjd</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">timetype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;GMST&#39;</span><span class="p">,</span> <span class="s1">&#39;UTC&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;timetype must by &#39;GMST&#39; or &#39;UTC&#39;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timetype</span> <span class="o">=</span> <span class="n">timetype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span> <span class="o">=</span> <span class="n">tarr</span>
+
+        <span class="c1"># Dictionary of array indices for site names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">))}</span>
+
+        <span class="c1"># Save the data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">datatables</span>
+
+<div class="viewcode-block" id="Caltable.copy"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy the observation object.</span>
+
+<span class="sd">           Args:</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               (Caltable): a copy of the Caltable object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_caltable</span></div>
+
+    <span class="c1">#TODO default extrapolation?</span>
+
+<div class="viewcode-block" id="Caltable.merge"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caltablelist</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Merge the calibration table with a list of other calibration tables&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">extrapolate</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># extrapolate can be a tuple or numpy array</span>
+            <span class="n">fill_value</span> <span class="o">=</span> <span class="s2">&quot;extrapolate&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fill_value</span> <span class="o">=</span> <span class="n">extrapolate</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">caltablelist</span><span class="o">.</span><span class="fm">__iter__</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span> <span class="n">caltablelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">caltablelist</span><span class="p">]</span>
+
+        <span class="c1">#self = ct</span>
+        <span class="c1">#caltablelist = [ct2]</span>
+
+        <span class="n">tarr1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
+        <span class="n">tkey1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">data1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">caltable</span> <span class="ow">in</span> <span class="n">caltablelist</span><span class="p">:</span>
+
+            <span class="c1">#TODO check metadata!</span>
+
+            <span class="c1">#TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???</span>
+            <span class="n">tarr2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
+            <span class="n">tkey2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">data2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data2</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+
+                <span class="c1"># if site in both tables</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="c1">#merge the data by interpolating</span>
+                    <span class="n">time1</span> <span class="o">=</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+                    <span class="n">time2</span> <span class="o">=</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+
+
+                    <span class="n">rinterp1</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time1</span><span class="p">,</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">linterp1</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time1</span><span class="p">,</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                    <span class="n">rinterp2</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time2</span><span class="p">,</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">linterp2</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time2</span><span class="p">,</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                    <span class="n">times_merge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">time1</span><span class="p">,</span><span class="n">time2</span><span class="p">)))</span>
+
+                    <span class="c1">#print &#39;site&#39;</span>
+                    <span class="c1">#print np.min(time1),np.max(time1)</span>
+                    <span class="c1">#print np.min(time2),np.max(time2)</span>
+                    <span class="c1">#print np.min(times_merge),np.max(times_merge)</span>
+
+                    <span class="n">rscale_merge</span> <span class="o">=</span> <span class="n">rinterp1</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span> <span class="o">*</span> <span class="n">rinterp2</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span>
+                    <span class="n">lscale_merge</span> <span class="o">=</span> <span class="n">linterp1</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span> <span class="o">*</span> <span class="n">linterp2</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span>
+
+                    <span class="c1">#put the merged data back in data1</span>
+                    <span class="c1">#TODO can we do this faster?</span>
+                    <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)):</span>
+                        <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">times_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">rscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">))</span>
+                    <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
+
+                <span class="c1"># sites not in both caltables</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tkey1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">tarr1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tarr1</span><span class="p">,</span><span class="n">tarr2</span><span class="p">[</span><span class="n">tkey2</span><span class="p">[</span><span class="n">site</span><span class="p">]])</span>
+                    <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span>  <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
+
+            <span class="c1">#update tkeys every time</span>
+            <span class="n">tkey1</span> <span class="o">=</span>  <span class="p">{</span><span class="n">tarr1</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr1</span><span class="p">))}</span>
+
+        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">tarr1</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_caltable</span></div>
+
+
+
+
+    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_singlepol</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span> <span class="o">==</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The telescope array in the Caltable is not the same as in the Obsdata&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">extrapolate</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># extrapolate can be a tuple or numpy array</span>
+            <span class="n">fill_value</span> <span class="o">=</span> <span class="s2">&quot;extrapolate&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fill_value</span> <span class="o">=</span> <span class="n">extrapolate</span>
+
+        <span class="n">rinterp</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">linterp</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">skipsites</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">)):</span>
+            <span class="n">site</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">skipsites</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+                <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;No Calibration  Data for </span><span class="si">%s</span><span class="s2"> !&quot;</span> <span class="o">%</span> <span class="n">site</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="n">time_mjd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">24.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span>
+            <span class="n">rinterp</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time_mjd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
+                                             <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">linterp</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time_mjd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
+                                             <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">bllist</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">bllist</span><span class="p">()</span>
+        <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">bl_obs</span> <span class="ow">in</span> <span class="n">bllist</span><span class="p">:</span>
+            <span class="n">t1</span> <span class="o">=</span> <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">t2</span> <span class="o">=</span> <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">time_mjd</span> <span class="o">=</span> <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">24.0</span> <span class="o">+</span> <span class="n">obs</span><span class="o">.</span><span class="n">mjd</span>
+
+            <span class="k">if</span> <span class="n">t1</span> <span class="ow">in</span> <span class="n">skipsites</span><span class="p">:</span>
+                <span class="n">rscale1</span> <span class="o">=</span> <span class="n">lscale1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rscale1</span> <span class="o">=</span> <span class="n">rinterp</span><span class="p">[</span><span class="n">t1</span><span class="p">](</span><span class="n">time_mjd</span><span class="p">)</span>
+                <span class="n">lscale1</span> <span class="o">=</span> <span class="n">linterp</span><span class="p">[</span><span class="n">t1</span><span class="p">](</span><span class="n">time_mjd</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">t2</span> <span class="ow">in</span> <span class="n">skipsites</span><span class="p">:</span>
+                <span class="n">rscale2</span> <span class="o">=</span> <span class="n">lscale2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rscale2</span> <span class="o">=</span> <span class="n">rinterp</span><span class="p">[</span><span class="n">t2</span><span class="p">](</span><span class="n">time_mjd</span><span class="p">)</span>
+                <span class="n">lscale2</span> <span class="o">=</span> <span class="n">linterp</span><span class="p">[</span><span class="n">t2</span><span class="p">](</span><span class="n">time_mjd</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">force_singlepol</span> <span class="o">==</span> <span class="s1">&#39;R&#39;</span><span class="p">:</span>
+                <span class="n">lscale1</span> <span class="o">=</span> <span class="n">rscale1</span>
+                <span class="n">lscale2</span> <span class="o">=</span> <span class="n">rscale2</span>
+
+            <span class="k">if</span> <span class="n">force_singlepol</span> <span class="o">==</span> <span class="s1">&#39;L&#39;</span><span class="p">:</span>
+                <span class="n">rscale1</span> <span class="o">=</span> <span class="n">lscale1</span>
+                <span class="n">rscale2</span> <span class="o">=</span> <span class="n">lscale2</span>
+
+            <span class="n">rrscale</span> <span class="o">=</span> <span class="n">rscale1</span> <span class="o">*</span> <span class="n">rscale2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span>
+            <span class="n">llscale</span> <span class="o">=</span> <span class="n">lscale1</span> <span class="o">*</span> <span class="n">lscale2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span>
+            <span class="n">rlscale</span> <span class="o">=</span> <span class="n">rscale1</span> <span class="o">*</span> <span class="n">lscale2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span>
+            <span class="n">lrscale</span> <span class="o">=</span> <span class="n">lscale1</span> <span class="o">*</span> <span class="n">rscale2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span>
+
+            <span class="n">rrvis</span> <span class="o">=</span> <span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>  <span class="o">+</span>    <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">rrscale</span>
+            <span class="n">llvis</span> <span class="o">=</span> <span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>  <span class="o">-</span>    <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">llscale</span>
+            <span class="n">rlvis</span> <span class="o">=</span> <span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;qvis&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;uvis&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">rlscale</span>
+            <span class="n">lrvis</span> <span class="o">=</span> <span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;qvis&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;uvis&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">lrscale</span>
+
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="mf">0.5</span>  <span class="o">*</span> <span class="p">(</span><span class="n">rrvis</span> <span class="o">+</span> <span class="n">llvis</span><span class="p">)</span>
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;qvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="o">*</span> <span class="p">(</span><span class="n">rlvis</span> <span class="o">+</span> <span class="n">lrvis</span><span class="p">)</span>
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;uvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="n">j</span> <span class="o">*</span> <span class="p">(</span><span class="n">lrvis</span> <span class="o">-</span> <span class="n">rlvis</span><span class="p">)</span>
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="o">*</span> <span class="p">(</span><span class="n">rrvis</span> <span class="o">-</span> <span class="n">llvis</span><span class="p">)</span>
+
+            <span class="n">rrsigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">rrscale</span><span class="p">)</span>
+            <span class="n">llsigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">llscale</span><span class="p">)</span>
+            <span class="n">rlsigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;qsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;usigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">rlscale</span><span class="p">)</span>
+            <span class="n">lrsigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;qsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;usigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">lrscale</span><span class="p">)</span>
+
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">rrsigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">llsigma</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;qsigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">rlsigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">lrsigma</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;usigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">lrsigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">rlsigma</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+            <span class="n">bl_obs</span><span class="p">[</span><span class="s1">&#39;vsigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">rrsigma</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">llsigma</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatable</span><span class="p">):</span>
+                <span class="n">datatable</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">datatable</span><span class="p">,</span><span class="n">bl_obs</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">datatable</span> <span class="o">=</span> <span class="n">bl_obs</span>
+
+        <span class="n">calobs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">),</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">calobs</span>
+
+<div class="viewcode-block" id="Caltable.save_txt"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the format src_site.txt given by Maciek&#39;s tables</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">save_caltable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="n">sqrt_gains</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="load_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.load_caltable">[docs]</a><span class="k">def</span> <span class="nf">load_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Load apriori cal tables</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">datatables</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">)):</span>
+
+        <span class="n">site</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="n">obs</span><span class="o">.</span><span class="n">source</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">site</span> <span class="o">+</span> <span class="s1">&#39;.txt&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bytes</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c1">#print (&quot;filename)</span>
+        <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+
+            <span class="n">time</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span> <span class="o">*</span> <span class="mf">24.0</span> <span class="c1"># time is given in mjd</span>
+
+            <span class="c1"># Maciek&#39;s old convention had a square root</span>
+            <span class="c1">#rscale = np.sqrt(float(row[1])) # r</span>
+            <span class="c1">#lscale = np.sqrt(float(row[2])) # l</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">rscale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">lscale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="n">rscale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                <span class="n">lscale</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;cannot load caltable -- format unknown!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sqrt_gains</span><span class="p">:</span>
+                <span class="n">rscale</span> <span class="o">=</span> <span class="n">rscale</span><span class="o">**.</span><span class="mi">5</span>
+                <span class="n">lscale</span> <span class="o">=</span> <span class="n">lscale</span><span class="o">**.</span><span class="mi">5</span>
+            <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">time</span><span class="p">,</span> <span class="n">rscale</span><span class="p">,</span> <span class="n">lscale</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">))</span>
+            <span class="c1">#if onerowonly:</span>
+            <span class="c1">#    datatable.append(np.array((1.1*time, rscale, lscale), dtype=DTCAL))</span>
+
+        <span class="n">datatables</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatables</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">datatables</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span>
+    <span class="k">return</span> <span class="n">caltable</span></div>
+
+<div class="viewcode-block" id="save_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.save_caltable">[docs]</a><span class="k">def</span> <span class="nf">save_caltable</span><span class="p">(</span><span class="n">caltable</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">datadir</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">datadir</span><span class="p">)</span>
+
+    <span class="n">datatables</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">src</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">source</span>
+    <span class="k">for</span> <span class="n">site_info</span> <span class="ow">in</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tarr</span><span class="p">:</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="n">site_info</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">src</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">site</span> <span class="o">+</span><span class="s1">&#39;.txt&#39;</span>
+        <span class="n">outfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">site_data</span> <span class="o">=</span> <span class="n">datatables</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">site_data</span><span class="p">:</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">24.0</span> <span class="o">+</span> <span class="n">obs</span><span class="o">.</span><span class="n">mjd</span>
+
+            <span class="k">if</span> <span class="n">sqrt_gains</span><span class="p">:</span>
+                <span class="n">rscale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;rscale&#39;</span><span class="p">])</span>
+                <span class="n">lscale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;lscale&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rscale</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;rscale&#39;</span><span class="p">]</span>
+                <span class="n">lscale</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;lscale&#39;</span><span class="p">]</span>
+
+            <span class="n">rreal</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">rscale</span><span class="p">))</span>
+            <span class="n">rimag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">rscale</span><span class="p">))</span>
+            <span class="n">lreal</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">lscale</span><span class="p">))</span>
+            <span class="n">limag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">lscale</span><span class="p">))</span>
+            <span class="n">outline</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rimag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">limag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outline</span><span class="p">)</span>
+        <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<span class="k">def</span> <span class="nf">make_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">gains</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">times</span><span class="p">):</span>
+
+    <span class="n">ntele</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span>
+    <span class="n">ntimes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+    
+    <span class="n">datatables</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ntele</span><span class="p">):</span>
+        <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ntimes</span><span class="p">):</span>
+            <span class="n">gain</span> <span class="o">=</span> <span class="n">gains</span><span class="p">[</span><span class="n">s</span><span class="o">*</span><span class="n">ntele</span> <span class="o">+</span> <span class="n">t</span><span class="p">]</span> 
+            <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">times</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">gain</span><span class="p">,</span> <span class="n">gain</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">))</span>
+        <span class="n">datatables</span><span class="p">[</span><span class="n">sites</span><span class="p">[</span><span class="n">s</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatables</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> 
+                        <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">datatables</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> 
+                        <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span>
+    
+    <span class="k">return</span> <span class="n">caltable</span>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Andrew Chael.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
