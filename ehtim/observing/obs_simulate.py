@@ -33,6 +33,7 @@ try:
     from pynfft.nfft import NFFT
 except ImportError:
     print("Warning: No NFFT installed!")
+
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 

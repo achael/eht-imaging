@@ -16,7 +16,7 @@ if __name__ == "__main__":
         license = "GPLv3",
         keywords = "imaging astronomy EHT polarimetry",
         url = "https://github.com/achael/eht-imaging",
-        packages = ["ehtim","ehtim.calibrating","ehtim.plotting","ehtim.imaging","ehtim.observing","ehtim.io","ehtim.scattering"],
+        packages = ["ehtim","ehtim.calibrating","ehtim.plotting","ehtim.imaging","ehtim.observing","ehtim.io","ehtim.scattering","ehtim.stats"],
         long_description=read('README.rst'),
-        install_requires=["astropy", "ephem", "future", "matplotlib", "numpy", "scipy", "jdcal"]#,"pynfft"],
+        install_requires=["astropy", "ephem", "future", "matplotlib", "numpy", "scipy", "jdcal","pandas"]#,"pynfft"],
         )

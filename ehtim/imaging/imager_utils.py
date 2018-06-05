@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 try:
     from pynfft.nfft import NFFT
 except ImportError:
-    print("Warning: No NFFT installed!")
+    print("Warning: No NFFT installed! Cannot use nfft functions")
 from  scipy.special import jv
 
 import ehtim.image as image

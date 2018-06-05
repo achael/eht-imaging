@@ -58,7 +58,9 @@ class Image(object):
            uvec (array): The vector of stokes U values in Jy/pixel (len xdim*ydim)
            vvec (array): The vector of stokes V values in Jy/pixel (len xdim*ydim)
     """
+
     def __init__(self, image, psize, ra, dec, rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, time=0.):
+
         """A polarimetric image (in units of Jy/pixel).
 
            Args:
@@ -75,6 +77,7 @@ class Image(object):
            Returns:
                (Image): the Image object    
         """
+
         if len(image.shape) != 2:
             raise Exception("image must be a 2D numpy array")
 
@@ -137,6 +140,7 @@ class Image(object):
                uimage (numpy.array): The 2D Stokes U values in Jy/pixel array
                vimage (numpy.array): The 2D Stokes U values in Jy/pixel array
         """
+
         self.add_qu(qimage, uimage)
         self.add_v(vimage)
 
@@ -149,6 +153,7 @@ class Image(object):
            Returns: 
                newim (Image): copy of the Image.
         """
+
         newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         if len(self.qvec):
             newim.add_qu(self.qvec.reshape(self.ydim,self.xdim), self.uvec.reshape(self.ydim,self.xdim))
@@ -175,6 +180,7 @@ class Image(object):
 
            Args: 
                stokes (str): "I","Q","U","V" for a given Stokes parameter
+
            Returns:
                (numpy.array): 2D image array of dimension (ydim, xdim)
         """
@@ -215,6 +221,7 @@ class Image(object):
         """Return the total flux of the Stokes I image in Jy.
 
            Args:
+
            Returns: 
                 (float) : image total flux (Jy)
         """
@@ -224,13 +231,18 @@ class Image(object):
     def flip_chi(self):
 
         """Flip between the different conventions for measuring the EVPA (E of N vs N of E).
+
+           Args:
+
+           Returns: 
         """
 
         self.qvec = - self.qvec
         return
 
 
-    def sample_uv(self, uv, ttype='nfft',fft_pad_factor=2,sgrscat=False):
+    def sample_uv(self, uv, ttype='nfft', fft_pad_factor=2, sgrscat=False):
+
         """Sample the image on the selected uv points without adding noise.
 
            Args:
@@ -501,27 +513,33 @@ class Image(object):
         return ehtim.obsdata.merge_obs(obs_List)
 
     def rotate(self, angle):
+
         """Rotate the image counterclockwise by the specified angle.
 
            Args:
                 angle  (float): CCW angle to rotate the image (radian) 
+
            Returns:
                 (Image): resampled image 
         """        
         
-        imvec_rot = scipy.ndimage.interpolation.rotate(self.imvec.reshape((self.ydim, self.xdim)), angle*180.0/np.pi, reshape=False, order=3, mode='constant', cval=0.0, prefilter=True)
+        imvec_rot = scipy.ndimage.interpolation.rotate(self.imvec.reshape((self.ydim, self.xdim)), 
+                                                       angle*180.0/np.pi, reshape=False, order=3, 
+                                                       mode='constant', cval=0.0, prefilter=True)
         outim = self.copy()
         outim.imvec = imvec_rot.flatten()
         return outim
 
 
     def regrid_image(self, targetfov, npix, interp='linear'):
+
         """Resample the image to new (square) dimensions.
 
            Args:
                 targetfov  (float): new field of view (radian) 
                 npix  (int): new pixel dimension 
                 interp ('linear', 'cubic', 'quintic'): type of interpolation. default is linear
+
            Returns:
                 (Image): resampled image 
         """
@@ -573,7 +591,10 @@ class Image(object):
 
         return outim
     
-    def compare_images(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, metric = ['nxcorr', 'nrmse', 'rssd'], blursmall=False, shift=True):
+    def compare_images(self, im2, psize=None, target_fov=None,blur_frac=0.0,  
+                             beamparams=[1., 1., 1.], metric=['nxcorr', 'nrmse', 'rssd'], 
+                             blursmall=False, shift=True):
+
         """Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.
 
          Args:
@@ -585,18 +606,19 @@ class Image(object):
 
              metric (list) : a list of fidelity metrics from ['nxcorr','nrmse','rssd']
              blursmall (bool) : True to blur the unpadded image rather than the large image.
+             shift (int): manual image shift, otherwise use shift from maximum cross-correlation
 
          Returns:
              (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images
         """
 
         im1 = self.copy()
-        (idx, xcorr, im1_pad, im2_pad) = im1.findShift(im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
+        [idx, xcorr, im1_pad, im2_pad] = im1.findShift(im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
 
         if type(shift)!=bool:
             idx = shift
 
-        im2_shift = im2_pad.shiftImg(idx)
+        im2_shift = im2_pad.shift(idx)
 
         error = []
         if 'nxcorr' in metric:
@@ -608,14 +630,50 @@ class Image(object):
         
         return (error, im1_pad, im2_shift)
 
-    def shiftImg(self, shiftidx):
+    def shift(self, shiftidx):
+
+        """Shift the image by a given number of pixels.
+
+         Args:
+             shiftidx (list): pixel offsets for image shift
+
+         Returns:
+             (Image): shifted images
+        """
+
         im_shift = np.roll(self.imvec.reshape(self.ydim, self.xdim),   shiftidx[0], axis=0)
         im_shift = np.roll(im_shift, shiftidx[1], axis=1)
         im_shift = Image( im_shift, self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         return im_shift
         
-    def findShift(self, im2, psize=None, target_fov=None, beamparams = [1., 1., 1.], blur_frac = 0.0, blursmall=False, scale='lin', gamma=0.5, dynamic_range=1.e3):
-            
+    def findShift(self, im2, psize=None, target_fov=None, 
+                        beamparams=[1., 1., 1.], blur_frac = 0.0, blursmall=False, 
+                        scale='lin', gamma=0.5, dynamic_range=1.e3):
+
+        """Find image shift that maximizes cross correlation with im2.
+
+         Args:
+             im2 (Image): image with respect with to switch
+             psize (float): pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes
+             target_fov (float): fov of the comparison image (rad). If None it is twice the largest fov of the input images
+
+             beamparams (list): the nominal Gaussian beam parameters [fovx, fovy, position angle]
+             blur_frac (float): fractional beam to blur each image to before comparison
+             blursmall (bool) : True to blur the unpadded image rather than the large image.
+
+             scale (str) : compare images in 'log','lin',or 'gamma' scale
+             gamma (float): exponent for gamma scale comparison
+             dynamic_range (float): dynamic range for log and gamma scale comparisons
+
+         Returns:
+             (list): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images
+
+
+         Returns:
+             (list): [idx, xcorr, im1_pad, im2_pad]
+        """
+
+      
         im1 = self.copy()
         if target_fov==None:
             max_fov = np.max([im1.xdim * im1.psize, im1.ydim * im1.psize, im2.xdim * im2.psize, im2.ydim * im2.psize])
@@ -636,7 +694,6 @@ class Image(object):
             im1_pad = im1_pad.blur_gauss(beamparams, blur_frac)
             im2_pad = im2_pad.blur_gauss(beamparams, blur_frac)
                 
-
         im1_pad_vec = im1_pad.imvec
         im2_pad_vec = im2_pad.imvec
         if scale=='log':
@@ -650,7 +707,6 @@ class Image(object):
             im2_pad_vec[im2_pad_vec<0.0] = 0.0
             im2_pad_vec = (im2_pad_vec + np.max(im2_pad_vec)/dynamic_range)**(gamma)
             
-
         im1_norm = ( im1_pad_vec.reshape(im1_pad.ydim, im1_pad.xdim) - np.mean(im1_pad_vec) ) / np.std(im1_pad_vec)
         im2_norm = ( im2_pad_vec.reshape(im2_pad.ydim, im2_pad.xdim) - np.mean(im2_pad_vec) ) / np.std(im2_pad_vec)
 
@@ -660,14 +716,17 @@ class Image(object):
         xcorr =  np.real( np.fft.ifft2( fft_im1 * np.conj(fft_im2) ) )
         idx = np.unravel_index(xcorr.argmax(), xcorr.shape)
         
-        return (idx, xcorr, im1_pad, im2_pad)
+        return [idx, xcorr, im1_pad, im2_pad]
 
 
     def resample_square(self, xdim_new, ker_size=5):
+
         """Resample the image to new (square) dimensions
+
            Args:
                 xdim_new  (int): new pixel dimension 
                 ker_size  (int): kernel size for resampling
+
            Returns:
                 im_resampled (Image): resampled image 
         """
@@ -729,10 +788,12 @@ class Image(object):
         return outim
 
     def im_pad(self, fovx, fovy):
+
         """Pad an image to new fov_x by fov_y in radian.
            Args:
                 fovx  (float): new fov in x dimension (rad)
                 fovy  (float): new fov in y dimension (rad)
+
            Returns:
                 im_pad (Image): padded image
         """
@@ -758,6 +819,7 @@ class Image(object):
 
 
     def add_flat(self, flux):
+
         """Add a flat background flux to the Stokes I image.
 
            Args:
@@ -772,6 +834,7 @@ class Image(object):
         return out
 
     def add_tophat(self, flux, radius):
+
         """Add centered tophat flux to the Stokes I image inside a given radius.
 
            Args:
@@ -799,11 +862,13 @@ class Image(object):
         return out
 
     def add_gauss(self, flux, beamparams):
+
         """Add a gaussian to an image.
 
            Args:
                flux (float): the total flux contained in the Gaussian in Jy
                beamparams (list): the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians
+
            Returns:
                 (Image): output image 
         """
@@ -836,6 +901,7 @@ class Image(object):
         return out
 
     def add_crescent(self, flux, Rp, Rn, a, b, x=0, y=0):
+
         """Add a crescent to an image; see Kamruddin & Dexter (2013).
 
            Args:
@@ -846,6 +912,7 @@ class Image(object):
                b (float): the relative y offset of smaller disk in radians
                x (float): the center x coordinate of the larger disk in radians
                y (float): the center y coordinate of the larger disk in radians
+
            Returns:
                (Image): output image add_gaus
         """
@@ -873,6 +940,7 @@ class Image(object):
         return out
 
     def add_ring_m1(self, I0, I1, r0, phi, sigma, x=0, y=0):
+
         """Add a ring to an image with an m=1 mode
 
            Args:
@@ -917,11 +985,13 @@ class Image(object):
         return out
 
     def add_const_m(self, mag, angle):
+
         """Add a constant fractional linear polarization to image
 
            Args:
                mag (float): constant polarization fraction to add to the image
                angle (float): constant EVPA
+
            Returns:
                 (Image): output image 
         """
@@ -937,11 +1007,14 @@ class Image(object):
         return out
 
     def blur_gauss(self, beamparams, frac=1., frac_pol=0):
+
         """Blur image with a Gaussian beam defined by beamparams [fwhm_max, fwhm_min, theta] in radians.
+
            Args:
                beamparams (list): the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians
                frac (float): fractional beam size for Stokes I  blurring
                frac_pol (float): fractional beam size for Stokes Q,U,V  blurring
+
            Returns:
                (Image): output image 
         """
@@ -1005,10 +1078,12 @@ class Image(object):
         return out
 
     def fit_gauss(self, units='rad'):
+
         """Determine the Gaussian parameters that short baselines would measure for the source by diagonalizing the image covariance matrix. 
 
            Args:
                units (string): 'rad' returns values in radians, 'natural' returns FWHM in uas and PA in degrees
+
            Returns:
                (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians or natural units.
         """        
@@ -1032,9 +1107,11 @@ class Image(object):
         return gauss_params
 
     def fit_gauss_empirical(self, paramguess=None):
+
         """Determine the Gaussian parameters that short baselines would measure for the source by fitting short baselines.
 
            Args:
+
            Returns:
                (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
         """        
@@ -1072,16 +1149,19 @@ class Image(object):
         return x
 
     def blur_circ(self, fwhm_i, fwhm_pol=0):
+
         """Apply a circular gaussian filter to the image, with FWHM in radians.
 
            Args:
                fwhm_i (float): circular beam size for Stokes I  blurring in  radian
                fwhm_pol (float): circular beam size for Stokes Q,U,V  blurring in  radian
+
            Returns:
                (Image): output image 
         """
 
         image = self
+
         # Blur Stokes I
         sigma = fwhm_i / (2. * np.sqrt(2. * np.log(2.)))
         sigmap = sigma / image.psize
@@ -1099,6 +1179,15 @@ class Image(object):
         return out
 
     def centroid(self):
+
+        """Compute the location of the image centroid.
+
+           Args:
+
+           Returns:
+               (np.array): centroid positions (x0,y0) in radians 
+        """
+
         pdim = self.psize
         im = self.imvec
         xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
@@ -1108,6 +1197,7 @@ class Image(object):
         return np.array((x0,y0))
       
     def threshold(self, frac_i=1.e-5):
+
         """Apply a hard threshold to the image.
 
            Args:
@@ -1132,7 +1222,10 @@ class Image(object):
                        image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
         return out
 
-    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), export_pdf="", show=True):
+    def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, 
+                      plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, 
+                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), export_pdf="", show=True):
+
         """Display the image.
 
            Args:
@@ -1151,6 +1244,7 @@ class Image(object):
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
                cbar_unit (tuple of strings): specifies the unit of each pixel for the colorbar: 'Jy', 'm-Jy', '$\mu$Jy'
+
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
 
@@ -1335,6 +1429,7 @@ class Image(object):
 
     def save_fits(self, fname):
         """Save image data to a fits file.
+
            Args:
                 fname (str): path to output fits file
            Returns:
@@ -1349,7 +1444,6 @@ class Image(object):
 
            Returns:
                
-
         """
     
         im0 = self.copy()
@@ -1380,14 +1474,18 @@ class Image(object):
             if useshift:
                 idx = shift[i]
 
-            tmp = im_pad.shiftImg(idx)
+            tmp = im_pad.shift(idx)
             shifts.append(idx)
             im_array_shift.append( tmp.regrid_image(final_fov, npix) )
             
         
         return (im_array_shift, shifts, im0_pad)
 
-    def overlay_display(self, im_array, f=False, shift=[0,0], final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3], color_coding = np.array([[1, 0, 1], [0, 1, 0]]), plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
+    def overlay_display(self, im_array, f=False, shift=[0,0], final_fov=False, 
+                              scale='lin', gamma=0.5, dynamic_range=[1.e3], 
+                              color_coding = np.array([[1, 0, 1], [0, 1, 0]]), 
+                              plotp=False, nvec=20, pcut=0.01,export_pdf="", show=True):
+
         """Display the overlay_display image.
 
            Args:
@@ -1479,6 +1577,7 @@ class Image(object):
 
     def save_fits(self, fname):
         """Save image data to a fits file.
+
            Args:
                 fname (str): path to output fits file
            Returns:

@@ -1,4 +1,4 @@
-# statistics.py
+# stats.py
 # variety of statistical functions useful for 
 #
 #    Copyright (C) 2018 Maciek Wielgus
@@ -16,13 +16,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from __future__ import division
 from __future__ import print_function
+from builtins import str
+from builtins import map
+from builtins import range
 
 import numpy as np
 import numpy.random as npr
 import sys
+
 from ehtim.const_def import *
 
 ############################################

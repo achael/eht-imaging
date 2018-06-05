@@ -18,17 +18,29 @@
 
 from __future__ import division
 from __future__ import print_function
+from builtins import str
+from builtins import map
+from builtins import range
+
 import numpy as np 
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    print("Warning: pandas not installed!")
+    print("Please install pandas to use statistics package!")
+
 import datetime as datetime
 from astropy.time import Time
-from ehtim.statistics.statistics import *
+from ehtim.stats.statistics import *
 
-def make_df(obs,polarization='unknown',band='unknown',round_s=1.):
+def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
+
     """converts visibilities from obs.data to DataFrame format
+
     Args:
         obs: ObsData object
         round_s: accuracy of datetime object in seconds
+
     Returns:
         df: observation visibility data in DataFrame format
     """
@@ -37,7 +49,7 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=1.):
     df['fmjd'] = df['time']/24.
     df['mjd'] = obs.mjd + df['fmjd']
     telescopes = list(zip(df['t1'],df['t2']))
-    telescopes = [(x[0].decode('unicode_escape'),x[1].decode('unicode_escape') ) for x in telescopes]
+    telescopes = [(x[0].decode('unicode_escape'),x[1].decode('unicode_escape')) for x in telescopes]
     df['baseline'] = [x[0]+'-'+x[1] for x in telescopes]
     df['amp'] = list(map(np.abs,df['vis']))
     df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df['vis']))
@@ -51,14 +63,18 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=1.):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
-def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',round_s=1.):
-    '''generate DataFrame of closure phases
+def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',round_s=0.1):
+
+    """generate DataFrame of closure phases
+
     Args: 
         obs: ObsData object
         round_s: accuracy of datetime object in seconds
+
     Returns:
         df: closure phase data in DataFrame format
-    '''
+    """
+
     data=obs.c_phases(mode=mode)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
@@ -73,14 +89,18 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',round_s=
     df['source'] = sour
     return df
 
-def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',round_s=1.):
-    '''generate DataFrame of closure amplitudes
+def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',round_s=0.1):
+
+    """generate DataFrame of closure amplitudes
+
     Args: 
         obs: ObsData object
         round_s: accuracy of datetime object in seconds
+
     Returns:
         df: closure amplitude data in DataFrame format
-    '''
+    """
+
     data = obs.c_amplitudes(mode=mode,debias=debias,ctype=ctype)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
@@ -96,14 +116,18 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['catype'] = ctype
     return df
 
-def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',round_s=1.):
-    '''generate DataFrame of bispectra
+def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',round_s=0.1):
+
+    """generate DataFrame of bispectra
+
     Args: 
         obs: ObsData object
         round_s: accuracy of datetime object in seconds
+
     Returns:
         df: bispectra data in DataFrame format
-    '''
+    """
+
     data = obs.bispectra(mode=mode)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
@@ -119,15 +143,19 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',round_s=1.)
     return df
 
 def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1e3)):
-    '''averages DataFrame of cphases
+
+    """averages DataFrame of cphases
+
     Args:
         cdf: data frame of closure phases
         dt: integration time in seconds
         return_type: 'rec' for numpy record array (as used by ehtim), 'df' for data frame
         err_type: 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+
     Returns:
         cdf2: averaged closure phases
-    '''
+    """
+
     cdf2 = cdf.copy()
     t0 = datetime.datetime(1960,1,1)
     cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
@@ -168,14 +196,18 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=in
 
 
 def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
-    '''averages DataFrame of bispectra
+
+    """averages DataFrame of bispectra
+
     Args:
         cdf: data frame of bispectra
         dt: integration time in seconds
         return_type: 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+
     Returns:
         cdf2: averaged bispectra
-    '''
+    """
+
     cdf2 = cdf.copy()
     t0 = datetime.datetime(1960,1,1)
     cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
@@ -204,15 +236,19 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
 
 
 def average_camp(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1e3)):
-    '''averages DataFrame of closure amplitudes
+
+    """averages DataFrame of closure amplitudes
+
     Args:
         cdf: data frame of closure amplitudes
         dt: integration time in seconds
         return_type: 'rec' for numpy record array (as used by ehtim), 'df' for data frame
         err_type: 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+
     Returns:
         cdf2: averaged closure amplitudes
-    '''
+    """
+
     cdf2 = cdf.copy()
     t0 = datetime.datetime(1960,1,1)
     cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
@@ -252,11 +288,13 @@ def average_camp(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1
         return cdf2
 
 def df_to_rec(df,product_type):
-    '''converts DataFrame to numpy recarray used by ehtim
+
+    """converts DataFrame to numpy recarray used by ehtim
+
     Args:
         df: DataFrame to convert
         product_type: vis, cphase, camp
-    '''
+    """
     if product_type=='cphase':
         return df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
     elif product_type=='camp':
@@ -266,11 +304,14 @@ def df_to_rec(df,product_type):
     elif product_type=='bsp':
         return df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
 
-def round_time(t,round_s=1):
+def round_time(t,round_s=0.1):
+
     """rounding time to given accuracy
+
     Args:
         t: time
         round_s: delta time to round to in seconds
+
     Returns:
         round_t: rounded time
     """

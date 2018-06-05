@@ -6,9 +6,9 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
-
-import ehtim.imager
 import ehtim.obsdata
+import ehtim.imager
+
 import ehtim.array
 import ehtim.movie
 import ehtim.image

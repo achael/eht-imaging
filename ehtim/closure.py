@@ -45,39 +45,47 @@ class Closure(object):
         self.tarr = obs.tarr
         self.tkey = obs.tkey
 
-	# make list of all possible tri/quadr-angles
-        #sites = [self.tarr[i][0] for i in range(len(self.tarr))] # List of telescope names
+	    # make list of all possible tri/quadr-angles
+        # sites = [self.tarr[i][0] for i in range(len(self.tarr))] # List of telescope names
         sites = [self.tarr[i][0] for i in range(len(self.tarr))] # List of telescope names
         bl   = list(it.combinations(sites,2))
-        tri  = list(it.combinations(sites,3))
-        quad = list(it.combinations(sites,4))
+        tris  = list(it.combinations(sites,3))
+        quads = list(it.combinations(sites,4))
 
         # closure phase/amp. time curves of all possible tri/quadr-angles ("None" if no data)
-        cp = obs.get_cphase_curves(tri)
-        ca = obs.get_camp_curves(quad)
-#        va = obs.get_amp_curves(bl)
+        print("computing closure phases...")
+        cp = []        
+        for tri in tris: 
+            cpdat = obs.cphase_tri(tri[0],tri[1],tri[2])
+            time = cpdat['time']
+            cphase  = cpdat['cphase']
+            sigmacp =  cpdat['sigmacp']
+            cpdat = np.array([time,cphase,sigmacp])
+            cp.append(cpdat)
 
-#        # remove bl/tri/quadr-angles that have no data
-#        self.va=[]
-#        self.bl=[]
-#        for i in range(len(va)):
-#            if va[i] is not None:
-#                (self.va).append(va[i])
-#                (self.bl).append(bl[i])
+        print("computing closure amplitudes...")  
+        ca = []      
+        for quad in quads:
+            cadat = obs.camp_quad(quad[0],quad[1],quad[3],quad[3])
+            time = cadat['time']
+            camp  = cadat['camp']
+            sigmaca=  cadat['sigmaca']
+            cadat = np.array([time,camp,sigmaca])
+            ca.append(cadat)
 
         self.cp=[]
         self.tri=[]
         for i in range(len(cp)):
             if cp[i] is not None:
                 (self.cp).append(cp[i])
-                (self.tri).append(tri[i])
+                (self.tri).append(tris[i])
 
         self.ca=[]
         self.quad=[]
         for i in range(len(ca)):
             if ca[i] is not None:
                 (self.ca).append(ca[i])
-                (self.quad).append(quad[i])
+                (self.quad).append(quads[i])
 
 
     def record_cp( self, tri_id ):
