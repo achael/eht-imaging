@@ -2092,7 +2092,7 @@ class Obsdata(object):
 
     def plot_cphase(self, site1, site2, site3, 
                           vtype='vis', ang_unit='deg', timetype=False, 
-                          rangex=False, rangey=False, ebar=True, 
+                          rangex=False, rangey=False, ebar=True, labels=True,
                           show=True, axis=False, color='b', export_pdf="", 
                           cphases=[]):
 
@@ -2111,6 +2111,7 @@ class Obsdata(object):
                rangey (list): [ymin, ymax] y-axis (phase) limits
 
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                color (str): Color of scatterplot points
@@ -2132,7 +2133,7 @@ class Obsdata(object):
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         if len(plotdata) == 0:
-            print("No closure phases on this triangle!")
+            print("%s %s %s : No closure phases on this triangle!" % (site1,site2,site3))
             return
 
         # Data ranges
@@ -2156,8 +2157,9 @@ class Obsdata(object):
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel(self.timetype + ' (h)')
-        x.set_ylabel('Closure Phase (deg)')
+        if labels:
+            x.set_xlabel(self.timetype + ' (h)')
+            x.set_ylabel('Closure Phase (deg)')
         x.set_title('%s - %s - %s' % (site1,site2,site3))
 
         if export_pdf != "" and not axis:

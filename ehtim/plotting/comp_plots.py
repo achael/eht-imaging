@@ -83,7 +83,9 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, rangex=False, rangey=Fals
 
 
 
-def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True, cphases=[], export_pdf=""):
+def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True, 
+                            clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, 
+                             ebar=True, cphases=[], export_pdf="",axis=False, labels=True):
 
     """Plot closure phase on a triangle vs time from multiple observations on the same axes.
         """
@@ -97,12 +99,11 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
     if len(cphases)==0:
         cphases = np.matlib.repmat([],len(obslist),1)
     
-    axis = False
     for i in range(len(obslist)):
         obs = obslist[i]
 
         axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], 
-                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar, cphases=cphases[i])
+                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar, cphases=cphases[i],labels=labels)
 
 
     if show:
@@ -181,7 +182,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2, ttype='direct', sgrsc
 
 def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', sgrscat=False,  rangex=False, rangey=False, show=True, clist=COLORLIST, timetype=False, ebar=True, debias=True, export_pdf=""):
     """Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
-        """
+    """
     
     try: len(obslist)
     
@@ -212,7 +213,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', 
 
 
 
-def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True, export_pdf=""):
+def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False, ebar=True, axis=False, labels=True, export_pdf=""):
 
     """Plot closure phase on a triangle compared to ground truth from an image on the same axes.
         """
@@ -228,18 +229,18 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direc
     if len(obslist) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
     
-    axis = False
+
     for i in range(len(obslist)):
         obs = obslist[i]
 
         axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar)
+                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar, labels=labels)
 
     if show:
         plt.show(block=False)
 
     if export_pdf != "":
-        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
 
     return axis
 
@@ -278,9 +279,11 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
     return axis
 
 
-def plotall_obs_im_cphases(obs, image, ttype='direct', sgrscat=False, rangex=False, rangey=[-180,180], show=True, ebar=True, vtype='vis'):
+def plotall_obs_im_cphases(obs, image, ttype='direct', sgrscat=False, 
+                           rangex=False, rangey=[-180,180], show=True, ebar=True, 
+                           vtype='vis',display_mode='all'):
     """plot image on top of all cphases
-        """
+    """
         
     # get closure triangle combinations
     sites = []
@@ -293,8 +296,48 @@ def plotall_obs_im_cphases(obs, image, ttype='direct', sgrscat=False, rangex=Fal
     cphases_obs = obs.c_phases(mode='time', count='max', vtype=vtype)
     cphases_model = obs_model.c_phases(mode='time', count='max', vtype=vtype)
 
+    # display  as individual plots or as a huge sheet
+    if display_mode=='individual': 
+        show=True
+    else:
+        nplots = len(uniqueclosure_tri)
+        ncols = 4
+        nrows = nplots / ncols
+        show=False
+        fig = plt.figure(figsize=(40, nrows*20))
+
     # plot closure phases
-    for c in range(0,len(uniqueclosure_tri)):
-        f = plot_cphase_obs_compare([obs, obs_model], uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2], vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show, cphases=[cphases_obs, cphases_model])
+    print()
+
+    nplot = 0
+    for c in range(0, len(uniqueclosure_tri)):
+        cphases_obs_tri = obs.cphase_tri(uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
+                                     vtype=vtype, ang_unit='deg', cphases=cphases_obs)
+
+        if len(cphases_obs_tri)>0:
+            cphases_model_tri = obs_model.cphase_tri(uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
+                                         vtype=vtype, ang_unit='deg', cphases=cphases_model)
+            chisq_tri= np.sum((1.0 - np.cos(cphases_obs_tri['cphase']*DEGREE-cphases_model_tri['cphase']*DEGREE))/
+                              ((cphases_obs_tri['sigmacp']*DEGREE)**2))
+            chisq_tri *= (2.0/len(cphases_obs_tri))
+            print ("%s %s %s : cphase_chisq: %0.2f" % (uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],chisq_tri))
+
+            if display_mode=='individual':
+                ax=False
+                labels=True
+            else:
+                ax = plt.subplot2grid((nrows,ncols), (nplot/ncols, nplot%ncols), fig=fig)
+                labels=False
+
+            f = plot_cphase_obs_compare([obs, obs_model], uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2], 
+                                        vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show, 
+                                        cphases=[cphases_obs, cphases_model], axis=ax, labels=labels)
+            nplot += 1
+
+    if display_mode!='individual': 
+        plt.ion()
+        f = fig
+        f.subplots_adjust(wspace=0.1,hspace=0.5)
+        f.show()
     
-    return
+    return f
