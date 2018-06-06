@@ -464,21 +464,7 @@ class Imager(object):
         """
         reg_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
-            # TODO incorporate flux and cm into the generic "regularizer"  function!
-#            if regname == 'flux':
-#                #norm = flux**2
-#                norm = 1
-#                reg = (np.sum(imvec) - self.flux_next)**2
-#                reg /= norm
 
-#            elif regname == 'cm':
-#                #norm = flux**2 * self.prior_next.psize**2
-#                norm = 1
-#                reg = (np.sum(imvec*self._coord_matrix[:,0])**2 +
-#                       np.sum(imvec*self._coord_matrix[:,1])**2)
-#                reg /= norm
-
-#            else:
             reg = regularizer(imvec, self._nprior_I, self._embed_mask,
                               self.flux_next, self.prior_next.xdim,
                               self.prior_next.ydim, self.prior_next.psize,
@@ -493,21 +479,7 @@ class Imager(object):
         """
         reggrad_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
-            # TODO incorporate flux and cm into the generic "regularizer"  function!
-#            if regname == 'flux':
-#                #norm = flux**2
-#                norm = 1
-#                reg = 2*(np.sum(imvec) - self.flux_next)
-#                reg /= norm
 
-#            elif regname == 'cm':
-#                #norm = flux**2 * self.prior_next.psize**2
-#                norm = 1
-#                reg = 2*(np.sum(imvec*self._coord_matrix[:,0])*self._coord_matrix[:,0] +
-#                         np.sum(imvec*self._coord_matrix[:,1])*self._coord_matrix[:,1])
-#                reg /= norm
-
-#            else:
             reg = regularizergrad(imvec, self._nprior_I, self._embed_mask,
                                   self.flux_next, self.prior_next.xdim,
                                   self.prior_next.ydim, self.prior_next.psize,
@@ -708,71 +680,76 @@ class Imager(object):
 
     def plotcur(self, imvec, **kwargs):
         if self._show_updates:
-            if self.transform_next == 'log':
-                imvec = np.exp(imvec)
-            chi2_term_dict = self.make_chisq_dict(imvec)
-            reg_term_dict = self.make_reg_dict(imvec)
+            if self._nit % self._update_interval == 0: 
+                if self.transform_next == 'log':
+                    imvec = np.exp(imvec)
+                chi2_term_dict = self.make_chisq_dict(imvec)
+                reg_term_dict = self.make_reg_dict(imvec)
 
-            chi2_keys = sorted(chi2_term_dict.keys())
-            chi2_1 = chi2_term_dict[chi2_keys[0]]
-            chi2_2 = 0.
-            if len(chi2_term_dict) > 1:
-                chi2_2 = chi2_term_dict[chi2_keys[1]]
+                chi2_keys = sorted(chi2_term_dict.keys())
+                chi2_1 = chi2_term_dict[chi2_keys[0]]
+                chi2_2 = 0.
+                if len(chi2_term_dict) > 1:
+                    chi2_2 = chi2_term_dict[chi2_keys[1]]
 
-            outstr = "i: %d " % self._nit
+                outstr = "i: %d |" % self._nit
+                for dname in sorted(self.dat_term_next.keys()):
+                    outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname])
 
-            for dname in sorted(self.dat_term_next.keys()):
-                outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
-            for regname in sorted(self.reg_term_next.keys()):
-                outstr += "%s : %0.2f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
+                outstr += "\n     "
+                for dname in sorted(self.dat_term_next.keys()):
+                    outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
+                for regname in sorted(self.reg_term_next.keys()):
+                    outstr += "%s : %0.2f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
 
-            if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
-            plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, **kwargs)
+                if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
+                plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, **kwargs)
 
-            print(outstr)
+                print(outstr)
         self._nit += 1
 
     def plotcur_scattering(self, minvec):
         if self._show_updates:
-            N = self.prior_next.xdim
+            if self._nit % self._update_interval == 0: 
+                N = self.prior_next.xdim
 
-            imvec       = minvec[:N**2]
-            EpsilonList = minvec[N**2:]
-            if self.transform_next == 'log':
-                imvec = np.exp(imvec)
+                imvec       = minvec[:N**2]
+                EpsilonList = minvec[N**2:]
+                if self.transform_next == 'log':
+                    imvec = np.exp(imvec)
 
-            IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
-                                   self.prior_next.dec, rf=self.obs_next.rf, 
-                                   source=self.prior_next.source, mjd=self.prior_next.mjd)
-            #the scattered image vector
-            scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
-                                                     ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec 
+                IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
+                                       self.prior_next.dec, rf=self.obs_next.rf, 
+                                       source=self.prior_next.source, mjd=self.prior_next.mjd)
+                #the scattered image vector
+                scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
+                                                         ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec 
 
-            # Calculate the chi^2 using the scattered image
-            datterm = 0.
-            chi2_term_dict = self.make_chisq_dict(scatt_im)
-            for dname in sorted(self.dat_term_next.keys()):
-                datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+                # Calculate the chi^2 using the scattered image
+                datterm = 0.
+                chi2_term_dict = self.make_chisq_dict(scatt_im)
+                for dname in sorted(self.dat_term_next.keys()):
+                    datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+    f
+                # Calculate the entropy using the unscattered image
+                regterm = 0
+                reg_term_dict = self.make_reg_dict(imvec)
+                for regname in sorted(self.reg_term_next.keys()):
+                    regterm += self.reg_term_next[regname] * reg_term_dict[regname]
 
-            # Calculate the entropy using the unscattered image
-            regterm = 0
-            reg_term_dict = self.make_reg_dict(imvec)
-            for regname in sorted(self.reg_term_next.keys()):
-                regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+                # Scattering screen regularization term
+                chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)
+                regterm_scattering = self.alpha_phi_next * (chisq_epsilon - 1.0)
 
-            # Scattering screen regularization term
-            chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)
-            regterm_scattering = self.alpha_phi_next * (chisq_epsilon - 1.0)
+                outstr = "i: %d " % self._nit
 
-            outstr = "i: %d " % self._nit
-
-            for dname in sorted(self.dat_term_next.keys()):
-                outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname])
-            for regname in sorted(self.reg_term_next.keys()):
-                outstr += "%s : %0.2f " % (regname, reg_term_dict[regname])
-            outstr += "Epsilon chi^2 : %0.2f " % (chisq_epsilon)
-            outstr += "Max |Epsilon| : %0.2f " % (max(abs(EpsilonList)))
-            print(outstr)
+                for dname in sorted(self.dat_term_next.keys()):
+                    outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname])
+                for regname in sorted(self.reg_term_next.keys()):
+                    outstr += "%s : %0.2f " % (regname, reg_term_dict[regname])
+                outstr += "Epsilon chi^2 : %0.2f " % (chisq_epsilon)
+                outstr += "Max |Epsilon| : %0.2f " % (max(abs(EpsilonList)))
+                print(outstr)
 
         self._nit += 1
 
@@ -790,8 +767,9 @@ class Imager(object):
         self._nit = 0
 
         # Print stats
-        if show_updates: self._show_updates=True
-        else: self._show_updates=False
+        self._show_updates=kwargs.get('show_updates',True)
+        self._update_interval=kwargs.get('update_interval',1)
+
         self.plotcur(xinit, **kwargs)
 
         # Minimize
@@ -870,11 +848,8 @@ class Imager(object):
         self._nit = 0
 
         # Print stats
-        if show_updates:
-            self._show_updates=True
-        else:
-            self._show_updates=False
-
+        self._show_updates=kwargs.get('show_updates',True)
+        self._update_interval=kwargs.get('update_interval',1)
         self.plotcur_scattering(xinit)
 
         # Minimize
