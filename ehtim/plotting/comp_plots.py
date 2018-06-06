@@ -23,6 +23,7 @@
 from builtins import range
 import numpy as np
 import matplotlib.pyplot as plt
+import itertools as it
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
@@ -275,3 +276,25 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
         plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
 
     return axis
+
+
+def plotall_obs_im_cphases(obs, image, ttype='direct', sgrscat=False, rangex=False, rangey=[-180,180], show=True, ebar=True, vtype='vis'):
+    """plot image on top of all cphases
+        """
+        
+    # get closure triangle combinations
+    sites = []
+    for i in range(0, len(obs.tarr)):
+        sites.append(obs.tarr[i][0])
+    uniqueclosure_tri = list(it.combinations(sites,3))  
+          
+    # generate data
+    obs_model = image.observe_same(obs, sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
+    cphases_obs = obs.c_phases(mode='time', count='max', vtype=vtype)
+    cphases_model = obs_model.c_phases(mode='time', count='max', vtype=vtype)
+
+    # plot closure phases
+    for c in range(0,len(uniqueclosure_tri)):
+        f = plot_cphase_obs_compare([obs, obs_model], uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2], vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show, cphases=[cphases_obs, cphases_model])
+    
+    return
