@@ -692,19 +692,22 @@ class Imager(object):
                 if len(chi2_term_dict) > 1:
                     chi2_2 = chi2_term_dict[chi2_keys[1]]
 
-                outstr = "i: %d |" % self._nit
+                outstr = "------------------------------------------------------------------"
+                outstr += "\n%4d | " % self._nit
                 for dname in sorted(self.dat_term_next.keys()):
-                    outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname])
+                    outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
 
-                outstr += "\n     "
+                outstr += "\n        "
                 for dname in sorted(self.dat_term_next.keys()):
-                    outstr += "%s : %0.2f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
+                    outstr += "%s : %0.1f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
+                outstr += "\n        "
                 for regname in sorted(self.reg_term_next.keys()):
-                    outstr += "%s : %0.2f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
+                    outstr += "%s : %0.1f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
 
                 if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
                 plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, **kwargs)
 
+                if self._nit == 0: print()
                 print(outstr)
         self._nit += 1
 
@@ -730,7 +733,7 @@ class Imager(object):
                 chi2_term_dict = self.make_chisq_dict(scatt_im)
                 for dname in sorted(self.dat_term_next.keys()):
                     datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
-    f
+    
                 # Calculate the entropy using the unscattered image
                 regterm = 0
                 reg_term_dict = self.make_reg_dict(imvec)
