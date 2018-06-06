@@ -10,6 +10,7 @@ imagingChallenge*
 tmp/*
 *.uvfits
 ehtim.egg-info/*
+dist/*
 
 build/*
 data/3C279JUN16.UVP
