@@ -304,7 +304,7 @@ def plotall_obs_im_cphases(obs, image, ttype='direct', sgrscat=False,
         ncols = 4
         nrows = nplots / ncols
         show=False
-        fig = plt.figure(figsize=(40, nrows*20))
+        fig = plt.figure(figsize=(nrows*20, 40))
 
     # plot closure phases
     print()
@@ -329,7 +329,8 @@ def plotall_obs_im_cphases(obs, image, ttype='direct', sgrscat=False,
                 ax = plt.subplot2grid((nrows,ncols), (nplot/ncols, nplot%ncols), fig=fig)
                 labels=False
 
-            f = plot_cphase_obs_compare([obs, obs_model], uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2], 
+            f = plot_cphase_obs_compare([obs, obs_model], 
+                                        uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2], 
                                         vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show, 
                                         cphases=[cphases_obs, cphases_model], axis=ax, labels=labels)
             nplot += 1
@@ -337,7 +338,7 @@ def plotall_obs_im_cphases(obs, image, ttype='direct', sgrscat=False,
     if display_mode!='individual': 
         plt.ion()
         f = fig
-        f.subplots_adjust(wspace=0.1,hspace=0.5)
+        f.subplots_adjust(wspace=0.1, hspace=0.5)
         f.show()
     
     return f

@@ -33,9 +33,12 @@ from ehtim.imaging.imager_utils import *
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+
 MAXIT = 100 # number of iterations
 NHIST = 50 # number of steps to store for hessian approx
+MAXLS = 40 # maximum number of line search steps in BFGS-B
 STOP = 1e-6 # convergence criterion
+EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm','compact','compact2']
@@ -705,7 +708,7 @@ class Imager(object):
                     outstr += "%s : %0.1f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
 
                 if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
-                plot_i(imvec, self.prior_next, self._nit, chi2_1, chi2_2, **kwargs)
+                plot_i(imvec, self.prior_next, self._nit, chi2_term_dict, **kwargs)
 
                 if self._nit == 0: print()
                 print(outstr)
@@ -776,7 +779,8 @@ class Imager(object):
         self.plotcur(xinit, **kwargs)
 
         # Minimize
-        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next, 'maxcor':NHIST}
+        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next,
+                   'maxcor':NHIST, 'maxls':MAXLS}
         tstart = time.time()
         if grads:
             res = opt.minimize(self.objfunc, xinit, method='L-BFGS-B', jac=self.objgrad,
