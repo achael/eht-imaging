@@ -671,7 +671,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     dl = np.zeros(len(tnames)) + 1j*np.zeros(len(tnames))
 
     tarr = [np.array((
-            tnames[i], xyz[i][0], xyz[i][1], xyz[i][2],
+            str(tnames[i]), xyz[i][0], xyz[i][1], xyz[i][2],
             sefdr[i], sefdl[i], dr[i], dl[i],
             fr_par[i], fr_el[i], fr_off[i]),
             dtype=DTARR) for i in range(len(tnames))]

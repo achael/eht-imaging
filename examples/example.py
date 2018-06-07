@@ -7,14 +7,15 @@
 from __future__ import division
 from __future__ import print_function
 
+import matplotlib.pyplot as plt
 import numpy as np
 import ehtim as eh
 from   ehtim.calibrating import self_cal as sc
 #from  ehtim.plotting import self_cal as sc
 
 # Load the image and the array
-im = eh.image.load_txt('models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('arrays/EHT2017.txt')
+im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 # Look at the image
 im.display()
@@ -40,8 +41,6 @@ obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
 obs.plotall('u','v', conj=True) # uv coverage
 obs.plotall('uvdist','amp') # amplitude with baseline distance'
 obs.plot_bl('SMA','ALMA','phase') # visibility phase on a baseline over time
-obs.plot_cphase('SMA', 'SMT', 'ALMA') # closure phase 1-2-3 on a over time
-obs.plot_cphase('SMA', 'SMT', 'ALMA') # closure phase 1-2-3 on a over time
 
 # You can check out the dirty image, dirty beam, and clean beam
 npix = 64
