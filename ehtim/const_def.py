@@ -49,26 +49,26 @@ FWHM_MIN = 0.64 * 1000
 POS_ANG = 78 # in degree, E of N
 
 # Observation recarray datatypes
-DTARR = [('site', 'a32'), ('x','f8'), ('y','f8'), ('z','f8'),
+DTARR = [('site', 'U32'), ('x','f8'), ('y','f8'), ('z','f8'),
          ('sefdr','f8'),('sefdl','f8'),('dr','c16'),('dl','c16'),
          ('fr_par','f8'),('fr_elev','f8'),('fr_off','f8')]
 
 DTPOL = [('time','f8'),('tint','f8'),
-         ('t1','a32'),('t2','a32'),
+         ('t1','U32'),('t2','U32'),
          ('tau1','f8'),('tau2','f8'),
          ('u','f8'),('v','f8'),
          ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
          ('sigma','f8'),('qsigma','f8'),('usigma','f8'),('vsigma','f8')]
 
-DTBIS = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),
+DTBIS = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),
          ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
          ('bispec','c16'),('sigmab','f8')]
 
-DTCPHASE = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),
+DTCPHASE = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),
             ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
             ('cphase','f8'),('sigmacp','f8')]
 
-DTCAMP = [('time','f8'),('t1','a32'),('t2','a32'),('t3','a32'),('t4','a32'),
+DTCAMP = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),('t4','U32'),
           ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),
           ('u3','f8'),('v3','f8'),('u4','f8'),('v4','f8'),
           ('camp','f8'),('sigmaca','f8')]
@@ -99,7 +99,7 @@ FIELDS = ['time','time_utc','time_gmst',
 
 #miscellaneous functions
 
-#TODO this makes a copy -- is there a faster robust way? 
+#TODO this makes a copy -- is there a faster robust way?
 def recarr_to_ndarr(x,typ):
     """converts a record array x to a normal ndarray with all fields converted to datatype typ
     """
@@ -109,8 +109,3 @@ def recarr_to_ndarr(x,typ):
     dt = [(name,typ) for name in fields]
     y = x.astype(dt).view(typ).reshape(shape)
     return y
-
-
-
-
-

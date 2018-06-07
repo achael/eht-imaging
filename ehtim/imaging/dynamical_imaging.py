@@ -1,5 +1,5 @@
 # Note: This library is still under very active development and is likely to change considerably
-# Contact Michael Johnson (mjohnson@cfa.harvard.edu) with any questions 
+# Contact Michael Johnson (mjohnson@cfa.harvard.edu) with any questions
 # The methods/techniques used in this are described in http://adsabs.harvard.edu/abs/2017ApJ...850..172J
 
 import time
@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 
 import itertools as it
 
-from ehtim.const_def import * #Note: C is m/s rather than cm/s. 
-from ehtim.observing.obs_helpers import * 
+from ehtim.const_def import * #Note: C is m/s rather than cm/s.
+from ehtim.observing.obs_helpers import *
 import ehtim.obsdata as obsdata
 import ehtim.image as image
 from ehtim.imaging.imager_utils import *
@@ -77,7 +77,7 @@ def center_core(im, blur_size_uas=100):
     im_rotate = im.copy()
     core_pos = get_core_position(im,blur_size_uas)
     center = np.array((int((im.ydim-1)/2),int((im.xdim-1)/2)))
-    print "Rotating By",(center - core_pos)
+    print ("Rotating By",center - core_pos)
     im_rotate.imvec = np.roll(im.imvec.reshape((im.ydim,im.xdim)), center - core_pos, (0,1)).flatten()
     return im_rotate
 
@@ -110,7 +110,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
     import matplotlib.animation as animation
 
     fig = plt.figure()
-    
+
     mjd_step = (im_List_Set[0][0].mjd - im_List_Set[0][-1].mjd)/len(im_List_Set[0])
 
     #if len(im_List_Set)%2 == 1:
@@ -122,7 +122,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
     extent = [np.array((1,-1,-1,1))]*N_set
     maxi   = np.zeros(N_set)
     plt_im = [None,]*N_set
-   
+
     if type(dynamic_range) == float or type(dynamic_range) == int:
         dynamic_range = np.zeros(N_set) + dynamic_range
 
@@ -138,8 +138,8 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
             return np.log(im_List_Set[i_set][n_data].imvec.reshape((im_List_Set[i_set][n_data].ydim,im_List_Set[i_set][n_data].xdim)) + maxi[i_set]/dynamic_range[i_set])
 
     for j in range(N_set):
-        ax = plt.subplot(1, N_set, j+1)    
-        plt_im[j] = plt.imshow(im_data(j, 0), extent=extent[j], cmap=plt.get_cmap('afmhot'), interpolation='gaussian') 
+        ax = plt.subplot(1, N_set, j+1)
+        plt_im[j] = plt.imshow(im_data(j, 0), extent=extent[j], cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
 
         if xlim != None:
             ax.set_xlim(xlim)
@@ -163,7 +163,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
 
     def update_img(n):
         if verbose:
-            print "processing frame {0} of {1}".format(n, len(im_List)*pad_factor)        
+            print ("processing frame {0} of {1}".format(n, len(im_List)*pad_factor))
         for j in range(N_set):
             plt_im[j].set_data(im_data(j, n))
 
@@ -171,7 +171,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
             fig.suptitle('MJD: ' + str(im_List_Set[0][int((n-n%pad_factor)/pad_factor)].mjd), verticalalignment = verticalalignment)
         else:
             time = im_List_Set[0][int((n-n%pad_factor)/pad_factor)].time
-            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))            
+            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
             fig.suptitle(time_str)
 
         return plt_im
@@ -187,7 +187,7 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
     import matplotlib.animation as animation
 
     fig = plt.figure()
-    
+
     extent = im_List[0].psize/RADPERUAS*im_List[0].xdim*np.array((1,-1,-1,1)) / 2.
     maxi = np.max(np.concatenate([im.imvec for im in im_List]))
 
@@ -217,7 +217,7 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
         elif scale == 'gamma':
             return (im_List[n_data].imvec.reshape((im_List[n_data].ydim,im_List[n_data].xdim)) + maxi/dynamic_range)**(gamma)
 
-    plt_im = plt.imshow(im_data(0), extent=extent, cmap=plt.get_cmap('afmhot'), interpolation='gaussian') 
+    plt_im = plt.imshow(im_data(0), extent=extent, cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
     if scale == 'linear':
         plt_im.set_clim([0,maxi])
     elif scale == 'log':
@@ -227,13 +227,13 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
 
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
-    
+
     fig.set_size_inches([5,5])
     plt.tight_layout()
 
     def update_img(n):
         if verbose:
-            print "processing frame {0} of {1}".format(n, len(im_List)*pad_factor)        
+            print ("processing frame {0} of {1}".format(n, len(im_List)*pad_factor))
         plt_im.set_data(im_data(n))
         fig.suptitle('MJD: ' + str(im_List[int((n-n%pad_factor)/pad_factor)].mjd))
         return plt_im
@@ -251,7 +251,7 @@ def split_obs(obs):
     """Split single observation into multiple observation files, one per scan
     """
 
-    print "Splitting Observation File into " + str(len(obs.tlist())) + " scans"
+    print ("Splitting Observation File into " + str(len(obs.tlist())) + " scans")
     return [ obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, tdata, obs.tarr, source=obs.source, mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal) for tdata in obs.tlist() ]
 
 def merge_obs(obs_List):
@@ -259,13 +259,13 @@ def merge_obs(obs_List):
     """
 
     if len(set([obs.ra for obs in obs_List])) > 1 or len(set([obs.dec for obs in obs_List])) > 1 or len(set([obs.rf for obs in obs_List])) > 1 or len(set([obs.bw for obs in obs_List])) > 1 or len(set([obs.source for obs in obs_List])) > 1:
-        print "All observations must have the same parameters!"
-        return 
+        print ("All observations must have the same parameters!")
+        return
 
     #The important things to merge are the mjd and the data
-    data_merge = np.hstack([obs.data for obs in obs_List]) 
+    data_merge = np.hstack([obs.data for obs in obs_List])
 
-    return obsdata.Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, obs_List[0].tarr, source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal) 
+    return obsdata.Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, obs_List[0].tarr, source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal)
 
 def average_im_list(im_List):
     """Return the average of a list of images
@@ -309,9 +309,9 @@ def Wrapped_Convolve(sig,ker):
 
     if Fast_Convolve == False:
         return scipy.signal.fftconvolve(np.pad(sig,((N, N), (N, N)), 'wrap'), np.pad(ker,((N, N), (N, N)), 'constant'),mode='same')[N:(2*N),N:(2*N)]
-    else: 
+    else:
         return scipy.signal.fftconvolve(sig, ker,mode='same')
-    
+
 def Wrapped_Gradient(M):
     G = np.gradient(np.pad(M,((1, 1), (1, 1)), 'wrap'))
     Gx = G[0][1:-1,1:-1]
@@ -324,7 +324,7 @@ def Wrapped_Gradient_Reorder(M):
     Gy = G[1][1:-1,1:-1]
     return np.transpose(np.array([Gx, Gy]),axes=[1,2,0])
 
-def Wrapped_Divergence( vectorfield ): 
+def Wrapped_Divergence( vectorfield ):
     Gx = np.gradient(np.pad(vectorfield[:,:,0],((1, 1), (1, 1)), 'wrap'), axis=0)[1:-1,1:-1]
     Gy = np.gradient(np.pad(vectorfield[:,:,1],((1, 1), (1, 1)), 'wrap'), axis=1)[1:-1,1:-1]
     return Gx+Gy
@@ -342,7 +342,7 @@ def RdF_clip(Frame_List, embed_mask_List):
     F_List = [np.sum(Frame_List[j].ravel()[embed_mask_List[j]]) for j in range(len(Frame_List))]
     return np.sum(np.diff(F_List)**2)
 
-def RdF_gradient_clip(Frame_List, embed_mask_List):   
+def RdF_gradient_clip(Frame_List, embed_mask_List):
     N_frame = Frame_List.shape[0]
     F_List = [np.sum(Frame_List[j].ravel()[embed_mask_List[j]]) for j in range(len(Frame_List))]
     F_grad_List = [1.0 + 0.0*np.copy(Frame_List[j].ravel()[embed_mask_List[j]]) for j in range(len(Frame_List))]
@@ -354,7 +354,7 @@ def RdF_gradient_clip(Frame_List, embed_mask_List):
     for i in range(N_frame-1):
         grad[i] = grad[i] + 2.0*(F_List[i] - F_List[i+1])*F_grad_List[i]
 
-    return np.concatenate([grad[i]*(Frame_List[i].ravel()[embed_mask_List[i]]) for i in range(N_frame)]) 
+    return np.concatenate([grad[i]*(Frame_List[i].ravel()[embed_mask_List[i]]) for i in range(N_frame)])
 
 #RdS Regularizer (continuity of entropy from frame to frame)
 def RdS(Frame_List, Prior_List, embed_mask_List, entropy="simple", norm_reg=True, **kwargs):
@@ -470,7 +470,7 @@ def Rdt_KL(Frames, ker):
     ep=1e-10
     N_frame = Frames.shape[0]
     Blur_Frames = np.array([Wrapped_Convolve(f, ker) for f in Frames])
-    
+
     R = 0.0
     for i in range(1,N_frame):
         R += np.sum( Blur_Frames[i]*np.log((Blur_Frames[i]+ep)/(Blur_Frames[i-1]+ep)) )
@@ -482,7 +482,7 @@ def Rdt_KL_gradient(Frames, ker):
     ep=1e-10
     N_frame = Frames.shape[0]
     Blur_Frames = np.array([Wrapped_Convolve(f, ker) for f in Frames])
-    
+
     grad = np.copy(Frames)*0.0
 
     for i in range(1,len(Frames)):
@@ -498,7 +498,7 @@ def Rdt_SymKL(Frames, ker):
     ep=1e-10
     N_frame = Frames.shape[0]
     Blur_Frames = np.array([Wrapped_Convolve(f, ker) for f in Frames])
-    
+
     R = 0.0
     for i in range(1,N_frame):
         R += np.sum( (Blur_Frames[i] - Blur_Frames[i-1])*np.log((Blur_Frames[i]+ep)/(Blur_Frames[i-1]+ep)) )
@@ -510,11 +510,11 @@ def Rdt_SymKL_gradient(Frames, ker):
     ep=1e-10
     N_frame = Frames.shape[0]
     Blur_Frames = np.array([Wrapped_Convolve(f, ker) for f in Frames])
-    
+
     grad = np.copy(Frames)*0.0
 
     for i in range(1,len(Frames)):
-        grad[i] = grad[i] + 1.0 - (Blur_Frames[i-1]+ep)/(Blur_Frames[i]+ep) + np.log((Blur_Frames[i]+ep)/(Blur_Frames[i-1]+ep)) 
+        grad[i] = grad[i] + 1.0 - (Blur_Frames[i-1]+ep)/(Blur_Frames[i]+ep) + np.log((Blur_Frames[i]+ep)/(Blur_Frames[i-1]+ep))
 
     for i in range(len(Frames)-1):
         grad[i] = grad[i] + 1.0 - (Blur_Frames[i+1]+ep)/(Blur_Frames[i]+ep) - np.log((Blur_Frames[i+1]+ep)/(Blur_Frames[i]+ep))
@@ -527,7 +527,7 @@ def Rdt_Dp(Frames, ker, p=2.0):
     Blur_Frames = np.array([Wrapped_Convolve(f, ker) for f in Frames])
     return np.sum(np.abs(np.diff(Blur_Frames,axis=0))**p)/N_frame
 
-def Rdt_Dp_gradient(Frames, ker, p=2.0): 
+def Rdt_Dp_gradient(Frames, ker, p=2.0):
     N_frame = Frames.shape[0]
 
     grad = np.copy(Frames)*0.0
@@ -559,11 +559,11 @@ def RdI_KL(Frames):
 
     return np.sum(Frames * np.log((Frames + ep)/(avg_Image + ep)))/N_frame
 
-def RdI_KL_gradient(Frames): 
+def RdI_KL_gradient(Frames):
     N_frame = Frames.shape[0]
     ep=1e-10
     avg_Image = np.mean(Frames,axis=0)
-    return np.concatenate([(np.log((Frames[i]+ep)/(avg_Image+ep))/N_frame*Frames[i]).ravel() for i in range(N_frame)]) 
+    return np.concatenate([(np.log((Frames[i]+ep)/(avg_Image+ep))/N_frame*Frames[i]).ravel() for i in range(N_frame)])
 
 def RdI_SymKL(Frames):
     N_frame = Frames.shape[0]
@@ -572,7 +572,7 @@ def RdI_SymKL(Frames):
 
     return np.sum(0.5 * (Frames - avg_Image) * np.log((Frames + ep)/(avg_Image + ep)))/N_frame
 
-def RdI_SymKL_gradient(Frames): 
+def RdI_SymKL_gradient(Frames):
     N_frame = Frames.shape[0]
     ep=1e-10
     avg_Image = np.mean(Frames,axis=0)
@@ -585,27 +585,27 @@ def RdI_D2(Frames):
     avg_Image = np.mean(Frames,axis=0)
     return np.sum((Frames - avg_Image)**2)/N_frame
 
-def RdI_D2_gradient(Frames): 
+def RdI_D2_gradient(Frames):
     N_frame = Frames.shape[0]
     avg_Image = np.mean(Frames,axis=0)
-    return np.concatenate([(2.0*(Frames[i] - avg_Image)/N_frame*Frames[i]).ravel() for i in range(Frames.shape[0])]) 
+    return np.concatenate([(2.0*(Frames[i] - avg_Image)/N_frame*Frames[i]).ravel() for i in range(Frames.shape[0])])
 
 def RdI_Dp(Frames, p=2.0):
     N_frame = Frames.shape[0]
     avg_Image = np.mean(Frames,axis=0)
     return np.sum(np.abs(Frames - avg_Image)**p)/N_frame
 
-def RdI_Dp_gradient(Frames, p=2.0): 
+def RdI_Dp_gradient(Frames, p=2.0):
     N_frame = Frames.shape[0]
     avg_Image = np.mean(Frames,axis=0)
     term2 = -p/N_frame * np.sum([np.abs(Frames[i] - avg_Image)**(p-1.0)*np.sign(Frames[i] - avg_Image) for i in range(N_frame)],axis=0)
-    return np.concatenate([((p*np.abs(Frames[i] - avg_Image)**(p-1.0)*np.sign(Frames[i] - avg_Image) + term2)/N_frame*Frames[i]).ravel() for i in range(N_frame)]) 
+    return np.concatenate([((p*np.abs(Frames[i] - avg_Image)**(p-1.0)*np.sign(Frames[i] - avg_Image) + term2)/N_frame*Frames[i]).ravel() for i in range(N_frame)])
 
 #Rflow Regularizer
 def Rflow_D2(Frames, Flow):
     N_frame = Frames.shape[0]
     val = 0.0
-    
+
     for j in range(len(Frames)-1):
         #dI_dt = -Wrapped_Divergence( Frames[j,:,:,None]*Flow )    #this is not the same as the expanded version (for discrete derivatives)
         dI_dt = -(Wrapped_Weighted_Divergence(Flow,Frames[j]) + Frames[j]*Wrapped_Divergence(Flow))
@@ -613,10 +613,10 @@ def Rflow_D2(Frames, Flow):
 
     return val/N_frame
 
-def Rflow_D2_gradient_I(Frames, Flow): 
+def Rflow_D2_gradient_I(Frames, Flow):
     N_frame = Frames.shape[0]
     grad = 0.0*np.copy(Frames)
-    
+
     for j in range(1,len(Frames)):
         #dI_dt = -Wrapped_Divergence( Frames[j-1,:,:,None]*Flow  )
         dI_dt = -(Wrapped_Weighted_Divergence(Flow,Frames[j-1]) + Frames[j-1]*Wrapped_Divergence(Flow))
@@ -628,16 +628,16 @@ def Rflow_D2_gradient_I(Frames, Flow):
         dI_dt = -(Wrapped_Weighted_Divergence(Flow,Frames[j]) + Frames[j]*Wrapped_Divergence(Flow))
         deltaI = Frames[j+1] - (Frames[j] + dI_dt)
         grad[j] = grad[j] - 2.0*(deltaI + Wrapped_Weighted_Divergence(Flow, deltaI))
-    
+
     for j in range(len(Frames)):
         grad[j] = grad[j]*Frames[j]
-    
-    return np.concatenate([g.flatten() for g in grad])/N_frame 
+
+    return np.concatenate([g.flatten() for g in grad])/N_frame
 
 def Rflow_D2_gradient_m(Frames, Flow):
     N_frame = Frames.shape[0]
     grad = 0.0*np.copy(Flow)
-    
+
     for j in range(len(Frames)-1):
         #dI_dt = -Wrapped_Divergence( Frames[j,:,:,None]*Flow )
         dI_dt = -(Wrapped_Weighted_Divergence(Flow,Frames[j]) + Frames[j]*Wrapped_Divergence(Flow))
@@ -650,7 +650,7 @@ def Rflow_D2_gradient_m(Frames, Flow):
 def Rflow_D2_gradient_m_alt(Frames, Flow): #not sure if this is correct
     N_frame = Frames.shape[0]
     grad = 0.0*np.copy(Flow)
-    
+
     for j in range(len(Frames)-1):
         #dI_dt = -Wrapped_Divergence( Frames[j,:,:,None]*Flow )
         dI_dt = -(Wrapped_Weighted_Divergence(Flow,Frames[j]) + Frames[j]*Wrapped_Divergence(Flow))
@@ -668,7 +668,7 @@ def squared_gradient_flow(flow):
 
 def squared_gradient_flow_grad(flow):
     """Total squared gradient of flow gradient wrt flow"""
-        
+
     grad_x = -2.0*Wrapped_Divergence(Wrapped_Gradient_Reorder(flow[:,:,0]))
     grad_y = -2.0*Wrapped_Divergence(Wrapped_Gradient_Reorder(flow[:,:,1]))
 
@@ -676,7 +676,7 @@ def squared_gradient_flow_grad(flow):
 
 ###### Static Regularizer Master Functions #######
 
-def static_regularizer(Frame_List, Prior_List, embed_mask_List, flux, psize, stype="simple", norm_reg=True, **kwargs):     
+def static_regularizer(Frame_List, Prior_List, embed_mask_List, flux, psize, stype="simple", norm_reg=True, **kwargs):
     N_frame = Frame_List.shape[0]
     xdim = int(len(Frame_List[0].ravel())**0.5)
 
@@ -684,7 +684,7 @@ def static_regularizer(Frame_List, Prior_List, embed_mask_List, flux, psize, sty
 
     return s/N_frame
 
-def static_regularizer_gradient(Frame_List, Prior_List, embed_mask_List, flux, psize, stype="simple", norm_reg=True, **kwargs): 
+def static_regularizer_gradient(Frame_List, Prior_List, embed_mask_List, flux, psize, stype="simple", norm_reg=True, **kwargs):
     # Note: this function includes Jacobian factor to account for the frames being written as log(frame)
     N_frame = Frame_List.shape[0]
     xdim = int(len(Frame_List[0].ravel())**0.5)
@@ -731,7 +731,7 @@ def get_chisq(i, imvec_embed, d1, d2, d3, ttype, mask):
 
     if d3 != False and len(data3_List[i])>0:
         chisq3 = chisq(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask)
-    
+
     return [chisq1, chisq2, chisq3]
 
 def get_chisq_wrap(args):
@@ -750,8 +750,8 @@ def get_chisqgrad(i, imvec_embed, d1, d2, d3, ttype, mask):
         chisqgrad2 = chisqgrad(imvec_embed, A2_List[i], data2_List[i], sigma2_List[i], d2, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
 
     if d3 != False and len(data3_List[i])>0:
-        chisqgrad3 = chisqgrad(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor  
-  
+        chisqgrad3 = chisqgrad(imvec_embed, A3_List[i], data3_List[i], sigma3_List[i], d3, ttype=ttype, mask=mask) #This *does not* include the Jacobian factor
+
     return [chisqgrad1, chisqgrad2, chisqgrad3]
 
 def get_chisqgrad_wrap(args):
@@ -761,21 +761,21 @@ def get_chisqgrad_wrap(args):
 # Imagers
 ##################################################################################################
 
-def dynamical_imaging(Obsdata_List, InitIm_List, Prior, Flow_Init = [], flux_List = [], 
-d1='vis', d2=False, d3=False, 
-alpha_d1=10, alpha_d2=10, alpha_d3=10, 
-systematic_noise1=0.0, systematic_noise2=0.0, systematic_noise3=0.0, 
-entropy1="tv2", entropy2="l1", 
-alpha_s1=1.0, alpha_s2=1.0, norm_reg=True, alpha_A=1.0, 
+def dynamical_imaging(Obsdata_List, InitIm_List, Prior, Flow_Init = [], flux_List = [],
+d1='vis', d2=False, d3=False,
+alpha_d1=10, alpha_d2=10, alpha_d3=10,
+systematic_noise1=0.0, systematic_noise2=0.0, systematic_noise3=0.0,
+entropy1="tv2", entropy2="l1",
+alpha_s1=1.0, alpha_s2=1.0, norm_reg=True, alpha_A=1.0,
 R_dI  ={'alpha':0.0, 'metric':'SymKL', 'p':2.0},
 R_dt  ={'alpha':0.0, 'metric':'SymKL', 'sigma_dt':0.0, 'p':2.0},
 R_flow={'alpha':0.0, 'metric':'SymKL', 'p':2.0, 'alpha_flow_tv':50.0},
-alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers 
-stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for scattering 
-Target_Dynamic_Range = 10000.0, 
+alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers
+stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for scattering
+Target_Dynamic_Range = 10000.0,
 
 maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
-    """Run dynamic imager 
+    """Run dynamic imager
        Uses I = exp(I') change of variables.
        Obsdata_List is a list of Obsdata objects, InitIm_List is a list of Image objects, and Prior is an Image object.
        Returns list of Image objects, one per frame (unless a flow or stochastic optics is used)
@@ -804,10 +804,10 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     # Catch problem if uvrange < largest baseline
     if 1./Prior.psize < np.max(first_obs.unpack(['uvdist'])['uvdist']):
-        raise Exception("pixel spacing is larger than smallest spatial wavelength!")    
-   
+        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+
     if alpha_flux > 0.0 and len(flux_List) != N_frame:
-        raise Exception("Number of elements in the list of total flux densities does not match the number of frames!")  
+        raise Exception("Number of elements in the list of total flux densities does not match the number of frames!")
 
     # If using stochastic optics, do some preliminary calculations
     if stochastic_optics == True:
@@ -840,20 +840,20 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     if R_dt['sigma_dt'] > 0.0:
         B_dt = np.abs(np.array([[np.exp(-1.0*(float(i)**2+float(j)**2)/(2.*R_dt['sigma_dt']**2))
-                              for i in np.linspace((Prior.xdim-1)/2., -(Prior.xdim-1)/2., num=Prior.xdim)]  
-                              for j in np.linspace((Prior.ydim-1)/2., -(Prior.ydim-1)/2., num=Prior.ydim)])) 
+                              for i in np.linspace((Prior.xdim-1)/2., -(Prior.xdim-1)/2., num=Prior.xdim)]
+                              for j in np.linspace((Prior.ydim-1)/2., -(Prior.ydim-1)/2., num=Prior.ydim)]))
         if np.max(B_dt) == 0.0 or np.sum(B_dt) == 0.0:
-            raise Exception("Error with the blurring kernel!")  
+            raise Exception("Error with the blurring kernel!")
         B_dt = B_dt / np.sum(B_dt) # normalize to be flux preserving
     else:
-        B_dt = np.zeros((Prior.ydim,Prior.xdim))    
+        B_dt = np.zeros((Prior.ydim,Prior.xdim))
 
     embed_mask_List = [Prior.imvec > clipfloor for j in range(N_frame)]
     embed_mask_All = np.array(embed_mask_List).flatten()
 
     embed_totals = [np.sum(embed_mask) for embed_mask in embed_mask_List]
     if len(set(embed_totals)) > 1 and R_flow['alpha'] > 0.0:
-        print "If a flow is used, then each frame must have the same prior!"
+        print ("If a flow is used, then each frame must have the same prior!")
         return
 
     logprior_List = [None,] * N_frame
@@ -866,7 +866,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_frame)]
 
     if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
-        print "Calculating lists/matrices for chi-squared terms..."
+        print ("Calculating lists/matrices for chi-squared terms...")
         A1_List = [None,] * N_frame
         A2_List = [None,] * N_frame
         A3_List = [None,] * N_frame
@@ -878,7 +878,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         sigma3_List = [None,] * N_frame
 
     # Get data and Fourier matrices for the data terms
-    for i in range(N_frame):  
+    for i in range(N_frame):
         pixel_max = np.max(InitIm_List[i].imvec)
         prior_flux_rescale = 1.0
         if len(flux_List) > 0:
@@ -887,8 +887,8 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         nprior_embed_List[i] = Prior.imvec * prior_flux_rescale
 
         nprior_List[i] = nprior_embed_List[i][embed_mask_List[i]]
-        logprior_List[i] = np.log(nprior_List[i])    
-        loginit_List[i] = np.log(ninit_List[i] + pixel_max/Target_Dynamic_Range/1.e6)  #add the dynamic range floor here  
+        logprior_List[i] = np.log(nprior_List[i])
+        loginit_List[i] = np.log(ninit_List[i] + pixel_max/Target_Dynamic_Range/1.e6)  #add the dynamic range floor here
 
         if len(Obsdata_List[i].data) == 0:  #This allows the algorithm to create frames for periods with no data
             continue
@@ -901,7 +901,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     # Coordinate matrix for COM constraint
     coord = np.array([[[x,y] for x in np.linspace(Prior.xdim/2,-Prior.xdim/2,Prior.xdim)]
                                            for y in np.linspace(Prior.ydim/2,-Prior.ydim/2,Prior.ydim)])
-    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)  
+    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
 
     # Make the pool for parallel processing
     if processes > 0:
@@ -927,7 +927,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
             init_i += cur_len
 
-        if R_flow['alpha'] != 0.0: 
+        if R_flow['alpha'] != 0.0:
             cur_len = np.sum(embed_mask_List[0]) #assumes all the priors have the same embedding
             Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
             Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
@@ -938,7 +938,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             EpsilonList = x[init_i:(init_i + N**2-1)]
             im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
             #the list of scattered image vectors
-            scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List] 
+            scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List]
             init_i += len(EpsilonList)
 
 
@@ -952,14 +952,14 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         s_dynamic = cm = flux = s_dS = s_dF = 0.0
 
         if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
-        if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']                      
+        if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
         if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
         if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
 
         if alpha_dF != 0.0: s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
 
-        if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid     
+        if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
 
         if alpha_flux > 0.0:
             flux = alpha_flux * movie_flux_constraint(Frames, flux_List)
@@ -980,7 +980,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
                  (np.sum(chisq[:,1])/N_frame - 1.0)*alpha_d2 +
                  (np.sum(chisq[:,2])/N_frame - 1.0)*alpha_d3)
 
-        if R_flow['alpha'] != 0.0: 
+        if R_flow['alpha'] != 0.0:
             flow_tv =  squared_gradient_flow(Flow)
             s_dynamic += flow_tv*R_flow['alpha_flow_tv']
             s_dynamic += Rflow(Frames, Flow, **R_flow)*R_flow['alpha']
@@ -992,7 +992,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             regterm_scattering = alpha_phi * (chisq_epsilon - 1.0)
 
         return (s1 + s2 + s_dF + s_dS + s_dynamic + chisq + cm + flux + regterm_scattering)*J_factor
-        
+
     def objgrad(x):
         Frames = np.zeros((N_frame, N_pixel, N_pixel))
         log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
@@ -1004,7 +1004,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
             init_i += cur_len
 
-        if R_flow['alpha'] != 0.0: 
+        if R_flow['alpha'] != 0.0:
             cur_len = np.sum(embed_mask_List[0]) #assumes all the priors have the same embedding
             Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
             Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
@@ -1034,7 +1034,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
         s_dynamic_grad = cm_grad = flux_grad = s_dS = s_dF = 0.0
         if R_dI['alpha'] != 0.0: s_dynamic_grad += RdI_gradient(Frames,R_dI)*R_dI['alpha']
-        if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, R_dt)*R_dt['alpha']                   
+        if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, R_dt)*R_dt['alpha']
 
         if alpha_dS1 != 0.0: s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
         if alpha_dS2 != 0.0: s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
@@ -1086,7 +1086,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             chisq_grad[j,1] = chisq_grad[j,1]*Frames[j].ravel()[embed_mask_List[j]]
             chisq_grad[j,2] = chisq_grad[j,2]*Frames[j].ravel()[embed_mask_List[j]]
 
-        chisq_grad = (np.concatenate([embed(chisq_grad[i,0], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d1 
+        chisq_grad = (np.concatenate([embed(chisq_grad[i,0], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d1
                     + np.concatenate([embed(chisq_grad[i,1], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d2
                     + np.concatenate([embed(chisq_grad[i,2], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d3)
 
@@ -1094,7 +1094,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         chisq_grad_epsilon = np.array([])
         if stochastic_optics == True:
             #Preliminary Definitions
-            chisq_grad_epsilon = np.zeros(N**2-1)            
+            chisq_grad_epsilon = np.zeros(N**2-1)
             ell_mat = np.zeros((N,N))
             m_mat   = np.zeros((N,N))
             for ell in range(0, N):
@@ -1148,13 +1148,13 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
                         i_grad = i_grad + 1
 
         # Gradients related to the flow
-        flow_grad = np.array([])        
-        if R_flow['alpha'] != 0.0: 
-            cur_len = np.sum(embed_mask_List[0])     
+        flow_grad = np.array([])
+        if R_flow['alpha'] != 0.0:
+            cur_len = np.sum(embed_mask_List[0])
             Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
             Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
             Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_pixel, N_pixel,2))
-            flow_tv_grad = squared_gradient_flow_grad(Flow) 
+            flow_tv_grad = squared_gradient_flow_grad(Flow)
             s_dynamic_grad_Frames = s_dynamic_grad_Flow = 0.0
             s_dynamic_grad_Frames = Rflow_gradient_I(Frames, Flow, R_flow)
             s_dynamic_grad_Flow   = Rflow_gradient_m(Frames, Flow, R_flow)
@@ -1178,8 +1178,8 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         global nit
         nit += 1
 
-        if nit%update_interval == 0 or final == True:        
-            print "iteration %d" % nit
+        if nit%update_interval == 0 or final == True:
+            print ("iteration %d" % nit)
 
             Frames = np.zeros((N_frame, N_pixel, N_pixel))
             log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
@@ -1191,7 +1191,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
                 Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
                 init_i += cur_len
 
-            if R_flow['alpha'] != 0.0: 
+            if R_flow['alpha'] != 0.0:
                 cur_len = np.sum(embed_mask_List[0]) #assumes all the priors have the same embedding
                 Flow_x = embed(x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
                 Flow_y = embed(x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
@@ -1202,15 +1202,15 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
                 EpsilonList = x[init_i:(init_i + N**2-1)]
                 im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
 
-                scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), 
-                                                          ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec 
+                scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
+                                                          ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec
                                  for im in im_List] #the list of scattered image vectors
 
             s1 = s2 = 0.0
 
             if alpha_s1 != 0.0:
 
-                s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), 
+                s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
                                         Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
             if alpha_s2 != 0.0:
                 s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
@@ -1219,7 +1219,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             s_dynamic = cm = s_dS = s_dF = 0.0
 
             if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
-            if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']                  
+            if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
             if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
             if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
@@ -1227,21 +1227,21 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             if alpha_dF != 0.0: s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
 
             if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
-            
+
             if stochastic_optics == False:
                 if processes > 0:
 
-                    chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], 
+                    chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]],
                                               d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
                 else:
-                    chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], 
+                    chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]],
                                       d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
             else:
                 if processes > 0:
-                    chisq = np.array(pool.map(get_chisq_wrap, [[j, scatt_im_List[j][embed_mask_List[j]], 
+                    chisq = np.array(pool.map(get_chisq_wrap, [[j, scatt_im_List[j][embed_mask_List[j]],
                                               d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
                 else:
-                    chisq = np.array([get_chisq(j, scatt_im_List[j][embed_mask_List[j]], 
+                    chisq = np.array([get_chisq(j, scatt_im_List[j][embed_mask_List[j]],
                                       d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
 
             chisq1_List = chisq[:,0]
@@ -1253,38 +1253,38 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             chisq1_max = np.max(chisq1_List)
             chisq2_max = np.max(chisq2_List)
             chisq3_max = np.max(chisq3_List)
-            if d1 != False: print "chi2_1: %f" % chisq1
-            if d2 != False: print "chi2_2: %f" % chisq2
-            if d3 != False: print "chi2_3: %f" % chisq3
-            if d1 != False: print "weighted chi2_1: %f" % (chisq1 * alpha_d1)
-            if d2 != False: print "weighted chi2_2: %f" % (chisq2 * alpha_d2)
-            if d3 != False: print "weighted chi2_3: %f" % (chisq3 * alpha_d3)
-            if d1 != False: print "Max Frame chi2_1: %f" % chisq1_max
-            if d2 != False: print "Max Frame chi2_2: %f" % chisq2_max
-            if d3 != False: print "Max Frame chi2_3: %f" % chisq3_max
+            if d1 != False: print ("chi2_1: %f" % chisq1)
+            if d2 != False: print ("chi2_2: %f" % chisq2)
+            if d3 != False: print ("chi2_3: %f" % chisq3)
+            if d1 != False: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2 != False: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3 != False: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1 != False: print ("Max Frame chi2_1: %f" % chisq1_max)
+            if d2 != False: print ("Max Frame chi2_2: %f" % chisq2_max)
+            if d3 != False: print ("Max Frame chi2_3: %f" % chisq3_max)
 
             if final == True:
-                if d1 != False: print "All chisq1:",chisq1_List
-                if d2 != False: print "All chisq2:",chisq2_List
-                if d3 != False: print "All chisq3:",chisq3_List
+                if d1 != False: print ("All chisq1:",chisq1_List)
+                if d2 != False: print ("All chisq2:",chisq2_List)
+                if d3 != False: print ("All chisq3:",chisq3_List)
 
-            # Now deal with the a flow, if necessary 
-            if R_flow['alpha'] != 0.0: 
+            # Now deal with the a flow, if necessary
+            if R_flow['alpha'] != 0.0:
                 flow_tv =  squared_gradient_flow(Flow)
                 s_dynamic += flow_tv*R_flow['alpha_flow_tv']
-                print "Weighted Flow TV: %f" % (flow_tv*R_flow['alpha_flow_tv'])
+                print ("Weighted Flow TV: %f" % (flow_tv*R_flow['alpha_flow_tv']))
                 s_dynamic += Rflow(Frames, Flow, **R_flow)*R_flow['alpha']
-                print "Weighted R_Flow: %f" % (Rflow(Frames, Flow, **R_flow)*R_flow['alpha'])
+                print ("Weighted R_Flow: %f" % (Rflow(Frames, Flow, **R_flow)*R_flow['alpha']))
 
-            if s1 != 0.0: print "weighted s1: %f" % (s1)
-            if s2 != 0.0: print "weighted s2: %f" % (s2)
-            if s_dF != 0.0: print "weighted s_dF: %f" % (s_dF)
-            if s_dS != 0.0: print "weighted s_dS: %f" % (s_dS)
-            print "weighted s_dynamic: %f" % (s_dynamic)
-            if alpha_centroid > 0.0: print "weighted COM: %f" % cm
+            if s1 != 0.0: print ("weighted s1: %f" % (s1))
+            if s2 != 0.0: print ("weighted s2: %f" % (s2))
+            if s_dF != 0.0: print ("weighted s_dF: %f" % (s_dF))
+            if s_dS != 0.0: print ("weighted s_dS: %f" % (s_dS))
+            print ("weighted s_dynamic: %f" % (s_dynamic))
+            if alpha_centroid > 0.0: print ("weighted COM: %f" % cm)
 
             if alpha_flux > 0.0:
-                print "weighted flux constraint: %f" % (alpha_flux * movie_flux_constraint(Frames, flux_List))
+                print ("weighted flux constraint: %f" % (alpha_flux * movie_flux_constraint(Frames, flux_List)))
 
             if stochastic_optics == True:
                 chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)
@@ -1294,7 +1294,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
                 print("Max |Epsilon| : %0.2f " % (max(abs(EpsilonList))))
 
             if nit%refresh_interval == 0:
-                print "Plotting Functionality Temporarily Disabled..."
+                print ("Plotting Functionality Temporarily Disabled...")
 
     loginit = np.hstack(loginit_List).flatten()
     if R_flow['alpha'] == 0.0:
@@ -1307,11 +1307,11 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         x0 = np.concatenate((x0,np.zeros(N**2-1)))
 
 
-    print "Total Pixel #: ",(N_pixel*N_pixel*N_frame)
-    print "Clipped Pixel #: ",(len(loginit))
+    print ("Total Pixel #: ",(N_pixel*N_pixel*N_frame))
+    print ("Clipped Pixel #: ",(len(loginit)))
 
-    print "Initial Values:"
-    plotcur(x0)        
+    print ("Initial Values:")
+    plotcur(x0)
 
     # Minimize
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST, 'gtol': 1e-10} # minimizer params
@@ -1332,9 +1332,9 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     Flow = EpsilonList = False
 
-    if R_flow['alpha'] != 0.0:   
-        print "Collecting Flow..."
-        cur_len = np.sum(embed_mask_List[0])   
+    if R_flow['alpha'] != 0.0:
+        print ("Collecting Flow...")
+        cur_len = np.sum(embed_mask_List[0])
         Flow_x = embed(res.x[init_i:(init_i+2*cur_len-1):2],   embed_mask_List[i]).reshape((N_pixel, N_pixel))
         Flow_y = embed(res.x[(init_i+1):(init_i+2*cur_len):2], embed_mask_List[i]).reshape((N_pixel, N_pixel))
         Flow = np.transpose([Flow_x.ravel(),Flow_y.ravel()]).reshape((N_pixel, N_pixel,2))
@@ -1345,12 +1345,12 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
         init_i += len(EpsilonList)
 
 
-    plotcur(res.x, final=True)   
+    plotcur(res.x, final=True)
 
     # Print stats
-    print "time: %f s" % (tstop - tstart)
-    print "J: %f" % res.fun
-    print res.message
+    print ("time: %f s" % (tstop - tstart))
+    print ("J: %f" % res.fun)
+    print (res.message)
 
     #Note: the global variables are *not* released to avoid recalculation
     if processes != -1:
@@ -1359,7 +1359,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
     #Return Frames
 
     outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
-                         Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, 
+                         Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source,
                          mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
 
     if R_flow['alpha'] == 0.0 and stochastic_optics == False:
@@ -1382,12 +1382,12 @@ def plot_im_List_Set(im_List_List, plot_log_amplitude=False, ipynb=False):
     ynum = len(im_List_List)
 
     for i in range(xnum*ynum):
-        plt.subplot(ynum, xnum, i+1)    
+        plt.subplot(ynum, xnum, i+1)
         im = im_List_List[(i-i%xnum)/xnum][i%xnum]
         if plot_log_amplitude == False:
-            plt.imshow(im.imvec.reshape(im.ydim,im.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')     
+            plt.imshow(im.imvec.reshape(im.ydim,im.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         else:
-            plt.imshow(np.log(im.imvec.reshape(im.ydim,im.xdim)), cmap=plt.get_cmap('afmhot'), interpolation='gaussian') 
+            plt.imshow(np.log(im.imvec.reshape(im.ydim,im.xdim)), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         xticks = ticks(im.xdim, im.psize/RADPERAS/1e-6)
         yticks = ticks(im.ydim, im.psize/RADPERAS/1e-6)
         plt.xticks(xticks[0], xticks[1])
@@ -1399,7 +1399,7 @@ def plot_im_List_Set(im_List_List, plot_log_amplitude=False, ipynb=False):
             plt.xlabel('')
             plt.ylabel('')
             plt.title('')
-        
+
     plt.draw()
 
     if ipynb:
@@ -1410,15 +1410,15 @@ def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
 
     plt.ion()
     plt.clf()
-    
+
     Prior = im_List[0]
 
     for i in range(len(im_List)):
-        plt.subplot(1, len(im_List), i+1)    
+        plt.subplot(1, len(im_List), i+1)
         if plot_log_amplitude == False:
-            plt.imshow(im_List[i].imvec.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')   
+            plt.imshow(im_List[i].imvec.reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         else:
-            plt.imshow(np.log(im_List[i].imvec.reshape(Prior.ydim,Prior.xdim)), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')  
+            plt.imshow(np.log(im_List[i].imvec.reshape(Prior.ydim,Prior.xdim)), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         xticks = ticks(Prior.xdim, Prior.psize/RADPERAS/1e-6)
         yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
         plt.xticks(xticks[0], xticks[1])
@@ -1430,7 +1430,7 @@ def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
             plt.xlabel('')
             plt.ylabel('')
             plt.title('')
-    
+
 
     plt.draw()
 
@@ -1439,13 +1439,13 @@ def plot_im_List(im_List, plot_log_amplitude=False, ipynb=False):
         display.display(plt.gcf())
 
 def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
-    
+
     plt.ion()
     plt.clf()
-    
+
     for i in range(len(im_List)):
-        plt.subplot(1, len(im_List), i+1)    
-        plt.imshow(im_List[i].reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')     
+        plt.subplot(1, len(im_List), i+1)
+        plt.imshow(im_List[i].reshape(Prior.ydim,Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         xticks = ticks(Prior.xdim, Prior.psize/RADPERAS/1e-6)
         yticks = ticks(Prior.ydim, Prior.psize/RADPERAS/1e-6)
         plt.xticks(xticks[0], xticks[1])
@@ -1458,7 +1458,7 @@ def plot_i_dynamic(im_List, Prior, nit, chi2, s, s_dynamic, ipynb=False):
         plt.xlabel('')
         plt.ylabel('')
         plt.title('')
-    
+
 
     plt.draw()
 
@@ -1475,7 +1475,7 @@ class MOJAVEHTMLParser(HTMLParser):
     dates = []
     mod_files = []
     uv_files = []
-    
+
     #checks for CLEAN files linked on the page by looking for file ending
     def handle_starttag(self, tag, attrs):
         for attr in attrs:
@@ -1487,8 +1487,8 @@ class MOJAVEHTMLParser(HTMLParser):
                         self.mod_files.append(str(attr[1]).strip())
                     if fileType == 'uvf':
                         self.uv_files.append(str(attr[1]).strip())
-    
-    #extracts date information and standardizes format to DD + month string + YYYY = DDMONYYYY                
+
+    #extracts date information and standardizes format to DD + month string + YYYY = DDMONYYYY
     def handle_data(self,data):
         ds = data.split(' ')
         lds = len(ds)
@@ -1511,7 +1511,7 @@ class BlazarHTMLParser(HTMLParser):
     dates = []
     mod_files = []
     uv_files = []
-    
+
     #checks for CLEAN files linked on the page by looking for file ending
     def handle_starttag(self, tag, attrs):
         for attr in attrs:
@@ -1523,8 +1523,8 @@ class BlazarHTMLParser(HTMLParser):
                         self.mod_files.append(str(attr[1]).strip())
                     if fileType == 'UVP' or fileType=='uvp':
                         self.uv_files.append(str(attr[1]).strip())
-    
-    #extracts date information and standardizes format to DD + month string + YYYY = DDMONYYYY                
+
+    #extracts date information and standardizes format to DD + month string + YYYY = DDMONYYYY
     def handle_data(self,data):
         ds = data.split(' ')
         lds = len(ds)
@@ -1583,25 +1583,25 @@ def sourceNameFromURL(url):
 def downloadMOJAVEfiles(url, path = './'):
     #Downloads data and image from MOJAVE library
     #url is the URL of the MOJAVE page of files for a particular source
-    
+
     sn =  sourceNameFromURL(url)
     #Find the base directory in the BU library from the url. This is a really hacky way to do this.
     #source name in BU library
     lsn = len(sn)
     baseurl = url[:-(5+lsn)]
-    
+
     #Make a new directory for the downloaded files
     CLEANpath = path + '/' + sn + '_CLEAN_images'
     if not os.path.exists(CLEANpath):
         os.mkdir(CLEANpath)
-    
-    print "Downloading CLEAN images to " + CLEANpath
+
+    print ("Downloading CLEAN images to " + CLEANpath)
 
     UVpath = path + '/' + sn+"_uvf_files"
     if not os.path.exists(UVpath):
         os.mkdir(UVpath)
-    
-    print "Downloading uvfits files to " + UVpath
+
+    print ("Downloading uvfits files to " + UVpath)
 
     #Generate the bookkeeping file and iterate on it, downloading files and saving them in a better format
     #Files are saved in a new directory named after the source i.e. "3c454_CLEAN_files"
@@ -1612,48 +1612,48 @@ def downloadMOJAVEfiles(url, path = './'):
         UVbuFileName = obs[1]
         CLEANbuFileName = obs[2]
         UVurl = baseurl+UVbuFileName
-        CLEANurl = baseurl + CLEANbuFileName 
+        CLEANurl = baseurl + CLEANbuFileName
         # If it doesn't already exist, download the UV file
         if os.path.isfile(UVpath+'/'+date+'_'+ sn+".uvf") == False:
-            print "Downloading " + (UVpath+'/'+date+'_'+ sn+".uvf")
+            print ("Downloading " + (UVpath+'/'+date+'_'+ sn+".uvf"))
             response = requests.get(UVurl, stream=True)
             with open(UVpath+'/'+date+'_'+ sn+".uvf",'wb') as handle:
                 handle.write(response.raw.read())
         else:
-            print "Already Downloaded " + (UVpath+'/'+date+'_'+ sn+".uvf")
-            
+            print ("Already Downloaded " + (UVpath+'/'+date+'_'+ sn+".uvf"))
+
         # If it doesn't already exist, download the CLEAN file
         if os.path.isfile(CLEANpath+'/'+date+'_'+sn+".icn.fits.gz") == False:
-            print "Downloading " + (CLEANpath+'/'+date+'_'+sn+".icn.fits.gz")
+            print ("Downloading " + (CLEANpath+'/'+date+'_'+sn+".icn.fits.gz"))
             response = requests.get(CLEANurl, stream=True)
             with open(CLEANpath+'/'+date+'_'+sn+".icn.fits.gz",'wb') as handle:
                 for chunk in response.iter_content(chunk_size = 128):
                     handle.write(chunk)
         else:
-            print "Already Downloaded " + (CLEANpath+'/'+date+'_'+sn+".icn.fits.gz")
+            print ("Already Downloaded " + (CLEANpath+'/'+date+'_'+sn+".icn.fits.gz"))
 
 def downloadCLEANfiles(url, path = './'):
     #Downloads all CLEAN files from a single source in the BU blazar library
     #url is the URL of the BU blazar library page of files for a particular source
-    
+
     sn =  sourceNameFromURL(url)
     #Find the base directory in the BU library from the url. This is a really hacky way to do this.
     #source name in BU library
     lsn = len(sn)
     baseurl = url[:-(5+lsn)]
-    
+
     #Make a new directory for the downloaded files
     CLEANpath = path + '/' + sn + '_CLEAN_files'
     if not os.path.exists(CLEANpath):
         os.mkdir(CLEANpath)
-    
-    print "Downloading CLEAN files to " + CLEANpath
+
+    print ("Downloading CLEAN files to " + CLEANpath)
 
     UVpath = path + '/' + sn+"_UVP.gz_files"
     if not os.path.exists(UVpath):
         os.mkdir(UVpath)
-    
-    print "Downloading uvfits files to " + UVpath
+
+    print ("Downloading uvfits files to " + UVpath)
 
     #Generate the bookkeeping file and iterate on it, downloading files and saving them in a better format
     #Files are saved in a new directory named after the source i.e. "3c454_CLEAN_files"
@@ -1664,25 +1664,25 @@ def downloadCLEANfiles(url, path = './'):
         UVbuFileName = obs[1]
         CLEANbuFileName = obs[2]
         UVurl = baseurl+UVbuFileName
-        CLEANurl = baseurl + CLEANbuFileName 
+        CLEANurl = baseurl + CLEANbuFileName
         # If it doesn't already exist, download the UV file
         if os.path.isfile(UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz") == False:
-            print "Downloading " + (UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz")
+            print ("Downloading " + (UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz"))
             response = requests.get(UVurl, stream=True)
             with open(UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz",'wb') as handle:
                 handle.write(response.raw.read())
         else:
-            print "Already Downloaded " + (UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz")
-            
+            print ("Already Downloaded " + (UVpath+'/'+date+'_'+ sn+"_UV.UVP.gz"))
+
         # If it doesn't already exist, download the CLEAN file
         if os.path.isfile(CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod") == False:
-            print "Downloading " + (CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod")
+            print ("Downloading " + (CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod"))
             response = requests.get(CLEANurl, stream=True)
             with open(CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod",'wb') as handle:
                 for chunk in response.iter_content(chunk_size = 128):
                     handle.write(chunk)
         else:
-            print "Already Downloaded " + (CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod")
+            print ("Already Downloaded " + (CLEANpath+'/'+date+'_'+sn+"_CLEAN.mod"))
 
 def minDeltaMJD(inputMJD, im_List):
     #returns the image whose MJD most closely matches the inputMJD
@@ -1694,15 +1694,15 @@ def minDeltaMJD(inputMJD, im_List):
         if not(minDelta == oldDelta):
             index = i
     #return im_List[index].copy()
-    return index    
+    return index
 
 def ReadCLEAN(nameF, reference_obs, npix, fov=0, beamPar=(0,0,0.)):
-#This should be able to load CLEAN Model data 
+#This should be able to load CLEAN Model data
 #such as given here https://www.bu.edu/blazars/VLBA_GLAST/3c454.html
 #nameF - name of the CLEAN Model file to load (3columns: Flux in Jy, r in mas, theta in deg)
 #npix - number of pixels in one dimension
 #fov - field of view (radians)
-#beamPar - parameters of Gaussian beam, same as beamparams in image.blur_gauss 
+#beamPar - parameters of Gaussian beam, same as beamparams in image.blur_gauss
 
     #read data
     #first remove multiple models in a single file
@@ -1716,7 +1716,7 @@ def ReadCLEAN(nameF, reference_obs, npix, fov=0, beamPar=(0,0,0.)):
             break
 
     #skip headline
-    TableMOD = np.genfromtxt(nameF, skip_header=4)    
+    TableMOD = np.genfromtxt(nameF, skip_header=4)
     ScaleR = 1.
     FluxConst = 1.
     Flux = FluxConst*TableMOD[:,0]
@@ -1727,7 +1727,7 @@ def ReadCLEAN(nameF, reference_obs, npix, fov=0, beamPar=(0,0,0.)):
     #set image parameters
     if fov==0:
         MaxR = np.amax(TableMOD[:,1]) #in mas
-        fov = 1.*MaxR*(1.e3)*RADPERUAS           
+        fov = 1.*MaxR*(1.e3)*RADPERUAS
 
     image0 = np.zeros((int(npix),int(npix)))
     im = image.Image(image0, fov/npix, 0., 0., rf=86e9)
@@ -1742,29 +1742,29 @@ def ReadCLEAN(nameF, reference_obs, npix, fov=0, beamPar=(0,0,0.)):
 
     beamTh = beamPar[2]
 
-    sigma_maj = beamMaj / (2. * np.sqrt(2. * np.log(2.))) 
+    sigma_maj = beamMaj / (2. * np.sqrt(2. * np.log(2.)))
     sigma_min = beamMin / (2. * np.sqrt(2. * np.log(2.)))
     cth = np.cos(beamTh)
-    sth = np.sin(beamTh)        
+    sth = np.sin(beamTh)
     xfov = im.xdim * im.psize
-    yfov = im.ydim * im.psize    
+    yfov = im.ydim * im.psize
     xlist = np.arange(0,-im.xdim,-1)*im.psize + (im.psize*im.xdim)/2.0 - im.psize/2.0
     ylist = np.arange(0,-im.ydim,-1)*im.psize + (im.psize*im.ydim)/2.0 - im.psize/2.0
-    
-    gauss = image0 
-    for couP in range(NumbPoints):  
+
+    gauss = image0
+    for couP in range(NumbPoints):
         x = xPS[couP]
         y = yPS[couP]
         xM, yM = np.meshgrid(xlist, ylist)
         gaussNew = np.exp(-((yM-y)*cth + (xM-x)*sth)**2/(2*sigma_maj**2) - ((xM-x)*cth - (yM-y)*sth)**2/(2.*sigma_min**2))
         gauss = gauss + gaussNew*Flux[couP]
-            
+
     gauss /= (2.0*np.pi*sigma_maj*sigma_min)/(fov/npix)**2 #Normalize the Gaussian
     gauss = (gauss > 0.)*gauss + 1.e-10
-    
+
     imageCLEAN = image.Image(gauss, fov/npix, reference_obs.ra, reference_obs.dec, rf=reference_obs.rf)
     imageCLEAN.mjd = reference_obs.mjd
-    return imageCLEAN   
+    return imageCLEAN
 
 def Cont(imG):
 #This is meant to create plots similar to the ones from
@@ -1794,13 +1794,13 @@ def ReadSeriesImages(pathCLEAN, Obs, npix,fov,beamPar, obsNumbList):
     listCLEAN = os.listdir(pathCLEAN)
     listCLEAN = sorted(listCLEAN)
     listCLEAN = list( listCLEAN[i] for i in obsNumbList )
-    
+
     im_List = [None]*len(listCLEAN)
     for cou in range(len(listCLEAN)):
         nameF = pathCLEAN+listCLEAN[cou]
         print(nameF)
         im_List[cou] = ReadCLEAN(nameF,Obs[cou], npix, fov, beamPar)
-                      
+
     return im_List
 
 def SaveSeriesImages(pathCLEAN, im_List, sourceName, outputDirectory='default'):
@@ -1810,7 +1810,7 @@ def SaveSeriesImages(pathCLEAN, im_List, sourceName, outputDirectory='default'):
     if not os.path.exists(outputDirectory):
         os.mkdir(outputDirectory)
     outputSuffix = '_'+sourceName+'_READ_CLEAN.txt'
-    
+
     listCLEAN = os.listdir(pathCLEAN)
     listCLEAN = sorted(listCLEAN)
     datesCLEAN = [filename.split('_')[0] for filename in listCLEAN]

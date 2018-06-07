@@ -256,7 +256,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
             s_1 = reg1(im_step)
             s_2 = reg2(im_step)
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
-            plot_i(im_step, Prior, nit, chi2_1, chi2_2)
+            plot_i(im_step, Prior, nit, {d1:chi2_1, d2:chi2_2})
             print("i: %d chi2_1: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1, chi2_2,s_1,s_2))
         nit += 1
 
@@ -2507,7 +2507,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
 ##################################################################################################
 # Restoring ,Embedding, and Plotting Functions
 ##################################################################################################
-def plot_i(im, Prior, nit, chi2_1, chi2_2, **kwargs):
+def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     """Plot the total intensity image at each iteration
     """
     imarr = im.reshape(Prior.ydim,Prior.xdim)
@@ -2542,7 +2542,10 @@ def plot_i(im, Prior, nit, chi2_1, chi2_2, **kwargs):
     plt.yticks(yticks[0], yticks[1])
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
-    plt.title("step: %i  $\chi^2_1$: %f  $\chi^2_2$: %f" % (nit, chi2_1, chi2_2), fontsize=20)
+    plotstr = "step: %i  "
+    for key in chi2_dict.keys():
+        plotstr += "$\chi^2_{%s}$: %0.2f  " % (key, chi2_dict[key])
+    plt.title(plotstr, fontsize=18)
     #plt.draw()
 
 

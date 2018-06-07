@@ -1087,7 +1087,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     else:
         obsdata = obs.data
 
-#    sites = obsdata[['t1','t2']].view(('a32',2))
+#    sites = obsdata[['t1','t2']].view(('U32',2))
 #    time = obsdata[['time']].view(('f8',1))
 #    tint = obsdata[['tint']].view(('f8',1))
 #    uv = obsdata[['u','v']].view(('f8',2))
@@ -1098,7 +1098,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
 #    taus = np.abs(obsdata[['tau1','tau2']].view(('f8',2)))
 #    elevs = obs.unpack(['el1','el2'], ang_unit='deg').view(('f8',2))
 
-    sites = recarr_to_ndarr(obsdata[['t1','t2']],'a32')
+    sites = recarr_to_ndarr(obsdata[['t1','t2']],'U32')
     uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
     taus = np.abs(recarr_to_ndarr(obsdata[['tau1','tau2']],'f8'))
     elevs = recarr_to_ndarr(obs.unpack(['el1','el2'],ang_unit='deg'),'f8')

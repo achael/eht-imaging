@@ -74,14 +74,14 @@ class Obsdata(object):
            tkey (dict): A dictionary of rows in the tarr for each site name
            data (numpy.recarray): the basic data with datatype DTPOL
 
-           scantable (numpy.recarray): The array of scan information 
-           bispec (numpy.recarray): An array of saved (averaged) bispectra 
-           cphase (numpy.recarray): An array of saved (averaged) closure phases 
-           camp (numpy.recarray): An array of saved (averaged) closure amplitudes 
+           scantable (numpy.recarray): The array of scan information
+           bispec (numpy.recarray): An array of saved (averaged) bispectra
+           cphase (numpy.recarray): An array of saved (averaged) closure phases
+           camp (numpy.recarray): An array of saved (averaged) closure amplitudes
     """
 
-    #TODO what is the scantable doing? 
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None, 
+    #TODO what is the scantable doing?
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None,
                        source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, timetype='UTC',
                        ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
 
@@ -104,7 +104,7 @@ class Obsdata(object):
 
                datatable (numpy.recarray): the basic data with datatype DTPOL
                tarr (numpy.recarray): The array of telescope data with datatype DTARR
-               scantable (numpy.recarray): The array of scan information 
+               scantable (numpy.recarray): The array of scan information
 
            Returns:
                obsdata (Obsdata): an Obsdata object
@@ -307,7 +307,8 @@ class Obsdata(object):
         tlist = self.tlist(conj=True)
         for scan in tlist:
             for obs in scan:
-                if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
+                if (obs['t1'], obs['t2']) == (site1, site2):
+                #if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
                     obs = np.array([obs])
                     out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias)
 
@@ -408,13 +409,13 @@ class Obsdata(object):
                 keys = [self.tkey[site] for site in sites]
                 tdata = self.tarr[keys]
                 out = sites
-                ty = 'a32'
+                ty = 'U32'
             elif field in ["t2","el2","par_ang2","hr_ang2"]:
                 sites = data["t2"]
                 keys = [self.tkey[site] for site in sites]
                 tdata = self.tarr[keys]
                 out = sites
-                ty = 'a32'
+                ty = 'U32'
             elif field in ["vis","amp","phase","snr","sigma","sigma_phase"]:
                 out = data['vis']
                 sig = data['sigma']
@@ -789,7 +790,7 @@ class Obsdata(object):
                     amp_qvis, sig_qvis = mean_incoh_amp_from_vis(bldata['qvis'],bldata['qsigma'],debias=debias,err_type=err_type)
                     amp_uvis, sig_uvis = mean_incoh_amp_from_vis(bldata['uvis'],bldata['usigma'],debias=debias,err_type=err_type)
                     amp_vvis, sig_vvis = mean_incoh_amp_from_vis(bldata['vvis'],bldata['vsigma'],debias=debias,err_type=err_type)
-                    
+
                     datatable.append(np.array
                                 ((
                                 np.mean(obs_timeregion.data['time']),
@@ -870,7 +871,7 @@ class Obsdata(object):
             self.bispec = cdf_av
         else:
             self.bispec = cdf
-    
+
     def add_camp(self, return_type='rec', ctype='logcamp', mode='all', debias=False,
                        dt=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
@@ -886,7 +887,7 @@ class Obsdata(object):
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
-               
+
         """
 
         if dt>0:
@@ -1203,7 +1204,7 @@ class Obsdata(object):
            Args:
                UT_start_hour (float): start of  time window
                UT_stop_hour (float): end of time window
-               flag_or_keep (bool): set as True to keep the time range instead of excising 
+               flag_or_keep (bool): set as True to keep the time range instead of excising
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1243,7 +1244,7 @@ class Obsdata(object):
                     fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]
 
                     # robust estimator of the scatter
-                    dfields = np.median(np.abs(fields-np.median(fields))) 
+                    dfields = np.median(np.abs(fields-np.median(fields)))
                     stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = dfields
 
         mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))] < scatter_cut for rec in obs_out.data])
@@ -1271,10 +1272,10 @@ class Obsdata(object):
                 vals = obs_out.unpack_bl(t1,t2,field)
                 for j in range(len(vals)):
                     near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
-                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0] 
+                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]
 
                     # Here, we use median absolute deviation from the median as a robust proxy for standard deviation
-                    dfields = np.median(np.abs(fields-np.median(fields))) 
+                    dfields = np.median(np.abs(fields-np.median(fields)))
                     stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = np.abs(vals[field][j]-np.median(fields)) / dfields
 
         mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in obs_out.data])
@@ -1698,7 +1699,7 @@ class Obsdata(object):
                     continue
         return np.array(outdata)
 
-    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp', 
+    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp',
                            debias=True, timetype=False, debias_type='old'):
 
         """Return a recarray of the equal time closure amplitudes.
@@ -1847,7 +1848,7 @@ class Obsdata(object):
 
         return out
 
-    def camp_quad(self, site1, site2, site3, site4, 
+    def camp_quad(self, site1, site2, site3, site4,
                         vtype='vis', ctype='camp', debias=True, timetype=False, camps=[]):
 
         """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
@@ -1935,8 +1936,8 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def plotall(self, field1, field2, conj=False, ang_unit='deg', debias=True, 
-                      ebar=True, rangex=False, rangey=False, 
+    def plotall(self, field1, field2, conj=False, ang_unit='deg', debias=True,
+                      ebar=True, rangex=False, rangey=False,
                       show=True, axis=False, color='b',  export_pdf=""):
 
         """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
@@ -2015,8 +2016,8 @@ class Obsdata(object):
 
         return x
 
-    def plot_bl(self, site1, site2, field, 
-                      debias=True, ang_unit='deg', timetype=False, 
+    def plot_bl(self, site1, site2, field,
+                      debias=True, ang_unit='deg', timetype=False,
                       rangex=False, rangey=False, ebar=True,
                       show=True, axis=False, color='b', export_pdf=""):
 
@@ -2087,10 +2088,10 @@ class Obsdata(object):
 
         return x
 
-    def plot_cphase(self, site1, site2, site3, 
-                          vtype='vis', ang_unit='deg', timetype=False, 
+    def plot_cphase(self, site1, site2, site3,
+                          vtype='vis', ang_unit='deg', timetype=False,
                           rangex=False, rangey=False, ebar=True, labels=True,
-                          show=True, axis=False, color='b', export_pdf="", 
+                          show=True, axis=False, color='b', export_pdf="",
                           cphases=[]):
 
         """Plot closure phase over time on a triangle (1-2-3).
@@ -2165,9 +2166,9 @@ class Obsdata(object):
             plt.show(block=False)
         return x
 
-    def plot_camp(self, site1, site2, site3, site4, 
+    def plot_camp(self, site1, site2, site3, site4,
                         vtype='vis', ctype='camp', debias=True, timetype=False,
-                        rangex=False, rangey=False, ebar=True, show=True, axis=False, color='b', export_pdf="", 
+                        rangex=False, rangey=False, ebar=True, show=True, axis=False, color='b', export_pdf="",
                         camps=[]):
 
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).

@@ -190,15 +190,15 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     qimage = uimage = vimage = np.array([])
 
     if stokes_in_hdu0: #stokes in top HDU
-            try: 
+            try:
                 qdata = stokesdata[1,0].reshape((data.shape[-2],data.shape[-1]))
                 qimage = normalizer*qdata[::-1,:] # flip y-axis!
             except IndexError: pass
-            try: 
+            try:
                 udata = stokesdata[2,0].reshape((data.shape[-2],data.shape[-1]))
                 uimage = normalizer*udata[::-1,:] # flip y-axis!
             except IndexError: pass
-            try: 
+            try:
                 vdata = stokesdata[3,0].reshape((data.shape[-2],data.shape[-1]))
                 vimage = normalizer*vdata[::-1,:] # flip y-axis!
             except IndexError: pass
@@ -317,14 +317,14 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
 def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
     """Read in a movie from a hdf5 file and create a Movie object
        file_name should be the name of the hdf5 file
-       thisdoes not use the header of the hdf5 file so you need to give it 
+       thisdoes not use the header of the hdf5 file so you need to give it
        psize, framedur_sec, ra and dec
     """
-    
+
     import h5py
-    file    = h5py.File(file_name, 'r') 
+    file    = h5py.File(file_name, 'r')
     name    = list(file.keys())[0]
-    d       = file[str(name)] 
+    d       = file[str(name)]
     sim  = d[:]
     file.close()
     return Movie(sim, framedur_sec, psize, ra, dec, rf)
@@ -704,7 +704,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     try:
         if header['CTYPE5'] == 'IF':
             nif = header['NAXIS5']
-    except KeyError: 
+    except KeyError:
         print ("no IF in uvfits header!")
 
     #determine the bandwidth
@@ -720,49 +720,49 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     # Mask to screen bad data
     # Reducing to single frequency
 
-    # prepare the arrays of if and channels that will be extracted from the data. 
+    # prepare the arrays of if and channels that will be extracted from the data.
     nvis = data['DATA'].shape[0]
     full_nchannels = data['DATA'].shape[4]
     full_nifs = data['DATA'].shape[3]
     if channel == all:
         channel = np.arange(0, full_nchannels, 1)
-        nchannels = full_nchannels 
+        nchannels = full_nchannels
     else:
-        try: 
+        try:
             nchannels = len(np.array(channel))
-            channel = np.array(channel).reshape(-1) 
+            channel = np.array(channel).reshape(-1)
         except TypeError:
-            channel = np.array([channel]).reshape(-1) 
+            channel = np.array([channel]).reshape(-1)
             nchannels = len(np.array(channel))
 
-    if IF == all: 
+    if IF == all:
         IF = np.arange(0, full_nifs, 1)
-        nifs =  full_nifs  
+        nifs =  full_nifs
     else:
-        try: 
+        try:
             nifs =  len(IF)
-            IF = np.array(IF).reshape(-1) 
+            IF = np.array(IF).reshape(-1)
         except TypeError:
-            IF = np.array([IF]).reshape(-1) 
+            IF = np.array([IF]).reshape(-1)
             nifs = len(np.array(IF))
 
     if (np.max(channel) >= full_nchannels) or (np.min(channel) < 0):
         raise Exception('The specified channel does not exist')
     if (np.max(IF) >= full_nifs) or (np.min(IF) < 0):
-        raise Exception('The specified IF does not exist')  
-        
+        raise Exception('The specified IF does not exist')
+
 
     #TODO CHECK THESE DECISIONS CAREFULLY!!!!
     rrweight = data['DATA'][:,0,0,IF,channel,0,2].reshape(nvis, nifs, nchannels)
-    if num_corr >= 2: 
+    if num_corr >= 2:
         llweight = data['DATA'][:,0,0,IF,channel,1,2].reshape(nvis, nifs, nchannels)
     else:
         llweight = rrweight * 0.0
-    if num_corr >= 3: 
+    if num_corr >= 3:
         rlweight = data['DATA'][:,0,0,IF,channel,2,2].reshape(nvis, nifs, nchannels)
     else:
         rlweight = rrweight * 0.0
-    if num_corr >= 4: 
+    if num_corr >= 4:
         lrweight = data['DATA'][:,0,0,IF,channel,3,2].reshape(nvis, nifs, nchannels)
     else:
         lrweight = rrweight * 0.0
@@ -788,7 +788,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         llweight = llweight * 0.0
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
-        
+
     #TODO less than or equal to?
     rrmask_2d = (rrweight > 0.)
     llmask_2d = (llweight > 0.)
@@ -814,25 +814,25 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     jds = data['DATE'][mask].astype('d') + data['_DATE'][mask].astype('d')
     mjd = int(np.min(jds)-2400000.5)
     times = (jds - 2400000.5 - mjd) * 24.0
-    
+
     try:
         scantable = []
         nxtable = hdulist['AIPS NX']
-        for scan in nxtable.data: 
-            
+        for scan in nxtable.data:
+
             reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').jd
             #scantime = (scan['TIME'] + reftime  - mjd)
             scan_start = scan['TIME'] #in days since reference date
             scan_dur = scan['TIME INTERVAL']
             startvis = scan['START VIS'] - 1
-            endvis = scan['END VIS'] - 1 
+            endvis = scan['END VIS'] - 1
             #scantable.append(np.array((scantime, scanint, startvis, endvis), dtype=DTSCANS))
-            scantable.append([scan_start - 0.5*scan_dur, 
+            scantable.append([scan_start - 0.5*scan_dur,
                               scan_start + 0.5*scan_dur])
 
         scantable = np.array(scantable*24)
-            
-    except: 
+
+    except:
         print("No NX table exists")
         scantable = None
 
@@ -878,22 +878,22 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     #TODO 2d or 1d mask
     rr_2d = data['DATA'][:,0,0,IF,channel,0,0] + 1j*data['DATA'][:,0,0,IF,channel,0,1]
     rr_2d = rr_2d.reshape(nvis, nifs, nchannels)
-    if num_corr >= 2: 
+    if num_corr >= 2:
         ll_2d = data['DATA'][:,0,0,IF,channel,1,0] + 1j*data['DATA'][:,0,0,IF,channel,1,1]
         ll_2d = ll_2d.reshape(nvis, nifs, nchannels)
     else:
         ll_2d = rr_2d*0.0
-    if num_corr >= 3: 
+    if num_corr >= 3:
         rl_2d = data['DATA'][:,0,0,IF,channel,2,0] + 1j*data['DATA'][:,0,0,IF,channel,2,1]
         rl_2d = rl_2d.reshape(nvis, nifs, nchannels)
     else:
         rl_2d = rr_2d*0.0
-    if num_corr >= 4: 
+    if num_corr >= 4:
         lr_2d = data['DATA'][:,0,0,IF,channel,3,0] + 1j*data['DATA'][:,0,0,IF,channel,3,1]
         lr_2d = lr_2d.reshape(nvis, nifs, nchannels)
     else:
         lr_2d = rr_2d*0.0
-    
+
     if force_singlepol == 'LR':
         rr_2d = copy.deepcopy(lr_2d)
     elif force_singlepol == 'RL':
