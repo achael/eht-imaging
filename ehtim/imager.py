@@ -58,10 +58,10 @@ class Imager(object):
     """
 
     def __init__(self, obsdata, init_im, prior_im=None, flux=None, data_term=DAT_DEFAULT, reg_term=REG_DEFAULT, **kwargs):
-#                       clipfloor=0., maxit=MAXIT, 
-#                       transform='log', ttype='fast', 
+#                       clipfloor=0., maxit=MAXIT,
+#                       transform='log', ttype='fast',
 #                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0,
-#                       fft_pad_factor=FFT_PAD_DEFAULT, fft_interp_order=FFT_INTERP_DEFAULT, 
+#                       fft_pad_factor=FFT_PAD_DEFAULT, fft_interp_order=FFT_INTERP_DEFAULT,
 #                       fft_conv_func=GRIDDER_CONV_FUNC_DEFAULT, fft_gridder_prad=GRIDDER_P_RAD_DEFAULT):
 
         self.logstr = ""
@@ -123,7 +123,7 @@ class Imager(object):
         self._fft_conv_func = kwargs.get('fft_conv_func',GRIDDER_CONV_FUNC_DEFAULT)
         self._fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
         self._fft_interp_order = kwargs.get('fft_interp_order',FFT_INTERP_DEFAULT)
-        
+
         # Parameters related to scattering
         self.epsilon_list_next = []
         self.scattering_model = kwargs.get('scattering_model', None)
@@ -190,7 +190,7 @@ class Imager(object):
             (self.prior_next.xdim != self.init_next.xdim) or
             (self.prior_next.ydim != self.prior_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
-    
+
         if self._ttype not in ['fast','direct','nfft']:
             raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
 
@@ -402,9 +402,9 @@ class Imager(object):
         if self._change_imgr_params:
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
-                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
+                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
                                 debias=self.debias_next, snrcut=self.snrcut_next,systematic_noise=self.systematic_noise_next,
-                                ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor, 
+                                ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
                                 conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad)
 
                 self._data_tuples[dname] = tup
@@ -520,14 +520,14 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
-                               self.prior_next.dec, rf=self.obs_next.rf, 
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
+                               self.prior_next.dec, rf=self.obs_next.rf,
                                source=self.prior_next.source, mjd=self.prior_next.mjd)
 
         #the scattered image vector
-        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), 
-                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, 
-                                                 Linearized_Approximation=True).imvec 
+        scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
+                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ,
+                                                 Linearized_Approximation=True).imvec
 
         # Calculate the chi^2 using the scattered image
         datterm = 0.
@@ -578,7 +578,7 @@ class Imager(object):
         wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
         N = self.prior_next.xdim
         #Field of view, in cm, at the scattering screen
-        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance 
+        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance
         rF = self.scattering_model.rF(wavelength)
 
         imvec       = minvec[:N**2]
@@ -586,13 +586,13 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
-                               self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source, 
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
+                               self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source,
                                mjd=self.prior_next.mjd)
         #the scattered image vector
         scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
-                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, 
-                                                 Linearized_Approximation=True).imvec 
+                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ,
+                                                 Linearized_Approximation=True).imvec
 
         EA_Image = self.scattering_model.Ensemble_Average_Blur(IM, ker = self._ea_ker)
         EA_Gradient = so.Wrapped_Gradient((EA_Image.imvec/(FOV/N)).reshape(N, N))
@@ -683,7 +683,7 @@ class Imager(object):
 
     def plotcur(self, imvec, **kwargs):
         if self._show_updates:
-            if self._nit % self._update_interval == 0: 
+            if self._nit % self._update_interval == 0:
                 if self.transform_next == 'log':
                     imvec = np.exp(imvec)
                 chi2_term_dict = self.make_chisq_dict(imvec)
@@ -716,7 +716,7 @@ class Imager(object):
 
     def plotcur_scattering(self, minvec):
         if self._show_updates:
-            if self._nit % self._update_interval == 0: 
+            if self._nit % self._update_interval == 0:
                 N = self.prior_next.xdim
 
                 imvec       = minvec[:N**2]
@@ -724,19 +724,19 @@ class Imager(object):
                 if self.transform_next == 'log':
                     imvec = np.exp(imvec)
 
-                IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra, 
-                                       self.prior_next.dec, rf=self.obs_next.rf, 
+                IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
+                                       self.prior_next.dec, rf=self.obs_next.rf,
                                        source=self.prior_next.source, mjd=self.prior_next.mjd)
                 #the scattered image vector
                 scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
-                                                         ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec 
+                                                         ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec
 
                 # Calculate the chi^2 using the scattered image
                 datterm = 0.
                 chi2_term_dict = self.make_chisq_dict(scatt_im)
                 for dname in sorted(self.dat_term_next.keys()):
                     datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
-    
+
                 # Calculate the entropy using the unscattered image
                 regterm = 0
                 reg_term_dict = self.make_reg_dict(imvec)
@@ -811,7 +811,7 @@ class Imager(object):
         # Print stats
         print("time: %f s" % (tstop - tstart))
         print("J: %f" % res.fun)
-        print(res.message)
+        print(res.message.decode())
 
         # Append to history
         logstr = str(self.nruns) + ": make_image_I()" #TODO - what should the log string be?
@@ -851,7 +851,7 @@ class Imager(object):
             xinit = np.concatenate((xinit,np.zeros(N**2-1)))
         else:
             xinit = np.concatenate((xinit,self.epsilon_list_next))
-        
+
 
         self._nit = 0
 
@@ -883,8 +883,8 @@ class Imager(object):
                             rf=self.prior_next.rf, source=self.prior_next.source,
                             mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
         outep = res.x[N**2:]
-        outscatt = self.scattering_model.Scatter(outim, Epsilon_Screen=so.MakeEpsilonScreenFromList(outep, N), 
-                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, 
+        outscatt = self.scattering_model.Scatter(outim, Epsilon_Screen=so.MakeEpsilonScreenFromList(outep, N),
+                                                 ea_ker = self._ea_ker, sqrtQ=self._sqrtQ,
                                                  Linearized_Approximation=True)
 
         # Preserving image complex polarization fractions
@@ -935,9 +935,3 @@ class Imager(object):
 
     def make_image_scat(self):
         return
-
-
-
-
-
-
