@@ -114,7 +114,7 @@ class Caltable(object):
         #self = ct
         #caltablelist = [ct2]
 
-        tarr1 = self.tarr.copy() 
+        tarr1 = self.tarr.copy()
         tkey1 = self.tkey.copy()
         data1 = self.data.copy()
         for caltable in caltablelist:
@@ -122,7 +122,7 @@ class Caltable(object):
             #TODO check metadata!
 
             #TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
-            tarr2 = caltable.tarr.copy() 
+            tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
             data2 = caltable.data.copy()
 
@@ -158,7 +158,7 @@ class Caltable(object):
                     #put the merged data back in data1
                     #TODO can we do this faster?
                     datatable = []
-                    for i in xrange(len(times_merge)):
+                    for i in range(len(times_merge)):
                         datatable.append(np.array((times_merge[i], rscale_merge[i], lscale_merge[i]), dtype=DTCAL))
                     data1[site] = np.array(datatable)
 
@@ -361,19 +361,19 @@ def make_caltable(obs, gains, sites, times):
 
     ntele = len(sites)
     ntimes = len(times)
-    
+
     datatables = {}
     for s in range(0,ntele):
         datatable = []
         for t in range(0,ntimes):
-            gain = gains[s*ntele + t] 
+            gain = gains[s*ntele + t]
             datatable.append(np.array((times[t], gain, gain), dtype=DTCAL))
         datatables[sites[s]] = np.array(datatable)
     if len(datatables)>0:
-        caltable = Caltable(obs.ra, obs.dec, obs.rf, 
-                        obs.bw, datatables, obs.tarr, source=obs.source, 
+        caltable = Caltable(obs.ra, obs.dec, obs.rf,
+                        obs.bw, datatables, obs.tarr, source=obs.source,
                         mjd=obs.mjd, timetype=obs.timetype)
     else:
         caltable=False
-    
+
     return caltable

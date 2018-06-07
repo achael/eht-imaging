@@ -19,6 +19,7 @@
 
 from __future__ import division
 from __future__ import print_function
+
 from builtins import str
 from builtins import range
 from builtins import object
@@ -31,19 +32,15 @@ import scipy.optimize as opt
 import itertools as it
 import sys
 
-
-
 import ehtim.image
 import ehtim.io.save
 import ehtim.io.load
 import ehtim.observing.obs_simulate as simobs
 
 from ehtim.const_def import *
-
 from ehtim.observing.obs_helpers import *
 from ehtim.stats.dataframes import *
 from ehtim.stats.statistics import *
-
 
 import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")

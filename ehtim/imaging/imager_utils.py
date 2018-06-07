@@ -256,8 +256,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
             s_1 = reg1(im_step)
             s_2 = reg2(im_step)
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
-            chi2dict = {d1: chi2_1, d2: chi2_2}
-            plot_i(im_step, Prior, nit, chi2dict)
+            plot_i(im_step, Prior, nit, chi2_1, chi2_2)
             print("i: %d chi2_1: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1, chi2_2,s_1,s_2))
         nit += 1
 
@@ -597,7 +596,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
             (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, **kwargs)
         elif dtype == 'logcamp':
             (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, **kwargs)
-            
+
     elif ttype=='nfft':
         if dtype=='vis':
             (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, **kwargs)
@@ -1618,7 +1617,7 @@ def scm(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_
     if norm_reg: norm = beam_size**2 * flux**2
     else: norm = 1
 
-    xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
+    xx, yy = np.meshgrid(range(nx//2,-nx//2,-1), range(ny//2,-ny//2,-1))
     xx = psize*xx.flatten()[embed_mask]
     yy = psize*yy.flatten()[embed_mask]
 
@@ -1633,7 +1632,7 @@ def scmgrad(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, b
     if norm_reg: norm = beam_size**2 * flux**2
     else: norm = 1
 
-    xx, yy = np.meshgrid(xrange(nx//2,-nx//2,-1), xrange(ny//2,-ny//2,-1))
+    xx, yy = np.meshgrid(range(nx//2,-nx//2,-1), range(ny//2,-ny//2,-1))
     xx = psize*xx.flatten()[embed_mask]
     yy = psize*yy.flatten()[embed_mask]
 
@@ -1937,7 +1936,7 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut):
 
     if type(systematic_noise)==dict:
         sys_level = np.zeros(len(t1))
-        for i in xrange(len(t1)):
+        for i in range(len(t1)):
             if t1[i] in systematic_noise.keys():
                 t1sys = systematic_noise[t1[i]]
             else:
@@ -2184,7 +2183,7 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
 
     # unpack data
     biarr = Obsdata.bispectra(mode="all", count="min")
-    snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
+    snrmask = np.abs(biarr['bspec']/biarr['sigmab']) > snrcut
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
@@ -2508,7 +2507,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
 ##################################################################################################
 # Restoring ,Embedding, and Plotting Functions
 ##################################################################################################
-def plot_i(im, Prior, nit, chi2_term_dict, **kwargs):
+def plot_i(im, Prior, nit, chi2_1, chi2_2, **kwargs):
     """Plot the total intensity image at each iteration
     """
     imarr = im.reshape(Prior.ydim,Prior.xdim)
@@ -2543,11 +2542,7 @@ def plot_i(im, Prior, nit, chi2_term_dict, **kwargs):
     plt.yticks(yticks[0], yticks[1])
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
-    outstr = r"step: %i" % nit
-    for chi2term in chi2_term_dict.keys():
-        outstr +=  "  $\chi^2_{%s}$: %0.2f" % (chi2term, chi2_term_dict[chi2term])
-
-    plt.title(outstr, fontsize=20)
+    plt.title("step: %i  $\chi^2_1$: %f  $\chi^2_2$: %f" % (nit, chi2_1, chi2_2), fontsize=20)
     #plt.draw()
 
 
@@ -2633,7 +2628,7 @@ class NFFTInfo(object):
         # compute phase and pulsefac
         phases = np.exp(-1j*np.pi*(uv_scaled[:,0]+uv_scaled[:,1]))
         pulses = np.array([pulse(2*np.pi*uv_scaled[i,0], 2*np.pi*uv_scaled[i,1], 1., dom="F")
-                           for i in xrange(self.uvdim)])
+                           for i in range(self.uvdim)])
         self.pulsefac = (pulses*phases)
 
 class SamplerInfo(object):

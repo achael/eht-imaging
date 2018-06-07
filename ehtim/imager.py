@@ -759,7 +759,7 @@ class Imager(object):
 
         self._nit += 1
 
-    def make_image_I(self, grads=True, show_updates=True, **kwargs):
+    def make_image_I(self, grads=True, **kwargs):
         """Make Stokes I image using current imager settings.
         """
         # Checks and initialize
@@ -773,6 +773,7 @@ class Imager(object):
         self._nit = 0
 
         # Print stats
+
         self._show_updates=kwargs.get('show_updates',True)
         self._update_interval=kwargs.get('update_interval',1)
 
@@ -820,7 +821,7 @@ class Imager(object):
         # Return Image object
         return outim
 
-    def make_image_I_stochastic_optics(self, grads=True, show_updates=True):
+    def make_image_I_stochastic_optics(self, grads=True, **kwargs):
         """Reconstructs an image of total flux density using the stochastic optics scattering mitigation technique.
            Uses the scattering model of the imager. If none has been specified, it will default to a standard model for Sgr A*.
            Returns the estimated unscattered image.

@@ -83,8 +83,8 @@ def plot_i(Image, nit, chi2, fig=1, cmap='afmhot'):
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
     plt.title("step: %i  $\chi^2$: %f " % (nit, chi2), fontsize=20)
-    
-def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=1, method='min_chisq', weighting='uniform',          
+
+def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_gain=1, method='min_chisq', weighting='uniform',
                  fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT, show_updates=False):
 
     # limit imager range to prior values > clipfloor
@@ -112,13 +112,13 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
         raise Exception("weighting must be 'uniform' or 'natural'")
     weights_norm = np.sum(weights)
 
-    # Coordinate matrix 
+    # Coordinate matrix
     coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
                                             for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
     coord = coord.reshape(InitIm.ydim*InitIm.xdim, 2)
     coord = coord[embed_mask]
 
-    # Initial imvec and visibilities 
+    # Initial imvec and visibilities
     # TODO currently always initialized to zero!!
     OutputIm = InitIm.copy()
     DeltasIm = InitIm.copy()
@@ -166,10 +166,10 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
 
         # display images of delta and chisq
         if show_updates:
-            DeltasIm.imvec = deltas_all         
+            DeltasIm.imvec = deltas_all
             plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
 
-            ChisqIm.imvec = -chisq_map_all          
+            ChisqIm.imvec = -chisq_map_all
             plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
         # clean component location
@@ -179,9 +179,9 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
 
         # update vis and imvec
         imvec_current[component_loc_idx] += component_strength
-        
+
         #TODO how to incorporate pulse function?
-        vis_current += component_strength*np.exp(2*np.pi*1j*(uv[:,0]*component_loc_x + uv[:,1]*component_loc_y))  
+        vis_current += component_strength*np.exp(2*np.pi*1j*(uv[:,0]*component_loc_x + uv[:,1]*component_loc_y))
 
         # update chi^2 and output image
         chisq_current = np.sum(weights*np.abs(vis-vis_current)**2)
@@ -191,7 +191,7 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
 
         OutputIm.imvec = imvec_current
         if show_updates:
-            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                             
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)
             OutputImBlur = OutputIm.blur_gauss(beamparams)
             plot_i(OutputImBlur, it, rchisq_current, fig=2)
 
@@ -200,14 +200,14 @@ def dd_clean_vis(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="direct", loop_ga
 
 
 #solve full 5th order polynomial
-def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, 
+def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
                         weighting='uniform', bscount="min",show_updates=True,
                         fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
 
- 
+
     # limit imager range to prior values > clipfloor
     embed_mask = InitIm.imvec >= clipfloor
-    
+
     # get data
     biarr = Obsdata.bispectra(mode="all", count=bscount)
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
@@ -230,7 +230,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
     nfft_info23 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv2-uv3)
     nfft_info31 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv3-uv1)
 
-    # TODO do we use pulse factors? 
+    # TODO do we use pulse factors?
     plan1 = nfft_info1.plan
     pulsefac1 = nfft_info1.pulsefac
     plan2 = nfft_info2.plan
@@ -262,14 +262,14 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
         raise Exception("weighting must be 'uniform' or 'natural'")
     weights_norm = np.sum(weights)
 
-    # Coordinate matrix 
-    # TODO what if the image is odd? 
+    # Coordinate matrix
+    # TODO what if the image is odd?
     coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
                                             for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
     coord = coord.reshape(InitIm.ydim*InitIm.xdim, 2)
     coord = coord[embed_mask]
 
-    # Initial imvec and visibilities 
+    # Initial imvec and visibilities
     # TODO currently initialized to zero!!
     OutputIm = InitIm.copy()
     DeltasIm = InitIm.copy()
@@ -359,7 +359,7 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
             plan11.f =  weights * vis1_current.conj() * vis23_current
             plan11.adjoint()
             out11 = np.real((plan11.f_hat.copy().T).reshape(nfft_info11.xdim*nfft_info11.ydim))
-            plan22.f =  weights * vis2_current.conj() * vis13_current 
+            plan22.f =  weights * vis2_current.conj() * vis13_current
             plan22.adjoint()
             out22 = np.real((plan22.f_hat.copy().T).reshape(nfft_info22.xdim*nfft_info22.ydim))
             plan33.f =  weights * vis3_current.conj() * vis12_current
@@ -427,31 +427,31 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
             # Find Component
             deltas = np.zeros(len(P))
             chisq_map = np.zeros(len(P))
-            for i in xrange(len(P)):
+            for i in range(len(P)):
                 polynomial_params = np.array([P[i], Q[i], R[i], S[i], T[i], U[i]])
                 allroots = p.polyroots(polynomial_params)
 
                 # test roots to see which minimizes chi^2
                 newchisq = chisq_current
                 delta = 0
-                for j in xrange(len(allroots)):
+                for j in range(len(allroots)):
                     root = allroots[j]
                     if np.imag(root)!=0: continue
 
                     trialchisq = chisq_current + P[i]*root + 0.5*Q[i]*root**2 + (1./3.)*R[i]*root**3 + 0.25*S[i]*root**4 + 0.2*T[i]*root**5 + (1./6.)*U[i]*root**6
-                    if trialchisq < newchisq: 
+                    if trialchisq < newchisq:
                         delta = root
                         newchisq = trialchisq
 
                 deltas[i] = delta
-                chisq_map[i] = newchisq  
+                chisq_map[i] = newchisq
 
             #plot deltas and chi^2 map
-            if show_updates:          
+            if show_updates:
                 DeltasIm.imvec = deltas
                 plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
 
-                ChisqIm.imvec = -chisq_map          
+                ChisqIm.imvec = -chisq_map
                 plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
 
@@ -465,10 +465,10 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
         # update imvec, vis, bispec
         imvec_current[component_loc_idx] += component_strength
 
-        #TODO how to incorporate pulse function? 
-        vis1_current += component_strength*np.exp(2*np.pi*1j*(uv1[:,0]*component_loc_x + uv1[:,1]*component_loc_y)) 
-        vis2_current += component_strength*np.exp(2*np.pi*1j*(uv2[:,0]*component_loc_x + uv2[:,1]*component_loc_y)) 
-        vis3_current += component_strength*np.exp(2*np.pi*1j*(uv3[:,0]*component_loc_x + uv3[:,1]*component_loc_y)) 
+        #TODO how to incorporate pulse function?
+        vis1_current += component_strength*np.exp(2*np.pi*1j*(uv1[:,0]*component_loc_x + uv1[:,1]*component_loc_y))
+        vis2_current += component_strength*np.exp(2*np.pi*1j*(uv2[:,0]*component_loc_x + uv2[:,1]*component_loc_y))
+        vis3_current += component_strength*np.exp(2*np.pi*1j*(uv3[:,0]*component_loc_x + uv3[:,1]*component_loc_y))
         bs_current = vis1_current * vis2_current * vis3_current
 
         # update chi^2 and output image
@@ -477,16 +477,16 @@ def dd_clean_bispec_full(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1,
 
         print("it %i: %f (%.2f , %.2f) %.4f" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_current))
 
-        OutputIm.imvec = imvec_current 
+        OutputIm.imvec = imvec_current
         if show_updates:
-            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                   
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)
             OutputImBlur = OutputIm.blur_gauss(beamparams)
             plot_i(OutputImBlur, it, rchisq_current,fig=2)
 
     OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)
     return OutputIm
 
-        
+
 
 
 #solve full 5th order polynomial
@@ -495,11 +495,11 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
                              weighting='uniform', bscount="min", imweight=1, show_updates=True,
                              fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT):
 
- 
+
     imag_weight=imweight
     # limit imager range to prior values > clipfloor
     embed_mask = InitIm.imvec >= clipfloor
-    
+
     # get data
     biarr = Obsdata.bispectra(mode="all", count=bscount)
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
@@ -522,7 +522,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
     nfft_info23 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv2-uv3)
     nfft_info31 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv3-uv1)
 
-    # TODO do we use pulse factors? 
+    # TODO do we use pulse factors?
     plan1 = nfft_info1.plan
     pulsefac1 = nfft_info1.pulsefac
     plan2 = nfft_info2.plan
@@ -554,15 +554,15 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
         raise Exception("weighting must be 'uniform' or 'natural'")
     weights_norm = np.sum(weights)
 
-    # Coordinate matrix 
-    # TODO do we need to make sure this corresponds exactly with what NFFT is doing? 
-    # TODO what if the image is odd? 
+    # Coordinate matrix
+    # TODO do we need to make sure this corresponds exactly with what NFFT is doing?
+    # TODO what if the image is odd?
     coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
                                             for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
     coord = coord.reshape(InitIm.ydim*InitIm.xdim, 2)
     coord = coord[embed_mask]
 
-    # Initial imvec and visibilities 
+    # Initial imvec and visibilities
     # TODO currently initialized to zero!!
     OutputIm = InitIm.copy()
     DeltasIm = InitIm.copy()
@@ -809,7 +809,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
             #Find Component
             deltas = np.zeros(len(P))
             chisq_map = np.zeros(len(P))
-            for i in xrange(len(P)):
+            for i in range(len(P)):
                 if embed_mask[i]:
                     polynomial_params = np.array([P[i], Q[i], R[i], S[i], T[i], U[i]])
                     allroots = p.polyroots(polynomial_params)
@@ -817,17 +817,17 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
                     # test roots to see which minimizes chi^2
                     newchisq = chisq_current
                     delta = 0
-                    for j in xrange(len(allroots)):
+                    for j in range(len(allroots)):
                         root = allroots[j]
                         if np.imag(root)!=0: continue
 
                         trialchisq = chisq_current + P[i]*root + 0.5*Q[i]*root**2 + (1./3.)*R[i]*root**3 + 0.25*S[i]*root**4 + 0.2*T[i]*root**5 + (1./6.)*U[i]*root**6
-                        if trialchisq < newchisq: 
+                        if trialchisq < newchisq:
                             delta = root
                             newchisq = trialchisq
 
                     deltas[i] = delta
-                    chisq_map[i] = newchisq  
+                    chisq_map[i] = newchisq
                 else:
                     deltas[i]=0
                     chisq_map[i]=chisq_current
@@ -840,7 +840,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
                 DeltasIm.imvec = deltas
                 plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
 
-                ChisqIm.imvec = -chisq_map          
+                ChisqIm.imvec = -chisq_map
                 plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
             component_loc_idx = np.argmin(chisq_map[embed_mask])
@@ -853,10 +853,10 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
         # update imvec, vis, bispec
         imvec_current[component_loc_idx] += component_strength
 
-        #TODO how to incorporate pulse function? 
-        vis1_current += component_strength*np.exp(2*np.pi*1j*(uv1[:,0]*component_loc_x + uv1[:,1]*component_loc_y)) 
-        vis2_current += component_strength*np.exp(2*np.pi*1j*(uv2[:,0]*component_loc_x + uv2[:,1]*component_loc_y)) 
-        vis3_current += component_strength*np.exp(2*np.pi*1j*(uv3[:,0]*component_loc_x + uv3[:,1]*component_loc_y)) 
+        #TODO how to incorporate pulse function?
+        vis1_current += component_strength*np.exp(2*np.pi*1j*(uv1[:,0]*component_loc_x + uv1[:,1]*component_loc_y))
+        vis2_current += component_strength*np.exp(2*np.pi*1j*(uv2[:,0]*component_loc_x + uv2[:,1]*component_loc_y))
+        vis3_current += component_strength*np.exp(2*np.pi*1j*(uv3[:,0]*component_loc_x + uv3[:,1]*component_loc_y))
         bs_current = vis1_current * vis2_current * vis3_current
 
         # update chi^2 and output image
@@ -867,7 +867,7 @@ def dd_clean_bispec_imweight(Obsdata, InitIm, niter=1, clipfloor=-1, ttype="dire
 
         OutputIm.imvec = imvec_current
         if show_updates:
-            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                             
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)
             OutputImBlur = OutputIm.blur_gauss(beamparams)
             plot_i(OutputImBlur, it, rchisq_current,fig=2)
 
@@ -879,10 +879,10 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
                         weighting='uniform', bscount="min",no_neg_comps=False,
                         fft_pad_factor=FFT_PAD_DEFAULT, p_rad=NFFT_KERSIZE_DEFAULT, show_updates=True):
 
- 
+
     # limit imager range to prior values > clipfloor
     embed_mask = InitIm.imvec >= clipfloor
-    
+
     # get data
     amp2 = np.abs(Obsdata.data['vis'])**2 #TODO debias??
     sigma_amp2 = Obsdata.data['sigma']**2
@@ -913,7 +913,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
     nfft_info23 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv2-uv3)
     nfft_info31 = NFFTInfo(InitIm.xdim, InitIm.ydim, InitIm.psize, InitIm.pulse, npad, p_rad, uv3-uv1)
 
-    # TODO do we use pulse factors? 
+    # TODO do we use pulse factors?
     planA = nfft_infoA.plan
     pulsefacA = nfft_infoA.pulsefac
     planB = nfft_infoB.plan
@@ -951,26 +951,26 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
     weights_amp2 = weights_amp2 / float(len(weights_amp2_nat))
     weights_amp2_norm = np.sum(weights_amp2)
 
-    weights_bs_nat = (np.abs(bs)**2) / (sigma_bs**2) 
+    weights_bs_nat = (np.abs(bs)**2) / (sigma_bs**2)
     if weighting=='uniform':
         weights_bs = np.ones(len(weights_bs_nat)) * np.median(weights_bs_nat)     #TODO for scaling weights are all given by median natural weight??
     elif weighting=='natural':
-        weights_bs = weights_bs_nat 
+        weights_bs = weights_bs_nat
     else:
         raise Exception("weighting must be 'uniform' or 'natural'")
     weights_bs = weights_bs / np.abs(bs)**2 #weight down by 1/bs^2 only works for uniform??
     weights_bs = weights_bs / float(len(weights_bs_nat))
-    weights_bs_norm = np.sum(weights_bs) 
+    weights_bs_norm = np.sum(weights_bs)
 
-    # Coordinate matrix 
-    # TODO do we need to make sure this corresponds exactly with what NFFT is doing? 
-    # TODO what if the image is odd? 
+    # Coordinate matrix
+    # TODO do we need to make sure this corresponds exactly with what NFFT is doing?
+    # TODO what if the image is odd?
     coord = InitIm.psize * np.array([[[x,y] for x in np.arange(InitIm.xdim//2,-InitIm.xdim//2,-1)]
                                             for y in np.arange(InitIm.ydim//2,-InitIm.ydim//2,-1)])
     coord = coord.reshape(InitIm.ydim*InitIm.xdim, 2)
     coord = coord[embed_mask]
 
-    # Initial imvec and visibilities 
+    # Initial imvec and visibilities
     # TODO currently initialized to zero!!
     OutputIm = InitIm.copy()
     DeltasIm = InitIm.copy()
@@ -1009,7 +1009,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
     print("\n")
     for it in range(niter):
         t = time.time()
-       
+
         # center the first component automatically
         # since initial image is empty, must go to higher order in delta in solution
         # TODO generalize to non-empty initial image!
@@ -1039,7 +1039,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             B0 = np.sum(weights_amp2*(2*amp2_current - amp2))
             B1 = out
             B = 4*(B0 + B1)
-            
+
             #Calculate C (3rd order)
             planA.f =  weights_amp2 * vis_current
             planA.adjoint()
@@ -1048,7 +1048,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             C = 12*out
 
             # Now find D (4th order)
-            D = 4*weights_amp2_norm * np.ones(C.shape) 
+            D = 4*weights_amp2_norm * np.ones(C.shape)
 
             #"Closure Phase" part
             resid_current = bs - bs_current
@@ -1067,7 +1067,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             plan3.adjoint()
             out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
 
-            P = -2 * (out1 + out2 + out3) 
+            P = -2 * (out1 + out2 + out3)
 
             # Then calculate Q (2nd order)
             plan12.f =  weights_bs * vis13_current*vis23_current.conj()
@@ -1099,7 +1099,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             plan11.f =  weights_bs * vis1_current.conj() * vis23_current
             plan11.adjoint()
             out11 = np.real((plan11.f_hat.copy().T).reshape(nfft_info11.xdim*nfft_info11.ydim))
-            plan22.f =  weights_bs * vis2_current.conj() * vis13_current 
+            plan22.f =  weights_bs * vis2_current.conj() * vis13_current
             plan22.adjoint()
             out22 = np.real((plan22.f_hat.copy().T).reshape(nfft_info22.xdim*nfft_info22.ydim))
             plan33.f =  weights_bs * vis3_current.conj() * vis12_current
@@ -1119,7 +1119,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             R0 = -np.sum(weights_bs*np.real(resid_current))
             R1 = np.real(out11 + out22 + out33)
             R2 = np.real(out1 + out2 + out3)
-            R = 6*(R0 + R1 + R2) 
+            R = 6*(R0 + R1 + R2)
 
             # Now find S (4th order)
             plan12.f =  weights_bs * vis1_current*vis2_current.conj()
@@ -1145,7 +1145,7 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             S0 = np.sum(weights_bs*(np.abs(vis1_current)**2 + np.abs(vis2_current)**2 + np.abs(vis3_current)**2))
             S1 = 2  * (out12 + out23 + out31)
             S2 = 2 * (out1 + out2 + out3)
-            S = 4*(S0 + S1 + S2) 
+            S = 4*(S0 + S1 + S2)
 
             # T (5th order)
             plan1.f =  weights_bs * vis1_current
@@ -1158,21 +1158,21 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
             plan3.adjoint()
             out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
 
-            T = 10*(out1 + out2 + out3) 
+            T = 10*(out1 + out2 + out3)
 
             # Finally U (6th order)
-            U = 6*weights_bs_norm * np.ones(T.shape) 
+            U = 6*weights_bs_norm * np.ones(T.shape)
 
             # Find Component based on minimizing chi^2
             deltas = np.zeros(len(A))
             chisq_map = np.zeros(len(A))
-            for i in xrange(len(P)):
+            for i in range(len(P)):
                 if embed_mask[i]:
                     coeffs = np.array([A[i] + phaseweight*P[i],
-                                      B[i] + phaseweight*Q[i], 
-                                      C[i] + phaseweight*R[i], 
-                                      D[i] + phaseweight*S[i], 
-                                      phaseweight*T[i], 
+                                      B[i] + phaseweight*Q[i],
+                                      C[i] + phaseweight*R[i],
+                                      D[i] + phaseweight*S[i],
+                                      phaseweight*T[i],
                                       phaseweight*U[i]
                                      ])
                     allroots = p.polyroots(coeffs)
@@ -1180,12 +1180,12 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
                     # test roots to see which minimizes chi^2
                     newchisq = chisq_current
                     delta = 0
-                    for j in xrange(len(allroots)):
+                    for j in range(len(allroots)):
                         root = allroots[j]
                         if np.imag(root)!=0: continue
                         if (no_neg_comps and root<0):continue
                         trialchisq = chisq_current + coeffs[0]*root + 0.5*coeffs[1]*root**2 + (1./3.)*coeffs[2]*root**3 + 0.25*coeffs[3]*root**4 + 0.2*coeffs[4]*root**5 + (1./6.)*coeffs[5]*root**6
-                        if trialchisq < newchisq: 
+                        if trialchisq < newchisq:
                             delta = root
                             newchisq = trialchisq
 
@@ -1193,13 +1193,13 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
                     delta = 0.
                     newchisq = chisq_current
                 deltas[i] = delta
-                chisq_map[i] = newchisq  
+                chisq_map[i] = newchisq
 
             #plot deltas and chi^2 map
             if show_updates:
                 DeltasIm.imvec = deltas
                 plot_i(DeltasIm, it, chisq_current,fig=0, cmap='afmhot')
-                ChisqIm.imvec = -chisq_map   
+                ChisqIm.imvec = -chisq_map
                 plot_i(ChisqIm, it, chisq_current,fig=1, cmap='cool')
 
             #chisq_map = chisq_current + P*deltas + 0.5*Q*deltas**2 + (1./3.)*R*deltas**3 + 0.25*S*deltas**4 + 0.2*T*deltas**5 + (1./6.)*U*deltas**6
@@ -1213,13 +1213,13 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
         # update imvec, vis, bispec
         imvec_current[component_loc_idx] += component_strength
 
-        #TODO how to incorporate pulse function? 
-        vis_current += component_strength*np.exp(2*np.pi*1j*(uv[:,0]*component_loc_x + uv[:,1]*component_loc_y)) 
+        #TODO how to incorporate pulse function?
+        vis_current += component_strength*np.exp(2*np.pi*1j*(uv[:,0]*component_loc_x + uv[:,1]*component_loc_y))
         amp2_current = np.abs(vis_current)**2
 
-        vis1_current += component_strength*np.exp(2*np.pi*1j*(uv1[:,0]*component_loc_x + uv1[:,1]*component_loc_y)) 
-        vis2_current += component_strength*np.exp(2*np.pi*1j*(uv2[:,0]*component_loc_x + uv2[:,1]*component_loc_y)) 
-        vis3_current += component_strength*np.exp(2*np.pi*1j*(uv3[:,0]*component_loc_x + uv3[:,1]*component_loc_y)) 
+        vis1_current += component_strength*np.exp(2*np.pi*1j*(uv1[:,0]*component_loc_x + uv1[:,1]*component_loc_y))
+        vis2_current += component_strength*np.exp(2*np.pi*1j*(uv2[:,0]*component_loc_x + uv2[:,1]*component_loc_y))
+        vis3_current += component_strength*np.exp(2*np.pi*1j*(uv3[:,0]*component_loc_x + uv3[:,1]*component_loc_y))
         bs_current = vis1_current * vis2_current * vis3_current
 
         # update chi^2 and output image
@@ -1233,39 +1233,10 @@ def dd_clean_amp_cphase(Obsdata, InitIm, niter=1, clipfloor=-1, loop_gain=.1, lo
 
         print("it %i| %.4e (%.1f , %.1f) | %.4e %.4e | %.4e" % (it+1, component_strength, component_loc_x/RADPERUAS, component_loc_y/RADPERUAS, chisq_amp2_current, chisq_bs_current, chisq_current))
 
-        OutputIm.imvec = imvec_current   
+        OutputIm.imvec = imvec_current
         if show_updates:
-            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)                                    
+            OutputIm.imvec = embed(OutputIm.imvec, embed_mask, clipfloor=0., randomfloor=False)
             OutputImBlur = OutputIm.blur_gauss(beamparams)
             plot_i(OutputImBlur, it, chisq_current, fig=2)
 
     return OutputIm
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
