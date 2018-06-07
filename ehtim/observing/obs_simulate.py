@@ -26,7 +26,10 @@ import time as ttime
 import scipy.ndimage as nd
 import numpy as np
 import datetime
-import ephem
+try:
+    import ephem
+except ImportError:
+    print("Warning: ephem not installed: cannot simulate space VLBI")
 import astropy.coordinates as coords
 import copy
 try:

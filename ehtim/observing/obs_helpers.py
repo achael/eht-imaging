@@ -1,5 +1,5 @@
 # obs_helpers.py
-# helper functions for simulating and manipulating observations 
+# helper functions for simulating and manipulating observations
 #
 #    Copyright (C) 2018 Andrew Chael
 #
@@ -20,7 +20,11 @@ from __future__ import division
 from builtins import str
 from builtins import map
 from builtins import range
-import ephem
+
+try:
+    import ephem
+except ImportError:
+    print("Warning: ephem not installed: cannot simulate space VLBI")
 
 import astropy.time as at
 import astropy.coordinates as coords
@@ -43,7 +47,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         site1 = np.array([site1[0] for i in range(len(time))])
         site2 = np.array([site2[0] for i in range(len(time))])
     elif not (len(site1) == len(site2) == len(time)):
-        raise Exception("site1, site2, and time not the same dimension in compute_uv_coordinates!") 
+        raise Exception("site1, site2, and time not the same dimension in compute_uv_coordinates!")
 
     # Source vector
     sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
@@ -137,7 +141,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     time = time[mask]
     u = u[mask]
     v = v[mask]
-    
+
     # return times and uv points where we have  data
     return (time, u, v)
 
@@ -165,7 +169,7 @@ def make_bispectrum(l1, l2, l3,vtype):
         p1 = l1['vis'] + l1['vvis']
         p2 = l2['vis'] + l2['vvis']
         p3 = l3['vis'] + l3['vvis']
-        
+
         var1 = l1['sigma']**2 + l1['vsigma']**2
         var2 = l2['sigma']**2 + l2['vsigma']**2
         var3 = l3['sigma']**2 + l3['vsigma']**2
@@ -174,7 +178,7 @@ def make_bispectrum(l1, l2, l3,vtype):
         p1 = l1['vis'] - l1['vvis']
         p2 = l2['vis'] - l2['vvis']
         p3 = l3['vis'] - l3['vvis']
-        
+
         var1 = l1['sigma']**2 + l1['vsigma']**2
         var2 = l2['sigma']**2 + l2['vsigma']**2
         var3 = l3['sigma']**2 + l3['vsigma']**2
@@ -183,7 +187,7 @@ def make_bispectrum(l1, l2, l3,vtype):
         p1 = l1['qvis'] - 1j*l1['uvis']
         p2 = l2['qvis'] - 1j*l2['uvis']
         p3 = l3['qvis'] - 1j*l3['uvis']
-        
+
         var1 = l1['qsigma']**2 + l1['usigma']**2
         var2 = l2['qsigma']**2 + l2['usigma']**2
         var3 = l3['qsigma']**2 + l3['usigma']**2
@@ -216,9 +220,9 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
        vtype is the  visibility type
        we always debias the individual amplitudes
        debias controls if we debias the closure amplitude at the end
-       DebiasType controls the type of debisaing, 'ExactLog' means 
+       DebiasType controls the type of debisaing, 'ExactLog' means
        exact debiasing in log space, it will turn off any debiasing in 'amp_debias',
-       and apply debiasing only to closure quantities 
+       and apply debiasing only to closure quantities
     """
 
     DebiasType = debias_type
@@ -318,7 +322,7 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
                 snr3 = get_snr(snr3)
                 snr4 = get_snr(snr4)
                 camp = logcamp_debias(camp, snr1, snr2,snr3,snr4,'ExactLog')
-            else:    
+            else:
                 camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
 
     return (camp, camperr)
@@ -327,7 +331,7 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 def get_snr_help(Esnr):
     """estimates snr given a single biased snr measurement
     """
-    if Esnr**2 >= 2.0: 
+    if Esnr**2 >= 2.0:
         return np.sqrt(Esnr**2 - 1.0)
     else:
         return 1.0
@@ -356,7 +360,7 @@ def amp_debias(amp, sigma, DebiasType='old'):
         #snr0 = amp/sigma
         #return amp*np.exp(-log_debias(snr0))
         return amp
-    
+
     else:
         deb2 = np.abs(amp)**2 - np.abs(sigma)**2
         if type(deb2) == float or type(deb2)==np.float64:
@@ -666,7 +670,7 @@ def gmst_to_utc(gmst,mjd):
     mjd=int(mjd)
     time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
     time_sidereal_ref = time_obj_ref.sidereal_time('mean', 'greenwich').hour
-    time_utc = (gmst - time_sidereal_ref) * 0.9972695601848 
+    time_utc = (gmst - time_sidereal_ref) * 0.9972695601848
     return time_utc
 
 def utc_to_gmst(utc, mjd):
