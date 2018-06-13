@@ -59,8 +59,8 @@ print("Clean beam parameters: " , beamparams)
 print("Nominal Resolution: " ,res)
 
 # Export the visibility data to uvfits/text
-obs.save_txt('obs.txt') # exports a text file with the visibilities
-obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
+#obs.save_txt('obs.txt') # exports a text file with the visibilities
+#obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 
 # Generate an image prior
 npix = 256
@@ -115,9 +115,9 @@ out.display()
 
 # Save the images
 outname = "test"
-out.save_txt(outname + '.txt')
-out.save_fits(outname + '.fits')
-outblur.save_txt(outname + '_blur.txt')
-outblur.save_fits(outname + '_blur.fits')
+#out.save_txt(outname + '.txt')
+#out.save_fits(outname + '.fits')
+#outblur.save_txt(outname + '_blur.txt')
+#outblur.save_fits(outname + '_blur.fits')
 
 

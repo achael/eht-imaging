@@ -178,7 +178,7 @@ class Caltable(object):
 
 
 
-    def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol = False):
+    def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol=False):
 
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
@@ -203,9 +203,9 @@ class Caltable(object):
 
             time_mjd = self.data[site]['time']/24.0 + self.mjd
             rinterp[site] = relaxed_interp1d(time_mjd, self.data[site]['rscale'],
-                                             kind=interp, fill_value=fill_value,bounds_error=False)
+                                             kind=interp, fill_value=fill_value, bounds_error=False)
             linterp[site] = relaxed_interp1d(time_mjd, self.data[site]['lscale'],
-                                             kind=interp, fill_value=fill_value,bounds_error=False)
+                                             kind=interp, fill_value=fill_value, bounds_error=False)
 
         bllist = obs.bllist()
         datatable = []

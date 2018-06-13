@@ -1224,7 +1224,8 @@ class Image(object):
 
     def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3, 
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, 
-                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), export_pdf="", show=True):
+                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), 
+                      export_pdf="", show=True):
 
         """Display the image.
 
@@ -1409,7 +1410,8 @@ class Image(object):
                 ax.axes.get_xaxis().set_visible(False)
                 ax.axes.get_yaxis().set_visible(False)
 
-        plt.show(block=False)
+        if show:
+            plt.show(block=False)
 
         if export_pdf != "":
             f.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)

@@ -1962,7 +1962,7 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut):
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[mask]
     return (uv, vis, amp, sigma)
 
-def chisqdata_vis(Obsdata, Prior, mask, **kwargs):#systematic_noise=0.0):
+def chisqdata_vis(Obsdata, Prior, mask, **kwargs):
     """Return the data, sigmas, and fourier matrix for visibilities
     """
 
@@ -1980,7 +1980,7 @@ def chisqdata_vis(Obsdata, Prior, mask, **kwargs):#systematic_noise=0.0):
 
     return (vis, sigma, A)
 
-def chisqdata_amp(Obsdata, Prior, mask, **kwargs):#debias=True, systematic_noise=0.0):
+def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
     """Return the data, sigmas, and fourier matrix for visibility amplitudes
     """
 
@@ -2049,7 +2049,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
          )
     return (clphase, sigma, A3)
 
-def chisqdata_camp(Obsdata, Prior, mask, **kwargs): #debias=True,snrcut=0):
+def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
     """Return the data, sigmas, and fourier matrices for closure amplitudes
     """
     # unpack keyword args
@@ -2075,7 +2075,7 @@ def chisqdata_camp(Obsdata, Prior, mask, **kwargs): #debias=True,snrcut=0):
 
     return (clamp, sigma, A4)
 
-def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs): #debias=True, snrcut=0):
+def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
     """Return the data, sigmas, and fourier matrices for log closure amplitudes
     """
     # unpack keyword args
@@ -2106,9 +2106,6 @@ def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs): #debias=True, snrcut=0):
 # FFT Chi^2 Data functions
 ##################################################################################################
 def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
-#                      fft_pad_factor=FFT_PAD_DEFAULT,
-#                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
-#                      p_rad=GRIDDER_P_RAD_DEFAULT,systematic_noise=0.0):
     """Return the data, sigmas, uv points, and FFT info for visibilities
     """
 
@@ -2137,9 +2134,7 @@ def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
     return (vis, sigma, A)
 
 def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
-#                      fft_pad_factor=2,
-#                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,
-#                      p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,systematic_noise=0.0):
+
     """Return the data, sigmas, uv points, and FFT info for visibility amplitudes
     """
 
@@ -2168,8 +2163,7 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
     return (amp, sigma, A)
 
 def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
-#                     fft_pad_factor=2,
-#                     order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+
     """Return the data, sigmas, uv points, and FFT info for bispectra
     """
 
@@ -2206,8 +2200,7 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
     return (bi, sigma, A)
 
 def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
-#                         fft_pad_factor=2,
-#                         order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT):
+
     """Return the data, sigmas, uv points, and FFT info for closure phases
     """
     # unpack keyword args
@@ -2240,8 +2233,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
     return (clphase, sigma, A)
 
 def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
-#                       fft_pad_factor=2,
-#                       order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
+
     """Return the data, sigmas, uv points, and FFT info for closure amplitudes
     """
 
@@ -2278,8 +2270,7 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
     return (clamp, sigma, A)
 
 def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
-#                      fft_pad_factor=2,
-#                      order=FFT_INTERP_DEFAULT,conv_func=GRIDDER_CONV_FUNC_DEFAULT,p_rad=GRIDDER_P_RAD_DEFAULT, debias=True,snrcut=0):
+
     """Return the data, sigmas, uv points, and FFT info for log closure amplitudes
     """
     # unpack keyword args
@@ -2318,8 +2309,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
 # NFFT Chi^2 Data functions
 ##################################################################################################
 def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
-#                       systematic_noise=0.,
-#                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+
     """Return the visibilities, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -2344,8 +2334,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
     return (vis, sigma, A)
 
 def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
-#                       debias=True, systematic_noise=0.,
-#                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+
     """Return the amplitudes, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -2370,7 +2359,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
     return (amp, sigma, A)
 
 def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
-#                      fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+
     """Return the bispectra, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -2403,7 +2392,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
     return (bi, sigma, A)
 
 def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
-#                          fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -2434,8 +2423,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
     return (clphase, sigma, A)
 
 def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
-#                       debias=True,snrcut=0,
-#                       fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
@@ -2469,8 +2457,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
     return (clamp, sigma, A)
 
 def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
-#                           debias=True,snrcut=0,
-#                           fft_pad_factor=2, p_rad=NFFT_KERSIZE_DEFAULT):
+
     """Return the closure phases, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
