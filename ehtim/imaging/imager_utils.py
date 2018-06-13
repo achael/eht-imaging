@@ -2529,7 +2529,7 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     plt.yticks(yticks[0], yticks[1])
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
-    plotstr = "step: %i  "
+    plotstr = "step: %i  " % nit
     for key in chi2_dict.keys():
         plotstr += "$\chi^2_{%s}$: %0.2f  " % (key, chi2_dict[key])
     plt.title(plotstr, fontsize=18)
