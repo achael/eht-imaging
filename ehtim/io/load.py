@@ -149,13 +149,14 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     elif 'CRVAL2' in list(header.keys()):  dec = header['CRVAL2']
     else: dec = 0.
 
+    if 'FREQ' in list(header.keys()): rf = header['FREQ']
+    elif 'CRVAL3' in list(header.keys()): rf = header['CRVAL3']
+    else: rf = 0.
+
     if 'MJD' in list(header.keys()): mjd_float = header['MJD']
     else: mjd_float = 0.
     mjd = int(mjd_float)
     time = (mjd_float - mjd) * 24
-
-    if 'FREQ' in list(header.keys()): rf = header['FREQ']
-    else: rf = 0.
 
     if 'OBJECT' in list(header.keys()): src = header['OBJECT']
     else: src = ''
