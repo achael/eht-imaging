@@ -27,7 +27,7 @@ im.display()
 # sgrscat=True blurs the visibilities with the Sgr A* scattering kernel for the appropriate image frequency
 # ampcal and phasecal determine if gain variations and phase errors are included
 tint_sec = 5
-tadv_sec = 10
+tadv_sec = 30
 tstart_hr = 0
 tstop_hr = 24
 bw_hz = 4e9
@@ -68,7 +68,7 @@ out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
                       d1='bs', s1='simple',
                       alpha_s1=1, alpha_d1=100,
                       alpha_flux=100, alpha_cm=50,
-                      maxit=100, ttype='nfft')
+                      maxit=500, ttype='nfft')
 
 # Blur the image with a circular beam and image again to help convergance
 out = out.blur_circ(res)
@@ -76,13 +76,13 @@ out = eh.imager_func(obs, out, out, flux,
                 d1='amp', d2='cphase', s1='tv',
                 alpha_s1=1, alpha_d1=50,alpha_d2=100,
                 alpha_flux=100, alpha_cm=50,
-                maxit=100,ttype='nfft')
+                maxit=500,ttype='nfft')
 
 out = out.blur_circ(res/2.0)
 out = eh.imager_func(obs, out, out, flux,
                 d1='amp', d2='cphase', s1='tv',
                 alpha_s1=1, alpha_d1=10,alpha_d2=20,
                 alpha_flux=100, alpha_cm=50,
-                maxit=100,ttype='nfft')
+                maxit=1000,ttype='nfft')
 
 out.display()
