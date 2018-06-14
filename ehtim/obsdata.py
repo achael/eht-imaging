@@ -181,9 +181,11 @@ class Obsdata(object):
 
         # Saved closure quantity arrays
         # TODO should we precompute??
+        self.amp=None
         self.bispec=None
         self.cphase=None
         self.camp=None
+        self.logcamp=None
 
     def copy(self):
 
@@ -197,6 +199,14 @@ class Obsdata(object):
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd,
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal,
                          frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
+
+        # copy over precomputed tables
+        newobs.amp = self.amp
+        newobs.bispec = self.bispec
+        newobs.cphase = self.cphase
+        newobs.camp = self.camp
+        newobs.logcamp = self.logcamp
+
         return newobs
 
     def data_conj(self):
@@ -720,7 +730,7 @@ class Obsdata(object):
 
 
     def avg_incoherent(self, inttime, debias=True, err_type='predicted'):
-
+        #ANDREW TODO should this really return an obsdata object? Better to just make this part of add_amp
         """Incoherently average data along u,v tracks in chunks of length inttime (sec).
 
            Args:
@@ -822,81 +832,148 @@ class Obsdata(object):
                                 ))
 
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd)
+  
+    def add_amp(self, return_type='rec', 
+                      avg_time=0, debias=True, err_type='predicted'):
+        #TODO store averaging timescale/other parameters?
+        """Adds attribute self.amp: amplitude table with incoherently averaged amplitudes
+
+           Args:
+               return_type: data frame ('df') or recarray ('rec')
+
+               avg_time (float): closure amplitude averaging timescale
+               debias (bool): if True then apply debiasing
+               err_type (str): 'predicted' or 'measured'
+        """
+
+        #ANDREW TODO -- dataframes??
+        #ANDREW TODO -- we should get rid of avg_incoherent and just have its  functionality in this function
+        if avg_time>0:
+            foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
+            self.amp = foo.data
+        else:
+            data = copy.deepcopy(self.data)
+            data['vis'] = np.abs(data['vis'])
+            data['qvis'] = np.abs(data['vis'])
+            data['uvis'] = np.abs(data['vis'])
+            data['vvis'] = np.abs(data['vis'])
+            self.amp = data
+        print("updated self.amp: avg_time %f s"%avg_time)
+
+    def add_bispec(self, return_type='rec', count='max',
+                         avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
+        #TODO store averaging timescale/other parameters?
+        """Adds attribute self.bispec: bispectra table with bispectra averaged for dt
 
 
-    def add_cphase(self,return_type='rec',mode='all',
-                        dt=0,err_type='predicted', num_samples=1000, round_s=0.1):
+           Args:
+               return_type: data frame ('df') or recarray ('rec')
+               count (str): If 'min', return minimal set of bispectra, if 'max' return all bispectra up to reordering
+
+               avg_time (float): bispectrum averaging timescale
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+
+        """
+        #TODO store averaging timescale/other parameters?
+        cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
+        if avg_time>0:
+            cdf_av = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples)
+            self.bispec = cdf_av
+        else:
+            if return_type=='rec': 
+                cdf = df_to_rec(cdf,'bispec')
+            self.bispec = cdf
+        print("\nupdated self.bispec: avg_time %f s"%avg_time)
+
+    def add_cphase(self,return_type='rec',count='max',
+                        avg_time=0,err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.cphase: cphase table averaged for dt
 
 
            Args:
                return_type: data frame ('df') or recarray ('rec')
-               mode (str): If 'time', return a list of equal time arrays, if 'all', return all in a single array
+               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
 
-               dt (float): closure amplitude averaging timescale
+               avg_time (float): closure phase averaging timescale
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
 
         """
-
-        cdf = make_cphase_df(self, mode=mode, round_s=round_s)
-        if dt>0:
-            cdf_av = average_cphases(cdf, dt, return_type=return_type, err_type=err_type, num_samples=num_samples)
+        #TODO store averaging timescale/other parameters?
+        cdf = make_cphase_df(self, mode='all', round_s=round_s,count=count)
+        if avg_time>0:
+            cdf_av = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
             self.cphase = cdf_av
         else:
+            if return_type=='rec': 
+                cdf = df_to_rec(cdf,'cphase')
             self.cphase = cdf
+        print("\nupdated self.cphase: avg_time %f s"%avg_time)
 
-    def add_bispec(self, return_type='rec', mode='all',
-                         dt=0, err_type='predicted', num_samples=1000, round_s=0.1):
+    def add_camp(self, return_type='rec', ctype='camp',
+                       count='max', debias=True,  debias_type='old',
+                       avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
-        """Adds attribute self.bispec: bispectra table with bispectra averaged for dt
-
-
-           Args:
-               return_type: data frame ('df') or recarray ('rec')
-               mode (str): If 'time', return a list of equal time arrays, if 'all', return all in a single array
-
-               dt (float): closure amplitude averaging timescale
-               err_type (str): 'predicted' or 'measured'
-               num_samples: number of bootstrap (re)samples if measuring error
-               round_s (float): accuracy of datetime object in seconds
-
-        """
-
-        cdf = make_bsp_df(self, mode=mode, round_s=round_s)
-        if dt>0:
-            cdf_av = average_bispectra(cdf,dt,return_type=return_type,num_samples=num_samples)
-            self.bispec = cdf_av
-        else:
-            self.bispec = cdf
-
-    def add_camp(self, return_type='rec', ctype='logcamp', mode='all', debias=False,
-                       dt=0, err_type='predicted', num_samples=1000, round_s=0.1):
-
-        """Adds attribute self.camp: closure amplitudes table
+        """Adds attribute self.camp or self.logcamp: closure amplitudes table
 
            Args:
                return_type: data frame ('df') or recarray ('rec')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude
-               mode (str): If 'time', return a list of equal time arrays, if 'all', return all in a single array
+               debias_type (str): 'ExactLog' or 'old'
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
 
-               dt (float): closure amplitude averaging timescale
+               avg_time (float): closure amplitude averaging timescale
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
 
         """
-
-        if dt>0:
-            foo = self.avg_incoherent(dt,debias=debias,err_type=err_type)
+        #TODO store averaging timescale/other parameters?
+        if avg_time>0:
+            foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else: foo = self
-        cdf = make_camp_df(foo,ctype=ctype,debias=False,mode=mode,round_s=round_s)
+        cdf = make_camp_df(foo,ctype=ctype,debias=False,count=count,
+                           round_s=round_s,debias_type=debias_type)
+
         if return_type=='rec':
             cdf = df_to_rec(cdf,'camp')
-        self.camp = cdf
+
+        if ctype=='logcamp':
+            self.logcamp = cdf
+            print("\n updated self.logcamp: avg_time %f s"%avg_time)
+        elif ctype=='camp':
+            self.camp = cdf
+            print("\n updated self.camp: avg_time %f s"%avg_time)
+
+
+    def add_logcamp(self, return_type='rec', ctype='camp',
+                       count='max', debias=True,  debias_type='old',
+                       avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
+
+        """Adds attribute self.logcamp: closure amplitudes table
+
+           Args:
+               return_type: data frame ('df') or recarray ('rec')
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               debias (bool): If True, debias the closure amplitude
+               debias_type (str): 'ExactLog' or 'old'
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+
+               avg_time (float): closure amplitude averaging timescale
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+
+        """
+        self.add_camp(return_type=return_type, ctype='logcamp',
+                     count=count, debias=debias,  debias_type=debias_type,
+                     avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
+
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
 
@@ -1092,7 +1169,7 @@ class Obsdata(object):
                                      If 0.0, auto-estimates this value to twice the median scan length.
                min_num (int): The minimum number of closure phase differences for a triangle to be included in the set of estimators.
                print_std (bool): Whether or not to print the normalized standard deviation for each closure triangle.
-               count (bool): Specification of which closure phases to use (e.g., 'max' or 'min')
+               count (str): If 'min', use minimal set of phases, if 'max' use all closure phases up to reordering
 
            Returns:
                (float): The rescaling factor
@@ -1449,7 +1526,7 @@ class Obsdata(object):
            Args:
                vtype (str): The visibilty type ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis') from which to assemble bispectra
                mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
-               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+               count (str): If 'min', return minimal set of bispectra, if 'max' return all bispectra up to reordering
                timetype (str): 'GMST' or 'UTC'
 
            Returns:
@@ -1494,18 +1571,19 @@ class Obsdata(object):
 
             # Minimal Set
             if count == 'min':
-                # If we want a minimal set, choose triangles with the minimum sefd reference
-                # Unless there is no sefd data, in which case choose the northernmost
-                # TODO This should probably be an sefdr + sefdl average instead
-                if len(set(self.tarr['sefdr'])) > 1:
-                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-                else:
-                    ref = sites[np.argmax([self.tarr[self.tkey[site]]['z'] for site in sites])]
-                sites.remove(ref)
+                tris = tri_minimal_set(sites, self.tarr, self.tkey)
+#                # If we want a minimal set, choose triangles with the minimum sefd reference
+#                # Unless there is no sefd data, in which case choose the northernmost
+#                # TODO This should probably be an sefdr + sefdl average instead
+#                if len(set(self.tarr['sefdr'])) > 1:
+#                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+#                else:
+#                    ref = sites[np.argmax([self.tarr[self.tkey[site]]['z'] for site in sites])]
+#                sites.remove(ref)
 
-                # Find all triangles that contain the ref
-                tris = list(it.combinations(sites,2))
-                tris = [(ref, t[0], t[1]) for t in tris]
+#                # Find all triangles that contain the ref
+#                tris = list(it.combinations(sites,2))
+#                tris = [(ref, t[0], t[1]) for t in tris]
 
             # Maximal  Set - find all triangles
             elif count == 'max':
@@ -1523,7 +1601,7 @@ class Obsdata(object):
                 # Select triangle entries in the data dictionary
                 try:
                     l1 = l_dict[(tri[0], tri[1])]
-                    l2 = l_dict[(tri[1],tri[2])]
+                    l2 = l_dict[(tri[1], tri[2])]
                     l3 = l_dict[(tri[2], tri[0])]
                 except KeyError:
                     continue
@@ -1647,7 +1725,7 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False, cphases=[]):
+    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False, cphases=[],force_recompute=False):
 
         """Return closure phase  over time on a triangle (1-2-3).
 
@@ -1658,8 +1736,9 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'GMST' or 'UTC'
-               cphases (list): optionally pass in the cphases so they are not recomputed if you are plotting multiple triangles
 
+               cphases (list): optionally pass in the cphases so they are not recomputed if you are plotting multiple triangles
+               force_recompute (bool): if True, recompute closure phases instead of using obs.cphase saved data
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
         """
@@ -1667,7 +1746,10 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get closure phases (maximal set)
-        if len(cphases) == 0:
+        if (len(cphases)==0) and not (self.cphases is None) and not force_recompute:
+            cphases=self.cphases
+
+        elif (len(cphases) == 0) or force_recompute:
             cphases = self.c_phases(mode='time', count='max', vtype=vtype, ang_unit=ang_unit, timetype=timetype)
 
         # Get requested closure phases over time
@@ -1749,6 +1831,8 @@ class Obsdata(object):
                 time = gmst_to_utc(time, self.mjd)
 
             sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
+            sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+            ref = sites[0]
             if len(sites) < 4:
                 continue
 
@@ -1759,52 +1843,88 @@ class Obsdata(object):
 
             # Minimal set
             if count == 'min':
-                # If we want a minimal set, choose the minimum sefd reference
-                # TODO this should probably be an sefdr + sefdl average instead
-                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-                ref = sites[0]
 
-                # Loop over other sites >=3 and form minimal closure amplitude set
-                for i in range(3, len(sites)):
-                    if (ref, sites[i]) not in l_dict.keys():
+                quadsets = quad_minimal_set(sites, self.tarr, self.tkey)
+                for quad in quadsets:
+                    # Blue is numerator, red is denominator
+                    # TODO behavior when no baseline?
+
+                    if (quad[0], quad[1]) not in l_dict.keys():
+                        continue
+                    if (quad[1], quad[2]) not in l_dict.keys():
+                        continue
+                    if (quad[0], quad[3]) not in l_dict.keys():
+                        continue
+                    if (quad[2], quad[3]) not in l_dict.keys():
+                        continue
+                    try:
+                        blue1 = l_dict[quad[0], quad[1]]
+                        blue2 = l_dict[quad[2], quad[3]]
+                        red1 = l_dict[quad[1], quad[2]]
+                        red2 = l_dict[quad[0], quad[3]]
+                    except KeyError:
                         continue
 
-                    # MJ: This causes a KeyError in some cases, probably with flagged data or something
-                    blue1 = l_dict[ref, sites[i]]
-                    for j in range(1, i):
-                        if j == i-1: k = 1
-                        else: k = j+1
+                    # Compute the closure amplitude and the error
+                    (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
+                                                             ctype=ctype, debias=debias, debias_type=debias_type)
 
-                        # TODO MJ: I tried joining these into a single if statement using or without success... no idea why..
-                        if (sites[i], sites[j]) not in l_dict.keys():
-                            continue
+                    # Add the closure amplitudes to the equal-time list
+                    # Our site convention is (12)(34)/(14)(23)
+                    cas.append(np.array((time,
+                                         quad[0], quad[1], quad[2], quad[3],
+                                         blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+                                         red1['u'], red1['v'], red2['u'], red2['v'],
+                                         camp, camperr),
+                                         dtype=DTCAMP))
 
-                        if (ref, sites[k]) not in l_dict.keys():
-                            continue
 
-                        if (sites[j], sites[k]) not in l_dict.keys():
-                            continue
+#                # If we want a minimal set, choose the minimum sefd reference
+#                # TODO this should probably be an sefdr + sefdl average instead
+#                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
+#                ref = sites[0]
 
-                        #TODO behavior when no baseline?
-                        try:
-                            red1 = l_dict[sites[i], sites[j]]
-                            red2 = l_dict[ref, sites[k]]
-                            blue2 = l_dict[sites[j], sites[k]]
-                        except KeyError:
-                            continue
+#                # Loop over other sites >=3 and form minimal closure amplitude set
+#                for i in range(3, len(sites)):
+#                    if (ref, sites[i]) not in l_dict.keys():
+#                        continue
 
-                        # Compute the closure amplitude and the error
-                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                                 ctype=ctype, debias=debias, debias_type=debias_type)
+#                    # MJ: This causes a KeyError in some cases, probably with flagged data or something
+#                    blue1 = l_dict[ref, sites[i]]
+#                    for j in range(1, i):
+#                        if j == i-1: k = 1
+#                        else: k = j+1
 
-                        # Add the closure amplitudes to the equal-time list
-                        # Our site convention is (12)(34)/(14)(23)
-                        cas.append(np.array((time,
-                                             ref, sites[i], sites[j], sites[k],
-                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                             red1['u'], red1['v'], red2['u'], red2['v'],
-                                             camp, camperr),
-                                             dtype=DTCAMP))
+#                        # TODO MJ: I tried joining these into a single if statement using or without success... no idea why..
+#                        if (sites[i], sites[j]) not in l_dict.keys():
+#                            continue
+
+#                        if (ref, sites[k]) not in l_dict.keys():
+#                            continue
+
+#                        if (sites[j], sites[k]) not in l_dict.keys():
+#                            continue
+
+#                        #TODO behavior when no baseline?
+#                        try:
+#                            red1 = l_dict[sites[i], sites[j]]
+#                            red2 = l_dict[ref, sites[k]]
+#                            blue2 = l_dict[sites[j], sites[k]]
+#                        except KeyError:
+#                            continue
+
+#                        # Compute the closure amplitude and the error
+#                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
+#                                                                 ctype=ctype, debias=debias, debias_type=debias_type)
+
+#                        # Add the closure amplitudes to the equal-time list
+#                        # Our site convention is (12)(34)/(14)(23)
+#                        cas.append(np.array((time,
+#                                             ref, sites[i], sites[j], sites[k],
+#                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+#                                             red1['u'], red1['v'], red2['u'], red2['v'],
+#                                             camp, camperr),
+#                                             dtype=DTCAMP))
 
             # Maximal Set
             elif count == 'max':
@@ -1849,7 +1969,8 @@ class Obsdata(object):
         return out
 
     def camp_quad(self, site1, site2, site3, site4,
-                        vtype='vis', ctype='camp', debias=True, timetype=False, camps=[]):
+                        vtype='vis', ctype='camp', debias=True, timetype=False,
+                        camps=[], force_recompute=False):
 
         """Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
@@ -1879,14 +2000,19 @@ class Obsdata(object):
         b1 = set((site1, site4))
         b2 = set((site2, site3))
 
-
         # Get the closure amplitudes
         outdata = []
 
-        if len(camps) == 0:
+        # Get closure amplitudes (maximal set)
+        if (ctype=='camp') and (len(camps)==0) and not (self.camps is None) and not force_recompute:
+            camps=self.camps
+        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamps is None) and not force_recompute:
+            camps=self.logcamps
+        else:
             camps = self.c_amplitudes(mode='time', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
 
         # camps does not contain inverses
+        # ANDREW TODO what about reorderings????
         for entry in camps:
             for obs in entry:
 
@@ -1931,7 +2057,6 @@ class Obsdata(object):
                         outdata.append(np.array(obs, dtype=DTCAMP))
 
                     continue
-
 
         return np.array(outdata)
 
@@ -2092,7 +2217,7 @@ class Obsdata(object):
                           vtype='vis', ang_unit='deg', timetype=False,
                           rangex=False, rangey=False, ebar=True, labels=True,
                           show=True, axis=False, color='b', export_pdf="",
-                          cphases=[]):
+                          cphases=[],force_recompute=False):
 
         """Plot closure phase over time on a triangle (1-2-3).
 
@@ -2116,7 +2241,7 @@ class Obsdata(object):
                export_pdf (str): path to pdf file to save figure
 
                cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
-
+               force_recompute (bool): if True, recompute closure phases instead of using stored data 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
@@ -2127,7 +2252,10 @@ class Obsdata(object):
         else: angle = eh.DEGREE
 
         # Get closure phases (maximal set)
-        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases)
+        if (len(cphases)==0) and not (self.cphases is None) and not force_recompute:
+            cphases=self.cphases
+
+        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         if len(plotdata) == 0:
@@ -2169,7 +2297,7 @@ class Obsdata(object):
     def plot_camp(self, site1, site2, site3, site4,
                         vtype='vis', ctype='camp', debias=True, timetype=False,
                         rangex=False, rangey=False, ebar=True, show=True, axis=False, color='b', export_pdf="",
-                        camps=[]):
+                        camps=[], force_recompute=False):
 
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
@@ -2194,7 +2322,7 @@ class Obsdata(object):
                export_pdf (str): path to pdf file to save figure
 
                camps (list): optionally pass in the time-sorted camps so they don't have to be recomputed
-
+               force_recompute (bool): if True, recompute closure amplitudes instead of using stored  data
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
@@ -2202,9 +2330,17 @@ class Obsdata(object):
         if timetype==False:
             timetype=self.timetype
 
-        # Get closure phases (maximal set)
+        # Get closure amplitudes (maximal set)
+        if (ctype=='camp') and (len(camps)==0) and not (self.camps is None) and not force_recompute:
+            camps=self.camps
+        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamps is None) and not force_recompute:
+            camps=self.logcamps
+
+        # Get closure amplitudes (maximal set)
         cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype,
-                                debias=debias, timetype=timetype, camps=camps)
+                                debias=debias, timetype=timetype, 
+                                camps=camps,force_recompute=force_recompute)
+
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
 

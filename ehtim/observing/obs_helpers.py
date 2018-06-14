@@ -30,6 +30,8 @@ import astropy.time as at
 import astropy.coordinates as coords
 import numpy as np
 import scipy.special as ss
+import itertools as it
+import copy
 
 from ehtim.const_def import *
 
@@ -769,3 +771,191 @@ def xyz_2_latlong(obsvecs):
 
     #if out.shape[0]==1: out = out[0]
     return out
+
+def tri_minimal_set(sites, tarr, tkey):
+    """returns a minimal set of triangles for bispectra and closure phase"""
+
+    if len(set(tarr['sefdr'])) > 1:
+        ref = sites[np.argmin([tarr[tkey[site]]['sefdr'] for site in sites])]
+    else:
+        ref = sites[np.argmax([tarr[tkey[site]]['z'] for site in sites])]
+    sites.remove(ref)
+
+    # Find all triangles that contain the ref
+    tris = list(it.combinations(sites,2))
+    tris = [(ref, t[0], t[1]) for t in tris]
+
+    return tris
+
+def quad_minimal_set(sites, tarr, tkey):
+    """returns a minimal set of quadrangels for closure amplitude"""
+
+    # If we want a minimal set, choose the minimum sefd reference
+    # TODO this should probably be an sefdr + sefdl average instead
+    sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])]
+    ref = sites[0]
+
+    # Loop over other sites >=3 and form minimal closure amplitude set
+    quads = []
+    for i in range(3, len(sites)):
+        for j in range(1, i):
+            if j == i-1: k = 1
+            else: k = j+1
+
+            # convetion is (12)(34)/(14)(23)
+            quad = (ref, sites[i], sites[j], sites[k])
+            quads.append(quad)
+
+    return quads
+
+# ANDREW TODO: 
+# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
+# minimal set as we would from  calling c_amplitudes(count='min). This is because of sign flips. 
+def reduce_tri_minimal(obs, datarr):
+    """reduce a bispectrum or closure phase data array to a minimal set
+       datarr can be either a bispectrum array of type DTBIS
+       or a closure phase array of type DTCPHASE, or a time sorted 
+       list of either
+    """
+
+    # time sort or not
+    if not (type(datarr) is list):
+        datalist = []
+        dtype = datarr.dtype
+        for key, group in it.groupby(datarr, lambda x: x['time']):
+            datalist.append(np.array([gp for gp in group],dtype=dtype))
+        returnType='all'
+    else: 
+        dtype = datarr[0].dtype
+        datalist=datarr
+        returnType='time'
+
+    out = []
+
+    for timegroup in datalist:
+        if returnType=='all': 
+            outgroup = out
+        else:
+            outgroup = []
+
+        # determine a minimal set of trinagles
+        sites = list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3']))))
+        tris = tri_minimal_set(sites, obs.tarr, obs.tkey)
+        tris = [set(tri) for tri in tris]
+
+        # add data points from original array to new array if in minimal set
+        for dp in timegroup:
+            if set((dp['t1'],dp['t2'],dp['t3'])) in  tris: #ANDREW TODO: should we care about sign flips?
+                outgroup.append(dp)
+
+        if returnType=='time':
+            out.append(np.array(outgroup,dtype=dtype))
+        else:
+            out = outgroup
+
+    if returnType=='all':
+        out = np.array(out,dtype=dtype)
+    return out
+
+# ANDREW TODO: 
+# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
+# minimal set as we would from  calling c_amplitudes(count='min). This is because of  inverses. 
+def reduce_quad_minimal(obs, datarr,ctype='camp'):
+    """reduce a closure amplitude or log closure amplitude array to a minimal set"""
+
+    if not ctype in ['camp','logcamp']:
+        raise Exception("ctype must be 'camp' or 'logcamp'")
+
+    # time sort or not
+    if not (type(datarr) is list):
+        datalist = []
+        dtype = datarr.dtype
+        for key, group in it.groupby(datarr, lambda x: x['time']):
+            datalist.append(np.array([x for x in group]))
+        returnType='all'
+    else: 
+        dtype = datarr[0].dtype
+        datalist=datarr
+        returnType='time'
+
+    out = []
+    for timegroup in datalist:
+        if returnType=='all': 
+            outgroup = out
+        else:
+            outgroup = []
+        # determine a minimal set of quadrangles
+        sites = np.array(list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3'],timegroup['t4'])))))
+        sites = sites[np.argsort([obs.tarr[obs.tkey[site]]['sefdr'] for site in sites])]
+        ref = sites[0]
+        quads = quad_minimal_set(sites, obs.tarr, obs.tkey)
+
+        # add data points from original camp array to new array if in minimal set
+        # ANDREW TODO: there are ordering issues here that don't show up in cphase case....
+        for dp in timegroup:
+            # this is all same closure amplitude, but the ordering of labels is different
+            if ((dp['t1'],dp['t2'],dp['t3'],dp['t4']) in quads or
+                (dp['t2'],dp['t1'],dp['t4'],dp['t3']) in quads or
+                (dp['t3'],dp['t4'],dp['t1'],dp['t2']) in quads or
+                (dp['t4'],dp['t3'],dp['t2'],dp['t1']) in quads):
+
+                outgroup.append(np.array(dp,dtype=DTCAMP))
+
+            # flip the inverse closure amplitude
+            if ((dp['t1'],dp['t4'],dp['t3'],dp['t2']) in quads or
+                (dp['t4'],dp['t1'],dp['t2'],dp['t3']) in quads or
+                (dp['t3'],dp['t2'],dp['t1'],dp['t4']) in quads or
+                (dp['t2'],dp['t3'],dp['t4'],dp['t1']) in quads):
+
+                dp2 = copy.deepcopy(dp)
+                campold = dp['camp']
+                sigmaold = dp['sigmaca']
+                t1old = dp['t1']
+                t2old = dp['t2']
+                t3old = dp['t3']
+                t4old = dp['t4']
+                u1old = dp['u1']
+                u2old = dp['u2']
+                u3old = dp['u3']
+                u4old = dp['u4']
+                v1old = dp['v1']
+                v2old = dp['v2']
+                v3old = dp['v3']
+                v4old = dp['v4']
+
+                if ctype=='camp':
+                    dp2['camp'] = 1./campold
+                    dp2['sigmaca'] = sigmaold/(campold**2)
+
+                elif ctype=='logcamp':
+                    dp2['camp'] = -campold
+                    dp2['sigmaca'] = sigmaold
+                dp2['t1'] = t1old
+                dp2['t2'] = t4old
+                dp2['t3'] = t3old
+                dp2['t4'] = t2old
+            
+                dp2['u1'] = u3old
+                dp2['v1'] = v3old
+
+                dp2['u2'] = -u4old
+                dp2['v2'] = -v4old
+
+                dp2['u3'] = -u2old
+                dp2['v3'] = -v2old
+
+                dp2['u4'] = u1old
+                dp2['v4'] = v1old
+
+                outgroup.append(dp2)
+
+        if returnType=='time':
+            out.append(np.array(outgroup,dtype=dtype))
+        else:
+            out = outgroup
+
+    if returnType=='all':
+        out = np.array(out,dtype=dtype)
+    return out
+
+

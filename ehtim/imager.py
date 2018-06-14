@@ -58,11 +58,6 @@ class Imager(object):
     """
 
     def __init__(self, obsdata, init_im, prior_im=None, flux=None, data_term=DAT_DEFAULT, reg_term=REG_DEFAULT, **kwargs):
-#                       clipfloor=0., maxit=MAXIT,
-#                       transform='log', ttype='fast',
-#                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0,
-#                       fft_pad_factor=FFT_PAD_DEFAULT, fft_interp_order=FFT_INTERP_DEFAULT,
-#                       fft_conv_func=GRIDDER_CONV_FUNC_DEFAULT, fft_gridder_prad=GRIDDER_P_RAD_DEFAULT):
 
         self.logstr = ""
         self._obs_list = []
@@ -81,6 +76,7 @@ class Imager(object):
         self._snrcut_list = []
         self._debias_list = []
         self._systematic_noise_list = []
+        self._systematic_cphase_noise_list = []
         self._transform_list = []
 
         # regularizer/data terms for the next imaging iteration
@@ -105,6 +101,7 @@ class Imager(object):
         self.debias_next=kwargs.get('debias',True)
         self.snrcut_next=kwargs.get('snrcut',0.)
         self.systematic_noise_next = kwargs.get('systematic_noise',0.)
+        self.systematic_cphase_noise_next = kwargs.get('systematic_noise',0.)
 
         # clippping
         self.clipfloor_next = kwargs.get('clipfloor',0.)
@@ -234,6 +231,10 @@ class Imager(object):
         if self.systematic_noise_next != self.systematic_noise_last():
             self._change_imgr_params = True
             return
+        if self.systematic_cphase_noise_next != self.systematic_noise_last():
+            self._change_imgr_params = True
+            return
+
 
     def check_limits(self):
         """Check image parameter consistency with observation.
@@ -361,13 +362,20 @@ class Imager(object):
         return self._snrcut_list[-1]
 
     def systematic_noise_last(self):
-        """Return last snrcut value.
+        """Return last systematic_noise value.
         """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._systematic_noise_list[-1]
 
+    def systematic_cphase_noise_last(self):
+        """Return last closure phase systematic noise value (in degree).
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._systematic_cphase_noise_list[-1]
 
     def stop_last(self):
         """Return last convergence value.
@@ -403,7 +411,8 @@ class Imager(object):
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
-                                debias=self.debias_next, snrcut=self.snrcut_next,systematic_noise=self.systematic_noise_next,
+                                debias=self.debias_next, snrcut=self.snrcut_next,
+                                systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                 ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
                                 conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad)
 
@@ -915,9 +924,10 @@ class Imager(object):
         self._obs_list.append(self.obs_next)
         self._init_list.append(self.init_next)
         self._prior_list.append(self.prior_next)
-        self._debias_list.append(self.flux_next)
-        self._systematic_noise_list.append(self.flux_next)
-        self._snrcut_list.append(self.flux_next)
+        self._debias_list.append(self.debias_next)
+        self._systematic_noise_list.append(self.systematic_noise_next)
+        self._systematic_noise_list.append(self.systematic_cphase_noise_next)
+        self._snrcut_list.append(self.snrcut_next)
         self._flux_list.append(self.flux_next)
         self._clipfloor_list.append(self.clipfloor_next)
         self._maxit_list.append(self.maxit_next)

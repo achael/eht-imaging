@@ -63,7 +63,7 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
-def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',round_s=0.1):
+def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
 
     """generate DataFrame of closure phases
 
@@ -75,7 +75,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',round_s=
         df: closure phase data in DataFrame format
     """
 
-    data=obs.c_phases(mode=mode)
+    data=obs.c_phases(mode=mode,count=count)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -89,7 +89,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',round_s=
     df['source'] = sour
     return df
 
-def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',round_s=0.1):
+def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',debias_type='ExactLog',round_s=0.1):
 
     """generate DataFrame of closure amplitudes
 
@@ -101,7 +101,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
         df: closure amplitude data in DataFrame format
     """
 
-    data = obs.c_amplitudes(mode=mode,debias=debias,ctype=ctype)
+    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype,debias_type=debias_type)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -116,7 +116,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['catype'] = ctype
     return df
 
-def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',round_s=0.1):
+def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1):
 
     """generate DataFrame of bispectra
 
@@ -128,7 +128,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',round_s=0.1
         df: bispectra data in DataFrame format
     """
 
-    data = obs.bispectra(mode=mode)
+    data = obs.bispectra(mode=mode,count=count)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -142,7 +142,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',round_s=0.1
     df['source'] = sour
     return df
 
-def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1e3)):
+def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=1000):
 
     """averages DataFrame of cphases
 
@@ -187,8 +187,9 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=in
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
     
+    #ANDREW TODO-- this can lead to big problems!!
     #drop values averaged from less than 3 datapoints
-    cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
+    #cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
     if return_type=='rec':
         return df_to_rec(cdf2,'cphase')
     elif return_type=='df':
@@ -227,10 +228,11 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
     
+    #ANDREW TODO -- this can lead to big problems!!
     #drop values averaged from less than 3 datapoints
-    cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
+    #cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
     if return_type=='rec':
-        return df_to_rec(cdf2,'bsp')
+        return df_to_rec(cdf2,'bispec')
     elif return_type=='df':
         return cdf2
 
@@ -280,8 +282,9 @@ def average_camp(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
     
+    #ANDREW TODO -- this can lead to big problems!!
     #drop values averaged from less than 3 datapoints
-    cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
+    #cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
     if return_type=='rec':
         return df_to_rec(cdf2,'camp')
     elif return_type=='df':
@@ -296,13 +299,17 @@ def df_to_rec(df,product_type):
         product_type: vis, cphase, camp
     """
     if product_type=='cphase':
-        return df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
+         out= df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
+         return np.array(out,dtype=DTCPHASE)
     elif product_type=='camp':
-        return df[['time','t1','t2','t3','t4','u1','v1','u2','v2','u3','v3','u4','v4','camp','sigmaca']].to_records(index=False)
+         out=  df[['time','t1','t2','t3','t4','u1','v1','u2','v2','u3','v3','u4','v4','camp','sigmaca']].to_records(index=False)
+         return np.array(out,dtype=DTCAMP)
     elif product_type=='vis':
-        return df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
-    elif product_type=='bsp':
-        return df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
+         out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
+         return np.array(out,dtype=DTPOL)
+    elif product_type=='bispec':
+         out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
+         return np.array(out,dtype=DTBIS)
 
 def round_time(t,round_s=0.1):
 
