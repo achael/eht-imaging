@@ -1180,6 +1180,26 @@ class Obsdata(object):
         print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
 
+    def flag_bl(self, sites):
+
+        """Flag data points that include the specified baseline
+
+           Args:
+               sites (list): baseline to remove from the data
+
+           Returns:
+               (Obsdata): a observation object with flagged data points removed
+        """
+
+        # This will remove all visibilities that include any of the specified baseline
+        obs_out = self.copy()
+        t1_list = obs_out.unpack('t1')['t1']
+        t2_list = obs_out.unpack('t2')['t2']
+        site_mask = np.array([not(t1_list[j] in sites and t2_list[j] in sites) for j in range(len(t1_list))])
+        obs_out.data = obs_out.data[site_mask]
+        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
+        return obs_out
+
     def flag_low_snr(self, snr_cut=3):
 
         """Flag low snr data points
