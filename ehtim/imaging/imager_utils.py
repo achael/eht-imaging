@@ -54,7 +54,7 @@ MAXIT = 100 # maximum number of iterations
 STOP = 1.e-8 # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'logamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'simple', 'compact', 'compact2']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'simple', 'compact', 'compact2','rgauss']
 
 # FFT & NFFT options
 NFFT_KERSIZE_DEFAULT = 20
@@ -73,11 +73,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
                    alpha_s1=1, alpha_s2=1,
                    alpha_d1=100, alpha_d2=100,
                    alpha_flux=500, alpha_cm=500, **kwargs):
-#                   ttype='direct',
-#                   fft_pad_factor=FFT_PAD_DEFAULT, fft_interp=FFT_INTERP_DEFAULT,
-#                   grid_prad=GRIDDER_P_RAD_DEFAULT, grid_conv=GRIDDER_CONV_FUNC_DEFAULT,
-#                   clipfloor=0., grads=True, logim=True, debias=True, snrcut=0, systematic_noise=0.,
-#                   maxit=MAXIT, stop=STOP, show_updates=True, norm_init=True, norm_reg=False):
+
 
     """Run a general interferometric imager.
 
@@ -88,8 +84,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            flux (float): The total flux of the output image in Jy
            d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
            d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
-           s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'tv2', 'l1', 'patch'
-           s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch'
+           s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'tv2', 'l1', 'patch','compact','compact2','rgauss'
+           s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch','compact','compact2','rgauss'
            alpha_d1 (float): The first data term weighting
            alpha_d2 (float): The second data term weighting
            alpha_s1 (float): The first regularizer term weighting
@@ -102,6 +98,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
            clipfloor (float): The Jy/pixel level above which prior image pixels are varied
            systematic_noise (float): Fractional systematic noise tolerance to add to sigmas
+           systematic_cphase_noise (float): Systematic noise tolerance  in degree to add to cphase sigmas
            beam_size (float): beam size in radians for normalizing the regularizers
            grads (bool): If True, analytic gradients are used
            logim (bool): If True, uses I = exp(I') change of variables
@@ -504,6 +501,15 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -scompact2(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
+    elif stype == "rgauss":
+        #additional key words for gaussian regularizer 
+        major = kwargs.get('major',1.0)
+        minor = kwargs.get('minor',1.0)
+        PA = kwargs.get('PA',1.0)
+
+	    if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)         
+        s = -sgauss(imvec, xdim, ydim, psize, major=major, minor=minor, PA=PA)
     else:
         s = 0
 
@@ -550,6 +556,16 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -scompact2grad(imvec, xdim, ydim, psize, flux, norm_reg=norm_reg)
+        s = s[mask]
+    elif stype == "rgauss":
+        #additional key words for gaussian regularizer 
+        major = kwargs.get('major',1.0)
+        minor = kwargs.get('minor',1.0)
+        PA = kwargs.get('PA',1.0)
+
+	    if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=True)
+        s = -sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA)
         s = s[mask]
     else:
         s = np.zeros(len(imvec))
@@ -1857,6 +1873,9 @@ def spatchgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
 
 #TODO FIGURE OUT NORMALIZATIONS FOR COMPACT 1 & 2 REGULARIZERS
 def scompact(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """I r^2 source size regularizer
+    """
+
     im = imvec.reshape(ny, nx)
     im = im / flux
 
@@ -1871,6 +1890,9 @@ def scompact(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=No
 
 
 def scompactgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Gradient for I r^2 source size regularizer
+    """
+
     im = imvec.reshape(ny, nx)
     im = im / flux
 
@@ -1891,6 +1913,9 @@ def scompactgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_siz
     return -grad.reshape(-1)
 
 def scompact2(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """I^2r^2 source size regularizer
+    """
+
     im = imvec.reshape(ny, nx)
 
     xx, yy = np.meshgrid(range(nx), range(ny))
@@ -1903,6 +1928,9 @@ def scompact2(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=N
     return -out
 
 def scompact2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Gradient for I^2r^2 source size regularizer
+    """
+
     im = imvec.reshape(ny, nx)
 
     xx, yy = np.meshgrid(range(nx), range(ny))
@@ -1915,6 +1943,106 @@ def scompact2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_si
 
     return -grad.reshape(-1)
 
+def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
+    """Gaussian source size regularizer
+    """
+
+	#major, minor and PA are all in radians
+	phi = PA 
+
+	#eigenvalues of covariance matrix
+	lambda1 = minor**2./(8.*np.log(2.))
+	lambda2 = major**2./(8.*np.log(2.))
+
+	#now compute covariance matrix elements from user inputs
+	sigxx_prime = lambda1*(np.cos(phi)**2.) + lambda2*(np.sin(phi)**2.) 
+	sigyy_prime = lambda1*(np.sin(phi)**2.) + lambda2*(np.cos(phi)**2.)
+	sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi) 
+
+ 
+	#we get the dimensions and image vector     
+        pdim = psize
+        im = imvec.reshape(xdim, ydim)
+	xlist, ylist = np.meshgrid(range(xdim),range(ydim))
+	xlist = xlist - (xdim-1)/2.0
+	ylist = ylist - (ydim-1)/2.0
+	
+	xx = xlist * psize
+	yy = ylist * psize
+
+
+	#the centroid parameters
+	x0 = np.sum(xx*im) / np.sum(im)
+        y0 = np.sum(yy*im) / np.sum(im)
+
+	#we calculate the elements of the covariance matrix
+        sigxx = (np.sum((xx - x0)**2.*im)/np.sum(im))
+        sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
+        sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
+      
+	#We calculate the regularizer 
+	rgauss = -( (sigxx - sigxx_prime)**2. + (sigyy - sigyy_prime)**2. + (sigxy - sigxy_prime)**2. )
+	rgauss = rgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
+
+	return rgauss
+
+
+def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
+    """Gradient for Gaussian source size regularizer
+    """
+
+	#major, minor and PA are all in radians
+	phi = PA
+
+	#computing eigenvalues of the covariance matrix
+	lambda1 = (minor**2.)/(8.*np.log(2.))
+	lambda2 = (major**2.)/(8.*np.log(2.))
+
+	#now compute covariance matrix elements from user inputs
+
+	sigxx_prime = lambda1*(np.cos(phi)**2.) + lambda2*(np.sin(phi)**2.) 
+	sigyy_prime = lambda1*(np.sin(phi)**2.) + lambda2*(np.cos(phi)**2.)
+	sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi) 
+
+ 
+	#we get the dimensions and image vector     
+        pdim = psize
+        im = imvec.reshape(xdim, ydim)
+	xlist, ylist = np.meshgrid(range(xdim),range(ydim))
+	xlist = xlist - (xdim-1)/2.0
+	ylist = ylist - (ydim-1)/2.0
+	
+	xx = xlist * psize
+	yy = ylist * psize
+
+
+	#the centroid parameters
+	x0 = np.sum(xx*im) / np.sum(im)
+        y0 = np.sum(yy*im) / np.sum(im)
+
+	#we calculate the elements of the covariance matrix of the image 
+        sigxx = (np.sum((xx - x0)**2.*im)/np.sum(im))
+        sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
+        sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
+
+
+	#now we compute the gradients of all quantities 
+	#gradient of centroid 
+	dx0 = ( xx -  x0) / np.sum(im)
+	dy0 = ( yy -  y0) / np.sum(im)
+
+	#gradients of covariance matrix elements 
+	dxx = (( (xx - x0)**2. - 2.*(xx - x0)*dx0*im ) - sigxx ) / np.sum(im) 
+
+	dyy = ( ( (yy - y0)**2. - 2.*(yy - y0)*dx0*im ) - sigyy ) / np.sum(im) 	
+
+	dxy = ( ( (xx - x0)*(yy - y0) - (yy - y0)*dx0*im - (xx - x0)*dy0*im ) - sigxy ) / np.sum(im) 
+
+	#gradient of the regularizer 
+	drgauss = ( 2.*(sigxx - sigxx_prime)*dxx + 2.*(sigyy - sigyy_prime)*dyy + 2.*(sigxy - sigxy_prime)*dxy )
+	drgauss = drgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
+
+	return -drgauss.reshape(-1)
 
 ##################################################################################################
 # Chi^2 Data functions
