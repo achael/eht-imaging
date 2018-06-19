@@ -1694,38 +1694,37 @@ class Obsdata(object):
 
         # Get bispectra (maximal set)
         if len(bs) == 0:
-            bs = self.bispectra(mode='time', count='max', vtype=vtype, timetype=timetype)
+            bs = self.bispectra(mode='all', count='max', vtype=vtype, timetype=timetype)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
         outdata = []
-        for entry in bs:
-            for obs in entry:
-                obstri = (obs['t1'],obs['t2'],obs['t3'])
-                if set(obstri) == set(tri):
-                    # Flip the sign of the closure phase if necessary
-                    parity = paritycompare(tri, obstri)
+        for obs in bs:
+            obstri = (obs['t1'],obs['t2'],obs['t3'])
+            if set(obstri) == set(tri):
+                # Flip the sign of the closure phase if necessary
+                parity = paritycompare(tri, obstri)
 
-                    if parity==-1:
-                        obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
-                        t2 = copy.deepcopy(obs['t2'])
-                        u2 = copy.deepcopy(obs['u2'])
-                        v2 = copy.deepcopy(obs['v2'])
+                if parity==-1:
+                    obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
+                    t2 = copy.deepcopy(obs['t2'])
+                    u2 = copy.deepcopy(obs['u2'])
+                    v2 = copy.deepcopy(obs['v2'])
 
-                        obs['t2'] = obs['t3']
-                        obs['u2'] = obs['u3']
-                        obs['v2'] = obs['v3']
+                    obs['t2'] = obs['t3']
+                    obs['u2'] = obs['u3']
+                    obs['v2'] = obs['v3']
 
-                        obs['t3'] = t2
-                        obs['u3'] = u2
-                        obs['v3'] = v2
+                    obs['t3'] = t2
+                    obs['u3'] = u2
+                    obs['v3'] = v2
 
-                    outdata.append(np.array(obs, dtype=DTBIS))
-                    continue
+                outdata.append(np.array(obs, dtype=DTBIS))
+                continue
         return np.array(outdata)
 
 
-    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False, cphases=[],force_recompute=False):
+    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False, cphase=[],force_recompute=False):
 
         """Return closure phase  over time on a triangle (1-2-3).
 
@@ -1737,7 +1736,7 @@ class Obsdata(object):
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'GMST' or 'UTC'
 
-               cphases (list): optionally pass in the cphases so they are not recomputed if you are plotting multiple triangles
+               cphase (list): optionally pass in the cphase so they are not recomputed if you are plotting multiple triangles
                force_recompute (bool): if True, recompute closure phases instead of using obs.cphase saved data
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
@@ -1746,39 +1745,38 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get closure phases (maximal set)
-        if (len(cphases)==0) and not (self.cphases is None) and not force_recompute:
-            cphases=self.cphases
+        if (len(cphase)==0) and not (self.cphase is None) and not force_recompute:
+            cphase=self.cphase
 
-        elif (len(cphases) == 0) or force_recompute:
-            cphases = self.c_phases(mode='time', count='max', vtype=vtype, ang_unit=ang_unit, timetype=timetype)
+        elif (len(cphase) == 0) or force_recompute:
+            cphase = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit, timetype=timetype)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
         outdata = []
-        for entry in cphases:
-            for obs in entry:
-                obstri = (obs['t1'],obs['t2'],obs['t3'])
-                if set(obstri) == set(tri):
-                    # Flip the sign of the closure phase if necessary
-                    parity = paritycompare(tri, obstri)
+        for obs in cphase:
+            obstri = (obs['t1'],obs['t2'],obs['t3'])
+            if set(obstri) == set(tri):
+                # Flip the sign of the closure phase if necessary
+                parity = paritycompare(tri, obstri)
 
-                    obs['cphase'] *= parity
+                obs['cphase'] *= parity
 
-                    if parity==-1:
-                        t2 = copy.deepcopy(obs['t2'])
-                        u2 = copy.deepcopy(obs['u2'])
-                        v2 = copy.deepcopy(obs['v2'])
+                if parity==-1:
+                    t2 = copy.deepcopy(obs['t2'])
+                    u2 = copy.deepcopy(obs['u2'])
+                    v2 = copy.deepcopy(obs['v2'])
 
-                        obs['t2'] = obs['t3']
-                        obs['u2'] = obs['u3']
-                        obs['v2'] = obs['v3']
+                    obs['t2'] = obs['t3']
+                    obs['u2'] = obs['u3']
+                    obs['v2'] = obs['v3']
 
-                        obs['t3'] = t2
-                        obs['u3'] = u2
-                        obs['v3'] = v2
+                    obs['t3'] = t2
+                    obs['u3'] = u2
+                    obs['v3'] = v2
 
-                    outdata.append(np.array(obs, dtype=DTCPHASE))
-                    continue
+                outdata.append(np.array(obs, dtype=DTCPHASE))
+                continue
         return np.array(outdata)
 
     def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp',
@@ -2009,54 +2007,53 @@ class Obsdata(object):
         elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamps is None) and not force_recompute:
             camps=self.logcamps
         else:
-            camps = self.c_amplitudes(mode='time', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
+            camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
 
         # camps does not contain inverses
         # ANDREW TODO what about reorderings????
-        for entry in camps:
-            for obs in entry:
+        for obs in camps:
 
-                obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
+            obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
 
-                if set(quad) == set(obsquad):
-                    num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
-                    denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+            if set(quad) == set(obsquad):
+                num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
+                denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
 
-                    #flip inverse closure amplitudes
-                    if ((r1 in denom) and (r2 in denom) and (b1 in num) and (b2 in num)):
+                #flip inverse closure amplitudes
+                if ((r1 in denom) and (r2 in denom) and (b1 in num) and (b2 in num)):
 
-                        t2 = copy.deepcopy(obs['t2'])
-                        u2 = copy.deepcopy(obs['u2'])
-                        v2 = copy.deepcopy(obs['v2'])
+                    t2 = copy.deepcopy(obs['t2'])
+                    u2 = copy.deepcopy(obs['u2'])
+                    v2 = copy.deepcopy(obs['v2'])
 
-                        t3 = copy.deepcopy(obs['t3'])
-                        u3 = copy.deepcopy(obs['u3'])
-                        v3 = copy.deepcopy(obs['v3'])
+                    t3 = copy.deepcopy(obs['t3'])
+                    u3 = copy.deepcopy(obs['u3'])
+                    v3 = copy.deepcopy(obs['v3'])
 
-                        obs['t2'] = obs['t4']
-                        obs['u2'] = obs['u4']
-                        obs['v2'] = obs['v4']
+                    obs['t2'] = obs['t4']
+                    obs['u2'] = obs['u4']
+                    obs['v2'] = obs['v4']
 
-                        obs['t3'] = t2
-                        obs['u3'] = u2
-                        obs['v3'] = v2
+                    obs['t3'] = t2
+                    obs['u3'] = u2
+                    obs['v3'] = v2
 
-                        obs['t4'] = t3
-                        obs['u4'] = u3
-                        obs['v4'] = v3
+                    obs['t4'] = t3
+                    obs['u4'] = u3
+                    obs['v4'] = v3
 
-                        if ctype=='logcamp':
-                            obs['camp'] = -obs['camp']
-                        else:
-                            obs['camp'] = 1./obs['camp']
-                            obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
-                        outdata.append(np.array(obs, dtype=DTCAMP))
+                    if ctype=='logcamp':
+                        obs['camp'] = -obs['camp']
+                    else:
+                        obs['camp'] = 1./obs['camp']
+                        obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
+                    outdata.append(np.array(obs, dtype=DTCAMP))
 
-                    # not an inverse closure amplitude
-                    elif ((r1 in num) and (r2 in num) and (b1 in denom) and (b2 in denom)):
-                        outdata.append(np.array(obs, dtype=DTCAMP))
+                # not an inverse closure amplitude
+                elif ((r1 in num) and (r2 in num) and (b1 in denom) and (b2 in denom)):
+                    outdata.append(np.array(obs, dtype=DTCAMP))
 
-                    continue
+                continue
 
         return np.array(outdata)
 
@@ -2217,7 +2214,7 @@ class Obsdata(object):
                           vtype='vis', ang_unit='deg', timetype=False,
                           rangex=False, rangey=False, ebar=True, labels=True,
                           show=True, axis=False, color='b', export_pdf="",
-                          cphases=[],force_recompute=False):
+                          cphase=[],force_recompute=False):
 
         """Plot closure phase over time on a triangle (1-2-3).
 
@@ -2240,7 +2237,7 @@ class Obsdata(object):
                color (str): Color of scatterplot points
                export_pdf (str): path to pdf file to save figure
 
-               cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
+               cphase (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
                force_recompute (bool): if True, recompute closure phases instead of using stored data 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
@@ -2252,10 +2249,10 @@ class Obsdata(object):
         else: angle = eh.DEGREE
 
         # Get closure phases (maximal set)
-        if (len(cphases)==0) and not (self.cphases is None) and not force_recompute:
-            cphases=self.cphases
+        if (len(cphase)==0) and not (self.cphase is None) and not force_recompute:
+            cphase=self.cphase
 
-        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
+        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphase=cphase, force_recompute=force_recompute)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         if len(plotdata) == 0:
