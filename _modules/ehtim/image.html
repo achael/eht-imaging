@@ -414,7 +414,7 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">               uv (ndarray): an array of uv points</span>
-<span class="sd">               ttype (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 <span class="sd">               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT</span>
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 
@@ -433,7 +433,7 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): the existing observation with  baselines where the image FT will be sampled</span>
-<span class="sd">               ttype (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">                ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 <span class="sd">               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT</span>
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 
@@ -486,7 +486,7 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">               obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled</span>
-<span class="sd">               ttype (str): if &quot;fast&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 <span class="sd">               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT</span>
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 <span class="sd">               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point</span>

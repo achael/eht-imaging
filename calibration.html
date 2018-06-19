@@ -167,6 +167,379 @@
             
   <span class="target" id="module-calibration"></span><div class="section" id="calibration">
 <span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.caltable"></span><dl class="class">
+<dt id="ehtim.caltable.Caltable">
+<em class="property">class </em><code class="descclassname">ehtim.caltable.</code><code class="descname">Caltable</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datadict</em>, <em>tarr</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="ehtim.caltable.Caltable.source">
+<code class="descname">source</code><a class="headerlink" href="#ehtim.caltable.Caltable.source" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> &#8211; The source name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.ra">
+<code class="descname">ra</code><a class="headerlink" href="#ehtim.caltable.Caltable.ra" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The source Right Ascension in fractional hours</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.dec">
+<code class="descname">dec</code><a class="headerlink" href="#ehtim.caltable.Caltable.dec" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The source declination in fractional degrees</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.mjd">
+<code class="descname">mjd</code><a class="headerlink" href="#ehtim.caltable.Caltable.mjd" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> &#8211; The integer MJD of the observation</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.rf">
+<code class="descname">rf</code><a class="headerlink" href="#ehtim.caltable.Caltable.rf" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The observation frequency in Hz</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.bw">
+<code class="descname">bw</code><a class="headerlink" href="#ehtim.caltable.Caltable.bw" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> &#8211; The observation bandwidth in Hz</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.timetype">
+<code class="descname">timetype</code><a class="headerlink" href="#ehtim.caltable.Caltable.timetype" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> &#8211; How to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.tarr">
+<code class="descname">tarr</code><a class="headerlink" href="#ehtim.caltable.Caltable.tarr" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.recarray</em> &#8211; The array of telescope data with datatype DTARR</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.tkey">
+<code class="descname">tkey</code><a class="headerlink" href="#ehtim.caltable.Caltable.tkey" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> &#8211; A dictionary of rows in the tarr for each site name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.caltable.Caltable.data">
+<code class="descname">data</code><a class="headerlink" href="#ehtim.caltable.Caltable.data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> &#8211; keys are sites in tarr, entries are calibration data tables of type DTCAL</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.applycal">
+<code class="descname">applycal</code><span class="sig-paren">(</span><em>obs</em>, <em>interp='linear'</em>, <em>extrapolate=None</em>, <em>force_singlepol=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.applycal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.applycal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the calibration table to an observation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The observation  with data to be calibrated</li>
+<li><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; Interpolation method (&#8216;linear&#8217;,&#8217;nearest&#8217;,&#8217;cubic&#8217;)</li>
+<li><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, points outside interpolation range will be extrapolated.</li>
+<li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;L&#8217; or &#8216;R&#8217;, will set opposite polarization gains equal to chosen polarization</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the calibrated Obsdata object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy the observation object.</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a copy of the Caltable object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.merge">
+<code class="descname">merge</code><span class="sig-paren">(</span><em>caltablelist</em>, <em>interp=None</em>, <em>extrapolate=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.merge"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge the calibration table with a list of other calibration tables</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>caltablelist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; The list of caltables to be merged</li>
+<li><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; Interpolation method (&#8216;linear&#8217;,&#8217;nearest&#8217;,&#8217;cubic&#8217;)</li>
+<li><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, points outside interpolation range will be extrapolated.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the merged Caltable object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.pad_scans">
+<code class="descname">pad_scans</code><span class="sig-paren">(</span><em>maxdiff=60</em>, <em>padtype='median'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.pad_scans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.pad_scans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pad data points around scans.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>maxdiff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; &#8220;scan&#8221; separation length (seconds)</li>
+<li><strong>padtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; padding type, &#8216;endval&#8217; or &#8216;median&#8217;</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a padded caltable object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.caltable.Caltable.save_txt">
+<code class="descname">save_txt</code><span class="sig-paren">(</span><em>obs</em>, <em>datadir='.'</em>, <em>sqrt_gains=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.save_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.save_txt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves a Caltable object to text files in the given directory
+:param obs: The observation object associated with the Caltable
+:type obs: Obsdata
+:param datadir: directory to save caltable in
+:type datadir: str
+:param sqrt_gains: If True, we square gains before saving.
+:type sqrt_gains: bool</p>
+<p>Returns:</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.caltable.load_caltable">
+<code class="descclassname">ehtim.caltable.</code><code class="descname">load_caltable</code><span class="sig-paren">(</span><em>obs</em>, <em>datadir</em>, <em>sqrt_gains=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#load_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.load_caltable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load apriori Caltable object from text files in the given directory
+:param obs: The observation object associated with the Caltable
+:type obs: Obsdata
+:param datadir: directory to save caltable in
+:type datadir: str
+:param sqrt_gains: If True, we take the sqrt of table gains before loading.
+:type sqrt_gains: bool</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a caltable object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.caltable.make_caltable">
+<code class="descclassname">ehtim.caltable.</code><code class="descname">make_caltable</code><span class="sig-paren">(</span><em>obs</em>, <em>gains</em>, <em>sites</em>, <em>times</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#make_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.make_caltable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a Caltable object for an observation
+:param obs: The observation object associated with the Caltable
+:type obs: Obsdata
+:param gains: list of gains (?? format ??)
+:type gains: list
+:param sites: list of sites
+:type sites: list
+:param times: list of times
+:type times: list</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a caltable object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.caltable.Caltable" title="ehtim.caltable.Caltable">Caltable</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.caltable.save_caltable">
+<code class="descclassname">ehtim.caltable.</code><code class="descname">save_caltable</code><span class="sig-paren">(</span><em>caltable</em>, <em>obs</em>, <em>datadir='.'</em>, <em>sqrt_gains=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#save_caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.save_caltable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves a Caltable object to text files in the given directory
+:param obs: The observation object associated with the Caltable
+:type obs: Obsdata
+:param datadir: directory to save caltable in
+:type datadir: str
+:param sqrt_gains: If True, we square gains before saving.
+:type sqrt_gains: bool</p>
+<p>Returns:</p>
+</dd></dl>
+
+<span class="target" id="module-ehtim.calibrating.self_cal"></span><dl class="function">
+<dt id="ehtim.calibrating.self_cal.self_cal">
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>im</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>caltable=False</em>, <em>processes=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Self-calibrate a dataset to an image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The observation to be calibrated</li>
+<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; the image to be calibrated  to</li>
+<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of sites to include in the network calibration. empty list calibrates all sites</li>
+<li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;</li>
+<li><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; adds fractional uncertainty to amplitude sigmas in quadrature</li>
+<li><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; gains that exceed this value will be disfavored by the prior</li>
+<li><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, returns a Caltable instead of an Obsdata</li>
+<li><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) &#8211; number of cores to use in multiprocessing</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
+<li><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, display the solution as it is calculated</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the calibrated observation, if caltable==False
+(Caltable): the derived calibration table, if caltable==True</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.self_cal.self_cal_scan">
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>im</em>, <em>V_scan=[]</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Self-calibrate a scan to an image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>scan</strong> (<em>np.recarray</em>) &#8211; data array of type DTPOL containing the scan visibility data</li>
+<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; the image to be calibrated  to</li>
+<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of sites to include in the network calibration. empty list calibrates all sites</li>
+<li><strong>V_scan</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; precomputed scan visibilities</li>
+<li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;</li>
+<li><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; adds fractional uncertainty to amplitude sigmas in quadrature</li>
+<li><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; gains that exceed this value will be disfavored by the prior</li>
+<li><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, returns a Caltable instead of an Obsdata</li>
+<li><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, display the solution as it is calculated</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the calibrated observation, if caltable==False
+(Caltable): the derived calibration table, if caltable==True</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<span class="target" id="module-ehtim.calibrating.network_cal"></span><dl class="function">
+<dt id="ehtim.calibrating.network_cal.make_cluster_data">
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">make_cluster_data</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl_uvdist_max=10000000.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#make_cluster_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.make_cluster_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cluster sites in an observation into groups with intra-group basline length not exceeding zbl_uvdist_max</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.network_cal.network_cal">
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='both'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em>, <em>show_solution=False</em>, <em>processes=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Network-calibrate a dataset with zero baseline constraints.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The observation to be calibrated</li>
+<li><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; zero baseline flux in Jy</li>
+<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of sites to include in the network calibration. empty list calibrates all sites</li>
+<li><strong>zbl_uvdist_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; considers all baselines of lambda-length less than this as zero baselines</li>
+<li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;</li>
+<li><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; adds fractional uncertainty to amplitude sigmas in quadrature</li>
+<li><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; gains that exceed this value will be disfavored by the prior</li>
+<li><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, returns a Caltable instead of an Obsdata</li>
+<li><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) &#8211; number of cores to use in multiprocessing</li>
+<li><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, display the solution as it is calculated</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the calibrated observation, if caltable==False
+(Caltable): the derived calibration table, if caltable==True</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.network_cal.network_cal_scan">
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>zbl</em>, <em>sites</em>, <em>clustered_sites</em>, <em>zbl_uvidst_max=10000000.0</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Network-calibrate a scan with zero baseline constraints.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The observation to be calibrated</li>
+<li><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; zero baseline flux in Jy</li>
+<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of sites to include in the network calibration. empty list calibrates all sites</li>
+<li><strong>clustered_sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) &#8211; information  on clustered sites, returned by make_cluster_data function</li>
+<li><strong>zbl_uvdist_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; considers all baselines of lambda-length less than this as zero baselines</li>
+<li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;</li>
+<li><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; adds fractional uncertainty to amplitude sigmas in quadrature</li>
+<li><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; gains that exceed this value will be disfavored by the prior</li>
+<li><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, returns a Caltable instead of an Obsdata</li>
+<li><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, display the solution as it is calculated</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the calibrated scan, if caltable==False
+(Caltable): the derived calibration table, if caltable==True</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.network_cal.norm_zbl">
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">norm_zbl</code><span class="sig-paren">(</span><em>obs</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#norm_zbl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.norm_zbl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize scans to the zero baseline flux</p>
+</dd></dl>
+
 </div>
 
 

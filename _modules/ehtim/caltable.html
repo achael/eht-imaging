@@ -218,17 +218,41 @@
 <span class="c1">##################################################################################################</span>
 <div class="viewcode-block" id="Caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable">[docs]</a><span class="k">class</span> <span class="nc">Caltable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-
 <span class="sd">       Attributes:</span>
+<span class="sd">           source (str): The source name</span>
+<span class="sd">           ra (float): The source Right Ascension in fractional hours</span>
+<span class="sd">           dec (float): The source declination in fractional degrees</span>
+<span class="sd">           mjd (int): The integer MJD of the observation</span>
+<span class="sd">           rf (float): The observation frequency in Hz</span>
+<span class="sd">           bw (float): The observation bandwidth in Hz</span>
+<span class="sd">           timetype (str): How to interpret tstart and tstop; either &#39;GMST&#39; or &#39;UTC&#39;</span>
+
+<span class="sd">           tarr (numpy.recarray): The array of telescope data with datatype DTARR</span>
+<span class="sd">           tkey (dict): A dictionary of rows in the tarr for each site name</span>
+
+<span class="sd">           data (dict): keys are sites in tarr, entries are calibration data tables of type DTCAL</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">datatables</span><span class="p">,</span> <span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">datadict</span><span class="p">,</span> <span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;A Calibration Table.</span>
 
 <span class="sd">           Args:</span>
+<span class="sd">               ra (float): The source Right Ascension in fractional hours</span>
+<span class="sd">               dec (float): The source declination in fractional degrees</span>
+<span class="sd">               rf (float): The observation frequency in Hz</span>
+<span class="sd">               mjd (int): The integer MJD of the observation</span>
+<span class="sd">               bw (float): The observation bandwidth in Hz</span>
+
+<span class="sd">               datadict (dict):  keys are sites in tarr, entries are calibration data tables of type DTCAL</span>
+<span class="sd">               tarr (numpy.recarray): The array of telescope data with datatype DTARR</span>
+
+<span class="sd">               source (str): The source name</span>
+<span class="sd">               mjd (int): The integer MJD of the observation</span>
+<span class="sd">               timetype (str): How to interpret tstart and tstop; either &#39;GMST&#39; or &#39;UTC&#39;</span>
 
 <span class="sd">           Returns:</span>
-<span class="sd">               caltable (Caltable): an Caltable object</span>
+<span class="sd">               (Caltable): an Caltable object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatables</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -245,13 +269,13 @@
         <span class="k">if</span> <span class="n">timetype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;GMST&#39;</span><span class="p">,</span> <span class="s1">&#39;UTC&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;timetype must by &#39;GMST&#39; or &#39;UTC&#39;&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timetype</span> <span class="o">=</span> <span class="n">timetype</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span> <span class="o">=</span> <span class="n">tarr</span>
 
         <span class="c1"># Dictionary of array indices for site names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span> <span class="o">=</span> <span class="n">tarr</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">))}</span>
 
         <span class="c1"># Save the data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">datatables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">datadict</span>
 
 <div class="viewcode-block" id="Caltable.copy"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Copy the observation object.</span>
@@ -265,88 +289,88 @@
         <span class="k">return</span> <span class="n">new_caltable</span></div>
 
     <span class="c1">#TODO default extrapolation?</span>
+<div class="viewcode-block" id="Caltable.pad_scans"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.pad_scans">[docs]</a>    <span class="k">def</span> <span class="nf">pad_scans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">maxdiff</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">padtype</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pad data points around scans.</span>
 
-<div class="viewcode-block" id="Caltable.merge"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caltablelist</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Merge the calibration table with a list of other calibration tables&quot;&quot;&quot;</span>
+<span class="sd">           Args:</span>
+<span class="sd">               maxdiff (float): &quot;scan&quot; separation length (seconds)</span>
+<span class="sd">               padtype (str): padding type, &#39;endval&#39; or &#39;median&#39;</span>
+<span class="sd">           Returns:</span>
+<span class="sd">               (Caltable):  a padded caltable object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">outdict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">caldata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="n">extrapolate</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># extrapolate can be a tuple or numpy array</span>
-            <span class="n">fill_value</span> <span class="o">=</span> <span class="s2">&quot;extrapolate&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">fill_value</span> <span class="o">=</span> <span class="n">extrapolate</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">x</span><span class="o">=</span><span class="n">caltablelist</span><span class="o">.</span><span class="fm">__iter__</span>
-        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span> <span class="n">caltablelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">caltablelist</span><span class="p">]</span>
-
-        <span class="c1">#self = ct</span>
-        <span class="c1">#caltablelist = [ct2]</span>
-
-        <span class="n">tarr1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">tkey1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">data1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">caltable</span> <span class="ow">in</span> <span class="n">caltablelist</span><span class="p">:</span>
-
-            <span class="c1">#TODO check metadata!</span>
-
-            <span class="c1">#TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???</span>
-            <span class="n">tarr2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">tkey2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">data2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data2</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-
-                <span class="c1"># if site in both tables</span>
-                <span class="k">if</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                    <span class="c1">#merge the data by interpolating</span>
-                    <span class="n">time1</span> <span class="o">=</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
-                    <span class="n">time2</span> <span class="o">=</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
-
-
-                    <span class="n">rinterp1</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time1</span><span class="p">,</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
-                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                    <span class="n">linterp1</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time1</span><span class="p">,</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
-                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-                    <span class="n">rinterp2</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time2</span><span class="p">,</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
-                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                    <span class="n">linterp2</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time2</span><span class="p">,</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
-                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-                    <span class="n">times_merge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">time1</span><span class="p">,</span><span class="n">time2</span><span class="p">)))</span>
-
-                    <span class="c1">#print &#39;site&#39;</span>
-                    <span class="c1">#print np.min(time1),np.max(time1)</span>
-                    <span class="c1">#print np.min(time2),np.max(time2)</span>
-                    <span class="c1">#print np.min(times_merge),np.max(times_merge)</span>
-
-                    <span class="n">rscale_merge</span> <span class="o">=</span> <span class="n">rinterp1</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span> <span class="o">*</span> <span class="n">rinterp2</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span>
-                    <span class="n">lscale_merge</span> <span class="o">=</span> <span class="n">linterp1</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span> <span class="o">*</span> <span class="n">linterp2</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span>
-
-                    <span class="c1">#put the merged data back in data1</span>
-                    <span class="c1">#TODO can we do this faster?</span>
-                    <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)):</span>
-                        <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">times_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">rscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">))</span>
-                    <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
-
-                <span class="c1"># sites not in both caltables</span>
+            <span class="c1"># Gather data into &quot;scans&quot; </span>
+            <span class="c1"># TODO we could use a scan table for this as well!</span>
+            <span class="n">gathered_data</span><span class="o">=</span><span class="p">[]</span>
+            <span class="n">scandata</span> <span class="o">=</span> <span class="p">[</span><span class="n">caldata</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">caldata</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">])</span><span class="o">*</span><span class="mi">3600</span> <span class="o">&gt;</span> <span class="n">maxdiff</span><span class="p">:</span>
+                    <span class="n">scandata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">scandata</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">)</span>
+                    <span class="n">gathered_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scandata</span><span class="p">)</span>
+                    <span class="n">scandata</span> <span class="o">=</span> <span class="p">[</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tkey1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                        <span class="n">tarr1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tarr1</span><span class="p">,</span><span class="n">tarr2</span><span class="p">[</span><span class="n">tkey2</span><span class="p">[</span><span class="n">site</span><span class="p">]])</span>
-                    <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span>  <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
-
-            <span class="c1">#update tkeys every time</span>
-            <span class="n">tkey1</span> <span class="o">=</span>  <span class="p">{</span><span class="n">tarr1</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr1</span><span class="p">))}</span>
-
-        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">tarr1</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">new_caltable</span></div>
+                    <span class="n">scandata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 
 
+            <span class="c1"># Compute padding values and pad scans</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gathered_data</span><span class="p">)):</span>
+                <span class="n">gg</span> <span class="o">=</span> <span class="n">gathered_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
+                <span class="n">medR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">gg</span><span class="p">[</span><span class="s1">&#39;rscale&#39;</span><span class="p">])</span>
+                <span class="n">medL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">gg</span><span class="p">[</span><span class="s1">&#39;lscale&#39;</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                <span class="n">timepre</span> <span class="o">=</span> <span class="n">gg</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">maxdiff</span><span class="o">/</span><span class="mf">2.</span><span class="o">/</span><span class="mf">3600.</span>
+                <span class="n">timepost</span> <span class="o">=</span> <span class="n">gg</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">maxdiff</span><span class="o">/</span><span class="mf">2.</span><span class="o">/</span><span class="mf">3600.</span>
 
+                <span class="k">if</span> <span class="n">padtype</span><span class="o">==</span><span class="s1">&#39;median&#39;</span><span class="p">:</span> <span class="c1"># pad with median scan value</span>
+                    <span class="n">medR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">gg</span><span class="p">[</span><span class="s1">&#39;rscale&#39;</span><span class="p">])</span>
+                    <span class="n">medL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">gg</span><span class="p">[</span><span class="s1">&#39;lscale&#39;</span><span class="p">])</span>
+                    <span class="n">preR</span> <span class="o">=</span> <span class="n">medR</span>
+                    <span class="n">postR</span> <span class="o">=</span> <span class="n">medR</span>
+                    <span class="n">preL</span> <span class="o">=</span> <span class="n">medL</span> 
+                    <span class="n">postL</span> <span class="o">=</span> <span class="n">medL</span>
+                <span class="k">elif</span> <span class="n">padtype</span><span class="o">==</span><span class="s1">&#39;endval&#39;</span><span class="p">:</span> <span class="c1"># pad with endpoints</span>
+                    <span class="n">preR</span> <span class="o">=</span> <span class="n">gg</span><span class="p">[</span><span class="s1">&#39;rscale&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">postR</span> <span class="o">=</span> <span class="n">gg</span><span class="p">[</span><span class="s1">&#39;rscale&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">preL</span> <span class="o">=</span> <span class="n">gg</span><span class="p">[</span><span class="s1">&#39;lscale&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">postL</span> <span class="o">=</span> <span class="n">gg</span><span class="p">[</span><span class="s1">&#39;lscale&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># pad with ones</span>
+                    <span class="n">preR</span> <span class="o">=</span> <span class="mf">1.</span>
+                    <span class="n">postR</span> <span class="o">=</span> <span class="mf">1.</span>
+                    <span class="n">preL</span> <span class="o">=</span> <span class="mf">1.</span>
+                    <span class="n">postL</span> <span class="o">=</span> <span class="mf">1.</span>
+
+                <span class="n">valspre</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">timepre</span><span class="p">,</span><span class="n">preR</span><span class="p">,</span><span class="n">preL</span><span class="p">)],</span><span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">)</span>
+                <span class="n">valspost</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="n">timepost</span><span class="p">,</span><span class="n">postR</span><span class="p">,</span><span class="n">postL</span><span class="p">)],</span><span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">)</span>
+
+                <span class="n">gg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">gg</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">valspre</span><span class="p">)</span>
+                <span class="n">gg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gg</span><span class="p">,</span><span class="n">valspost</span><span class="p">)</span>
+
+                <span class="c1"># output data table</span>
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> 
+                    <span class="n">caldata_out</span> <span class="o">=</span> <span class="n">gg</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">caldata_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">caldata_out</span><span class="p">,</span> <span class="n">gg</span><span class="p">)</span>
+
+            <span class="n">outdict</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span> <span class="o">=</span> <span class="n">caldata_out</span>
+            <span class="k">return</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">outdict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> 
+                            <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Caltable.applycal"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.applycal">[docs]</a>    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply the calibration table to an observation.</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               obs (Obsdata): The observation  with data to be calibrated</span>
+<span class="sd">               interp (str): Interpolation method (&#39;linear&#39;,&#39;nearest&#39;,&#39;cubic&#39;)</span>
+<span class="sd">               extrapolate (bool): If True, points outside interpolation range will be extrapolated. </span>
+<span class="sd">               force_singlepol (str): If &#39;L&#39; or &#39;R&#39;, will set opposite polarization gains equal to chosen polarization</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               (Obsdata): the calibrated Obsdata object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span> <span class="o">==</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The telescope array in the Caltable is not the same as in the Obsdata&quot;</span><span class="p">)</span>
 
@@ -432,18 +456,113 @@
 
         <span class="n">calobs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">),</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">calobs</span>
+        <span class="k">return</span> <span class="n">calobs</span></div>
 
-<div class="viewcode-block" id="Caltable.save_txt"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the format src_site.txt given by Maciek&#39;s tables</span>
+<div class="viewcode-block" id="Caltable.merge"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caltablelist</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Merge the calibration table with a list of other calibration tables</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               caltablelist (list): The list of caltables to be merged</span>
+<span class="sd">               interp (str): Interpolation method (&#39;linear&#39;,&#39;nearest&#39;,&#39;cubic&#39;)</span>
+<span class="sd">               extrapolate (bool): If True, points outside interpolation range will be extrapolated. </span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               (Caltable): the merged Caltable object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">save_caltable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="n">sqrt_gains</span><span class="p">)</span></div></div>
+        <span class="k">if</span> <span class="n">extrapolate</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># extrapolate can be a tuple or numpy array</span>
+            <span class="n">fill_value</span> <span class="o">=</span> <span class="s2">&quot;extrapolate&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fill_value</span> <span class="o">=</span> <span class="n">extrapolate</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">caltablelist</span><span class="o">.</span><span class="fm">__iter__</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span> <span class="n">caltablelist</span> <span class="o">=</span> <span class="p">[</span><span class="n">caltablelist</span><span class="p">]</span>
+
+        <span class="c1">#self = ct</span>
+        <span class="c1">#caltablelist = [ct2]</span>
+
+        <span class="n">tarr1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">tkey1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">data1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">caltable</span> <span class="ow">in</span> <span class="n">caltablelist</span><span class="p">:</span>
+
+            <span class="c1">#TODO check metadata!</span>
+
+            <span class="c1">#TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???</span>
+            <span class="n">tarr2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">tkey2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">data2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data2</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+
+                <span class="c1"># if site in both tables</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="c1">#merge the data by interpolating</span>
+                    <span class="n">time1</span> <span class="o">=</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+                    <span class="n">time2</span> <span class="o">=</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+
+
+                    <span class="n">rinterp1</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time1</span><span class="p">,</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">linterp1</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time1</span><span class="p">,</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                    <span class="n">rinterp2</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time2</span><span class="p">,</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">linterp2</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time2</span><span class="p">,</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
+                                                <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                    <span class="n">times_merge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">time1</span><span class="p">,</span><span class="n">time2</span><span class="p">)))</span>
+
+                    <span class="n">rscale_merge</span> <span class="o">=</span> <span class="n">rinterp1</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span> <span class="o">*</span> <span class="n">rinterp2</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span>
+                    <span class="n">lscale_merge</span> <span class="o">=</span> <span class="n">linterp1</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span> <span class="o">*</span> <span class="n">linterp2</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)</span>
+
+
+                    <span class="c1">#put the merged data back in data1</span>
+                    <span class="c1">#TODO can we do this faster?</span>
+                    <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)):</span>
+                        <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">times_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">rscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">))</span>
+                    <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
+
+                <span class="c1"># sites not in both caltables</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">site</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tkey1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">tarr1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tarr1</span><span class="p">,</span><span class="n">tarr2</span><span class="p">[</span><span class="n">tkey2</span><span class="p">[</span><span class="n">site</span><span class="p">]])</span>
+                    <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span>  <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
+
+            <span class="c1">#update tkeys every time</span>
+            <span class="n">tkey1</span> <span class="o">=</span>  <span class="p">{</span><span class="n">tarr1</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr1</span><span class="p">))}</span>
+
+        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">tarr1</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_caltable</span></div>
+
+
+<div class="viewcode-block" id="Caltable.save_txt"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the given directory</span>
+<span class="sd">           Args:</span>
+<span class="sd">               obs (Obsdata): The observation object associated with the Caltable</span>
+<span class="sd">               datadir (str): directory to save caltable in</span>
+<span class="sd">               sqrt_gains (bool): If True, we square gains before saving. </span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">save_caltable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="n">sqrt_gains</span><span class="p">)</span></div></div>
+       
 
 <div class="viewcode-block" id="load_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.load_caltable">[docs]</a><span class="k">def</span> <span class="nf">load_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Load apriori cal tables</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Load apriori Caltable object from text files in the given directory</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
+<span class="sd">           datadir (str): directory to save caltable in</span>
+<span class="sd">           sqrt_gains (bool): If True, we take the sqrt of table gains before loading. </span>
 
+<span class="sd">       Returns:</span>
+<span class="sd">           (Caltable): a caltable object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">datatables</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">)):</span>
 
@@ -485,12 +604,20 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatables</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
         <span class="n">caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">datatables</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;COULD NOT FIND CALTABLE IN DIRECTORY </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">datadir</span><span class="p">)</span>
         <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span>
     <span class="k">return</span> <span class="n">caltable</span></div>
 
 <div class="viewcode-block" id="save_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.save_caltable">[docs]</a><span class="k">def</span> <span class="nf">save_caltable</span><span class="p">(</span><span class="n">caltable</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text file</span>
+    <span class="sd">&quot;&quot;&quot;Saves a Caltable object to text files in the given directory</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
+<span class="sd">           datadir (str): directory to save caltable in</span>
+<span class="sd">           sqrt_gains (bool): If True, we square gains before saving. </span>
+
+<span class="sd">       Returns:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">datadir</span><span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">datadir</span><span class="p">)</span>
 
@@ -521,11 +648,21 @@
             <span class="n">limag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">lscale</span><span class="p">))</span>
             <span class="n">outline</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rimag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">limag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
             <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outline</span><span class="p">)</span>
-        <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+        <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
+        <span class="k">return</span></div>
 
-<span class="k">def</span> <span class="nf">make_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">gains</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">times</span><span class="p">):</span>
+<div class="viewcode-block" id="make_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.make_caltable">[docs]</a><span class="k">def</span> <span class="nf">make_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">gains</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">times</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a Caltable object for an observation</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
+<span class="sd">           gains (list): list of gains (?? format ??)</span>
+<span class="sd">           sites (list): list of sites</span>
+<span class="sd">           times (list): list of times</span>
 
+<span class="sd">       Returns:</span>
+<span class="sd">           (Caltable): a caltable object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ntele</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span>
     <span class="n">ntimes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
 
@@ -543,7 +680,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span>
 
-    <span class="k">return</span> <span class="n">caltable</span>
+    <span class="k">return</span> <span class="n">caltable</span></div>
 </pre></div>
 
            </div>
