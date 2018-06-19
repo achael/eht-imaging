@@ -1,5 +1,5 @@
 """
-.. module:: ehtim.calib
+.. module:: ehtim.calibrating
     :platform: Unix
     :synopsis: EHT Imaging Utilities: calibration functions
 
@@ -7,5 +7,6 @@
 
 """
 from . import self_cal
+from . import network_cal
 
 from ..const_def import *

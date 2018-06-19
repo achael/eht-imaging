@@ -39,14 +39,15 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
               'gain_tol':gain_tol,
               'processes':0,
               'caltable':True}
+
     # If the specified sites aren't present, skip the calibration
     if len(pick(obs,sites).data) == 0:
         return [obs, master_caltab]
 
     for i in range(n):
-        # Self calibrate the amplitudes
+        # network calibrate the amplitudes
         datadir = '{}-{}-amp'.format(stepname, i)
-        caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='amp',
+        caltab = eh.network_cal.network_cal(pick(obs,sites), amp0, method='amp',
                                          **common)
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
         caltab.save_txt(obs, datadir=datadir)
@@ -59,9 +60,9 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
         if only_amp:
             continue
 
-        # Self calibrate the phases
+        # network calibrate the phases
         datadir = '{}-{}-phase'.format(stepname, i)
-        caltab = eh.self_cal.network_cal(pick(obs,sites), amp0, method='phase',
+        caltab = eh.network_cal.network_cal(pick(obs,sites), amp0, method='phase',
                                          **common)
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
         caltab.save_txt(obs, datadir=datadir)

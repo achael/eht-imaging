@@ -18,5 +18,11 @@ import ehtim.caltable
 
 from ehtim.imaging.imager_utils import imager_func
 from ehtim.calibrating import self_cal
+from ehtim.calibrating import network_cal
 from ehtim.plotting    import comp_plots
+
+from ehtim.calibrating.self_cal import *
+from ehtim.calibrating.network_cal import *
+from ehtim.plotting.comp_plots import *
+
 from ehtim.const_def import *

@@ -507,7 +507,7 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
         minor = kwargs.get('minor',1.0)
         PA = kwargs.get('PA',1.0)
 
-	    if np.any(np.invert(mask)):
+        if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)         
         s = -sgauss(imvec, xdim, ydim, psize, major=major, minor=minor, PA=PA)
     else:
@@ -563,7 +563,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         minor = kwargs.get('minor',1.0)
         PA = kwargs.get('PA',1.0)
 
-	    if np.any(np.invert(mask)):
+        if np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
         s = -sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA)
         s = s[mask]
@@ -1946,103 +1946,102 @@ def scompact2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_si
 def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
     """Gaussian source size regularizer
     """
+    #major, minor and PA are all in radians
+    phi = PA 
 
-	#major, minor and PA are all in radians
-	phi = PA 
+    #eigenvalues of covariance matrix
+    lambda1 = minor**2./(8.*np.log(2.))
+    lambda2 = major**2./(8.*np.log(2.))
 
-	#eigenvalues of covariance matrix
-	lambda1 = minor**2./(8.*np.log(2.))
-	lambda2 = major**2./(8.*np.log(2.))
-
-	#now compute covariance matrix elements from user inputs
-	sigxx_prime = lambda1*(np.cos(phi)**2.) + lambda2*(np.sin(phi)**2.) 
-	sigyy_prime = lambda1*(np.sin(phi)**2.) + lambda2*(np.cos(phi)**2.)
-	sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi) 
-
- 
-	#we get the dimensions and image vector     
-        pdim = psize
-        im = imvec.reshape(xdim, ydim)
-	xlist, ylist = np.meshgrid(range(xdim),range(ydim))
-	xlist = xlist - (xdim-1)/2.0
-	ylist = ylist - (ydim-1)/2.0
-	
-	xx = xlist * psize
-	yy = ylist * psize
+    #now compute covariance matrix elements from user inputs
+    sigxx_prime = lambda1*(np.cos(phi)**2.) + lambda2*(np.sin(phi)**2.) 
+    sigyy_prime = lambda1*(np.sin(phi)**2.) + lambda2*(np.cos(phi)**2.)
+    sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi) 
 
 
-	#the centroid parameters
-	x0 = np.sum(xx*im) / np.sum(im)
-        y0 = np.sum(yy*im) / np.sum(im)
+    #we get the dimensions and image vector     
+    pdim = psize
+    im = imvec.reshape(xdim, ydim)
+    xlist, ylist = np.meshgrid(range(xdim),range(ydim))
+    xlist = xlist - (xdim-1)/2.0
+    ylist = ylist - (ydim-1)/2.0
 
-	#we calculate the elements of the covariance matrix
-        sigxx = (np.sum((xx - x0)**2.*im)/np.sum(im))
-        sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
-        sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
+    xx = xlist * psize
+    yy = ylist * psize
+
+
+    #the centroid parameters
+    x0 = np.sum(xx*im) / np.sum(im)
+    y0 = np.sum(yy*im) / np.sum(im)
+
+    #we calculate the elements of the covariance matrix
+    sigxx = (np.sum((xx - x0)**2.*im)/np.sum(im))
+    sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
+    sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
       
-	#We calculate the regularizer 
-	rgauss = -( (sigxx - sigxx_prime)**2. + (sigyy - sigyy_prime)**2. + (sigxy - sigxy_prime)**2. )
-	rgauss = rgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
+    #We calculate the regularizer 
+    rgauss = -( (sigxx - sigxx_prime)**2. + (sigyy - sigyy_prime)**2. + (sigxy - sigxy_prime)**2. )
+    rgauss = rgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
 
-	return rgauss
+    return rgauss
 
 
 def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
     """Gradient for Gaussian source size regularizer
     """
 
-	#major, minor and PA are all in radians
-	phi = PA
+    #major, minor and PA are all in radians
+    phi = PA
 
-	#computing eigenvalues of the covariance matrix
-	lambda1 = (minor**2.)/(8.*np.log(2.))
-	lambda2 = (major**2.)/(8.*np.log(2.))
+    #computing eigenvalues of the covariance matrix
+    lambda1 = (minor**2.)/(8.*np.log(2.))
+    lambda2 = (major**2.)/(8.*np.log(2.))
 
-	#now compute covariance matrix elements from user inputs
+    #now compute covariance matrix elements from user inputs
 
-	sigxx_prime = lambda1*(np.cos(phi)**2.) + lambda2*(np.sin(phi)**2.) 
-	sigyy_prime = lambda1*(np.sin(phi)**2.) + lambda2*(np.cos(phi)**2.)
-	sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi) 
-
- 
-	#we get the dimensions and image vector     
-        pdim = psize
-        im = imvec.reshape(xdim, ydim)
-	xlist, ylist = np.meshgrid(range(xdim),range(ydim))
-	xlist = xlist - (xdim-1)/2.0
-	ylist = ylist - (ydim-1)/2.0
-	
-	xx = xlist * psize
-	yy = ylist * psize
+    sigxx_prime = lambda1*(np.cos(phi)**2.) + lambda2*(np.sin(phi)**2.) 
+    sigyy_prime = lambda1*(np.sin(phi)**2.) + lambda2*(np.cos(phi)**2.)
+    sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi) 
 
 
-	#the centroid parameters
-	x0 = np.sum(xx*im) / np.sum(im)
-        y0 = np.sum(yy*im) / np.sum(im)
+    #we get the dimensions and image vector     
+    pdim = psize
+    im = imvec.reshape(xdim, ydim)
+    xlist, ylist = np.meshgrid(range(xdim),range(ydim))
+    xlist = xlist - (xdim-1)/2.0
+    ylist = ylist - (ydim-1)/2.0
 
-	#we calculate the elements of the covariance matrix of the image 
-        sigxx = (np.sum((xx - x0)**2.*im)/np.sum(im))
-        sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
-        sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
+    xx = xlist * psize
+    yy = ylist * psize
 
 
-	#now we compute the gradients of all quantities 
-	#gradient of centroid 
-	dx0 = ( xx -  x0) / np.sum(im)
-	dy0 = ( yy -  y0) / np.sum(im)
+    #the centroid parameters
+    x0 = np.sum(xx*im) / np.sum(im)
+    y0 = np.sum(yy*im) / np.sum(im)
 
-	#gradients of covariance matrix elements 
-	dxx = (( (xx - x0)**2. - 2.*(xx - x0)*dx0*im ) - sigxx ) / np.sum(im) 
+    #we calculate the elements of the covariance matrix of the image 
+    sigxx = (np.sum((xx - x0)**2.*im)/np.sum(im))
+    sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
+    sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
 
-	dyy = ( ( (yy - y0)**2. - 2.*(yy - y0)*dx0*im ) - sigyy ) / np.sum(im) 	
 
-	dxy = ( ( (xx - x0)*(yy - y0) - (yy - y0)*dx0*im - (xx - x0)*dy0*im ) - sigxy ) / np.sum(im) 
+    #now we compute the gradients of all quantities 
+    #gradient of centroid 
+    dx0 = ( xx -  x0) / np.sum(im)
+    dy0 = ( yy -  y0) / np.sum(im)
 
-	#gradient of the regularizer 
-	drgauss = ( 2.*(sigxx - sigxx_prime)*dxx + 2.*(sigyy - sigyy_prime)*dyy + 2.*(sigxy - sigxy_prime)*dxy )
-	drgauss = drgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
+    #gradients of covariance matrix elements 
+    dxx = (( (xx - x0)**2. - 2.*(xx - x0)*dx0*im ) - sigxx ) / np.sum(im) 
 
-	return -drgauss.reshape(-1)
+    dyy = ( ( (yy - y0)**2. - 2.*(yy - y0)*dx0*im ) - sigyy ) / np.sum(im) 	
+
+    dxy = ( ( (xx - x0)*(yy - y0) - (yy - y0)*dx0*im - (xx - x0)*dy0*im ) - sigxy ) / np.sum(im) 
+
+    #gradient of the regularizer 
+    drgauss = ( 2.*(sigxx - sigxx_prime)*dxx + 2.*(sigyy - sigyy_prime)*dyy + 2.*(sigxy - sigxy_prime)*dxy )
+    drgauss = drgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
+
+    return -drgauss.reshape(-1)
 
 ##################################################################################################
 # Chi^2 Data functions
