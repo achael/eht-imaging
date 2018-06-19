@@ -247,7 +247,7 @@ class Image(object):
 
            Args:
                uv (ndarray): an array of uv points
-               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
@@ -266,7 +266,7 @@ class Image(object):
 
            Args:
                obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
-               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
@@ -319,7 +319,7 @@ class Image(object):
 
            Args:
                obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
-               ttype (str): if "fast", use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point

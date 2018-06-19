@@ -25,7 +25,7 @@ from builtins import object
 import numpy as np
 
 def sumdown_lin(y, n=16):
-    """Summing segments of a line together to reduce its size
+    """Sum segments of a line together to reduce its size
     """
     nold = y.shape[0]
     nnew = n
@@ -46,10 +46,10 @@ def sumdown_lin(y, n=16):
 def sumdown_img(img, n=16):
     """Summing patches of an image together to reduce its size
 
-    For simplicity, we will just pad each side of an image to an
-    integer multiple of n and then down sample but summing up the
-    intensity of the subcells.  This is not perfect but is good enough
-    for a proof of concept.
+       For simplicity, we just pad each side of an image to an
+       integer multiple of n and then down sample but summing up the
+       intensity of the subcells.  This is not perfect but is good enough
+       for a proof of concept.
     """
     nx = img.shape[0]
     ny = img.shape[1]

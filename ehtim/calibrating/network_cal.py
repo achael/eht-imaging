@@ -41,9 +41,31 @@ ZBLCUTOFF = 1.e7;
 ###################################################################################################################################
 #Network-Calibration
 ###################################################################################################################################
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0.,gain_tol=.2, processes=-1, caltable=False):
-    """Network-calibrate a dataset with zbl constraints
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad_amp=0.,gain_tol=.2, 
+                caltable=False, show_solution=False,  processes=-1):
+
+    """Network-calibrate a dataset with zero baseline constraints.
+
+       Args:
+           obs (Obsdata): The observation to be calibrated
+           zbl (float): zero baseline flux in Jy
+           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
+
+           zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
+           gain_tol (float): gains that exceed this value will be disfavored by the prior
+
+           caltable (bool): if True, returns a Caltable instead of an Obsdata 
+           processes (int): number of cores to use in multiprocessing
+           show_solution (bool): if True, display the solution as it is calculated
+           
+
+       Returns:
+           (Obsdata): the calibrated observation, if caltable==False
+           (Caltable): the derived calibration table, if caltable==True
     """
+
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
     if len(sites) < 2:
@@ -68,7 +90,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
     scans     = obs.tlist()
     scans_cal = copy.copy(scans)
 
-    if processes > 0:
+    if processes > 0: # with multiprocessing
         scans_cal = np.array(filter(lambda x: x,
                                     pool.map(get_network_scan_cal,
                                              [[i, len(scans), scans[i],
@@ -76,7 +98,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
                                               for i in range(len(scans))
                                              ])))
         print('DONE')
-    else:
+    else: # without multiprocessing
         for i in range(len(scans)):
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
             sys.stdout.flush()
@@ -84,7 +106,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
                                             method=method, show_solution=show_solution, caltable=caltable,
                                             pad_amp=pad_amp, gain_tol=gain_tol)
 
-    if caltable:
+    if caltable: # create and return  a caltable
         allsites = obs.tarr['site']
         caldict = {k:v.reshape(1) for k,v in scans_cal[0].items()}
         for i in range(1,len(scans_cal)):
@@ -103,26 +125,46 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", sho
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
 
-    else:
+    else: # return the calibrated observation
         obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
                                         np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
-                                        timetype=obs.timetype)
+                                        timetype=obs.timetype, scantable=obs.scans)
         out = obs_cal
 
+    # close multiprocessing jobs
     if processes != -1:
         pool.close()
 
     return out
 
 def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
-    """Network-calibrate a scan with zbl constraints
+    """Network-calibrate a scan with zero baseline constraints.
+
+       Args:
+           obs (Obsdata): The observation to be calibrated
+           zbl (float): zero baseline flux in Jy
+           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
+           clustered_sites (tuple): information  on clustered sites, returned by make_cluster_data function
+
+           zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
+           gain_tol (float): gains that exceed this value will be disfavored by the prior
+
+           caltable (bool): if True, returns a Caltable instead of an Obsdata 
+           show_solution (bool): if True, display the solution as it is calculated
+           
+
+       Returns:
+           (Obsdata): the calibrated scan, if caltable==False
+           (Caltable): the derived calibration table, if caltable==True
     """
+
+
     if len(sites) < 2:
         print("less than 2 stations specified in network cal: defaulting to calibrating all !")
         sites = list(set(np.hstack((scan['t1'], scan['t2']))))
-
-    #sites = list(set(scan['t1']).union(set(scan['t2'])))
 
     # clustered site information
     allclusters = clustered_sites[0]
@@ -133,7 +175,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     tkey = {b:a for a,b in enumerate(sites)}
     clusterkey = clusterdict
 
-    # make a list of gain keys that relates scan bl gains to solved site ones
+    # make two lists of gain keys that relates scan bl gains to solved site ones
     # -1 means that this station does not have a gain that is being solved for
 
     # and make a list of scan keys that relates scan bl visibilities to solved cluster ones
@@ -173,16 +215,12 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
     gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
-
     vpar_guess = np.ones(n_clusterbls, dtype=np.complex128)
     for i in range(len(scan_keys)):
         if scan_keys[i] < 0: continue
         vpar_guess[scan_keys[i]] = vis[i]
-
     vpar_guess = vpar_guess.view(dtype=np.float64)
-
     gvpar_guess = np.hstack((gpar_guess, vpar_guess))
-
 
     # error function
     def errfunc(gvpar):
@@ -210,7 +248,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         g1 = g[g1_keys]
         g2 = g[g2_keys]
 
-        #TODO debias!
+        #TODO debias!??!
         if method=='amp':
             verr = np.abs(vis) - g1*g2.conj() * np.abs(v_scan)
         else:
@@ -218,20 +256,18 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
 
-        g_fracerr = gain_tol #0.3
-        sharpness = 5.
+        # prior on the gains
+        g_fracerr = gain_tol 
         chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
         chisq_v = np.sum((np.abs(v)/zbl)**4)
-        #chisq_v = np.sum(-np.log(spec.expit(sharpness*(1-np.abs(v)/zbl))))
 
         return chisq + chisq_g + chisq_v
 
-    #print ("errfunc init: ", errfunc(gvpar_guess))
+    # run the minimizer to get a solution
     optdict = {'maxiter' : 500} # minimizer params
     res = opt.minimize(errfunc, gvpar_guess, method='CG', options=optdict)
 
     # get solution
-    #print ("errfunc end: " ,errfunc(res.x))
     g_fit = res.x[0:2*n_gains].view(np.complex128)
     v_fit = res.x[2*n_gains:].view(np.complex128)
 
@@ -248,7 +284,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     g_fit = np.append(g_fit, 1.)
     v_fit = np.append(v_fit, zbl)
 
-    if caltable:
+   
+    if caltable:  # derive caltable
         allsites = list(set(scan['t1']).union(set(scan['t2']))) if g_fit[-2] != 1.0 else []
 
         caldict = {}
@@ -260,7 +297,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
             caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)
         out = caldict
 
-    else:
+    else: # apply calibration solution
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
         gij_inv = (g1_fit * g2_fit.conj())**(-1)
@@ -295,6 +332,9 @@ def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,
 ###################################################################################################################################
 
 def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
+    """Cluster sites in an observation into groups with intra-group basline length not exceeding zbl_uvdist_max
+    """
+
     clusters = []
     clustered_sites = []
     for i1 in range(len(obs.tarr)):
@@ -332,7 +372,7 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
     return cluster_data
 
 def norm_zbl(obs, flux=1.):
-    """Normalize scans to zero baseline
+    """Normalize scans to the zero baseline flux
     """
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
@@ -344,7 +384,6 @@ def norm_zbl(obs, flux=1.):
     for scan in scans:
         i += 1
         uvdist = np.sqrt(scan['u']**2 + scan['v']**2)
-        #print(np.min(uvdist)/1.e4)
         scan_zbl = np.abs(scan['vis'][np.argmin(uvdist)])
 
         scan['vis'] = scan['vis']/scan_zbl
@@ -363,5 +402,6 @@ def norm_zbl(obs, flux=1.):
 
     obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_norm, obs.tarr,
                                     source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
-                                    ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal)
+                                    ampcal=obs.ampcal, phasecal=obs.phasecal, 
+                                    dcal=obs.dcal, frcal=obs.frcal, scantable=obs.scans)
     return obs_cal

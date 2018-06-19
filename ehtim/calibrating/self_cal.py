@@ -41,9 +41,33 @@ ZBLCUTOFF = 1.e7;
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
-def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., ttype='direct', fft_pad_factor=2, gain_tol=.2, caltable=False, processes=-1):
-    """Self-calibrate a dataset to a fixed image.
+def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2, 
+             ttype='nfft', fft_pad_factor=2, caltable=False, processes=-1):
+    """Self-calibrate a dataset to an image.
+
+       Args:
+           obs (Obsdata): The observation to be calibrated
+           im (Image): the image to be calibrated  to
+           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
+
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
+           gain_tol (float): gains that exceed this value will be disfavored by the prior
+
+           caltable (bool): if True, returns a Caltable instead of an Obsdata 
+           processes (int): number of cores to use in multiprocessing
+
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+
+           show_solution (bool): if True, display the solution as it is calculated
+           
+
+       Returns:
+           (Obsdata): the calibrated observation, if caltable==False
+           (Caltable): the derived calibration table, if caltable==True
     """
+
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
     if len(sites) < 2:
@@ -85,10 +109,12 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
     scans     = obs.tlist()
     scans_cal = copy.copy(scans)
 
-    if processes > 0:
-        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method, show_solution, pad_amp, gain_tol, caltable] for i in range(len(scans))]))
+    if processes > 0: # run on multiple cores with multiprocessing
+        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method,
+                                                              show_solution, pad_amp, gain_tol, caltable
+                                                             ] for i in range(len(scans))]))
         print('DONE')
-    else:
+    else: # run on a single core
         for i in range(len(scans)):
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
             sys.stdout.flush()
@@ -96,7 +122,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
                                  method=method, show_solution=show_solution,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
 
-    if caltable:
+    if caltable: # assemble the caltable to return
         allsites = obs.tarr['site']
         caldict = scans_cal[0]
         for i in range(1,len(scans_cal)):
@@ -111,7 +137,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
-    else:
+    else: # return a calibrated observation
         obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
                                         np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
@@ -119,14 +145,31 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
 
         out = obs_cal
 
+    # close multiprocessing jobs
     if processes != -1:
         pool.close()
 
     return out
 
 def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
-    """Self-calibrate a scan to a fixed  image.
-       if caltable==True, returns a caltable dictionary. If False, returns the  scan.
+    """Self-calibrate a scan to an image.
+
+       Args:
+           scan (np.recarray): data array of type DTPOL containing the scan visibility data
+           im (Image): the image to be calibrated  to
+           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
+           V_scan (list) : precomputed scan visibilities
+
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
+           gain_tol (float): gains that exceed this value will be disfavored by the prior
+
+           caltable (bool): if True, returns a Caltable instead of an Obsdata 
+           show_solution (bool): if True, display the solution as it is calculated
+           
+       Returns:
+           (Obsdata): the calibrated observation, if caltable==False
+           (Caltable): the derived calibration table, if caltable==True
     """
 
     if len(sites) < 2:
@@ -158,8 +201,10 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     sigma_inv = 1.0/(scan['sigma'] + pad_amp*np.abs(scan['vis']))
 
+    # initial guess for gains
     gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
 
+    # error function
     def errfunc(gpar):
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
 
@@ -180,13 +225,18 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         else:
             verr = scan['vis'] - g1*g2.conj() * V_scan
 
+        # goodness-of-fit for gains 
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
+        # prior on the gains
         chisq_g = np.sum((np.log(np.abs(g))**2 / gain_tol**2))
 
         return chisq + chisq_g
 
+    # use gradient descent to find the gains
     optdict = {'maxiter': 5000} # minimizer params
     res = opt.minimize(errfunc, gpar_guess, method='Powell', options=optdict)
+
+    # save the solution
     g_fit = res.x.view(np.complex128)
 
     if show_solution == True:
@@ -199,7 +249,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     g_fit = np.append(g_fit, 1.)
 
-    if caltable:
+    if caltable: # derive a calibration table
         allsites = list(set(scan['t1']).union(set(scan['t2'])))
 
         caldict = {}
@@ -212,7 +262,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
         out = caldict
 
-    else:
+    else: # apply the solution to the scan
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
         gij_inv = (g1_fit * g2_fit.conj())**(-1)
