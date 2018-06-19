@@ -167,6 +167,370 @@
             
   <span class="target" id="module-plotting"></span><div class="section" id="plotting">
 <span id="id1"></span><h1>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.plotting.comp_plots"></span><dl class="function">
+<dt id="ehtim.plotting.comp_plots.plot_bl_obs_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_bl_obs_compare</code><span class="sig-paren">(</span><em>obslist, site1, site2, field, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], timetype=False, ebar=True, debias=True, export_pdf='', axis=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_bl_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_bl_obs_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot data from multiple observations vs time on a single baseline on the same axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 2 name</li>
+<li><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; y-axis field (from FIELDS)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True and plotting vis amplitudes, debias them</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis (time) limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of color strings of scatterplot points</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plot_bl_obs_im_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_bl_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, site1, site2, field, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], timetype=False, ebar=True, debias=True, export_pdf='', axis=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_bl_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_bl_obs_im_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
+:param obslist: list of observations to plot
+:type obslist: list
+:param image: ground truth image to compare to
+:type image: Image
+:param site1: station 1 name
+:type site1: str
+:param site2: station 2 name
+:type site2: str
+:param field: y-axis field (from FIELDS)
+:type field: str
+:param debias: If True and plotting vis amplitudes, debias them
+:type debias: bool
+:param ang_unit: phase unit &#8216;deg&#8217; or &#8216;rad&#8217;
+:type ang_unit: str
+:param timetype: &#8216;GMST&#8217; or &#8216;UTC&#8217;
+:type timetype: str
+:param sgrscat: if True, the visibilites will be blurred by the Sgr A* scattering kernel
+:type sgrscat: bool
+:param ttype: if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT
+:type ttype: str
+:param rangex: [xmin, xmax] x-axis (time) limits
+:type rangex: list
+:param rangey: [ymin, ymax] y-axis limits
+:type rangey: list
+:param ebar: Plot error bars if True
+:type ebar: bool
+:param show: Display the plot if true
+:type show: bool
+:param axis: add plot to this axis
+:type axis: matplotlib.axes.Axes
+:param clist: list of color strings of scatterplot points
+:type clist: list
+:param export_pdf: path to pdf file to save figure
+:type export_pdf: str</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Axes object with data plot</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(matplotlib.axes.Axes)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plot_camp_obs_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_camp_obs_compare</code><span class="sig-paren">(</span><em>obslist, site1, site2, site3, site4, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], vtype='vis', ctype='camp', debias=True, timetype=False, ebar=True, camps=[], export_pdf='', axis=False, force_recompute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_camp_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_camp_obs_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 3 name</li>
+<li><strong>site4</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 4 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble closure amplitudes</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis (time) limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; List of color strings of scatterplot points</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>camps</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted camps so they don&#8217;t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure amplitudes instead of using stored  data</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plot_camp_obs_im_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_camp_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, site1, site2, site3, site4, ttype='nfft', sgrscat=False, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], vtype='vis', ctype='camp', debias=True, timetype=False, axis=False, ebar=True, export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_camp_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_camp_obs_im_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
+<li><strong>image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; ground truth image to compare to</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 3 name</li>
+<li><strong>site4</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 4 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble closure amplitudes</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis (time) limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; List of color strings of scatterplot points</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>camps</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted camps so they don&#8217;t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure amplitudes instead of using stored  data</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plot_cphase_obs_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_cphase_obs_compare</code><span class="sig-paren">(</span><em>obslist, site1, site2, site3, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], ang_unit='deg', vtype='vis', timetype=False, ebar=True, cphases=[], export_pdf='', axis=False, labels=True, force_recompute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_cphase_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_cphase_obs_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot closure phase on a triangle vs time from multiple observations on the same axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 3 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis (time) limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>labels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; List of color strings of scatterplot points</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted cphases so they don&#8217;t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using stored data</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plot_cphase_obs_im_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_cphase_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, site1, site2, site3, ttype='direct', sgrscat=False, rangex=False, rangey=False, show=True, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], ang_unit='deg', vtype='vis', timetype=False, ebar=True, axis=False, labels=True, export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_cphase_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot closure phase on a triangle compared to ground truth from an image on the same axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
+<li><strong>image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; ground truth image to compare to</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; station 3 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis (time) limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>labels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; List of color strings of scatterplot points</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted cphases so they don&#8217;t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using stored data</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plotall_obs_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_compare</code><span class="sig-paren">(</span><em>obslist, field1, field2, rangex=False, rangey=False, conj=False, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], ebar=True, debias=True, ang_unit='deg', export_pdf='', axis=False, show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a scatter plot for multiple observations of 2 real baseline observation fields in (FIELDS) with error bars.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
+<li><strong>field1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; x-axis field (from FIELDS)</li>
+<li><strong>field2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; y-axis field (from FIELDS)</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot conjuage baseline data points if True</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias amplitudes.</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of color strings of scatterplot points</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plotall_obs_im_compare">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, field1, field2, ttype='direct', sgrscat=False, rangex=False, rangey=False, conj=False, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], ebar=True, axis=False, show=True, export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_im_compare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot data from observations compared to ground truth from an image on the same axes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
+<li><strong>image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; ground truth image to compare to</li>
+<li><strong>field1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; x-axis field (from FIELDS)</li>
+<li><strong>field2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; y-axis field (from FIELDS)</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot conjuage baseline data points if True</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias amplitudes.</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
+<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of color strings of scatterplot points</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.comp_plots.plotall_obs_im_cphases">
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_im_cphases</code><span class="sig-paren">(</span><em>obs, image, ttype='nfft', sgrscat=False, rangex=False, rangey=[-180, 180], show=True, ebar=True, vtype='vis', ang_unit='deg', timetype='UTC', display_mode='all', labels=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_im_cphases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_im_cphases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot all observation closure phases on  top of image ground truth values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; observation to plot</li>
+<li><strong>image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; ground truth image to compare to</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis (time) limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>labels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>display_mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;all&#8217; or &#8216;individual&#8217; to plot a giant single plot or multiple small Jones</li>
+<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted cphases so they don&#8217;t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using stored data</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 
