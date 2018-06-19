@@ -2405,7 +2405,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
     """
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
-    systematic_cphase_noise = kwargs.get('systematic_cphase_noise',0.)
+    systematic_cphase_noise = kwargs.get('systematic_cphase_noise', 0.)
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)

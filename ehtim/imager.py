@@ -101,7 +101,7 @@ class Imager(object):
         self.debias_next=kwargs.get('debias',True)
         self.snrcut_next=kwargs.get('snrcut',0.)
         self.systematic_noise_next = kwargs.get('systematic_noise',0.)
-        self.systematic_cphase_noise_next = kwargs.get('systematic_noise',0.)
+        self.systematic_cphase_noise_next = kwargs.get('systematic_cphase_noise',0.)
 
         # clippping
         self.clipfloor_next = kwargs.get('clipfloor',0.)
