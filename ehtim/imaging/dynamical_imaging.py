@@ -792,8 +792,10 @@ R_flow={'alpha':0.0, 'metric':'SymKL', 'p':2.0, 'alpha_flow_tv':50.0},
 alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers
 stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for scattering
 Target_Dynamic_Range = 10000.0,
+maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, 
+minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, 
+recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
-maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
     """Run dynamic imager
        Uses I = exp(I') change of variables.
        Obsdata_List is a list of Obsdata objects, InitIm_List is a list of Image objects, and Prior is an Image object.
@@ -919,7 +921,7 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 
     # Coordinate matrix for COM constraint
     coord = np.array([[[x,y] for x in np.linspace(Prior.xdim/2,-Prior.xdim/2,Prior.xdim)]
-                                           for y in np.linspace(Prior.ydim/2,-Prior.ydim/2,Prior.ydim)])
+                             for y in np.linspace(Prior.ydim/2,-Prior.ydim/2,Prior.ydim)])
     coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
 
     # Make the pool for parallel processing
