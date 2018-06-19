@@ -32,7 +32,7 @@ COLORLIST = ['b','m','g','c','y','k','r']
 # Plotters: Compare Observations
 ##################################################################################################
 def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, conj=False,
-                        clist=COLORLIST, ebar=True, debias=True, ang_unit='deg' export_pdf="", axis=False, show=True):
+                        clist=COLORLIST, ebar=True, debias=True, ang_unit='deg', export_pdf="", axis=False, show=True):
         """Make a scatter plot for multiple observations of 2 real baseline observation fields in (FIELDS) with error bars.
 
            Args:
