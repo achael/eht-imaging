@@ -33,7 +33,7 @@ COLORLIST = ['b','m','g','c','y','k','r']
 ##################################################################################################
 def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, conj=False,
                         clist=COLORLIST, ebar=True, debias=True, ang_unit='deg', export_pdf="", axis=False, show=True):
-        """Make a scatter plot for multiple observations of 2 real baseline observation fields in (FIELDS) with error bars.
+    """Make a scatter plot for multiple observations of 2 real baseline observation fields in (FIELDS) with error bars.
 
            Args:
                obslist (list): list of observations to plot
@@ -57,7 +57,6 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
     """
-
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
@@ -105,8 +104,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field,
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
-        """
-
+    """
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
@@ -162,8 +160,7 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
-        """
-
+    """
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
@@ -224,8 +221,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
-        """
-
+    """
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
@@ -285,7 +281,6 @@ def plotall_obs_im_compare(obslist, image, field1, field2,
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
     """
-
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
@@ -339,11 +334,8 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
-        """
-
-
+    """
     try: len(obslist)
-
     except TypeError: obslist = [obslist]
 
     for i in range(len(obslist)):
@@ -405,8 +397,7 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direc
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
-        """
-
+    """
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
@@ -472,8 +463,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
-        """
-
+    """
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
@@ -530,7 +520,7 @@ def plotall_obs_im_cphases(obs, image, ttype='nfft', sgrscat=False,
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
-        """
+    """
 
     # get closure triangle combinations
     sites = []
