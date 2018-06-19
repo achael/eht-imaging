@@ -99,7 +99,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Vex</a></li>
 <li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
 <li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plotting.html">Comparison Plots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
 </ul>
@@ -167,80 +167,6 @@
             
   <span class="target" id="module-vex"></span><div class="section" id="vex">
 <span id="id1"></span><h1>Vex<a class="headerlink" href="#vex" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-ehtim.vex"></span><dl class="class">
-<dt id="ehtim.vex.Vex">
-<em class="property">class </em><code class="descclassname">ehtim.vex.</code><code class="descname">Vex</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read in observing schedule data from .vex files.
-Assumes there is only 1 MODE in vex file</p>
-<dl class="attribute">
-<dt id="ehtim.vex.Vex.filename">
-<code class="descname">filename</code><a class="headerlink" href="#ehtim.vex.Vex.filename" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; The .vex filename.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.vex.Vex.source">
-<code class="descname">source</code><a class="headerlink" href="#ehtim.vex.Vex.source" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; The source name.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.vex.Vex.metalist">
-<code class="descname">metalist</code><a class="headerlink" href="#ehtim.vex.Vex.metalist" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; The observation information.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.vex.Vex.sched">
-<code class="descname">sched</code><a class="headerlink" href="#ehtim.vex.Vex.sched" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; The schedule information.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.vex.Vex.array">
-<code class="descname">array</code><a class="headerlink" href="#ehtim.vex.Vex.array" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Array</em> &#8211; an Array object of sites.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.vex.Vex.find_variable">
-<code class="descname">find_variable</code><span class="sig-paren">(</span><em>vname</em>, <em>line</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.find_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.find_variable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to find a variable &#8216;vname&#8217; in a line.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.vex.Vex.get_SEFD">
-<code class="descname">get_SEFD</code><span class="sig-paren">(</span><em>station</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_SEFD"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_SEFD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find SEFD for a given station.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.vex.Vex.get_obs_timerange">
-<code class="descname">get_obs_timerange</code><span class="sig-paren">(</span><em>source</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_obs_timerange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_obs_timerange" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find the time that any station starts observing the source in MJD,
-and the time that the last station stops observing the source.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.vex.Vex.get_sector">
-<code class="descname">get_sector</code><span class="sig-paren">(</span><em>sname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_sector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_sector" title="Permalink to this definition">¶</a></dt>
-<dd><p>Obtain a desired sector from &#8216;metalist&#8217;.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.vex.Vex.get_variable">
-<code class="descname">get_variable</code><span class="sig-paren">(</span><em>vname</em>, <em>line</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_variable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to get a value of &#8216;vname&#8217; in a line.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.vex.vexdate_to_MJD_hr">
-<code class="descclassname">ehtim.vex.</code><code class="descname">vexdate_to_MJD_hr</code><span class="sig-paren">(</span><em>vexdate</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#vexdate_to_MJD_hr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.vexdate_to_MJD_hr" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find the integer MJD and UT hour from vex format date.</p>
-</dd></dl>
-
 </div>
 
 

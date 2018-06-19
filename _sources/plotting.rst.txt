@@ -2,7 +2,7 @@
 
 .. _plotting:
 
-Comparison Plots
+Plotting
 ================
 
 .. automodule:: ehtim.plotting.comp_plots
