@@ -185,7 +185,7 @@ class Caltable(object):
                 # output data table
                 if i==0: 
                     caldata_out = gg
-                else
+                else:
                     caldata_out = np.append(caldata_out, gg)
 
             outdict[scope] = caldata_out
