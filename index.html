@@ -97,7 +97,7 @@
 <li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 <li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
-<li class="toctree-l1"><a class="reference internal" href="calibration.html">Self Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Comparison Plots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
@@ -170,16 +170,16 @@
 <p>The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the <code class="xref py py-class docutils literal"><span class="pre">Image</span></code>, <code class="xref py py-class docutils literal"><span class="pre">Array</span></code>, and <code class="xref py py-class docutils literal"><span class="pre">Obsdata</span></code>. <code class="xref py py-class docutils literal"><span class="pre">Movie</span></code> and <code class="xref py py-class docutils literal"><span class="pre">Vex</span></code> provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. <code class="docutils literal"><span class="pre">imager</span></code> is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.</p>
+<p class="last">If you have a problem please submit a pull request on the git repository and/or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;cfa&#46;harvard&#46;edu">achael<span>&#64;</span>cfa<span>&#46;</span>harvard<span>&#46;</span>edu</a></p>
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>Download the latest version from the <a class="reference external" href="https://github.com/achael/eht-imaging">GitHub repository</a>, change to the main directory and run:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install .
-</pre></div>
-</div>
 <p>It should install the depended libraries <a class="reference external" href="http://www.astropy.org/">astropy</a>, <a class="reference external" href="http://pypi.python.org/pypi/pyephem/">ephem</a>, <a class="reference external" href="http://pypi.python.org/pypi/future">future</a>, <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>, <a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="http://www.scipy.org/">scipy</a>, <a class="reference external" href="http://www.pandas.pydata.org/">pandas</a> automatically.</p>
-<p>You will need to install <a class="reference external" href="https://github.com/NFFT/nfft">NFFT</a> and the <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynnft wrapper</a> . You can use <a class="reference external" href="https://anaconda.org/conda-forge/pynfft/">conda</a> to to install both NFFT and the pynfft wrapper Alternatively, first install NFFT following the instructions on the <a class="reference external" href="https://github.com/NFFT/nfft">github readme</a>, making sure to use the &#8211;enable-openmp flag in compilation. Then install <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynnft</a>, with pip, following the readme instructions to link the installation to where you installed NFFT.</p>
+<p>If you want to use fast fourier transforms, you will also need to install <a class="reference external" href="https://github.com/NFFT/nfft">NFFT</a> and the <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynnft wrapper</a> before installing ehtim. The simplest way is to use <a class="reference external" href="https://anaconda.org/conda-forge/pynfft/">conda</a> to to install both NFFT and the pynfft wrapper.
+.. code-block:: bash</p>
+<blockquote>
+<div>conda install -c conda-forge pynfft</div></blockquote>
+<p>Alternatively, first install NFFT following the instructions on the <a class="reference external" href="https://github.com/NFFT/nfft">github readme</a>, making sure to use the &#8211;enable-openmp flag in compilation. Then install <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynnft</a>, with pip, following the readme instructions to link the installation to where you installed NFFT.</p>
 </div>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
@@ -192,7 +192,7 @@
 <li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 <li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
-<li class="toctree-l1"><a class="reference internal" href="calibration.html">Self Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Comparison Plots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>

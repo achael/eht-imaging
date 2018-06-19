@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Self Calibration &mdash; ehtim 1.0.0 documentation</title>
+  <title>Calibration &mdash; ehtim 1.0.0 documentation</title>
   
 
   
@@ -98,7 +98,7 @@
 <li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
 <li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Self Calibration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Comparison Plots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
@@ -146,7 +146,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Self Calibration</li>
+      <li>Calibration</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -165,9 +165,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="module-calibration"></span><div class="section" id="module-ehtim.caltable">
-<span id="self-calibration"></span><span id="calibration"></span><h1>Self Calibration<a class="headerlink" href="#module-ehtim.caltable" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
+  <span class="target" id="module-calibration"></span><div class="section" id="calibration">
+<span id="id1"></span><h1>Calibration<a class="headerlink" href="#calibration" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.caltable"></span><dl class="class">
 <dt id="ehtim.caltable.Caltable">
 <em class="property">class </em><code class="descclassname">ehtim.caltable.</code><code class="descname">Caltable</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatables</em>, <em>tarr</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Attributes:</p>
@@ -225,6 +225,24 @@
 <code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>im</em>, <em>V_scan=[]</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal_scan" title="Permalink to this definition">¶</a></dt>
 <dd><p>Self-calibrate a scan to a fixed  image.
 if caltable==True, returns a caltable dictionary. If False, returns the  scan.</p>
+</dd></dl>
+
+<span class="target" id="module-ehtim.calibrating.network_cal"></span><dl class="function">
+<dt id="ehtim.calibrating.network_cal.network_cal">
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>processes=-1</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Network-calibrate a dataset with zbl constraints</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.network_cal.network_cal_scan">
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal_scan</code><span class="sig-paren">(</span><em>scan</em>, <em>zbl</em>, <em>sites</em>, <em>clustered_sites</em>, <em>zbl_uvidst_max=10000000.0</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Network-calibrate a scan with zbl constraints</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.calibrating.network_cal.norm_zbl">
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">norm_zbl</code><span class="sig-paren">(</span><em>obs</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#norm_zbl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.norm_zbl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize scans to zero baseline</p>
 </dd></dl>
 
 </div>
