@@ -281,7 +281,7 @@
         <span class="c1">#self = ct</span>
         <span class="c1">#caltablelist = [ct2]</span>
 
-        <span class="n">tarr1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
+        <span class="n">tarr1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">tkey1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">data1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">caltable</span> <span class="ow">in</span> <span class="n">caltablelist</span><span class="p">:</span>
@@ -289,7 +289,7 @@
             <span class="c1">#TODO check metadata!</span>
 
             <span class="c1">#TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???</span>
-            <span class="n">tarr2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
+            <span class="n">tarr2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">tkey2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">data2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
@@ -325,7 +325,7 @@
                     <span class="c1">#put the merged data back in data1</span>
                     <span class="c1">#TODO can we do this faster?</span>
                     <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)):</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times_merge</span><span class="p">)):</span>
                         <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">times_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">rscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lscale_merge</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">))</span>
                     <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
 
@@ -345,7 +345,7 @@
 
 
 
-    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_singlepol</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span> <span class="o">==</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The telescope array in the Caltable is not the same as in the Obsdata&quot;</span><span class="p">)</span>
@@ -370,9 +370,9 @@
 
             <span class="n">time_mjd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">24.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span>
             <span class="n">rinterp</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time_mjd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;rscale&#39;</span><span class="p">],</span>
-                                             <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                                             <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="n">linterp</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">relaxed_interp1d</span><span class="p">(</span><span class="n">time_mjd</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">],</span>
-                                             <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                                             <span class="n">kind</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">bllist</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">bllist</span><span class="p">()</span>
         <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
@@ -528,21 +528,21 @@
 
     <span class="n">ntele</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span>
     <span class="n">ntimes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
-    
+
     <span class="n">datatables</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ntele</span><span class="p">):</span>
         <span class="n">datatable</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ntimes</span><span class="p">):</span>
-            <span class="n">gain</span> <span class="o">=</span> <span class="n">gains</span><span class="p">[</span><span class="n">s</span><span class="o">*</span><span class="n">ntele</span> <span class="o">+</span> <span class="n">t</span><span class="p">]</span> 
+            <span class="n">gain</span> <span class="o">=</span> <span class="n">gains</span><span class="p">[</span><span class="n">s</span><span class="o">*</span><span class="n">ntele</span> <span class="o">+</span> <span class="n">t</span><span class="p">]</span>
             <span class="n">datatable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">times</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">gain</span><span class="p">,</span> <span class="n">gain</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">DTCAL</span><span class="p">))</span>
         <span class="n">datatables</span><span class="p">[</span><span class="n">sites</span><span class="p">[</span><span class="n">s</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datatables</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
-        <span class="n">caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> 
-                        <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">datatables</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> 
+        <span class="n">caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span>
+                        <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">datatables</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
                         <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span>
-    
+
     <span class="k">return</span> <span class="n">caltable</span>
 </pre></div>
 

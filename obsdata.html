@@ -298,8 +298,52 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.obsdata.Obsdata.add_all">
+<code class="descname">add_all</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>count='max'</em>, <em>debias=True</em>, <em>debias_type='old'</em>, <em>avg_time=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds tables of all all averaged derived quantities self.amp,self.bispec,self.cphase,self.camp,self.logcamp</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
+<li><strong>debias_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;ExactLog&#8217; or &#8216;old&#8217;</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of closure quantities, if &#8216;max&#8217; return all closure quantities</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
+<li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.add_amp">
+<code class="descname">add_amp</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>avg_time=0</em>, <em>debias=True</em>, <em>err_type='predicted'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_amp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_amp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds attribute self.amp: amplitude table with incoherently averaged amplitudes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True then apply debiasing</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.obsdata.Obsdata.add_bispec">
-<code class="descname">add_bispec</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>mode='all'</em>, <em>dt=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_bispec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_bispec" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_bispec</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>count='max'</em>, <em>avg_time=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_bispec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_bispec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds attribute self.bispec: bispectra table with bispectra averaged for dt</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -307,8 +351,8 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return a list of equal time arrays, if &#8216;all&#8217;, return all in a single array</li>
-<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of bispectra, if &#8216;max&#8217; return all bispectra up to reordering</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; bispectrum averaging timescale</li>
 <li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
 <li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
 <li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
@@ -321,8 +365,8 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.add_camp">
-<code class="descname">add_camp</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>ctype='logcamp'</em>, <em>mode='all'</em>, <em>debias=False</em>, <em>dt=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_camp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_camp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds attribute self.camp: closure amplitudes table</p>
+<code class="descname">add_camp</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>ctype='camp'</em>, <em>count='max'</em>, <em>debias=True</em>, <em>debias_type='old'</em>, <em>avg_time=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_camp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_camp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds attribute self.camp or self.logcamp: closure amplitudes table</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -331,8 +375,9 @@
 <li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
 <li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return a list of equal time arrays, if &#8216;all&#8217;, return all in a single array</li>
-<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
+<li><strong>debias_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;ExactLog&#8217; or &#8216;old&#8217;</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of amplitudes, if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
 <li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
 <li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
 <li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
@@ -345,7 +390,7 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.add_cphase">
-<code class="descname">add_cphase</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>mode='all'</em>, <em>dt=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_cphase" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_cphase</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>count='max'</em>, <em>avg_time=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_cphase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds attribute self.cphase: cphase table averaged for dt</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -353,8 +398,33 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return a list of equal time arrays, if &#8216;all&#8217;, return all in a single array</li>
-<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of phases, if &#8216;max&#8217; return all closure phases up to reordering</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure phase averaging timescale</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
+<li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.add_logcamp">
+<code class="descname">add_logcamp</code><span class="sig-paren">(</span><em>return_type='rec'</em>, <em>ctype='camp'</em>, <em>count='max'</em>, <em>debias=True</em>, <em>debias_type='old'</em>, <em>avg_time=0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_logcamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_logcamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds attribute self.logcamp: closure amplitudes table</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
+<li><strong>debias_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;ExactLog&#8217; or &#8216;old&#8217;</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of amplitudes, if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
 <li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
 <li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
 <li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
@@ -419,7 +489,7 @@
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;, &#8216;qvis&#8217;, &#8216;uvis&#8217;,&#8217;vvis&#8217;,&#8217;rrvis&#8217;,&#8217;lrvis&#8217;,&#8217;rlvis&#8217;,&#8217;llvis&#8217;) from which to assemble bispectra</li>
 <li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return phases in a list of equal time arrays, if &#8216;all&#8217;, return all phases in a single array</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of phases, if &#8216;max&#8217; return all closure phases up to reordering</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of bispectra, if &#8216;max&#8217; return all bispectra up to reordering</li>
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
 </ul>
 </td>
@@ -538,7 +608,7 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.camp_quad">
-<code class="descname">camp_quad</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>camps=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.camp_quad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.camp_quad" title="Permalink to this definition">¶</a></dt>
+<code class="descname">camp_quad</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>camps=[]</em>, <em>force_recompute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.camp_quad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.camp_quad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -639,7 +709,7 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.cphase_tri">
-<code class="descname">cphase_tri</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>cphases=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.cphase_tri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.cphase_tri" title="Permalink to this definition">¶</a></dt>
+<code class="descname">cphase_tri</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>cphase=[]</em>, <em>force_recompute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.cphase_tri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.cphase_tri" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return closure phase  over time on a triangle (1-2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -652,7 +722,8 @@
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble closure phases</li>
 <li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;deg&#8217;, return closure phases in degrees, else return in radians</li>
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the cphases so they are not recomputed if you are plotting multiple triangles</li>
+<li><strong>cphase</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the cphase so they are not recomputed if you are plotting multiple triangles</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using obs.cphase saved data</li>
 </ul>
 </td>
 </tr>
@@ -766,7 +837,7 @@ The output can be non-sensical if there are higher-order terms in the closure ph
 If 0.0, auto-estimates this value to twice the median scan length.</li>
 <li><strong>min_num</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) &#8211; The minimum number of closure phase differences for a triangle to be included in the set of estimators.</li>
 <li><strong>print_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Whether or not to print the normalized standard deviation for each closure triangle.</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Specification of which closure phases to use (e.g., &#8216;max&#8217; or &#8216;min&#8217;)</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, use minimal set of phases, if &#8216;max&#8217; use all closure phases up to reordering</li>
 </ul>
 </td>
 </tr>
@@ -994,7 +1065,7 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_camp">
-<code class="descname">plot_camp</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>ebar=True</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>export_pdf=''</em>, <em>camps=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_camp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_camp" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plot_camp</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>ebar=True</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>export_pdf=''</em>, <em>camps=[]</em>, <em>force_recompute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_camp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_camp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1017,6 +1088,7 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 <li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; Color of scatterplot points</li>
 <li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
 <li><strong>camps</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted camps so they don&#8217;t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure amplitudes instead of using stored  data</li>
 </ul>
 </td>
 </tr>
@@ -1032,7 +1104,7 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_cphase">
-<code class="descname">plot_cphase</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>ebar=True</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>export_pdf=''</em>, <em>cphases=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_cphase" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plot_cphase</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>ebar=True</em>, <em>labels=True</em>, <em>show=True</em>, <em>axis=False</em>, <em>color='b'</em>, <em>export_pdf=''</em>, <em>cphase=[]</em>, <em>force_recompute=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_cphase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot closure phase over time on a triangle (1-2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1048,11 +1120,13 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 <li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis (time) limits</li>
 <li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis (phase) limits</li>
 <li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
+<li><strong>labels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
 <li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
 <li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
 <li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; Color of scatterplot points</li>
 <li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
-<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted cphases so they don&#8217;t have to be recomputed</li>
+<li><strong>cphase</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; optionally pass in the time-sorted cphases so they don&#8217;t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using stored data</li>
 </ul>
 </td>
 </tr>

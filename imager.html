@@ -182,8 +182,8 @@
 <li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; The total flux of the output image in Jy</li>
 <li><strong>d1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The first data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;, &#8216;logcamp&#8217;</li>
 <li><strong>d2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The second data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;, &#8216;logcamp&#8217;</li>
-<li><strong>s1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The first regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;tv2&#8217;, &#8216;l1&#8217;, &#8216;patch&#8217;</li>
-<li><strong>s2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The second regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;tv2&#8217;,&#8217;l1&#8217;, &#8216;patch&#8217;</li>
+<li><strong>s1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The first regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;tv2&#8217;, &#8216;l1&#8217;, &#8216;patch&#8217;,&#8217;compact&#8217;,&#8217;compact2&#8217;,&#8217;rgauss&#8217;</li>
+<li><strong>s2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The second regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;tv2&#8217;,&#8217;l1&#8217;, &#8216;patch&#8217;,&#8217;compact&#8217;,&#8217;compact2&#8217;,&#8217;rgauss&#8217;</li>
 <li><strong>alpha_d1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; The first data term weighting</li>
 <li><strong>alpha_d2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; The second data term weighting</li>
 <li><strong>alpha_s1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; The first regularizer term weighting</li>
@@ -194,6 +194,7 @@
 <li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; The convergence criterion</li>
 <li><strong>clipfloor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; The Jy/pixel level above which prior image pixels are varied</li>
 <li><strong>systematic_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; Fractional systematic noise tolerance to add to sigmas</li>
+<li><strong>systematic_cphase_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; Systematic noise tolerance  in degree to add to cphase sigmas</li>
 <li><strong>beam_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; beam size in radians for normalizing the regularizers</li>
 <li><strong>grads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, analytic gradients are used</li>
 <li><strong>logim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, uses I = exp(I&#8217;) change of variables</li>
@@ -290,13 +291,13 @@
 
 <dl class="method">
 <dt id="ehtim.imager.Imager.make_image_I">
-<code class="descname">make_image_I</code><span class="sig-paren">(</span><em>grads=True</em>, <em>show_updates=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I" title="Permalink to this definition">¶</a></dt>
+<code class="descname">make_image_I</code><span class="sig-paren">(</span><em>grads=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make Stokes I image using current imager settings.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.imager.Imager.make_image_I_stochastic_optics">
-<code class="descname">make_image_I_stochastic_optics</code><span class="sig-paren">(</span><em>grads=True</em>, <em>show_updates=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I_stochastic_optics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I_stochastic_optics" title="Permalink to this definition">¶</a></dt>
+<code class="descname">make_image_I_stochastic_optics</code><span class="sig-paren">(</span><em>grads=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_I_stochastic_optics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_I_stochastic_optics" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reconstructs an image of total flux density using the stochastic optics scattering mitigation technique.
 Uses the scattering model of the imager. If none has been specified, it will default to a standard model for Sgr A*.
 Returns the estimated unscattered image.</p>
@@ -417,9 +418,15 @@ Returns the estimated unscattered image.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.imager.Imager.systematic_cphase_noise_last">
+<code class="descname">systematic_cphase_noise_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.systematic_cphase_noise_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.systematic_cphase_noise_last" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return last closure phase systematic noise value (in degree).</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.imager.Imager.systematic_noise_last">
 <code class="descname">systematic_noise_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.systematic_noise_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.systematic_noise_last" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return last snrcut value.</p>
+<dd><p>Return last systematic_noise value.</p>
 </dd></dl>
 
 <dl class="method">
