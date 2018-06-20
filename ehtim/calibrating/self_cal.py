@@ -33,9 +33,10 @@ import ehtim.imaging.imager_utils as iu
 
 from multiprocessing import cpu_count
 from multiprocessing import Pool
+from multiprocessing import Process, Value, Lock
 
 import itertools
-
+import time
 ZBLCUTOFF = 1.e7;
 
 ###################################################################################################################################
@@ -74,17 +75,6 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         print("less than 2 stations specified in self cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']
 
-    # Make the pool for parallel processing
-    if processes > 0:
-        print("Using Multiprocessing")
-        pool = Pool(processes=processes)
-    elif processes == 0:
-        processes = int(cpu_count())
-        print("Using Multiprocessing with %d Processes" % processes)
-        pool = Pool(processes=processes)
-    else:
-        print("Not Using Multiprocessing")
-
     # First, sample the model visibilities
     print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
     if ttype == 'direct':
@@ -105,22 +95,42 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
     scan_lengths = [len(o) for o in obs.tlist()]
     V_scans      = [list(islice(it, 0, i)) for i in scan_lengths]
 
-    # loop over scans and calibrate
+    # get scans
     scans     = obs.tlist()
     scans_cal = copy.copy(scans)
 
+    # Make the pool for parallel processing
+    if processes > 0:
+        counter = Counter(initval=0, maxval=len(scans))
+        print("Using Multiprocessing with %d Processes" % processes)
+        pool = Pool(processes=processes, initializer=init, initargs=(counter,))
+    elif processes == 0:
+        counter = Counter(initval=0, maxval=len(scans))
+        processes = int(cpu_count())
+        print("Using Multiprocessing with %d Processes" % processes)
+        pool = Pool(processes=processes, initializer=init, initargs=(counter,))
+    else:
+        print("Not Using Multiprocessing")
+
+    # loop over scans and calibrate
+    tstart = time.time()
     if processes > 0: # run on multiple cores with multiprocessing
+
         scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method,
-                                                              show_solution, pad_amp, gain_tol, caltable
+                                                              show_solution, pad_amp, gain_tol, caltable, 
                                                              ] for i in range(len(scans))]))
-        print('DONE')
+
     else: # run on a single core
+
         for i in range(len(scans)):
-            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
-            sys.stdout.flush()
+            cal_prog_msg(i, len(scans))
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
                                  method=method, show_solution=show_solution,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+
+    print('DONE')
+    tstop = time.time()
+    print("self_cal time: %f s" % (tstop - tstart))
 
     if caltable: # assemble the caltable to return
         allsites = obs.tarr['site']
@@ -278,13 +288,48 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     return out
 
+def init(x):
+    global counter
+    counter = x
+
 def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
 def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable):
     if n > 1:
-        sys.stdout.write('.')
-        sys.stdout.flush()
+        global counter
+        counter.increment()
+        cal_prog_msg(counter.value(), counter.maxval)
 
-    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, 
+                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+
+
+def cal_prog_msg(nscan, totscans):
+    complete_percent = int(100*float(nscan)/float(totscans))
+    sys.stdout.write('\rCalibrating Scan %i/%i : %i%% done . . .' % (nscan, totscans, complete_percent))
+    sys.stdout.flush()
+
+# counter object for sharing among multiprocessing jobs
+class Counter(object):
+    def __init__(self,initval=0,maxval=0):
+        self.val = Value('i',initval)
+        self.maxval = maxval
+        self.lock = Lock()
+    def increment(self):
+        with self.lock:
+            self.val.value += 1
+    def value(self):
+        with self.lock:
+            return self.val.value
+
+
+
+
+
+
+
+
+
+
 

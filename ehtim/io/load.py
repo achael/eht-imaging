@@ -42,6 +42,9 @@ from astropy.time import Time
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+import warnings
+#warnings.filterwarnings("ignore", message="invalid value encountered in greater")
+
 ##################################################################################################
 # Vex IO
 ##################################################################################################
@@ -715,11 +718,23 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
 
-    #TODO less than or equal to?
+    # first, catch  nans
+    rrnanmask_2d = (np.isnan(rrweight))
+    llnanmask_2d = (np.isnan(llweight))
+    rlnanmask_2d = (np.isnan(rlweight))
+    lrnanmask_2d = (np.isnan(lrweight))
+
+    rrweight[rrnanmask_2d] = 0.
+    llweight[llnanmask_2d] = 0.
+    rlweight[rlnanmask_2d] = 0.
+    lrweight[lrnanmask_2d] = 0.
+
+    #look for weights < 0 
     rrmask_2d = (rrweight > 0.)
     llmask_2d = (llweight > 0.)
     rlmask_2d = (rlweight > 0.)
     lrmask_2d = (lrweight > 0.)
+
 
     # if there is any unmasked data in the frequency column, use it
     rrmask = np.any(np.any(rrmask_2d, axis=2), axis=1)

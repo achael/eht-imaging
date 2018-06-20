@@ -72,24 +72,28 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
         print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']
 
-    # Make the pool for parallel processing
-    if processes > 0:
-        print("Using Multiprocessing")
-        pool = Pool(processes=processes)
-    elif processes == 0:
-        processes = int(cpu_count())
-        print("Using Multiprocessing with %d Processes" % processes)
-        pool = Pool(processes=processes)
-    else:
-        print("Not Using Multiprocessing")
-
     # find colocated sites and put into list allclusters
     cluster_data = make_cluster_data(obs, zbl_uvdist_max)
 
-    # loop over scans and calibrate
+    # get scans
     scans     = obs.tlist()
     scans_cal = copy.copy(scans)
 
+    # Make the pool for parallel processing
+    if processes > 0:
+        counter = Counter(initval=0, maxval=len(scans))
+        print("Using Multiprocessing with %d Processes" % processes)
+        pool = Pool(processes=processes, initializer=init, initargs=(counter,))
+    elif processes == 0:
+        counter = Counter(initval=0, maxval=len(scans))
+        processes = int(cpu_count())
+        print("Using Multiprocessing with %d Processes" % processes)
+        pool = Pool(processes=processes, initializer=init, initargs=(counter,))
+    else:
+        print("Not Using Multiprocessing")
+
+    # loop over scans and calibrate
+    tstart = time.time()
     if processes > 0: # with multiprocessing
         scans_cal = np.array(filter(lambda x: x,
                                     pool.map(get_network_scan_cal,
@@ -97,7 +101,6 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
                                                zbl, sites, cluster_data, method, pad_amp, gain_tol, caltable, show_solution]
                                               for i in range(len(scans))
                                              ])))
-        print('DONE')
     else: # without multiprocessing
         for i in range(len(scans)):
             sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
@@ -105,6 +108,10 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
             scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data,
                                             method=method, show_solution=show_solution, caltable=caltable,
                                             pad_amp=pad_amp, gain_tol=gain_tol)
+
+    print('DONE')
+    tstop = time.time()
+    print("network_cal time: %f s" % (tstop - tstart))
 
     if caltable: # create and return  a caltable
         allsites = obs.tarr['site']
@@ -313,19 +320,42 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
     return out
 
+def init(x):
+    global counter
+    counter = x
 
 def get_network_scan_cal(args):
     return get_network_scan_cal2(*args)
 
 def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution):
     if n > 1:
-        sys.stdout.write('.')
-        sys.stdout.flush()
+        global counter
+        counter.increment()
+        cal_prog_msg(counter.value(), counter.maxval)
 
     return network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, 
                             method=method,caltable=caltable, show_solution=show_solution, 
                             pad_amp=pad_amp, gain_tol=gain_tol)
 
+
+
+def cal_prog_msg(nscan, totscans):
+    complete_percent = int(100*float(nscan)/float(totscans))
+    sys.stdout.write('\rCalibrating Scan %i/%i : %i%% done . . .' % (nscan, totscans, complete_percent))
+    sys.stdout.flush()
+
+# counter object for sharing among multiprocessing jobs
+class Counter(object):
+    def __init__(self,initval=0,maxval=0):
+        self.val = Value('i',initval)
+        self.maxval = maxval
+        self.lock = Lock()
+    def increment(self):
+        with self.lock:
+            self.val.value += 1
+    def value(self):
+        with self.lock:
+            return self.val.value
 
 ###################################################################################################################################
 #Misc
