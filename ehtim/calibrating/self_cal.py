@@ -87,7 +87,6 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         im_info, sampler_info_list, gridder_info_list = fft_A
         vis_arr = iu.fft_imvec(im.imvec, im_info)
         V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
-    print("Done!")
 
     # Partition the list of model visibilities into scans
     from itertools import islice

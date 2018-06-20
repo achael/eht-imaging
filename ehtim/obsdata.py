@@ -655,10 +655,10 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            sys.stdout.flush()
+
             sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
                               % (t,len(timesplit),inttime, tavg,t))
-
+            sys.stdout.flush()
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
 
@@ -728,7 +728,7 @@ class Obsdata(object):
                                timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
                                ), dtype=DTPOL
                              ))
-
+        print()
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -762,10 +762,10 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            sys.stdout.flush()
+
             sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
-                                % (t,len(timesplit),inttime, tavg,t)
-                            )
+                                % (t,len(timesplit),inttime, tavg,t))
+            sys.stdout.flush()
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
 
@@ -835,7 +835,7 @@ class Obsdata(object):
                                 timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
                                 ), dtype=DTPOL
                                 ))
-
+        print()
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1229,14 +1229,15 @@ class Obsdata(object):
                 all_triangles.append((cphase[1],cphase[2],cphase[3]))
 
         std_list = []
-        print("Estimating noise for %d triangles...\n" % len(set(all_triangles)))
+        if print_std:
+            print("Estimating noise for %d triangles...\n" % len(set(all_triangles)))
 
         i_count = 0
         for tri in set(all_triangles):
             i_count = i_count + 1
-            if print_std == False:
-                sys.stdout.flush()
+            if print_std:
                 sys.stdout.write('\rGetting noise for triangles %i/%i ' % (i_count, len(set(all_triangles))))
+                sys.stdout.flush()
             all_tri = np.array([[]])
             for scan in c_phases:
                 for cphase in scan:
@@ -1256,7 +1257,7 @@ class Obsdata(object):
                 std_list.append(np.std(s_list))
                 if print_std == True:
                     print(tri, np.std(s_list))
-
+        print()
         return np.median(std_list)
 
     def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
@@ -1276,7 +1277,7 @@ class Obsdata(object):
 
         datatable = self.data.copy()
         datatable = datatable[mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('uvdist flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
 
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
@@ -1299,7 +1300,7 @@ class Obsdata(object):
         t2_list = self.unpack('t2')['t2']
         site_mask = np.array([t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))])
         datatable = datatable[site_mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('site flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1318,7 +1319,7 @@ class Obsdata(object):
         datatable = self.data.copy()
         snr_mask = self.unpack('snr')['snr'] > snr_cut
         datatable = datatable[snr_mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('snr flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1344,7 +1345,7 @@ class Obsdata(object):
             UT_mask = np.invert(UT_mask)
 
         datatable = datatable[UT_mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('time flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1378,7 +1379,7 @@ class Obsdata(object):
 
         datatable =  self.data.copy()
         datatable = datatable[mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('%s scatter flagged %d/%d visibilities' % (field, (len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1412,7 +1413,7 @@ class Obsdata(object):
 
         datatable = self.data.copy()
         datatable = datatable[mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('anomalous %s flagged %d/%d visibilities' % (field, (len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1610,8 +1611,9 @@ class Obsdata(object):
         bis = []
         tt = 1
         for tdata in tlist:
+
+            sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % (vtype, count, tt, len(tlist)))
             sys.stdout.flush()
-            sys.stdout.write('\rGetting bispectra: type: %s count: %s scan %i/%i ' % (vtype, count, tt, len(tlist)))
 
             tt += 1
 
@@ -1668,7 +1670,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(bis)
-
+        print()
         return out
 
     def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg', timetype=False):
@@ -1706,8 +1708,8 @@ class Obsdata(object):
         # Reformat into a closure phase list/array
         out = []
         cps = []
-        sys.stdout.flush()
-        sys.stdout.write('\rReformatting bispectra to closure phase...')
+
+        print('Reformatting bispectra to closure phase...')
 
         for bis in bispecs:
             for bi in bis:
@@ -1722,6 +1724,7 @@ class Obsdata(object):
 
         if mode == 'all':
             out = np.array(cps)
+
         return out
 
     def bispectra_tri(self, site1, site2, site3, vtype='vis', timetype=False, bs=[]):
@@ -1868,8 +1871,9 @@ class Obsdata(object):
         cas = []
         tt = 1
         for tdata in tlist:
-            sys.stdout.flush()
-            sys.stdout.write('\rGetting closure amps: type: %s %s count: %s scan %i/%i' % (vtype, ctype, count, tt, len(tlist)))
+
+            sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % (vtype, ctype, count, tt, len(tlist)))
+            sys.stdout.flush()            
             tt += 1
 
             time = tdata[0]['time']
@@ -1965,7 +1969,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(cas)
-
+        print()
         return out
 
     def camp_quad(self, site1, site2, site3, site4,

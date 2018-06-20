@@ -43,7 +43,7 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 import warnings
-#warnings.filterwarnings("ignore", message="invalid value encountered in greater")
+warnings.filterwarnings("ignore", message="Mean of empty slice")
 
 ##################################################################################################
 # Vex IO
@@ -53,6 +53,7 @@ def load_vex(fname):
        Assumes there is only 1 MODE in vex file
        Hotaka Shiokawa - 2017
     """
+    print ("Loading vexfile: ", fname)
     return ehtim.vex.Vex(fname)
 
 
@@ -64,6 +65,8 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
        Text file should have the same format as output from Image.save_txt()
        Make sure the header has exactly the same form!
     """
+
+    print ("Loading text image: ", filename)
 
     # Read the header
     file = open(filename)
@@ -121,6 +124,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
 def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     """Read in an image from a FITS file and create an Image object
     """
+    print ("Loading fits image: ", filename)
 
     # Radian or Degree?
     if punit=="deg":
@@ -372,6 +376,7 @@ def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
+    print ("Loading text observation: ", filename)
 
     # Read the header parameters
     file = open(filename)
@@ -576,6 +581,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     """
 
     # Load the uvfits file
+    print ("Loading uvfits: ", filename)
     hdulist = fits.open(filename)
     header = hdulist[0].header
     data = hdulist[0].data

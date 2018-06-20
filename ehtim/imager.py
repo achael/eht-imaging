@@ -770,6 +770,8 @@ class Imager(object):
     def make_image_I(self, grads=True, **kwargs):
         """Make Stokes I image using current imager settings.
         """
+        print("==============================")
+        print("Imager run %i " % (int(self.nruns)+1))
         # Checks and initialize
         self.check_params()
         self.check_limits()
@@ -820,6 +822,7 @@ class Imager(object):
         print("time: %f s" % (tstop - tstart))
         print("J: %f" % res.fun)
         print(res.message.decode())
+        print("==============================")
 
         # Append to history
         logstr = str(self.nruns) + ": make_image_I()" #TODO - what should the log string be?
