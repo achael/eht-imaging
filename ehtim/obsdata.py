@@ -578,7 +578,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_factor=2, systematic_noise=0.0):
+    def chisq(self, im, dtype='vis', ttype='nfft', mask=[], fft_pad_factor=2, systematic_noise=0.0):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
