@@ -195,42 +195,52 @@ class Imager(object):
             return
 
         if self.obs_next != self.obs_last():
+            print("A")
             self._change_imgr_params = True
             return
 
         if len(self.reg_term_next) != len(self.reg_terms_last()):
+            print("B")
             self._change_imgr_params = True
             return
 
         if len(self.dat_term_next) != len(self.dat_terms_last()):
+            print("C")
             self._change_imgr_params = True
             return
 
         for term in sorted(self.dat_term_next.keys()):
             if term not in self.dat_terms_last().keys():
+                print("D")
                 self._change_imgr_params = True
                 return
 
         for term in sorted(self.reg_term_next.keys()):
             if term not in self.reg_terms_last().keys():
+                print("E")
                 self._change_imgr_params = True
                 return
 
         if ((self.prior_next.psize != self.prior_last().psize) or
             (self.prior_next.xdim != self.prior_last().xdim) or
             (self.prior_next.ydim != self.prior_last().ydim)):
+            print("F")
             self._change_imgr_params = True
 
         if self.debias_next != self.debias_last():
+            print("G")
             self._change_imgr_params = True
             return
         if self.snrcut_next != self.snrcut_last():
+            print("H")
             self._change_imgr_params = True
             return
         if self.systematic_noise_next != self.systematic_noise_last():
+            print("I")
             self._change_imgr_params = True
             return
         if self.systematic_cphase_noise_next != self.systematic_noise_last():
+            print("J")
             self._change_imgr_params = True
             return
 
