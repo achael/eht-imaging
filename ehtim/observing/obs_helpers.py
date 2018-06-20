@@ -35,6 +35,9 @@ import copy
 
 from ehtim.const_def import *
 
+import warnings
+warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
+
 ##################################################################################################
 # Other Functions
 ##################################################################################################
