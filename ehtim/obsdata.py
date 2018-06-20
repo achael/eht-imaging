@@ -655,10 +655,11 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
+            avg_prog_msg(t, len(timesplit), inttime, msgtype='bar')
+#            sys.stdout.write('\rAveraging Scans %i/%i in %0.2f s ints : Reduced Data %i/%i'
+#                              % (t,len(timesplit),inttime, tavg,t))
+#            sys.stdout.flush()
 
-            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
-                              % (t,len(timesplit),inttime, tavg,t))
-            sys.stdout.flush()
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
 
@@ -762,10 +763,10 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-
-            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
-                                % (t,len(timesplit),inttime, tavg,t))
-            sys.stdout.flush()
+            avg_prog_msg(t, len(timesplit), inttime, msgtype='bar')
+#            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
+#                                % (t,len(timesplit),inttime, tavg,t))
+#            sys.stdout.flush()
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
 
@@ -2007,10 +2008,10 @@ class Obsdata(object):
         outdata = []
 
         # Get closure amplitudes (maximal set)
-        if ((ctype=='camp') and (len(camps)==0)) and not (self.camps is None) and not force_recompute:
-            camps=self.camps
-        elif ((ctype=='logcamp') and (len(camps)==0)) and not (self.logcamps is None) and not force_recompute:
-            camps=self.logcamps
+        if ((ctype=='camp') and (len(camps)==0)) and not (self.camp is None) and not force_recompute:
+            camps=self.camp
+        elif ((ctype=='logcamp') and (len(camps)==0)) and not (self.logcamp is None) and not force_recompute:
+            camps=self.logcamp
         elif (len(camps)==0) or force_recompute:
             camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
 
@@ -2254,7 +2255,7 @@ class Obsdata(object):
         else: angle = eh.DEGREE
 
         # Get closure phases (maximal set)
-        if (len(cphases)==0) and not (self.cphases is None) and not force_recompute:
+        if (len(cphases)==0) and not (self.cphase is None) and not force_recompute:
             cphases=self.cphase
 
         cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
@@ -2333,10 +2334,10 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get closure amplitudes (maximal set)
-        if (ctype=='camp') and (len(camps)==0) and not (self.camps is None) and not force_recompute:
-            camps=self.camps
-        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamps is None) and not force_recompute:
-            camps=self.logcamps
+        if (ctype=='camp') and (len(camps)==0) and not (self.camp is None) and not force_recompute:
+            camps=self.camp
+        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamp is None) and not force_recompute:
+            camps=self.logcamp
 
         # Get closure amplitudes (maximal set)
         cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype,
