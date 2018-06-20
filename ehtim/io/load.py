@@ -53,7 +53,7 @@ def load_vex(fname):
        Assumes there is only 1 MODE in vex file
        Hotaka Shiokawa - 2017
     """
-    print ("Loading vexfile: ", fname)
+    print ("\nLoading vexfile: ", fname)
     return ehtim.vex.Vex(fname)
 
 
@@ -66,7 +66,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
        Make sure the header has exactly the same form!
     """
 
-    print ("Loading text image: ", filename)
+    print ("\nLoading text image: ", filename)
 
     # Read the header
     file = open(filename)
@@ -124,7 +124,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
 def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     """Read in an image from a FITS file and create an Image object
     """
-    print ("Loading fits image: ", filename)
+    print ("\nLoading fits image: ", filename)
 
     # Radian or Degree?
     if punit=="deg":
@@ -376,7 +376,7 @@ def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
-    print ("Loading text observation: ", filename)
+    print ("\nLoading text observation: ", filename)
 
     # Read the header parameters
     file = open(filename)
@@ -581,7 +581,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     """
 
     # Load the uvfits file
-    print ("Loading uvfits: ", filename)
+    print ("\nLoading uvfits: ", filename)
     hdulist = fits.open(filename)
     header = hdulist[0].header
     data = hdulist[0].data
@@ -647,7 +647,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
 
     # Determine the number of correlation products in the data
     num_corr = data['DATA'].shape[5]
-    print("Number of Correlation Products:",num_corr)
+    print("Number of uvfits Correlation Products:",num_corr)
     if num_corr == 1 and force_singlepol != None:
         print("Cannot force single polarization when file is not full polarization.")
         force_singlepol = None
@@ -780,7 +780,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         scantable = np.array(scantable*24)
 
     except:
-        print("No NX table exists")
+        print("No NX table in uvfits!")
         scantable = None
 
     # Integration times

@@ -1229,8 +1229,7 @@ class Obsdata(object):
                 all_triangles.append((cphase[1],cphase[2],cphase[3]))
 
         std_list = []
-        if print_std:
-            print("Estimating noise for %d triangles...\n" % len(set(all_triangles)))
+        print("Estimating noise rescaling factor from %d triangles...\n" % len(set(all_triangles)))
 
         i_count = 0
         for tri in set(all_triangles):
@@ -1257,7 +1256,7 @@ class Obsdata(object):
                 std_list.append(np.std(s_list))
                 if print_std == True:
                     print(tri, np.std(s_list))
-        print()
+               
         return np.median(std_list)
 
     def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):

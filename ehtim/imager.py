@@ -33,7 +33,7 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 
-MAXIT = 100 # number of iterations
+MAXIT = 200 # number of iterations
 NHIST = 50 # number of steps to store for hessian approx
 MAXLS = 40 # maximum number of line search steps in BFGS-B
 STOP = 1e-6 # convergence criterion
@@ -195,52 +195,52 @@ class Imager(object):
             return
 
         if self.obs_next != self.obs_last():
-            print("A")
+            print("changed observation!")
             self._change_imgr_params = True
             return
 
         if len(self.reg_term_next) != len(self.reg_terms_last()):
-            print("B")
+            print("changed number of regularizer terms!")
             self._change_imgr_params = True
             return
 
         if len(self.dat_term_next) != len(self.dat_terms_last()):
-            print("C")
+            print("changed number of data terms!")
             self._change_imgr_params = True
             return
 
         for term in sorted(self.dat_term_next.keys()):
             if term not in self.dat_terms_last().keys():
-                print("D")
+                print("added %s to data terms" % term)
                 self._change_imgr_params = True
                 return
 
         for term in sorted(self.reg_term_next.keys()):
             if term not in self.reg_terms_last().keys():
-                print("E")
+                print("added %s to regularizers!" % term)
                 self._change_imgr_params = True
                 return
 
         if ((self.prior_next.psize != self.prior_last().psize) or
             (self.prior_next.xdim != self.prior_last().xdim) or
             (self.prior_next.ydim != self.prior_last().ydim)):
-            print("F")
+            print("changed prior dimensions!")
             self._change_imgr_params = True
 
         if self.debias_next != self.debias_last():
-            print("G")
+            print("changed debiasing!")
             self._change_imgr_params = True
             return
         if self.snrcut_next != self.snrcut_last():
-            print("H")
+            print("changed snrcut!")
             self._change_imgr_params = True
             return
         if self.systematic_noise_next != self.systematic_noise_last():
-            print("I")
+            print("changed systematic noise!")
             self._change_imgr_params = True
             return
-        if self.systematic_cphase_noise_next != self.systematic_noise_last():
-            print("J")
+        if self.systematic_cphase_noise_next != self.systematic_cphase_noise_last():
+            print("changed systematic cphase noise!")
             self._change_imgr_params = True
             return
 
@@ -417,6 +417,10 @@ class Imager(object):
 
         # data term tuples
         if self._change_imgr_params:
+            if self.nruns==0:
+                print("Initializing imager data products . . .")
+            if self.nruns>0:
+                print("Recomputing imager data products . . .")
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
@@ -938,7 +942,7 @@ class Imager(object):
         self._prior_list.append(self.prior_next)
         self._debias_list.append(self.debias_next)
         self._systematic_noise_list.append(self.systematic_noise_next)
-        self._systematic_noise_list.append(self.systematic_cphase_noise_next)
+        self._systematic_cphase_noise_list.append(self.systematic_cphase_noise_next)
         self._snrcut_list.append(self.snrcut_next)
         self._flux_list.append(self.flux_next)
         self._clipfloor_list.append(self.clipfloor_next)

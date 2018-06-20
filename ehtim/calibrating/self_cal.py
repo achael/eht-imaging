@@ -25,6 +25,7 @@ import scipy.special as spec
 import scipy.optimize as opt
 import sys
 import itertools as it
+import time
 import copy
 
 import ehtim.obsdata
@@ -35,15 +36,17 @@ from multiprocessing import cpu_count
 from multiprocessing import Pool
 from multiprocessing import Process, Value, Lock
 
-import itertools
-import time
-ZBLCUTOFF = 1.e7;
+from cal_helpers import *
+
+
+
 
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
-def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2, 
-             ttype='nfft', fft_pad_factor=2, caltable=False, processes=-1):
+def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2, 
+             ttype='nfft', fft_pad_factor=2, caltable=False, 
+             processes=-1,show_solution=False,msgtype='bar'):
     """Self-calibrate a dataset to an image.
 
        Args:
@@ -62,7 +65,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
            show_solution (bool): if True, display the solution as it is calculated
-           
+           msgtype (str): type of progress message to be printed, default is 'bar'
 
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
@@ -116,20 +119,19 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
     if processes > 0: # run on multiple cores with multiprocessing
 
         scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method,
-                                                              show_solution, pad_amp, gain_tol, caltable, 
+                                                              show_solution, pad_amp, gain_tol, caltable, msgtype
                                                              ] for i in range(len(scans))]))
 
     else: # run on a single core
 
         for i in range(len(scans)):
-            cal_prog_msg(i, len(scans))
+            cal_prog_msg(i, len(scans),msgtype=msgtype)
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
                                  method=method, show_solution=show_solution,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
 
-    print('DONE')
     tstop = time.time()
-    print("self_cal time: %f s" % (tstop - tstart))
+    print("\nself_cal time: %f s" % (tstop - tstart))
 
     if caltable: # assemble the caltable to return
         allsites = obs.tarr['site']
@@ -287,6 +289,8 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     return out
 
+
+
 def init(x):
     global counter
     counter = x
@@ -294,34 +298,14 @@ def init(x):
 def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
-def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable):
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable,msgtype):
     if n > 1:
         global counter
         counter.increment()
-        cal_prog_msg(counter.value(), counter.maxval)
+        cal_prog_msg(counter.value(), counter.maxval,msgtype)
 
     return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, 
                          pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
-
-
-def cal_prog_msg(nscan, totscans):
-    complete_percent = int(100*float(nscan)/float(totscans))
-    sys.stdout.write('\rCalibrating Scan %i/%i : %i%% done . . .' % (nscan, totscans, complete_percent))
-    sys.stdout.flush()
-
-# counter object for sharing among multiprocessing jobs
-class Counter(object):
-    def __init__(self,initval=0,maxval=0):
-        self.val = Value('i',initval)
-        self.maxval = maxval
-        self.lock = Lock()
-    def increment(self):
-        with self.lock:
-            self.val.value += 1
-    def value(self):
-        with self.lock:
-            return self.val.value
-
 
 
 
