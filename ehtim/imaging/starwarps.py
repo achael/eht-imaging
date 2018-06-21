@@ -14,6 +14,7 @@ import numpy as np
 import ehtim.image as image
 import ehtim.observing.pulses
 from ehtim.observing.obs_helpers import *
+from ehtim.imaging.imager_utils import *
 
 import scipy.stats as st
 import scipy
@@ -674,157 +675,187 @@ def prodGaussiansLem2(A, Sigma, y, mu, Q):
     
     return (mean, covariance)
     
-def getMeasurementTerms(obs, im, measurement='visibility', mask=[]):
     
-    if measurement=='visibility':
-        # calculate Fourier Transform A matrix
-        data = obs.unpack(['u','v','vis','sigma'])
-        uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
-        
-        A_exp = realimagStack(A)
-        F = A_exp
-        
-        meas_exp = realimagStack(data['vis'])  
-        measCov = np.diag( np.concatenate( (data['sigma']**2, data['sigma']**2), axis=0) )
-        idealmeas = np.dot( A_exp, im.imvec[mask] )
-        
-    elif measurement=='visibility-log':
-        
-        # calculate Fourier Transform A matrix
-        data = obs.unpack(['u','v','vis','sigma'])
-        uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
-        
-        A_expanded = realimagStack(A)
-        derivA = np.dot( A_expanded, np.diag(np.exp(im.imvec[mask])) )
-        F = derivA
-        
-        meas_exp = realimagStack( data['vis'] )  + np.dot(derivA,im.imvec[mask]) - np.dot( A_expanded, np.exp(im.imvec[mask]) )
-
-        measCov = np.diag( np.concatenate( (data['sigma']**2, data['sigma']**2), axis=0) )
-        idealmeas = np.dot( A_expanded, np.exp(im.imvec[mask]) )
-        
-    elif measurement=='visibility-gamma':
-        gamma = 2.0
-        
-        # calculate Fourier Transform A matrix
-        data = obs.unpack(['u','v','vis','sigma'])
-        uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
-        
-        A_expanded = realimagStack(A)
-        derivA = np.dot( A_expanded, np.diag(gamma*(im.imvec[mask]**(gamma-1.0))) )
-        F = derivA
-        
-        meas_exp = realimagStack( data['vis'] )  + np.dot(derivA,im.imvec[mask]) - np.dot( A_expanded, (im.imvec[mask]**gamma) )
-
-        measCov = np.diag( np.concatenate( (data['sigma']**2, data['sigma']**2), axis=0) )
-        idealmeas = np.dot( A_expanded, (im.imvec[mask]**gamma) )
     
-    elif measurement=='bispectrum':
-        biarr = obs.bispectra(mode="all", count="min")
+def getMeasurementTerms(obs, im, measurement={'vis':1}, mask=[], normalize=False, gamma = 2.0):
+    
+    count = 0
+    for dname in list(measurement.keys()):
+        count = count + 1
         
-        if len(biarr)==0:
+        if dname == 'vis':
+            (data, Cov, F, ideal)  = grad_vis_mtx(obs, im, mask)    
+        elif dname == 'visgamma':
+            (data, Cov, F, ideal) = grad_visgamma_mtx(obs, im, mask, gamma = gamma)    
+        elif dname == 'bs':
+            (data, Cov, F, ideal)  = grad_bs_mtx(obs, im, mask)
+        elif dname == 'cphase':
+            (data, Cov, F, ideal)  = grad_cphase_mtx(obs, im, mask)
+        elif dname == 'amp':
+            (data, Cov, F, ideal)  = grad_amp_mtx(obs, im, mask)
+        elif dname == 'logcamp': 
+            (data, Cov, F, ideal)  = grad_logcamp_mtx(obs, im, mask)
+          
+        ncmp = len(data)  
+        if ncmp==0:
             return (-1, -1, -1, -1, False)
         
-        uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-        uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-        uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-        bispec = biarr['bispec']
-        sigs = biarr['sigmab']
+        weight = measurement[dname]
+        if normalize:
+            nweight = weight / ncmp
+        else:
+            nweight = weight
+             
+        data = data * nweight
+        ideal = ideal * nweight
+        Cov = Cov * nweight**2
+        
+        if count == 1:
+            data_all = data.reshape(-1)
+            ideal_all = ideal.reshape(-1)
+            F_all = F
+            Cov_all = Cov
+        else:
+            data_all = np.concatenate( (data_all, data.reshape(-1)), axis=0).reshape(-1)
+            ideal_all = np.concatenate( (ideal_all, ideal.reshape(-1)), axis=0).reshape(-1)
+            F_all = np.concatenate( (F_all, F), axis=0)
+            Cov_all = scipy.linalg.block_diag(Cov_all, Cov)        
 
-        # Compute the fourier matrices
-        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse, mask=mask),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse, mask=mask),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse, mask=mask)
-             )
-        
-        measCov = np.diag( np.concatenate( (sigs**2, sigs**2), axis=0 ) )
-        idealmeas, A_exp = computeBispectrumLinTerms(im.imvec, A3, im.xdim*im.ydim)
-        F = A_exp
-        
-        #meas_exp = realimagStack(bispec)
-        meas_exp = realimagStack(bispec) + np.dot(A_exp, im.imvec[mask]) - idealmeas
+    meas_exp  = data_all + np.dot(F_all, im.imvec[mask]) - ideal_all
     
-    elif measurement=='amp-bispectrum':
-        
-        biarr = obs.bispectra(mode="all", count="min")
-        data = obs.unpack(['u','v','vis','sigma'])
-        
-        if len(biarr)==0:
-            return (-1, -1, -1, -1, False)
-        
-        uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-        uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-        uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-        bispec = biarr['bispec']
-        sigs = biarr['sigmab']
+    return (meas_exp, ideal_all, F_all, Cov_all, True)
 
-        # Compute the fourier matrices
-        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse, mask=mask),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse, mask=mask),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse, mask=mask)
-             )
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
-        
-        idealmeas_visamp, A_visamp = computeVisAmpLinTerms(im.imvec, A, im.xdim*im.ydim)
-        idealmeas_bispec, A_bispec = computeBispectrumLinTerms(im.imvec, A3, im.xdim*im.ydim)
-        
-        F = np.concatenate( (A_visamp, A_bispec), axis=0 )
-        idealmeas = np.concatenate( (idealmeas_visamp, idealmeas_bispec), axis=0 )
-        
-        visamps = np.abs(data['vis'])
-        meas_real = np.concatenate( ( visamps, realimagStack(bispec) ), axis=0 )
-        
-        meas_exp = meas_real + np.dot(F, im.imvec[mask]) - idealmeas
-        
-        measCov = np.diag( np.concatenate( (data['sigma']**2, (sigs)**2, (sigs)**2), axis=0 ) )
 
-    elif measurement=='amp-clphase':
-        
-        biarr = obs.bispectra(mode="all", count="min")
-        data = obs.unpack(['u','v','vis','sigma'])
-        
-        if len(biarr)==0:
-            return (-1, -1, -1, -1, False)
-        
-        uv = np.hstack((data['u'].reshape(-1,1), data['v'].reshape(-1,1)))
-        uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
-        uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
-        uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-        bispec = biarr['bispec']
-        sigs = biarr['sigmab']
+def grad_vis_mtx(obs, im, mask):  
 
-        # Compute the fourier matrices
-        A3 = (ftmatrix(im.psize, im.xdim, im.ydim, uv1, pulse=im.pulse, mask=mask),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv2, pulse=im.pulse, mask=mask),
-              ftmatrix(im.psize, im.xdim, im.ydim, uv3, pulse=im.pulse, mask=mask)
-             )
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse, mask=mask)
-        
-        idealmeas_visamp, A_visamp = computeVisAmpLinTerms(im.imvec, A, im.xdim*im.ydim)
-        idealmeas_clphase, A_clphase = computeClosurePhaseLinTerms(im.imvec, A3, im.xdim*im.ydim)
-        
-        F = np.concatenate( (A_visamp, A_clphase), axis=0 )
-        idealmeas = np.concatenate( (idealmeas_visamp, idealmeas_clphase), axis=0 )
-        
-        visamps = np.abs(data['vis'])
-        cosvals = np.cos( np.arctan(np.imag(bispec)/np.real(bispec)) )
-        sinvals = np.sin( np.arctan(np.imag(bispec)/np.real(bispec)) )
-        clphases = np.concatenate( (cosvals, sinvals), axis=0)
-        meas_real = np.concatenate( (visamps, clphases), axis=0 )
-        
-        meas_exp = meas_real + np.dot(F, im.imvec[mask]) - idealmeas
-        
-        print('WARNING! THIS IS WRONG. CHANGE ASAP!!')
-        measCov = np.diag( np.concatenate( (data['sigma']**2, (sigs/np.abs(bispec))**2, (sigs/np.abs(bispec))**2), axis=0 ) )
-
-        
-    return (meas_exp, idealmeas, F, measCov, True)
+    (data_vis, sigma_vis, A_vis) = chisqdata(obs, im, mask, 'vis')
+    if len(data_vis) == 0:
+        return (False, False, False, False)
     
+    F = realimagStack(A_vis)
+    measCov = np.diag( np.concatenate( (sigma_vis**2, sigma_vis**2), axis=0) )
+    idealmeas = np.dot( F, im.imvec[mask] )
+            
+    return (realimagStack(data_vis).reshape((2*len(data_vis), 1)), measCov, F, idealmeas.reshape((2*len(data_vis), 1)) )
+
+def grad_visgamma_mtx(obs, im, mask, gamma = 2.0):  
+
+    (data_vis, sigma_vis, A_vis) = chisqdata(obs, im, mask, 'vis')
+    if len(data_vis) == 0:
+        return (False, False, False, False)
     
+    F = np.dot( realimagStack(A_vis), np.diag(gamma*(im.imvec[mask]**(gamma-1.0))) )
+    measCov = np.diag( np.concatenate( (sigma_vis**2, sigma_vis**2), axis=0) )
+    idealmeas = np.dot( F, (im.imvec[mask]**gamma) )
+            
+    return (realimagStack(data_vis).reshape((2*len(data_vis), 1)), measCov, F, idealmeas.reshape((2*len(data_vis), 1)) )
+    
+
+def grad_bs_mtx(obs, im, mask):  
+
+    (data_bs, sigma_bs, A_bs) = chisqdata(obs, im, mask, 'bs')
+    if len(data_bs) == 0:
+        return (False, False, False, False)
+    
+    idealmeas_bispec, A_bispec = computeBispectrumLinTerms(im.imvec, A_bs, im.xdim*im.ydim)
+    return (realimagStack(data_bs).reshape((2*len(data_bs), 1)), np.diag( np.concatenate( ((sigma_bs)**2, (sigma_bs)**2), axis=0 ) ), A_bispec, idealmeas_bispec.reshape((len(idealmeas_bispec), 1)))
+
+def grad_cphase_mtx(obs, im, mask):    
+    
+    (data_cphase, sigma_cphase, A_cphase) = chisqdata(obs, im, mask, 'cphase')
+    ncmp = len(data_cphase)
+    if ncmp == 0:
+        return (False, False, False, False)
+    
+    data_cphase2 = np.concatenate( ( np.cos(data_cphase) , np.sin(data_cphase) ), axis=0)
+    H = np.zeros((2*ncmp, im.xdim*im.ydim))
+    ideal_meas = np.zeros((2*ncmp,1))
+    for i in range(0, ncmp):
+        Atmp = (A_cphase[0][i:i+1],A_cphase[1][i:i+1],A_cphase[2][i:i+1]) 
+        (c0, ideal) = grad_cphase(im.imvec[mask], Atmp)
+        H[i,:] = c0[0]
+        H[ncmp+i,:] = c0[1]
+        ideal_meas[i,:] = ideal[0]
+        ideal_meas[ncmp+i,:] = ideal[1]
+    
+    return (data_cphase2, np.diag( np.concatenate( ((sigma_cphase)**2, (sigma_cphase)**2), axis=0 ) ), H, ideal_meas)
+            
+def grad_logcamp_mtx(obs, im, mask):
+
+    (data_logcamp, sigma_logcamp, A_logcamp) = chisqdata(obs, im, mask, 'logcamp')
+    ncmp = len(data_logcamp)
+    if ncmp == 0:
+        return (False, False, False, False)
+        
+    H = np.zeros((ncmp, im.xdim*im.ydim))
+    ideal_meas = np.zeros( (ncmp,1) )
+    for i in range(0, ncmp):
+        Atmp = (A_logcamp[0][i:i+1],A_logcamp[1][i:i+1],A_logcamp[2][i:i+1],A_logcamp[3][i:i+1]) 
+        (c0, ideal) = grad_logcamp(im.imvec[mask], Atmp)
+        H[i,:] = c0
+        ideal_meas[i] = ideal
+        
+    return(data_logcamp, np.diag(sigma_logcamp**2), H, ideal_meas)
+            
+def grad_amp_mtx(obs, im, mask):
+
+    (data_amp, sigma_amp, A_amp) = chisqdata(obs, im, mask, 'amp')
+    ncmp = len(data_amp)
+    if ncmp == 0:
+        return (False, False, False, False)
+        
+    H = np.zeros((ncmp, im.xdim*im.ydim))
+    ideal_meas = np.zeros( (ncmp,1) )
+    for i in range(0, ncmp):
+        Atmp = A_amp[i:i+1]
+        (c0, ideal) = grad_amp(im.imvec[mask], Atmp)
+        H[i,:] = c0
+        ideal_meas[i] = ideal
+    
+    return(data_amp.reshape((ncmp,1)), np.diag(sigma_amp**2), H, ideal_meas) 
+
+def grad_amp(imvec, A):
+
+    i1 = np.dot(A, imvec)
+    amp_samples = np.abs(i1)
+
+    pp = (amp_samples) / i1
+    out = np.real(np.dot(pp, A))
+    return (out, amp_samples)
+
+def grad_logcamp(imvec, Amatrices):
+
+    i1 = np.dot(Amatrices[0], imvec)
+    i2 = np.dot(Amatrices[1], imvec)
+    i3 = np.dot(Amatrices[2], imvec)
+    i4 = np.dot(Amatrices[3], imvec)
+    log_clamp_samples = np.log(np.abs(i1)) + np.log(np.abs(i2)) - np.log(np.abs(i3)) - np.log(np.abs(i4))
+
+    pt1 = 1 / i1
+    pt2 = 1 / i2
+    pt3 = -1 / i3
+    pt4 = -1 / i4
+    out = np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    return (out, log_clamp_samples)
+
+def grad_cphase(imvec, Amatrices):
+
+    i1 = np.dot(Amatrices[0], imvec)
+    i2 = np.dot(Amatrices[1], imvec)
+    i3 = np.dot(Amatrices[2], imvec)
+
+    pt1  = 1/i1
+    pt2  = 1/i2
+    pt3  = 1/i3
+    out1  = np.imag(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))
+    
+    clphase_samples = np.angle(i1 * i2 * i3)
+    out = (-np.sin(clphase_samples)*out1, np.cos(clphase_samples)*out1)
+    return (out, (np.cos(clphase_samples), np.sin(clphase_samples)) )
+
+
+
+
 def mergeObs(obs_List):
     
     obs = obs_List[0].copy()
