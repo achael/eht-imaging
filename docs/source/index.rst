@@ -6,13 +6,13 @@
 ehtim (eht-imaging)
 ===================
 
-Python modules for simulating and manipulating VLBI data and producing images with regularized gradient descent methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or need help for your application.
+Python modules for simulating and manipulating VLBI data and producing images with regularized gradient descent methods.
 
-The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the :class:`Image`, :class:`Array`, and :class:`Obsdata`. :class:`Movie` and :class:`Vex` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. ``imager`` is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.  
+The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the :class:`Image`, :class:`Array`, and :class:`Obsdata`. :class:`Movie` and :class:`Vex` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. :class:`imager` is a generic Stokes I imager class that can produce images from data sets using various data terms and regularizers.  
 
 .. note::
 
-    This is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.
+    If you have a problem please submit a pull request on the git repository and/or email achael@cfa.harvard.edu
 
 Installation
 ------------
@@ -25,7 +25,14 @@ Download the latest version from the `GitHub repository <https://github.com/acha
 
 It should install the depended libraries `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `matplotlib <http://www.matplotlib.org/>`_, `numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `pandas <http://www.pandas.pydata.org/>`_ automatically.
 
-You will need to install `NFFT <https://github.com/NFFT/nfft>`_ and the `pynnft wrapper <https://github.com/ghisvail/pyNFFT/>`_ . You can use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to to install both NFFT and the pynfft wrapper Alternatively, first install NFFT following the instructions on the `github readme <https://github.com/NFFT/nfft>`_, making sure to use the --enable-openmp flag in compilation. Then install `pynnft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. 
+If you want to use fast fourier transforms, you will also need to install `NFFT <https://github.com/NFFT/nfft>`_ and the `pynnft wrapper <https://github.com/ghisvail/pyNFFT/>`_ before installing ehtim. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to to install both NFFT and the pynfft wrapper. 
+
+.. code-block:: bash
+
+    conda install -c conda-forge pynfft
+
+Alternatively, first install NFFT following the instructions on the `github readme <https://github.com/NFFT/nfft>`_, making sure to use the --enable-openmp flag in compilation. Then install `pynnft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. 
+
 
 Documentation
 -------------

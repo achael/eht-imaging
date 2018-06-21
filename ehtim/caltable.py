@@ -51,21 +51,42 @@ def relaxed_interp1d(x, y, **kwargs):
 ##################################################################################################
 class Caltable(object):
     """
-
        Attributes:
+           source (str): The source name
+           ra (float): The source Right Ascension in fractional hours
+           dec (float): The source declination in fractional degrees
+           mjd (int): The integer MJD of the observation
+           rf (float): The observation frequency in Hz
+           bw (float): The observation bandwidth in Hz
+           timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC'
+
+           tarr (numpy.recarray): The array of telescope data with datatype DTARR
+           tkey (dict): A dictionary of rows in the tarr for each site name
+
+           data (dict): keys are sites in tarr, entries are calibration data tables of type DTCAL
+
     """
 
-    def __init__(self, ra, dec, rf, bw, datatables, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, timetype='UTC'):
+    def __init__(self, ra, dec, rf, bw, datadict, tarr, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, timetype='UTC'):
         """A Calibration Table.
 
            Args:
+               ra (float): The source Right Ascension in fractional hours
+               dec (float): The source declination in fractional degrees
+               rf (float): The observation frequency in Hz
+               mjd (int): The integer MJD of the observation
+               bw (float): The observation bandwidth in Hz
+
+               datadict (dict):  keys are sites in tarr, entries are calibration data tables of type DTCAL
+               tarr (numpy.recarray): The array of telescope data with datatype DTARR
+
+               source (str): The source name
+               mjd (int): The integer MJD of the observation
+               timetype (str): How to interpret tstart and tstop; either 'GMST' or 'UTC'
 
            Returns:
-               caltable (Caltable): an Caltable object
+               (Caltable): an Caltable object
         """
-
-        if len(datatables) == 0:
-            raise Exception("No data in input table!")
 
         # Set the various parameters
         self.source = str(source)
@@ -78,13 +99,13 @@ class Caltable(object):
         if timetype not in ['GMST', 'UTC']:
             raise Exception("timetype must by 'GMST' or 'UTC'")
         self.timetype = timetype
-        self.tarr = tarr
 
         # Dictionary of array indices for site names
+        self.tarr = tarr
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
 
         # Save the data
-        self.data = datatables
+        self.data = datadict
 
     def copy(self):
         """Copy the observation object.
@@ -98,88 +119,88 @@ class Caltable(object):
         return new_caltable
 
     #TODO default extrapolation?
+    def pad_scans(self, maxdiff=60, padtype='median'):
+        """Pad data points around scans.
 
-    def merge(self, caltablelist, interp=None, extrapolate=1):
-        """Merge the calibration table with a list of other calibration tables"""
+           Args:
+               maxdiff (float): "scan" separation length (seconds)
+               padtype (str): padding type, 'endval' or 'median'
+           Returns:
+               (Caltable):  a padded caltable object
+        """
+        outdict = {}
+        for scope in self.data.keys():
+            caldata = self.data[scope].copy()
 
-        if extrapolate is True: # extrapolate can be a tuple or numpy array
-            fill_value = "extrapolate"
-        else:
-            fill_value = extrapolate
-
-        try:
-            x=caltablelist.__iter__
-        except AttributeError: caltablelist = [caltablelist]
-
-        #self = ct
-        #caltablelist = [ct2]
-
-        tarr1 = self.tarr.copy()
-        tkey1 = self.tkey.copy()
-        data1 = self.data.copy()
-        for caltable in caltablelist:
-
-            #TODO check metadata!
-
-            #TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
-            tarr2 = caltable.tarr.copy()
-            tkey2 = caltable.tkey.copy()
-            data2 = caltable.data.copy()
-
-            for site in data2.keys():
-
-                # if site in both tables
-                if site in data1.keys():
-                    #merge the data by interpolating
-                    time1 = data1[site]['time']
-                    time2 = data2[site]['time']
-
-
-                    rinterp1 = relaxed_interp1d(time1, data1[site]['rscale'],
-                                                kind=interp, fill_value=fill_value,bounds_error=False)
-                    linterp1 = relaxed_interp1d(time1, data1[site]['lscale'],
-                                                kind=interp, fill_value=fill_value,bounds_error=False)
-
-                    rinterp2 = relaxed_interp1d(time2, data2[site]['rscale'],
-                                                kind=interp, fill_value=fill_value,bounds_error=False)
-                    linterp2 = relaxed_interp1d(time2, data2[site]['lscale'],
-                                                kind=interp, fill_value=fill_value,bounds_error=False)
-
-                    times_merge = np.unique(np.hstack((time1,time2)))
-
-                    #print 'site'
-                    #print np.min(time1),np.max(time1)
-                    #print np.min(time2),np.max(time2)
-                    #print np.min(times_merge),np.max(times_merge)
-
-                    rscale_merge = rinterp1(times_merge) * rinterp2(times_merge)
-                    lscale_merge = linterp1(times_merge) * linterp2(times_merge)
-
-                    #put the merged data back in data1
-                    #TODO can we do this faster?
-                    datatable = []
-                    for i in range(len(times_merge)):
-                        datatable.append(np.array((times_merge[i], rscale_merge[i], lscale_merge[i]), dtype=DTCAL))
-                    data1[site] = np.array(datatable)
-
-                # sites not in both caltables
+            # Gather data into "scans" 
+            # TODO we could use a scan table for this as well!
+            gathered_data=[]
+            scandata = [caldata[0]]
+            for i in range(1,len(caldata)):
+                if (caldata[i]['time']-caldata[i-1]['time'])*3600 > maxdiff:
+                    scandata = np.array(scandata, dtype=DTCAL)
+                    gathered_data.append(scandata)
+                    scandata = [caldata[i]]
                 else:
-                    if site not in tkey1.keys():
-                        tarr1 = np.append(tarr1,tarr2[tkey2[site]])
-                    data1[site] =  data2[site]
-
-            #update tkeys every time
-            tkey1 =  {tarr1[i]['site']: i for i in range(len(tarr1))}
-
-        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1, source=self.source, mjd=self.mjd, timetype=self.timetype)
-
-        return new_caltable
+                    scandata.append(caldata[i])
 
 
+            # Compute padding values and pad scans
+            for i in range(len(gathered_data)):
+                gg = gathered_data[i]
 
+                medR = np.median(gg['rscale'])
+                medL = np.median(gg['lscale'])
+
+                timepre = gg['time'][0] - maxdiff/2./3600.
+                timepost = gg['time'][-1] + maxdiff/2./3600.
+
+                if padtype=='median': # pad with median scan value
+                    medR = np.median(gg['rscale'])
+                    medL = np.median(gg['lscale'])
+                    preR = medR
+                    postR = medR
+                    preL = medL 
+                    postL = medL
+                elif padtype=='endval': # pad with endpoints
+                    preR = gg['rscale'][0]
+                    postR = gg['rscale'][-1]
+                    preL = gg['lscale'][0]
+                    postL = gg['lscale'][-1]
+                else:  # pad with ones
+                    preR = 1.
+                    postR = 1.
+                    preL = 1.
+                    postL = 1.
+
+                valspre = np.array([(timepre,preR,preL)],dtype=DTCAL)
+                valspost = np.array([(timepost,postR,postL)],dtype=DTCAL)
+
+                gg = np.insert(gg,0,valspre)
+                gg = np.append(gg,valspost)
+
+                # output data table
+                if i==0: 
+                    caldata_out = gg
+                else:
+                    caldata_out = np.append(caldata_out, gg)
+
+            outdict[scope] = caldata_out
+            return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr, 
+                            source=self.source, mjd=self.mjd, timetype=self.timetype)
 
     def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol=False):
+        """Apply the calibration table to an observation.
 
+           Args:
+               obs (Obsdata): The observation  with data to be calibrated
+               interp (str): Interpolation method ('linear','nearest','cubic')
+               extrapolate (bool): If True, points outside interpolation range will be extrapolated. 
+               force_singlepol (str): If 'L' or 'R', will set opposite polarization gains equal to chosen polarization
+
+           Returns:
+               (Obsdata): the calibrated Obsdata object
+        """
         if not (self.tarr == obs.tarr).all():
             raise Exception("The telescope array in the Caltable is not the same as in the Obsdata")
 
@@ -267,16 +288,111 @@ class Caltable(object):
 
         return calobs
 
-    def save_txt(self, obs, datadir='.', sqrt_gains=False):
-        """Saves a Caltable object to text files in the format src_site.txt given by Maciek's tables
+    def merge(self, caltablelist, interp=None, extrapolate=1):
+        """Merge the calibration table with a list of other calibration tables
+
+           Args:
+               caltablelist (list): The list of caltables to be merged
+               interp (str): Interpolation method ('linear','nearest','cubic')
+               extrapolate (bool): If True, points outside interpolation range will be extrapolated. 
+
+           Returns:
+               (Caltable): the merged Caltable object
         """
 
-        save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
+        if extrapolate is True: # extrapolate can be a tuple or numpy array
+            fill_value = "extrapolate"
+        else:
+            fill_value = extrapolate
+
+        try:
+            x=caltablelist.__iter__
+        except AttributeError: caltablelist = [caltablelist]
+
+        #self = ct
+        #caltablelist = [ct2]
+
+        tarr1 = self.tarr.copy()
+        tkey1 = self.tkey.copy()
+        data1 = self.data.copy()
+        for caltable in caltablelist:
+
+            #TODO check metadata!
+
+            #TODO CHECK ARE THEY ALL REFERENCED TO SAME MJD???
+            tarr2 = caltable.tarr.copy()
+            tkey2 = caltable.tkey.copy()
+            data2 = caltable.data.copy()
+
+            for site in data2.keys():
+
+                # if site in both tables
+                if site in data1.keys():
+                    #merge the data by interpolating
+                    time1 = data1[site]['time']
+                    time2 = data2[site]['time']
+
+
+                    rinterp1 = relaxed_interp1d(time1, data1[site]['rscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
+                    linterp1 = relaxed_interp1d(time1, data1[site]['lscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
+
+                    rinterp2 = relaxed_interp1d(time2, data2[site]['rscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
+                    linterp2 = relaxed_interp1d(time2, data2[site]['lscale'],
+                                                kind=interp, fill_value=fill_value,bounds_error=False)
+
+                    times_merge = np.unique(np.hstack((time1,time2)))
+
+                    rscale_merge = rinterp1(times_merge) * rinterp2(times_merge)
+                    lscale_merge = linterp1(times_merge) * linterp2(times_merge)
+
+
+                    #put the merged data back in data1
+                    #TODO can we do this faster?
+                    datatable = []
+                    for i in range(len(times_merge)):
+                        datatable.append(np.array((times_merge[i], rscale_merge[i], lscale_merge[i]), dtype=DTCAL))
+                    data1[site] = np.array(datatable)
+
+                # sites not in both caltables
+                else:
+                    if site not in tkey1.keys():
+                        tarr1 = np.append(tarr1,tarr2[tkey2[site]])
+                    data1[site] =  data2[site]
+
+            #update tkeys every time
+            tkey1 =  {tarr1[i]['site']: i for i in range(len(tarr1))}
+
+        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1, source=self.source, mjd=self.mjd, timetype=self.timetype)
+
+        return new_caltable
+
+
+    def save_txt(self, obs, datadir='.', sqrt_gains=False):
+        """Saves a Caltable object to text files in the given directory
+           Args:
+               obs (Obsdata): The observation object associated with the Caltable
+               datadir (str): directory to save caltable in
+               sqrt_gains (bool): If True, we square gains before saving. 
+
+           Returns:
+        """
+
+        return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
+       
 
 def load_caltable(obs, datadir, sqrt_gains=False ):
-    """Load apriori cal tables
-    """
+    """Load apriori Caltable object from text files in the given directory
+       Args:
+           obs (Obsdata): The observation object associated with the Caltable
+           datadir (str): directory to save caltable in
+           sqrt_gains (bool): If True, we take the sqrt of table gains before loading. 
 
+       Returns:
+           (Caltable): a caltable object
+    """
     datatables = {}
     for s in range(0, len(obs.tarr)):
 
@@ -318,12 +434,20 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
     if len(datatables)>0:
         caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
     else:
+        print ("COULD NOT FIND CALTABLE IN DIRECTORY %s" % datadir)
         caltable=False
     return caltable
 
 def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
-    """Saves a Caltable object to text file
+    """Saves a Caltable object to text files in the given directory
+       Args:
+           obs (Obsdata): The observation object associated with the Caltable
+           datadir (str): directory to save caltable in
+           sqrt_gains (bool): If True, we square gains before saving. 
+
+       Returns:
     """
+
     if not os.path.exists(datadir):
         os.makedirs(datadir)
 
@@ -356,9 +480,19 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
             outfile.write(outline)
         outfile.close()
 
+        return
 
 def make_caltable(obs, gains, sites, times):
+    """Create a Caltable object for an observation
+       Args:
+           obs (Obsdata): The observation object associated with the Caltable
+           gains (list): list of gains (?? format ??)
+           sites (list): list of sites
+           times (list): list of times
 
+       Returns:
+           (Caltable): a caltable object
+    """
     ntele = len(sites)
     ntimes = len(times)
 

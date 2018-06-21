@@ -42,6 +42,9 @@ from astropy.time import Time
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+import warnings
+warnings.filterwarnings("ignore", message="Mean of empty slice")
+
 ##################################################################################################
 # Vex IO
 ##################################################################################################
@@ -50,6 +53,7 @@ def load_vex(fname):
        Assumes there is only 1 MODE in vex file
        Hotaka Shiokawa - 2017
     """
+    print ("\nLoading vexfile: ", fname)
     return ehtim.vex.Vex(fname)
 
 
@@ -61,6 +65,8 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
        Text file should have the same format as output from Image.save_txt()
        Make sure the header has exactly the same form!
     """
+
+    print ("\nLoading text image: ", filename)
 
     # Read the header
     file = open(filename)
@@ -118,6 +124,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
 def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     """Read in an image from a FITS file and create an Image object
     """
+    print ("\nLoading fits image: ", filename)
 
     # Radian or Degree?
     if punit=="deg":
@@ -238,84 +245,9 @@ def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
 ##################################################################################################
 # Movie IO
 ##################################################################################################
-#TODO think more about how to do the filenames
-#def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
-#    """Read in a movie from text files and create a Movie object
-#       Text files should be filename + 00001, etc.
-#       Text files should have the same format as output from Image.save_txt()
-#       Make sure the header has exactly the same form!
-#    """
 
-#    framelist = []
-#    qlist = []
-#    ulist = []
-
-#    for i in range(nframes):
-#        filename = basename + "%05d" % i
-
-#        # Read the header
-#        file = open(filename)
-#        src = ' '.join(file.readline().split()[2:])
-#        ra = file.readline().split()
-#        ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
-#        dec = file.readline().split()
-#        dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
-#        mjd_frac = float(file.readline().split()[2])
-#        mjd = np.floor(mjd_frac)
-#        hour = (mjd_frac - mjd)*24.0
-#        rf = float(file.readline().split()[2]) * 1e9
-#        xdim = file.readline().split()
-#        xdim_p = int(xdim[2])
-#        psize_x = float(xdim[4])*RADPERAS/xdim_p
-#        ydim = file.readline().split()
-#        ydim_p = int(ydim[2])
-#        psize_y = float(ydim[4])*RADPERAS/ydim_p
-#        file.close()
-
-#        if psize_x != psize_y:
-#            raise Exception("Pixel dimensions in x and y are inconsistent!")
-#        if i == 0:
-#            src0 = src
-#            ra0 = ra
-#            dec0 = dec
-#            mjd0 = mjd
-#            hour0 = hour
-#            rf0 = rf
-#            xdim0 = xdim
-#            ydim0 = ydim
-#            psize0 = psize_x
-#        else:
-#            pass
-#            #some checks on header consistency
-
-#        # Load the data, convert to list format, make object
-#        datatable = np.loadtxt(filename, dtype=float)
-#        image = datatable[:,2].reshape(ydim_p, xdim_p)
-#        framelist.append(image)
-
-#        # Look for Stokes Q and U
-#        qimage = uimage = np.zeros(image.shape)
-#        if datatable.shape[1] == 5:
-#            qimage = datatable[:,3].reshape(ydim_p, xdim_p)
-#            uimage = datatable[:,4].reshape(ydim_p, xdim_p)
-#            qlist.append(qimage)
-#            ulist.append(uimage)
-
-#    if frame_dur == -1:
-#        frame_dur = (hour - hour0)/float(nframes)*3600.0
-
-#    out_mov = ehtim.movie.Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, start_hr=hour0, pulse=pulse)
-
-#    if len(qlist):
-#        print('Loaded Stokes I, Q, and U movies')
-#        out_mov.add_qu(qlist, ulist)
-#    else:
-#        print('Loaded Stokes I movie only')
-
-#    return out_mov
-
-
-def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
+def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1,
+                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
     """Read in a movie from a hdf5 file and create a Movie object
        file_name should be the name of the hdf5 file
        thisdoes not use the header of the hdf5 file so you need to give it
@@ -444,6 +376,7 @@ def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
+    print ("\nLoading text observation: ", filename)
 
     # Read the header parameters
     file = open(filename)
@@ -648,6 +581,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     """
 
     # Load the uvfits file
+    print ("\nLoading uvfits: ", filename)
     hdulist = fits.open(filename)
     header = hdulist[0].header
     data = hdulist[0].data
@@ -713,7 +647,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
 
     # Determine the number of correlation products in the data
     num_corr = data['DATA'].shape[5]
-    print("Number of Correlation Products:",num_corr)
+    print("Number of uvfits Correlation Products:",num_corr)
     if num_corr == 1 and force_singlepol != None:
         print("Cannot force single polarization when file is not full polarization.")
         force_singlepol = None
@@ -790,11 +724,23 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
 
-    #TODO less than or equal to?
+    # first, catch  nans
+    rrnanmask_2d = (np.isnan(rrweight))
+    llnanmask_2d = (np.isnan(llweight))
+    rlnanmask_2d = (np.isnan(rlweight))
+    lrnanmask_2d = (np.isnan(lrweight))
+
+    rrweight[rrnanmask_2d] = 0.
+    llweight[llnanmask_2d] = 0.
+    rlweight[rlnanmask_2d] = 0.
+    lrweight[lrnanmask_2d] = 0.
+
+    #look for weights < 0 
     rrmask_2d = (rrweight > 0.)
     llmask_2d = (llweight > 0.)
     rlmask_2d = (rlweight > 0.)
     lrmask_2d = (lrweight > 0.)
+
 
     # if there is any unmasked data in the frequency column, use it
     rrmask = np.any(np.any(rrmask_2d, axis=2), axis=1)
@@ -834,7 +780,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         scantable = np.array(scantable*24)
 
     except:
-        print("No NX table exists")
+        print("No NX table in uvfits!")
         scantable = None
 
     # Integration times

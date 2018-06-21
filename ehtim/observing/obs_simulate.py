@@ -201,7 +201,6 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
 #    else:
 
     uv = np.array(uv)
-    print (uv.shape)
     if uv.shape[1] != 2:
         raise Exception("When given as a list of uv points, the obs should be a list of pairs of u-v coordinates!")
 

@@ -16,7 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -34,14 +33,14 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 
-MAXIT = 100 # number of iterations
+MAXIT = 200 # number of iterations
 NHIST = 50 # number of steps to store for hessian approx
 MAXLS = 40 # maximum number of line search steps in BFGS-B
 STOP = 1e-6 # convergence criterion
 EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm','compact','compact2']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm','compact','compact2','rgauss']
 
 GRIDDER_P_RAD_DEFAULT = 2
 GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
@@ -58,11 +57,6 @@ class Imager(object):
     """
 
     def __init__(self, obsdata, init_im, prior_im=None, flux=None, data_term=DAT_DEFAULT, reg_term=REG_DEFAULT, **kwargs):
-#                       clipfloor=0., maxit=MAXIT,
-#                       transform='log', ttype='fast',
-#                       scattering_model=None, alpha_phi=1e4, systematic_noise=0.0,
-#                       fft_pad_factor=FFT_PAD_DEFAULT, fft_interp_order=FFT_INTERP_DEFAULT,
-#                       fft_conv_func=GRIDDER_CONV_FUNC_DEFAULT, fft_gridder_prad=GRIDDER_P_RAD_DEFAULT):
 
         self.logstr = ""
         self._obs_list = []
@@ -81,6 +75,7 @@ class Imager(object):
         self._snrcut_list = []
         self._debias_list = []
         self._systematic_noise_list = []
+        self._systematic_cphase_noise_list = []
         self._transform_list = []
 
         # regularizer/data terms for the next imaging iteration
@@ -105,6 +100,7 @@ class Imager(object):
         self.debias_next=kwargs.get('debias',True)
         self.snrcut_next=kwargs.get('snrcut',0.)
         self.systematic_noise_next = kwargs.get('systematic_noise',0.)
+        self.systematic_cphase_noise_next = kwargs.get('systematic_cphase_noise',0.)
 
         # clippping
         self.clipfloor_next = kwargs.get('clipfloor',0.)
@@ -199,41 +195,55 @@ class Imager(object):
             return
 
         if self.obs_next != self.obs_last():
+            print("changed observation!")
             self._change_imgr_params = True
             return
 
         if len(self.reg_term_next) != len(self.reg_terms_last()):
+            print("changed number of regularizer terms!")
             self._change_imgr_params = True
             return
 
         if len(self.dat_term_next) != len(self.dat_terms_last()):
+            print("changed number of data terms!")
             self._change_imgr_params = True
             return
 
         for term in sorted(self.dat_term_next.keys()):
             if term not in self.dat_terms_last().keys():
+                print("added %s to data terms" % term)
                 self._change_imgr_params = True
                 return
 
         for term in sorted(self.reg_term_next.keys()):
             if term not in self.reg_terms_last().keys():
+                print("added %s to regularizers!" % term)
                 self._change_imgr_params = True
                 return
 
         if ((self.prior_next.psize != self.prior_last().psize) or
             (self.prior_next.xdim != self.prior_last().xdim) or
             (self.prior_next.ydim != self.prior_last().ydim)):
+            print("changed prior dimensions!")
             self._change_imgr_params = True
 
         if self.debias_next != self.debias_last():
+            print("changed debiasing!")
             self._change_imgr_params = True
             return
         if self.snrcut_next != self.snrcut_last():
+            print("changed snrcut!")
             self._change_imgr_params = True
             return
         if self.systematic_noise_next != self.systematic_noise_last():
+            print("changed systematic noise!")
             self._change_imgr_params = True
             return
+        if self.systematic_cphase_noise_next != self.systematic_cphase_noise_last():
+            print("changed systematic cphase noise!")
+            self._change_imgr_params = True
+            return
+
 
     def check_limits(self):
         """Check image parameter consistency with observation.
@@ -361,13 +371,20 @@ class Imager(object):
         return self._snrcut_list[-1]
 
     def systematic_noise_last(self):
-        """Return last snrcut value.
+        """Return last systematic_noise value.
         """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._systematic_noise_list[-1]
 
+    def systematic_cphase_noise_last(self):
+        """Return last closure phase systematic noise value (in degree).
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._systematic_cphase_noise_list[-1]
 
     def stop_last(self):
         """Return last convergence value.
@@ -400,10 +417,15 @@ class Imager(object):
 
         # data term tuples
         if self._change_imgr_params:
+            if self.nruns==0:
+                print("Initializing imager data products . . .")
+            if self.nruns>0:
+                print("Recomputing imager data products . . .")
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
-                                debias=self.debias_next, snrcut=self.snrcut_next,systematic_noise=self.systematic_noise_next,
+                                debias=self.debias_next, snrcut=self.snrcut_next,
+                                systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                 ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
                                 conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad)
 
@@ -762,6 +784,8 @@ class Imager(object):
     def make_image_I(self, grads=True, **kwargs):
         """Make Stokes I image using current imager settings.
         """
+        print("==============================")
+        print("Imager run %i " % (int(self.nruns)+1))
         # Checks and initialize
         self.check_params()
         self.check_limits()
@@ -812,6 +836,7 @@ class Imager(object):
         print("time: %f s" % (tstop - tstart))
         print("J: %f" % res.fun)
         print(res.message.decode())
+        print("==============================")
 
         # Append to history
         logstr = str(self.nruns) + ": make_image_I()" #TODO - what should the log string be?
@@ -915,9 +940,10 @@ class Imager(object):
         self._obs_list.append(self.obs_next)
         self._init_list.append(self.init_next)
         self._prior_list.append(self.prior_next)
-        self._debias_list.append(self.flux_next)
-        self._systematic_noise_list.append(self.flux_next)
-        self._snrcut_list.append(self.flux_next)
+        self._debias_list.append(self.debias_next)
+        self._systematic_noise_list.append(self.systematic_noise_next)
+        self._systematic_cphase_noise_list.append(self.systematic_cphase_noise_next)
+        self._snrcut_list.append(self.snrcut_next)
         self._flux_list.append(self.flux_next)
         self._clipfloor_list.append(self.clipfloor_next)
         self._maxit_list.append(self.maxit_next)
