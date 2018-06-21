@@ -867,7 +867,7 @@ class Obsdata(object):
             data['uvis'] = np.abs(data['vis'])
             data['vvis'] = np.abs(data['vis'])
             self.amp = data
-        print("updated self.amp: avg_time %f s"%avg_time)
+        print("updated self.amp: avg_time %f s\n"%avg_time)
 
     def add_bispec(self, return_type='rec', count='max',
                          avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
@@ -895,7 +895,7 @@ class Obsdata(object):
             if return_type=='rec': 
                 cdf = df_to_rec(cdf,'bispec')
             self.bispec = cdf
-        print("\nupdated self.bispec: avg_time %f s"%avg_time)
+        print("updated self.bispec: avg_time %f s\n"%avg_time)
 
     def add_cphase(self,return_type='rec',count='max',
                         avg_time=0,err_type='predicted', num_samples=1000, round_s=0.1):
@@ -922,7 +922,7 @@ class Obsdata(object):
             if return_type=='rec': 
                 cdf = df_to_rec(cdf,'cphase')
             self.cphase = cdf
-        print("\nupdated self.cphase: avg_time %f s"%avg_time)
+        print("updated self.cphase: avg_time %f s\n"%avg_time)
 
     def add_camp(self, return_type='rec', ctype='camp',
                        count='max', debias=True,  debias_type='old',
@@ -955,10 +955,10 @@ class Obsdata(object):
 
         if ctype=='logcamp':
             self.logcamp = cdf
-            print("\n updated self.logcamp: avg_time %f s" % avg_time)
+            print("updated self.logcamp: avg_time %f s\n" % avg_time)
         elif ctype=='camp':
             self.camp = cdf
-            print("\n updated self.camp: avg_time %f s" % avg_time)
+            print("updated self.camp: avg_time %f s\n" % avg_time)
 
 
     def add_logcamp(self, return_type='rec', ctype='camp',
@@ -2097,6 +2097,9 @@ class Obsdata(object):
         if (field1 not in FIELDS) and (field2 not in FIELDS):
             raise Exception("valid fields are " + ' '.join(FIELDS))
 
+        if 'amp' in [field1, field2] and not (self.amp is None):
+            print ("Warning: plotall is not using amplitudes in Obsdata.amp array!")
+
         # Unpack x and y axis data
         data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)
 
@@ -2116,9 +2119,13 @@ class Obsdata(object):
         if not rangex:
             rangex = [np.min(data[field1]) - 0.2 * np.abs(np.min(data[field1])),
                       np.max(data[field1]) + 0.2 * np.abs(np.max(data[field1]))]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data x range: try specifying rangex manually")
         if not rangey:
             rangey = [np.min(data[field2]) - 0.2 * np.abs(np.min(data[field2])),
                       np.max(data[field2]) + 0.2 * np.abs(np.max(data[field2]))]
+            if np.any(np.isnan(np.array(rangey))):
+                raise Exception("NaN in data y range: try specifying rangey manually")
 
         # Plot the data
         tolerance = len(data[field2])
@@ -2178,6 +2185,9 @@ class Obsdata(object):
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
 
+        if field=='amp' and not (self.amp is None):
+            print ("Warning: plot_bl is not using amplitudes in Obsdata.amp array!")
+
         # Determine if fields are valid
         if field not in FIELDS:
             raise Exception("valid fields are " + string.join(FIELDS))
@@ -2185,9 +2195,13 @@ class Obsdata(object):
         plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
         if not rangex:
             rangex = [self.tstart,self.tstop]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data x range: try specifying rangex manually")
         if not rangey:
             rangey = [np.min(plotdata[field]) - 0.2 * np.abs(np.min(plotdata[field])),
                       np.max(plotdata[field]) + 0.2 * np.abs(np.max(plotdata[field]))]
+            if np.any(np.isnan(np.array(rangey))):
+                raise Exception("NaN in data y range: try specifying rangey manually")
 
         # Plot the data
         if axis:
@@ -2268,9 +2282,13 @@ class Obsdata(object):
         # Data ranges
         if not rangex:
             rangex = [self.tstart,self.tstop]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data x range: try specifying rangex manually")
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])),
                       np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data y range: try specifying rangey manually")
 
         # Plot the data
         if axis:
@@ -2354,9 +2372,13 @@ class Obsdata(object):
         # Data ranges
         if not rangex:
             rangex = [self.tstart,self.tstop]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data x range: try specifying rangex manually")
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])),
                       np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))]
+            if np.any(np.isnan(np.array(rangey))):
+                raise Exception("NaN in data y range: try specifying rangey manually")
 
         # Plot the data
         if axis:
