@@ -39,7 +39,7 @@ npixels = NPIX**2
 
 # StarWarps optimization parameters
 warp_method = 'phase'
-measurement = 'visibility' #'visibility' or 'amp-bispectrum' or 'bispectrum'
+measurement = {'vis':1 } # {'amp':1, 'cphase':1}
 interiorPriors = True
 reassign_apxImgs = False
 numLinIters = 5

@@ -88,9 +88,6 @@ class Caltable(object):
                (Caltable): an Caltable object
         """
 
-        if len(datatables) == 0:
-            raise Exception("No data in input table!")
-
         # Set the various parameters
         self.source = str(source)
         self.ra = float(ra)
