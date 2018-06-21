@@ -42,6 +42,9 @@ from astropy.time import Time
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+import warnings
+warnings.filterwarnings("ignore", message="Mean of empty slice")
+
 ##################################################################################################
 # Vex IO
 ##################################################################################################
@@ -50,6 +53,7 @@ def load_vex(fname):
        Assumes there is only 1 MODE in vex file
        Hotaka Shiokawa - 2017
     """
+    print ("\nLoading vexfile: ", fname)
     return ehtim.vex.Vex(fname)
 
 
@@ -61,6 +65,8 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
        Text file should have the same format as output from Image.save_txt()
        Make sure the header has exactly the same form!
     """
+
+    print ("\nLoading text image: ", filename)
 
     # Read the header
     file = open(filename)
@@ -118,6 +124,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
 def load_im_fits(filename, punit="deg", pulse=PULSE_DEFAULT):
     """Read in an image from a FITS file and create an Image object
     """
+    print ("\nLoading fits image: ", filename)
 
     # Radian or Degree?
     if punit=="deg":
@@ -369,6 +376,7 @@ def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
+    print ("\nLoading text observation: ", filename)
 
     # Read the header parameters
     file = open(filename)
@@ -573,6 +581,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     """
 
     # Load the uvfits file
+    print ("\nLoading uvfits: ", filename)
     hdulist = fits.open(filename)
     header = hdulist[0].header
     data = hdulist[0].data
@@ -638,7 +647,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
 
     # Determine the number of correlation products in the data
     num_corr = data['DATA'].shape[5]
-    print("Number of Correlation Products:",num_corr)
+    print("Number of uvfits Correlation Products:",num_corr)
     if num_corr == 1 and force_singlepol != None:
         print("Cannot force single polarization when file is not full polarization.")
         force_singlepol = None
@@ -715,11 +724,23 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
 
-    #TODO less than or equal to?
+    # first, catch  nans
+    rrnanmask_2d = (np.isnan(rrweight))
+    llnanmask_2d = (np.isnan(llweight))
+    rlnanmask_2d = (np.isnan(rlweight))
+    lrnanmask_2d = (np.isnan(lrweight))
+
+    rrweight[rrnanmask_2d] = 0.
+    llweight[llnanmask_2d] = 0.
+    rlweight[rlnanmask_2d] = 0.
+    lrweight[lrnanmask_2d] = 0.
+
+    #look for weights < 0 
     rrmask_2d = (rrweight > 0.)
     llmask_2d = (llweight > 0.)
     rlmask_2d = (rlweight > 0.)
     lrmask_2d = (lrweight > 0.)
+
 
     # if there is any unmasked data in the frequency column, use it
     rrmask = np.any(np.any(rrmask_2d, axis=2), axis=1)
@@ -759,7 +780,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         scantable = np.array(scantable*24)
 
     except:
-        print("No NX table exists")
+        print("No NX table in uvfits!")
         scantable = None
 
     # Integration times

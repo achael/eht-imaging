@@ -578,7 +578,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', ttype='direct', mask=[], fft_pad_factor=2, systematic_noise=0.0):
+    def chisq(self, im, dtype='vis', ttype='nfft', mask=[], fft_pad_factor=2, systematic_noise=0.0):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
@@ -655,10 +655,10 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
-                              % (t,len(timesplit),inttime, tavg,t)
-                            )
-            sys.stdout.flush()
+            avg_prog_msg(t, len(timesplit), inttime, msgtype='bar')
+#            sys.stdout.write('\rAveraging Scans %i/%i in %0.2f s ints : Reduced Data %i/%i'
+#                              % (t,len(timesplit),inttime, tavg,t))
+#            sys.stdout.flush()
 
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
@@ -729,7 +729,7 @@ class Obsdata(object):
                                timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
                                ), dtype=DTPOL
                              ))
-
+        print()
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -763,11 +763,10 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
-                                % (t,len(timesplit),inttime, tavg,t)
-                            )
-            sys.stdout.flush()
-
+            avg_prog_msg(t, len(timesplit), inttime, msgtype='bar')
+#            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
+#                                % (t,len(timesplit),inttime, tavg,t))
+#            sys.stdout.flush()
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
 
@@ -837,7 +836,7 @@ class Obsdata(object):
                                 timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
                                 ), dtype=DTPOL
                                 ))
-
+        print()
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1231,15 +1230,14 @@ class Obsdata(object):
                 all_triangles.append((cphase[1],cphase[2],cphase[3]))
 
         std_list = []
-        print("Estimating noise for %d triangles...\n" % len(set(all_triangles)))
+        print("Estimating noise rescaling factor from %d triangles...\n" % len(set(all_triangles)))
 
         i_count = 0
         for tri in set(all_triangles):
             i_count = i_count + 1
-            if print_std == False:
-                sys.stdout.flush()
+            if print_std:
                 sys.stdout.write('\rGetting noise for triangles %i/%i ' % (i_count, len(set(all_triangles))))
-
+                sys.stdout.flush()
             all_tri = np.array([[]])
             for scan in c_phases:
                 for cphase in scan:
@@ -1259,7 +1257,7 @@ class Obsdata(object):
                 std_list.append(np.std(s_list))
                 if print_std == True:
                     print(tri, np.std(s_list))
-
+               
         return np.median(std_list)
 
     def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
@@ -1279,7 +1277,7 @@ class Obsdata(object):
 
         datatable = self.data.copy()
         datatable = datatable[mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('uvdist flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
 
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
@@ -1302,7 +1300,7 @@ class Obsdata(object):
         t2_list = self.unpack('t2')['t2']
         site_mask = np.array([t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))])
         datatable = datatable[site_mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('site flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1321,7 +1319,7 @@ class Obsdata(object):
         datatable = self.data.copy()
         snr_mask = self.unpack('snr')['snr'] > snr_cut
         datatable = datatable[snr_mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('snr flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1347,7 +1345,7 @@ class Obsdata(object):
             UT_mask = np.invert(UT_mask)
 
         datatable = datatable[UT_mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('time flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1381,7 +1379,7 @@ class Obsdata(object):
 
         datatable =  self.data.copy()
         datatable = datatable[mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('%s scatter flagged %d/%d visibilities' % (field, (len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1415,7 +1413,7 @@ class Obsdata(object):
 
         datatable = self.data.copy()
         datatable = datatable[mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        print('anomalous %s flagged %d/%d visibilities' % (field, (len(self.data)-len(datatable)), (len(self.data))))
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
@@ -1582,7 +1580,7 @@ class Obsdata(object):
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
         return res.x
 
-    def bispectra(self, vtype='vis', mode='time', count='min',timetype=False):
+    def bispectra(self, vtype='vis', mode='all', count='min',timetype=False):
 
         """Return a recarray of the equal time bispectra.
 
@@ -1613,8 +1611,9 @@ class Obsdata(object):
         bis = []
         tt = 1
         for tdata in tlist:
+
+            sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % (vtype, count, tt, len(tlist)))
             sys.stdout.flush()
-            sys.stdout.write('\rGetting bispectra: type: %s count: %s scan %i/%i ' % (vtype, count, tt, len(tlist)))
 
             tt += 1
 
@@ -1635,18 +1634,6 @@ class Obsdata(object):
             # Minimal Set
             if count == 'min':
                 tris = tri_minimal_set(sites, self.tarr, self.tkey)
-#                # If we want a minimal set, choose triangles with the minimum sefd reference
-#                # Unless there is no sefd data, in which case choose the northernmost
-#                # TODO This should probably be an sefdr + sefdl average instead
-#                if len(set(self.tarr['sefdr'])) > 1:
-#                    ref = sites[np.argmin([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-#                else:
-#                    ref = sites[np.argmax([self.tarr[self.tkey[site]]['z'] for site in sites])]
-#                sites.remove(ref)
-
-#                # Find all triangles that contain the ref
-#                tris = list(it.combinations(sites,2))
-#                tris = [(ref, t[0], t[1]) for t in tris]
 
             # Maximal  Set - find all triangles
             elif count == 'max':
@@ -1683,10 +1670,10 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(bis)
-
+        print()
         return out
 
-    def c_phases(self, vtype='vis', mode='time', count='min', ang_unit='deg', timetype=False):
+    def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg', timetype=False):
 
         """Return a recarray of the equal time closure phases.
 
@@ -1721,7 +1708,9 @@ class Obsdata(object):
         # Reformat into a closure phase list/array
         out = []
         cps = []
-        sys.stdout.write('\rReformatting bispectra to closure phase...')
+
+        print('Reformatting bispectra to closure phase...')
+
         for bis in bispecs:
             for bi in bis:
                 if len(bi) == 0: continue
@@ -1735,6 +1724,7 @@ class Obsdata(object):
 
         if mode == 'all':
             out = np.array(cps)
+
         return out
 
     def bispectra_tri(self, site1, site2, site3, vtype='vis', timetype=False, bs=[]):
@@ -1787,7 +1777,7 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False, cphase=[],force_recompute=False):
+    def cphase_tri(self, site1, site2, site3, vtype='vis', ang_unit='deg', timetype=False, cphases=[],force_recompute=False):
 
         """Return closure phase  over time on a triangle (1-2-3).
 
@@ -1799,7 +1789,7 @@ class Obsdata(object):
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'GMST' or 'UTC'
 
-               cphase (list): optionally pass in the cphase so they are not recomputed if you are plotting multiple triangles
+               cphases (list): optionally pass in the cphase so they are not recomputed if you are plotting multiple triangles
                force_recompute (bool): if True, recompute closure phases instead of using obs.cphase saved data
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
@@ -1808,16 +1798,16 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get closure phases (maximal set)
-        if (len(cphase)==0) and not (self.cphase is None) and not force_recompute:
-            cphase=self.cphase
+        if (len(cphases)==0) and not (self.cphase is None) and not force_recompute:
+            cphases=self.cphase
 
-        elif (len(cphase) == 0) or force_recompute:
-            cphase = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit, timetype=timetype)
+        elif (len(cphases) == 0) or force_recompute:
+            cphases = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit, timetype=timetype)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
         outdata = []
-        for obs in cphase:
+        for obs in cphases:
             obstri = (obs['t1'],obs['t2'],obs['t3'])
             if set(obstri) == set(tri):
                 # Flip the sign of the closure phase if necessary
@@ -1842,7 +1832,7 @@ class Obsdata(object):
                 continue
         return np.array(outdata)
 
-    def c_amplitudes(self, vtype='vis', mode='time', count='min', ctype='camp',
+    def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp',
                            debias=True, timetype=False, debias_type='old'):
 
         """Return a recarray of the equal time closure amplitudes.
@@ -1881,8 +1871,9 @@ class Obsdata(object):
         cas = []
         tt = 1
         for tdata in tlist:
-            sys.stdout.flush()
-            sys.stdout.write('\rGetting closure amps: type: %s %s count: %s scan %i/%i ' % (vtype, ctype, count, tt, len(tlist)))
+
+            sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % (vtype, ctype, count, tt, len(tlist)))
+            sys.stdout.flush()            
             tt += 1
 
             time = tdata[0]['time']
@@ -1939,54 +1930,6 @@ class Obsdata(object):
                                          camp, camperr),
                                          dtype=DTCAMP))
 
-
-#                # If we want a minimal set, choose the minimum sefd reference
-#                # TODO this should probably be an sefdr + sefdl average instead
-#                sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-#                ref = sites[0]
-
-#                # Loop over other sites >=3 and form minimal closure amplitude set
-#                for i in range(3, len(sites)):
-#                    if (ref, sites[i]) not in l_dict.keys():
-#                        continue
-
-#                    # MJ: This causes a KeyError in some cases, probably with flagged data or something
-#                    blue1 = l_dict[ref, sites[i]]
-#                    for j in range(1, i):
-#                        if j == i-1: k = 1
-#                        else: k = j+1
-
-#                        # TODO MJ: I tried joining these into a single if statement using or without success... no idea why..
-#                        if (sites[i], sites[j]) not in l_dict.keys():
-#                            continue
-
-#                        if (ref, sites[k]) not in l_dict.keys():
-#                            continue
-
-#                        if (sites[j], sites[k]) not in l_dict.keys():
-#                            continue
-
-#                        #TODO behavior when no baseline?
-#                        try:
-#                            red1 = l_dict[sites[i], sites[j]]
-#                            red2 = l_dict[ref, sites[k]]
-#                            blue2 = l_dict[sites[j], sites[k]]
-#                        except KeyError:
-#                            continue
-
-#                        # Compute the closure amplitude and the error
-#                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-#                                                                 ctype=ctype, debias=debias, debias_type=debias_type)
-
-#                        # Add the closure amplitudes to the equal-time list
-#                        # Our site convention is (12)(34)/(14)(23)
-#                        cas.append(np.array((time,
-#                                             ref, sites[i], sites[j], sites[k],
-#                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-#                                             red1['u'], red1['v'], red2['u'], red2['v'],
-#                                             camp, camperr),
-#                                             dtype=DTCAMP))
-
             # Maximal Set
             elif count == 'max':
                 # Find all quadrangles
@@ -2026,7 +1969,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(cas)
-
+        print()
         return out
 
     def camp_quad(self, site1, site2, site3, site4,
@@ -2065,11 +2008,11 @@ class Obsdata(object):
         outdata = []
 
         # Get closure amplitudes (maximal set)
-        if (ctype=='camp') and (len(camps)==0) and not (self.camps is None) and not force_recompute:
-            camps=self.camps
-        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamps is None) and not force_recompute:
-            camps=self.logcamps
-        else:
+        if ((ctype=='camp') and (len(camps)==0)) and not (self.camp is None) and not force_recompute:
+            camps=self.camp
+        elif ((ctype=='logcamp') and (len(camps)==0)) and not (self.logcamp is None) and not force_recompute:
+            camps=self.logcamp
+        elif (len(camps)==0) or force_recompute:
             camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
 
         # camps does not contain inverses
@@ -2277,7 +2220,7 @@ class Obsdata(object):
                           vtype='vis', ang_unit='deg', timetype=False,
                           rangex=False, rangey=False, ebar=True, labels=True,
                           show=True, axis=False, color='b', export_pdf="",
-                          cphase=[],force_recompute=False):
+                          cphases=[],force_recompute=False):
 
         """Plot closure phase over time on a triangle (1-2-3).
 
@@ -2300,7 +2243,7 @@ class Obsdata(object):
                color (str): Color of scatterplot points
                export_pdf (str): path to pdf file to save figure
 
-               cphase (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
+               cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
                force_recompute (bool): if True, recompute closure phases instead of using stored data 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
@@ -2312,10 +2255,10 @@ class Obsdata(object):
         else: angle = eh.DEGREE
 
         # Get closure phases (maximal set)
-        if (len(cphase)==0) and not (self.cphase is None) and not force_recompute:
-            cphase=self.cphase
+        if (len(cphases)==0) and not (self.cphase is None) and not force_recompute:
+            cphases=self.cphase
 
-        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphase=cphase, force_recompute=force_recompute)
+        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         if len(plotdata) == 0:
@@ -2391,10 +2334,10 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get closure amplitudes (maximal set)
-        if (ctype=='camp') and (len(camps)==0) and not (self.camps is None) and not force_recompute:
-            camps=self.camps
-        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamps is None) and not force_recompute:
-            camps=self.logcamps
+        if (ctype=='camp') and (len(camps)==0) and not (self.camp is None) and not force_recompute:
+            camps=self.camp
+        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamp is None) and not force_recompute:
+            camps=self.logcamp
 
         # Get closure amplitudes (maximal set)
         cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype,

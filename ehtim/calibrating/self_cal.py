@@ -25,6 +25,7 @@ import scipy.special as spec
 import scipy.optimize as opt
 import sys
 import itertools as it
+import time
 import copy
 
 import ehtim.obsdata
@@ -33,16 +34,19 @@ import ehtim.imaging.imager_utils as iu
 
 from multiprocessing import cpu_count
 from multiprocessing import Pool
+from multiprocessing import Process, Value, Lock
 
-import itertools
+from cal_helpers import *
 
-ZBLCUTOFF = 1.e7;
+
+
 
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
-def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2, 
-             ttype='nfft', fft_pad_factor=2, caltable=False, processes=-1):
+def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2, 
+             ttype='nfft', fft_pad_factor=2, caltable=False, 
+             processes=-1,show_solution=False,msgtype='bar'):
     """Self-calibrate a dataset to an image.
 
        Args:
@@ -61,7 +65,7 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
            show_solution (bool): if True, display the solution as it is calculated
-           
+           msgtype (str): type of progress message to be printed, default is 'bar'
 
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
@@ -73,17 +77,6 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
     if len(sites) < 2:
         print("less than 2 stations specified in self cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']
-
-    # Make the pool for parallel processing
-    if processes > 0:
-        print("Using Multiprocessing")
-        pool = Pool(processes=processes)
-    elif processes == 0:
-        processes = int(cpu_count())
-        print("Using Multiprocessing with %d Processes" % processes)
-        pool = Pool(processes=processes)
-    else:
-        print("Not Using Multiprocessing")
 
     # First, sample the model visibilities
     print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
@@ -97,7 +90,6 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
         im_info, sampler_info_list, gridder_info_list = fft_A
         vis_arr = iu.fft_imvec(im.imvec, im_info)
         V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
-    print("Done!")
 
     # Partition the list of model visibilities into scans
     from itertools import islice
@@ -105,22 +97,41 @@ def self_cal(obs, im, sites=[], method="both", show_solution=False, pad_amp=0., 
     scan_lengths = [len(o) for o in obs.tlist()]
     V_scans      = [list(islice(it, 0, i)) for i in scan_lengths]
 
-    # loop over scans and calibrate
+    # get scans
     scans     = obs.tlist()
     scans_cal = copy.copy(scans)
 
+    # Make the pool for parallel processing
+    if processes > 0:
+        counter = Counter(initval=0, maxval=len(scans))
+        print("Using Multiprocessing with %d Processes" % processes)
+        pool = Pool(processes=processes, initializer=init, initargs=(counter,))
+    elif processes == 0:
+        counter = Counter(initval=0, maxval=len(scans))
+        processes = int(cpu_count())
+        print("Using Multiprocessing with %d Processes" % processes)
+        pool = Pool(processes=processes, initializer=init, initargs=(counter,))
+    else:
+        print("Not Using Multiprocessing")
+
+    # loop over scans and calibrate
+    tstart = time.time()
     if processes > 0: # run on multiple cores with multiprocessing
+
         scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method,
-                                                              show_solution, pad_amp, gain_tol, caltable
+                                                              show_solution, pad_amp, gain_tol, caltable, msgtype
                                                              ] for i in range(len(scans))]))
-        print('DONE')
+
     else: # run on a single core
+
         for i in range(len(scans)):
-            sys.stdout.write('\rCalibrating Scan %i/%i...' % (i,len(scans)))
-            sys.stdout.flush()
+            cal_prog_msg(i, len(scans),msgtype=msgtype)
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
                                  method=method, show_solution=show_solution,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+
+    tstop = time.time()
+    print("\nself_cal time: %f s" % (tstop - tstart))
 
     if caltable: # assemble the caltable to return
         allsites = obs.tarr['site']
@@ -278,13 +289,30 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     return out
 
+
+
+def init(x):
+    global counter
+    counter = x
+
 def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
-def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable):
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable,msgtype):
     if n > 1:
-        sys.stdout.write('.')
-        sys.stdout.flush()
+        global counter
+        counter.increment()
+        cal_prog_msg(counter.value(), counter.maxval,msgtype)
 
-    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, 
+                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+
+
+
+
+
+
+
+
+
 

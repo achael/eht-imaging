@@ -35,6 +35,9 @@ import copy
 
 from ehtim.const_def import *
 
+import warnings
+warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
+
 ##################################################################################################
 # Other Functions
 ##################################################################################################
@@ -957,5 +960,53 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
     if returnType=='all':
         out = np.array(out,dtype=dtype)
     return out
+
+
+def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
+    """print a progress method for averaging
+    """
+
+    complete_percent = int(100*float(nscan)/float(totscans))
+    ndigit = str(len(str(totscans)))
+    if msgtype=='default':
+        barparams = (nscan, totscans,tint, complete_percent)
+        prinstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+    if msgtype=='bar':
+        bar_width = 30
+        progress = int(bar_width * complete_percent/float(100))
+        barparams = (nscan, totscans, tint, ("-"*progress) + (" " * (bar_width-progress)),complete_percent)
+
+        printstr = "\rAverging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]%i%%"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+    if msgtype=='casa':
+        message_list = [".",".",".","10",".",".",".","20",".",".",".","30",".",".",".","40",
+                        ".",".",".","50",".",".",".","60",".",".",".","70",".",".",".","80",
+                        ".",".",".","90",".",".",".","DONE"]
+        bar_width = len(message_list)
+        progress = int(bar_width * complete_percent/float(100))
+        message = ''.join(message_list[:progress])
+
+        barparams = (nscan, totscans, tint,message)
+        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %s"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+    if msgtype=='itcrowd':
+        message_list = ["0","1","1","8"," ","9","9","9"," ","8","8","1","9","9"," ",
+                        "9","1","1","9"," ","7","2","5"," "," "," ","3"]
+        bar_width = len(message_list)
+        progress = int(bar_width * complete_percent/float(100))
+        message = ''.join(message_list[:progress])
+        if complete_percent<100:
+            message += "." 
+            message += " "*(bar_width-progress-1)
+
+        barparams = (nscan, totscans, tint,message)
+
+        printstr= "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
 
 

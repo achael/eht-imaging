@@ -16,7 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -34,7 +33,7 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 
-MAXIT = 100 # number of iterations
+MAXIT = 200 # number of iterations
 NHIST = 50 # number of steps to store for hessian approx
 MAXLS = 40 # maximum number of line search steps in BFGS-B
 STOP = 1e-6 # convergence criterion
@@ -196,42 +195,52 @@ class Imager(object):
             return
 
         if self.obs_next != self.obs_last():
+            print("changed observation!")
             self._change_imgr_params = True
             return
 
         if len(self.reg_term_next) != len(self.reg_terms_last()):
+            print("changed number of regularizer terms!")
             self._change_imgr_params = True
             return
 
         if len(self.dat_term_next) != len(self.dat_terms_last()):
+            print("changed number of data terms!")
             self._change_imgr_params = True
             return
 
         for term in sorted(self.dat_term_next.keys()):
             if term not in self.dat_terms_last().keys():
+                print("added %s to data terms" % term)
                 self._change_imgr_params = True
                 return
 
         for term in sorted(self.reg_term_next.keys()):
             if term not in self.reg_terms_last().keys():
+                print("added %s to regularizers!" % term)
                 self._change_imgr_params = True
                 return
 
         if ((self.prior_next.psize != self.prior_last().psize) or
             (self.prior_next.xdim != self.prior_last().xdim) or
             (self.prior_next.ydim != self.prior_last().ydim)):
+            print("changed prior dimensions!")
             self._change_imgr_params = True
 
         if self.debias_next != self.debias_last():
+            print("changed debiasing!")
             self._change_imgr_params = True
             return
         if self.snrcut_next != self.snrcut_last():
+            print("changed snrcut!")
             self._change_imgr_params = True
             return
         if self.systematic_noise_next != self.systematic_noise_last():
+            print("changed systematic noise!")
             self._change_imgr_params = True
             return
-        if self.systematic_cphase_noise_next != self.systematic_noise_last():
+        if self.systematic_cphase_noise_next != self.systematic_cphase_noise_last():
+            print("changed systematic cphase noise!")
             self._change_imgr_params = True
             return
 
@@ -408,6 +417,10 @@ class Imager(object):
 
         # data term tuples
         if self._change_imgr_params:
+            if self.nruns==0:
+                print("Initializing imager data products . . .")
+            if self.nruns>0:
+                print("Recomputing imager data products . . .")
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
@@ -771,6 +784,8 @@ class Imager(object):
     def make_image_I(self, grads=True, **kwargs):
         """Make Stokes I image using current imager settings.
         """
+        print("==============================")
+        print("Imager run %i " % (int(self.nruns)+1))
         # Checks and initialize
         self.check_params()
         self.check_limits()
@@ -821,6 +836,7 @@ class Imager(object):
         print("time: %f s" % (tstop - tstart))
         print("J: %f" % res.fun)
         print(res.message.decode())
+        print("==============================")
 
         # Append to history
         logstr = str(self.nruns) + ": make_image_I()" #TODO - what should the log string be?
@@ -926,7 +942,7 @@ class Imager(object):
         self._prior_list.append(self.prior_next)
         self._debias_list.append(self.debias_next)
         self._systematic_noise_list.append(self.systematic_noise_next)
-        self._systematic_noise_list.append(self.systematic_cphase_noise_next)
+        self._systematic_cphase_noise_list.append(self.systematic_cphase_noise_next)
         self._snrcut_list.append(self.snrcut_next)
         self._flux_list.append(self.flux_next)
         self._clipfloor_list.append(self.clipfloor_next)
