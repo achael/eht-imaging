@@ -61,7 +61,7 @@ def solve_singleImage(mu, Lambda_orig, obs, measurement={'vis':1}, numLinIters=5
 
 def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis':1}, numLinIters=5, interiorPriors=False, mask=[]):
     
-    if if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
+    if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
         numLinIters = 1
     
     if len(mask):
@@ -346,7 +346,7 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
     if mu[0].xdim!=mu[0].ydim:
         error('Error: This has only been checked thus far on square images!')
     
-    if if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
+    if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
         numLinIters = 1
     
     warpMtx = calcWarpMtx(mu[0], theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method=method) 
@@ -705,24 +705,24 @@ def getMeasurementTerms(obs, im, measurement={'vis':1}, mask=[], normalize=False
             nweight = np.sqrt(weight / ncmp)
         else:
             nweight = np.sqrt(weight)
-            
+        
         data = data * nweight
         ideal = ideal * nweight
-        derivterm = np.dot(F,im.imvec[mask])*nweight
+        F = F * nweight
         
         if count == 1:
             data_all = data.reshape(-1)
             ideal_all = ideal.reshape(-1)
             F_all = F
             Cov_all = Cov
-            measdiff_all = data.reshape(-1) + derivterm - ideal.reshape(-1)
+            measdiff_all = data.reshape(-1) + np.dot(F,im.imvec[mask]) - ideal.reshape(-1)
             
         else:
             data_all = np.concatenate( (data_all, data.reshape(-1)), axis=0).reshape(-1)
             ideal_all = np.concatenate( (ideal_all, ideal.reshape(-1)), axis=0).reshape(-1)
             F_all = np.concatenate( (F_all, F), axis=0)
             Cov_all = scipy.linalg.block_diag(Cov_all, Cov) 
-            measdiff_all = np.concatenate( (measdiff_all, data.reshape(-1) + derivterm - ideal.reshape(-1)), axis=0)
+            measdiff_all = np.concatenate( (measdiff_all, data.reshape(-1) + np.dot(F,im.imvec[mask]) - ideal.reshape(-1)), axis=0)
                      
     return (measdiff_all, ideal_all, F_all, Cov_all, True)
 
