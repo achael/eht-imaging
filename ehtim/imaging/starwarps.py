@@ -29,7 +29,7 @@ PROPERROR = True
 ##################################################################################################
 
 
-def solve_singleImage(mu, Lambda_orig, obs, measurement='visibility', numLinIters=5, mask=[]):
+def solve_singleImage(mu, Lambda_orig, obs, measurement={'vis':1}, numLinIters=5, mask=[]):
 
     if len(mask):
         Lambda = Lambda_orig[mask[:,None] & mask[None,:]].reshape([np.sum(mask), -1])
@@ -37,7 +37,7 @@ def solve_singleImage(mu, Lambda_orig, obs, measurement='visibility', numLinIter
         Lambda = Lambda_orig 
         mask = np.ones(mu.imvec.shape)>0  
 
-    if measurement=='visibility':
+    if list(measurement.keys())==1 and measurement.keys()[0]=='vis':    
         numLinIters = 1
     
     z_List_t_t = mu.copy()
@@ -59,9 +59,9 @@ def solve_singleImage(mu, Lambda_orig, obs, measurement='visibility', numLinIter
 
 ##################################################################################################
 
-def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visibility', numLinIters=5, interiorPriors=False, mask=[]):
+def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis':1}, numLinIters=5, interiorPriors=False, mask=[]):
     
-    if measurement=='visibility':
+    if if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
         numLinIters = 1
     
     if len(mask):
@@ -158,7 +158,7 @@ def forwardUpdates_apxImgs(mu, Lambda_orig, obs_List, A_orig, Q_orig, measuremen
 
 ###################################### EXTENDED MESSAGE PASSING ########################################
 
-def forwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visibility', apxImgs=False, interiorPriors=False, mask=[]):
+def forwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis':1}, apxImgs=False, interiorPriors=False, mask=[]):
     
     #if measurement=='bispectrum':
     #    print 'WARNING: check the loglikelihood for non-linear functions'
@@ -248,7 +248,7 @@ def forwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visib
     return ((loglikelihood_data, loglikelihood_prior, loglikelihood), z_List_t_tm1, P_List_t_tm1, z_List_t_t, P_List_t_t)
     
 
-def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visibility', apxImgs=False, mask=[]):
+def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement={'vis':1}, apxImgs=False, mask=[]):
 
     if apxImgs == False:
         apxImgs = mu
@@ -338,7 +338,7 @@ def smoothingUpdates(z_t_t, P_t_t, z_t_tm1, P_t_tm1, A_orig, mask=[]):
     
 
     
-def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method='phase', measurement='visibility', interiorPriors=False, numLinIters=1, apxImgs=False, compute_expVal_tm1_t=True, mask=[]):
+def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method='phase', measurement={'vis':1}, interiorPriors=False, numLinIters=1, apxImgs=False, compute_expVal_tm1_t=True, mask=[]):
     
     if not len(mask):
         mask = np.ones(mu[0].imvec.shape)>0
@@ -346,7 +346,7 @@ def computeSuffStatistics(mu, Lambda, obs_List, Upsilon, theta, init_x, init_y, 
     if mu[0].xdim!=mu[0].ydim:
         error('Error: This has only been checked thus far on square images!')
     
-    if measurement=='visibility':
+    if if list(measurement.keys())==1 and measurement.keys()[0]=='vis':
         numLinIters = 1
     
     warpMtx = calcWarpMtx(mu[0], theta, init_x, init_y, flowbasis_x, flowbasis_y, initTheta, method=method) 
@@ -702,28 +702,29 @@ def getMeasurementTerms(obs, im, measurement={'vis':1}, mask=[], normalize=False
         
         weight = measurement[dname]
         if normalize:
-            nweight = weight / ncmp
+            nweight = np.sqrt(weight / ncmp)
         else:
-            nweight = weight
-             
+            nweight = np.sqrt(weight)
+            
         data = data * nweight
         ideal = ideal * nweight
-        Cov = Cov * nweight**2
+        derivterm = np.dot(F,im.imvec[mask])*nweight
         
         if count == 1:
             data_all = data.reshape(-1)
             ideal_all = ideal.reshape(-1)
             F_all = F
             Cov_all = Cov
+            measdiff_all = data.reshape(-1) + derivterm - ideal.reshape(-1)
+            
         else:
             data_all = np.concatenate( (data_all, data.reshape(-1)), axis=0).reshape(-1)
             ideal_all = np.concatenate( (ideal_all, ideal.reshape(-1)), axis=0).reshape(-1)
             F_all = np.concatenate( (F_all, F), axis=0)
-            Cov_all = scipy.linalg.block_diag(Cov_all, Cov)        
-
-    meas_exp  = data_all + np.dot(F_all, im.imvec[mask]) - ideal_all
-    
-    return (meas_exp, ideal_all, F_all, Cov_all, True)
+            Cov_all = scipy.linalg.block_diag(Cov_all, Cov) 
+            measdiff_all = np.concatenate( (measdiff_all, data.reshape(-1) + derivterm - ideal.reshape(-1)), axis=0)
+                     
+    return (measdiff_all, ideal_all, F_all, Cov_all, True)
 
 
 def grad_vis_mtx(obs, im, mask):  
@@ -940,7 +941,7 @@ def weinerFiltering(meanImg, covImg, obs_List, mask=[]):
     
     for t in range(0,len(obs_List)):
         
-        meas, idealmeas, A, measCov, valid = getMeasurementTerms(obs_List[t], meanImg, measurement='visibility', mask=mask)
+        meas, idealmeas, A, measCov, valid = getMeasurementTerms(obs_List[t], meanImg, measurement={'vis':1}, mask=mask)
         
         if valid==False: 
             im_List[t] = meanImg.copy()
