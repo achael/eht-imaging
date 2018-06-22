@@ -36,21 +36,14 @@ Here are some ways to learn to use the code:
 Some publications that use ehtim
 ------------
 
-`Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ , 
-
-`Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_ , 
-
-`Johnson 2016 <https://arxiv.org/abs/1610.05326>`_ , 
-
-`Roelofs et al. 2017 <https://arxiv.org/abs/1708.01056>`_ ,
-
-`Bouman et al. 2017 <https://arxiv.org/abs/1711.01357>`_ , 
-
-`Johnson et al. 2017 <https://arxiv.org/abs/1711.01286>`_ , 
-
-`Chael et al. 2018 <https://arxiv.org/abs/1803.07088>`_, 
-
-_`Mizuno et al. 2018 <https://arxiv.org/abs/1804.05812>`_
+`Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ 
+`Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_ 
+`Johnson 2016 <https://arxiv.org/abs/1610.05326>`_ 
+`Roelofs et al. 2017 <https://arxiv.org/abs/1708.01056>`_ 
+`Bouman et al. 2017 <https://arxiv.org/abs/1711.01357>`_  
+`Johnson et al. 2017 <https://arxiv.org/abs/1711.01286>`_  
+`Chael et al. 2018 <https://arxiv.org/abs/1803.07088>`_
+`Mizuno et al. 2018 <https://arxiv.org/abs/1804.05812>`_
 
 
 Acknowledgements
