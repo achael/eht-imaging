@@ -631,7 +631,7 @@ class Obsdata(object):
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                          timetype=self.timetype, scantable=self.scans)
 
-    def avg_coherent(self, inttime):
+    def avg_coherent(self, inttime, msgtype='bar'):
 
         """Coherently average data along u,v tracks in chunks of length inttime (sec).
 
@@ -655,7 +655,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t, len(timesplit), inttime, msgtype='bar')
+            avg_prog_msg(t, len(timesplit), inttime, msgtype=msgtype)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %0.2f s ints : Reduced Data %i/%i'
 #                              % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()
@@ -735,7 +735,7 @@ class Obsdata(object):
                        timetype=self.timetype, scantable=self.scans)
 
 
-    def avg_incoherent(self, inttime, debias=True, err_type='predicted'):
+    def avg_incoherent(self, inttime, debias=True, err_type='predicted', msgtype='bar'):
 
         #ANDREW TODO should this really return an obsdata object? Better to just make this part of add_amp
         """Incoherently average data along u,v tracks in chunks of length inttime (sec).
@@ -763,7 +763,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t, len(timesplit), inttime, msgtype='bar')
+            avg_prog_msg(t, len(timesplit), inttime, msgtype=msgtype)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
 #                                % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()

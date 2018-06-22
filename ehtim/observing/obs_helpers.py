@@ -212,17 +212,19 @@ def make_bispectrum(l1, l2, l3,vtype):
     bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +
                                  var2/np.abs(p2)**2 +
                                  var3/np.abs(p3)**2)
+
     # Katie's 2nd + 3rd order corrections - see CHIRP supplement
     #bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
     #                           var1*var3*np.abs(p2)**2 +
     #                           var2*var3*np.abs(p1)**2 +
     #                           var1*var2*var3)
+
     return (bi, bisig)
 
-def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, debias_type='ExactLog'):
+def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, debias_type='old'):
     """make a list of closure amplitudes and errors
-       red1 and red2 are full datatables of numerator entries
-       blue1 and blue2 are full datatables denominator entries
+       red1 and red2 are full datatables of denominator entries
+       blue1 and blue2 are full datatables numerator entries
        vtype is the  visibility type
        we always debias the individual amplitudes
        debias controls if we debias the closure amplitude at the end
@@ -406,6 +408,7 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
     sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
     theta = -beamparams[2] # theta needs to be negative in this convention!
+
     #try:
     #	x=beamparams[3]
     #	y=beamparams[4]

@@ -8,6 +8,8 @@ ehtim (eht-imaging)
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized gradient descent methods.
 
+The code can be found `GitHub <https://github.com/achael/eht-imaging>`_
+
 The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the :class:`Image`, :class:`Array`, and :class:`Obsdata`. :class:`Movie` and :class:`Vex` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. :class:`imager` is a generic Stokes I imager class that can produce images from data sets using various data terms and regularizers.  
 
 .. note::
