@@ -271,7 +271,7 @@ def plotall_obs_im_compare(obslist, image, field1, field2,
 
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
-
+j
                ebar (bool): Plot error bars if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
@@ -530,8 +530,8 @@ def plotall_obs_im_cphases(obs, image, ttype='nfft', sgrscat=False,
 
     # generate data
     obs_model = image.observe_same(obs, sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-    cphases_obs = obs.c_phases(mode='time', count='max', vtype=vtype)
-    cphases_model = obs_model.c_phases(mode='time', count='max', vtype=vtype)
+    cphases_obs = obs.c_phases(mode='all', count='max', vtype=vtype)
+    cphases_model = obs_model.c_phases(mode='all', count='max', vtype=vtype)
 
     # display  as individual plots or as a huge sheet
     if display_mode=='individual':
