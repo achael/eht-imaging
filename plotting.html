@@ -460,38 +460,37 @@
 <dt id="ehtim.plotting.comp_plots.plotall_obs_im_compare">
 <code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_im_compare</code><span class="sig-paren">(</span><em>obslist, image, field1, field2, ttype='direct', sgrscat=False, rangex=False, rangey=False, conj=False, clist=['b', 'm', 'g', 'c', 'y', 'k', 'r'], ebar=True, axis=False, show=True, export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_im_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_im_compare" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot data from observations compared to ground truth from an image on the same axes.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>obslist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of observations to plot</li>
-<li><strong>image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; ground truth image to compare to</li>
-<li><strong>field1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; x-axis field (from FIELDS)</li>
-<li><strong>field2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; y-axis field (from FIELDS)</li>
-<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot conjuage baseline data points if True</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; If True, debias amplitudes.</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
-<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
-<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis limits</li>
-<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
-<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
-<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; Display the plot if true</li>
-<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
-<li><strong>clist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) &#8211; list of color strings of scatterplot points</li>
-<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Axes object with data plot</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(matplotlib.axes.Axes)</p>
-</td>
-</tr>
-</tbody>
-</table>
+<blockquote>
+<div><dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">obslist (list): list of observations to plot
+image (Image): ground truth image to compare to
+field1 (str): x-axis field (from FIELDS)
+field2 (str): y-axis field (from FIELDS)</p>
+<p>conj (bool): Plot conjuage baseline data points if True
+debias (bool): If True, debias amplitudes.
+ang_unit (str): phase unit &#8216;deg&#8217; or &#8216;rad&#8217;
+sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+ttype (str): if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</p>
+<p class="last">rangex (list): [xmin, xmax] x-axis limits
+rangey (list): [ymin, ymax] y-axis limits</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt>j</dt>
+<dd><blockquote class="first">
+<div>ebar (bool): Plot error bars if True
+show (bool): Display the plot if true
+axis (matplotlib.axes.Axes): add plot to this axis
+clist (list): list of color strings of scatterplot points
+export_pdf (str): path to pdf file to save figure</div></blockquote>
+<dl class="last docutils">
+<dt>Returns:</dt>
+<dd>(matplotlib.axes.Axes): Axes object with data plot</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">

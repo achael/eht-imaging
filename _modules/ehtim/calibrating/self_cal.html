@@ -192,6 +192,7 @@
 <span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">opt</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">it</span>
+<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 
 <span class="kn">import</span> <span class="nn">ehtim.obsdata</span>
@@ -200,16 +201,19 @@
 
 <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">cpu_count</span>
 <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Pool</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Value</span><span class="p">,</span> <span class="n">Lock</span>
 
-<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">ehtim.calibrating.cal_helpers</span> <span class="k">import</span> <span class="o">*</span>
 
-<span class="n">ZBLCUTOFF</span> <span class="o">=</span> <span class="mf">1.e7</span><span class="p">;</span>
+
+
 
 <span class="c1">###################################################################################################################################</span>
 <span class="c1">#Self-Calibration</span>
 <span class="c1">###################################################################################################################################</span>
-<div class="viewcode-block" id="self_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal">[docs]</a><span class="k">def</span> <span class="nf">self_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> 
-             <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="self_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal">[docs]</a><span class="k">def</span> <span class="nf">self_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span>  <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> 
+             <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+             <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">msgtype</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Self-calibrate a dataset to an image.</span>
 
 <span class="sd">       Args:</span>
@@ -228,7 +232,7 @@
 <span class="sd">           fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT</span>
 
 <span class="sd">           show_solution (bool): if True, display the solution as it is calculated</span>
-<span class="sd">           </span>
+<span class="sd">           msgtype (str): type of progress message to be printed, default is &#39;bar&#39;</span>
 
 <span class="sd">       Returns:</span>
 <span class="sd">           (Obsdata): the calibrated observation, if caltable==False</span>
@@ -240,17 +244,6 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;less than 2 stations specified in self cal: defaulting to calibrating all stations!&quot;</span><span class="p">)</span>
         <span class="n">sites</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
-
-    <span class="c1"># Make the pool for parallel processing</span>
-    <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using Multiprocessing&quot;</span><span class="p">)</span>
-        <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">processes</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">processes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cpu_count</span><span class="p">())</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using Multiprocessing with </span><span class="si">%d</span><span class="s2"> Processes&quot;</span> <span class="o">%</span> <span class="n">processes</span><span class="p">)</span>
-        <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Not Using Multiprocessing&quot;</span><span class="p">)</span>
 
     <span class="c1"># First, sample the model visibilities</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Computing the Model Visibilities with &quot;</span> <span class="o">+</span> <span class="n">ttype</span> <span class="o">+</span> <span class="s2">&quot; Fourier Transform...&quot;</span><span class="p">)</span>
@@ -264,7 +257,6 @@
         <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">fft_A</span>
         <span class="n">vis_arr</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">fft_imvec</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">,</span> <span class="n">im_info</span><span class="p">)</span>
         <span class="n">V</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">sampler</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">sample_type</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done!&quot;</span><span class="p">)</span>
 
     <span class="c1"># Partition the list of model visibilities into scans</span>
     <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">islice</span>
@@ -272,22 +264,41 @@
     <span class="n">scan_lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">obs</span><span class="o">.</span><span class="n">tlist</span><span class="p">()]</span>
     <span class="n">V_scans</span>      <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">islice</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">scan_lengths</span><span class="p">]</span>
 
-    <span class="c1"># loop over scans and calibrate</span>
+    <span class="c1"># get scans</span>
     <span class="n">scans</span>     <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">tlist</span><span class="p">()</span>
     <span class="n">scans_cal</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">scans</span><span class="p">)</span>
 
+    <span class="c1"># Make the pool for parallel processing</span>
+    <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">initval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using Multiprocessing with </span><span class="si">%d</span><span class="s2"> Processes&quot;</span> <span class="o">%</span> <span class="n">processes</span><span class="p">)</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">init</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">counter</span><span class="p">,))</span>
+    <span class="k">elif</span> <span class="n">processes</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">initval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))</span>
+        <span class="n">processes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cpu_count</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using Multiprocessing with </span><span class="si">%d</span><span class="s2"> Processes&quot;</span> <span class="o">%</span> <span class="n">processes</span><span class="p">)</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">init</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">counter</span><span class="p">,))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Not Using Multiprocessing&quot;</span><span class="p">)</span>
+
+    <span class="c1"># loop over scans and calibrate</span>
+    <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># run on multiple cores with multiprocessing</span>
+
         <span class="n">scans_cal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">get_selfcal_scan_cal</span><span class="p">,</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span>
-                                                              <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span>
+                                                              <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span> <span class="n">msgtype</span>
                                                              <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))]))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;DONE&#39;</span><span class="p">)</span>
+
     <span class="k">else</span><span class="p">:</span> <span class="c1"># run on a single core</span>
+
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)):</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">Calibrating Scan </span><span class="si">%i</span><span class="s1">/</span><span class="si">%i</span><span class="s1">...&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)))</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span><span class="n">msgtype</span><span class="o">=</span><span class="n">msgtype</span><span class="p">)</span>
             <span class="n">scans_cal</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span>
                                  <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span>
                                  <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">)</span>
+
+    <span class="n">tstop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">self_cal time: </span><span class="si">%f</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tstop</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">caltable</span><span class="p">:</span> <span class="c1"># assemble the caltable to return</span>
         <span class="n">allsites</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
@@ -445,15 +456,32 @@
 
     <span class="k">return</span> <span class="n">out</span></div>
 
+
+
+<span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">counter</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="n">x</span>
+
 <span class="k">def</span> <span class="nf">get_selfcal_scan_cal</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">get_selfcal_scan_cal2</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">get_selfcal_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">get_selfcal_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span><span class="n">msgtype</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">global</span> <span class="n">counter</span>
+        <span class="n">counter</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
+        <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">counter</span><span class="o">.</span><span class="n">maxval</span><span class="p">,</span><span class="n">msgtype</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span> 
+                         <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">)</span>
+
+
+
+
+
+
+
+
+
 
 </pre></div>
 

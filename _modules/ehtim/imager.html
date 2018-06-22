@@ -183,7 +183,6 @@
 <span class="c1">#    You should have received a copy of the GNU General Public License</span>
 <span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
 
-
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">str</span>
@@ -201,7 +200,7 @@
 <span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
 
 
-<span class="n">MAXIT</span> <span class="o">=</span> <span class="mi">100</span> <span class="c1"># number of iterations</span>
+<span class="n">MAXIT</span> <span class="o">=</span> <span class="mi">200</span> <span class="c1"># number of iterations</span>
 <span class="n">NHIST</span> <span class="o">=</span> <span class="mi">50</span> <span class="c1"># number of steps to store for hessian approx</span>
 <span class="n">MAXLS</span> <span class="o">=</span> <span class="mi">40</span> <span class="c1"># maximum number of line search steps in BFGS-B</span>
 <span class="n">STOP</span> <span class="o">=</span> <span class="mf">1e-6</span> <span class="c1"># convergence criterion</span>
@@ -268,7 +267,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;debias&#39;</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;snrcut&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;systematic_noise&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;systematic_noise&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;systematic_cphase_noise&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
 
         <span class="c1"># clippping</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clipfloor_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clipfloor&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
@@ -363,42 +362,52 @@
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_last</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed observation!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_terms_last</span><span class="p">()):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed number of regularizer terms!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_terms_last</span><span class="p">()):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed number of data terms!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
 
         <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="k">if</span> <span class="n">term</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dat_terms_last</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;added </span><span class="si">%s</span><span class="s2"> to data terms&quot;</span> <span class="o">%</span> <span class="n">term</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">return</span>
 
         <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="k">if</span> <span class="n">term</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_terms_last</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;added </span><span class="si">%s</span><span class="s2"> to regularizers!&quot;</span> <span class="o">%</span> <span class="n">term</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">return</span>
 
         <span class="k">if</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_last</span><span class="p">()</span><span class="o">.</span><span class="n">psize</span><span class="p">)</span> <span class="ow">or</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_last</span><span class="p">()</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_last</span><span class="p">()</span><span class="o">.</span><span class="n">ydim</span><span class="p">)):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed prior dimensions!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">debias_last</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed debiasing!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">snrcut_last</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed snrcut!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_last</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed systematic noise!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_last</span><span class="p">():</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_last</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed systematic cphase noise!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span></div>
 
@@ -575,6 +584,10 @@
 
         <span class="c1"># data term tuples</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initializing imager data products . . .&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Recomputing imager data products . . .&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
                 <span class="n">tup</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
@@ -938,6 +951,8 @@
 <div class="viewcode-block" id="Imager.make_image_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make Stokes I image using current imager settings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;==============================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Imager run </span><span class="si">%i</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
         <span class="c1"># Checks and initialize</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span>
@@ -988,6 +1003,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time: </span><span class="si">%f</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tstop</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">))</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;J: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;==============================&quot;</span><span class="p">)</span>
 
         <span class="c1"># Append to history</span>
         <span class="n">logstr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: make_image_I()&quot;</span> <span class="c1">#TODO - what should the log string be?</span>
@@ -1093,7 +1109,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_prior_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_debias_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_noise_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_noise_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_cphase_noise_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_snrcut_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_flux_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_clipfloor_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clipfloor_next</span><span class="p">)</span>

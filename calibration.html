@@ -398,7 +398,7 @@
 
 <span class="target" id="module-ehtim.calibrating.self_cal"></span><dl class="function">
 <dt id="ehtim.calibrating.self_cal.self_cal">
-<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>im</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>show_solution=False</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>caltable=False</em>, <em>processes=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>im</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>caltable=False</em>, <em>processes=-1</em>, <em>show_solution=False</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Self-calibrate a dataset to an image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -416,6 +416,7 @@
 <li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
 <li><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, display the solution as it is calculated</li>
+<li><strong>msgtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; type of progress message to be printed, default is &#8216;bar&#8217;</li>
 </ul>
 </td>
 </tr>
@@ -463,14 +464,8 @@
 </dd></dl>
 
 <span class="target" id="module-ehtim.calibrating.network_cal"></span><dl class="function">
-<dt id="ehtim.calibrating.network_cal.make_cluster_data">
-<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">make_cluster_data</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl_uvdist_max=10000000.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#make_cluster_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.make_cluster_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Cluster sites in an observation into groups with intra-group basline length not exceeding zbl_uvdist_max</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="ehtim.calibrating.network_cal.network_cal">
-<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='both'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em>, <em>show_solution=False</em>, <em>processes=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='both'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>caltable=False</em>, <em>processes=-1</em>, <em>show_solution=False</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Network-calibrate a dataset with zero baseline constraints.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -487,6 +482,7 @@
 <li><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, returns a Caltable instead of an Obsdata</li>
 <li><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) &#8211; number of cores to use in multiprocessing</li>
 <li><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; if True, display the solution as it is calculated</li>
+<li><strong>msgtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; type of progress message to be printed, default is &#8216;bar&#8217;</li>
 </ul>
 </td>
 </tr>
@@ -532,12 +528,6 @@
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="function">
-<dt id="ehtim.calibrating.network_cal.norm_zbl">
-<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">norm_zbl</code><span class="sig-paren">(</span><em>obs</em>, <em>flux=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#norm_zbl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.norm_zbl" title="Permalink to this definition">¶</a></dt>
-<dd><p>Normalize scans to the zero baseline flux</p>
 </dd></dl>
 
 </div>

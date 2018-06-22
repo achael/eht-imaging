@@ -438,7 +438,7 @@
 
 <span class="sd">               rangex (list): [xmin, xmax] x-axis limits</span>
 <span class="sd">               rangey (list): [ymin, ymax] y-axis limits</span>
-
+<span class="sd">j</span>
 <span class="sd">               ebar (bool): Plot error bars if True</span>
 <span class="sd">               show (bool): Display the plot if true</span>
 <span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
@@ -697,8 +697,8 @@
 
     <span class="c1"># generate data</span>
     <span class="n">obs_model</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
-    <span class="n">cphases_obs</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">)</span>
-    <span class="n">cphases_model</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">)</span>
+    <span class="n">cphases_obs</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">)</span>
+    <span class="n">cphases_model</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">)</span>
 
     <span class="c1"># display  as individual plots or as a huge sheet</span>
     <span class="k">if</span> <span class="n">display_mode</span><span class="o">==</span><span class="s1">&#39;individual&#39;</span><span class="p">:</span>
