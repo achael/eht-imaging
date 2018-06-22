@@ -40,9 +40,9 @@ Let us know if you use ehtim in your publication and we'll list it here!:
 
 - Computational  Imaging for VLBI Image Reconstruction, `Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_ 
 
-- Stochastic Optics: A Scattering Mitigation  Framework for Radio Interferometric Imaging`Johnson 2016 <https://arxiv.org/abs/1610.05326>`_ 
+- Stochastic Optics: A Scattering Mitigation  Framework for Radio Interferometric Imaging, `Johnson 2016 <https://arxiv.org/abs/1610.05326>`_ 
 
-- Quantifying Intrinsic Variability of  Sgr A* using Closure Phase Measurements of the Event Horizon Telescope`, Roelofs et al. 2017 <https://arxiv.org/abs/1708.01056>`_ 
+- Quantifying Intrinsic Variability of  Sgr A* using Closure Phase Measurements of the Event Horizon Telescope, `Roelofs et al. 2017 <https://arxiv.org/abs/1708.01056>`_ 
 
 - Reconstructing Video from Interferometric Measurements of Time-Varying Sources, `Bouman et al. 2017 <https://arxiv.org/abs/1711.01357>`_  
 
