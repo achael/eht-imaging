@@ -23,7 +23,7 @@ If you want to use fast fourier transforms, you will also need to install `NFFT 
 
     conda install -c conda-forge pynfft
 
-Alternatively, first install NFFT following the instructions on the `github readme <https://github.com/NFFT/nfft>`_, making sure to use the --enable-openmp flag in compilation. Then install `pynnft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. 
+Alternatively, first manually install NFFT following the instructions  `here <https://github.com/NFFT/nfft>`_, making sure to use the --enable-openmp flag in compilation. Then install `pynnft <https://github.com/ghisvail/pyNFFT/>`_ with pip, following the instructions to link the installation to where you installed NFFT. 
 
 Documentation
 -------------
