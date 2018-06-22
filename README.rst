@@ -36,6 +36,7 @@ Here are some ways to learn to use the code:
 Some publications that use ehtim
 ------------
 Let us know if you use ehtim in your publication and we'll list it here!:
+
 - High-Resolution Linear Polarimetric Imaging for the Event Horizon Telescope, `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ 
 
 - Computational  Imaging for VLBI Image Reconstruction, `Bouman et al. 2016 <http://www.cv-foundation.org/openaccess/content_cvpr_2016/html/Bouman_Computational_Imaging_for_CVPR_2016_paper.html>`_ 
