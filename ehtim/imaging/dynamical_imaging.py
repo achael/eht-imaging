@@ -305,7 +305,7 @@ def blur_im_list(im_List, fwhm_x, fwhm_t):
     """
 
     # Blur Stokes I
-    sigma_x = fwhm_x / (2. * np.sqrt(2. * np.log(2.)))
+    sigma_x = fwhm_x / im_List[0].psize / (2. * np.sqrt(2. * np.log(2.)))
     sigma_t = fwhm_t / (2. * np.sqrt(2. * np.log(2.)))
 
     arr = np.array([im.imvec.reshape(im.ydim, im.xdim) for im in im_List])
