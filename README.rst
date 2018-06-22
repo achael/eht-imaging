@@ -35,7 +35,7 @@ Here are some ways to learn to use the code:
 
 Some publications that use ehtim
 ------------
-Let us know if you use ehtim in your publication and we'll list it here!:
+Let us know if you use ehtim in your publication and we'll list it here!
 
 - High-Resolution Linear Polarimetric Imaging for the Event Horizon Telescope, `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ 
 
@@ -62,7 +62,7 @@ The oifits_new code used for reading/writing .oifits files is a slightly modifie
 
 The jdcal.py module is from Prasanth Nair at `<http://github.com/phn/jdcal>`_.
 
-The documentation is styled after `dfm's projects <https://github.com/dfm>`_ and the documentation for `scatterbrane <https://github.com/krosenfeld/scatterbrane>`_
+The documentation is styled after `dfm's projects <https://github.com/dfm>`_ 
 
 License
 -------
