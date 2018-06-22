@@ -34,7 +34,7 @@ from ehtim.observing.obs_helpers import *
 from multiprocessing import cpu_count
 from multiprocessing import Pool
 
-from cal_helpers import *
+from ehtim.calibrating.cal_helpers import *
 
 
 
