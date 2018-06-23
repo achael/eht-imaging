@@ -49,7 +49,8 @@ from functools import partial
 import calendar
 import requests
 import os
-from HTMLParser import HTMLParser
+from html.parser import HTMLParser
+#from HTMLParser import HTMLParser
 
 Fast_Convolve = True # This option will not wrap the convolution around the image
 
@@ -150,7 +151,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
         maxi[j]   = np.max(np.concatenate([im.imvec for im in im_List_Set[j]]))
 
     def im_data(i_set, n):
-        n_data = (n-n%pad_factor)/pad_factor
+        n_data = (n-n%pad_factor)//pad_factor
         if scale == 'linear':
             return im_List_Set[i_set][n_data].imvec.reshape((im_List_Set[i_set][n_data].ydim,im_List_Set[i_set][n_data].xdim))
         else:
@@ -187,9 +188,9 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
             plt_im[j].set_data(im_data(j, n))
 
         if mjd_step > 0.1:
-            fig.suptitle('MJD: ' + str(im_List_Set[0][int((n-n%pad_factor)/pad_factor)].mjd), verticalalignment = verticalalignment)
+            fig.suptitle('MJD: ' + str(im_List_Set[0][int((n-n%pad_factor)//pad_factor)].mjd), verticalalignment = verticalalignment)
         else:
-            time = im_List_Set[0][int((n-n%pad_factor)/pad_factor)].time
+            time = im_List_Set[0][int((n-n%pad_factor)//pad_factor)].time
             time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
             fig.suptitle(time_str)
 
@@ -228,7 +229,7 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
         unit = '(' + cbar_unit + '/pixel)^gamma'
 
     def im_data(n):
-        n_data = (n-n%pad_factor)/pad_factor
+        n_data = (n-n%pad_factor)//pad_factor
         if scale == 'linear':
             return im_List[n_data].imvec.reshape((im_List[n_data].ydim,im_List[n_data].xdim))
         elif scale == 'log':
@@ -254,7 +255,7 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
         if verbose:
             print ("processing frame {0} of {1}".format(n, len(im_List)*pad_factor))
         plt_im.set_data(im_data(n))
-        fig.suptitle('MJD: ' + str(im_List[int((n-n%pad_factor)/pad_factor)].mjd))
+        fig.suptitle('MJD: ' + str(im_List[int((n-n%pad_factor)//pad_factor)].mjd))
         return plt_im
 
     ani = animation.FuncAnimation(fig,update_img,len(im_List)*pad_factor,interval=1e3/fps)
@@ -1389,6 +1390,379 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
         return {'Frames':outim, 'Flow':Flow, 'EpsilonList':EpsilonList }
 
 
+
+def multifreq_dynamical_imaging(Obsdata_Multifreq_List, InitIm_Multifreq_List, Prior, flux_Multifreq_List = [],
+d1='vis', d2=False, d3=False,
+alpha_d1=10, alpha_d2=10, alpha_d3=10,
+systematic_noise1=0.0, systematic_noise2=0.0, systematic_noise3=0.0,
+entropy1="tv2", entropy2="l1",
+alpha_s1=1.0, alpha_s2=1.0, norm_reg=True, alpha_A=1.0,
+R_dI  ={'alpha':0.0, 'metric':'SymKL', 'p':2.0},
+R_dt  ={'alpha':0.0, 'metric':'SymKL', 'sigma_dt':0.0, 'p':2.0},
+R_dt_multifreq ={'alpha':0.0, 'metric':'SymKL', 'sigma_dt':0.0, 'p':2.0},
+alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers
+Target_Dynamic_Range = 10000.0,
+maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
+    """Run dynamic imager
+       Uses I = exp(I') change of variables.
+       Obsdata_List is a list of Obsdata objects, InitIm_List is a list of Image objects, and Prior is an Image object.
+       Returns list of Image objects, one per frame (unless a flow or stochastic optics is used)
+       ttype = 'direct' or 'fast' or 'nfft'
+    """
+
+    global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
+
+    N_freq  = len(Obsdata_Multifreq_List)
+    N_frame = len(Obsdata_Multifreq_List[0])
+    N_pixel = Prior.xdim #pixel dimension
+
+    # Flatten the input lists
+    flux_List    = [x for y in flux_Multifreq_List    for x in y]
+    InitIm_List  = [x for y in InitIm_Multifreq_List  for x in y]
+    Obsdata_List = [x for y in Obsdata_Multifreq_List for x in y]
+
+    # Determine the appropriate final resolution
+    all_res = [[] for j in range(N_freq)]
+    for j in range(len(Obsdata_Multifreq_List)):
+        for obs in Obsdata_Multifreq_List[j]:
+            if len(obs.data) > 0:
+                all_res[j].append(obs.res())
+
+    # Determine the beam size for each frequency
+    beam_size = [np.min(all_res[j]) for j in range(N_freq)]
+    print("Maximal Resolutions:",beam_size)
+
+    if alpha_flux > 0.0 and len(flux_Multifreq_List[0]) != N_frame:
+        raise Exception("Number of elements in the list of total flux densities does not match the number of frames!")
+
+    # Make the blurring kernel for R_dt
+    # Note: There are odd problems when sigma_dt is too small. I can't figure out why it causes the convolution to crash.
+    # However, having sigma_dt -> 0 is not a problem in theory. So we'll just set the kernel to be zero in that case and then ignore it later in the convolution.
+
+    if R_dt['sigma_dt'] > 0.0:
+        B_dt = np.abs(np.array([[np.exp(-1.0*(float(i)**2+float(j)**2)/(2.*R_dt['sigma_dt']**2))
+                              for i in np.linspace((Prior.xdim-1)/2., -(Prior.xdim-1)/2., num=Prior.xdim)]
+                              for j in np.linspace((Prior.ydim-1)/2., -(Prior.ydim-1)/2., num=Prior.ydim)]))
+        if np.max(B_dt) == 0.0 or np.sum(B_dt) == 0.0:
+            raise Exception("Error with the blurring kernel!")
+        B_dt = B_dt / np.sum(B_dt) # normalize to be flux preserving
+    else:
+        B_dt = np.zeros((Prior.ydim,Prior.xdim))
+
+    if R_dt_multifreq['sigma_dt'] > 0.0:
+        B_dt_multifreq = np.abs(np.array([[np.exp(-1.0*(float(i)**2+float(j)**2)/(2.*R_dt_multifreq['sigma_dt']**2))
+                              for i in np.linspace((Prior.xdim-1)/2., -(Prior.xdim-1)/2., num=Prior.xdim)]
+                              for j in np.linspace((Prior.ydim-1)/2., -(Prior.ydim-1)/2., num=Prior.ydim)]))
+        if np.max(B_dt_multifreq) == 0.0 or np.sum(B_dt_multifreq) == 0.0:
+            raise Exception("Error with the blurring kernel!")
+        B_dt_multifreq = B_dt_multifreq / np.sum(B_dt_multifreq) # normalize to be flux preserving
+    else:
+        B_dt_multifreq = np.zeros((Prior.ydim,Prior.xdim))
+
+    embed_mask_List = [Prior.imvec > clipfloor for j in range(N_freq*N_frame)]
+    embed_mask_All = np.array(embed_mask_List).flatten()
+
+    embed_totals = [np.sum(embed_mask) for embed_mask in embed_mask_List]
+
+    logprior_List = [None,] * (N_freq * N_frame)
+    loginit_List = [None,] * (N_freq * N_frame)
+
+    nprior_embed_List = [None,] * (N_freq * N_frame)
+    nprior_List = [None,] * (N_freq * N_frame)
+
+    ninit_embed_List = [InitIm_List[i].imvec for i in range(N_freq * N_frame)]
+    ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_freq * N_frame)]
+
+    if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
+        print ("Calculating lists/matrices for chi-squared terms...")
+        A1_List = [None,] * N_freq * N_frame
+        A2_List = [None,] * N_freq * N_frame
+        A3_List = [None,] * N_freq * N_frame
+        data1_List = [[],] * N_freq * N_frame
+        data2_List = [[],] * N_freq * N_frame
+        data3_List = [[],] * N_freq * N_frame
+        sigma1_List = [None,] * N_freq * N_frame
+        sigma2_List = [None,] * N_freq * N_frame
+        sigma3_List = [None,] * N_freq * N_frame
+
+    # Get data and Fourier matrices for the data terms
+    for i in range(N_frame*N_freq):
+        pixel_max = np.max(InitIm_List[i].imvec)
+        prior_flux_rescale = 1.0
+        if len(flux_List) > 0:
+            prior_flux_rescale = flux_List[i]/Prior.total_flux()
+
+        nprior_embed_List[i] = Prior.imvec * prior_flux_rescale
+
+        nprior_List[i] = nprior_embed_List[i][embed_mask_List[i]]
+        logprior_List[i] = np.log(nprior_List[i])
+        loginit_List[i] = np.log(ninit_List[i] + pixel_max/Target_Dynamic_Range/1.e6)  #add the dynamic range floor here
+
+        if len(Obsdata_List[i].data) == 0:  #This allows the algorithm to create frames for periods with no data
+            continue
+
+        if (recalculate_chisqdata == True and ttype == 'direct') or ttype != 'direct':
+            (data1_List[i], sigma1_List[i], A1_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d1, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise1)
+            (data2_List[i], sigma2_List[i], A2_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d2, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise2)
+            (data3_List[i], sigma3_List[i], A3_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d3, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise3)
+
+    # Coordinate matrix for COM constraint
+    coord = np.array([[[x,y] for x in np.linspace(Prior.xdim/2,-Prior.xdim/2,Prior.xdim)]
+                                           for y in np.linspace(Prior.ydim/2,-Prior.ydim/2,Prior.ydim)])
+    coord = coord.reshape(Prior.ydim*Prior.xdim, 2)
+
+    # Define the objective function and gradient
+    def objfunc(x):
+        Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+        log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+
+        init_i = 0
+        for i in range(N_freq*N_frame):
+            cur_len = np.sum(embed_mask_List[i])
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            init_i += cur_len
+
+        s1 = s2 = s_multifreq = s_dynamic = cm = flux = s_dS = s_dF = 0.0
+
+        # Multifrequency part
+        if R_dt_multifreq['alpha'] != 0.0: 
+            for j in range(N_frame):
+                s_multifreq += Rdt(Frames[j::N_frame], B_dt_multifreq, **R_dt_multifreq)*R_dt_multifreq['alpha']
+
+        # Individual frequencies
+        for j in range(N_freq):
+            i1 = j*N_frame
+            i2 = (j+1)*N_frame
+
+            if alpha_s1 != 0.0:
+                s1 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s1
+            if alpha_s2 != 0.0:
+                s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s2
+
+            if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
+            if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
+
+            if alpha_dS1 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
+            if alpha_dS2 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
+
+            if alpha_dF != 0.0: s_dF += RdF_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
+
+        if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
+
+        if alpha_flux > 0.0:
+            flux = alpha_flux * movie_flux_constraint(Frames, flux_List)
+
+        chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame*N_freq)])
+
+        chisq = ((np.sum(chisq[:,0])/(N_freq*N_frame) - 1.0)*alpha_d1 +
+                 (np.sum(chisq[:,1])/(N_freq*N_frame) - 1.0)*alpha_d2 +
+                 (np.sum(chisq[:,2])/(N_freq*N_frame) - 1.0)*alpha_d3)
+
+        return (s1 + s2 + s_dF + s_dS + s_multifreq + s_dynamic + chisq + cm + flux)*J_factor
+
+    def objgrad(x):
+        Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+        log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+
+        init_i = 0
+        for i in range(N_freq*N_frame):
+            cur_len = np.sum(embed_mask_List[i])
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            init_i += cur_len
+
+        s1 = s2 = s_dS = s_dF = np.zeros((N_freq*N_frame*cur_len))
+        s_dynamic_grad = cm_grad = flux_grad = np.zeros((N_freq*N_frame*N_pixel*N_pixel))
+        s_multifreq = 0.0
+
+        # Multifrequency part
+        if R_dt_multifreq['alpha'] != 0.0:
+            s_multifreq = np.zeros((N_freq*N_frame, N_pixel*N_pixel))
+            for j in range(N_frame):
+                s_multifreq[j::N_frame] += Rdt_gradient(Frames[j::N_frame], B_dt_multifreq, **R_dt_multifreq).reshape((N_freq,N_pixel*N_pixel))*R_dt_multifreq['alpha']
+            s_multifreq = s_multifreq.reshape(N_freq*N_frame*N_pixel*N_pixel)
+
+        # Individual frequencies
+        for j in range(N_freq):
+            i1 = j*N_frame
+            i2 = (j+1)*N_frame
+            f1 = j*N_frame*N_pixel*N_pixel 
+            f2 = (j+1)*N_frame*N_pixel*N_pixel
+            mf1 = j*N_frame*cur_len # Note: This assumes that all priors have the same number of masked pixels!
+            mf2 = (j+1)*N_frame*cur_len
+
+
+            if alpha_s1 != 0.0:
+                s1[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s1
+            if alpha_s2 != 0.0:
+                s2[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s2
+
+            if R_dI['alpha'] != 0.0: s_dynamic_grad[f1:f2] += RdI_gradient(Frames[i1:i2],R_dI)*R_dI['alpha']
+            if R_dt['alpha'] != 0.0: s_dynamic_grad[f1:f2] += Rdt_gradient(Frames[i1:i2], B_dt, R_dt)*R_dt['alpha']
+
+            if alpha_dS1 != 0.0: s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
+            if alpha_dS2 != 0.0: s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
+
+            if alpha_dF != 0.0: s_dF[mf1:mf2] += RdF_gradient_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
+
+        if alpha_centroid != 0.0: cm_grad = centroid_gradient(Frames, coord) * alpha_centroid
+
+        if alpha_flux > 0.0:
+            flux_grad = alpha_flux * movie_flux_constraint_grad(Frames, flux_List)
+
+        chisq_grad = np.array([get_chisqgrad(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_freq*N_frame)])
+
+        # Now add the Jacobian factor and concatenate
+        for j in range(N_freq*N_frame):
+            chisq_grad[j,0] = chisq_grad[j,0]*Frames[j].ravel()[embed_mask_List[j]]
+            chisq_grad[j,1] = chisq_grad[j,1]*Frames[j].ravel()[embed_mask_List[j]]
+            chisq_grad[j,2] = chisq_grad[j,2]*Frames[j].ravel()[embed_mask_List[j]]
+
+        chisq_grad = (np.concatenate([embed(chisq_grad[i,0], embed_mask_List[i]) for i in range(N_freq*N_frame)])/(N_freq*N_frame)*alpha_d1
+                    + np.concatenate([embed(chisq_grad[i,1], embed_mask_List[i]) for i in range(N_freq*N_frame)])/(N_freq*N_frame)*alpha_d2
+                    + np.concatenate([embed(chisq_grad[i,2], embed_mask_List[i]) for i in range(N_freq*N_frame)])/(N_freq*N_frame)*alpha_d3)
+
+#        print((s1.shape, s2.shape, s_dF.shape, s_dS.shape))
+#        print((s_multifreq.shape, s_dynamic_grad.shape, chisq_grad.shape, cm_grad.shape, flux_grad.shape))
+#        print((s_multifreq[embed_mask_All].shape))
+
+        return ((s1 + s2 + s_dF + s_dS + (s_multifreq + s_dynamic_grad + chisq_grad + cm_grad + flux_grad)[embed_mask_All])*J_factor)
+
+    # Plotting function for each iteration
+    global nit
+    nit = 0
+    def plotcur(x, final=False):
+        global nit
+        nit += 1
+
+        if nit%update_interval == 0 or final == True:
+            print ("iteration %d" % nit)
+
+            Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+            log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+
+            init_i = 0
+            for i in range(N_freq*N_frame):
+                cur_len = np.sum(embed_mask_List[i])
+                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+                init_i += cur_len
+
+            s1 = s2 = s_multifreq = s_dynamic = cm = s_dS = s_dF = 0.0
+
+            # Multifrequency part
+            if R_dt_multifreq['alpha'] != 0.0: 
+                for j in range(N_frame):
+                    s_multifreq += Rdt(Frames[j::N_frame], B_dt_multifreq, **R_dt_multifreq)*R_dt_multifreq['alpha']
+
+            # Individual frequencies
+            for j in range(N_freq):
+                i1 = j*N_frame
+                i2 = (j+1)*N_frame
+
+                if alpha_s1 != 0.0:
+                    s1 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s1
+                if alpha_s2 != 0.0:
+                    s2 += static_regularizer(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s2
+
+                if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames[i1:i2], **R_dI)*R_dI['alpha']
+                if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
+
+                if alpha_dS1 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
+                if alpha_dS2 != 0.0: s_dS += RdS(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2
+
+                if alpha_dF != 0.0: s_dF += RdF_clip(Frames[i1:i2], embed_mask_List[i1:i2])*alpha_dF
+
+            if alpha_centroid != 0.0: cm = centroid(Frames, coord) * alpha_centroid
+
+            chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]],
+                                  d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_freq*N_frame)])
+
+            chisq1_List = chisq[:,0]
+            chisq2_List = chisq[:,1]
+            chisq3_List = chisq[:,2]
+            chisq1 = np.sum(chisq1_List)/len(chisq1_List)
+            chisq2 = np.sum(chisq2_List)/len(chisq1_List)
+            chisq3 = np.sum(chisq3_List)/len(chisq1_List)
+            chisq1_max = np.max(chisq1_List)
+            chisq2_max = np.max(chisq2_List)
+            chisq3_max = np.max(chisq3_List)
+            if d1 != False: print ("chi2_1: %f" % chisq1)
+            if d2 != False: print ("chi2_2: %f" % chisq2)
+            if d3 != False: print ("chi2_3: %f" % chisq3)
+            if d1 != False: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2 != False: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3 != False: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1 != False: print ("Max Frame chi2_1: %f" % chisq1_max)
+            if d2 != False: print ("Max Frame chi2_2: %f" % chisq2_max)
+            if d3 != False: print ("Max Frame chi2_3: %f" % chisq3_max)
+
+            if final == True:
+                if d1 != False: print ("All chisq1:",chisq1_List)
+                if d2 != False: print ("All chisq2:",chisq2_List)
+                if d3 != False: print ("All chisq3:",chisq3_List)
+
+            if s1 != 0.0: print ("weighted s1: %f" % (s1))
+            if s2 != 0.0: print ("weighted s2: %f" % (s2))
+            if s_dF != 0.0: print ("weighted s_dF: %f" % (s_dF))
+            if s_dS != 0.0: print ("weighted s_dS: %f" % (s_dS))
+            print ("weighted s_dynamic: %f" % (s_dynamic))
+            print ("weighted s_multifreq: %f" % (s_multifreq))
+            if alpha_centroid > 0.0: print ("weighted COM: %f" % cm)
+
+            if alpha_flux > 0.0:
+                print ("weighted flux constraint: %f" % (alpha_flux * movie_flux_constraint(Frames, flux_List)))
+
+            if nit%refresh_interval == 0:
+                print ("Plotting Functionality Temporarily Disabled...")
+
+    loginit = np.hstack(loginit_List).flatten()
+
+    x0 = loginit
+
+    print ("Total Pixel #: ",(N_pixel*N_pixel*N_frame*N_freq))
+    print ("Clipped Pixel #: ",(len(loginit)))
+
+    print ("Initial Values:")
+    plotcur(x0)
+
+    # Minimize
+    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST, 'gtol': 1e-10} # minimizer params
+    tstart = time.time()
+    res = opt.minimize(objfunc, x0, method=minimizer_method, jac=objgrad, options=optdict, callback=plotcur)
+    tstop = time.time()
+
+    Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+    log_Frames = np.zeros((N_freq*N_frame, N_pixel, N_pixel))
+
+    init_i = 0
+    for i in range(N_freq*N_frame):
+        cur_len = np.sum(embed_mask_List[i])
+        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+        #Impose the prior mask in linear space for the output
+        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+        init_i += cur_len
+
+    plotcur(res.x, final=True)
+
+    # Print stats
+    print ("time: %f s" % (tstop - tstart))
+    print ("J: %f" % res.fun)
+    print (res.message)
+
+    #Return Frames
+    outim = [[image.Image(Frames[i + j*N_frame].reshape(Prior.ydim, Prior.xdim), Prior.psize,
+                         Prior.ra, Prior.dec, rf=Obsdata_Multifreq_List[j][i].rf, source=Prior.source,
+                         mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)] for j in range(N_freq)]
+
+    return outim
+
+
+
+
+
+
 ##################################################################################################
 # Plotting Functions
 ##################################################################################################
@@ -1404,7 +1778,7 @@ def plot_im_List_Set(im_List_List, plot_log_amplitude=False, ipynb=False):
 
     for i in range(xnum*ynum):
         plt.subplot(ynum, xnum, i+1)
-        im = im_List_List[(i-i%xnum)/xnum][i%xnum]
+        im = im_List_List[(i-i%xnum)//xnum][i%xnum]
         if plot_log_amplitude == False:
             plt.imshow(im.imvec.reshape(im.ydim,im.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
         else:
