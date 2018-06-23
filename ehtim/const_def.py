@@ -50,6 +50,7 @@ FWHM_MAJ = 1.309 * 1000 # in uas
 FWHM_MIN = 0.64 * 1000
 POS_ANG = 78 # in degree, E of N
 
+
 # Observation recarray datatypes
 DTARR = [('site', 'U32'), ('x','f8'), ('y','f8'), ('z','f8'),
          ('sefdr','f8'),('sefdl','f8'),('dr','c16'),('dl','c16'),
@@ -98,6 +99,9 @@ FIELDS = ['time','time_utc','time_gmst',
           'llvis','llamp','llphase','llsnr','llsigma','llsigma_phase'
           'rlvis','rlamp','rlphase','rlsnr','rlsigma','rlsigma_phase'
           'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase']
+
+#plotting
+MARKERSIZE = 6
 
 FIELD_LABELS = {'time':'Time','time_utc':'Time (UTC)','time_gmst':'Time (GMST)',
           'tint':'Integration Time','u':r'$u$','v':r'$v$','uvdist':r'$u-v$ Distance',

@@ -2087,7 +2087,8 @@ class Obsdata(object):
     def plotall(self, field1, field2, conj=False,
                       debias=True, tag_bl=False, timetype=False, ang_unit='deg',
                       ebar=True, rangex=False, rangey=False, grid=False,labels=True,
-                      show=True, axis=False, color=SCOLORS[0],  markersize=10, export_pdf=""):
+                      show=True, axis=False, color=SCOLORS[0],  markersize=MARKERSIZE, 
+                      export_pdf=""):
 
         """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
 
@@ -2212,7 +2213,7 @@ class Obsdata(object):
             tolerance = len(data[field2])
 
             if ebar and (np.any(sigy) or np.any(sigx)):
-                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label="%s-%s"%bl,
+                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label="%s-%s"%((str(bl[0]),str(bl[1]))),
                            marker='o', markersize=markersize, color=color,picker=tolerance)
             else:
                 x.plot(data[field1], data[field2], 'o', markersize=markersize, color=color, label="%s-%s"%bl,picker=tolerance)
@@ -2242,7 +2243,8 @@ class Obsdata(object):
     def plot_bl(self, site1, site2, field,
                       debias=True, ang_unit='deg', timetype=False,
                       rangex=False, rangey=False, ebar=True, grid=False,labels=True,
-                      show=True, axis=False, color=SCOLORS[0], markersize=10, export_pdf=""):
+                      show=True, axis=False, color=SCOLORS[0], markersize=MARKERSIZE, 
+                      export_pdf=""):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2332,7 +2334,8 @@ class Obsdata(object):
     def plot_cphase(self, site1, site2, site3,
                           vtype='vis', ang_unit='deg', timetype=False,
                           rangex=False, rangey=False, ebar=True, labels=True, grid=False,
-                          show=True, axis=False, color=SCOLORS[0], markersize=10, export_pdf="",
+                          show=True, axis=False, color=SCOLORS[0], markersize=MARKERSIZE, 
+                          export_pdf="",
                           cphases=[],force_recompute=False):
 
         """Plot closure phase over time on a triangle (1-2-3).
@@ -2427,7 +2430,7 @@ class Obsdata(object):
     def plot_camp(self, site1, site2, site3, site4,
                         vtype='vis', ctype='camp', debias=True, timetype=False, grid=False,labels=True,
                         rangex=False, rangey=False, ebar=True, show=True, axis=False,
-                        color=SCOLORS[0], markersize=10, export_pdf="",
+                        color=SCOLORS[0], markersize=MARKERSIZE, export_pdf="",
                         camps=[], force_recompute=False):
 
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).

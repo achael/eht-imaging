@@ -114,7 +114,7 @@ class Caltable(object):
 
     def plot_gains(self, sites, gain_type='amp', pol='R', 
                    ang_unit='deg',timetype=False,yscale='lin',
-                   clist=SCOLORS,rangex=False,rangey=False, 
+                   clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
                    show=True, grid=False, labels=True, axis=False, export_pdf=""):
         """Plot gains on multiple sites vs time.
            Args:
@@ -128,11 +128,12 @@ class Caltable(object):
 
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (gain) limits
-
+            
                grid (bool): Plot gridlines if True
                labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
+               markersize (int): size of plot markers
                export_pdf (str): path to pdf file to save figure
 
            Returns:  
@@ -161,11 +162,12 @@ class Caltable(object):
             x = fig.add_subplot(1,1,1)
 
         # sites
-        if sites in ['all' or 'All']: sites=[]
+        if sites in ['all' or 'All'] or sites==[]:
+            sites = self.data.keys()
+
         if not type(sites) is list:
             sites = [sites]
-        if len(sites)==0:
-            sites = self.data.keys()
+
 
         # plot gain on each site
         for site in sites:
@@ -200,7 +202,7 @@ class Caltable(object):
 
 
             # Plot the data
-            plt.plot(times, gains, color=next(colors), marker='o', markersize=10, label=str(site), linestyle='none')
+            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, label=str(site), linestyle='none')
             x.set_xlim(rangex)
             x.set_ylim(rangey)
 
