@@ -273,11 +273,14 @@ class Obsdata(object):
                 (list): a list of data tables (type DTPOL) containing baseline-partitioned data
         """
 
-        data = self.data
+        if conj:
+            data = self.data_conj()
+        else:
+            data = self.data
         idx = np.lexsort((data['t2'], data['t1']))
 
         datalist = []
-        for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2'])) ):
+        for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
         return np.array(datalist)
@@ -320,19 +323,14 @@ class Obsdata(object):
                 if (obs['t1'], obs['t2']) == (site1, site2):
                 #if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
                     obs = np.array([obs])
-                    out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias)
-
-                    if timetype in ['UTC','utc'] and self.timetype=='GMST':
-                        out['time'] = gmst_to_utc(out['time'], self.mjd)
-                    elif timetype in ['GMST','gmst'] and self.timetype=='UTC':
-                        out['time'] = utc_to_gmst(out['time'], self.mjd)
+                    out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias, timetype=timetype)
 
                     allout.append(out)
 
 
         return np.array(allout)
 
-    def unpack(self, fields, mode='all', ang_unit='deg',  debias=False, conj=False):
+    def unpack(self, fields, mode='all', ang_unit='deg',  debias=False, conj=False, timetype=False):
 
         """Unpack the data for the whole observation .
 
@@ -342,7 +340,7 @@ class Obsdata(object):
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
                 conj (bool): True to include conjugate baselines
-
+                timetype (str): 'GMST' or 'UTC'
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
 
@@ -360,26 +358,26 @@ class Obsdata(object):
                 data = self.data_conj()
             else:
                 data = self.data
-            allout=self.unpack_dat(data, fields, ang_unit=ang_unit, debias=debias)
+            allout=self.unpack_dat(data, fields, ang_unit=ang_unit, debias=debias,timetype=timetype)
 
         elif mode=='time':
             allout=[]
             tlist = self.tlist(conj=True)
             for scan in tlist:
-                out=self.unpack_dat(scan, fields, ang_unit=ang_unit, debias=debias)
+                out=self.unpack_dat(scan, fields, ang_unit=ang_unit, debias=debias,timetype=timetype)
                 allout.append(out)
 
         elif mode=='bl':
             allout = []
             bllist = self.bllist()
             for bl in bllist:
-                out = self.unpack_dat(bl, fields, ang_unit=ang_unit, debias=debias)
+                out = self.unpack_dat(bl, fields, ang_unit=ang_unit, debias=debias,timetype=timetype)
                 allout.append(out)
 
         return allout
 
 
-    def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False):
+    def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False, timetype=False):
 
         """Unpack the data in a data recarray.
 
@@ -389,7 +387,7 @@ class Obsdata(object):
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
                 conj (bool): True to include conjugate baselines
-
+                timetype (str): 'GMST' or 'UTC'
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
 
@@ -399,8 +397,13 @@ class Obsdata(object):
         else: angle = 1.0
 
         # If we only specify one field
-        if type(fields) == str:
+        if type(fields) is str:
             fields = [fields]
+
+        if not timetype:
+            timetype=self.timetype
+        if timetype not  in ['GMST','UTC','gmst','utc']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
 
         # Get field data
         allout = []
@@ -467,12 +470,12 @@ class Obsdata(object):
                 sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
                 ty = 'c16'
 
-            else: raise Exception("%s is not valid field \n" % field +
+            else: raise Exception("%s is not a valid field \n" % field +
                                   "valid field values are: " + ' '.join(FIELDS))
 
-            if field in ["time_utc"] and self.timetype=='GMST':
+            if field in ["time_utc"] and timetype=='GMST':
                 out = gmst_to_utc(out, self.mjd)
-            if field in ["time_gmst"] and self.timetype=='UTC':
+            if field in ["time_gmst"] and timetype=='UTC':
                 out = utc_to_gmst(out, self.mjd)
 
             # Elevation and Parallactic Angles
@@ -2129,39 +2132,45 @@ class Obsdata(object):
             print ("Warning: plotall is not using amplitudes in Obsdata.amp array!")
 
         # Label individual baselines
-        # ANDREW TODO could this be faster??
+        # ANDREW TODO WAAY too slow could this be faster??
         if tag_bl:
-            clist = [] #TODO allow for custom colors??
-
-            # get unique baselines -- TODO easier way? separate function? 
-            idx = np.lexsort((self.data['t2'], self.data['t1']))
-            bllist = []
-            ii=0
-            for key, group in it.groupby(self.data[idx], lambda x: (x['t1'], x['t2']) ):
-                bl =  list(key)
-                bllist.append(bl)
-                clist.append(SCOLORS[ii%len(SCOLORS)])
-                if conj:
-                    bllist.append([bl[1],bl[0]])
-                    clist.append(SCOLORS[ii%len(SCOLORS)])
+            clist = SCOLORS #TODO allow for custom colors??
+           
+            # make a color coding dictionary
+            cdict = {}
+            ii = 0 
+            baselines = list(it.combinations(self.tarr['site'],2))
+            for baseline in baselines:
+                cdict[(baseline[0],baseline[1])] = clist[ii%len(clist)]
+                cdict[(baseline[1],baseline[0])] = clist[ii%len(clist)]
                 ii+=1
 
+            # get unique baselines -- TODO easier way? separate function? 
             alldata = []
             allsigx = []
             allsigy = []
-            for bl in bllist:  
+            bllist = []
+            colors = []
+            bldata = self.bllist(conj=conj)
+            for bl in bldata:
+                t1 = bl['t1'][0]
+                t2 = bl['t2'][0]
+                bllist.append((t1,t2))
+                colors.append(cdict[(t1,t2)])
+
                 # Unpack data
-                alldata.append(self.unpack_bl(bl[0], bl[1], [field1,field2], ang_unit=ang_unit, debias=debias, timetype=timetype))       
+                dat = self.unpack_dat(bl, [field1,field2], ang_unit=ang_unit, debias=debias, timetype=timetype)
+                alldata.append(dat)       
 
                 # X error bars
                 if sigtype(field1):
-                    allsigx.append(self.unpack_bl(bl[0], bl[1],sigtype(field1), ang_unit=ang_unit)[sigtype(field1)])
+                    allsigx.append(self.unpack_dat(bl,[sigtype(field1)], ang_unit=ang_unit)[sigtype(field1)])
                 else:
                     allsigx.append(None)
 
                 # Y error bars
                 if sigtype(field2):
-                    allsigy.append(self.unpack_bl(bl[0], bl[1],sigtype(field2), ang_unit=ang_unit)[sigtype(field2)])
+                    allsigy.append(self.unpack_dat(bl,[sigtype(field2)], ang_unit=ang_unit)[sigtype(field2)])
                 else:
                     allsigy.append(None)
 
@@ -2169,7 +2178,7 @@ class Obsdata(object):
         # Don't Label individual baselines
         else:
             bllist = [['All','All']]
-            clist = [color]
+            colors = [color]
             # unpack data
             alldata = [self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)]
 
@@ -2186,7 +2195,6 @@ class Obsdata(object):
                 allsigy = [None]
 
 
-
         # make plot(s)
         if axis:
             x = axis
@@ -2194,12 +2202,15 @@ class Obsdata(object):
             fig=plt.figure()
             x = fig.add_subplot(1,1,1)
 
-        xmins = xmaxes = ymins = ymaxes = []
+        xmins = []
+        xmaxes = []
+        ymins = []
+        ymaxes = []
         for i in range(len(alldata)):
             data = alldata[i]
             sigy = allsigy[i]
             sigx = allsigx[i]
-            color = clist[i]   
+            color = colors[i]   
 
             bl = bllist[i]
 
@@ -2230,8 +2241,8 @@ class Obsdata(object):
             if np.any(np.isnan(np.array(rangey))):
                 raise Exception("NaN in data y range: try specifying rangey manually")
 
-            x.set_xlim(rangex)
-            x.set_ylim(rangey)
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
 
 
         # label and save
