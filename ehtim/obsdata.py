@@ -27,6 +27,7 @@ from builtins import object
 import string, copy
 import numpy as np
 import numpy.lib.recfunctions as rec
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import itertools as it
@@ -277,7 +278,6 @@ class Obsdata(object):
 
         datalist = []
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2'])) ):
-
             datalist.append(np.array([obs for obs in group]))
 
         return np.array(datalist)
@@ -323,9 +323,9 @@ class Obsdata(object):
                     out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias)
 
                     if timetype in ['UTC','utc'] and self.timetype=='GMST':
-                        out['time'] = gmst_to_utc(out['time'])
+                        out['time'] = gmst_to_utc(out['time'], self.mjd)
                     elif timetype in ['GMST','gmst'] and self.timetype=='UTC':
-                        out['time'] = utc_to_gmst(out['time'])
+                        out['time'] = utc_to_gmst(out['time'], self.mjd)
 
                     allout.append(out)
 
@@ -1524,7 +1524,7 @@ class Obsdata(object):
            Returns:
                (Obsdata): a new deblurred observation object.
         """
-
+        print("Deblurring data with Sgr A* kernel ...")
         # make a copy of observation data
         datatable = self.data.copy()
 
@@ -2084,9 +2084,10 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def plotall(self, field1, field2, conj=False, ang_unit='deg', debias=True,
-                      ebar=True, rangex=False, rangey=False,
-                      show=True, axis=False, color='b',  export_pdf=""):
+    def plotall(self, field1, field2, conj=False,
+                      debias=True, tag_bl=False, timetype=False, ang_unit='deg',
+                      ebar=True, rangex=False, rangey=False, grid=False,labels=True,
+                      show=True, axis=False, color=SCOLORS[0],  markersize=10, export_pdf=""):
 
         """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
 
@@ -2094,24 +2095,30 @@ class Obsdata(object):
                field1 (str): x-axis field (from FIELDS)
                field2 (str): y-axis field (from FIELDS)
 
-               conj (bool): Plot conjuage baseline data points if True
+               conj (bool): Plot conjuate baseline data points if True
+               tag_bl (bool): if True, label each baseline
                debias (bool): If True, debias amplitudes.
                ang_unit (str): phase unit 'deg' or 'rad'
+               timetype (str): 'GMST' or 'UTC'
 
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
-
+                
+               grid (bool): Plot gridlines if True
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                color (str): Color of scatterplot points
+               markersize (int): size of plot markers
                export_pdf (str): path to pdf file to save figure
 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
 
         """
-
+        if timetype==False:
+            timetype=self.timetype
 
         # Determine if fields are valid
         if (field1 not in FIELDS) and (field2 not in FIELDS):
@@ -2120,50 +2127,111 @@ class Obsdata(object):
         if 'amp' in [field1, field2] and not (self.amp is None):
             print ("Warning: plotall is not using amplitudes in Obsdata.amp array!")
 
-        # Unpack x and y axis data
-        data = self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)
+        # Label individual baselines
+        if tag_bl:
+            clist = SCOLORS #TODO allow for custom colors??
 
-        # X error bars
-        if sigtype(field1):
-            sigx = self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field1)]
+            # get unique baselines -- TODO easier way? separate function? 
+            idx = np.lexsort((self.data['t2'], self.data['t1']))
+            bllist = []
+            for key, group in it.groupby(self.data[idx], lambda x: (x['t1'], x['t2']) ):
+                bl =  list(key)
+                bllist.append(bl)
+                if conj:
+                    bllist.append([bl[1],bl[0]])
+
+
+            alldata = []
+            allsigx = []
+            allsigy = []
+            for bl in bllist:  
+                # Unpack data
+                alldata.append(self.unpack_bl(bl[0], bl[1], [field1,field2], ang_unit=ang_unit, debias=debias, timetype=timetype))       
+
+                # X error bars
+                if sigtype(field1):
+                    allsigx.append(self.unpack_bl(bl[0], bl[1],sigtype(field2), ang_unit=ang_unit)[sigtype(field1)])
+                else:
+                    allsigx.append(None)
+
+                # Y error bars
+                if sigtype(field2):
+                    allsigy.append(self.unpack_bl(bl[0], bl[1],sigtype(field2), ang_unit=ang_unit)[sigtype(field2)])
+                else:
+                    allsigy.append(None)
+
+               
+        # Don't Label individual baselines
         else:
-            sigx = None
+            bllist = ['All','All']
+            clist = [color]
+            # unpack data
+            alldata = [self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)]
 
-        # Y error bars
-        if sigtype(field2):
-            sigy = self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field2)]
-        else:
-            sigy = None
+            # X error bars
+            if sigtype(field1):
+                allsigx = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field1)]]
+            else:
+                allsigx = [None]
 
-        # Data ranges
-        if not rangex:
-            rangex = [np.min(data[field1]) - 0.2 * np.abs(np.min(data[field1])),
-                      np.max(data[field1]) + 0.2 * np.abs(np.max(data[field1]))]
-            if np.any(np.isnan(np.array(rangex))):
-                raise Exception("NaN in data x range: try specifying rangex manually")
-        if not rangey:
-            rangey = [np.min(data[field2]) - 0.2 * np.abs(np.min(data[field2])),
-                      np.max(data[field2]) + 0.2 * np.abs(np.max(data[field2]))]
-            if np.any(np.isnan(np.array(rangey))):
-                raise Exception("NaN in data y range: try specifying rangey manually")
+            # Y error bars
+            if sigtype(field2):
+                allsigy = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field2)]]
+            else:
+                allsigy = [None]
 
-        # Plot the data
-        tolerance = len(data[field2])
+
+
+        # make plot(s)
         if axis:
             x = axis
         else:
             fig=plt.figure()
             x = fig.add_subplot(1,1,1)
 
-        if ebar and (np.any(sigy) or np.any(sigx)):
-            x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, fmt='.', color=color,picker=tolerance)
-        else:
-            x.plot(data[field1], data[field2], '.', color=color,picker=tolerance)
-        x.set_xlim(rangex)
-        x.set_ylim(rangey)
-        x.set_xlabel(field1)
-        x.set_ylabel(field2)
+        for i in range(len(alldata)):
+            data = alldata[i]
+            sigy = allsigy[i]
+            sigx = allsigx[i]
+            color = clist[i]    
+            bl = bllist[i]
 
+            # Data ranges
+            if not rangex:
+                rangex = [np.min(data[field1]) - 0.2 * np.abs(np.min(data[field1])),
+                          np.max(data[field1]) + 0.2 * np.abs(np.max(data[field1]))]
+                if np.any(np.isnan(np.array(rangex))):
+                    raise Exception("NaN in data x range: try specifying rangex manually")
+            if not rangey:
+                rangey = [np.min(data[field2]) - 0.2 * np.abs(np.min(data[field2])),
+                          np.max(data[field2]) + 0.2 * np.abs(np.max(data[field2]))]
+                if np.any(np.isnan(np.array(rangey))):
+                    raise Exception("NaN in data y range: try specifying rangey manually")
+
+            # Plot the data
+            tolerance = len(data[field2])
+
+            if ebar and (np.any(sigy) or np.any(sigx)):
+                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label="%s-%s"%bl,
+                           fmt='o', markersize=markersize, color=color,picker=tolerance)
+            else:
+                x.plot(data[field1], data[field2], 'o', markersize=markersize, color=color, label="%s-%s"%bl,picker=tolerance)
+            x.set_xlim(rangex)
+            x.set_ylim(rangey)
+
+
+        # label and save
+        if labels:
+            try:
+                x.set_xlabel(FIELD_LABELS[field1])
+                x.set_ylabel(FIELD_LABELS[field2])
+            except:
+                x.set_xlabel(field1.capitalize())
+                x.set_ylabel(field2.capitalize())
+        if labels and tag_bl:
+            plt.legend()
+        if grid:
+            x.grid()
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
@@ -2173,8 +2241,8 @@ class Obsdata(object):
 
     def plot_bl(self, site1, site2, field,
                       debias=True, ang_unit='deg', timetype=False,
-                      rangex=False, rangey=False, ebar=True,
-                      show=True, axis=False, color='b', export_pdf=""):
+                      rangex=False, rangey=False, ebar=True, grid=False,labels=True,
+                      show=True, axis=False, color=SCOLORS[0], markersize=10, export_pdf=""):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2190,10 +2258,13 @@ class Obsdata(object):
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
 
+               grid (bool): Plot gridlines if True
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                color (str): Color of scatterplot points
+               markersize (int): size of plot markers
                export_pdf (str): path to pdf file to save figure
 
            Returns:
@@ -2232,16 +2303,24 @@ class Obsdata(object):
 
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
-            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],
-                       yerr=errdata[sigtype(field)][:,0], fmt='.', color=color)
+            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0], 
+                       fmt='o', markersize=markersize, color=color)
         else:
-            x.plot(plotdata['time'][:,0], plotdata[field][:,0],'.', color=color)
+            x.plot(plotdata['time'][:,0], plotdata[field][:,0],fmt='o', markersize=markersize, color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel(self.timetype + ' (hr)')
-        x.set_ylabel(field)
-        x.set_title('%s - %s'%(site1,site2))
+
+        if labels:
+            x.set_xlabel(self.timetype + ' (hr)')
+            try:
+                x.set_ylabel(FIELD_LABELS[field])
+            except:
+                x.set_ylabel(field.capitalize())
+            x.set_title('%s - %s'%(site1,site2))
+
+        if grid:
+            x.grid()
 
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
@@ -2252,8 +2331,8 @@ class Obsdata(object):
 
     def plot_cphase(self, site1, site2, site3,
                           vtype='vis', ang_unit='deg', timetype=False,
-                          rangex=False, rangey=False, ebar=True, labels=True,
-                          show=True, axis=False, color='b', export_pdf="",
+                          rangex=False, rangey=False, ebar=True, labels=True, grid=False,
+                          show=True, axis=False, color=SCOLORS[0], markersize=10, export_pdf="",
                           cphases=[],force_recompute=False):
 
         """Plot closure phase over time on a triangle (1-2-3).
@@ -2270,11 +2349,13 @@ class Obsdata(object):
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (phase) limits
 
+               grid (bool): Plot gridlines if True
                ebar (bool): Plot error bars if True
                labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                color (str): Color of scatterplot points
+               markersize (int): size of plot markers
                export_pdf (str): path to pdf file to save figure
 
                cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
@@ -2286,7 +2367,7 @@ class Obsdata(object):
         if timetype==False:
             timetype=self.timetype
         if ang_unit=='deg': angle=1.0
-        else: angle = eh.DEGREE
+        else: angle = DEGREE
 
         # Get closure phases (maximal set)
         if (len(cphases)==0) and not (self.cphase is None) and not force_recompute:
@@ -2305,10 +2386,12 @@ class Obsdata(object):
             if np.any(np.isnan(np.array(rangex))):
                 raise Exception("NaN in data x range: try specifying rangex manually")
         if not rangey:
-            rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])),
-                      np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))]
-            if np.any(np.isnan(np.array(rangex))):
-                raise Exception("NaN in data y range: try specifying rangey manually")
+            if ang_unit=='deg':rangey = [-190,190]
+            else: rangey=[-np.pi,np.pi]
+            #rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])),
+            #          np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))]
+            #if np.any(np.isnan(np.array(rangex))):
+            #    raise Exception("NaN in data y range: try specifying rangey manually")
 
         # Plot the data
         if axis:
@@ -2318,16 +2401,22 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.', color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1], '.', color=color)
+            x.plot(plotdata[:,0], plotdata[:,1], 'o', markersize=markersize, color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
         if labels:
             x.set_xlabel(self.timetype + ' (h)')
-            x.set_ylabel('Closure Phase (deg)')
+            if ang_unit=='deg': 
+                x.set_ylabel(r'Closure Phase $(^\circ)$')
+            else:
+                x.set_ylabel(r'Closure Phase (radian)')
         x.set_title('%s - %s - %s' % (site1,site2,site3))
+
+        if grid:
+            x.grid()
 
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
@@ -2336,8 +2425,9 @@ class Obsdata(object):
         return x
 
     def plot_camp(self, site1, site2, site3, site4,
-                        vtype='vis', ctype='camp', debias=True, timetype=False,
-                        rangex=False, rangey=False, ebar=True, show=True, axis=False, color='b', export_pdf="",
+                        vtype='vis', ctype='camp', debias=True, timetype=False, grid=False,labels=True,
+                        rangex=False, rangey=False, ebar=True, show=True, axis=False,
+                        color=SCOLORS[0], markersize=10, export_pdf="",
                         camps=[], force_recompute=False):
 
         """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
@@ -2356,10 +2446,13 @@ class Obsdata(object):
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (phase) limits
 
+               grid (bool): Plot gridlines  if  True
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                color (str): Color of scatterplot points
+               markersize (int): size of plot markers
                export_pdf (str): path to pdf file to save figure
 
                camps (list): optionally pass in the time-sorted camps so they don't have to be recomputed
@@ -2408,19 +2501,23 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='.', color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1],'.', color=color)
+            x.plot(plotdata[:,0], plotdata[:,1],'o', markersize=markersize, color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        x.set_xlabel(self.timetype + ' (h)')
-        if ctype=='camp':
-            x.set_ylabel('Closure Amplitude')
-        elif ctype=='logcamp':
-            x.set_ylabel('Log Closure Amplitude')
-        x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
-                                                           site1,site4,site2,site3))
+
+        if labels:
+            x.set_xlabel(self.timetype + ' (h)')
+            if ctype=='camp':
+                x.set_ylabel('Closure Amplitude')
+            elif ctype=='logcamp':
+                x.set_ylabel('Log Closure Amplitude')
+            x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
+                                                               site1,site4,site2,site3))
+        if grid:
+            x.grid()
 
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
