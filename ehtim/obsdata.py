@@ -2129,18 +2129,22 @@ class Obsdata(object):
             print ("Warning: plotall is not using amplitudes in Obsdata.amp array!")
 
         # Label individual baselines
+        # ANDREW TODO could this be faster??
         if tag_bl:
-            clist = SCOLORS #TODO allow for custom colors??
+            clist = [] #TODO allow for custom colors??
 
             # get unique baselines -- TODO easier way? separate function? 
             idx = np.lexsort((self.data['t2'], self.data['t1']))
             bllist = []
+            ii=0
             for key, group in it.groupby(self.data[idx], lambda x: (x['t1'], x['t2']) ):
                 bl =  list(key)
                 bllist.append(bl)
+                clist.append(SCOLORS[ii%len(SCOLORS)])
                 if conj:
                     bllist.append([bl[1],bl[0]])
-
+                    clist.append(SCOLORS[ii%len(SCOLORS)])
+                ii+=1
 
             alldata = []
             allsigx = []
@@ -2151,7 +2155,7 @@ class Obsdata(object):
 
                 # X error bars
                 if sigtype(field1):
-                    allsigx.append(self.unpack_bl(bl[0], bl[1],sigtype(field2), ang_unit=ang_unit)[sigtype(field1)])
+                    allsigx.append(self.unpack_bl(bl[0], bl[1],sigtype(field1), ang_unit=ang_unit)[sigtype(field1)])
                 else:
                     allsigx.append(None)
 
@@ -2164,7 +2168,7 @@ class Obsdata(object):
                
         # Don't Label individual baselines
         else:
-            bllist = ['All','All']
+            bllist = [['All','All']]
             clist = [color]
             # unpack data
             alldata = [self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)]
@@ -2190,33 +2194,42 @@ class Obsdata(object):
             fig=plt.figure()
             x = fig.add_subplot(1,1,1)
 
+        xmins = xmaxes = ymins = ymaxes = []
         for i in range(len(alldata)):
             data = alldata[i]
             sigy = allsigy[i]
             sigx = allsigx[i]
-            color = clist[i]    
+            color = clist[i]   
+
             bl = bllist[i]
 
-            # Data ranges
-            if not rangex:
-                rangex = [np.min(data[field1]) - 0.2 * np.abs(np.min(data[field1])),
-                          np.max(data[field1]) + 0.2 * np.abs(np.max(data[field1]))]
-                if np.any(np.isnan(np.array(rangex))):
-                    raise Exception("NaN in data x range: try specifying rangex manually")
-            if not rangey:
-                rangey = [np.min(data[field2]) - 0.2 * np.abs(np.min(data[field2])),
-                          np.max(data[field2]) + 0.2 * np.abs(np.max(data[field2]))]
-                if np.any(np.isnan(np.array(rangey))):
-                    raise Exception("NaN in data y range: try specifying rangey manually")
+            xmins.append(np.min(data[field1]))
+            xmaxes.append(np.max(data[field1]))
+            ymins.append(np.min(data[field2]))
+            ymaxes.append(np.max(data[field2]))
 
             # Plot the data
             tolerance = len(data[field2])
 
             if ebar and (np.any(sigy) or np.any(sigx)):
                 x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label="%s-%s"%((str(bl[0]),str(bl[1]))),
-                           marker='o', markersize=markersize, color=color,picker=tolerance)
+                           fmt='o', markersize=markersize, color=color,picker=tolerance)
             else:
-                x.plot(data[field1], data[field2], 'o', markersize=markersize, color=color, label="%s-%s"%bl,picker=tolerance)
+                x.plot(data[field1], data[field2], 'o', markersize=markersize, color=color, 
+                       label="%s-%s"%((str(bl[0]),str(bl[1]))),picker=tolerance)
+
+        # Data ranges
+        if not rangex:
+            rangex = [np.min(xmins) - 0.2 * np.abs(np.min(xmins)),
+                      np.max(xmaxes) + 0.2 * np.abs(np.max(xmaxes))]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data x range: try specifying rangex manually")
+        if not rangey:
+            rangey = [np.min(ymins) - 0.2 * np.abs(np.min(ymins)),
+                      np.max(ymaxes) + 0.2 * np.abs(np.max(ymaxes))]
+            if np.any(np.isnan(np.array(rangey))):
+                raise Exception("NaN in data y range: try specifying rangey manually")
+
             x.set_xlim(rangex)
             x.set_ylim(rangey)
 
@@ -2230,7 +2243,7 @@ class Obsdata(object):
                 x.set_xlabel(field1.capitalize())
                 x.set_ylabel(field2.capitalize())
         if labels and tag_bl:
-            plt.legend()
+            plt.legend(ncol=2)
         if grid:
             x.grid()
         if export_pdf != "" and not axis:
@@ -2306,9 +2319,9 @@ class Obsdata(object):
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0], 
-                       marker='o', markersize=markersize, color=color)
+                       fmt='o', markersize=markersize, color=color, linestyle='none')
         else:
-            x.plot(plotdata['time'][:,0], plotdata[field][:,0],marker='o', markersize=markersize, color=color)
+            x.plot(plotdata['time'][:,0], plotdata[field][:,0],fmt='o', markersize=markersize, color=color, linestyle='none')
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -2404,9 +2417,9 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], marker='o', markersize=markersize, color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color, linestyle='none')
         else:
-            x.plot(plotdata[:,0], plotdata[:,1], 'o', markersize=markersize, color=color)
+            x.plot(plotdata[:,0], plotdata[:,1], 'o', markersize=markersize, color=color, linestyle='none')
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -2504,9 +2517,9 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], marker='o', markersize=markersize, color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color, linestyle='none')
         else:
-            x.plot(plotdata[:,0], plotdata[:,1],'o', markersize=markersize, color=color)
+            x.plot(plotdata[:,0], plotdata[:,1],'o', markersize=markersize, color=color, linestyle='none')
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)

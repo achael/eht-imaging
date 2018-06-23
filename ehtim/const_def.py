@@ -101,7 +101,7 @@ FIELDS = ['time','time_utc','time_gmst',
           'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase']
 
 #plotting
-MARKERSIZE = 6
+MARKERSIZE = 3
 
 FIELD_LABELS = {'time':'Time','time_utc':'Time (UTC)','time_gmst':'Time (GMST)',
           'tint':'Integration Time','u':r'$u$','v':r'$v$','uvdist':r'$u-v$ Distance',

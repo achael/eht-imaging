@@ -170,6 +170,7 @@ class Caltable(object):
 
 
         # plot gain on each site
+        tmins = tmaxes = gmins = gmaxes = []
         for site in sites:
             times = self.data[site]['time']
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
@@ -184,27 +185,33 @@ class Caltable(object):
             if gain_type=='amp':
                 gains = np.abs(gains)
                 ylabel = r'$|G|$'
+
             if gain_type=='phase':
                 gains = np.angle(gains)*angle
                 if ang_unit=='deg': ylabel = r'arg($|G|$) ($^\circ$)'
                 else: ylabel = r'arg($|G|$) (radian)'
 
-            if not rangex:
-                rangey = [np.min(times) - 0.2 * np.abs(np.min(times)),
-                          np.max(times) + 0.2 * np.abs(np.max(times))]
-                if np.any(np.isnan(np.array(rangex))):
-                    raise Exception("NaN in data x range: try specifying rangex manually")
-            if not rangey:
-                rangey = [np.min(gains) - 0.2 * np.abs(np.min(gains)),
-                          np.max(gains) + 0.2 * np.abs(np.max(gains))]
-                if np.any(np.isnan(np.array(rangey))):
-                    raise Exception("NaN in data y range: try specifying rangey manually")
-
+            tmins.append(np.min(times))
+            tmaxes.append(np.max(times))
+            gmins.append(np.min(gains))
+            gmaxes.append(np.max(gains))
 
             # Plot the data
             plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, label=str(site), linestyle='none')
-            x.set_xlim(rangex)
-            x.set_ylim(rangey)
+
+        if not rangex:
+            rangex = [np.min(tmins) - 0.2 * np.abs(np.min(tmins)),
+                      np.max(tmaxes) + 0.2 * np.abs(np.max(tmaxes))]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data x range: try specifying rangex manually")
+        if not rangey:
+            rangey = [np.min(gmins) - 0.2 * np.abs(np.min(gmins)),
+                      np.max(gmaxes) + 0.2 * np.abs(np.max(gmaxes))]
+            if np.any(np.isnan(np.array(rangey))):
+                raise Exception("NaN in data y range: try specifying rangey manually")
+
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
 
         # labels
         if labels:
