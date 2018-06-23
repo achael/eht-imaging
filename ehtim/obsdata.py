@@ -2213,7 +2213,7 @@ class Obsdata(object):
 
             if ebar and (np.any(sigy) or np.any(sigx)):
                 x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label="%s-%s"%bl,
-                           fmt='o', markersize=markersize, color=color,picker=tolerance)
+                           marker='o', markersize=markersize, color=color,picker=tolerance)
             else:
                 x.plot(data[field1], data[field2], 'o', markersize=markersize, color=color, label="%s-%s"%bl,picker=tolerance)
             x.set_xlim(rangex)
@@ -2304,9 +2304,9 @@ class Obsdata(object):
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0], 
-                       fmt='o', markersize=markersize, color=color)
+                       marker='o', markersize=markersize, color=color)
         else:
-            x.plot(plotdata['time'][:,0], plotdata[field][:,0],fmt='o', markersize=markersize, color=color)
+            x.plot(plotdata['time'][:,0], plotdata[field][:,0],marker='o', markersize=markersize, color=color)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -2401,7 +2401,7 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], marker='o', markersize=markersize, color=color)
         else:
             x.plot(plotdata[:,0], plotdata[:,1], 'o', markersize=markersize, color=color)
 
@@ -2501,7 +2501,7 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color)
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], marker='o', markersize=markersize, color=color)
         else:
             x.plot(plotdata[:,0], plotdata[:,1],'o', markersize=markersize, color=color)
 

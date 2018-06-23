@@ -115,7 +115,7 @@ class Caltable(object):
     def plot_gains(self, sites, gain_type='amp', pol='R', 
                    ang_unit='deg',timetype=False,yscale='lin',
                    clist=SCOLORS,rangex=False,rangey=False, 
-                   show=True, grid=False, labels=True, axis=False, exportpdf=""):
+                   show=True, grid=False, labels=True, axis=False, export_pdf=""):
         """Plot gains on multiple sites vs time.
            Args:
                sites (list): a list of site names for which to plot gains. Empty list is all sites. 
