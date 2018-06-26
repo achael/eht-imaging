@@ -889,6 +889,7 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+
         #TODO store averaging timescale/other parameters?
         cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>0:
@@ -905,7 +906,6 @@ class Obsdata(object):
 
         """Adds attribute self.cphase: cphase table averaged for dt
 
-
            Args:
                return_type: data frame ('df') or recarray ('rec')
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
@@ -916,8 +916,9 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+
         #TODO store averaging timescale/other parameters?
-        cdf = make_cphase_df(self, mode='all', round_s=round_s,count=count)
+        cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>0:
             cdf_av = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
             self.cphase = cdf_av
@@ -946,6 +947,7 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+
         #TODO store averaging timescale/other parameters?
         if avg_time>0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
@@ -2360,7 +2362,7 @@ class Obsdata(object):
                           rangex=False, rangey=False, ebar=True, labels=True, grid=False,
                           show=True, axis=False, color=SCOLORS[0], markersize=MARKERSIZE, 
                           export_pdf="",
-                          cphases=[],force_recompute=False):
+                          cphases=[], force_recompute=False):
 
         """Plot closure phase over time on a triangle (1-2-3).
 

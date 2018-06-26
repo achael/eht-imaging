@@ -23,10 +23,14 @@ from builtins import range
 from builtins import object
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.signal
 import scipy.ndimage.filters as filt
 import scipy.interpolate
+from scipy import ndimage as ndi
+from skimage.feature import canny
+from skimage.transform import hough_circle, hough_circle_peaks
 
 import ehtim.observing.obs_simulate as simobs
 import ehtim.observing.pulses
@@ -613,7 +617,7 @@ class Image(object):
         """
 
         im1 = self.copy()
-        [idx, xcorr, im1_pad, im2_pad] = im1.findShift(im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
+        [idx, xcorr, im1_pad, im2_pad] = im1.find_shift(im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
 
         if type(shift)!=bool:
             idx = shift
@@ -646,7 +650,7 @@ class Image(object):
         im_shift = Image( im_shift, self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         return im_shift
         
-    def findShift(self, im2, psize=None, target_fov=None, 
+    def find_shift(self, im2, psize=None, target_fov=None, 
                         beamparams=[1., 1., 1.], blur_frac = 0.0, blursmall=False, 
                         scale='lin', gamma=0.5, dynamic_range=1.e3):
 
@@ -1077,6 +1081,231 @@ class Image(object):
             out.add_v(vim)
         return out
 
+    def im_grad(self, gradtype='abs'):
+        """Return the gradient image
+           
+           Args:
+               gradtype (str): 'x','y',or 'abs' for the image gradient dimension
+           Returns:
+               Image : an image object containing the gradient image
+        """
+        imgrad = self.copy()
+        #gradlist = np.gradient(imgrad.imvec.reshape(self.ydim,self.xdim))
+        imarr = imgrad.imvec.reshape(self.ydim,self.xdim)
+        sx = ndi.sobel(imarr, axis=0, mode='constant')
+        sy = ndi.sobel(imarr, axis=1, mode='constant')
+
+        #TODO: are these in the right order??
+        if gradtype=='x':
+            #gradarr = gradlist[1]
+            gradarr = sx
+        if gradtype=='y':
+            #gradarr = gradlist[0]
+            gradarr = sy
+        else:
+            gradarr = np.hypot(sx, sy)
+        imgrad.imvec = gradarr.flatten()
+        return imgrad
+
+    def fit_ring(self, edgetype='canny',thresh=None, display_results=True, num_circles=3):
+        """Use Andrew's hough transform esque algorithm for fitting a ring
+
+           Args:
+               num_circles (int) : number of circles to return
+               edgetype (str): edge detection type, 'gradient' or 'canny'
+               thresh (float): fractional threshold for the gradient image
+               display_results (bool): True to display results of the fit
+               
+           Returns:
+               list : a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian
+
+        """
+        # coordinate values
+        pdim = self.psize
+        xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
+        ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
+
+        # image center of mass
+        cm = ndi.center_of_mass(self.imvec.reshape(self.ydim,self.xdim))
+
+        #normalize to range 0, 1
+        im = self.copy()
+        maxval = np.max(im.imvec)
+        meanval = np.mean(im.imvec)
+        im_norm = im.imvec / (maxval + .01*meanval) 
+        im_norm = im_norm
+        im_norm = im_norm.astype('float') # is it a problem if it's double??
+        im_norm[np.isnan(im.imvec)] = 0 #mask nans to 0
+        im.imvec = im_norm
+
+        # detect edges
+        if edgetype=='canny':
+            imarr = im.imvec.reshape(self.ydim,self.xdim)
+            edges = canny(imarr, sigma=0, high_threshold=.2,  low_threshold=0.05)
+            im_edges = self.copy()
+            im_edges.imvec = edges.flatten()
+
+        else: #edgetype=='grad':
+            im_edges = self.im_grad()
+            if not (thresh is None):
+                thresh_val = thresh*np.max(im_edges.imvec)
+                mask = im_edges.imvec > thresh_val
+                #im_edges.imvec[mask] = 1
+                im_edges.imvec[~mask] = 0
+
+        # interpolation function on edges
+        imarr = im_edges.imvec.reshape(self.ydim,self.xdim)
+        xs = np.arange(self.xdim)
+        ys = np.arange(self.ydim)
+        #im_interp = scipy.interpolate.RectBivariateSpline(ys,xs,imarr)
+        im_interp = scipy.interpolate.interp2d(ys,xs,imarr,kind='cubic')
+
+        def Interp(x0,y0):
+            return im_interp(x0,y0)[0]
+
+        # define the objective function
+        nrays = 60
+        thetas = np.linspace(0,2*np.pi,nrays)
+        costhetas = np.cos(thetas)
+        sinthetas = np.sin(thetas)
+        def ringSum(x0,y0,r):
+            xxs = x0 + r*costhetas
+            yys = y0 + r*sinthetas
+            vals = [Interp(yys[i],xxs[i]) for i in np.arange(nrays)]
+            return np.sum(vals)
+
+        def objFunc(params):
+            x0 = params[0]
+            y0 = params[1]
+            r = np.abs(params[2])
+            return -ringSum(x0,y0,r)
+
+        # brute force search
+        rangex = (int(cm[1]-.25*self.xdim),int(cm[1]+.25*self.xdim))
+        rangey = (int(cm[0]-.25*self.ydim),int(cm[0]+.25*self.ydim))
+        ranger = (10*RADPERUAS/self.psize, 50*RADPERUAS/self.psize)
+
+        resb = scipy.optimize.brute(objFunc, (rangex,rangey,ranger),Ns=10,full_output=True)
+        all_results = resb[3].flatten()
+        all_xs = resb[2][0].flatten()
+        all_ys = resb[2][1].flatten()
+        all_rs = resb[2][2].flatten()
+
+        # print results, plot circles, and return
+        outlist = []
+        colors = ['b','r','w','lime','magenta','aqua']
+        if display_results:
+            plt.ion()       
+            fig = self.display()
+            ax = fig.gca()
+        for i in range(num_circles):
+            idx = np.argmin(all_results)
+            guess = (all_xs[idx],all_ys[idx],all_rs[idx])
+            all_results[idx] = 0
+
+            # refine search with gradient descent
+            res = scipy.optimize.minimize(objFunc, guess*(1+.01*np.random.randn(3)) , method='L-BFGS-B')
+            center_x = res.x[0]
+            center_y = res.x[1]
+            radius = res.x[2]
+            print("%i ring diameter: %0.1f microarcsec"% (i, 2*radius*self.psize/RADPERUAS))
+
+            x_rad = xlist[int(np.round(center_x))]
+            y_rad = ylist[int(np.round(center_y))]
+            r_rad = radius*self.psize
+            outlist.append([x_rad,y_rad,r_rad,res.fun])
+
+            if display_results:
+                if i>len(colors): color=colors[-1]
+                else: color = colors[i]
+                circ = mpl.patches.Circle((center_y,center_x),radius, fill=False, color=color)
+                ax.add_patch(circ)
+
+        return outlist
+
+    def hough_ring(self, edgetype='canny',thresh=None, display_results=True, num_circles=3, radius_range=None):
+        """Use a circular hough transform to find a circle in the image
+
+           Args:
+               num_circles (int) : number of circles to return
+               radius_range (tuple): range of radii to search in Hough transform, in radian
+               edgetype (str): edge detection type, 'gradient' or 'canny'
+               thresh(float): fractional threshold for the gradient image
+               display_results (bool): True to display results of the fit
+               
+           Returns:
+               list : a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian
+        """
+
+        # coordinate values
+        pdim = self.psize
+        xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
+        ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
+
+        #normalize to range 0, 1
+        im = self.copy()
+        maxval = np.max(im.imvec)
+        meanval = np.mean(im.imvec)
+        im_norm = im.imvec / (maxval + .01*meanval) 
+        im_norm = im_norm
+        im_norm = im_norm.astype('float') # is it a problem if it's double??
+        im_norm[np.isnan(im.imvec)] = 0 #mask nans to 0
+        im.imvec = im_norm
+
+        # detect edges
+        if edgetype=='canny':
+            imarr = im.imvec.reshape(self.ydim,self.xdim)
+            edges = canny(imarr, sigma=0, high_threshold=.2,  low_threshold=0.05)
+            im_edges = self.copy()
+            im_edges.imvec = edges.flatten()
+
+        else: #edgetype=='grad':
+            im_edges = self.im_grad()
+            if not (thresh is None):
+                thresh_val = thresh*np.max(im_edges.imvec)
+                mask = im_edges.imvec > thresh_val
+                #im_edges.imvec[mask] = 1
+                im_edges.imvec[~mask] = 0
+                edges = im_edges.imvec.reshape(self.ydim, self.xdim)
+
+        # define radius range for Hough transform search
+        if radius_range is None:
+            hough_radii = np.arange(int(10*RADPERUAS/self.psize), int(50*RADPERUAS/self.psize))
+        else:
+            hough_radii = np.linspace(radius_range[0]/self.psize, radius_range[0]/self.psize, 25)
+         
+        # perform the hough transform and select the most prominent circles
+        hough_res = hough_circle(edges, hough_radii)
+        accums, cy, cx, radii = hough_circle_peaks(hough_res, hough_radii, total_num_peaks=num_circles)
+        accum_tot = np.sum(accums)
+
+        # print results, plot circles, and return
+        outlist = []
+        if display_results:
+            plt.ion()       
+            fig = self.display()
+            ax = fig.gca()
+
+        i=0
+        colors = ['b','r','w','lime','magenta','aqua']
+        for accum, center_y, center_x, radius in zip(accums, cy, cx, radii):
+            accum_frac = accum/accum_tot
+            x_rad = xlist[int(np.round(center_x))]
+            y_rad = ylist[int(np.round(center_y))]
+            r_rad = radius*self.psize
+            outlist.append([x_rad,y_rad,r_rad,accum_frac])
+            print(accum_frac)
+            print("%i ring diameter: %0.1f microarcsec"% (i, 2*r_rad/RADPERUAS))
+            if display_results:
+                if i>len(colors): color=colors[-1]
+                else: color = colors[i]
+                circ = mpl.patches.Circle((center_y,center_x),radius, fill=False, color=color)
+                ax.add_patch(circ)
+            i+=1
+
+
+        return outlist
+
     def fit_gauss(self, units='rad'):
 
         """Determine the Gaussian parameters that short baselines would measure for the source by diagonalizing the image covariance matrix. 
@@ -1469,7 +1698,7 @@ class Image(object):
         im_array_shift = []
         shifts = []
         for i in range(0, len(im_array)):
-            (idx, _, im0_pad_orig, im_pad) = im0.findShift(im_array[i], target_fov=2*max_fov, psize=psize, scale=scale, gamma=gamma,  dynamic_range=dynamic_range[i+1])
+            (idx, _, im0_pad_orig, im_pad) = im0.find_shift(im_array[i], target_fov=2*max_fov, psize=psize, scale=scale, gamma=gamma,  dynamic_range=dynamic_range[i+1])
             if i==0:
                     npix = int(im0_pad_orig.xdim/2)
                     im0_pad = im0_pad_orig.regrid_image(final_fov, npix) 

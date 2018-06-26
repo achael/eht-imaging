@@ -221,19 +221,17 @@ def make_bispectrum(l1, l2, l3,vtype):
 
     return (bi, bisig)
 
-def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, debias_type='old'):
+#TODO: debiasing strategy?? 
+def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True):
     """make a list of closure amplitudes and errors
        red1 and red2 are full datatables of denominator entries
        blue1 and blue2 are full datatables numerator entries
        vtype is the  visibility type
        we always debias the individual amplitudes
        debias controls if we debias the closure amplitude at the end
-       DebiasType controls the type of debisaing, 'ExactLog' means
        exact debiasing in log space, it will turn off any debiasing in 'amp_debias',
        and apply debiasing only to closure quantities
     """
-
-    DebiasType = debias_type
 
     if not (ctype in ['camp', 'logcamp']):
         raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
@@ -249,10 +247,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = red1[sigmatype]
         sig4 = red2[sigmatype]
 
-        p1 = amp_debias(blue1[vtype], sig1,DebiasType)
-        p2 = amp_debias(blue2[vtype], sig2,DebiasType)
-        p3 = amp_debias(red1[vtype], sig3,DebiasType)
-        p4 = amp_debias(red2[vtype], sig4,DebiasType)
+        p1 = amp_debias(blue1[vtype], sig1,actually_debias=debias,force_nonzero=True)
+        p2 = amp_debias(blue2[vtype], sig2,actually_debias=debias,force_nonzero=True)
+        p3 = amp_debias(red1[vtype], sig3,actually_debias=debias,force_nonzero=True)
+        p4 = amp_debias(red2[vtype], sig4,actually_debias=debias,force_nonzero=True)
 
     elif vtype == "rrvis":
         sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
@@ -260,10 +258,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
         sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
 
-        p1 = amp_debias(blue1['vis'] + blue1['vvis'], sig1,DebiasType)
-        p2 = amp_debias(blue2['vis'] + blue2['vvis'], sig2,DebiasType)
-        p3 = amp_debias(red1['vis'] + red1['vvis'], sig3,DebiasType)
-        p4 = amp_debias(red2['vis'] + red2['vvis'], sig4,DebiasType)
+        p1 = amp_debias(blue1['vis'] + blue1['vvis'], sig1,actually_debias=debias,force_nonzero=True)
+        p2 = amp_debias(blue2['vis'] + blue2['vvis'], sig2,actually_debias=debias,force_nonzero=True)
+        p3 = amp_debias(red1['vis'] + red1['vvis'], sig3,actually_debias=debias,force_nonzero=True)
+        p4 = amp_debias(red2['vis'] + red2['vvis'], sig4,actually_debias=debias,force_nonzero=True)
 
     elif vtype == "llvis":
         sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
@@ -271,32 +269,32 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
         sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
 
-        p1 = amp_debias(blue1['vis'] - blue1['vvis'], sig1,DebiasType)
-        p2 = amp_debias(blue2['vis'] - blue2['vvis'], sig2,DebiasType)
-        p3 = amp_debias(red1['vis'] - red1['vvis'], sig3,DebiasType)
-        p4 = amp_debias(red2['vis'] - red2['vvis'], sig4,DebiasType)
+        p1 = amp_debias(blue1['vis'] - blue1['vvis'], sig1, actually_debias=debias, force_nonzero=True)
+        p2 = amp_debias(blue2['vis'] - blue2['vvis'], sig2, actually_debias=debias, force_nonzero=True)
+        p3 = amp_debias(red1['vis'] - red1['vvis'], sig3, actually_debias=debias, force_nonzero=True)
+        p4 = amp_debias(red2['vis'] - red2['vvis'], sig4, actually_debias=debias, force_nonzero=True)
 
     elif vtype == "lrvis":
-        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2,DebiasType)
-        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2,DebiasType)
-        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2,DebiasType)
-        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2,DebiasType)
+        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
 
-        p1 = amp_debias(blue1['qvis'] - 1j*blue1['uvis'], sig1)
-        p2 = amp_debias(blue2['qvis'] - 1j*blue2['uvis'], sig2)
-        p3 = amp_debias(red1['qvis'] - 1j*red1['uvis'], sig3)
-        p4 = amp_debias(red2['qvis'] - 1j*red2['uvis'], sig4)
+        p1 = amp_debias(blue1['qvis'] - 1j*blue1['uvis'], sig1, actually_debias=debias, force_nonzero=True)
+        p2 = amp_debias(blue2['qvis'] - 1j*blue2['uvis'], sig2, actually_debias=debias, force_nonzero=True)
+        p3 = amp_debias(red1['qvis'] - 1j*red1['uvis'], sig3, actually_debias=debias, force_nonzero=True)
+        p4 = amp_debias(red2['qvis'] - 1j*red2['uvis'], sig4, actually_debias=debias, force_nonzero=True)
 
     elif vtype in ["pvis","rlvis"]:
-        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2,DebiasType)
-        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2,DebiasType)
-        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2,DebiasType)
-        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2,DebiasType)
+        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
 
-        p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], sig1,DebiasType)
-        p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], sig2,DebiasType)
-        p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], sig3,DebiasType)
-        p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], sig4,DebiasType)
+        p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], sig1, actually_debias=debias, force_nonzero=True)
+        p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], sig2, actually_debias=debias, force_nonzero=True)
+        p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], sig3, actually_debias=debias, force_nonzero=True)
+        p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], sig4, actually_debias=debias, force_nonzero=True)
 
     snr1 = p1/sig1
     snr2 = p2/sig2
@@ -309,14 +307,7 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 
         # Debias
         if debias:
-            if DebiasType=='ExactLog':
-                snr1 = get_snr(snr1)
-                snr2 = get_snr(snr2)
-                snr3 = get_snr(snr3)
-                snr4 = get_snr(snr4)
-                camp = camp_debias(camp, snr3, snr4,snr1,snr2,'ExactLog')
-            else:
-                camp = camp_debias(camp, snr3, snr4)
+            camp = camp_debias(camp, snr3, snr4)
 
     elif ctype=='logcamp':
         camp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4))
@@ -324,79 +315,49 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 
         # Debias
         if debias:
-            if DebiasType=='ExactLog':
-                snr1 = get_snr(snr1)
-                snr2 = get_snr(snr2)
-                snr3 = get_snr(snr3)
-                snr4 = get_snr(snr4)
-                camp = logcamp_debias(camp, snr1, snr2,snr3,snr4,'ExactLog')
-            else:
-                camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
+            camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
 
     return (camp, camperr)
 
-#MW---OCT---2017
-def get_snr_help(Esnr):
-    """estimates snr given a single biased snr measurement
-    """
-    if Esnr**2 >= 2.0:
-        return np.sqrt(Esnr**2 - 1.0)
-    else:
-        return 1.0
 
-def get_snr(Esnr):
-    """"applies get_snr_help on vector
-    """
-    if type(Esnr) == float or type(Esnr)==np.float64:
-        return get_snr_help(Esnr)
-    else:
-        return np.asarray(map(get_snr_help,Esnr))
-
-def log_debias(snr0):
-    """debias log snr
-    """
-    snr0 = np.asarray(snr0)
-    return -ss.expi(-snr0**2/2.)/2.
-
-
-def amp_debias(amp, sigma, DebiasType='old'):
+def amp_debias(amp, sigma, actually_debias=True, force_nonzero=False):
     """Return debiased visibility amplitudes
     """
 
-    if DebiasType=='ExactLog':
-        #don't debias at all in this case, all debiasing will happen later for closure quantities
-        #snr0 = amp/sigma
-        #return amp*np.exp(-log_debias(snr0))
-        return amp
-
+    if not actually_debias:
+        return np.abs(amp)
     else:
         deb2 = np.abs(amp)**2 - np.abs(sigma)**2
-        if type(deb2) == float or type(deb2)==np.float64:
-            if deb2 < 0.0: return np.abs(amp)
-            else: return np.sqrt(deb2)
-        else:
-            lowsnr = deb2 < 0.0
-            deb2[lowsnr] = np.abs(amp[lowsnr])**2
-            return np.sqrt(deb2)
 
-def camp_debias(camp, snr3, snr4,snr1=1e5,snr2=1e5,DebiasType='old'):
+        # puts amplitude at 0 if snr < 1
+        deb2 *= (np.abs(amp) > np.abs(sigma))
+        if force_nonzero:
+            # puts amplitude at 0 if snr < 1
+            deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
+        return np.sqrt(deb2)
+
+#        if type(deb2) == float or type(deb2)==np.float64:
+#            if deb2 < 0.0: return np.abs(amp)
+#            else: return np.sqrt(deb2)
+#        else:
+#            lowsnr = deb2 < 0.0
+#            deb2[lowsnr] = np.abs(amp[lowsnr])**2
+#            return np.sqrt(deb2)
+
+def camp_debias(camp, snr3, snr4):
     """Debias closure amplitudes
        snr3 and snr4 are snr of visibility amplitudes # 3 and 4.
     """
-    if DebiasType=='ExactLog':
-        camp_debias = camp*np.exp( - log_debias(snr1) - log_debias(snr2) + log_debias(snr3) + log_debias(snr4) )
-    else:
-        camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
+
+    camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
     return camp_debias
 
-def logcamp_debias(log_camp, snr1, snr2, snr3, snr4,DebiasType='old'):
+def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
     """Debias log closure amplitudes
        The snrs are the snr of visibility amplitudes
     """
-    if DebiasType=='ExactLog':
-        log_camp_debias = log_camp  - log_debias(snr1) - log_debias(snr2) + log_debias(snr3) + log_debias(snr4)
-    else:
-        log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
+
+    log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
     return log_camp_debias
 
 def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
@@ -982,7 +943,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
         progress = int(bar_width * complete_percent/float(100))
         barparams = (nscan, totscans, tint, ("-"*progress) + (" " * (bar_width-progress)),complete_percent)
 
-        printstr = "\rAverging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]%i%%"
+        printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]%i%%"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
     if msgtype=='casa':
@@ -994,7 +955,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
         message = ''.join(message_list[:progress])
 
         barparams = (nscan, totscans, tint,message)
-        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %s"
+        printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: %s"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
     if msgtype=='itcrowd':
@@ -1009,7 +970,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
 
         barparams = (nscan, totscans, tint,message)
 
-        printstr= "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]"
+        printstr= "\rAveraging Scan %0"+ndigit+"i/%i : [%s]"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
 
