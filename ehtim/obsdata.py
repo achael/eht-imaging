@@ -929,7 +929,7 @@ class Obsdata(object):
         print("updated self.cphase: avg_time %f s\n"%avg_time)
 
     def add_camp(self, return_type='rec', ctype='camp',
-                       count='max', debias=True,  debias_type='old',
+                       count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.camp or self.logcamp: closure amplitudes table
@@ -938,7 +938,6 @@ class Obsdata(object):
                return_type: data frame ('df') or recarray ('rec')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude
-               debias_type (str): 'ExactLog' or 'old'
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
 
                avg_time (float): closure amplitude averaging timescale
@@ -953,7 +952,7 @@ class Obsdata(object):
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else: foo = self
         cdf = make_camp_df(foo,ctype=ctype,debias=False,count=count,
-                           round_s=round_s,debias_type=debias_type)
+                           round_s=round_s)
 
         if return_type=='rec':
             cdf = df_to_rec(cdf,'camp')
@@ -967,7 +966,7 @@ class Obsdata(object):
 
 
     def add_logcamp(self, return_type='rec', ctype='camp',
-                       count='max', debias=True,  debias_type='old',
+                       count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.logcamp: closure amplitudes table
@@ -976,7 +975,6 @@ class Obsdata(object):
                return_type: data frame ('df') or recarray ('rec')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude
-               debias_type (str): 'ExactLog' or 'old'
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
 
                avg_time (float): closure amplitude averaging timescale
@@ -986,12 +984,12 @@ class Obsdata(object):
 
         """
         self.add_camp(return_type=return_type, ctype='logcamp',
-                     count=count, debias=debias,  debias_type=debias_type,
+                     count=count, debias=debias, 
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
 
     def add_all(self, return_type='rec',
-                       count='max', debias=True,  debias_type='old',
+                       count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds tables of all all averaged derived quantities self.amp,self.bispec,self.cphase,self.camp,self.logcamp
@@ -999,7 +997,6 @@ class Obsdata(object):
            Args:
                return_type: data frame ('df') or recarray ('rec')
                debias (bool): If True, debias the closure amplitude
-               debias_type (str): 'ExactLog' or 'old'
                count (str): If 'min', return minimal set of closure quantities, if 'max' return all closure quantities
 
                avg_time (float): closure amplitude averaging timescale
@@ -1014,10 +1011,10 @@ class Obsdata(object):
         self.add_cphase(return_type=return_type, count=count, avg_time=avg_time, 
                         err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='camp',
-                     count=count, debias=debias,  debias_type=debias_type,
+                     count=count, debias=debias,  
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='logcamp',
-                     count=count, debias=debias,  debias_type=debias_type,
+                     count=count, debias=debias,  
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
 
@@ -1858,7 +1855,7 @@ class Obsdata(object):
         return np.array(outdata)
 
     def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp',
-                           debias=True, timetype=False, debias_type='old'):
+                           debias=True, timetype=False):
 
         """Return a recarray of the equal time closure amplitudes.
 
@@ -1869,7 +1866,6 @@ class Obsdata(object):
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
                timetype (str): 'GMST' or 'UTC'
-               debias_type (str): 'ExactLog' or 'old'
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
@@ -1887,8 +1883,6 @@ class Obsdata(object):
             raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
-        if debias_type not  in ['old','ExactLog']:
-            raise Exception("debias_type should be 'ExactLog' or 'old'!")
 
         # Get data sorted by time
         tlist = self.tlist(conj=True)
@@ -1944,7 +1938,7 @@ class Obsdata(object):
 
                     # Compute the closure amplitude and the error
                     (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                             ctype=ctype, debias=debias, debias_type=debias_type)
+                                                             ctype=ctype, debias=debias)
 
                     # Add the closure amplitudes to the equal-time list
                     # Our site convention is (12)(34)/(14)(23)
@@ -1976,7 +1970,7 @@ class Obsdata(object):
 
                         # Compute the closure amplitude and the error
                         (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                                 ctype=ctype, debias=debias, debias_type=debias_type)
+                                                                 ctype=ctype, debias=debias)
 
                         # Add the closure amplitudes to the equal-time list
                         # Our site convention is (12)(34)/(14)(23)

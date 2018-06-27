@@ -40,6 +40,7 @@ import ehtim.io.load
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+import emcee
 ###########################################################################################################################################
 #Image object
 ###########################################################################################################################################
@@ -1125,9 +1126,6 @@ class Image(object):
         xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
         ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
 
-        # image center of mass
-        cm = ndi.center_of_mass(self.imvec.reshape(self.ydim,self.xdim))
-
         #normalize to range 0, 1
         im = self.copy()
         maxval = np.max(im.imvec)
@@ -1139,91 +1137,115 @@ class Image(object):
         im.imvec = im_norm
 
         # detect edges
-        if edgetype=='canny':
-            imarr = im.imvec.reshape(self.ydim,self.xdim)
-            edges = canny(imarr, sigma=0, high_threshold=.2,  low_threshold=0.05)
-            im_edges = self.copy()
-            im_edges.imvec = edges.flatten()
+        def edgeFilter(thresh):
+            if edgetype=='canny':
+                imarr = im.imvec.reshape(self.ydim,self.xdim)
+                edges = canny(imarr, sigma=0, high_threshold=thresh,  low_threshold=0.01)
+                im_edges = self.copy()
+                im_edges.imvec = edges.flatten()
 
-        else: #edgetype=='grad':
-            im_edges = self.im_grad()
-            if not (thresh is None):
-                thresh_val = thresh*np.max(im_edges.imvec)
-                mask = im_edges.imvec > thresh_val
-                #im_edges.imvec[mask] = 1
-                im_edges.imvec[~mask] = 0
+            else: #edgetype=='grad':
+                im_edges = self.im_grad()
+                if not (thresh is None):
+                    thresh_val = thresh*np.max(im_edges.imvec)
+                    mask = im_edges.imvec > thresh_val
+                    im_edges.imvec[mask] = 1
+                    im_edges.imvec[~mask] = 0
 
-        # interpolation function on edges
-        imarr = im_edges.imvec.reshape(self.ydim,self.xdim)
-        xs = np.arange(self.xdim)
-        ys = np.arange(self.ydim)
-        #im_interp = scipy.interpolate.RectBivariateSpline(ys,xs,imarr)
-        im_interp = scipy.interpolate.interp2d(ys,xs,imarr,kind='cubic')
+            # interpolation function on edges
+            edges = im_edges.imvec.reshape(self.ydim,self.xdim)
+            edges_tot = np.sum(edges)
+            xs = np.arange(self.xdim)
+            ys = np.arange(self.ydim)
+            #im_interp = scipy.interpolate.RectBivariateSpline(ys,xs,imarr)
+            edges_interp = scipy.interpolate.interp2d(ys,xs,edges,kind='linear')
 
-        def Interp(x0,y0):
-            return im_interp(x0,y0)[0]
+            return (edges_interp, edges_tot)
+
 
         # define the objective function
-        nrays = 60
+        nrays = 100
         thetas = np.linspace(0,2*np.pi,nrays)
         costhetas = np.cos(thetas)
         sinthetas = np.sin(thetas)
-        def ringSum(x0,y0,r):
+        def ringSum(im_interp, x0,y0,r):
             xxs = x0 + r*costhetas
             yys = y0 + r*sinthetas
-            vals = [Interp(yys[i],xxs[i]) for i in np.arange(nrays)]
-            return np.sum(vals)
+            vals = [im_interp(yys[i],xxs[i])[0] for i in np.arange(nrays)]
+            out = np.sum(vals)
+            return out
 
-        def objFunc(params):
+        def lnLike(params):
             x0 = params[0]
             y0 = params[1]
             r = np.abs(params[2])
-            return -ringSum(x0,y0,r)
+            thresh = np.abs(params[3])
+            im_interp, edges_tot = edgeFilter(thresh)
+            like = ringSum(im_interp,x0,y0,r)/float(edges_tot*r)
 
-        # brute force search
+
+            if like <= 0.: return -np.inf
+            else: return np.log(like)
+
+
+        # data ranges
+        cm = ndi.center_of_mass(self.imvec.reshape(self.ydim,self.xdim))
         rangex = (int(cm[1]-.25*self.xdim),int(cm[1]+.25*self.xdim))
         rangey = (int(cm[0]-.25*self.ydim),int(cm[0]+.25*self.ydim))
         ranger = (10*RADPERUAS/self.psize, 50*RADPERUAS/self.psize)
 
-        resb = scipy.optimize.brute(objFunc, (rangex,rangey,ranger),Ns=10,full_output=True)
-        all_results = resb[3].flatten()
-        all_xs = resb[2][0].flatten()
-        all_ys = resb[2][1].flatten()
-        all_rs = resb[2][2].flatten()
+        def lnPrior(ringparams):
+            lnprior = 0
+            if rangex[0] < ringparams[0] < rangex[1]: lnprior+=0
+            else: lnprior += -np.inf
 
-        # print results, plot circles, and return
-        outlist = []
-        colors = ['b','r','w','lime','magenta','aqua']
-        if display_results:
-            plt.ion()       
-            fig = self.display()
-            ax = fig.gca()
-        for i in range(num_circles):
-            idx = np.argmin(all_results)
-            guess = (all_xs[idx],all_ys[idx],all_rs[idx])
-            all_results[idx] = 0
+            if rangey[0] < ringparams[1] < rangey[1]: lnprior+=0
+            else: lnprior += -np.inf
 
-            # refine search with gradient descent
-            res = scipy.optimize.minimize(objFunc, guess*(1+.01*np.random.randn(3)) , method='L-BFGS-B')
-            center_x = res.x[0]
-            center_y = res.x[1]
-            radius = res.x[2]
-            print("%i ring diameter: %0.1f microarcsec"% (i, 2*radius*self.psize/RADPERUAS))
+            if ranger[0] < ringparams[2] < ranger[1]: lnprior+=0
+            else: lnprior += -np.inf
 
-            x_rad = xlist[int(np.round(center_x))]
-            y_rad = ylist[int(np.round(center_y))]
-            r_rad = radius*self.psize
-            outlist.append([x_rad,y_rad,r_rad,res.fun])
+            if 1.e-3 < ringparams[3] < .5 : lnprior+=0
+            else: lnprior += -np.inf
 
-            if display_results:
-                if i>len(colors): color=colors[-1]
-                else: color = colors[i]
-                circ = mpl.patches.Circle((center_y,center_x),radius, fill=False, color=color)
-                ax.add_patch(circ)
+            return lnprior
+
+        def lnPost(ringparams):
+            return lnPrior(ringparams) + lnLike(ringparams)
+
+
+        # initial conditions from hough
+        nhough=5
+        rings = self.hough_ring(num_circles=nhough,display_results=True,return_type='pixel')
+
+        # set up the MCMC
+        ndim, nwalkers = 4, 100
+        p0 = [np.array((rings[i%5][0] * (1+1.e-2*np.random.randn()),
+                        rings[i%5][1] * (1+1.e-2*np.random.randn()),
+                        rings[i%5][2] * (1+1.e-2*np.random.randn()),
+                       .1 * (1+1.e-2*np.random.randn()) )) 
+              for i in range(nwalkers)]
+
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnPost)
+        pos,prob,state=sampler.run_mcmc(p0, 100)
+        sampler.reset()
+        pos,prob,state=sampler.run_mcmc(pos, 1000)
+
+        chain = sampler.chain
+        ndim = chain.shape[-1]
+#        samples = chain[:, 50:, :].reshape((-1, ndim))
+#        results = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+#                  zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+#        allparams=np.array(results)[:,0]
+#        print (allparams)
+
+        plt.hist(chain.reshape((-1,ndim))[:,2], 100, color="k", histtype="step")
+        plt.show()
 
         return outlist
 
-    def hough_ring(self, edgetype='canny',thresh=None, display_results=True, num_circles=3, radius_range=None):
+    def hough_ring(self, edgetype='canny',thresh=0.2, num_circles=3, radius_range=None,
+                         return_type='rad', display_results=True):
         """Use a circular hough transform to find a circle in the image
 
            Args:
@@ -1232,7 +1254,7 @@ class Image(object):
                edgetype (str): edge detection type, 'gradient' or 'canny'
                thresh(float): fractional threshold for the gradient image
                display_results (bool): True to display results of the fit
-               
+               return_type (str): 'rad' to return results in radian, 'pixel' to return in pixel units
            Returns:
                list : a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian
         """
@@ -1255,7 +1277,7 @@ class Image(object):
         # detect edges
         if edgetype=='canny':
             imarr = im.imvec.reshape(self.ydim,self.xdim)
-            edges = canny(imarr, sigma=0, high_threshold=.2,  low_threshold=0.05)
+            edges = canny(imarr, sigma=0, high_threshold=thresh,  low_threshold=0.01)
             im_edges = self.copy()
             im_edges.imvec = edges.flatten()
 
@@ -1264,7 +1286,7 @@ class Image(object):
             if not (thresh is None):
                 thresh_val = thresh*np.max(im_edges.imvec)
                 mask = im_edges.imvec > thresh_val
-                #im_edges.imvec[mask] = 1
+                #im_edges.imvec[mask] = 1f
                 im_edges.imvec[~mask] = 0
                 edges = im_edges.imvec.reshape(self.ydim, self.xdim)
 
@@ -1290,12 +1312,15 @@ class Image(object):
         colors = ['b','r','w','lime','magenta','aqua']
         for accum, center_y, center_x, radius in zip(accums, cy, cx, radii):
             accum_frac = accum/accum_tot
-            x_rad = xlist[int(np.round(center_x))]
-            y_rad = ylist[int(np.round(center_y))]
-            r_rad = radius*self.psize
-            outlist.append([x_rad,y_rad,r_rad,accum_frac])
+            if return_type=='rad':
+                x_rad = xlist[int(np.round(center_x))]
+                y_rad = ylist[int(np.round(center_y))]
+                r_rad = radius*self.psize
+                outlist.append([x_rad,y_rad,r_rad,accum_frac])
+            else:
+                outlist.append([center_x,center_y,radius,accum_frac])
             print(accum_frac)
-            print("%i ring diameter: %0.1f microarcsec"% (i, 2*r_rad/RADPERUAS))
+            print("%i ring diameter: %0.1f microarcsec"% (i, 2*radius*pdim/RADPERUAS))
             if display_results:
                 if i>len(colors): color=colors[-1]
                 else: color = colors[i]
