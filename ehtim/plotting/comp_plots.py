@@ -20,19 +20,24 @@
 
 from builtins import range
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import itertools as it
 
+
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
+from ehtim.obsdata import merge_obs
 
-COLORLIST = ['b','m','g','c','y','k','r']
 
+
+#COLORLIST = ['b','m','g','c','y','k','r']
+COLORLIST = SCOLORS
 ##################################################################################################
 # Plotters: Compare Observations
 ##################################################################################################
 def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, conj=False,
-                        clist=COLORLIST, ebar=True, debias=True, ang_unit='deg', export_pdf="", axis=False, show=True):
+                        clist=COLORLIST, ebar=True, debias=True, labels=True, ang_unit='deg', export_pdf="", axis=False, show=True):
     """Make a scatter plot for multiple observations of 2 real baseline observation fields in (FIELDS) with error bars.
 
            Args:
@@ -50,6 +55,7 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
 
                ebar (bool): Plot error bars if True
                show (bool): Display the plot if true
+               labels (bool): Show axis labels if True
                axis (matplotlib.axes.Axes): add plot to this axis
                clist (list): list of color strings of scatterplot points
                export_pdf (str): path to pdf file to save figure
@@ -66,7 +72,7 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
     for i in range(len(obslist)):
         obs = obslist[i]
         axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, debias=debias, ang_unit=ang_unit,
-                           conj=conj, show=False, axis=axis, color=clist[i%len(clist)], ebar=ebar)
+                           conj=conj, show=False, axis=axis, color=clist[i%len(clist)], ebar=ebar, labels=labels)
 
     if show:
         plt.show(block=False)
@@ -78,7 +84,7 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
 
 def plot_bl_obs_compare(obslist,  site1, site2, field,
                         rangex=False, rangey=False, show=True, clist=COLORLIST,
-                        timetype=False, ebar=True, debias=True, export_pdf="", axis=False):
+                        timetype=False, ebar=True, labels=True, debias=True, export_pdf="", axis=False):
     """Plot data from multiple observations vs time on a single baseline on the same axes.
 
            Args:
@@ -88,6 +94,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field,
                field (str): y-axis field (from FIELDS)
 
                debias (bool): If True and plotting vis amplitudes, debias them
+               labels (bool): Show axis labels if True
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
@@ -113,7 +120,8 @@ def plot_bl_obs_compare(obslist,  site1, site2, field,
 
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
+        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], 
+                           timetype=timetype, ebar=ebar, labels=labels, debias=debias)
 
 
     if show:
@@ -189,7 +197,7 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=
 
 def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False,
                           show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True,
-                          timetype=False, ebar=True, camps=[], export_pdf="", axis=False,
+                          timetype=False, ebar=True, labels=True,  camps=[], export_pdf="", axis=False,
                           force_recompute=False):
 
     """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
@@ -211,6 +219,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
                rangey (list): [ymin, ymax] y-axis (phase) limits
 
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                clist (list): List of color strings of scatterplot points
@@ -235,9 +244,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
         obs = obslist[i]
 
         axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar, camps=camps[i])
-
-
+                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar, labels=labels, camps=camps[i])
 
     if show:
         plt.show(block=False)
@@ -251,7 +258,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, ra
 # Plotters: Compare Observations to Image
 ##################################################################################################
 def plotall_obs_im_compare(obslist, image, field1, field2,
-                           ttype='direct', sgrscat=False,
+                           ttype='direct', sgrscat=False,labels=True,
                            rangex=False, rangey=False, conj=False, clist=COLORLIST, ebar=True,
                            axis=False,show=True, export_pdf=""):
 
@@ -271,8 +278,9 @@ def plotall_obs_im_compare(obslist, image, field1, field2,
 
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
-j
+
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                clist (list): list of color strings of scatterplot points
@@ -284,17 +292,21 @@ j
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
+    obslist_true=[]
     for i in range(len(obslist)):
         obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
         obstrue.data['sigma'] *= 0
-        obslist.append(obstrue)
+        obslist_true.append(obstrue)
+    obstrue = merge_obs(obslist_true)
+    obslist.append(obstrue)
 
     if len(obslist) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
 
     for i in range(len(obslist)):
         obs = obslist[i]
-        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False, axis=axis, color=clist[i%len(clist)], ebar=ebar)
+        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False,
+                           axis=axis, color=clist[i%len(clist)], ebar=ebar,labels=labels)
 
 
     if show:
@@ -306,7 +318,7 @@ j
     return axis
 
 def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', sgrscat=False,
-                           rangex=False, rangey=False, show=True, clist=COLORLIST,
+                           rangex=False, rangey=False, show=True, clist=COLORLIST,labels=True,
                            timetype=False, ebar=True, debias=True, export_pdf="", axis=False):
     """Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
            Args:
@@ -326,6 +338,7 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', 
                rangey (list): [ymin, ymax] y-axis limits
 
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                clist (list): list of color strings of scatterplot points
@@ -338,10 +351,13 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', 
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
+    obslist_true=[]
     for i in range(len(obslist)):
         obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
         obstrue.data['sigma'] *= 0
-        obslist.append(obstrue)
+        obslist_true.append(obstrue)
+    obstrue = merge_obs(obslist_true)
+    obslist.append(obstrue)
 
     if len(obslist) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
@@ -349,7 +365,8 @@ def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', 
     for i in range(len(obslist)):
         obs = obslist[i]
 
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
+        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, labels=labels,
+                           axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
 
 
     if show:
@@ -401,10 +418,13 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direc
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
+    obslist_true=[]
     for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat,add_th_noise=False, ttype=ttype)
+        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
         obstrue.data['sigma'] *= 0
-        obslist.append(obstrue)
+        obslist_true.append(obstrue)
+    obstrue = merge_obs(obslist_true)
+    obslist.append(obstrue)
 
     if len(obslist) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
@@ -428,7 +448,7 @@ def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direc
 
 def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='nfft', sgrscat=False,
                              rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp',
-                              debias=True, timetype=False, axis=False, ebar=True, export_pdf=""):
+                              debias=True, timetype=False, axis=False, ebar=True, labels=True, export_pdf=""):
 
 
 
@@ -453,6 +473,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
                rangey (list): [ymin, ymax] y-axis (phase) limits
 
                ebar (bool): Plot error bars if True
+               labels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                clist (list): List of color strings of scatterplot points
@@ -467,10 +488,13 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
     try: len(obslist)
     except TypeError: obslist = [obslist]
 
+    obslist_true=[]
     for i in range(len(obslist)):
         obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
         obstrue.data['sigma'] *= 0
-        obslist.append(obstrue)
+        obslist_true.append(obstrue)
+    obstrue = merge_obs(obslist_true)
+    obslist.append(obstrue)
 
     if len(obslist) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
@@ -479,7 +503,7 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
         obs = obslist[i]
 
         axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar)
+                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar,labels=labels)
 
     if show:
         plt.show(block=False)
@@ -490,14 +514,15 @@ def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='
     return axis
 
 
-def plotall_obs_im_cphases(obs, image, ttype='nfft', sgrscat=False,
+#TODO: make this work with multiple observations??
+def plotall_obs_im_cphases(obslist, image, ttype='nfft', sgrscat=False,
                            rangex=False, rangey=[-180,180], show=True, ebar=True,
                            vtype='vis',ang_unit='deg', timetype='UTC',
                            display_mode='all', labels=False):
     """Plot all observation closure phases on  top of image ground truth values.
 
            Args:
-               obs (Obsdata):  observation to plot
+               Obsdata (Obsdata): observation to plot
                image (Image): ground truth image to compare to
 
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
@@ -521,6 +546,7 @@ def plotall_obs_im_cphases(obs, image, ttype='nfft', sgrscat=False,
                (matplotlib.axes.Axes): Axes object with data plot
 
     """
+
 
     # get closure triangle combinations
     sites = []

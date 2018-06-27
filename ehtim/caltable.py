@@ -40,12 +40,6 @@ from ehtim.observing.obs_helpers import *
 
 import scipy
 
-def relaxed_interp1d(x, y, **kwargs):
-    if len(x) == 1:
-        x = np.array([-0.5, 0.5]) + x[0]
-        y = np.array([ 1.0, 1.0]) * y[0]
-    return scipy.interpolate.interp1d(x, y, **kwargs)
-
 ##################################################################################################
 # Caltable object
 ##################################################################################################
@@ -117,6 +111,126 @@ class Caltable(object):
         """
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
+
+    def plot_gains(self, sites, gain_type='amp', pol='R', 
+                   ang_unit='deg',timetype=False,yscale='lin',
+                   clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
+                   show=True, grid=False, labels=True, axis=False, export_pdf=""):
+        """Plot gains on multiple sites vs time.
+           Args:
+               sites (list): a list of site names for which to plot gains. Empty list is all sites. 
+               gain_type (str): 'amp' or 'phase'
+               pol str(str): 'R' or 'L'
+               ang_unit (str): phase unit 'deg' or 'rad'
+               timetype (str): 'GMST' or 'UTC'
+               yscale (str): 'log' or 'lin',
+               clist (list): list of colors for the plot
+
+               rangex (list): [xmin, xmax] x-axis (time) limits
+               rangey (list): [ymin, ymax] y-axis (gain) limits
+            
+               grid (bool): Plot gridlines if True
+               labels (bool): Show axis labels if True
+               show (bool): Display the plot if true
+               axis (matplotlib.axes.Axes): add plot to this axis
+               markersize (int): size of plot markers
+               export_pdf (str): path to pdf file to save figure
+
+           Returns:  
+               (matplotlib.axes.Axes): Axes object with the plot
+        """
+
+        colors = iter(clist)
+
+        if timetype==False:
+            timetype=self.timetype
+        if timetype not  in ['GMST','UTC','utc','gmst']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
+        if gain_type not in ['amp','phase']:
+            raise Exception("gain_type must be 'amp' or 'phase'  ")
+        if pol not in ['R','L','both']:
+            raise Exception("pol must be 'R' or 'L'")
+
+        if ang_unit=='deg': angle=DEGREE
+        else: angle = 1.0
+
+        # axis
+        if axis:
+            x = axis
+        else:
+            fig = plt.figure()
+            x = fig.add_subplot(1,1,1)
+
+        # sites
+        if sites in ['all' or 'All'] or sites==[]:
+            sites = self.data.keys()
+
+        if not type(sites) is list:
+            sites = [sites]
+
+
+        # plot gain on each site
+        tmins = tmaxes = gmins = gmaxes = []
+        for site in sites:
+            times = self.data[site]['time']
+            if timetype in ['UTC','utc'] and self.timetype=='GMST':
+                times = gmst_to_utc(times, self.mjd)
+            elif timetype in ['GMST','gmst'] and self.timetype=='UTC':
+                times = utc_to_gmst(times, self.mjd)
+            if pol=='R':
+                gains = self.data[site]['lscale']
+            elif pol=='L':
+                gains = self.data[site]['rscale']
+
+            if gain_type=='amp':
+                gains = np.abs(gains)
+                ylabel = r'$|G|$'
+
+            if gain_type=='phase':
+                gains = np.angle(gains)*angle
+                if ang_unit=='deg': ylabel = r'arg($|G|$) ($^\circ$)'
+                else: ylabel = r'arg($|G|$) (radian)'
+
+            tmins.append(np.min(times))
+            tmaxes.append(np.max(times))
+            gmins.append(np.min(gains))
+            gmaxes.append(np.max(gains))
+
+            # Plot the data
+            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, label=str(site), linestyle='none')
+
+        if not rangex:
+            rangex = [np.min(tmins) - 0.2 * np.abs(np.min(tmins)),
+                      np.max(tmaxes) + 0.2 * np.abs(np.max(tmaxes))]
+            if np.any(np.isnan(np.array(rangex))):
+                raise Exception("NaN in data x range: try specifying rangex manually")
+        if not rangey:
+            rangey = [np.min(gmins) - 0.2 * np.abs(np.min(gmins)),
+                      np.max(gmaxes) + 0.2 * np.abs(np.max(gmaxes))]
+            if np.any(np.isnan(np.array(rangey))):
+                raise Exception("NaN in data y range: try specifying rangey manually")
+
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
+
+        # labels
+        if labels:
+            x.set_xlabel(self.timetype + ' (hr)')
+            x.set_ylabel(ylabel)
+            plt.title('Caltable gains for %s on day %s' % (self.source, self.mjd))
+            plt.legend()
+
+        if yscale=='log':
+            x.yscale('log')
+        if grid:
+            x.grid()
+        if export_pdf != "" and not axis:
+            fig.savefig(export_pdf, bbox_inches='tight')
+        if show:
+            plt.show(block=False)
+
+        return x
+
 
     #TODO default extrapolation?
     def pad_scans(self, maxdiff=60, padtype='median'):
@@ -511,3 +625,9 @@ def make_caltable(obs, gains, sites, times):
         caltable=False
 
     return caltable
+
+def relaxed_interp1d(x, y, **kwargs):
+    if len(x) == 1:
+        x = np.array([-0.5, 0.5]) + x[0]
+        y = np.array([ 1.0, 1.0]) * y[0]
+    return scipy.interpolate.interp1d(x, y, **kwargs)
