@@ -74,8 +74,8 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
 
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
-    if len(sites) < 2:
-        print("less than 2 stations specified in self cal: defaulting to calibrating all stations!")
+    if len(sites) == 0:
+        print("No stations specified in self cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']
 
     # First, sample the model visibilities
@@ -210,7 +210,13 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         except KeyError:
             g2_keys.append(-1)
 
-    sigma_inv = 1.0/(scan['sigma'] + pad_amp*np.abs(scan['vis']))
+    # scan visibilities and sigmas with extra padding
+    if method=='amp':
+        vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+    else:
+        vis = scan['vis']
+
+    sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
 
     # initial guess for gains
     gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
@@ -232,9 +238,9 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
         #TODO debias!
         if method=='amp':
-            verr = np.abs(scan['vis']) - g1*g2.conj() * np.abs(V_scan)
+            verr = np.abs(vis) - g1*g2.conj() * np.abs(V_scan)
         else:
-            verr = scan['vis'] - g1*g2.conj() * V_scan
+            verr = vis - g1*g2.conj() * V_scan
 
         # goodness-of-fit for gains 
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)

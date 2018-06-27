@@ -70,8 +70,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
 
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
-    if len(sites) < 2:
-        print("less than 2 stations specified in network cal: defaulting to calibrating all stations!")
+    if len(sites) == 0:
+        print("No stations specified in network cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']
 
     # find colocated sites and put into list allclusters
@@ -216,7 +216,11 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         return scan
 
     # scan visibilities and sigmas with extra padding
-    vis = scan['vis']
+    if method=='amp':
+        vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+    else:
+        vis = scan['vis']
+
     sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
 
     # initial guesses for parameters
@@ -256,7 +260,6 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         g1 = g[g1_keys]
         g2 = g[g2_keys]
 
-        #TODO debias!??!
         if method=='amp':
             verr = np.abs(vis) - g1*g2.conj() * np.abs(v_scan)
         else:
