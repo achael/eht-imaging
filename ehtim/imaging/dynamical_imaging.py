@@ -797,11 +797,46 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, 
 recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
-    """Run dynamic imager
-       Uses I = exp(I') change of variables.
-       Obsdata_List is a list of Obsdata objects, InitIm_List is a list of Image objects, and Prior is an Image object.
-       Returns list of Image objects, one per frame (unless a flow or stochastic optics is used)
-       ttype = 'direct' or 'fast' or 'nfft'
+    """Run dynamical imaging.
+
+       Args:
+           Obsdata_List (List): List of Obsdata objects, one per reconstructed frame. Some can have empty data arrays.
+           InitIm_List (List): List of initial images, each an Image object, one per reconstructed frame.
+           Prior (Image): The Image object with the prior image
+           Flow_Init: Optional initialization for imaging with R_flow
+           flux_List (List): Optional specification of the total flux density for each frame
+           d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           d3 (str): The third data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           systematic_noise1 (float): Systematic noise on the first data term, as a fraction of the visibility amplitude
+           systematic_noise2 (float): Systematic noise on the second data term, as a fraction of the visibility amplitude
+           systematic_noise3 (float): Systematic noise on the third data term, as a fraction of the visibility amplitude
+           entropy1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'tv2', 'l1', 'patch','compact','compact2','rgauss'
+           entropy2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch','compact','compact2','rgauss'
+           alpha_d1 (float): The first data term weighting
+           alpha_d2 (float): The second data term weighting
+           alpha_s1 (float): The first regularizer term weighting
+           alpha_s2 (float): The second regularizer term weighting
+           alpha_flux (float): The weighting for the total flux constraint
+           alpha_centroid (float): The weighting for the center of mass constraint
+           alpha_dF (float): The weighting for temporal continuity of the total flux density.
+           alpha_dS1 (float): The weighting for temporal continuity of entropy1.
+           alpha_dS2 (float): The weighting for temporal continuity of entropy2.
+
+           maxit (int): Maximum number of minimizer iterations
+           stop (float): The convergence criterion
+           minimizer_method (str): Minimizer method (e.g., 'L-BFGS-B' or 'CG')
+           update_interval (int): Print convergence status every update_interval steps
+           norm_reg (bool): If True, normalizes regularizer terms
+           ttype (str): The Fourier transform type; options are 'fast', 'direct', 'nfft'
+
+           stochastic_optics (bool): If True, stochastic optics imaging is used. 
+           scattering_model (ScatteringModel): Optional specification of the ScatteringModel object. 
+           alpha_phi (float): Weighting for screen phase regularization in stochastic optics.
+minimizer_method = 'L-BFGS-B', update_interval = 1
+
+       Returns:
+           List or Dictionary: A list of Image objects, one per frame, unless a flow or stochastic optics is used in which case it returns a dictionary {'Frames', 'Flow', 'EpsilonList' }.
     """
 
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
