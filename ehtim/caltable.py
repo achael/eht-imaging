@@ -188,7 +188,7 @@ class Caltable(object):
                 ylabel = r'$|G|$'
 
             if gain_type=='phase':
-                gains = np.angle(gains)*angle
+                gains = np.angle(gains)/angle
                 if ang_unit=='deg': ylabel = r'arg($|G|$) ($^\circ$)'
                 else: ylabel = r'arg($|G|$) (radian)'
 
