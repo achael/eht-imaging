@@ -85,11 +85,15 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
     # Make the pool for parallel processing
     if processes > 0:
         counter = Counter(initval=0, maxval=len(scans))
+        if processes > len(scans):
+            processes = len(scans)
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
         counter = Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
+        if processes > len(scans):
+            processes = len(scans)
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     else:
@@ -98,13 +102,12 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
     # loop over scans and calibrate
     tstart = time.time()
     if processes > 0: # with multiprocessing
-        scans_cal = np.array(filter(lambda x: x,
-                                    pool.map(get_network_scan_cal,
+        scans_cal = pool.map(get_network_scan_cal,
                                              [[i, len(scans), scans[i],
                                                zbl, sites, cluster_data, method, pad_amp, gain_tol,
                                                caltable, show_solution,debias,msgtype]
                                               for i in range(len(scans))
-                                             ])))
+                                             ])
     else: # without multiprocessing
         for i in range(len(scans)):
             cal_prog_msg(i, len(scans), msgtype=msgtype)
