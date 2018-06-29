@@ -45,7 +45,7 @@ from ehtim.calibrating.cal_helpers import *
 #Self-Calibration
 ###################################################################################################################################
 def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2, 
-             ttype='nfft', fft_pad_factor=2, caltable=False, 
+             ttype='nfft', fft_pad_factor=2, caltable=False, debias=True,
              processes=-1,show_solution=False,msgtype='bar'):
     """Self-calibrate a dataset to an image.
 
@@ -64,6 +64,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
+           debias (bool): If True, debias the amplitudes
            show_solution (bool): if True, display the solution as it is calculated
            msgtype (str): type of progress message to be printed, default is 'bar'
 
@@ -80,16 +81,22 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
 
     # First, sample the model visibilities
     print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
-    if ttype == 'direct':
-        data_arr = obs.unpack(['u','v','vis','sigma'])
-        uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
-        A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
-        V = np.dot(A, im.imvec)
-    else:
+    if ttype == 'nfft':
+        (data, sigma, nfft_A) = iu.chisqdata_vis_nfft(obs, im, fft_pad_factor=fft_pad_factor)
+        nfft_info = nfft_A[0]
+        plan = nfft_info.plan
+        pulsefac = nfft_info.pulsefac
+        plan.f_hat = (im.imvec).copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+        plan.trafo()
+        V = plan.f.copy()*pulsefac
+    elif ttype=='fast':
         (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_factor=fft_pad_factor)
         im_info, sampler_info_list, gridder_info_list = fft_A
         vis_arr = iu.fft_imvec(im.imvec, im_info)
         V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
+    else:
+        (data, sigma, A) = iu.chisqdata_vis(obs, im)
+        V = np.dot(A, im.imvec)
 
     # Partition the list of model visibilities into scans
     from itertools import islice
@@ -119,7 +126,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
     if processes > 0: # run on multiple cores with multiprocessing
 
         scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method,
-                                                              show_solution, pad_amp, gain_tol, caltable, msgtype
+                                                              show_solution, pad_amp, gain_tol, caltable, debias, msgtype
                                                              ] for i in range(len(scans))]))
 
     else: # run on a single core
@@ -127,7 +134,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
         for i in range(len(scans)):
             cal_prog_msg(i, len(scans),msgtype=msgtype)
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
-                                 method=method, show_solution=show_solution,
+                                 method=method, show_solution=show_solution, debias=debias,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
 
     tstop = time.time()
@@ -162,7 +169,8 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
 
     return out
 
-def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
+def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=False, 
+                  pad_amp=0., gain_tol=.2, debias=True,caltable=False):
     """Self-calibrate a scan to an image.
 
        Args:
@@ -175,6 +183,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
 
+           debias (bool): If True, debias the amplitudes
            caltable (bool): if True, returns a Caltable instead of an Obsdata 
            show_solution (bool): if True, display the solution as it is calculated
            
@@ -212,11 +221,14 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     # scan visibilities and sigmas with extra padding
     if method=='amp':
-        vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+        if debias:
+            vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+        else:
+            vis = np.abs(amp)
     else:
         vis = scan['vis']
-
     sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
+
 
     # initial guess for gains
     gpar_guess = np.ones(len(sites), dtype=np.complex128).view(dtype=np.float64)
@@ -237,6 +249,10 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         g2 = g[g2_keys]
 
         #TODO debias!
+#        if method=='amp':
+#            verr = np.abs(scan['vis']) - g1*g2.conj() * np.abs(V_scan)
+#        else:
+#            verr = scan['vis'] - g1*g2.conj() * V_scan
         if method=='amp':
             verr = np.abs(vis) - g1*g2.conj() * np.abs(V_scan)
         else:
@@ -304,14 +320,14 @@ def init(x):
 def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
-def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable,msgtype):
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable,debias,msgtype):
     if n > 1:
         global counter
         counter.increment()
         cal_prog_msg(counter.value(), counter.maxval,msgtype)
 
     return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, 
-                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+                         pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable, debias=debias)
 
 
 

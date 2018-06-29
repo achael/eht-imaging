@@ -658,7 +658,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t, len(timesplit), inttime, msgtype=msgtype)
+            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %0.2f s ints : Reduced Data %i/%i'
 #                              % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()
@@ -766,7 +766,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t, len(timesplit), inttime, msgtype=msgtype)
+            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
 #                                % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()

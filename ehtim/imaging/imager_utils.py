@@ -2059,7 +2059,7 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut):
     t1 = data_arr['t1']
     t2 = data_arr['t2']
 
-    snrmask = np.abs(amp/sigma) > snrcut
+    snrmask = np.abs(amp/sigma) >= snrcut
 
     if type(systematic_noise) is dict:
         sys_level = np.zeros(len(t1))
