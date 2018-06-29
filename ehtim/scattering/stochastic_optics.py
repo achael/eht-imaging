@@ -698,11 +698,11 @@ def MakeEpsilonScreen(Nx, Ny, rngseed = 0):
 
     #Now let's ensure that it has the necessary conjugation symmetry
     if Nx%2 == 0:
-        epsilon[0][Nx/2] = np.real(epsilon[0][Nx/2])
+        epsilon[0][Nx//2] = np.real(epsilon[0][Nx//2])
     if Ny%2 == 0:
-        epsilon[Ny/2][0] = np.real(epsilon[Ny/2][0])
+        epsilon[Ny//2][0] = np.real(epsilon[Ny//2][0])
     if Nx%2 == 0 and Ny%2 == 0:
-        epsilon[Ny/2][Nx/2] = np.real(epsilon[Ny/2][Nx/2])
+        epsilon[Ny//2][Nx//2] = np.real(epsilon[Ny//2][Nx//2])
 
     for x in range(Nx):
         if x > (Nx-1)//2: 

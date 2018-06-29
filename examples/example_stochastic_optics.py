@@ -5,10 +5,9 @@
 import numpy as np
 import ehtim as eh
 import ehtim.scattering as so
-import ehtim.plotting as pl
 
 # Create a sample unscattered image -- a ring
-npix = 201 #Linear pixel dimension
+npix = 200 #Linear pixel dimension
 fov = 500*eh.RADPERUAS #Field of view
 total_flux = 3.4 # Jy
 im = eh.image.Image(np.zeros((npix,npix)), fov/npix, eh.RA_DEFAULT, eh.DEC_DEFAULT, rf=86e9)
@@ -22,7 +21,7 @@ sm = so.ScatteringModel()
 scatt = sm.Scatter(im,ep,DisplayImage=True)
 
 # Observe the average image
-eht = eh.array.load_txt('arrays/VLBA_86GHz.txt') # Load the observing array
+eht = eh.array.load_txt('../arrays/VLBA_86GHz.txt') # Load the observing array
 #observing parameters:
 tint_sec = 60
 tadv_sec = 600
