@@ -45,7 +45,7 @@ from ehtim.calibrating.cal_helpers import *
 #Self-Calibration
 ###################################################################################################################################
 def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2, 
-             ttype='nfft', fft_pad_factor=2, caltable=False, debias=True,
+             ttype='direct', fft_pad_factor=2, caltable=False, debias=True,
              processes=-1,show_solution=False,msgtype='bar'):
     """Self-calibrate a dataset to an image.
 
@@ -95,7 +95,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
         vis_arr = iu.fft_imvec(im.imvec, im_info)
         V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
     else:
-        (data, sigma, A) = iu.chisqdata_vis(obs, im)
+        (data, sigma, A, im.imvec>0) = iu.chisqdata_vis(obs, im)
         V = np.dot(A, im.imvec)
 
     # Partition the list of model visibilities into scans
