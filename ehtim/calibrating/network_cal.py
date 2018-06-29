@@ -107,7 +107,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
                                              ])))
     else: # without multiprocessing
         for i in range(len(scans)):
-            cal_prog_msg(i, len(scans), msgtype=msgtype)
+            cal_prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i-1)
             scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data,
                                             method=method, show_solution=show_solution, caltable=caltable,
                                             pad_amp=pad_amp, gain_tol=gain_tol,debias=debias)
@@ -341,7 +341,7 @@ def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,
     if n > 1:
         global counter
         counter.increment()
-        cal_prog_msg(counter.value(), counter.maxval,msgtype)
+        cal_prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
     return network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, 
                             method=method,caltable=caltable, show_solution=show_solution, 

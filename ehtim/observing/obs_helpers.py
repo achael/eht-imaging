@@ -33,8 +33,11 @@ import scipy.special as ss
 import itertools as it
 import copy
 import sys
+import os
 
+import ehtim.const_def 
 from ehtim.const_def import *
+
 
 import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
@@ -927,17 +930,13 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
     return out
 
 
-def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
+def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
     """print a progress method for averaging
     """
-
+    complete_percent_last = int(100*float(nscan_last)/float(totscans))
     complete_percent = int(100*float(nscan)/float(totscans))
     ndigit = str(len(str(totscans)))
-    if msgtype=='default':
-        barparams = (nscan, totscans,tint, complete_percent)
-        prinstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
-        sys.stdout.write(printstr % barparams)
-        sys.stdout.flush()
+
     if msgtype=='bar':
         bar_width = 30
         progress = int(bar_width * complete_percent/float(100))
@@ -946,7 +945,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
         printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]%i%%"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-    if msgtype=='casa':
+    elif msgtype=='casa':
         message_list = [".",".",".","10",".",".",".","20",".",".",".","30",".",".",".","40",
                         ".",".",".","50",".",".",".","60",".",".",".","70",".",".",".","80",
                         ".",".",".","90",".",".",".","DONE"]
@@ -958,7 +957,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
         printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: %s"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-    if msgtype=='itcrowd':
+    elif msgtype=='itcrowd':
         message_list = ["0","1","1","8"," ","9","9","9"," ","8","8","1","9","9"," ",
                         "9","1","1","9"," ","7","2","5"," "," "," ","3"]
         bar_width = len(message_list)
@@ -973,5 +972,22 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar'):
         printstr= "\rAveraging Scan %0"+ndigit+"i/%i : [%s]"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+    elif msgtype=='bh':
+        message_all = BHIMAGE
+        bar_width = len(message_all)
+        progress = int(np.floor(bar_width * complete_percent/float(100)))-1
+        progress_last = int(np.floor(bar_width * complete_percent_last/float(100)))-1
+        if progress>progress_last:
+            for i in range(progress_last+1,progress+1):
+                message_line = ''.join(message_all[i])
+                message_line = '%03i'%int(complete_percent) + message_line
+                print(message_line)
+
+    else:# msgtype=='default':
+        barparams = (nscan, totscans,tint, complete_percent)
+        prinstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
 
 

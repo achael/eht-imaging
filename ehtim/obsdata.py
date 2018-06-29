@@ -658,7 +658,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype)
+            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype,nscan_last=t)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %0.2f s ints : Reduced Data %i/%i'
 #                              % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()
@@ -766,7 +766,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype)
+            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype,nscan_last=t)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
 #                                % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()
@@ -2082,7 +2082,6 @@ class Obsdata(object):
 
         return np.array(outdata)
 
-
     def plotall(self, field1, field2, conj=False,
                       debias=True, tag_bl=False, timetype=False, ang_unit='deg',
                       ebar=True, rangex=False, rangey=False, grid=False,labels=True,
@@ -2683,4 +2682,5 @@ def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEF
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile, src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
+    return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile, 
+                                       src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
