@@ -880,7 +880,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         FOV = InitIm_List[0].psize * N * scattering_model.observer_screen_distance #Field of view, in cm, at the scattering screen
 
         # The ensemble-average convolution kernel and its gradients
-        wavelength_List = np.array([C/obs.rf*100.0 for obs in obs_List]) #Observing wavelength for each frame [cm]
+        wavelength_List = np.array([C/obs.rf*100.0 for obs in Obsdata_List]) #Observing wavelength for each frame [cm]
         wavelengthbar_List = wavelength_List/(2.0*np.pi) #lambda/(2pi) [cm]
         rF_List = [scattering_model.rF(wavelength) for wavelength in wavelength_List]
 
