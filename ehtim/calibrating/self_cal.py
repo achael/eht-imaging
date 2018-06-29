@@ -81,22 +81,24 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
 
     # First, sample the model visibilities
     print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
-    if ttype == 'nfft':
-        (data, sigma, nfft_A) = iu.chisqdata_vis_nfft(obs, im, fft_pad_factor=fft_pad_factor)
-        nfft_info = nfft_A[0]
-        plan = nfft_info.plan
-        pulsefac = nfft_info.pulsefac
-        plan.f_hat = (im.imvec).copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-        plan.trafo()
-        V = plan.f.copy()*pulsefac
-    elif ttype=='fast':
-        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_factor=fft_pad_factor)
-        im_info, sampler_info_list, gridder_info_list = fft_A
-        vis_arr = iu.fft_imvec(im.imvec, im_info)
-        V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
-    else:
-        (data, sigma, A, im.imvec>0) = iu.chisqdata_vis(obs, im)
-        V = np.dot(A, im.imvec)
+    obs_clean = im.observe_same_nonoise(obs, ttype=ttype, fft_pad_factor=fft_pad_factor)
+    V = obs_clean.data['vis']
+#    if ttype == 'nfft':
+#        (data, sigma, nfft_A) = iu.chisqdata_vis_nfft(obs, im, fft_pad_factor=fft_pad_factor)
+#        nfft_info = nfft_A[0]
+#        plan = nfft_info.plan
+#        pulsefac = nfft_info.pulsefac
+#        plan.f_hat = (im.imvec).copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+#        plan.trafo()
+#        V = plan.f.copy()*pulsefac
+#    elif ttype=='fast':
+#        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_factor=fft_pad_factor)
+#        im_info, sampler_info_list, gridder_info_list = fft_A
+#        vis_arr = iu.fft_imvec(im.imvec, im_info)
+#        V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
+#    else:
+#        (data, sigma, A, im.imvec>0) = iu.chisqdata_vis(obs, im)
+#        V = np.dot(A, im.imvec)
 
     # Partition the list of model visibilities into scans
     from itertools import islice
