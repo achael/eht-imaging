@@ -310,6 +310,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
             nker = 50
         elif (im.xdim<50 or im.ydim<50):
             nker = np.min((im.xdim,im.ydim))/2
+        #TODO y & x reversed?
         plan = NFFT([im.xdim,im.ydim],uvdim, m=nker, n=[npad,npad])
 
         #sampled points
