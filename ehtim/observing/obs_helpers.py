@@ -94,7 +94,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         if timetype=='GMST':
             raise Exception("Spacecraft ephemeris only work with UTC!")
 
-        site1space_list = site2[spacemask1]
+        site1space_list = site1[spacemask1]
         site1space_dtolist = dto[spacemask1]
         coord1space = []
         for k in range(len(site1space_list)):
