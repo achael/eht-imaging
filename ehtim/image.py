@@ -1143,7 +1143,7 @@ class Image(object):
                 edges = canny(imarr, sigma=0, high_threshold=thresh,  low_threshold=0.01)
                 im_edges = self.copy()
                 im_edges.imvec = edges.flatten()
-
+                im_edges.display()
             else: #edgetype=='grad':
                 im_edges = self.im_grad()
                 if not (thresh is None):
@@ -1239,7 +1239,7 @@ class Image(object):
 #        allparams=np.array(results)[:,0]
 #        print (allparams)
 
-        plt.hist(chain.reshape((-1,ndim))[:,2], 100, color="k", histtype="step")
+        plt.hist(chain.reshape((-1,ndim))[:,0], 100, color="k", histtype="step")
         plt.show()
 
         return outlist
@@ -1281,7 +1281,7 @@ class Image(object):
             im_edges = self.copy()
             im_edges.imvec = edges.flatten()
 
-        else: #edgetype=='grad':
+        elif edgetype=='grad':
             im_edges = self.im_grad()
             if not (thresh is None):
                 thresh_val = thresh*np.max(im_edges.imvec)
@@ -1289,6 +1289,9 @@ class Image(object):
                 #im_edges.imvec[mask] = 1f
                 im_edges.imvec[~mask] = 0
                 edges = im_edges.imvec.reshape(self.ydim, self.xdim)
+        else: #edgetype==None
+            im_edges = im.copy()
+            edges = im_edges.imvec.reshape(self.ydim,self.xdim)
 
         # define radius range for Hough transform search
         if radius_range is None:
