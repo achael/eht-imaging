@@ -128,7 +128,7 @@ class Imager(object):
         self._ea_ker_gradient_x = None
         self._ea_ker_gradient_y = None
         self._alpha_phi_list = []
-        self.alpha_phi_next = kwargs.get('alpha_phi',None)
+        self.alpha_phi_next = kwargs.get('alpha_phi',1e4)
 
         # imager history
         self._change_imgr_params = True
@@ -658,7 +658,7 @@ class Imager(object):
                 m_mat[ell,m] = m
 
         #Real part; top row
-        for t in range(1, (N+1)/2):
+        for t in range(1, (N+1)//2):
             s=0
             grad_term = so.Wrapped_Gradient(wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
             grad_term_x = -grad_term[1]
@@ -667,7 +667,7 @@ class Imager(object):
             i_grad = i_grad + 1
 
         #Real part; remainder
-        for s in range(1,(N+1)/2):
+        for s in range(1,(N+1)//2):
             for t in range(N):
                 grad_term = so.Wrapped_Gradient(wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
                 grad_term_x = -grad_term[1]
@@ -676,7 +676,7 @@ class Imager(object):
                 i_grad = i_grad + 1
 
         #Imaginary part; top row
-        for t in range(1, (N+1)/2):
+        for t in range(1, (N+1)//2):
             s=0
             grad_term = so.Wrapped_Gradient(-wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
             grad_term_x = -grad_term[1]
@@ -685,7 +685,7 @@ class Imager(object):
             i_grad = i_grad + 1
 
         #Imaginary part; remainder
-        for s in range(1,(N+1)/2):
+        for s in range(1,(N+1)//2):
             for t in range(N):
                 grad_term = so.Wrapped_Gradient(-wavelengthbar/FOV*self._sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
                 grad_term_x = -grad_term[1]

@@ -89,7 +89,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
     df['source'] = sour
     return df
 
-def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',debias_type='ExactLog',round_s=0.1):
+def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
 
     """generate DataFrame of closure amplitudes
 
@@ -101,7 +101,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
         df: closure amplitude data in DataFrame format
     """
 
-    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype,debias_type=debias_type)
+    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.

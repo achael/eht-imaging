@@ -24,9 +24,11 @@ import numpy as np
 import sys
 import itertools as it
 import copy
+import os
 
 import ehtim.obsdata
 from ehtim.observing.obs_helpers import *
+
 from multiprocessing import Process, Value, Lock
 
 ZBLCUTOFF = 1.e7;
@@ -45,17 +47,13 @@ class Counter(object):
         with self.lock:
             return self.val.value
 
-def cal_prog_msg(nscan, totscans, msgtype='bar'):
+def cal_prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
     """print a progress method for calibration
     """
-
+    complete_percent_last = int(100*float(nscan_last)/float(totscans))
     complete_percent = int(100*float(nscan)/float(totscans))
     ndigit = str(len(str(totscans)))
-    if msgtype=='default':
-        barparams = (nscan, totscans, complete_percent)
-        prinstr = "\rCalibrating Scan %0"+ndigit+"i/%i : %i%% done . . ."
-        sys.stdout.write(printstr % barparams)
-        sys.stdout.flush()
+
     if msgtype=='bar':
         bar_width = 30
         progress = int(bar_width * complete_percent/float(100))
@@ -64,7 +62,7 @@ def cal_prog_msg(nscan, totscans, msgtype='bar'):
         printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]%i%%"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-    if msgtype=='casa':
+    elif msgtype=='casa':
         message_list = [".",".",".","10",".",".",".","20",".",".",".","30",".",".",".","40",
                         ".",".",".","50",".",".",".","60",".",".",".","70",".",".",".","80",
                         ".",".",".","90",".",".",".","DONE"]
@@ -76,7 +74,7 @@ def cal_prog_msg(nscan, totscans, msgtype='bar'):
         printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : %s"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-    if msgtype=='itcrowd':
+    elif msgtype=='itcrowd':
         message_list = ["0","1","1","8"," ","9","9","9"," ","8","8","1","9","9"," ",
                         "9","1","1","9"," ","7","2","5"," "," "," ","3"]
         bar_width = len(message_list)
@@ -91,6 +89,24 @@ def cal_prog_msg(nscan, totscans, msgtype='bar'):
         printstr= "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+    elif msgtype=='bh':
+        message_all = BHIMAGE
+        bar_width = len(message_all)
+        progress = int(np.floor(bar_width * complete_percent/float(100)))-1
+        progress_last = int(np.floor(bar_width * complete_percent_last/float(100)))-1
+        if progress>progress_last:
+            for i in range(progress_last+1,progress+1):
+                message_line = ''.join(message_all[i])
+                message_line = '%03i'%int(complete_percent) + message_line
+                print(message_line)
+
+    else:# msgtype=='default':
+        barparams = (nscan, totscans, complete_percent)
+        prinstr = "\rCalibrating Scan %0"+ndigit+"i/%i : %i%% done . . ."
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
+
 
 def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
     """Cluster sites in an observation into groups with intra-group basline length not exceeding zbl_uvdist_max

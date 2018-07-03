@@ -44,7 +44,7 @@ ZBLCUTOFF = 1.e7;
 #Network-Calibration
 ###################################################################################################################################
 def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad_amp=0.,gain_tol=.2, 
-                caltable=False, processes=-1,show_solution=False, msgtype='bar'):
+                caltable=False, processes=-1,show_solution=False, debias=True, msgtype='bar'):
 
     """Network-calibrate a dataset with zero baseline constraints.
 
@@ -58,6 +58,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
 
+           debias (bool): If True, debias the amplitudes
            caltable (bool): if True, returns a Caltable instead of an Obsdata 
            processes (int): number of cores to use in multiprocessing
            show_solution (bool): if True, display the solution as it is calculated
@@ -84,11 +85,15 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
     # Make the pool for parallel processing
     if processes > 0:
         counter = Counter(initval=0, maxval=len(scans))
+        if processes > len(scans):
+            processes = len(scans)
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
         counter = Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
+        if processes > len(scans):
+            processes = len(scans)
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     else:
@@ -97,19 +102,18 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
     # loop over scans and calibrate
     tstart = time.time()
     if processes > 0: # with multiprocessing
-        scans_cal = np.array(filter(lambda x: x,
-                                    pool.map(get_network_scan_cal,
+        scans_cal = pool.map(get_network_scan_cal,
                                              [[i, len(scans), scans[i],
                                                zbl, sites, cluster_data, method, pad_amp, gain_tol,
-                                               caltable, show_solution,msgtype]
+                                               caltable, show_solution,debias,msgtype]
                                               for i in range(len(scans))
-                                             ])))
+                                             ])
     else: # without multiprocessing
         for i in range(len(scans)):
-            cal_prog_msg(i, len(scans), msgtype=msgtype)
+            cal_prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i-1)
             scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data,
                                             method=method, show_solution=show_solution, caltable=caltable,
-                                            pad_amp=pad_amp, gain_tol=gain_tol)
+                                            pad_amp=pad_amp, gain_tol=gain_tol,debias=debias)
 
     tstop = time.time()
     print("\nnetwork_cal time: %f s" % (tstop - tstart))
@@ -146,7 +150,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
 
     return out
 
-def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", show_solution=False, pad_amp=0., gain_tol=.2, caltable=False):
+def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", 
+                     show_solution=False, pad_amp=0., gain_tol=.2, caltable=False, debias=True):
     """Network-calibrate a scan with zero baseline constraints.
 
        Args:
@@ -160,6 +165,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
 
+           debias (bool): If True, debias the amplitudes
            caltable (bool): if True, returns a Caltable instead of an Obsdata 
            show_solution (bool): if True, display the solution as it is calculated
            
@@ -217,7 +223,10 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
     # scan visibilities and sigmas with extra padding
     if method=='amp':
-        vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+        if debias:
+            vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+        else:
+            vis = np.abs(vis)
     else:
         vis = scan['vis']
 
@@ -331,14 +340,14 @@ def init(x):
 def get_network_scan_cal(args):
     return get_network_scan_cal2(*args)
 
-def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution,msgtype):
+def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution,debias,msgtype):
     if n > 1:
         global counter
         counter.increment()
-        cal_prog_msg(counter.value(), counter.maxval,msgtype)
+        cal_prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
     return network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, 
                             method=method,caltable=caltable, show_solution=show_solution, 
-                            pad_amp=pad_amp, gain_tol=gain_tol)
+                            pad_amp=pad_amp, gain_tol=gain_tol,debias=debias)
 
 

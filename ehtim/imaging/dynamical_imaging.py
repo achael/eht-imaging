@@ -797,11 +797,46 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
 minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, 
 recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
-    """Run dynamic imager
-       Uses I = exp(I') change of variables.
-       Obsdata_List is a list of Obsdata objects, InitIm_List is a list of Image objects, and Prior is an Image object.
-       Returns list of Image objects, one per frame (unless a flow or stochastic optics is used)
-       ttype = 'direct' or 'fast' or 'nfft'
+    """Run dynamical imaging.
+
+       Args:
+           Obsdata_List (List): List of Obsdata objects, one per reconstructed frame. Some can have empty data arrays.
+           InitIm_List (List): List of initial images, each an Image object, one per reconstructed frame.
+           Prior (Image): The Image object with the prior image
+           Flow_Init: Optional initialization for imaging with R_flow
+           flux_List (List): Optional specification of the total flux density for each frame
+           d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           d3 (str): The third data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           systematic_noise1 (float): Systematic noise on the first data term, as a fraction of the visibility amplitude
+           systematic_noise2 (float): Systematic noise on the second data term, as a fraction of the visibility amplitude
+           systematic_noise3 (float): Systematic noise on the third data term, as a fraction of the visibility amplitude
+           entropy1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'tv2', 'l1', 'patch','compact','compact2','rgauss'
+           entropy2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch','compact','compact2','rgauss'
+           alpha_d1 (float): The first data term weighting
+           alpha_d2 (float): The second data term weighting
+           alpha_s1 (float): The first regularizer term weighting
+           alpha_s2 (float): The second regularizer term weighting
+           alpha_flux (float): The weighting for the total flux constraint
+           alpha_centroid (float): The weighting for the center of mass constraint
+           alpha_dF (float): The weighting for temporal continuity of the total flux density.
+           alpha_dS1 (float): The weighting for temporal continuity of entropy1.
+           alpha_dS2 (float): The weighting for temporal continuity of entropy2.
+
+           maxit (int): Maximum number of minimizer iterations
+           stop (float): The convergence criterion
+           minimizer_method (str): Minimizer method (e.g., 'L-BFGS-B' or 'CG')
+           update_interval (int): Print convergence status every update_interval steps
+           norm_reg (bool): If True, normalizes regularizer terms
+           ttype (str): The Fourier transform type; options are 'fast', 'direct', 'nfft'
+
+           stochastic_optics (bool): If True, stochastic optics imaging is used. 
+           scattering_model (ScatteringModel): Optional specification of the ScatteringModel object. 
+           alpha_phi (float): Weighting for screen phase regularization in stochastic optics.
+minimizer_method = 'L-BFGS-B', update_interval = 1
+
+       Returns:
+           List or Dictionary: A list of Image objects, one per frame, unless a flow or stochastic optics is used in which case it returns a dictionary {'Frames', 'Flow', 'EpsilonList' }.
     """
 
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
@@ -841,17 +876,19 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
             scattering_model = so.ScatteringModel()
 
         # First some preliminary definitions
-        wavelength = C/Obsdata_List[0].rf*100.0 #Observing wavelength [cm]
-        wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
-        rF = scattering_model.rF(wavelength)
         N = InitIm_List[0].xdim
         FOV = InitIm_List[0].psize * N * scattering_model.observer_screen_distance #Field of view, in cm, at the scattering screen
 
         # The ensemble-average convolution kernel and its gradients
-        ea_ker = scattering_model.Ensemble_Average_Kernel(InitIm_List[0], wavelength_cm = wavelength)
-        ea_ker_gradient = so.Wrapped_Gradient(ea_ker/(FOV/N))
-        ea_ker_gradient_x = -ea_ker_gradient[1]
-        ea_ker_gradient_y = -ea_ker_gradient[0]
+        wavelength_List = np.array([C/obs.rf*100.0 for obs in Obsdata_List]) #Observing wavelength for each frame [cm]
+        wavelengthbar_List = wavelength_List/(2.0*np.pi) #lambda/(2pi) [cm]
+        rF_List = [scattering_model.rF(wavelength) for wavelength in wavelength_List]
+
+        print("Computing the Ensemble-Average Kernel for Each Frame...")
+        ea_ker = [scattering_model.Ensemble_Average_Kernel(InitIm_List[0], wavelength_cm = wavelength_List[j]) for j in range(N_frame)]
+        ea_ker_gradient = [so.Wrapped_Gradient(ea_ker[j]/(FOV/N)) for j in range(N_frame)]
+        ea_ker_gradient_x = [-ea_ker_gradient[j][1] for j in range(N_frame)]
+        ea_ker_gradient_y = [-ea_ker_gradient[j][0] for j in range(N_frame)]
 
         # The power spectrum (note: rotation is not currently implemented; the gradients would need to be modified slightly)
         sqrtQ = np.real(scattering_model.sqrtQ_Matrix(InitIm_List[0],t_hr=0.0))
@@ -958,11 +995,10 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
         if stochastic_optics == True:
             EpsilonList = x[init_i:(init_i + N**2-1)]
-            im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
+            im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Obsdata_List[j].rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
             #the list of scattered image vectors
-            scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List]
+            scatt_im_List = [scattering_model.Scatter(im_List[j], Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker[j], sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for j in range(N_frame)]
             init_i += len(EpsilonList)
-
 
         s1 = s2 = 0.0
 
@@ -988,7 +1024,6 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
         if stochastic_optics == False:
             if processes > 0:
-
                 chisq = np.array(pool.map(get_chisq_wrap, [[j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]] for j in range(N_frame)]))
             else:
                 chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
@@ -1036,16 +1071,10 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
         if stochastic_optics == True:
             EpsilonList = x[init_i:(init_i + N**2-1)]
             Epsilon_Screen = so.MakeEpsilonScreenFromList(EpsilonList, N)
-            im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
-            scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for im in im_List] #the list of scattered image vectors
+            im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Obsdata_List[j].rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
+            scatt_im_List = [scattering_model.Scatter(im_List[j], Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker[j], sqrtQ=sqrtQ, Linearized_Approximation=True).imvec for j in range(N_frame)] #the list of scattered image vectors
             Epsilon_Screen = so.MakeEpsilonScreenFromList(EpsilonList, N)
-            phi = scattering_model.MakePhaseScreen(Epsilon_Screen, im_List[0], obs_frequency_Hz=im_List[0].rf,sqrtQ_init=sqrtQ).imvec.reshape((N, N))
-            phi_Gradient = so.Wrapped_Gradient(phi/(FOV/N))
-            phi_Gradient_x = -phi_Gradient[1]
-            phi_Gradient_y = -phi_Gradient[0]
             init_i += len(EpsilonList)
-
-
 
         s1 = s2 = 0.0
 
@@ -1085,22 +1114,27 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
             # Now, the chi^2 gradient must be modified so that it corresponds to the gradient wrt the unscattered image
             for j in range(N_frame):
+                rF = rF_List[j]
+                phi = scattering_model.MakePhaseScreen(Epsilon_Screen, im_List[0], obs_frequency_Hz=im_List[j].rf,sqrtQ_init=sqrtQ).imvec.reshape((N, N))
+                phi_Gradient = so.Wrapped_Gradient(phi/(FOV/N))
+                phi_Gradient_x = -phi_Gradient[1]
+                phi_Gradient_y = -phi_Gradient[0]
                 dchisq_dIa_List.append( ((chisq_grad[j,0]*alpha_d1 + chisq_grad[j,1]*alpha_d2 + chisq_grad[j,2]*alpha_d3)/N_frame).reshape((N,N)) )
 
                 dchisq_dIa = chisq_grad[j,0].reshape((N,N))
-                gx = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()
-                gy = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_y[::-1,::-1], phi_Gradient_y * (dchisq_dIa))).flatten()
-                chisq_grad[j,0] = so.Wrapped_Convolve(ea_ker[::-1,::-1], (dchisq_dIa)).flatten() + gx + gy
+                gx = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_x[j][::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()
+                gy = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_y[j][::-1,::-1], phi_Gradient_y * (dchisq_dIa))).flatten()
+                chisq_grad[j,0] = so.Wrapped_Convolve(ea_ker[j][::-1,::-1], (dchisq_dIa)).flatten() + gx + gy
 
                 dchisq_dIa = chisq_grad[j,1].reshape((N,N))
-                gx = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()
-                gy = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_y[::-1,::-1], phi_Gradient_y * (dchisq_dIa))).flatten()
-                chisq_grad[j,1] = so.Wrapped_Convolve(ea_ker[::-1,::-1], (dchisq_dIa)).flatten() + gx + gy
+                gx = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_x[j][::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()
+                gy = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_y[j][::-1,::-1], phi_Gradient_y * (dchisq_dIa))).flatten()
+                chisq_grad[j,1] = so.Wrapped_Convolve(ea_ker[j][::-1,::-1], (dchisq_dIa)).flatten() + gx + gy
 
                 dchisq_dIa = chisq_grad[j,2].reshape((N,N))
-                gx = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()
-                gy = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_y[::-1,::-1], phi_Gradient_y * (dchisq_dIa))).flatten()
-                chisq_grad[j,2] = so.Wrapped_Convolve(ea_ker[::-1,::-1], (dchisq_dIa)).flatten() + gx + gy
+                gx = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_x[j][::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()
+                gy = (rF**2.0 * so.Wrapped_Convolve(ea_ker_gradient_y[j][::-1,::-1], phi_Gradient_y * (dchisq_dIa))).flatten()
+                chisq_grad[j,2] = so.Wrapped_Convolve(ea_ker[j][::-1,::-1], (dchisq_dIa)).flatten() + gx + gy
 
         # Now add the Jacobian factor and concatenate
         for j in range(N_frame):
@@ -1125,8 +1159,9 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
                     m_mat[ell,m] = m
 
             for j in range(N_frame):
+                rF = rF_List[j]
                 dchisq_dIa = dchisq_dIa_List[j]
-                EA_Image = scattering_model.Ensemble_Average_Blur(im_List[j], ker = ea_ker)
+                EA_Image = scattering_model.Ensemble_Average_Blur(im_List[j], ker = ea_ker[j])
                 EA_Gradient = so.Wrapped_Gradient((EA_Image.imvec/(FOV/N)).reshape(N, N))
                 #The gradient signs don't actually matter, but let's make them match intuition (i.e., right to left, bottom to top)
                 EA_Gradient_x = -EA_Gradient[1]
@@ -1134,36 +1169,36 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
                 i_grad = 0
                 #Real part; top row
-                for t in range(1, (N+1)/2):
+                for t in range(1, (N+1)//2):
                     s=0
-                    grad_term = so.Wrapped_Gradient(wavelengthbar/FOV*sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
+                    grad_term = so.Wrapped_Gradient(wavelengthbar_List[j]/FOV*sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
                     grad_term_x = -grad_term[1]
                     grad_term_y = -grad_term[0]
                     chisq_grad_epsilon[i_grad] += np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )
                     i_grad = i_grad + 1
 
                 #Real part; remainder
-                for s in range(1,(N+1)/2):
+                for s in range(1,(N+1)//2):
                     for t in range(N):
-                        grad_term = so.Wrapped_Gradient(wavelengthbar/FOV*sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
+                        grad_term = so.Wrapped_Gradient(wavelengthbar_List[j]/FOV*sqrtQ[s][t]*2.0*np.cos(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
                         grad_term_x = -grad_term[1]
                         grad_term_y = -grad_term[0]
                         chisq_grad_epsilon[i_grad] += np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )
                         i_grad = i_grad + 1
 
                 #Imaginary part; top row
-                for t in range(1, (N+1)/2):
+                for t in range(1, (N+1)//2):
                     s=0
-                    grad_term = so.Wrapped_Gradient(-wavelengthbar/FOV*sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
+                    grad_term = so.Wrapped_Gradient(-wavelengthbar_List[j]/FOV*sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
                     grad_term_x = -grad_term[1]
                     grad_term_y = -grad_term[0]
                     chisq_grad_epsilon[i_grad] += np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )
                     i_grad = i_grad + 1
 
                 #Imaginary part; remainder
-                for s in range(1,(N+1)/2):
+                for s in range(1,(N+1)//2):
                     for t in range(N):
-                        grad_term = so.Wrapped_Gradient(-wavelengthbar/FOV*sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
+                        grad_term = so.Wrapped_Gradient(-wavelengthbar_List[j]/FOV*sqrtQ[s][t]*2.0*np.sin(2.0*np.pi/N*(ell_mat*s + m_mat*t))/(FOV/N))
                         grad_term_x = -grad_term[1]
                         grad_term_y = -grad_term[0]
                         chisq_grad_epsilon[i_grad] += np.sum( dchisq_dIa * rF**2 * ( EA_Gradient_x * grad_term_x + EA_Gradient_y * grad_term_y ) )
@@ -1222,11 +1257,10 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
             if stochastic_optics == True:
                 EpsilonList = x[init_i:(init_i + N**2-1)]
-                im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
+                im_List = [image.Image(Frames[j], Prior.psize, Prior.ra, Prior.dec, rf=Obsdata_List[j].rf, source=Prior.source, mjd=Prior.mjd) for j in range(N_frame)]
 
-                scatt_im_List = [scattering_model.Scatter(im, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
-                                                          ea_ker = ea_ker, sqrtQ=sqrtQ, Linearized_Approximation=True).imvec
-                                 for im in im_List] #the list of scattered image vectors
+                scatt_im_List = [scattering_model.Scatter(im_List[j], Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N), ea_ker = ea_ker[j], sqrtQ=sqrtQ, Linearized_Approximation=True).imvec
+                                 for j in range(N_frame)] #the list of scattered image vectors
 
             s1 = s2 = 0.0
 
@@ -1381,7 +1415,7 @@ recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
     #Return Frames
 
     outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
-                         Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source,
+                         Prior.ra, Prior.dec, rf=Obsdata_List[i].rf, source=Prior.source,
                          mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
 
     if R_flow['alpha'] == 0.0 and stochastic_optics == False:

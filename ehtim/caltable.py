@@ -113,9 +113,10 @@ class Caltable(object):
         return new_caltable
 
     def plot_gains(self, sites, gain_type='amp', pol='R', 
-                   ang_unit='deg',timetype=False,yscale='lin',
+                   ang_unit='deg',timetype=False, yscale='log',
                    clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
                    show=True, grid=False, labels=True, axis=False, export_pdf=""):
+
         """Plot gains on multiple sites vs time.
            Args:
                sites (list): a list of site names for which to plot gains. Empty list is all sites. 
@@ -187,7 +188,7 @@ class Caltable(object):
                 ylabel = r'$|G|$'
 
             if gain_type=='phase':
-                gains = np.angle(gains)*angle
+                gains = np.angle(gains)/angle
                 if ang_unit=='deg': ylabel = r'arg($|G|$) ($^\circ$)'
                 else: ylabel = r'arg($|G|$) (radian)'
 
@@ -198,6 +199,7 @@ class Caltable(object):
 
             # Plot the data
             plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, label=str(site), linestyle='none')
+
 
         if not rangex:
             rangex = [np.min(tmins) - 0.2 * np.abs(np.min(tmins)),
@@ -210,6 +212,7 @@ class Caltable(object):
             if np.any(np.isnan(np.array(rangey))):
                 raise Exception("NaN in data y range: try specifying rangey manually")
 
+        plt.plot(np.linspace(rangex[0],rangex[1],5), np.ones(5),'k--')
         x.set_xlim(rangex)
         x.set_ylim(rangey)
 
@@ -221,7 +224,7 @@ class Caltable(object):
             plt.legend()
 
         if yscale=='log':
-            x.yscale('log')
+            x.set_yscale('log')
         if grid:
             x.grid()
         if export_pdf != "" and not axis:
@@ -230,7 +233,6 @@ class Caltable(object):
             plt.show(block=False)
 
         return x
-
 
     #TODO default extrapolation?
     def pad_scans(self, maxdiff=60, padtype='median'):

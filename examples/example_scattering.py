@@ -7,14 +7,14 @@ import ehtim.scattering as so
 import ehtim.plotting as pl
 
 # Load the image and the array
-im = eh.image.load_txt('models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('arrays/EHT2017.txt')
+im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 # If the image has an even number of pixels, make it odd
-if im.xdim%2 == 0:
-	newim = im.imvec.reshape(im.ydim, im.xdim)
-	newim = newim[:-1,:-1]
-	im = eh.image.Image(newim, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd)
+#if im.xdim%2 == 0:
+#	newim = im.imvec.reshape(im.ydim, im.xdim)
+#	newim = newim[:-1,:-1]
+#	im = eh.image.Image(newim, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd)
 
 
 # Create a ScatteringModel; this defaults to parameters appropriate for Sgr A*
@@ -46,3 +46,7 @@ plt.axhline(y=np.sum(im.imvec),c="red",linewidth=1,zorder=0)
 plt.xlabel('Hour')
 plt.ylabel('Total Flux Density (Jy)')
 plt.show()
+
+# Export a movie of the results
+import ehtim.imaging.dynamical_imaging as di
+di.export_movie(movie_frames,'./example_scattered.mp4')

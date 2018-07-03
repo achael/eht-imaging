@@ -925,7 +925,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     vvis = 0.5 * (rr - ll)
     vvis[~vmask_dsize] = 0.
 
-    vsigma = copy.deepcopy(isigma) #ARGH POINTERS
+    vsigma = copy.deepcopy(isigma) 
     vsigma[~vmask_dsize] = isigma[~vmask_dsize]
 
     # Stokes Q,U

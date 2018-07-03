@@ -28,3 +28,10 @@ from ehtim.calibrating.self_cal import self_cal as selfcal
 from ehtim.calibrating.self_cal import self_cal as netcal
 
 from ehtim.const_def import *
+
+
+print("Welcome to eht-imaging v 1.0.0")
+
+def logo():
+    for line in BHIMAGE:    
+        print(line)

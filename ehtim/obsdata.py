@@ -658,7 +658,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t, len(timesplit), inttime, msgtype=msgtype)
+            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype,nscan_last=t)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %0.2f s ints : Reduced Data %i/%i'
 #                              % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()
@@ -766,7 +766,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t, len(timesplit), inttime, msgtype=msgtype)
+            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype,nscan_last=t)
 #            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
 #                                % (t,len(timesplit),inttime, tavg,t))
 #            sys.stdout.flush()
@@ -889,6 +889,7 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+
         #TODO store averaging timescale/other parameters?
         cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>0:
@@ -905,7 +906,6 @@ class Obsdata(object):
 
         """Adds attribute self.cphase: cphase table averaged for dt
 
-
            Args:
                return_type: data frame ('df') or recarray ('rec')
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
@@ -916,8 +916,9 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+
         #TODO store averaging timescale/other parameters?
-        cdf = make_cphase_df(self, mode='all', round_s=round_s,count=count)
+        cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>0:
             cdf_av = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
             self.cphase = cdf_av
@@ -928,7 +929,7 @@ class Obsdata(object):
         print("updated self.cphase: avg_time %f s\n"%avg_time)
 
     def add_camp(self, return_type='rec', ctype='camp',
-                       count='max', debias=True,  debias_type='old',
+                       count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.camp or self.logcamp: closure amplitudes table
@@ -937,7 +938,6 @@ class Obsdata(object):
                return_type: data frame ('df') or recarray ('rec')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude
-               debias_type (str): 'ExactLog' or 'old'
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
 
                avg_time (float): closure amplitude averaging timescale
@@ -946,12 +946,13 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+
         #TODO store averaging timescale/other parameters?
         if avg_time>0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else: foo = self
         cdf = make_camp_df(foo,ctype=ctype,debias=False,count=count,
-                           round_s=round_s,debias_type=debias_type)
+                           round_s=round_s)
 
         if return_type=='rec':
             cdf = df_to_rec(cdf,'camp')
@@ -965,7 +966,7 @@ class Obsdata(object):
 
 
     def add_logcamp(self, return_type='rec', ctype='camp',
-                       count='max', debias=True,  debias_type='old',
+                       count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.logcamp: closure amplitudes table
@@ -974,7 +975,6 @@ class Obsdata(object):
                return_type: data frame ('df') or recarray ('rec')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude
-               debias_type (str): 'ExactLog' or 'old'
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
 
                avg_time (float): closure amplitude averaging timescale
@@ -984,12 +984,12 @@ class Obsdata(object):
 
         """
         self.add_camp(return_type=return_type, ctype='logcamp',
-                     count=count, debias=debias,  debias_type=debias_type,
+                     count=count, debias=debias, 
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
 
     def add_all(self, return_type='rec',
-                       count='max', debias=True,  debias_type='old',
+                       count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds tables of all all averaged derived quantities self.amp,self.bispec,self.cphase,self.camp,self.logcamp
@@ -997,7 +997,6 @@ class Obsdata(object):
            Args:
                return_type: data frame ('df') or recarray ('rec')
                debias (bool): If True, debias the closure amplitude
-               debias_type (str): 'ExactLog' or 'old'
                count (str): If 'min', return minimal set of closure quantities, if 'max' return all closure quantities
 
                avg_time (float): closure amplitude averaging timescale
@@ -1012,10 +1011,10 @@ class Obsdata(object):
         self.add_cphase(return_type=return_type, count=count, avg_time=avg_time, 
                         err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='camp',
-                     count=count, debias=debias,  debias_type=debias_type,
+                     count=count, debias=debias,  
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='logcamp',
-                     count=count, debias=debias,  debias_type=debias_type,
+                     count=count, debias=debias,  
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
 
@@ -1407,14 +1406,14 @@ class Obsdata(object):
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
 
-    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5):
+    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'):
         """Flag anomalous data points
 
            Args:
                field (str): The quantity to test for
                max_diff_seconds (float): The moving window size for testing outliers
                robust_nsigma_cut (float): Outliers further than this many sigmas from the mean are removed
-
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
            Returns:
                (Obsdata): a observation object with flagged data points removed
         """
@@ -1434,12 +1433,25 @@ class Obsdata(object):
 
         mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in self.data])
 
-        datatable = self.data.copy()
-        datatable = datatable[mask]
-        print('anomalous %s flagged %d/%d visibilities' % (field, (len(self.data)-len(datatable)), (len(self.data))))
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('anomalous %s flagged %d/%d visibilities' % (field, len(datatable_flagged), len(self.data)))
+
+        # Make new observations with all data first to avoid problems with empty arrays
+        obs_kept = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(self.data), self.tarr, source=self.source, mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
+        obs_flagged = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(self.data), self.tarr, source=self.source, mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
 
     def reverse_taper(self, fwhm):
         """Reverse taper the observation with a circular Gaussian kernel
@@ -1856,7 +1868,7 @@ class Obsdata(object):
         return np.array(outdata)
 
     def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp',
-                           debias=True, timetype=False, debias_type='old'):
+                           debias=True, timetype=False):
 
         """Return a recarray of the equal time closure amplitudes.
 
@@ -1867,7 +1879,6 @@ class Obsdata(object):
                count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
                timetype (str): 'GMST' or 'UTC'
-               debias_type (str): 'ExactLog' or 'old'
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
@@ -1885,8 +1896,6 @@ class Obsdata(object):
             raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
-        if debias_type not  in ['old','ExactLog']:
-            raise Exception("debias_type should be 'ExactLog' or 'old'!")
 
         # Get data sorted by time
         tlist = self.tlist(conj=True)
@@ -1942,7 +1951,7 @@ class Obsdata(object):
 
                     # Compute the closure amplitude and the error
                     (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                             ctype=ctype, debias=debias, debias_type=debias_type)
+                                                             ctype=ctype, debias=debias)
 
                     # Add the closure amplitudes to the equal-time list
                     # Our site convention is (12)(34)/(14)(23)
@@ -1974,7 +1983,7 @@ class Obsdata(object):
 
                         # Compute the closure amplitude and the error
                         (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                                 ctype=ctype, debias=debias, debias_type=debias_type)
+                                                                 ctype=ctype, debias=debias)
 
                         # Add the closure amplitudes to the equal-time list
                         # Our site convention is (12)(34)/(14)(23)
@@ -2085,7 +2094,6 @@ class Obsdata(object):
                 continue
 
         return np.array(outdata)
-
 
     def plotall(self, field1, field2, conj=False,
                       debias=True, tag_bl=False, timetype=False, ang_unit='deg',
@@ -2360,7 +2368,7 @@ class Obsdata(object):
                           rangex=False, rangey=False, ebar=True, labels=True, grid=False,
                           show=True, axis=False, color=SCOLORS[0], markersize=MARKERSIZE, 
                           export_pdf="",
-                          cphases=[],force_recompute=False):
+                          cphases=[], force_recompute=False):
 
         """Plot closure phase over time on a triangle (1-2-3).
 
@@ -2687,4 +2695,5 @@ def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEF
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile, src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
+    return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile, 
+                                       src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)
