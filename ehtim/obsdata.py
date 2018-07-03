@@ -1406,14 +1406,14 @@ class Obsdata(object):
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
 
-    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5):
+    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'):
         """Flag anomalous data points
 
            Args:
                field (str): The quantity to test for
                max_diff_seconds (float): The moving window size for testing outliers
                robust_nsigma_cut (float): Outliers further than this many sigmas from the mean are removed
-
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
            Returns:
                (Obsdata): a observation object with flagged data points removed
         """
@@ -1433,12 +1433,25 @@ class Obsdata(object):
 
         mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in self.data])
 
-        datatable = self.data.copy()
-        datatable = datatable[mask]
-        print('anomalous %s flagged %d/%d visibilities' % (field, (len(self.data)-len(datatable)), (len(self.data))))
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('anomalous %s flagged %d/%d visibilities' % (field, len(datatable_flagged), len(self.data)))
+
+        # Make new observations with all data first to avoid problems with empty arrays
+        obs_kept = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(self.data), self.tarr, source=self.source, mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
+        obs_flagged = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(self.data), self.tarr, source=self.source, mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
 
     def reverse_taper(self, fwhm):
         """Reverse taper the observation with a circular Gaussian kernel
