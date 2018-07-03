@@ -487,7 +487,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
     """
     # Read telescope parameters from the array file
     tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
-    tdata = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[-1]), 0., 0., 0., 0., 0.), dtype=DTARR) for x in tdata]
+    tdata = [np.array((x[0],float(x[1]),float(x[2]),float(x[3]),float(x[-1]),float(x[-1]), 0., 0., 0., 0., 0.), dtype=DTARR) for x in tdata]
     tdata = np.array(tdata)
 
     # Read parameters from the obs_spec
