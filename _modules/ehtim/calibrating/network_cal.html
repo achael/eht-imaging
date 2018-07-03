@@ -211,7 +211,7 @@
 <span class="c1">#Network-Calibration</span>
 <span class="c1">###################################################################################################################################</span>
 <div class="viewcode-block" id="network_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.network_cal.network_cal">[docs]</a><span class="k">def</span> <span class="nf">network_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">zbl_uvdist_max</span><span class="o">=</span><span class="n">ZBLCUTOFF</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> 
-                <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">msgtype</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">):</span>
+                <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">msgtype</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;Network-calibrate a dataset with zero baseline constraints.</span>
 
@@ -225,6 +225,7 @@
 <span class="sd">           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature</span>
 <span class="sd">           gain_tol (float): gains that exceed this value will be disfavored by the prior</span>
 
+<span class="sd">           debias (bool): If True, debias the amplitudes</span>
 <span class="sd">           caltable (bool): if True, returns a Caltable instead of an Obsdata </span>
 <span class="sd">           processes (int): number of cores to use in multiprocessing</span>
 <span class="sd">           show_solution (bool): if True, display the solution as it is calculated</span>
@@ -237,8 +238,8 @@
 
     <span class="c1"># V = model visibility, V&#39; = measured visibility, G_i = site gain</span>
     <span class="c1"># G_i * conj(G_j) * V_ij = V&#39;_ij</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;less than 2 stations specified in network cal: defaulting to calibrating all stations!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No stations specified in network cal: defaulting to calibrating all stations!&quot;</span><span class="p">)</span>
         <span class="n">sites</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
 
     <span class="c1"># find colocated sites and put into list allclusters</span>
@@ -251,11 +252,15 @@
     <span class="c1"># Make the pool for parallel processing</span>
     <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">initval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">):</span>
+            <span class="n">processes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using Multiprocessing with </span><span class="si">%d</span><span class="s2"> Processes&quot;</span> <span class="o">%</span> <span class="n">processes</span><span class="p">)</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">init</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">counter</span><span class="p">,))</span>
     <span class="k">elif</span> <span class="n">processes</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">initval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxval</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))</span>
         <span class="n">processes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cpu_count</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">):</span>
+            <span class="n">processes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using Multiprocessing with </span><span class="si">%d</span><span class="s2"> Processes&quot;</span> <span class="o">%</span> <span class="n">processes</span><span class="p">)</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">,</span> <span class="n">initializer</span><span class="o">=</span><span class="n">init</span><span class="p">,</span> <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">counter</span><span class="p">,))</span>
     <span class="k">else</span><span class="p">:</span>
@@ -264,19 +269,18 @@
     <span class="c1"># loop over scans and calibrate</span>
     <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># with multiprocessing</span>
-        <span class="n">scans_cal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
-                                    <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">get_network_scan_cal</span><span class="p">,</span>
+        <span class="n">scans_cal</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">get_network_scan_cal</span><span class="p">,</span>
                                              <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                                <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">cluster_data</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span>
-                                               <span class="n">caltable</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span><span class="n">msgtype</span><span class="p">]</span>
+                                               <span class="n">caltable</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span><span class="n">debias</span><span class="p">,</span><span class="n">msgtype</span><span class="p">]</span>
                                               <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))</span>
-                                             <span class="p">])))</span>
+                                             <span class="p">])</span>
     <span class="k">else</span><span class="p">:</span> <span class="c1"># without multiprocessing</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)):</span>
-            <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">msgtype</span><span class="o">=</span><span class="n">msgtype</span><span class="p">)</span>
+            <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">msgtype</span><span class="o">=</span><span class="n">msgtype</span><span class="p">,</span> <span class="n">nscan_last</span><span class="o">=</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">scans_cal</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">network_cal_scan</span><span class="p">(</span><span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">cluster_data</span><span class="p">,</span>
                                             <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">,</span>
-                                            <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">)</span>
+                                            <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
 
     <span class="n">tstop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">network_cal time: </span><span class="si">%f</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tstop</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">))</span>
@@ -313,7 +317,8 @@
 
     <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="network_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.network_cal.network_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">network_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">clustered_sites</span><span class="p">,</span> <span class="n">zbl_uvidst_max</span><span class="o">=</span><span class="n">ZBLCUTOFF</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="network_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.network_cal.network_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">network_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">clustered_sites</span><span class="p">,</span> <span class="n">zbl_uvidst_max</span><span class="o">=</span><span class="n">ZBLCUTOFF</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> 
+                     <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Network-calibrate a scan with zero baseline constraints.</span>
 
 <span class="sd">       Args:</span>
@@ -327,6 +332,7 @@
 <span class="sd">           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature</span>
 <span class="sd">           gain_tol (float): gains that exceed this value will be disfavored by the prior</span>
 
+<span class="sd">           debias (bool): If True, debias the amplitudes</span>
 <span class="sd">           caltable (bool): if True, returns a Caltable instead of an Obsdata </span>
 <span class="sd">           show_solution (bool): if True, display the solution as it is calculated</span>
 <span class="sd">           </span>
@@ -383,7 +389,14 @@
         <span class="k">return</span> <span class="n">scan</span>
 
     <span class="c1"># scan visibilities and sigmas with extra padding</span>
-    <span class="n">vis</span> <span class="o">=</span> <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s1">&#39;amp&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debias</span><span class="p">:</span>
+            <span class="n">vis</span> <span class="o">=</span> <span class="n">amp_debias</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vis</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">vis</span> <span class="o">=</span> <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
+
     <span class="n">sigma_inv</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span> <span class="p">(</span><span class="n">pad_amp</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
     <span class="c1"># initial guesses for parameters</span>
@@ -423,7 +436,6 @@
         <span class="n">g1</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">g1_keys</span><span class="p">]</span>
         <span class="n">g2</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">g2_keys</span><span class="p">]</span>
 
-        <span class="c1">#TODO debias!??!</span>
         <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s1">&#39;amp&#39;</span><span class="p">:</span>
             <span class="n">verr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vis</span><span class="p">)</span> <span class="o">-</span> <span class="n">g1</span><span class="o">*</span><span class="n">g2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v_scan</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -495,15 +507,15 @@
 <span class="k">def</span> <span class="nf">get_network_scan_cal</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">get_network_scan_cal2</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">get_network_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">cluster_data</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span><span class="n">gain_tol</span><span class="p">,</span><span class="n">caltable</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span><span class="n">msgtype</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">get_network_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">cluster_data</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span><span class="n">gain_tol</span><span class="p">,</span><span class="n">caltable</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span><span class="n">debias</span><span class="p">,</span><span class="n">msgtype</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">global</span> <span class="n">counter</span>
         <span class="n">counter</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
-        <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">counter</span><span class="o">.</span><span class="n">maxval</span><span class="p">,</span><span class="n">msgtype</span><span class="p">)</span>
+        <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">counter</span><span class="o">.</span><span class="n">maxval</span><span class="p">,</span><span class="n">msgtype</span><span class="p">,</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">network_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">cluster_data</span><span class="p">,</span> <span class="n">zbl_uvidst_max</span><span class="o">=</span><span class="n">ZBLCUTOFF</span><span class="p">,</span> 
                             <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span><span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span> 
-                            <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">)</span>
+                            <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
 
 
 </pre></div>

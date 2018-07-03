@@ -2226,7 +2226,7 @@
     <span class="n">t1</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">]</span>
     <span class="n">t2</span> <span class="o">=</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">]</span>
 
-    <span class="n">snrmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">amp</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">snrcut</span>
+    <span class="n">snrmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">amp</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">snrcut</span>
 
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">systematic_noise</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="n">sys_level</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t1</span><span class="p">))</span>

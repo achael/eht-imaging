@@ -205,14 +205,11 @@
 
 <span class="kn">from</span> <span class="nn">ehtim.calibrating.cal_helpers</span> <span class="k">import</span> <span class="o">*</span>
 
-
-
-
 <span class="c1">###################################################################################################################################</span>
 <span class="c1">#Self-Calibration</span>
 <span class="c1">###################################################################################################################################</span>
 <div class="viewcode-block" id="self_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal">[docs]</a><span class="k">def</span> <span class="nf">self_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span>  <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> 
-             <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+             <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
              <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">msgtype</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Self-calibrate a dataset to an image.</span>
 
@@ -231,6 +228,7 @@
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 <span class="sd">           fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT</span>
 
+<span class="sd">           debias (bool): If True, debias the amplitudes</span>
 <span class="sd">           show_solution (bool): if True, display the solution as it is calculated</span>
 <span class="sd">           msgtype (str): type of progress message to be printed, default is &#39;bar&#39;</span>
 
@@ -241,22 +239,30 @@
 
     <span class="c1"># V = model visibility, V&#39; = measured visibility, G_i = site gain</span>
     <span class="c1"># G_i * conj(G_j) * V_ij = V&#39;_ij</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;less than 2 stations specified in self cal: defaulting to calibrating all stations!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No stations specified in self cal: defaulting to calibrating all stations!&quot;</span><span class="p">)</span>
         <span class="n">sites</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]</span>
 
     <span class="c1"># First, sample the model visibilities</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Computing the Model Visibilities with &quot;</span> <span class="o">+</span> <span class="n">ttype</span> <span class="o">+</span> <span class="s2">&quot; Fourier Transform...&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">ttype</span> <span class="o">==</span> <span class="s1">&#39;direct&#39;</span><span class="p">:</span>
-        <span class="n">data_arr</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">,</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span>
-        <span class="n">uv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">data_arr</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
-        <span class="n">A</span> <span class="o">=</span> <span class="n">ftmatrix</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
-        <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">fft_A</span><span class="p">)</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">chisqdata_vis_fft</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">)</span>
-        <span class="n">im_info</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">gridder_info_list</span> <span class="o">=</span> <span class="n">fft_A</span>
-        <span class="n">vis_arr</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">fft_imvec</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">,</span> <span class="n">im_info</span><span class="p">)</span>
-        <span class="n">V</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">sampler</span><span class="p">(</span><span class="n">vis_arr</span><span class="p">,</span> <span class="n">sampler_info_list</span><span class="p">,</span> <span class="n">sample_type</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">)</span>
+    <span class="n">obs_clean</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">observe_same_nonoise</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">)</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">obs_clean</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
+<span class="c1">#    if ttype == &#39;nfft&#39;:</span>
+<span class="c1">#        (data, sigma, nfft_A) = iu.chisqdata_vis_nfft(obs, im, fft_pad_factor=fft_pad_factor)</span>
+<span class="c1">#        nfft_info = nfft_A[0]</span>
+<span class="c1">#        plan = nfft_info.plan</span>
+<span class="c1">#        pulsefac = nfft_info.pulsefac</span>
+<span class="c1">#        plan.f_hat = (im.imvec).copy().reshape((nfft_info.ydim,nfft_info.xdim)).T</span>
+<span class="c1">#        plan.trafo()</span>
+<span class="c1">#        V = plan.f.copy()*pulsefac</span>
+<span class="c1">#    elif ttype==&#39;fast&#39;:</span>
+<span class="c1">#        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_factor=fft_pad_factor)</span>
+<span class="c1">#        im_info, sampler_info_list, gridder_info_list = fft_A</span>
+<span class="c1">#        vis_arr = iu.fft_imvec(im.imvec, im_info)</span>
+<span class="c1">#        V = iu.sampler(vis_arr, sampler_info_list, sample_type=&#39;vis&#39;)</span>
+<span class="c1">#    else:</span>
+<span class="c1">#        (data, sigma, A, im.imvec&gt;0) = iu.chisqdata_vis(obs, im)</span>
+<span class="c1">#        V = np.dot(A, im.imvec)</span>
 
     <span class="c1"># Partition the list of model visibilities into scans</span>
     <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">islice</span>
@@ -286,15 +292,15 @@
     <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># run on multiple cores with multiprocessing</span>
 
         <span class="n">scans_cal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">get_selfcal_scan_cal</span><span class="p">,</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span>
-                                                              <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span> <span class="n">msgtype</span>
+                                                              <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span> <span class="n">debias</span><span class="p">,</span> <span class="n">msgtype</span>
                                                              <span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))]))</span>
 
     <span class="k">else</span><span class="p">:</span> <span class="c1"># run on a single core</span>
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)):</span>
-            <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span><span class="n">msgtype</span><span class="o">=</span><span class="n">msgtype</span><span class="p">)</span>
+            <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span><span class="n">msgtype</span><span class="o">=</span><span class="n">msgtype</span><span class="p">,</span><span class="n">nscan_last</span><span class="o">=</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">scans_cal</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span>
-                                 <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span>
+                                 <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span>
                                  <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">)</span>
 
     <span class="n">tstop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
@@ -329,7 +335,8 @@
 
     <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="self_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="p">[],</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="self_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="p">[],</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                  <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Self-calibrate a scan to an image.</span>
 
 <span class="sd">       Args:</span>
@@ -342,6 +349,7 @@
 <span class="sd">           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature</span>
 <span class="sd">           gain_tol (float): gains that exceed this value will be disfavored by the prior</span>
 
+<span class="sd">           debias (bool): If True, debias the amplitudes</span>
 <span class="sd">           caltable (bool): if True, returns a Caltable instead of an Obsdata </span>
 <span class="sd">           show_solution (bool): if True, display the solution as it is calculated</span>
 <span class="sd">           </span>
@@ -377,7 +385,16 @@
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="n">g2_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="n">sigma_inv</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pad_amp</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]))</span>
+    <span class="c1"># scan visibilities and sigmas with extra padding</span>
+    <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s1">&#39;amp&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">debias</span><span class="p">:</span>
+            <span class="n">vis</span> <span class="o">=</span> <span class="n">amp_debias</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">amp</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">vis</span> <span class="o">=</span> <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span>
+    <span class="n">sigma_inv</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span> <span class="p">(</span><span class="n">pad_amp</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
 
     <span class="c1"># initial guess for gains</span>
     <span class="n">gpar_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sites</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -398,10 +415,14 @@
         <span class="n">g2</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">g2_keys</span><span class="p">]</span>
 
         <span class="c1">#TODO debias!</span>
+<span class="c1">#        if method==&#39;amp&#39;:</span>
+<span class="c1">#            verr = np.abs(scan[&#39;vis&#39;]) - g1*g2.conj() * np.abs(V_scan)</span>
+<span class="c1">#        else:</span>
+<span class="c1">#            verr = scan[&#39;vis&#39;] - g1*g2.conj() * V_scan</span>
         <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s1">&#39;amp&#39;</span><span class="p">:</span>
-            <span class="n">verr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="n">g1</span><span class="o">*</span><span class="n">g2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">V_scan</span><span class="p">)</span>
+            <span class="n">verr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vis</span><span class="p">)</span> <span class="o">-</span> <span class="n">g1</span><span class="o">*</span><span class="n">g2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">V_scan</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">verr</span> <span class="o">=</span> <span class="n">scan</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">g1</span><span class="o">*</span><span class="n">g2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">*</span> <span class="n">V_scan</span>
+            <span class="n">verr</span> <span class="o">=</span> <span class="n">vis</span> <span class="o">-</span> <span class="n">g1</span><span class="o">*</span><span class="n">g2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">*</span> <span class="n">V_scan</span>
 
         <span class="c1"># goodness-of-fit for gains </span>
         <span class="n">chisq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">verr</span><span class="o">.</span><span class="n">real</span> <span class="o">*</span> <span class="n">sigma_inv</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">verr</span><span class="o">.</span><span class="n">imag</span> <span class="o">*</span> <span class="n">sigma_inv</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
@@ -465,14 +486,14 @@
 <span class="k">def</span> <span class="nf">get_selfcal_scan_cal</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">get_selfcal_scan_cal2</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">get_selfcal_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span><span class="n">msgtype</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">get_selfcal_scan_cal2</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="p">,</span><span class="n">debias</span><span class="p">,</span><span class="n">msgtype</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">global</span> <span class="n">counter</span>
         <span class="n">counter</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
-        <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">counter</span><span class="o">.</span><span class="n">maxval</span><span class="p">,</span><span class="n">msgtype</span><span class="p">)</span>
+        <span class="n">cal_prog_msg</span><span class="p">(</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">counter</span><span class="o">.</span><span class="n">maxval</span><span class="p">,</span><span class="n">msgtype</span><span class="p">,</span><span class="n">counter</span><span class="o">.</span><span class="n">value</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="n">V_scan</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="n">sites</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="n">show_solution</span><span class="p">,</span> 
-                         <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">)</span>
+                         <span class="n">pad_amp</span><span class="o">=</span><span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=</span><span class="n">gain_tol</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="n">caltable</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
 
 
 
