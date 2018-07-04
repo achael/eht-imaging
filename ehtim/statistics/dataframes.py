@@ -293,7 +293,7 @@ def make_bsp_df(obs,mode='all',count='min',round_s=0.1,band='unknown',polarizati
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
     df['mjd'] = mjd0 + df['fmjd']
-    df['triangle'] = list(map(lambda x: x[0].decode('unicode_escape')+'-'+x[1].decode('unicode_escape')+'-'+x[2].decode('unicode_escape'),zip(df['t1'],df['t2'],df['t3'])))
+    df['triangle'] = list(map(lambda x: x[0]+'-'+x[1]+'-'+x[2],zip(df['t1'],df['t2'],df['t3'])))
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
     df['jd'] = Time(df['mjd'], format='mjd').jd
