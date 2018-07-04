@@ -188,7 +188,7 @@ def make_amp_incoh(obs,dt=0,return_type='rec',err_type='predicted',debias=True,s
             amp_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., amp_avg['datetime']))
         else:
             amp_avg.drop(list(amp_avg[amp_avg.scan<0].index.values),inplace=True)    
-        amp_avg['source'] = sour
+    amp_avg.drop(list(amp_avg[amp_avg.amp==0].index.values),inplace=True)    
     if return_type=='rec':
         return df_to_rec(amp_avg,'amp')
     elif return_type=='df':
