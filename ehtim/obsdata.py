@@ -857,7 +857,48 @@ class Obsdata(object):
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
   
-    def add_amp(self, return_type='rec', 
+    
+    
+    def add_amp(self, avg_time=0, tcoh=0,err_type='predicted',return_type='rec',debias=True,num_samples=int(1e3),scan_avg=False):
+        """Creates array of visibility amplitudes as an imaging data product
+            
+            Args:
+                avg_time: total averaging time in seconds
+                tcoh: coherent averaging time prior to incoherent averaging
+                debias: whether debiasing is applied during incoherent averaging
+                return_type: 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+                err_type: 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+        """
+        #if avg_time>0:
+        if tcoh > avg_time:
+            print('Coherent averaging must be no longer than total averaging time! Assuming tcoh=avg_time.')
+            tcoh=avg_time
+        #START WITH COHERENT AVERAGING for Tcoh
+        foo = self.copy()
+        if tcoh > 0:
+            foo.avg_coherent(tcoh)
+
+        ###TODO MACIEK
+        #I forced return_vis='vis' to avoid errors in chisqdata_amp_nfft
+        #and unpacking 'vis'
+        #in future we should use enable using DTAMP dataproduct that has no 'vis' column
+        #amp = make_amp_incoh(foo,avg_time,return_type=return_type,err_type=err_type,debias=debias,num_samples=num_samples)
+        amp = make_amp_incoh(foo,avg_time,return_type='vis',err_type=err_type,debias=debias,scan_avg=scan_avg,num_samples=num_samples)
+        self.amp=amp
+        #else:
+        #    data = copy.deepcopy(self.data)
+        #    data['vis'] = np.abs(data['vis'])
+        #    data['qvis'] = np.abs(data['vis'])
+        #    data['uvis'] = np.abs(data['vis'])
+        #    data['vvis'] = np.abs(data['vis'])
+        #    self.amp = data
+        if scan_avg==False:
+            print("updated self.amp: avg_time %f s\n" % avg_time)
+        else:
+            print("updated self.amp: scan-long averaging")
+    
+    
+    def add_amp_old(self, return_type='rec', 
                       avg_time=0, debias=True, err_type='predicted'):
 
         #TODO store averaging timescale/other parameters?

@@ -123,6 +123,79 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         elif return_type=='df':
             return vis_avg
 
+def make_amp_incoh(obs,dt=0,return_type='rec',err_type='predicted',debias=True,scan_avg=False,num_samples=int(1e3)):
+    """gets visibility amplitudes from Obsdata by incoherent averaging
+    Args:
+        obs: ObsData object
+        dt (float): integration time in seconds
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+        err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+        debias (bool): should debiasing be applied
+        num_samples (int) : 'bootstrap' resample set size for measured error
+        scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
+    Returns:
+        amp_avg: incoherently averaged amplitudes
+    """
+    vis = make_df(obs)
+    sour=obs.source
+    if hasattr(obs, 'scans')&hasattr(obs.scans,'shape'):
+        scandata=obs.scans
+    else:
+        if scan_avg==True:
+            raise Exception("No scan info available for the observation!")
+
+    if (dt<=0)&(scan_avg==False):
+        amp_avg=vis.copy()
+        if debias==True:
+            amp_avg['amp'] = np.sqrt(np.maximum((np.abs(amp_avg['vis'])**2-amp_avg['sigma']**2),0))
+        else:
+            amp_avg['amp'] = np.abs(amp_avg['vis'])
+
+    else:
+        if scan_avg==False:
+            t0 = datetime.datetime(1960,1,1)
+            vis['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),vis.datetime))  
+            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
+        else:
+            bins, labs = get_bins_labels(scandata)
+            vis['scan'] = list(pd.cut(vis.time/24., bins,labels=labs))
+            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
+
+        #column just for counting the elements
+        vis['number'] = 1
+        
+        aggregated = {'datetime': np.min, 'time': np.min,
+        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum,
+        'qvis': lambda x: 0*1j, 'uvis': lambda x: 0*1j, 'vvis': lambda x: 0*1j,'qsigma':lambda x: 0,'usigma': lambda x: 0, 'vsigma': lambda x: 0}
+
+        if err_type not in ['predicted','measured']:
+            print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
+            err_type='predicted'
+        
+        #AVERAGING-------------------------------    
+        vis['dummy'] = list(zip(vis['amp'],vis['sigma']))
+        aggregated['dummy'] = lambda x: mean_incoh_amp([y[0] for y in x] ,[y[1] for y in x], debias=debias,err_type=err_type)
+        
+        #ACTUAL AVERAGING
+        amp_avg = vis.groupby(grouping).agg(aggregated).reset_index()
+        
+        amp_avg['amp'] = [x[0] for x in list(amp_avg['dummy'])]
+        amp_avg['sigma'] = [x[1] for x in list(amp_avg['dummy'])]
+        amp_avg['snr'] = amp_avg['amp']/amp_avg['sigma']
+        if scan_avg==False:
+            #round datetime and time to the begining of the bucket
+            amp_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), amp_avg['round_time']))
+            amp_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., amp_avg['datetime']))
+        else:
+            amp_avg.drop(list(amp_avg[amp_avg.scan<0].index.values),inplace=True)    
+        amp_avg['source'] = sour
+    if return_type=='rec':
+        return df_to_rec(amp_avg,'amp')
+    elif return_type=='df':
+        return amp_avg 
+    elif return_type=='vis':
+        amp_avg['vis'] = amp_avg['amp']  +0*1j*amp_avg['amp'] 
+        return df_to_rec(amp_avg,'vis')
 
 def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
 

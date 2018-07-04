@@ -104,6 +104,7 @@ def mean_incoh_amp(amp,sigma,debias=True,err_type='predicted',num_samples=int(1e
     Returns:
         amp0: estimator of unbiased amplitude
     """
+    amp=np.abs(amp)
     if (not hasattr(amp, "__len__")):
         amp = [amp]
     amp = np.asarray(amp, dtype=np.float32) 
