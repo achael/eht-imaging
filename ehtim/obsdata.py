@@ -926,7 +926,54 @@ class Obsdata(object):
             self.amp = data
         print("updated self.amp: avg_time %f s\n"%avg_time)
 
-    def add_bispec(self, return_type='rec', count='max',
+
+    def add_bispec(self, return_type='rec', count='max', tcoh=0, mode='all',
+                         avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1,scan_avg=False,scandata=[]):
+
+        #TODO store averaging timescale/other parameters?
+        """Adds attribute self.bispec: bispectra table with bispectra averaged for dt
+
+
+           Args:
+               return_type: data frame ('df') or recarray ('rec')
+               count (str): If 'min', return minimal set of bispectra, if 'max' return all bispectra up to reordering
+
+               avg_time (float): bispectrum averaging timescale
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+
+        """
+        if hasattr(self, 'scans')&hasattr(self.scans,'shape'):
+            scandata=self.scans
+        else:
+            if scan_avg==True:
+                raise Exception("No scan info available for the observation!")
+
+        if tcoh > avg_time:
+            print('Coherent averaging must be no longer than total averaging time! Assuming tcoh=avg_time.')
+            tcoh=avg_time
+        
+        #START WITH COHERENT AVERAGING for Tcoh
+        foo = self.copy()
+        if tcoh > 0:
+            foo.avg_coherent(tcoh)
+
+        #TODO store averaging timescale/other parameters?
+        cdf = make_bsp_df(foo, mode=mode, round_s=round_s, count=count)
+        if (avg_time>0)|(scan_avg==True):
+            cdf_av = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples,scan_avg=scan_avg,scandata=scandata)
+            self.bispec = cdf_av
+        else:
+            if return_type=='rec': 
+                cdf = df_to_rec(cdf,'bispec')
+            self.bispec = cdf
+        if scan_avg==False:
+            print("updated self.bispec: avg_time %f s\n" % avg_time)
+        else:
+            print("updated self.bispec: scan-long averaging")
+            
+    def add_bispec_old(self, return_type='rec', count='max',
                          avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         #TODO store averaging timescale/other parameters?
@@ -955,7 +1002,59 @@ class Obsdata(object):
             self.bispec = cdf
         print("updated self.bispec: avg_time %f s\n"%avg_time)
 
-    def add_cphase(self,return_type='rec',count='max',
+
+    def add_cphase(self, avg_time=0, tcoh=0, strategy='avg_bispec', mode='all',count='max',return_type='rec',
+    err_type='predicted',num_samples=int(1e3), round_s=0.1,scan_avg=False,scandata=[]):
+        """Adds attribute self.cphase: cphase table averaged for dt
+            
+            Args:
+               return_type: data frame ('df') or recarray ('rec')
+               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+
+               strategy: average bispectra ('avg_bispec') or average cphases ('avg_cphases')
+               avg_time (float): closure phase averaging timescale
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+        """
+        if hasattr(self, 'scans')&hasattr(self.scans,'shape'):
+            scandata=self.scans
+        else:
+            if scan_avg==True:
+                raise Exception("No scan info available for the observation!")
+
+        if (avg_time<=0)&(scan_avg==False):
+            cdf = make_cphase_df(self, mode=mode, round_s=round_s,count=count)
+            if return_type=='rec': 
+                cdf = df_to_rec(cdf,'cphase')
+            self.cphase = cdf
+        else:
+            if tcoh > avg_time:
+                print('Coherent averaging time must be no longer by total averaging time! Assuming tcoh=avg_time.')
+                tcoh=avg_time
+            #START WITH COHERENT AVERAGING for Tcoh
+            foo = self.copy()
+            if tcoh > 0:
+                foo.avg_coherent(tcoh)
+
+            if strategy not in ['avg_cphases','avg_bispec']:
+                print("'strategy' parameter must be 'avg_cphases' or 'avg_bispec'! Assume 'avg_bispec' ")
+                strategy='avg_bispec'
+            if strategy=='avg_cphases':
+                cp = make_cphase_df(foo,mode=mode,count=count) #get cphase
+                cp_avg = average_cphases(cp,avg_time,return_type=return_type,err_type=err_type,num_samples=num_samples,scan_avg=scan_avg,scandata=scandata) #average cphase
+            elif strategy=='avg_bispec':
+                bsp = make_bsp_df(foo,mode=mode,count=count) #get bispectra
+                bsp_avg = average_bispectra(bsp,avg_time,return_type='df',num_samples=num_samples,scan_avg=scan_avg,scandata=scandata) #average bispectra
+                cp_avg = bsp_to_cp(bsp_avg,return_type=return_type) # get cphase data product
+            self.cphase=cp_avg
+        if scan_avg==False:
+            print("updated self.cphase: avg_time %f s\n" % avg_time)
+        else:
+            print("updated self.cphase: scan-long averaging")
+
+
+    def add_cphase_old(self,return_type='rec',count='max',
                         avg_time=0,err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.cphase: cphase table averaged for dt
@@ -982,7 +1081,95 @@ class Obsdata(object):
             self.cphase = cdf
         print("updated self.cphase: avg_time %f s\n"%avg_time)
 
-    def add_camp(self, return_type='rec', ctype='camp',
+
+    def add_camp(self, avg_time=0, tcoh=0, strategy='low_snr',ctype='camp',debias=True, mode='all',count='max',return_type='rec',
+    err_type='predicted',num_samples=int(1e3),round_s=0.1,scan_avg=False,scandata=[]):
+        return 0
+
+
+
+    def add_camp_2(self, avg_time=0, tcoh=0, strategy='low_snr',ctype='camp',debias=True, mode='all',count='max',return_type='rec',
+    err_type='predicted',num_samples=int(1e3),round_s=0.1,scan_avg=False,scandata=[]):
+        """Adds attribute self.camp or self.logcamp: closure amplitudes table
+
+           Args:
+               return_type: data frame ('df') or recarray ('rec')
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               debias (bool): If True, debias the closure amplitude
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+               strategy (str):  form closures, debias then average closures ('high snr') or debias while averaging incoherently and form closures later ('low snr') 
+
+               avg_time (float): closure amplitude averaging timescale
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+
+        """
+        print('were in add camp 2')
+        if hasattr(self, 'scans')&hasattr(self.scans,'shape'):
+            scandata=self.scans
+            print('there is usable .scans')
+        else:
+            if scan_avg==True:
+                raise Exception("No scan info available for the observation!")
+
+        if (avg_time<=0)&(scan_avg==False):
+            print('were in no averaging code')
+            foo = self.copy()
+            camp_avg = make_camp_df(foo,ctype=ctype,debias=False,count=count,mode=mode,
+                           round_s=round_s)
+            if return_type=='rec':
+                camp_avg = df_to_rec(camp_avg,'camp')
+
+        else:
+            print('were in averaging camp' )
+            if tcoh > avg_time:
+                print('Coherent averaging time must be shorter than total averaging time! Assuming tcoh=avg_time.')
+                tcoh=avg_time
+            #START WITH COHERENT AVERAGING for Tcoh
+            foo = self.copy()
+            if tcoh > 0:
+                foo.avg_coherent(tcoh)
+            
+            if strategy not in ['high_snr','low_snr']:
+                print("'strategy' parameter must be 'high_snr' or 'low_snr'! Assume 'low_snr' ")
+                strategy='low_snr'    
+            if strategy=='high_snr':
+                """
+                debias amplitudes from single sample, then form closure amplitudes 
+                and then average closure amplitudes for tavg
+                """
+                cdf = make_camp_df(foo,ctype=ctype,debias=True,mode=mode,count=count)
+                camp_avg = average_camp(cdf,avg_time,return_type=return_type,err_type=err_type,num_samples=num_samples,scan_avg=scan_avg,scandata=scandata)
+            elif strategy=='low_snr':
+                """
+                average amplitudes incoherently for tavg and debias while averaging, only then
+                form closure amplitudes
+                """
+                cdf = make_amp_incoh(foo,dt=avg_time,return_type='vis',err_type=err_type,num_samples=num_samples,debias=True,scan_avg=scan_avg)
+                obs_foo = Obsdata(foo.ra, foo.dec, foo.rf, foo.bw, cdf, foo.tarr, source=foo.source, mjd=foo.mjd,
+                            ampcal=foo.ampcal, phasecal=foo.phasecal, opacitycal=foo.opacitycal, dcal=foo.dcal, frcal=foo.frcal,
+                            timetype=foo.timetype, scantable=foo.scans)
+                camp_avg = make_camp_df(obs_foo,ctype=ctype,debias=False,mode=mode,count=count)
+                if return_type=='rec':
+                    camp_avg = df_to_rec(camp_avg,'camp')
+
+        if ctype=='logcamp':
+            self.logcamp = camp_avg
+            if scan_avg==False:
+                print("updated self.logcamp: avg_time %f s\n" % avg_time)
+            else:
+                print("updated self.logcamp: scan-long averaging")
+        elif ctype=='camp':
+            self.camp = camp_avg
+            if scan_avg==False:
+                print("updated self.camp: avg_time %f s\n" % avg_time)
+            else:
+                print("updated self.camp: scan-long averaging")
+
+
+
+    def add_camp_old(self, return_type='rec', ctype='camp',
                        count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
@@ -1020,6 +1207,31 @@ class Obsdata(object):
 
 
     def add_logcamp(self, return_type='rec', ctype='camp',
+                       count='max', debias=True,  strategy='low_snr',
+                       avg_time=0,tcoh=0, err_type='predicted', num_samples=1000, round_s=0.1,scan_avg=False,scandata=[]):
+
+        """Adds attribute self.logcamp: closure amplitudes table
+
+           Args:
+               return_type: data frame ('df') or recarray ('rec')
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               debias (bool): If True, debias the closure amplitude
+               debias_type (str): 'ExactLog' or 'old'
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+
+               avg_time (float): closure amplitude averaging timescale
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+
+        """
+        self.add_camp(return_type=return_type, ctype='logcamp',
+                     count=count, debias=debias, avg_time=avg_time, 
+                     err_type=err_type, num_samples=num_samples, round_s=round_s,scan_avg=scan_avg,scandata=scandata)
+
+
+
+    def add_logcamp_old(self, return_type='rec', ctype='camp',
                        count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
@@ -1043,6 +1255,37 @@ class Obsdata(object):
 
 
     def add_all(self, return_type='rec',
+                       count='max', debias=True,
+                       avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
+
+        """Adds tables of all all averaged derived quantities self.amp,self.bispec,self.cphase,self.camp,self.logcamp
+
+           Args:
+               return_type: data frame ('df') or recarray ('rec')
+               debias (bool): If True, debias the closure amplitude
+               debias_type (str): 'ExactLog' or 'old'
+               count (str): If 'min', return minimal set of closure quantities, if 'max' return all closure quantities
+
+               avg_time (float): closure amplitude averaging timescale
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+
+        """
+        self.add_amp(return_type=return_type, avg_time=avg_time, debias=debias, err_type=err_type)
+        self.add_bispec(return_type=return_type, count=count, avg_time=avg_time, 
+                        err_type=err_type, num_samples=num_samples, round_s=round_s)
+        self.add_cphase(return_type=return_type, count=count, avg_time=avg_time, 
+                        err_type=err_type, num_samples=num_samples, round_s=round_s)
+        self.add_camp(return_type=return_type, ctype='camp',
+                     count=count, debias=debias,
+                     avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
+        self.add_camp(return_type=return_type, ctype='logcamp',
+                     count=count, debias=debias,
+                     avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
+
+    
+    def add_all_old(self, return_type='rec',
                        count='max', debias=True,  
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 

@@ -197,23 +197,30 @@ def make_amp_incoh(obs,dt=0,return_type='rec',err_type='predicted',debias=True,s
         amp_avg['vis'] = amp_avg['amp']  +0*1j*amp_avg['amp'] 
         return df_to_rec(amp_avg,'vis')
 
-def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
-
+def make_cphase_df(obs,mode='all',count='max',round_s=0.1,source_name='unknown',band='unknown',polarization='unknown'):
     """generate DataFrame of closure phases
 
     Args: 
-        obs: ObsData object
+        obs: if ObsData object then calculate cphases. If nparray,
+        assume that it consists of closure phases in ehtim format
         round_s: accuracy of datetime object in seconds
 
     Returns:
         df: closure phase data in DataFrame format
     """
+    if 'Obsdata' in str(type(obs)):
+        data=obs.c_phases(mode=mode,count=count)
+        sour=obs.source
+        mjd0=obs.mjd
+    else:
+        data=obs
+        sour=source_name
+        mjd0=0
 
-    data=obs.c_phases(mode=mode,count=count)
-    sour=obs.source
     df = pd.DataFrame(data=data).copy()
+
     df['fmjd'] = df['time']/24.
-    df['mjd'] = obs.mjd + df['fmjd']
+    df['mjd'] = mjd0 + df['fmjd']
     df['triangle'] = list(map(lambda x: x[0]+'-'+x[1]+'-'+x[2],zip(df['t1'],df['t2'],df['t3'])))
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
@@ -223,23 +230,31 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
     df['source'] = sour
     return df
 
-def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
+def make_camp_df(obs,ctype='camp',debias=False,mode='all',count='max',debias_type='old',round_s=0.1, source_name='unknown',band='unknown',polarization='unknown'):
 
     """generate DataFrame of closure amplitudes
 
     Args: 
-        obs: ObsData object
+        obs: if ObsData object then calculate camps. If nparray,
+        assume that it consists of closure amplitudes in ehtim format
         round_s: accuracy of datetime object in seconds
 
     Returns:
         df: closure amplitude data in DataFrame format
     """
+    if 'Obsdata' in str(type(obs)):
+        data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype)
+        sour=obs.source
+        mjd0=obs.mjd
+    else:
+        data=obs
+        sour=source_name
+        mjd0=0
 
-    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype)
-    sour=obs.source
     df = pd.DataFrame(data=data).copy()
+    
     df['fmjd'] = df['time']/24.
-    df['mjd'] = obs.mjd + df['fmjd']
+    df['mjd'] = mjd0 + df['fmjd']
     df['quadrangle'] = list(map(lambda x: x[0]+'-'+x[1]+'-'+x[2]+'-'+x[3],zip(df['t1'],df['t2'],df['t3'],df['t4'])))
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
@@ -248,26 +263,37 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['band'] = band
     df['source'] = sour
     df['catype'] = ctype
+    df.drop(list(df[df.camp>1e10].index.values),inplace=True)
+    df.drop(list(df[df.camp<-1e10].index.values),inplace=True)
+    df.drop(list(df[df.sigmaca==0].index.values),inplace=True)
+    df.dropna(axis=0, how='any', subset=['camp','sigmaca'], inplace=True)
     return df
 
-def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1):
-
+def make_bsp_df(obs,mode='all',count='min',round_s=0.1,band='unknown',polarization='unknown'):
     """generate DataFrame of bispectra
 
     Args: 
-        obs: ObsData object
+        obs: if ObsData object then calculate bisp. If nparray,
+        assume that it consists of bisp in ehtim format
         round_s: accuracy of datetime object in seconds
 
     Returns:
         df: bispectra data in DataFrame format
     """
 
-    data = obs.bispectra(mode=mode,count=count)
-    sour=obs.source
+    if 'Obsdata' in str(type(obs)):
+        data = obs.bispectra(mode=mode,count=count)
+        sour=obs.source
+        mjd0=obs.mjd
+    else:
+        data=obs
+        sour=source_name
+        mjd0=0
+
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
-    df['mjd'] = obs.mjd + df['fmjd']
-    df['triangle'] = list(map(lambda x: x[0]+'-'+x[1]+'-'+x[2],zip(df['t1'],df['t2'],df['t3'])))
+    df['mjd'] = mjd0 + df['fmjd']
+    df['triangle'] = list(map(lambda x: x[0].decode('unicode_escape')+'-'+x[1].decode('unicode_escape')+'-'+x[2].decode('unicode_escape'),zip(df['t1'],df['t2'],df['t3'])))
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
     df['jd'] = Time(df['mjd'], format='mjd').jd
@@ -276,24 +302,30 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min'
     df['source'] = sour
     return df
 
-def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=1000):
+def average_cphases(cdf,dt=0,return_type='rec',err_type='predicted',num_samples=1000,scan_avg=False,scandata=[]):
 
     """averages DataFrame of cphases
 
     Args:
         cdf: data frame of closure phases
         dt: integration time in seconds
-        return_type: 'rec' for numpy record array (as used by ehtim), 'df' for data frame
-        err_type: 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
-
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+        err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+        scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
     Returns:
         cdf2: averaged closure phases
     """
 
     cdf2 = cdf.copy()
-    t0 = datetime.datetime(1960,1,1)
-    cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
-    grouping=['polarization','band','triangle','t1','t2','t3','round_time']
+    if scan_avg==False:
+        t0 = datetime.datetime(1960,1,1)
+        cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
+        grouping=['polarization','band','triangle','t1','t2','t3','round_time']
+    else:
+        bins, labs = get_bins_labels(scandata)
+        cdf2['scan'] = list(pd.cut(cdf2.time/24., bins,labels=labs))
+        grouping=['polarization','band','triangle','t1','t2','t3','scan']
+
     #column just for counting the elements
     cdf2['number'] = 1
     aggregated = {'datetime': np.min, 'time': np.mean,
@@ -318,9 +350,12 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         cdf2['cphase'] = [x[0] for x in list(cdf2['dummy'])]
         cdf2['sigmacp'] = [0.5*(x[1][1]-x[1][0]) for x in list(cdf2['dummy'])]
 
-    #round datetime
-    cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
-    
+    if scan_avg==False:
+        #round datetime
+        cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
+        cdf2['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., cdf2['datetime']))
+    else:
+        cdf2.drop(list(cdf2[cdf2.scan<0].index.values),inplace=True)
     #ANDREW TODO-- this can lead to big problems!!
     #drop values averaged from less than 3 datapoints
     #cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
@@ -330,23 +365,30 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         return cdf2
 
 
-def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
+def average_bispectra(cdf,dt=0,return_type='rec',num_samples=int(1e3),scan_avg=False,scandata=[]):
 
     """averages DataFrame of bispectra
 
     Args:
         cdf: data frame of bispectra
         dt: integration time in seconds
-        return_type: 'rec' for numpy record array (as used by ehtim), 'df' for data frame
-
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+        scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
     Returns:
         cdf2: averaged bispectra
     """
 
     cdf2 = cdf.copy()
-    t0 = datetime.datetime(1960,1,1)
-    cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
-    grouping=['polarization','band','triangle','t1','t2','t3','round_time']
+    if scan_avg==False:
+        t0 = datetime.datetime(1960,1,1)
+        cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
+        grouping=['polarization','band','triangle','t1','t2','t3','round_time']
+    else:
+        bins, labs = get_bins_labels(scandata)
+        cdf2['scan'] = list(pd.cut(cdf2.time/24., bins,labels=labs))
+        grouping=['polarization','band','triangle','t1','t2','t3','scan']
+
+
     #column just for counting the elements
     cdf2['number'] = 1
     aggregated = {'datetime': np.min, 'time': np.mean,
@@ -360,8 +402,11 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
     cdf2 = cdf2.groupby(grouping).agg(aggregated).reset_index()
 
     #round datetime
-    cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
-    
+    if scan_avg==False:
+        cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
+        cdf2['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., cdf2['datetime']))
+    else:
+        cdf2.drop(list(cdf2[cdf2.scan<0].index.values),inplace=True)
     #ANDREW TODO -- this can lead to big problems!!
     #drop values averaged from less than 3 datapoints
     #cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
@@ -370,25 +415,29 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
     elif return_type=='df':
         return cdf2
 
-
-def average_camp(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1e3)):
+def average_camp(cdf,dt=0,return_type='rec',err_type='predicted',num_samples=int(1e3),scan_avg=False,scandata=[]):
 
     """averages DataFrame of closure amplitudes
 
     Args:
         cdf: data frame of closure amplitudes
         dt: integration time in seconds
-        return_type: 'rec' for numpy record array (as used by ehtim), 'df' for data frame
-        err_type: 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
-
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+        err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+        scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
     Returns:
         cdf2: averaged closure amplitudes
     """
 
     cdf2 = cdf.copy()
-    t0 = datetime.datetime(1960,1,1)
-    cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
-    grouping=['polarization','band','quadrangle','t1','t2','t3','t4','round_time']
+    if scan_avg==False:
+        t0 = datetime.datetime(1960,1,1)
+        cdf2['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),cdf2.datetime))  
+        grouping=['polarization','band','quadrangle','t1','t2','t3','t4','round_time']
+    else:
+        bins, labs = get_bins_labels(scandata)
+        cdf2['scan'] = list(pd.cut(cdf2.time/24., bins,labels=labs))
+        grouping=['polarization','band','quadrangle','t1','t2','t3','t4','scan']
     #column just for counting the elements
     cdf2['number'] = 1
     aggregated = {'datetime': np.min, 'time': np.mean,
@@ -414,8 +463,11 @@ def average_camp(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1
         cdf2['sigmaca'] = [0.5*(x[1][1]-x[1][0]) for x in list(cdf2['dummy'])]
 
     #round datetime
-    cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
-    
+    if scan_avg==False:
+        cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
+        cdf2['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., cdf2['datetime']))
+    else:
+        cdf2.drop(list(cdf2[cdf2.scan<0].index.values),inplace=True)
     #ANDREW TODO -- this can lead to big problems!!
     #drop values averaged from less than 3 datapoints
     #cdf2.drop(cdf2[cdf2.number < 3.].index, inplace=True)
@@ -442,8 +494,21 @@ def df_to_rec(df,product_type):
          out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
          return np.array(out,dtype=DTPOL)
     elif product_type=='bispec':
-         out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
+         out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)    
          return np.array(out,dtype=DTBIS)
+    elif product_type=='amp':
+         out=  df[['time','t1','t2','u','v','vis','amp','sigma']].to_records(index=False)    
+         return np.array(out,dtype=DTAMP)
+
+def bsp_to_cp(bsp,return_type='rec'):
+    """Takes bispectrum dataframe and adds cphase columns
+    """
+    bsp['cphase'] = np.angle(bsp['bispec'])*(180/np.pi)
+    bsp['sigmacp'] = bsp['sigmab']/np.abs(bsp['bispec'])*(180/np.pi)
+    if return_type=='rec':
+        return df_to_rec(bsp,'cphase')
+    elif return_type=='df':
+        return bsp
 
 def round_time(t,round_s=0.1):
 
