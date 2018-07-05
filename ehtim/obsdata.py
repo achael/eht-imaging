@@ -1842,7 +1842,7 @@ class Obsdata(object):
         tri = (site1, site2, site3)
         outdata = []
         for obs in bs:
-            obstri = (obs['t1'],obs['t2'],obs['t3'])
+            obstri = (obs['t1'][0],obs['t2'][0],obs['t3'][0])
             if set(obstri) == set(tri):
                 # Flip the sign of the closure phase if necessary
                 parity = paritycompare(tri, obstri)
@@ -1897,7 +1897,7 @@ class Obsdata(object):
         tri = (site1, site2, site3)
         outdata = []
         for obs in cphases:
-            obstri = (obs['t1'],obs['t2'],obs['t3'])
+            obstri = (obs['t1'][0],obs['t2'][0],obs['t3'][0])
             if set(obstri) == set(tri):
                 # Flip the sign of the closure phase if necessary
                 parity = paritycompare(tri, obstri)
