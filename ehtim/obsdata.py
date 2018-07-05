@@ -1082,13 +1082,7 @@ class Obsdata(object):
         print("updated self.cphase: avg_time %f s\n"%avg_time)
 
 
-    def add_camp(self, avg_time=0, tcoh=0, strategy='low_snr',ctype='camp',debias=True, mode='all',count='max',return_type='rec',
-    err_type='predicted',num_samples=int(1e3),round_s=0.1,scan_avg=False,scandata=[]):
-        return 0
-
-
-
-    def add_camp_2(self, avg_time=0, tcoh=0, strategy='low_snr',ctype='camp',debias=True, mode='all',count='max',return_type='rec',
+    def add_camp(self, avg_time=0, tcoh=0, strategy='low_snr',ctype='camp',debias=True, mode='all',count='min',return_type='rec',
     err_type='predicted',num_samples=int(1e3),round_s=0.1,scan_avg=False,scandata=[]):
         """Adds attribute self.camp or self.logcamp: closure amplitudes table
 
@@ -1105,16 +1099,13 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
-        print('were in add camp 2')
-        if hasattr(self, 'scans')&hasattr(self.scans,'shape'):
+        if hasattr(self, 'scans')&hasattr(self.scans,'shape')&(scan_avg==True):
             scandata=self.scans
-            print('there is usable .scans')
         else:
             if scan_avg==True:
                 raise Exception("No scan info available for the observation!")
 
         if (avg_time<=0)&(scan_avg==False):
-            print('were in no averaging code')
             foo = self.copy()
             camp_avg = make_camp_df(foo,ctype=ctype,debias=False,count=count,mode=mode,
                            round_s=round_s)
@@ -1122,7 +1113,6 @@ class Obsdata(object):
                 camp_avg = df_to_rec(camp_avg,'camp')
 
         else:
-            print('were in averaging camp' )
             if tcoh > avg_time:
                 print('Coherent averaging time must be shorter than total averaging time! Assuming tcoh=avg_time.')
                 tcoh=avg_time
@@ -1151,6 +1141,7 @@ class Obsdata(object):
                             ampcal=foo.ampcal, phasecal=foo.phasecal, opacitycal=foo.opacitycal, dcal=foo.dcal, frcal=foo.frcal,
                             timetype=foo.timetype, scantable=foo.scans)
                 camp_avg = make_camp_df(obs_foo,ctype=ctype,debias=False,mode=mode,count=count)
+                camp = make_camp_df(foo,ctype=ctype,debias=False,mode=mode,count=count)
                 if return_type=='rec':
                     camp_avg = df_to_rec(camp_avg,'camp')
 

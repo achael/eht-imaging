@@ -230,7 +230,7 @@ def make_cphase_df(obs,mode='all',count='max',round_s=0.1,source_name='unknown',
     df['source'] = sour
     return df
 
-def make_camp_df(obs,ctype='camp',debias=False,mode='all',count='max',debias_type='old',round_s=0.1, source_name='unknown',band='unknown',polarization='unknown'):
+def make_camp_df(obs,ctype='camp',debias=False,mode='all',count='min',debias_type='old',round_s=0.1, source_name='unknown',band='unknown',polarization='unknown'):
 
     """generate DataFrame of closure amplitudes
 
@@ -243,10 +243,12 @@ def make_camp_df(obs,ctype='camp',debias=False,mode='all',count='max',debias_typ
         df: closure amplitude data in DataFrame format
     """
     if 'Obsdata' in str(type(obs)):
+        print('OBSDATA object')
         data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype)
         sour=obs.source
         mjd0=obs.mjd
     else:
+        print('cphase data')
         data=obs
         sour=source_name
         mjd0=0
