@@ -1197,8 +1197,8 @@ class Obsdata(object):
             print("updated self.camp: avg_time %f s\n" % avg_time)
 
 
-    def add_logcamp(self, return_type='rec', ctype='camp',
-                       count='max', debias=True,  strategy='low_snr',
+    def add_logcamp(self, return_type='rec',mode='all', ctype='logcamp',
+                       count='min', debias=True,  strategy='low_snr',
                        avg_time=0,tcoh=0, err_type='predicted', num_samples=1000, round_s=0.1,scan_avg=False,scandata=[]):
 
         """Adds attribute self.logcamp: closure amplitudes table
@@ -1217,7 +1217,7 @@ class Obsdata(object):
 
         """
         self.add_camp(return_type=return_type, ctype='logcamp',
-                     count=count, debias=debias, avg_time=avg_time, 
+                     count=count,mode=mode, debias=debias, avg_time=avg_time, tcoh=tcoh,
                      err_type=err_type, num_samples=num_samples, round_s=round_s,scan_avg=scan_avg,scandata=scandata)
 
 
