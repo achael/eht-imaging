@@ -71,7 +71,7 @@ sigma3_List = [None,]
 ##################################################################################################
 # Constants
 ##################################################################################################
-NHIST = 200 # number of steps to store for hessian approx
+#NHIST = 25 # number of steps to store for hessian approx
 nit = 0 # global variable to track the iteration number in the plotting callback
 
 ##################################################################################################
@@ -794,7 +794,7 @@ alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, 
 stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for scattering
 Target_Dynamic_Range = 10000.0,
 maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, 
-minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., processes = -1, 
+minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0., processes = -1, 
 recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
 
     """Run dynamical imaging.
@@ -1436,7 +1436,7 @@ R_dt  ={'alpha':0.0, 'metric':'SymKL', 'sigma_dt':0.0, 'p':2.0},
 R_dt_multifreq ={'alpha':0.0, 'metric':'SymKL', 'sigma_dt':0.0, 'p':2.0},
 alpha_centroid=0.0, alpha_flux=0.0, alpha_dF=0.0, alpha_dS1=0.0, alpha_dS2=0.0, #other regularizers
 Target_Dynamic_Range = 10000.0,
-maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, minimizer_method = 'L-BFGS-B', update_interval = 1, clipfloor=0., recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
+maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, minimizer_method = 'L-BFGS-B', NHIST = 25,  update_interval = 1, clipfloor=0., recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
     """Run dynamic imager
        Uses I = exp(I') change of variables.
        Obsdata_List is a list of Obsdata objects, InitIm_List is a list of Image objects, and Prior is an Image object.
