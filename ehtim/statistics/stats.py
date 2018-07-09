@@ -104,6 +104,7 @@ def mean_incoh_amp(amp,sigma,debias=True,err_type='predicted',num_samples=int(1e
     Returns:
         amp0: estimator of unbiased amplitude
     """
+    amp=np.abs(amp)
     if (not hasattr(amp, "__len__")):
         amp = [amp]
     amp = np.asarray(amp, dtype=np.float32) 
@@ -214,3 +215,32 @@ def bootstrap(data, statistic, num_samples=int(1e3), alpha='1sig',wrapping_varia
     bootstrap_value = np.median(stat)+m
     bootstrap_CI = [stat[int((alpha/2.0)*num_samples)]+m, stat[int((1-alpha/2.0)*num_samples)]+m]
     return bootstrap_value, bootstrap_CI
+
+
+def debiasing(x,y, debias_type='amp_sample'):
+    '''performes debiasing element by element
+        Args:
+               x (float, array): vector to debias
+               y(float, array): sigma/snr to use for debiasing
+               debias_type (str): don't debias ('none'), debias amplitudes ('amp_sample'), debias logamps ('logamp')
+    '''
+    if debias_type=='none':
+        #for 'none' act as identity
+        return x
+    elif debias_type=='amp_sample':
+        #interprets x as amplitudes/visibilities and y as errors and debias each sample separately
+        return debias_sample(x,y)
+    elif debias_type=='logamp':
+        #interprets x as log amplitudes and y as snrs and debias each sample separately
+        return log_debias(x,y)
+    
+def log_debias(logamp,snr):
+    if (hasattr(snr, "__len__")):
+        snr= np.asarray(snr)
+    return logamp + ss.expi(-snr**2/2.)/2.
+  
+def debias_sample(x,y):
+    x=np.abs(x)
+    y=np.abs(y)
+    deb_amp = np.sqrt(np.maximum(x**2-1*y**2,0))
+    return deb_amp
