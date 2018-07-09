@@ -1712,6 +1712,7 @@ class Obsdata(object):
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
                 time = gmst_to_utc(time, self.mjd)
             sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
+            sites = np.sort(sites)
 
             # Create a dictionary of baselines at the current time incl. conjugates;
             l_dict = {}
@@ -1968,9 +1969,9 @@ class Obsdata(object):
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
                 time = gmst_to_utc(time, self.mjd)
 
-            sites = np.array(list(set(np.hstack((tdata['t1'],tdata['t2'])))))
-            sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])]
-            ref = sites[0]
+            sites = np.array(list(set(np.hstack((tdata['t1'], tdata['t2'])))))
+            sites = np.sort(sites)
+            sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])[::-1]]
             if len(sites) < 4:
                 continue
 
@@ -1981,7 +1982,6 @@ class Obsdata(object):
 
             # Minimal set
             if count == 'min':
-
                 quadsets = quad_minimal_set(sites, self.tarr, self.tkey)
                 for quad in quadsets:
                     # Blue is numerator, red is denominator

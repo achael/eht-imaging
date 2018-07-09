@@ -2709,7 +2709,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.camp
         # reduce to a minimal set    
-        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
+        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
@@ -2751,6 +2751,8 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
+        # reduce to a minimal set    
+        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 

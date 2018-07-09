@@ -365,12 +365,6 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
             vvis[i] *= ker
 
     # Put the visibilities back in the obsdata array
-#    if type(obs) == Obsdata:
-#        obsdata['vis'] = vis
-#        obsdata['qvis'] = qvis
-#        obsdata['uvis'] = uvis
-#        obsdata['vvis'] = vvis
-#    else:
     if len(im.qvec):
         obsdata = [vis, qvis, uvis, vvis]
     else:
@@ -1086,17 +1080,6 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         obsdata = copy.deepcopy(obs.data)
     else:
         obsdata = obs.data
-
-#    sites = obsdata[['t1','t2']].view(('U32',2))
-#    time = obsdata[['time']].view(('f8',1))
-#    tint = obsdata[['tint']].view(('f8',1))
-#    uv = obsdata[['u','v']].view(('f8',2))
-#    vis = obsdata[['vis']].view(('c16',1))
-#    qvis = obsdata[['qvis']].view(('c16',1))
-#    uvis = obsdata[['uvis']].view(('c16',1))
-#    vvis = obsdata[['vvis']].view(('c16',1))
-#    taus = np.abs(obsdata[['tau1','tau2']].view(('f8',2)))
-#    elevs = obs.unpack(['el1','el2'], ang_unit='deg').view(('f8',2))
 
     sites = recarr_to_ndarr(obsdata[['t1','t2']],'U32')
     uv = recarr_to_ndarr(obsdata[['u','v']],'f8')

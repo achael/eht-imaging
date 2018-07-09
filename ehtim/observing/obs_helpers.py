@@ -457,6 +457,22 @@ def cerror(sigma):
     """
     return np.random.normal(loc=0,scale=sigma) + 1j*np.random.normal(loc=0,scale=sigma)
 
+def cerror_hash(sigma,*args):
+    """Return a complex number drawn from a circular complex Gaussian of zero mean
+    """
+    reargs = list(args)
+    reargs.append('re')
+    np.random.seed(hash(",".join(map(repr,reargs))) % 4294967295)
+    re = np.random.randn()
+
+    imargs = list(args)
+    imargs.append('im')
+    np.random.seed(hash(",".join(map(repr,imargs))) % 4294967295)
+    im = np.random.randn()
+
+    err = sigma * (re + 1j*im)
+    return err 
+
 def hashrandn(*args):
     """set the seed according to a collection of arguments and return random gaussian var
     """
@@ -746,6 +762,7 @@ def xyz_2_latlong(obsvecs):
 def tri_minimal_set(sites, tarr, tkey):
     """returns a minimal set of triangles for bispectra and closure phase"""
 
+    sites = list(np.sort(sites))
     if len(set(tarr['sefdr'])) > 1:
         ref = sites[np.argmin([tarr[tkey[site]]['sefdr'] for site in sites])]
     else:
@@ -761,9 +778,10 @@ def tri_minimal_set(sites, tarr, tkey):
 def quad_minimal_set(sites, tarr, tkey):
     """returns a minimal set of quadrangels for closure amplitude"""
 
-    # If we want a minimal set, choose the minimum sefd reference
+    # If we want a minimal set, choose the maximum sefd reference
     # TODO this should probably be an sefdr + sefdl average instead
-    sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])]
+    sites = np.sort(sites)
+    sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])[::-1]]
     ref = sites[0]
 
     # Loop over other sites >=3 and form minimal closure amplitude set
@@ -811,6 +829,7 @@ def reduce_tri_minimal(obs, datarr):
 
         # determine a minimal set of trinagles
         sites = list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3']))))
+        sites = np.sort(sites)
         tris = tri_minimal_set(sites, obs.tarr, obs.tkey)
         tris = [set(tri) for tri in tris]
 
@@ -832,7 +851,7 @@ def reduce_tri_minimal(obs, datarr):
 # Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
 # minimal set as we would from  calling c_amplitudes(count='min). This is because of  inverses. 
 def reduce_quad_minimal(obs, datarr,ctype='camp'):
-    """reduce a closure amplitude or log closure amplitude array to a minimal set"""
+    """reduce a closure amplitude or log closure amplitude array FROM a maximal set TO a minimal set"""
 
     if not ctype in ['camp','logcamp']:
         raise Exception("ctype must be 'camp' or 'logcamp'")
@@ -853,31 +872,37 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
     for timegroup in datalist:
         if returnType=='all': 
             outgroup = out
+            outgroup2=[]
         else:
             outgroup = []
         # determine a minimal set of quadrangles
         sites = np.array(list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3'],timegroup['t4'])))))
-        sites = sites[np.argsort([obs.tarr[obs.tkey[site]]['sefdr'] for site in sites])]
-        ref = sites[0]
+        sites =  np.sort(sites)
+        sites = sites[np.argsort([obs.tarr[obs.tkey[site]]['sefdr'] for site in sites])[::-1]]
+        if len(sites) < 4:
+            continue
         quads = quad_minimal_set(sites, obs.tarr, obs.tkey)
 
         # add data points from original camp array to new array if in minimal set
         # ANDREW TODO: there are ordering issues here that don't show up in cphase case....
         for dp in timegroup:
             # this is all same closure amplitude, but the ordering of labels is different
+            #num = [set((dp['t1'], dp['t2'])), set((dp['t3'], dp['t4']))]
+            #denom = [set((dp['t1'], dp['t4'])), set((dp['t2'], dp['t3']))]
             if ((dp['t1'],dp['t2'],dp['t3'],dp['t4']) in quads or
                 (dp['t2'],dp['t1'],dp['t4'],dp['t3']) in quads or
                 (dp['t3'],dp['t4'],dp['t1'],dp['t2']) in quads or
                 (dp['t4'],dp['t3'],dp['t2'],dp['t1']) in quads):
-
+                #print('num')
                 outgroup.append(np.array(dp,dtype=DTCAMP))
+                outgroup2.append(np.array(dp,dtype=DTCAMP))
 
             # flip the inverse closure amplitude
-            if ((dp['t1'],dp['t4'],dp['t3'],dp['t2']) in quads or
-                (dp['t4'],dp['t1'],dp['t2'],dp['t3']) in quads or
-                (dp['t3'],dp['t2'],dp['t1'],dp['t4']) in quads or
-                (dp['t2'],dp['t3'],dp['t4'],dp['t1']) in quads):
-
+            elif ((dp['t1'],dp['t4'],dp['t3'],dp['t2']) in quads or
+                  (dp['t4'],dp['t1'],dp['t2'],dp['t3']) in quads or
+                  (dp['t3'],dp['t2'],dp['t1'],dp['t4']) in quads or
+                  (dp['t2'],dp['t3'],dp['t4'],dp['t1']) in quads):
+                #sprint('denom')
                 dp2 = copy.deepcopy(dp)
                 campold = dp['camp']
                 sigmaold = dp['sigmaca']
@@ -901,6 +926,7 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                 elif ctype=='logcamp':
                     dp2['camp'] = -campold
                     dp2['sigmaca'] = sigmaold
+
                 dp2['t1'] = t1old
                 dp2['t2'] = t4old
                 dp2['t3'] = t3old
@@ -919,7 +945,10 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                 dp2['v4'] = v1old
 
                 outgroup.append(dp2)
+                outgroup2.append(np.array(dp2,dtype=DTCAMP))
 
+#        if len(quads)!= len(outgroup2):
+#            print(timegroup[0]['time'], len(quads), len(timegroup),len(outgroup2))
         if returnType=='time':
             out.append(np.array(outgroup,dtype=dtype))
         else:

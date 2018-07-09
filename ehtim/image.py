@@ -350,7 +350,6 @@ class Image(object):
 
         # Jones Matrix Corruption & Calibration
         if jones:
-            print("Applying Jones Matrices to data . . . ")
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, dcal=dcal, frcal=frcal,
@@ -362,7 +361,6 @@ class Image(object):
                                              ampcal=ampcal, phasecal=phasecal,
                                              opacitycal=opacitycal, dcal=dcal, frcal=frcal)
             if inv_jones:
-                print("Applying a priori calibration with estimated Jones matrices . . . ")
                 obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
                 obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
@@ -374,7 +372,6 @@ class Image(object):
         # No Jones Matrices, Add noise the old way
         # There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
         else:
-            print("Adding gain + phase errors to data and applying a priori calibration . . . ")
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset)
