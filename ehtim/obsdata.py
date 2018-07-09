@@ -1285,12 +1285,13 @@ class Obsdata(object):
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
 
-    def flag_sites(self, sites):
+    def flag_sites(self, sites, output='kept'):
 
         """Flag data points that include the specified sites
 
            Args:
                sites (list): list of sites to remove from the data
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1300,19 +1301,35 @@ class Obsdata(object):
         datatable = self.data.copy()
         t1_list = self.unpack('t1')['t1']
         t2_list = self.unpack('t2')['t2']
-        site_mask = np.array([t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))])
-        datatable = datatable[site_mask]
-        print('site flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
+        mask = np.array([t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))])
 
-    def flag_bl(self, sites):
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('Flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
+
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
+
+
+    def flag_bl(self, sites, output='kept'):
 
         """Flag data points that include the specified baseline
 
            Args:
                sites (list): baseline to remove from the data
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')                
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1322,29 +1339,65 @@ class Obsdata(object):
         obs_out = self.copy()
         t1_list = obs_out.unpack('t1')['t1']
         t2_list = obs_out.unpack('t2')['t2']
-        site_mask = np.array([not(t1_list[j] in sites and t2_list[j] in sites) for j in range(len(t1_list))])
+        mask = np.array([not(t1_list[j] in sites and t2_list[j] in sites) for j in range(len(t1_list))])
+
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('Flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
+
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
+
+
         obs_out.data = obs_out.data[site_mask]
         print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
         return obs_out
 
-    def flag_low_snr(self, snr_cut=3):
+    def flag_low_snr(self, snr_cut=3, output='kept'):
 
         """Flag low snr data points
 
            Args:
                snr_cut (float): remove points with snr lower than  this
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
         """
 
         datatable = self.data.copy()
-        snr_mask = self.unpack('snr')['snr'] > snr_cut
-        datatable = datatable[snr_mask]
-        print('snr flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
+        mask = self.unpack('snr')['snr'] > snr_cut
+
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('snr flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
+
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
 
     def flag_UT_range(self, UT_start_hour=0.0, UT_stop_hour=0.0, flag_or_keep=False):
 
@@ -1406,7 +1459,7 @@ class Obsdata(object):
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
 
-    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'):
+    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'): # Is this depriciated? It appears identical to flag_anomalous. 
         """Flag anomalous data points
 
            Args:
@@ -1418,7 +1471,6 @@ class Obsdata(object):
                (Obsdata): a observation object with flagged data points removed
         """
 
-
         stats = dict()
         for t1 in set(self.data['t1']):
             for t2 in set(self.data['t2']):
@@ -1429,6 +1481,8 @@ class Obsdata(object):
 
                     # Here, we use median absolute deviation from the median as a robust proxy for standard deviation
                     dfields = np.median(np.abs(fields-np.median(fields)))
+                    if dfields == 0.0: # Avoid problem when the MAD is zero (e.g., a single sample)
+                        dfields = 1.0
                     stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = np.abs(vals[field][j]-np.median(fields)) / dfields
 
         mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in self.data])
@@ -1441,8 +1495,8 @@ class Obsdata(object):
         print('anomalous %s flagged %d/%d visibilities' % (field, len(datatable_flagged), len(self.data)))
 
         # Make new observations with all data first to avoid problems with empty arrays
-        obs_kept = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(self.data), self.tarr, source=self.source, mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
-        obs_flagged = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(self.data), self.tarr, source=self.source, mjd=self.mjd, ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal, timetype=self.timetype, scantable=self.scans)
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
         obs_kept.data    = datatable_kept
         obs_flagged.data = datatable_flagged
 
@@ -1788,7 +1842,7 @@ class Obsdata(object):
         tri = (site1, site2, site3)
         outdata = []
         for obs in bs:
-            obstri = (obs['t1'],obs['t2'],obs['t3'])
+            obstri = (obs['t1'][0],obs['t2'][0],obs['t3'][0])
             if set(obstri) == set(tri):
                 # Flip the sign of the closure phase if necessary
                 parity = paritycompare(tri, obstri)
@@ -1843,7 +1897,7 @@ class Obsdata(object):
         tri = (site1, site2, site3)
         outdata = []
         for obs in cphases:
-            obstri = (obs['t1'],obs['t2'],obs['t3'])
+            obstri = (obs['t1'][0],obs['t2'][0],obs['t3'][0])
             if set(obstri) == set(tri):
                 # Flip the sign of the closure phase if necessary
                 parity = paritycompare(tri, obstri)
