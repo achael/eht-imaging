@@ -140,12 +140,8 @@ class Obsdata(object):
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
         if np.any(self.tarr['sefdr']!=0) or np.any(self.tarr['sefdl']!=0):
             self.reorder_tarr_sefd()
-            #print ("ordered telescope array by SEFD!") 
-        elif np.any(self.unpack(['snr'])['snr'] > 0):
-            #print ("ordered telescope array by SNR!") 
-            self.reorder_tarr_snr()
-        #else:
-            #print ("telescope ordering unchanged!") 
+#        elif np.any(self.unpack(['snr'])['snr'] > 0):
+#            self.reorder_tarr_snr()
         self.reorder_baselines()
 
 #        # Time partition the datatable
@@ -221,7 +217,7 @@ class Obsdata(object):
         return newobs
 
     def reorder_baselines(self):
-        """Reorder baselines to match uvfits convetion based on the telescope array ordering
+        """Reorder baselines to match uvfits convention, based on the telescope array ordering
         """
         # Time partition the datatable
         datatable = self.data.copy()
@@ -342,7 +338,7 @@ class Obsdata(object):
         else:
             data = self.data
 
-        # Use itertools groupby function to partition the data
+        # partition the data
         datalist = []
         for key, group in it.groupby(data, lambda x: x['time']):
             datalist.append(np.array([obs for obs in group]))

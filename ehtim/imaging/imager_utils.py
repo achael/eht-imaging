@@ -2785,7 +2785,7 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     interpolation = kwargs.get('interpolation', 'gaussian')
 
     plt.ion()
-    plt.pause(0.00001)
+    plt.pause(1.e-6)
     plt.clf()
 
     scale = kwargs.get('scale',None)
