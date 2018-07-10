@@ -762,11 +762,17 @@ def xyz_2_latlong(obsvecs):
 def tri_minimal_set(sites, tarr, tkey):
     """returns a minimal set of triangles for bispectra and closure phase"""
 
-    sites = list(np.sort(sites))
-    if len(set(tarr['sefdr'])) > 1:
-        ref = sites[np.argmin([tarr[tkey[site]]['sefdr'] for site in sites])]
-    else:
-        ref = sites[np.argmax([tarr[tkey[site]]['z'] for site in sites])]
+
+    # determine ordering -- now choose based on order of  self.tarr
+    sites_ordered = [x for x in tarr['site'] if x in sites]
+    ref = sites_ordered[0]
+    sites = sites_ordered
+#    sites = list(np.sort(sites))
+#    if len(set(tarr['sefdr'])) > 1:
+#        ref = sites[np.argmin([tarr[tkey[site]]['sefdr'] for site in sites])]
+#    else:
+#        ref = sites[np.argmax([tarr[tkey[site]]['z'] for site in sites])]
+
     sites.remove(ref)
 
     # Find all triangles that contain the ref
@@ -778,11 +784,14 @@ def tri_minimal_set(sites, tarr, tkey):
 def quad_minimal_set(sites, tarr, tkey):
     """returns a minimal set of quadrangels for closure amplitude"""
 
-    # If we want a minimal set, choose the maximum sefd reference
-    # TODO this should probably be an sefdr + sefdl average instead
-    sites = np.sort(sites)
-    sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])[::-1]]
-    ref = sites[0]
+    # determine ordering -- now choose based on order of  self.tarr
+    #sites = np.sort(sites)
+    #sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])[::-1]]
+    #ref = sites[0]
+
+    sites_ordered = np.array([x for x in tarr['site'] if x in sites]) 
+    ref = sites_ordered[0]
+    sites = sites_ordered
 
     # Loop over other sites >=3 and form minimal closure amplitude set
     quads = []
@@ -829,7 +838,7 @@ def reduce_tri_minimal(obs, datarr):
 
         # determine a minimal set of trinagles
         sites = list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3']))))
-        sites = np.sort(sites)
+        #sites = np.sort(sites)
         tris = tri_minimal_set(sites, obs.tarr, obs.tkey)
         tris = [set(tri) for tri in tris]
 
@@ -877,8 +886,8 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
             outgroup = []
         # determine a minimal set of quadrangles
         sites = np.array(list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3'],timegroup['t4'])))))
-        sites =  np.sort(sites)
-        sites = sites[np.argsort([obs.tarr[obs.tkey[site]]['sefdr'] for site in sites])[::-1]]
+        #sites =  np.sort(sites)
+        #sites = sites[np.argsort([obs.tarr[obs.tkey[site]]['sefdr'] for site in sites])[::-1]]
         if len(sites) < 4:
             continue
         quads = quad_minimal_set(sites, obs.tarr, obs.tkey)
@@ -958,7 +967,6 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
         out = np.array(out,dtype=dtype)
     return out
 
-
 def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
     """print a progress method for averaging
     """
@@ -998,7 +1006,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
 
         barparams = (nscan, totscans, tint,message)
 
-        printstr= "\rAveraging Scan %0"+ndigit+"i/%i : [%s]"
+        printstr= "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
     elif msgtype=='bh':

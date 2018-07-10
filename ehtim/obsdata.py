@@ -131,46 +131,56 @@ class Obsdata(object):
         if timetype not in ['GMST', 'UTC']:
             raise Exception("timetype must by 'GMST' or 'UTC'")
         self.timetype = timetype
-        self.tarr = tarr
 
-        # Dictionary of array indices for site names
-        self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
-
-        # Time partition the datatable
-        datalist = []
-        for key, group in it.groupby(datatable, lambda x: x['time']):
-            datalist.append(np.array([obs for obs in group]))
-
-        # Remove conjugate baselines
-        obsdata = []
-        for tlist in datalist:
-            blpairs = []
-            for dat in tlist:
-                if not (set((dat['t1'], dat['t2']))) in blpairs:
-
-                     # Reverse the baseline in the right order for uvfits:
-                     if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):
-                        (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
-                        (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
-                        dat['u'] = -dat['u']
-                        dat['v'] = -dat['v']
-                        dat['vis'] = np.conj(dat['vis'])
-                        dat['uvis'] = np.conj(dat['uvis'])
-                        dat['qvis'] = np.conj(dat['qvis'])
-                        dat['vvis'] = np.conj(dat['vvis'])
-
-                     # Append the data point
-                     blpairs.append(set((dat['t1'],dat['t2'])))
-                     obsdata.append(dat)
-
-        obsdata = np.array(obsdata, dtype=DTPOL)
-
-        # Sort the data by time
-        obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
-
-        # Save the data
-        self.data = obsdata
+        self.data = datatable
         self.scans = scantable
+
+        # telescope array: default ordering is by sefd
+        self.tarr =  tarr
+        self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
+        if np.any(self.tarr['sefdr']!=0) or np.any(self.tarr['sefdl']!=0):
+            self.reorder_tarr_sefd()
+            #print ("ordered telescope array by SEFD!") 
+        elif np.any(self.unpack(['snr'])['snr'] > 0):
+            #print ("ordered telescope array by SNR!") 
+            self.reorder_tarr_snr()
+        #else:
+            #print ("telescope ordering unchanged!") 
+        self.reorder_baselines()
+
+#        # Time partition the datatable
+#        datalist = []
+#        for key, group in it.groupby(datatable, lambda x: x['time']):
+#            datalist.append(np.array([obs for obs in group]))
+
+#        # Remove conjugate baselines and timesort data
+#        obsdata = []
+#        for tlist in datalist:
+#            blpairs = []
+#            for dat in tlist:
+#                if not (set((dat['t1'], dat['t2']))) in blpairs:
+
+#                     # Reverse the baseline in the right order for uvfits:
+#                     if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):
+#                        (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
+#                        (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
+#                        dat['u'] = -dat['u']
+#                        dat['v'] = -dat['v']
+#                        dat['vis'] = np.conj(dat['vis'])
+#                        dat['uvis'] = np.conj(dat['uvis'])
+#                        dat['qvis'] = np.conj(dat['qvis'])
+#                        dat['vvis'] = np.conj(dat['vvis'])
+
+#                     # Append the data point
+#                     blpairs.append(set((dat['t1'],dat['t2'])))
+#                     obsdata.append(dat)
+
+#        obsdata = np.array(obsdata, dtype=DTPOL)
+#        obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
+
+#        # Save the data
+#        self.data = obsdata
+#        self.scans = scantable
 
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
@@ -209,6 +219,82 @@ class Obsdata(object):
         newobs.logcamp = self.logcamp
 
         return newobs
+
+    def reorder_baselines(self):
+        """Reorder baselines to match uvfits convetion based on the telescope array ordering
+        """
+        # Time partition the datatable
+        datatable = self.data.copy()
+        datalist = []
+        for key, group in it.groupby(datatable, lambda x: x['time']):
+            datalist.append(np.array([obs for obs in group]))
+
+        # Remove conjugate baselines 
+        obsdata = []
+        for tlist in datalist:
+            blpairs = []
+            for dat in tlist:
+                if not (set((dat['t1'], dat['t2']))) in blpairs:
+
+                     # Reverse the baseline in the right order for uvfits:
+                     if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):
+                        (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
+                        (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
+                        dat['u'] = -dat['u']
+                        dat['v'] = -dat['v']
+                        dat['vis'] = np.conj(dat['vis'])
+                        dat['uvis'] = np.conj(dat['uvis'])
+                        dat['qvis'] = np.conj(dat['qvis'])
+                        dat['vvis'] = np.conj(dat['vvis'])
+
+                     # Append the data point
+                     blpairs.append(set((dat['t1'],dat['t2'])))
+                     obsdata.append(dat)
+        obsdata = np.array(obsdata, dtype=DTPOL)
+        # Timesort data
+        obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
+
+        # Save the data
+        self.data = obsdata
+        return
+
+    def reorder_tarr_sefd(self):
+        """Reorder the telescope array by SEFD minimal to maximum
+        """
+
+        sorted_list = sorted(self.tarr, key=lambda x: np.sqrt(x['sefdr']**2 + x['sefdl']**2))
+        self.tarr = np.array(sorted_list,dtype=DTARR)
+        self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
+        self.reorder_baselines()
+#        if np.any(self.tarr['sefdr']!=0):
+#            print ("ordered telescope array by SEFD!") 
+#        else:
+#            print ("telescope ordering unchanged!") 
+        return
+
+    def reorder_tarr_snr(self):
+        """Reorder the telescope array by median SNR maximal to minimal
+        """
+        snr = self.unpack(['t1','t2','snr'])
+        snr_median = [np.median(snr[(snr['t1']==site) + (snr['t2']==site)]['snr']) for site in self.tarr['site']]
+        idx = np.argsort(snr_median)[::-1]
+        self.tarr = self.tarr[idx]
+        self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
+        self.reorder_baselines()
+        #print ("ordered telescope array by median SNR!") 
+        return 
+
+    def reorder_tarr_random(self):
+        """Randomly reorder the telescope array
+        """
+        
+        idx = np.arange(len(self.tarr))
+        np.random.shuffle(idx)
+        self.tarr = self.tarr[idx]
+        self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
+        self.reorder_baselines()
+        #print ("randomly reordered telescope array")
+        return 
 
     def data_conj(self):
 
@@ -1712,7 +1798,7 @@ class Obsdata(object):
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
                 time = gmst_to_utc(time, self.mjd)
             sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
-            sites = np.sort(sites)
+            #sites = np.sort(sites)
 
             # Create a dictionary of baselines at the current time incl. conjugates;
             l_dict = {}
@@ -1970,8 +2056,8 @@ class Obsdata(object):
                 time = gmst_to_utc(time, self.mjd)
 
             sites = np.array(list(set(np.hstack((tdata['t1'], tdata['t2'])))))
-            sites = np.sort(sites)
-            sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])[::-1]]
+            #sites = np.sort(sites)
+            #sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])[::-1]]
             if len(sites) < 4:
                 continue
 
