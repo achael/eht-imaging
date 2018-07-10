@@ -1399,6 +1399,40 @@ class Obsdata(object):
         else:
             return obs_kept
 
+    def flag_high_sigma(self, sigma_cut=.005, output='kept'):
+
+        """Flag high sigma (thermal noise on Stoke I) data points
+
+           Args:
+               sigma_cut (float): remove points with sigma higher than  this
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
+
+           Returns:
+               (Obsdata): a observation object with flagged data points removed
+        """
+
+        datatable = self.data.copy()
+        mask = self.unpack('sigma')['sigma'] < sigma_cut
+
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('sigma flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
+
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
+
     def flag_UT_range(self, UT_start_hour=0.0, UT_stop_hour=0.0, flag_or_keep=False):
 
         """Flag data points within a certain UT range
