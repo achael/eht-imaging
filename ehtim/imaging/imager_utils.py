@@ -2078,7 +2078,7 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut):
             else:
                 sys_level[i] = np.sqrt(t1sys**2 + t2sys**2)
     else:
-        sys_level = systematic_noise*np.ones(len(t1))
+        sys_level = np.sqrt(2)*systematic_noise*np.ones(len(t1))
 
     sysmask = sys_level>=0.
     mask = snrmask * sysmask
