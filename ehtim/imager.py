@@ -77,6 +77,7 @@ class Imager(object):
         self._systematic_noise_list = []
         self._systematic_cphase_noise_list = []
         self._transform_list = []
+        self._weighting_list = []
 
         # regularizer/data terms for the next imaging iteration
         self.reg_term_next = reg_term  #e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
@@ -96,11 +97,12 @@ class Imager(object):
         else:
             self.flux_next = flux
 
-        #debiasing/snr cut/systematic noise
+        #weighting/debiasing/snr cut/systematic noise
         self.debias_next=kwargs.get('debias',True)
         self.snrcut_next=kwargs.get('snrcut',0.)
         self.systematic_noise_next = kwargs.get('systematic_noise',0.)
         self.systematic_cphase_noise_next = kwargs.get('systematic_cphase_noise',0.)
+        self.weighting_next = kwargs.get('weighting','natural')
 
         # clippping
         self.clipfloor_next = kwargs.get('clipfloor',0.)
@@ -233,6 +235,10 @@ class Imager(object):
             return
         if self.snrcut_next != self.snrcut_last():
             print("changed snrcut!")
+            self._change_imgr_params = True
+            return
+        if self.weighting_next != self.weighting_last():
+            print("changed data weighting!")
             self._change_imgr_params = True
             return
         if self.systematic_noise_next != self.systematic_noise_last():
@@ -370,6 +376,14 @@ class Imager(object):
             return
         return self._snrcut_list[-1]
 
+    def weighting_last(self):
+        """Return last weighting value.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._weighting_list[-1]
+
     def systematic_noise_last(self):
         """Return last systematic_noise value.
         """
@@ -424,7 +438,7 @@ class Imager(object):
             self._data_tuples = {}
             for dname in list(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
-                                debias=self.debias_next, snrcut=self.snrcut_next,
+                                debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
                                 systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                 ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
                                 conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad)
@@ -941,6 +955,7 @@ class Imager(object):
         self._init_list.append(self.init_next)
         self._prior_list.append(self.prior_next)
         self._debias_list.append(self.debias_next)
+        self._weighting_list.append(self.weighting_next)
         self._systematic_noise_list.append(self.systematic_noise_next)
         self._systematic_cphase_noise_list.append(self.systematic_cphase_noise_next)
         self._snrcut_list.append(self.snrcut_next)

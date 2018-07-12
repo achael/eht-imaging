@@ -1288,7 +1288,12 @@ class Image(object):
                 edges = im_edges.imvec.reshape(self.ydim, self.xdim)
         else: #edgetype==None
             im_edges = im.copy()
-            edges = im_edges.imvec.reshape(self.ydim,self.xdim)
+            if not (thresh is None):
+                thresh_val = thresh*np.max(im_edges.imvec)
+                mask = im_edges.imvec > thresh_val
+                #im_edges.imvec[mask] = 1f
+                im_edges.imvec[~mask] = 0
+                edges = im_edges.imvec.reshape(self.ydim, self.xdim)
 
         # define radius range for Hough transform search
         if radius_range is None:
