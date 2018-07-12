@@ -69,10 +69,12 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 # Total Intensity Imager
 ##################################################################################################
 def imager_func(Obsdata, InitIm, Prior, flux,
-                   d1='vis', d2=False, s1='simple', s2=False,
-                   alpha_s1=1, alpha_s2=1,
-                   alpha_d1=100, alpha_d2=100,
-                   alpha_flux=500, alpha_cm=500, **kwargs):
+                   d1='vis', d2=False, d3=False,
+                   alpha_d1=100, alpha_d2=100, alpha_d3=100,
+                   s1='simple', s2=False, s3=False,
+                   alpha_s1=1, alpha_s2=1, alpha_s3=1,
+                   alpha_flux=500, alpha_cm=500, 
+                   **kwargs):
 
 
     """Run a general interferometric imager.
@@ -82,24 +84,35 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            InitIm (Image): The Image object with the initial image for the minimization
            Prior (Image): The Image object with the prior image
            flux (float): The total flux of the output image in Jy
+
            d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
            d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           d3 (str): The third data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+
            s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'tv2', 'l1', 'patch','compact','compact2','rgauss'
            s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch','compact','compact2','rgauss'
+           s3 (str): The third regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch','compact','compact2','rgauss'
+
            alpha_d1 (float): The first data term weighting
            alpha_d2 (float): The second data term weighting
+           alpha_d2 (float): The third data term weighting
+
            alpha_s1 (float): The first regularizer term weighting
            alpha_s2 (float): The second regularizer term weighting
+           alpha_s3 (float): The third regularizer term weighting
+
            alpha_flux (float): The weighting for the total flux constraint
            alpha_cm (float): The weighting for the center of mass constraint
 
-           maxit (int): Maximum number of minimizer iterations
-           stop (float): The convergence criterion
-
-           clipfloor (float): The Jy/pixel level above which prior image pixels are varied
+           weighting (str): 'uniform' or 'natural' (default)
            systematic_noise (float): Fractional systematic noise tolerance to add to sigmas
            systematic_cphase_noise (float): Systematic noise tolerance  in degree to add to cphase sigmas
+           clipfloor (float): The Jy/pixel level above which prior image pixels are varied
            beam_size (float): beam size in radians for normalizing the regularizers
+
+           stop (float): The convergence criterion
+           maxit (int): Maximum number of minimizer iterations
+
            grads (bool): If True, analytic gradients are used
            logim (bool): If True, uses I = exp(I') change of variables
            norm_reg (bool): If True, normalizes regularizer terms
@@ -174,6 +187,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     # Get data and fourier matrices for the data terms
     (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, **kwargs)
     (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, **kwargs)
+    (data3, sigma3, A3) = chisqdata(Obsdata, Prior, embed_mask, d3, **kwargs)
 
     # Define the chi^2 and chi^2 gradient
     def chisq1(imvec):
@@ -190,6 +204,13 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         c = chisqgrad(imvec, A2, data2, sigma2, d2, ttype=ttype, mask=embed_mask)
         return c
 
+    def chisq3(imvec):
+        return chisq(imvec, A3, data3, sigma3, d3, ttype=ttype, mask=embed_mask)
+
+    def chisq3grad(imvec):
+        c = chisqgrad(imvec, A3, data3, sigma3, d3, ttype=ttype, mask=embed_mask)
+        return c
+
     # Define the regularizer and regularizer gradient
     def reg1(imvec):
         return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s1, **kwargs)
@@ -203,6 +224,12 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     def reg2grad(imvec):
         return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s2, **kwargs)
 
+    def reg3(imvec):
+        return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s3, **kwargs)
+
+    def reg3grad(imvec):
+        return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, s3, **kwargs)
+
     # Define constraint functions
     def flux_constraint(imvec):
         return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "flux", **kwargs)
@@ -213,7 +240,6 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     def cm_constraint(imvec):
         return regularizer(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "cm", **kwargs)
 
-
     def cm_constraint_grad(imvec):
         return regularizergrad(imvec, nprior, embed_mask, flux, Prior.xdim, Prior.ydim, Prior.psize, "cm", **kwargs)
 
@@ -221,8 +247,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     def objfunc(imvec):
         if logim: imvec = np.exp(imvec)
 
-        datterm  = alpha_d1 * (chisq1(imvec) - 1) + alpha_d2 * (chisq2(imvec) - 1)
-        regterm  = alpha_s1 * reg1(imvec) + alpha_s2 * reg2(imvec)
+        datterm  = alpha_d1 * (chisq1(imvec) - 1) + alpha_d2 * (chisq2(imvec) - 1) + alpha_d3 * (chisq3(imvec) - 1)
+        regterm  = alpha_s1 * reg1(imvec) + alpha_s2 * reg2(imvec) + alpha_s3 * reg3(imvec)
         conterm  = alpha_flux * flux_constraint(imvec)  + alpha_cm * cm_constraint(imvec)
 
         return datterm + regterm + conterm
@@ -230,8 +256,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     def objgrad(imvec):
         if logim: imvec = np.exp(imvec)
 
-        datterm  = alpha_d1 * chisq1grad(imvec) + alpha_d2 * chisq2grad(imvec)
-        regterm  = alpha_s1 * reg1grad(imvec) + alpha_s2 * reg2grad(imvec)
+        datterm  = alpha_d1 * chisq1grad(imvec) + alpha_d2 * chisq2grad(imvec) + alpha_d3 * chisq3grad(imvec)
+        regterm  = alpha_s1 * reg1grad(imvec) + alpha_s2 * reg2grad(imvec) + alpha_s3 * reg3grad(imvec)
         conterm  = alpha_flux * flux_constraint_grad(imvec)  + alpha_cm * cm_constraint_grad(imvec)
 
         grad = datterm + regterm + conterm
@@ -250,11 +276,13 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         if show_updates:
             chi2_1 = chisq1(im_step)
             chi2_2 = chisq2(im_step)
+            chi2_3 = chisq3(im_step)
             s_1 = reg1(im_step)
             s_2 = reg2(im_step)
+            s_3 = reg3(im_step)
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
-            plot_i(im_step, Prior, nit, {d1:chi2_1, d2:chi2_2})
-            print("i: %d chi2_1: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1, chi2_2,s_1,s_2))
+            plot_i(im_step, Prior, nit, {d1:chi2_1, d2:chi2_2, d3:chi2_3})
+            print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f s_3: %0.2f" % (nit, chi2_1, chi2_2, chi2_3, s_1, s_2, s_3))
         nit += 1
 
     # Generate and the initial image
@@ -264,14 +292,16 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         xinit = ninit
 
     # Print stats
-    print("Initial S_1: %f S_2: %f" % (reg1(ninit), reg2(ninit)))
-    print("Initial Chi^2_1: %f Chi^2_2: %f" % (chisq1(ninit), chisq2(ninit)))
+    print("Initial S_1: %f S_2: %f S_3: %f" % (reg1(ninit), reg2(ninit), reg3(ninit)))
+    print("Initial Chi^2_1: %f Chi^2_2: %f Chi^2_3: %f" % (chisq1(ninit), chisq2(ninit), chisq3(ninit)))
     print("Initial Objective Function: %f" % (objfunc(xinit)))
 
     if d1 in DATATERMS:
         print("Total Data 1: ", (len(data1)))
     if d2 in DATATERMS:
         print("Total Data 2: ", (len(data2)))
+    if d3 in DATATERMS:
+        print("Total Data 3: ", (len(data3)))
     print("Total Pixel #: ",(len(Prior.imvec)))
     print("Clipped Pixel #: ",(len(ninit)))
     print()
@@ -308,7 +338,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     # Print stats
     print("time: %f s" % (tstop - tstart))
     print("J: %f" % res.fun)
-    print("Final Chi^2_1: %f Chi^2_2: %f" % (chisq1(out[embed_mask]), chisq2(out[embed_mask])))
+    print("Final Chi^2_1: %f Chi^2_2: %f  Chi^2_3: %f" % (chisq1(out[embed_mask]), chisq2(out[embed_mask]), chisq3(out[embed_mask])))
     print(res.message)
 
     # Return Image object
@@ -573,9 +603,6 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
     return s
 
 def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
-#              ttype='direct', debias=True, snrcut=0,
-#              fft_pad_factor=2, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT,
-#              order=FFT_INTERP_DEFAULT, systematic_noise=0.0):
 
     """Return the data, sigma, and matrices for the appropriate dtype
     """
@@ -2097,6 +2124,7 @@ def chisqdata_vis(Obsdata, Prior, mask, **kwargs):
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
 
     # unpack data
     data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
@@ -2115,6 +2143,7 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
 
     # unpack data
     if Obsdata.amp is None:
@@ -2131,6 +2160,10 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
     # apply systematic noise and SNR cut
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
+
     # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
@@ -2144,6 +2177,7 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
     #systematic_noise = kwargs.get('systematic_noise',0.) #this will break with a systematic noise dict
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
 
     # unpack data
     if Obsdata.bispec is None:
@@ -2166,6 +2200,11 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
     #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
     sigma = biarr['sigmab'][snrmask]
 
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
+
+
     # make fourier matrices
     A3 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
@@ -2181,6 +2220,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
     systematic_cphase_noise = kwargs.get('systematic_cphase_noise',0.)
+    weighting = kwargs.get('weighting','natural')
 
     # unpack data
     if Obsdata.cphase is None:
@@ -2203,6 +2243,10 @@ def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
     #add systematic cphase noise (in DEGREES)
     sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)[snrmask]
 
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
+
     # make fourier matrices
     A3 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
@@ -2216,6 +2260,7 @@ def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
     if Obsdata.camp is None:
@@ -2236,6 +2281,10 @@ def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
 
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
+
     # make fourier matrices
     A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
           ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
@@ -2251,6 +2300,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
     if Obsdata.logcamp is None:
@@ -2270,6 +2320,10 @@ def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # make fourier matrices
     A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
@@ -2292,6 +2346,7 @@ def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
@@ -2300,6 +2355,10 @@ def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
     # unpack data
     data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2321,6 +2380,7 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
@@ -2341,6 +2401,10 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
     # apply systematic noise and snr cut
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
 
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
+
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
     im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
@@ -2360,6 +2424,7 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     #systematic_noise = kwargs.get('systematic_noise',0.) #this will break with a systematic noise dict
     snrcut = kwargs.get('snrcut',0.)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
@@ -2383,8 +2448,12 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
     bi = biarr['bispec'][snrmask]
     sigma = biarr['sigmab'][snrmask]
 
+
     #add systematic noise
     #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2405,6 +2474,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
     """
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
+    weighting = kwargs.get('weighting','natural')
     systematic_cphase_noise = kwargs.get('systematic_cphase_noise', 0.)
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
@@ -2431,6 +2501,9 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
 
     #add systematic cphase noise (in DEGREES)
     sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)[snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2453,6 +2526,7 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
@@ -2476,6 +2550,9 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2498,6 +2575,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
@@ -2521,6 +2599,9 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # prepare image and fft info objects
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2550,12 +2631,16 @@ def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
     data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2575,6 +2660,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
     systematic_noise = kwargs.get('systematic_noise',0.)
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
@@ -2592,6 +2678,9 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
     
     # apply systematic noise and snr cut
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2610,6 +2699,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     #systematic_noise = kwargs.get('systematic_noise',0.) #this will break with a systematic_noise dict
     snrcut = kwargs.get('snrcut',0.)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
@@ -2633,6 +2723,9 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
 
     #add systematic noise
     #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2652,6 +2745,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
 
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
+    weighting = kwargs.get('weighting','natural')
     systematic_cphase_noise = kwargs.get('systematic_cphase_noise',0.)
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
@@ -2677,6 +2771,9 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
 
     #add systematic cphase noise (in DEGREES)
     sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)[snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2697,6 +2794,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
@@ -2719,6 +2817,9 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
@@ -2740,6 +2841,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
     # unpack keyword args
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
+    weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
@@ -2762,6 +2864,9 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+    # data weighting
+    if weighting=='uniform':
+        sigma = np.median(sigma) * np.ones(len(sigma))
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
