@@ -110,13 +110,32 @@ def cal_prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
                 message_line = '%03i'%int(complete_percent) + message_line
                 print(message_line)
     elif msgtype=='verbose':
-        message_all = ['Traceback (most recent call last):', 'File "cal_helpers", line 113, in ehtim.calbrating','ZeroDivisionError: integer division or modulo by zero',
-        'Traceback (most recent call last):', 'File "cal_helpers", line 113, in ehtim.calbrating','ZeroDivisionError: integer division or modulo by zero',
-        'Traceback (most recent call last):', 'File "cal_helpers", line 113, in ehtim.calbrating','ZeroDivisionError: integer division or modulo by zero',
-        'Traceback (most recent call last):', 'File "cal_helpers", line 113, in ehtim.calbrating','ZeroDivisionError: integer division or modulo by zero',
-        'Traceback (most recent call last):', 'File "cal_helpers", line 113, in ehtim.calbrating','ZeroDivisionError: integer division or modulo by zero',
-        'Traceback (most recent call last):', 'File "cal_helpers", line 113, in ehtim.calbrating','ZeroDivisionError: integer division or modulo by zero',
-        'Traceback (most recent call last):', 'File "cal_helpers", line 113, in ehtim.calbrating','ZeroDivisionError: integer division or modulo by zero']
+        message_all = ['Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero',
+        'Traceback (most recent call last):\nFile "cal_helpers", line 113, in ehtim.calibrating\nZeroDivisionError: integer division or modulo by zero']
         bar_width = len(message_all)
         progress = int(np.floor(bar_width * complete_percent/float(100)))-1
         progress_last = int(np.floor(bar_width * complete_percent_last/float(100)))-1
