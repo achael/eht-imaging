@@ -23,7 +23,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import itertools as it
-
+import copy
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
@@ -34,46 +34,68 @@ from ehtim.obsdata import merge_obs
 #COLORLIST = ['b','m','g','c','y','k','r']
 COLORLIST = SCOLORS
 ##################################################################################################
-# Plotters: Compare Observations
+# Plotters
 ##################################################################################################
-def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, conj=False,
-                        clist=COLORLIST, ebar=True, debias=True, labels=True, ang_unit='deg', export_pdf="", axis=False, show=True):
-    """Make a scatter plot for multiple observations of 2 real baseline observation fields in (FIELDS) with error bars.
 
-           Args:
-               obslist (list): list of observations to plot
-               field1 (str): x-axis field (from FIELDS)
-               field2 (str): y-axis field (from FIELDS)
 
-               conj (bool): Plot conjuage baseline data points if True
-               debias (bool): If True, debias amplitudes.
-               ang_unit (str): phase unit 'deg' or 'rad'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+def plotall_compare(obslist, imlist, field1, field2,
+                    conj=False, debias=True, sgrscat=False, 
+                    ang_unit='deg', timetype='UTC', ttype='nfft', 
+                    axis=False, rangex=False, rangey=False, 
+                    clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
+                    export_pdf="", grid=False, ebar=True, 
+                    axislabels=True, legend=True, show=True):
 
-               rangex (list): [xmin, xmax] x-axis limits
-               rangey (list): [ymin, ymax] y-axis limits
+    """Plot data from observations compared to ground truth from an image on the same axes.
 
-               ebar (bool): Plot error bars if True
-               show (bool): Display the plot if true
-               labels (bool): Show axis labels if True
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): list of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
+       Args:
+           obslist (list): list of observations to plot
+           imlist (list): list of ground truth images to compare to
+           field1 (str): x-axis field (from FIELDS)
+           field2 (str): y-axis field (from FIELDS)
 
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
+           conj (bool): Plot conjuage baseline data points if True
+           debias (bool): If True, debias amplitudes.
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
     """
-    try: len(obslist)
-    except TypeError: obslist = [obslist]
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+                                                                             legendlabels=legendlabels, sgrscat=sgrscat, ttype=ttype)
 
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
-
-    for i in range(len(obslist)):
-        obs = obslist[i]
-        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, debias=debias, ang_unit=ang_unit,
-                           conj=conj, show=False, axis=axis, color=clist[i%len(clist)], ebar=ebar, labels=labels)
-
+    for i in range(len(obslist_plot)):
+        obs = obslist_plot[i]
+        axis = obs.plotall(field1, field2, 
+                           conj=conj, debias=debias, 
+                           ang_unit=ang_unit, timetype=timetype, 
+                           axis=axis, rangex=rangex, rangey=rangey, 
+                           grid=grid,ebar=ebar,axislabels=axislabels,
+                           show=False, tag_bl=False, legend=False,
+                           label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                           marker=markers[i], markersize=markersize)
+                           
+    if legend:
+        plt.legend()
+    if grid:
+        axis.grid()
     if show:
         plt.show(block=False)
 
@@ -82,48 +104,63 @@ def plotall_obs_compare(obslist, field1, field2, rangex=False, rangey=False, con
 
     return axis
 
-def plot_bl_obs_compare(obslist,  site1, site2, field,
-                        rangex=False, rangey=False, show=True, clist=COLORLIST,
-                        timetype=False, ebar=True, labels=True, debias=True, export_pdf="", axis=False):
+def plot_bl_compare(obslist, imlist, site1, site2, field,
+                    debias=True, sgrscat=False, 
+                    ang_unit='deg', timetype='UTC', ttype='nfft', 
+                    axis=False, rangex=False, rangey=False, 
+                    clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
+                    export_pdf="", grid=False, ebar=True, 
+                    axislabels=True, legend=True, show=True):
+
     """Plot data from multiple observations vs time on a single baseline on the same axes.
 
-           Args:
-               obslist (list): list of observations to plot
-               site1 (str): station 1 name
-               site2 (str): station 2 name
-               field (str): y-axis field (from FIELDS)
+       Args:
+           obslist (list): list of observations to plot
+           imlist (list): list of ground truth images  to compare to
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           field (str): y-axis field (from FIELDS)
 
-               debias (bool): If True and plotting vis amplitudes, debias them
-               labels (bool): Show axis labels if True
-               ang_unit (str): phase unit 'deg' or 'rad'
-               timetype (str): 'GMST' or 'UTC'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           debias (bool): If True, debias amplitudes.
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis limits
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
 
-               ebar (bool): Plot error bars if True
-               show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): list of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
 
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
 
     """
-    try: len(obslist)
-    except TypeError: obslist = [obslist]
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+                                                                             legendlabels=legendlabels, sgrscat=sgrscat, ttype=ttype)
 
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
-
-    for i in range(len(obslist)):
-        obs = obslist[i]
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)], 
-                           timetype=timetype, ebar=ebar, labels=labels, debias=debias)
-
-
+    for i in range(len(obslist_plot)):
+        obs = obslist_plot[i]
+        axis = obs.plot_bl(site1, site2, field,
+                           debias=debias, ang_unit=ang_unit, timetype=timetype,
+                           axis=axis, rangex=rangex, rangey=rangey, 
+                           grid=grid,ebar=ebar,axislabels=axislabels,
+                           show=False, legend=False,
+                           label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                           marker=markers[i], markersize=markersize)
+    if legend:
+        plt.legend()
+    if grid:
+        axis.grid()
     if show:
         plt.show(block=False)
 
@@ -132,421 +169,515 @@ def plot_bl_obs_compare(obslist,  site1, site2, field,
 
     return axis
 
+def plot_cphase_compare(obslist, imlist, site1, site2, site3, 
+                        vtype='vis', cphases=[],force_recompute=False,
+                        ang_unit='deg', timetype='UTC', ttype='nfft', 
+                        axis=False, rangex=False, rangey=False, 
+                        clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
+                        export_pdf="", grid=False, ebar=True, 
+                        axislabels=True, legend=True, show=True):
 
 
-def plot_cphase_obs_compare(obslist,  site1, site2, site3, rangex=False, rangey=False, show=True,
-                            clist=COLORLIST, ang_unit='deg', vtype='vis', timetype=False,
-                            ebar=True, cphases=[], export_pdf="",axis=False, labels=True,
-                            force_recompute=False):
+    """Plot closure phase on a triangle compared to ground truth from an image on the same axes.
 
-    """Plot closure phase on a triangle vs time from multiple observations on the same axes.
+       Args:
+           obslist (list): list of observations to plot
+           imlist (list): list of ground truth images to compare to
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           site3 (str): station 3 name
 
-           Args:
-               obslist (list): list of observations to plot
-               site1 (str): station 1 name
-               site2 (str): station 2 name
-               site3 (str): station 3 name
+           vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+           cphases (list): optionally pass in a list of cphases so they don't have to be recomputed
+           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
-               ang_unit (str): phase unit 'deg' or 'rad'
-               timetype (str): 'GMST' or 'UTC'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
 
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis (phase) limits
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
 
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): List of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
-
-               cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure phases instead of using stored data
-
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
 
     """
     try: len(obslist)
     except TypeError: obslist = [obslist]
-
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
 
     if len(cphases)==0:
         cphases = np.matlib.repmat([],len(obslist),1)
 
+    if len(cphases) != len(obslist):
+        raise Exception("cphases list must be same length as obslist!")
     for i in range(len(obslist)):
-        obs = obslist[i]
+        obslist[i].cphase=cphases[i]
 
-        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar, cphases=cphases[i],labels=labels)
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+                                                                             legendlabels=legendlabels, sgrscat=False, ttype=ttype)
 
-
+    for i in range(len(obslist_plot)):
+        obs = obslist_plot[i]
+        axis = obs.plot_cphase(site1, site2, site3,
+                               vtype=vtype, force_recompute=force_recompute,
+                               ang_unit=ang_unit, timetype=timetype, 
+                               axis=axis, rangex=rangex, rangey=rangey, 
+                               grid=grid,ebar=ebar,axislabels=axislabels,
+                               show=False, legend=False,
+                               label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                               marker=markers[i], markersize=markersize)
+    if legend:
+        plt.legend()
+    if grid:
+        axis.grid()
     if show:
         plt.show(block=False)
+    if export_pdf != "":
+        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
 
+    return axis
+
+def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
+                      vtype='vis', ctype='camp', camps=[], force_recompute=False,
+                      debias=True, sgrscat=False, timetype='UTC', ttype='nfft', 
+                      axis=False, rangex=False, rangey=False, 
+                      clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
+                      export_pdf="", grid=False, ebar=True, 
+                      axislabels=True, legend=True, show=True):
+
+    """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
+
+       Args:
+           obslist (list): list of observations to plot
+           imlist (list): list of  ground truth images to compare to
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           site3 (str): station 3 name
+           site4 (str): station 4 name
+
+           vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+           ctype (str): The closure amplitude type ('camp' or 'logcamp')
+           camps (list): optionally pass in a list of camp so they don't have to be recomputed
+           force_recompute (bool): if True, recompute closure phases instead of using stored data
+
+           debias (bool): If True, debias amplitudes.
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+
+    """
+
+    try: len(obslist)
+    except TypeError: obslist = [obslist]
+
+    if len(camps)==0:
+        camps = np.matlib.repmat([],len(obslist),1)
+
+    if len(camps) != len(obslist):
+        raise Exception("camps list must be same length as obslist!")
+    for i in range(len(obslist)):
+        if ctype=='camp':
+            obslist[i].camp=camps[i]
+        elif ctype=='logcamp':
+            obslist[i].logcamp=camps[i]
+
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+                                                                             legendlabels=legendlabels, sgrscat=sgrscat, ttype=ttype)
+
+    for i in range(len(obslist_plot)):
+        obs = obslist_plot[i]
+        axis = obs.plot_camp(site1, site2, site3, site4,
+                               vtype=vtype, ctype=ctype, force_recompute=force_recompute,
+                               debias=debias, timetype=timetype,
+                               axis=axis, rangex=rangex, rangey=rangey, 
+                               grid=grid,ebar=ebar,axislabels=axislabels,
+                               show=False, legend=False,
+                               label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                               marker=markers[i], markersize=markersize)
+    if legend:
+        plt.legend()
+    if grid:
+        axis.grid()
+    if show:
+        plt.show(block=False)
     if export_pdf != "":
         plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
 
     return axis
 
 
+##################################################################################################
+# Aliases
+##################################################################################################
+def plotall_obs_compare(obslist, field1, field2, **kwargs):
+    """Plot data from observations compared to ground truth from an image on the same axes.
 
-def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, rangex=False, rangey=False,
-                          show=True, clist=COLORLIST, vtype='vis', ctype='camp', debias=True,
-                          timetype=False, ebar=True, labels=True,  camps=[], export_pdf="", axis=False,
-                          force_recompute=False):
+       Args:
+           obslist (list): list of observations to plot
+           field1 (str): x-axis field (from FIELDS)
+           field2 (str): y-axis field (from FIELDS)
+
+           conj (bool): Plot conjuage baseline data points if True
+           debias (bool): If True, debias amplitudes.
+           ang_unit (str): phase unit 'deg' or 'rad'
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           legendlabels (str): should be a list of labels of the same length of obslist or imlist
+
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+           axis (matplotlib.axes.Axes): add plot to this axis
+
+           clist (list): list of colors scatterplot points
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+    """
+    axis = plotall_compare(obslist, [], field1, field2, **kwargs)
+    return axis
+
+def plotall_obs_im_compare(obslist, imlist, field1, field2, **kwargs):
+
+    """Plot data from observations compared to ground truth from an image on the same axes.
+
+       Args:
+           obslist (list): list of observations to plot
+           imlist (list): list of images to plot
+           field1 (str): x-axis field (from FIELDS)
+           field2 (str): y-axis field (from FIELDS)
+
+           conj (bool): Plot conjuage baseline data points if True
+           debias (bool): If True, debias amplitudes.
+           ang_unit (str): phase unit 'deg' or 'rad'
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           legendlabels (str): should be a list of labels of the same length of obslist
+
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+           axis (matplotlib.axes.Axes): add plot to this axis
+
+           clist (list): list of colors scatterplot points
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+    """
+    axis = plotall_compare(obslist, imlist, field1, field2, **kwargs)
+    return axis
+
+
+def plot_bl_obs_compare(obslist,  site1, site2, field, **kwargs):
+
+    """Plot data from multiple observations vs time on a single baseline on the same axes.
+
+       Args:
+           obslist (list): list of observations to plot
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           field (str): y-axis field (from FIELDS)
+
+           debias (bool): If True and plotting vis amplitudes, debias them
+           axislabels (bool): Show axis labels if True
+           legendlabels (str): should be a list of labels of the same length of obslist or imlist
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+
+           rangex (list): [xmin, xmax] x-axis (time) limits
+           rangey (list): [ymin, ymax] y-axis limits
+
+           legend (bool): Show legend if True
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           show (bool): Display the plot if true
+           axis (matplotlib.axes.Axes): add plot to this axis
+           clist (list): list of color strings of scatterplot points
+           export_pdf (str): path to pdf file to save figure
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+
+    """
+    axis = plot_bl_compare(obslist, [], field1, field2, **kwargs)
+    return axis
+
+
+def plot_bl_obs_im_compare(obslist, imlist, site1, site2, field, **kwargs):
+
+    """Plot data from multiple observations vs time on a single baseline on the same axes.
+
+       Args:
+           obslist (list): list of observations to plot
+           imlist (list): list of ground truth images  to compare to
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           field (str): y-axis field (from FIELDS)
+
+           debias (bool): If True and plotting vis amplitudes, debias them
+           axislabels (bool): Show axis labels if True
+           legendlabels (str): should be a list of labels of the same length of obslist or imlist
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+
+           rangex (list): [xmin, xmax] x-axis (time) limits
+           rangey (list): [ymin, ymax] y-axis limits
+
+           legend (bool): Show legend if True
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           show (bool): Display the plot if true
+           axis (matplotlib.axes.Axes): add plot to this axis
+           clist (list): list of color strings of scatterplot points
+           export_pdf (str): path to pdf file to save figure
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+
+    """
+    axis = plot_bl_compare(obslist, imlist, field1, field2, **kwargs)
+    return axis
+
+def plot_cphase_obs_compare(obslist,  site1, site2, site3, **kwargs):
+
+    """Plot closure phase on a triangle vs time from multiple observations on the same axes.
+
+       Args:
+           obslist (list): list of observations to plot
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           site3 (str): station 3 name
+
+           vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+           cphases (list): optionally pass in a list of cphases so they don't have to be recomputed
+           force_recompute (bool): if True, recompute closure phases instead of using stored data
+
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+
+    """
+    axis = plot_cphase_compare(obslist, [], site1, site2, site3, **kwargs)
+    return axis
+
+def plot_cphase_obs_im_compare(obslist, imlist, site1, site2, site3, **kwargs):
+
+    """Plot closure phase on a triangle vs time from multiple observations on the same axes.
+
+       Args:
+           obslist (list): list of observations to plot
+           imlist (list): list of ground truth images to compare to
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           site3 (str): station 3 name
+
+           vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+           cphases (list): optionally pass in a list of cphases so they don't have to be recomputed
+           force_recompute (bool): if True, recompute closure phases instead of using stored data
+
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+
+    """
+    axis = plot_cphase_compare(obslist, imlist, site1, site2, site3, **kwargs)
+    return axis
+
+
+def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, **kwargs):
 
     """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
 
-           Args:
-               obslist (list): list of observations to plot
-               site1 (str): station 1 name
-               site2 (str): station 2 name
-               site3 (str): station 3 name
-               site4 (str): station 4 name
+       Args:
+           obslist (list): list of observations to plot
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           site3 (str): station 3 name
+           site4 (str): station 4 name
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
-               ctype (str): The closure amplitude type ('camp' or 'logcamp')
-               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
-               timetype (str): 'GMST' or 'UTC'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+           ctype (str): The closure amplitude type ('camp' or 'logcamp')
+           camps (list): optionally pass in a list of camps so they don't have to be recomputed
+           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis (phase) limits
+           debias (bool): If True, debias amplitudes.
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): List of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
 
-               camps (list): optionally pass in the time-sorted camps so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure amplitudes instead of using stored  data
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
 
     """
-    try: len(obslist)
-    except TypeError: obslist = [obslist]
+    axis = plot_camp_compare(obslist, [], site1, site2, site3, site4, **kwargs)
+    return axis
 
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
+def plot_camp_obs_im_compare(obslist,  imlist, site1, site2, site3, site4, **kwargs):
 
-    if len(camps)==0:
-        cphases = np.matlib.repmat([],len(obslist),1)
+    """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
 
-    for i in range(len(obslist)):
-        obs = obslist[i]
+       Args:
+           obslist (list): list of observations to plot
+           image (Image): ground truth image to compare to
+           site1 (str): station 1 name
+           site2 (str): station 2 name
+           site3 (str): station 3 name
+           site4 (str): station 4 name
 
-        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar, labels=labels, camps=camps[i])
+           vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+           ctype (str): The closure amplitude type ('camp' or 'logcamp')
+           camps (list): optionally pass in a list of camps so they don't have to be recomputed
+           force_recompute (bool): if True, recompute closure phases instead of using stored data
 
-    if show:
-        plt.show(block=False)
+           debias (bool): If True, debias amplitudes.
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
-    if export_pdf != "":
-        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
 
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           clist (list): list of colors scatterplot points
+           legendlabels (list): list of labels of the same length of obslist or imlist
+           markersize (int): size of plot markers
+           export_pdf (str): path to pdf file to save figure
+           grid (bool): Plot gridlines if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+
+    """
+    axis = plot_camp_compare(obslist, imlist, site1, site2, site3, site4, **kwargs)
     return axis
 
 ##################################################################################################
 # Plotters: Compare Observations to Image
 ##################################################################################################
-def plotall_obs_im_compare(obslist, image, field1, field2,
-                           ttype='direct', sgrscat=False,labels=True,
-                           rangex=False, rangey=False, conj=False, clist=COLORLIST, ebar=True,
-                           axis=False,show=True, export_pdf=""):
-
-    """Plot data from observations compared to ground truth from an image on the same axes.
-
-           Args:
-               obslist (list): list of observations to plot
-               image (Image): ground truth image to compare to
-               field1 (str): x-axis field (from FIELDS)
-               field2 (str): y-axis field (from FIELDS)
-
-               conj (bool): Plot conjuage baseline data points if True
-               debias (bool): If True, debias amplitudes.
-               ang_unit (str): phase unit 'deg' or 'rad'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
-
-               rangex (list): [xmin, xmax] x-axis limits
-               rangey (list): [ymin, ymax] y-axis limits
-
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): list of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
-
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
-    """
-    try: len(obslist)
-    except TypeError: obslist = [obslist]
-
-    obslist_true=[]
-    for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-        obstrue.data['sigma'] *= 0
-        obslist_true.append(obstrue)
-    obstrue = merge_obs(obslist_true)
-    obslist.append(obstrue)
-
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
-
-    for i in range(len(obslist)):
-        obs = obslist[i]
-        axis = obs.plotall(field1, field2, rangex=rangex, rangey=rangey, conj=conj, show=False,
-                           axis=axis, color=clist[i%len(clist)], ebar=ebar,labels=labels)
-
-
-    if show:
-        plt.show(block=False)
-
-    if export_pdf != "":
-        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
-
-    return axis
-
-def plot_bl_obs_im_compare(obslist, image, site1, site2, field, ttype='direct', sgrscat=False,
-                           rangex=False, rangey=False, show=True, clist=COLORLIST,labels=True,
-                           timetype=False, ebar=True, debias=True, export_pdf="", axis=False):
-    """Plot data vs time on a single baseline compared to ground truth from an image on the same axes.
-           Args:
-               obslist (list): list of observations to plot
-               image (Image): ground truth image to compare to
-               site1 (str): station 1 name
-               site2 (str): station 2 name
-               field (str): y-axis field (from FIELDS)
-
-               debias (bool): If True and plotting vis amplitudes, debias them
-               ang_unit (str): phase unit 'deg' or 'rad'
-               timetype (str): 'GMST' or 'UTC'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
-
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis limits
-
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): list of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
-
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
-
-    """
-    try: len(obslist)
-    except TypeError: obslist = [obslist]
-
-    obslist_true=[]
-    for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-        obstrue.data['sigma'] *= 0
-        obslist_true.append(obstrue)
-    obstrue = merge_obs(obslist_true)
-    obslist.append(obstrue)
-
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
-
-    for i in range(len(obslist)):
-        obs = obslist[i]
-
-        axis = obs.plot_bl(site1, site2, field, rangex=rangex, rangey=rangey, show=False, labels=labels,
-                           axis=axis, color=clist[i%len(clist)], timetype=timetype, ebar=ebar, debias=debias)
-
-
-    if show:
-        plt.show(block=False)
-
-    if export_pdf != "":
-        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
-
-    return axis
-
-
-
-def plot_cphase_obs_im_compare(obslist, image, site1, site2, site3, ttype='direct', sgrscat=False,
-                               rangex=False, rangey=False, show=True, clist=COLORLIST, ang_unit='deg',
-                               vtype='vis', timetype=False, ebar=True, axis=False, labels=True, export_pdf=""):
-
-    """Plot closure phase on a triangle compared to ground truth from an image on the same axes.
-
-           Args:
-               obslist (list): list of observations to plot
-               image (Image): ground truth image to compare to
-               site1 (str): station 1 name
-               site2 (str): station 2 name
-               site3 (str): station 3 name
-
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
-               ang_unit (str): phase unit 'deg' or 'rad'
-               timetype (str): 'GMST' or 'UTC'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
-
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis (phase) limits
-
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): List of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
-
-               cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure phases instead of using stored data
-
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
-
-    """
-    try: len(obslist)
-    except TypeError: obslist = [obslist]
-
-    obslist_true=[]
-    for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-        obstrue.data['sigma'] *= 0
-        obslist_true.append(obstrue)
-    obstrue = merge_obs(obslist_true)
-    obslist.append(obstrue)
-
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
-
-
-    for i in range(len(obslist)):
-        obs = obslist[i]
-
-        axis = obs.plot_cphase(site1, site2, site3, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               ang_unit=ang_unit, timetype=timetype, vtype=vtype, ebar=ebar, labels=labels)
-
-    if show:
-        plt.show(block=False)
-
-    if export_pdf != "":
-        plt.savefig(export_pdf, bbox_inches='tight', pad_inches=0)
-
-    return axis
-
-
-
-def plot_camp_obs_im_compare(obslist, image, site1, site2, site3, site4, ttype='nfft', sgrscat=False,
-                             rangex=False, rangey=False, show=True, clist=COLORLIST, vtype='vis', ctype='camp',
-                              debias=True, timetype=False, axis=False, ebar=True, labels=True, export_pdf=""):
-
-
-
-    """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
-
-           Args:
-               obslist (list): list of observations to plot
-               image (Image): ground truth image to compare to
-               site1 (str): station 1 name
-               site2 (str): station 2 name
-               site3 (str): station 3 name
-               site4 (str): station 4 name
-
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
-               ctype (str): The closure amplitude type ('camp' or 'logcamp')
-               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
-               timetype (str): 'GMST' or 'UTC'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
-
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis (phase) limits
-
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               clist (list): List of color strings of scatterplot points
-               export_pdf (str): path to pdf file to save figure
-
-               camps (list): optionally pass in the time-sorted camps so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure amplitudes instead of using stored  data
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
-
-    """
-    try: len(obslist)
-    except TypeError: obslist = [obslist]
-
-    obslist_true=[]
-    for i in range(len(obslist)):
-        obstrue = image.observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-        obstrue.data['sigma'] *= 0
-        obslist_true.append(obstrue)
-    obstrue = merge_obs(obslist_true)
-    obslist.append(obstrue)
-
-    if len(obslist) > len(clist):
-        Exception("More observations than colors -- Add more colors to clist!")
-
-    for i in range(len(obslist)):
-        obs = obslist[i]
-
-        axis = obs.plot_camp(site1, site2, site3, site4, rangex=rangex, rangey=rangey, show=False, axis=axis, color=clist[i%len(clist)],
-                               timetype=timetype, vtype=vtype, ctype=ctype, debias=debias, ebar=ebar,labels=labels)
-
-    if show:
-        plt.show(block=False)
-
-    if export_pdf != "":
-        plt.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
-
-    return axis
-
-
-#TODO: make this work with multiple observations??
-def plotall_obs_im_cphases(obslist, image, ttype='nfft', sgrscat=False,
-                           rangex=False, rangey=[-180,180], show=True, ebar=True,
-                           vtype='vis',ang_unit='deg', timetype='UTC',
-                           display_mode='all', labels=False):
+def plotall_obs_im_cphases(obs, image, 
+                           vtype='vis', ang_unit='deg', timetype='UTC',
+                           ttype='nfft', sgrscat=False,
+                           rangex=False, rangey=[-180,180], 
+                           show=True, ebar=True,axislabels=False,
+                           display_mode='all'):
     """Plot all observation closure phases on  top of image ground truth values.
 
-           Args:
-               Obsdata (Obsdata): observation to plot
-               image (Image): ground truth image to compare to
+       Args:
+           obs (Obsdata): observation to plot
+           image (Image): ground truth image to compare to
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
-               ang_unit (str): phase unit 'deg' or 'rad'
-               timetype (str): 'GMST' or 'UTC'
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+           ang_unit (str): phase unit 'deg' or 'rad'
+           timetype (str): 'GMST' or 'UTC'
+           ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis (phase) limits
+           rangex (list): [xmin, xmax] x-axis (time) limits
+           rangey (list): [ymin, ymax] y-axis (phase) limits
 
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
-               display_mode (str): 'all' or 'individual' to plot a giant single plot or multiple small Jones
+           show (bool): Display the plot if True
+           ebar (bool): Plot error bars if True
+           axislabels (bool): Show axis labels if True
 
-               cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure phases instead of using stored data
+           display_mode (str): 'all' or 'individual' to plot a giant single plot or multiple small Jones
 
-           Returns:
-               (matplotlib.axes.Axes): Axes object with data plot
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
 
     """
-
 
     # get closure triangle combinations
     sites = []
@@ -605,3 +736,94 @@ def plotall_obs_im_cphases(obslist, image, ttype='nfft', sgrscat=False,
         f.show()
 
     return f
+
+##################################################################################################
+# Misc
+##################################################################################################
+
+def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=False, ttype='nfft'):
+    """Return observation, color, marker, legend lists for comp plots"""
+
+    if imlist is None or imlist==False:
+        imlist = []
+
+    try: len(obslist)
+    except TypeError: obslist = [obslist]
+
+    try: len(imlist)
+    except TypeError: imlist = [imlist]
+
+    if not((len(imlist)==len(obslist)) or len(imlist)<=1 or len(obslist)<=1):
+        raise Exception("imlist and obslist must be the same length, or either must have length 1") 
+
+    if not (legendlabels is None) and (len(legendlabels)!=max(len(imlist),len(obslist))):
+        raise Exception("legendlabels should be the same length of the longer of imlist, obslist!")
+
+    if legendlabels is None:
+        legendlabels = [str(i+1) for i in range(max(len(imlist),len(obslist)))]
+
+    obslist_plot = []
+    clist_plot = copy.copy(clist)
+    legendlabels_plot = copy.copy(legendlabels)
+
+    #one image, multiple observations
+    if len(imlist)==0:
+        markers =  []
+        for i in range(len(obslist)):
+            obslist_plot.append(obslist[i])
+            markers.append('o')
+
+    elif len(imlist)==1 and len(obslist)>1: 
+        obslist_true=[]
+        markers =  ['s']
+        clist_plot = ['k']
+        for i in range(len(obslist)):
+            obslist_plot.append(obslist[i])
+            obstrue = imlist[0].observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
+            obstrue.data['sigma'] *= 0
+            obslist_true.append(obstrue)
+            markers.append('o')
+            clist_plot.append(clist[i])
+
+        obstrue = merge_obs(obslist_true)
+        obslist_plot.insert(0, obstrue)
+        legendlabels_plot.insert(0,'Image')
+
+    #one observation, multiple images
+    elif len(obslist)==1 and len(imlist)>1:
+        obslist_plot.append(obslist[0])
+        markers =  ['o']
+        for i in range(len(imlist)):
+            obstrue = imlist[i].observe_same(obslist[0], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
+            obstrue.data['sigma'] *= 0
+            obslist_plot.append(obstrue)
+            markers.append('s')
+
+        clist_plot.insert(0,'k')
+        legendlabels_plot.insert(0,'Observation')
+
+    #same number of images and observations
+    else:
+        markers = []
+        legendlabels_plot = []
+        clist_plot = []
+        for i in range(len(obslist)):
+            obstrue = imlist[i].observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
+            obstrue.data['sigma'] *= 0
+            obslist_plot.append(obstrue)
+            clist_plot.append(clist[i])
+            legendlabels_plot.append(legendlabels[i]+'_im')
+            markers.append('s')
+
+            obslist_plot.append(obslist[i])
+            clist_plot.append(clist[i])
+            legendlabels_plot.append(legendlabels[i]+'_obs')
+            markers.append('o')
+
+    if len(obslist_plot) > len(clist):
+        Exception("More observations than colors -- Add more colors to clist!")
+    
+    return (obslist_plot, clist_plot, legendlabels_plot, markers)
+
+
+

@@ -81,7 +81,6 @@ class Obsdata(object):
            camp (numpy.recarray): An array of saved (averaged) closure amplitudes
     """
 
-    #TODO what should the scantable be doing?
     def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None,
                        source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, timetype='UTC',
                        ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
@@ -143,40 +142,6 @@ class Obsdata(object):
 #        elif np.any(self.unpack(['snr'])['snr'] > 0):
 #            self.reorder_tarr_snr()
         self.reorder_baselines()
-
-#        # Time partition the datatable
-#        datalist = []
-#        for key, group in it.groupby(datatable, lambda x: x['time']):
-#            datalist.append(np.array([obs for obs in group]))
-
-#        # Remove conjugate baselines and timesort data
-#        obsdata = []
-#        for tlist in datalist:
-#            blpairs = []
-#            for dat in tlist:
-#                if not (set((dat['t1'], dat['t2']))) in blpairs:
-
-#                     # Reverse the baseline in the right order for uvfits:
-#                     if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):
-#                        (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
-#                        (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
-#                        dat['u'] = -dat['u']
-#                        dat['v'] = -dat['v']
-#                        dat['vis'] = np.conj(dat['vis'])
-#                        dat['uvis'] = np.conj(dat['uvis'])
-#                        dat['qvis'] = np.conj(dat['qvis'])
-#                        dat['vvis'] = np.conj(dat['vvis'])
-
-#                     # Append the data point
-#                     blpairs.append(set((dat['t1'],dat['t2'])))
-#                     obsdata.append(dat)
-
-#        obsdata = np.array(obsdata, dtype=DTPOL)
-#        obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
-
-#        # Save the data
-#        self.data = obsdata
-#        self.scans = scantable
 
         # Get tstart, mjd and tstop
         times = self.unpack(['time'])['time']
@@ -2004,7 +1969,7 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get closure phases (maximal set)
-        if (len(cphases)==0) and not (self.cphase is None) and not force_recompute:
+        if (len(cphases)==0) and not (self.cphase is None) and not (len(self.cphase)==0) and not force_recompute:
             cphases=self.cphase
 
         elif (len(cphases) == 0) or force_recompute:
@@ -2210,9 +2175,9 @@ class Obsdata(object):
         outdata = []
 
         # Get closure amplitudes (maximal set)
-        if ((ctype=='camp') and (len(camps)==0)) and not (self.camp is None) and not force_recompute:
+        if ((ctype=='camp') and (len(camps)==0)) and not (self.camp is None) and not (len(self.camp)==0) and not force_recompute:
             camps=self.camp
-        elif ((ctype=='logcamp') and (len(camps)==0)) and not (self.logcamp is None) and not force_recompute:
+        elif ((ctype=='logcamp') and (len(camps)==0)) and not (self.logcamp is None) and not (len(self.logcamp)==0) and not force_recompute:
             camps=self.logcamp
         elif (len(camps)==0) or force_recompute:
             camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
@@ -2265,40 +2230,47 @@ class Obsdata(object):
 
         return np.array(outdata)
 
-    def plotall(self, field1, field2, conj=False,
-                      debias=True, tag_bl=False, timetype=False, ang_unit='deg',
-                      ebar=True, rangex=False, rangey=False, grid=False,labels=True,
-                      show=True, axis=False, color=SCOLORS[0],  markersize=MARKERSIZE, 
-                      export_pdf=""):
+    def plotall(self, field1, field2, 
 
-        """Make a scatter plot of 2 real baseline observation fields in (FIELDS) with error bars.
+                conj=False, debias=True, tag_bl=False,
+                ang_unit='deg', timetype=False,
+                axis=False, rangex=False, rangey=False, 
+                color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
+                export_pdf="", grid=False, ebar=True, 
+                axislabels=True, legend=True, show=True):
+
+        """Plot a field over time on a baseline site1-site2.
 
            Args:
-               field1 (str): x-axis field (from FIELDS)
-               field2 (str): y-axis field (from FIELDS)
+               site1 (str): station 1 name
+               site2 (str): station 2 name
+               field (str): y-axis field (from FIELDS)
 
-               conj (bool): Plot conjuate baseline data points if True
-               tag_bl (bool): if True, label each baseline
+               conj (bool): Plot conjuage baseline data points if True
                debias (bool): If True, debias amplitudes.
+               tag_bl (bool): if True, label each baseline
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
 
+               axis (matplotlib.axes.Axes): add plot to this axis
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
-                
+               color (str): color for scatterplot points
+               marker (str): matplotlib plot marker
+               markersize (int): size of plot markers
+               label (str): plot legend label 
+
+               export_pdf (str): path to pdf file to save figure
                grid (bool): Plot gridlines if True
                ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
+               axislabels (bool): Show axis labels if True
+               legend (bool): Show legend if True
                show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               color (str): Color of scatterplot points
-               markersize (int): size of plot markers
-               export_pdf (str): path to pdf file to save figure
 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
-
         """
+
         if timetype==False:
             timetype=self.timetype
 
@@ -2400,12 +2372,17 @@ class Obsdata(object):
             # Plot the data
             tolerance = len(data[field2])
 
-            if ebar and (np.any(sigy) or np.any(sigx)):
-                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label="%s-%s"%((str(bl[0]),str(bl[1]))),
-                           fmt='o', markersize=markersize, color=color,picker=tolerance)
+            if label is None:
+                label="%s-%s"%((str(bl[0]),str(bl[1])))
             else:
-                x.plot(data[field1], data[field2], 'o', markersize=markersize, color=color, 
-                       label="%s-%s"%((str(bl[0]),str(bl[1]))),picker=tolerance)
+                label=str(label)
+
+            if ebar and (np.any(sigy) or np.any(sigx)):
+                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label=label,
+                           fmt=marker, markersize=markersize, color=color,picker=tolerance)
+            else:
+                x.plot(data[field1], data[field2], marker, markersize=markersize, color=color, 
+                       label=label, picker=tolerance)
 
         # Data ranges
         if not rangex:
@@ -2424,15 +2401,17 @@ class Obsdata(object):
 
 
         # label and save
-        if labels:
+        if axislabels:
             try:
                 x.set_xlabel(FIELD_LABELS[field1])
                 x.set_ylabel(FIELD_LABELS[field2])
             except:
                 x.set_xlabel(field1.capitalize())
                 x.set_ylabel(field2.capitalize())
-        if labels and tag_bl:
+        if legend and tag_bl:
             plt.legend(ncol=2)
+        elif legend:
+            plt.legend()
         if grid:
             x.grid()
         if export_pdf != "" and not axis:
@@ -2443,10 +2422,11 @@ class Obsdata(object):
         return x
 
     def plot_bl(self, site1, site2, field,
-                      debias=True, ang_unit='deg', timetype=False,
-                      rangex=False, rangey=False, ebar=True, grid=False,labels=True,
-                      show=True, axis=False, color=SCOLORS[0], markersize=MARKERSIZE, 
-                      export_pdf=""):
+                debias=True, ang_unit='deg', timetype=False,
+                axis=False, rangex=False, rangey=False, 
+                color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
+                export_pdf="", grid=False, ebar=True, 
+                axislabels=True, legend=True, show=True):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2455,25 +2435,27 @@ class Obsdata(object):
                site2 (str): station 2 name
                field (str): y-axis field (from FIELDS)
 
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis limits
-
-               debias (bool): If True and plotting vis amplitudes, debias them
+               debias (bool): If True, debias amplitudes.
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
 
+               axis (matplotlib.axes.Axes): add plot to this axis
+               rangex (list): [xmin, xmax] x-axis limits
+               rangey (list): [ymin, ymax] y-axis limits
+               color (str): color for scatterplot points
+               marker (str): matplotlib plot marker
+               markersize (int): size of plot markers
+               label (str): plot legend label 
+
+               export_pdf (str): path to pdf file to save figure
                grid (bool): Plot gridlines if True
                ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
+               axislabels (bool): Show axis labels if True
+               legend (bool): Show legend if True
                show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               color (str): Color of scatterplot points
-               markersize (int): size of plot markers
-               export_pdf (str): path to pdf file to save figure
 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
-
         """
         if timetype==False:
             timetype=self.timetype
@@ -2482,6 +2464,11 @@ class Obsdata(object):
 
         if field=='amp' and not (self.amp is None):
             print ("Warning: plot_bl is not using amplitudes in Obsdata.amp array!")
+
+        if label is None:
+            label=str(self.source)
+        else:
+            label=str(label)
 
         # Determine if fields are valid
         if field not in FIELDS:
@@ -2508,14 +2495,15 @@ class Obsdata(object):
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0], 
-                       fmt='o', markersize=markersize, color=color, linestyle='none')
+                       fmt=marker, markersize=markersize, color=color, linestyle='none', label=label)
         else:
-            x.plot(plotdata['time'][:,0], plotdata[field][:,0],fmt='o', markersize=markersize, color=color, linestyle='none')
+            x.plot(plotdata['time'][:,0], plotdata[field][:,0],fmt=marker, markersize=markersize,
+                   color=color, label=label, linestyle='none')
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
 
-        if labels:
+        if axislabels:
             x.set_xlabel(self.timetype + ' (hr)')
             try:
                 x.set_ylabel(FIELD_LABELS[field])
@@ -2525,7 +2513,8 @@ class Obsdata(object):
 
         if grid:
             x.grid()
-
+        if legend:
+            plt.legend()
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
@@ -2534,45 +2523,54 @@ class Obsdata(object):
         return x
 
     def plot_cphase(self, site1, site2, site3,
-                          vtype='vis', ang_unit='deg', timetype=False,
-                          rangex=False, rangey=False, ebar=True, labels=True, grid=False,
-                          show=True, axis=False, color=SCOLORS[0], markersize=MARKERSIZE, 
-                          export_pdf="",
-                          cphases=[], force_recompute=False):
+                    vtype='vis', cphases=[], force_recompute=False, ang_unit='deg', timetype=False,  
+                    axis=False, rangex=False, rangey=False, 
+                    color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
+                    export_pdf="", grid=False, ebar=True, 
+                    axislabels=True, legend=True, show=True):
 
-        """Plot closure phase over time on a triangle (1-2-3).
+        """Plot a field over time on a baseline site1-site2.
 
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
-               site3 (str): station 3 name
+               field (str): y-axis field (from FIELDS)
 
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+               cphases (list): optionally pass in the closure phases so they don't have to be recomputed
+               force_recompute (bool): if True, recompute closure phases instead of using stored data 
+
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
 
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis (phase) limits
+               axis (matplotlib.axes.Axes): add plot to this axis
+               rangex (list): [xmin, xmax] x-axis limits
+               rangey (list): [ymin, ymax] y-axis limits
+               color (str): color for scatterplot points
+               marker (str): matplotlib plot marker
+               markersize (int): size of plot markers
+               label (str): plot legend label 
 
+               export_pdf (str): path to pdf file to save figure
                grid (bool): Plot gridlines if True
                ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
+               axislabels (bool): Show axis labels if True
+               legend (bool): Show legend if True
                show (bool): Display the plot if true
-               axis (matplotlib.axes.Axes): add plot to this axis
-               color (str): Color of scatterplot points
-               markersize (int): size of plot markers
-               export_pdf (str): path to pdf file to save figure
 
-               cphases (list): optionally pass in the time-sorted cphases so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure phases instead of using stored data 
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
-
         """
+
         if timetype==False:
             timetype=self.timetype
         if ang_unit=='deg': angle=1.0
         else: angle = DEGREE
+
+        if label is None:
+            label=str(self.source)
+        else:
+            label=str(label)
 
         # Get closure phases (maximal set)
         if (len(cphases)==0) and not (self.cphase is None) and not force_recompute:
@@ -2606,13 +2604,14 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color, linestyle='none')
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt=marker, markersize=markersize, 
+                       color=color, linestyle='none',label=label)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1], 'o', markersize=markersize, color=color, linestyle='none')
+            x.plot(plotdata[:,0], plotdata[:,1], marker, markersize=markersize, color=color, linestyle='none', label=label)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-        if labels:
+        if axislabels:
             x.set_xlabel(self.timetype + ' (h)')
             if ang_unit=='deg': 
                 x.set_ylabel(r'Closure Phase $(^\circ)$')
@@ -2622,7 +2621,8 @@ class Obsdata(object):
 
         if grid:
             x.grid()
-
+        if legend:
+            plt.legend()
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
@@ -2630,49 +2630,59 @@ class Obsdata(object):
         return x
 
     def plot_camp(self, site1, site2, site3, site4,
-                        vtype='vis', ctype='camp', debias=True, timetype=False, grid=False,labels=True,
-                        rangex=False, rangey=False, ebar=True, show=True, axis=False,
-                        color=SCOLORS[0], markersize=MARKERSIZE, export_pdf="",
-                        camps=[], force_recompute=False):
+                    vtype='vis', ctype='camp', camps=[], force_recompute=False, 
+                    debias=False, timetype=False,  
+                    axis=False, rangex=False, rangey=False, 
+                    color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
+                    export_pdf="", grid=False, ebar=True, 
+                    axislabels=True, legend=True, show=True):
 
-        """Plot closure amplitude over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
+        """Plot a field over time on a baseline site1-site2.
 
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
-               site3 (str): station 3 name
-               site4 (str): station 4 name
+               field (str): y-axis field (from FIELDS)
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               camps (list): optionally pass in camps so they don't have to be recomputed
+               force_recompute (bool): if True, recompute closure amplitudes instead of using stored data 
+
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
                timetype (str): 'GMST' or 'UTC'
 
-               rangex (list): [xmin, xmax] x-axis (time) limits
-               rangey (list): [ymin, ymax] y-axis (phase) limits
-
-               grid (bool): Plot gridlines  if  True
-               ebar (bool): Plot error bars if True
-               labels (bool): Show axis labels if True
-               show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
-               color (str): Color of scatterplot points
+               rangex (list): [xmin, xmax] x-axis limits
+               rangey (list): [ymin, ymax] y-axis limits
+               color (str): color for scatterplot points
+               marker (str): matplotlib plot marker
                markersize (int): size of plot markers
-               export_pdf (str): path to pdf file to save figure
+               label (str): plot legend label 
 
-               camps (list): optionally pass in the time-sorted camps so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure amplitudes instead of using stored  data
+               export_pdf (str): path to pdf file to save figure
+               grid (bool): Plot gridlines if True
+               ebar (bool): Plot error bars if True
+               axislabels (bool): Show axis labels if True
+               legend (bool): Show legend if True
+               show (bool): Display the plot if true
+
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
-
         """
+
         if timetype==False:
             timetype=self.timetype
 
+        if label is None:
+            label=str(self.source)
+        else:
+            label=str(label)
+
         # Get closure amplitudes (maximal set)
-        if (ctype=='camp') and (len(camps)==0) and not (self.camp is None) and not force_recompute:
+        if ((ctype=='camp') and (len(camps)==0) and not (self.camp is None) and not (len(self.camp)==0) and not force_recompute):
             camps=self.camp
-        elif (ctype=='logcamp') and (len(camps)==0) and not (self.logcamp is None) and not force_recompute:
+        elif ((ctype=='logcamp') and (len(camps)==0) and not (self.logcamp is None) and not (len(self.logcamp)==0) and not force_recompute):
             camps=self.logcamp
 
         # Get closure amplitudes (maximal set)
@@ -2706,14 +2716,15 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt='o', markersize=markersize, color=color, linestyle='none')
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt=marker, markersize=markersize,
+                       color=color, linestyle='none',label=label)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1],'o', markersize=markersize, color=color, linestyle='none')
+            x.plot(plotdata[:,0], plotdata[:,1],marker, markersize=markersize, color=color, linestyle='none',label=label)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
 
-        if labels:
+        if axislabels:
             x.set_xlabel(self.timetype + ' (h)')
             if ctype=='camp':
                 x.set_ylabel('Closure Amplitude')
@@ -2723,7 +2734,8 @@ class Obsdata(object):
                                                                site1,site4,site2,site3))
         if grid:
             x.grid()
-
+        if legend:
+            plt.legend()
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:

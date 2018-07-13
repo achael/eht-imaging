@@ -282,7 +282,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
             s_3 = reg3(im_step)
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
             plot_i(im_step, Prior, nit, {d1:chi2_1, d2:chi2_2, d3:chi2_3})
-            print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f s_3: %0.2f" % (nit, chi2_1, chi2_2, chi2_3, s_1, s_2, s_3))
+            print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_3: %0.2f s_1: %0.2f s_2: %0.2f s_3: %0.2f" % (nit, chi2_1, chi2_2, chi2_3, s_1, s_2, s_3))
         nit += 1
 
     # Generate and the initial image
