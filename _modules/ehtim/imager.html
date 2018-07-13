@@ -244,6 +244,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_noise_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_cphase_noise_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_transform_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_weighting_list</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="c1"># regularizer/data terms for the next imaging iteration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span> <span class="o">=</span> <span class="n">reg_term</span>  <span class="c1">#e.g. [(&#39;simple&#39;,1), (&#39;l1&#39;,10), (&#39;flux&#39;,500), (&#39;cm&#39;,500)]</span>
@@ -263,11 +264,12 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">=</span> <span class="n">flux</span>
 
-        <span class="c1">#debiasing/snr cut/systematic noise</span>
+        <span class="c1">#weighting/debiasing/snr cut/systematic noise</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;debias&#39;</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;snrcut&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;systematic_noise&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;systematic_cphase_noise&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;weighting&#39;</span><span class="p">,</span><span class="s1">&#39;natural&#39;</span><span class="p">)</span>
 
         <span class="c1"># clippping</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clipfloor_next</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clipfloor&#39;</span><span class="p">,</span><span class="mf">0.</span><span class="p">)</span>
@@ -400,6 +402,10 @@
             <span class="k">return</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">snrcut_last</span><span class="p">():</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed snrcut!&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighting_last</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed data weighting!&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_last</span><span class="p">():</span>
@@ -537,6 +543,14 @@
             <span class="k">return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snrcut_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
+<div class="viewcode-block" id="Imager.weighting_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.weighting_last">[docs]</a>    <span class="k">def</span> <span class="nf">weighting_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last weighting value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weighting_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
 <div class="viewcode-block" id="Imager.systematic_noise_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.systematic_noise_last">[docs]</a>    <span class="k">def</span> <span class="nf">systematic_noise_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return last systematic_noise value.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -591,7 +605,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
                 <span class="n">tup</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
-                                <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">,</span>
+                                <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span><span class="p">,</span>
                                 <span class="n">systematic_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span><span class="p">,</span> <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">,</span>
                                 <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_interp_order</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_pad_factor</span><span class="p">,</span>
                                 <span class="n">conv_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_conv_func</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_gridder_prad</span><span class="p">)</span>
@@ -1108,6 +1122,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_prior_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_debias_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_weighting_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_noise_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_cphase_noise_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_snrcut_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">)</span>

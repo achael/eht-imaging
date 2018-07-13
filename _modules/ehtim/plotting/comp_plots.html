@@ -190,7 +190,7 @@
 <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">it</span>
-
+<span class="kn">import</span> <span class="nn">copy</span>
 
 <span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
@@ -201,46 +201,68 @@
 <span class="c1">#COLORLIST = [&#39;b&#39;,&#39;m&#39;,&#39;g&#39;,&#39;c&#39;,&#39;y&#39;,&#39;k&#39;,&#39;r&#39;]</span>
 <span class="n">COLORLIST</span> <span class="o">=</span> <span class="n">SCOLORS</span>
 <span class="c1">##################################################################################################</span>
-<span class="c1"># Plotters: Compare Observations</span>
+<span class="c1"># Plotters</span>
 <span class="c1">##################################################################################################</span>
-<div class="viewcode-block" id="plotall_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                        <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make a scatter plot for multiple observations of 2 real baseline observation fields in (FIELDS) with error bars.</span>
 
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               field1 (str): x-axis field (from FIELDS)</span>
-<span class="sd">               field2 (str): y-axis field (from FIELDS)</span>
 
-<span class="sd">               conj (bool): Plot conjuage baseline data points if True</span>
-<span class="sd">               debias (bool): If True, debias amplitudes.</span>
-<span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<div class="viewcode-block" id="plotall_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span>
+                    <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                    <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> 
+                    <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                    <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
+                    <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                    <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
-<span class="sd">               rangex (list): [xmin, xmax] x-axis limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis limits</span>
+    <span class="sd">&quot;&quot;&quot;Plot data from observations compared to ground truth from an image on the same axes.</span>
 
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): list of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           imlist (list): list of ground truth images to compare to</span>
+<span class="sd">           field1 (str): x-axis field (from FIELDS)</span>
+<span class="sd">           field2 (str): y-axis field (from FIELDS)</span>
 
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">           conj (bool): Plot conjuage baseline data points if True</span>
+<span class="sd">           debias (bool): If True, debias amplitudes.</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+    <span class="p">(</span><span class="n">obslist_plot</span><span class="p">,</span> <span class="n">clist_plot</span><span class="p">,</span> <span class="n">legendlabels_plot</span><span class="p">,</span> <span class="n">markers</span><span class="p">)</span> <span class="o">=</span> <span class="n">prep_plot_lists</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">clist</span><span class="p">,</span> 
+                                                                             <span class="n">legendlabels</span><span class="o">=</span><span class="n">legendlabels</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plotall</span><span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span>
-                           <span class="n">conj</span><span class="o">=</span><span class="n">conj</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
-
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist_plot</span><span class="p">)):</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist_plot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plotall</span><span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> 
+                           <span class="n">conj</span><span class="o">=</span><span class="n">conj</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> 
+                           <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> 
+                           <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> 
+                           <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
+                           <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tag_bl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span> 
+                           <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
+                           
+    <span class="k">if</span> <span class="n">legend</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -249,48 +271,63 @@
 
     <span class="k">return</span> <span class="n">axis</span></div>
 
-<div class="viewcode-block" id="plot_bl_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span>
-                        <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span>
-                        <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="plot_bl_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span>
+                    <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                    <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> 
+                    <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                    <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
+                    <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                    <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
     <span class="sd">&quot;&quot;&quot;Plot data from multiple observations vs time on a single baseline on the same axes.</span>
 
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               site1 (str): station 1 name</span>
-<span class="sd">               site2 (str): station 2 name</span>
-<span class="sd">               field (str): y-axis field (from FIELDS)</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           imlist (list): list of ground truth images  to compare to</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           field (str): y-axis field (from FIELDS)</span>
 
-<span class="sd">               debias (bool): If True and plotting vis amplitudes, debias them</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
-<span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">           debias (bool): If True, debias amplitudes.</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 
-<span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): list of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
 
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+    <span class="p">(</span><span class="n">obslist_plot</span><span class="p">,</span> <span class="n">clist_plot</span><span class="p">,</span> <span class="n">legendlabels_plot</span><span class="p">,</span> <span class="n">markers</span><span class="p">)</span> <span class="o">=</span> <span class="n">prep_plot_lists</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">clist</span><span class="p">,</span> 
+                                                                             <span class="n">legendlabels</span><span class="o">=</span><span class="n">legendlabels</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_bl</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span> 
-                           <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
-
-
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist_plot</span><span class="p">)):</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist_plot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_bl</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span>
+                           <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
+                           <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> 
+                           <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
+                           <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span> 
+                           <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">legend</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -299,421 +336,515 @@
 
     <span class="k">return</span> <span class="n">axis</span></div>
 
+<div class="viewcode-block" id="plot_cphase_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> 
+                        <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">cphases</span><span class="o">=</span><span class="p">[],</span><span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> 
+                        <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                        <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
+                        <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                        <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
 
-<div class="viewcode-block" id="plot_cphase_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                            <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cphases</span><span class="o">=</span><span class="p">[],</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot closure phase on a triangle compared to ground truth from an image on the same axes.</span>
 
-    <span class="sd">&quot;&quot;&quot;Plot closure phase on a triangle vs time from multiple observations on the same axes.</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           imlist (list): list of ground truth images to compare to</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           site3 (str): station 3 name</span>
 
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               site1 (str): station 1 name</span>
-<span class="sd">               site2 (str): station 2 name</span>
-<span class="sd">               site3 (str): station 3 name</span>
+<span class="sd">           vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
+<span class="sd">           cphases (list): optionally pass in a list of cphases so they don&#39;t have to be recomputed</span>
+<span class="sd">           force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
 
-<span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
-<span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
-<span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 
-<span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis (phase) limits</span>
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
 
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): List of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
-
-<span class="sd">               cphases (list): optionally pass in the time-sorted cphases so they don&#39;t have to be recomputed</span>
-<span class="sd">               force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
-
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
         <span class="n">cphases</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">([],</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;cphases list must be same length as obslist!&quot;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">cphase</span><span class="o">=</span><span class="n">cphases</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_cphase</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span>
-                               <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span> <span class="n">cphases</span><span class="o">=</span><span class="n">cphases</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">obslist_plot</span><span class="p">,</span> <span class="n">clist_plot</span><span class="p">,</span> <span class="n">legendlabels_plot</span><span class="p">,</span> <span class="n">markers</span><span class="p">)</span> <span class="o">=</span> <span class="n">prep_plot_lists</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">clist</span><span class="p">,</span> 
+                                                                             <span class="n">legendlabels</span><span class="o">=</span><span class="n">legendlabels</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
 
-
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist_plot</span><span class="p">)):</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist_plot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_cphase</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span>
+                               <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">,</span> <span class="n">force_recompute</span><span class="o">=</span><span class="n">force_recompute</span><span class="p">,</span>
+                               <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> 
+                               <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> 
+                               <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
+                               <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                               <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span> 
+                               <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">legend</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
 
+    <span class="k">return</span> <span class="n">axis</span></div>
+
+<div class="viewcode-block" id="plot_camp_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span>
+                      <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">camps</span><span class="o">=</span><span class="p">[],</span> <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> 
+                      <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                      <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
+                      <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                      <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           imlist (list): list of  ground truth images to compare to</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           site3 (str): station 3 name</span>
+<span class="sd">           site4 (str): station 4 name</span>
+
+<span class="sd">           vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
+<span class="sd">           ctype (str): The closure amplitude type (&#39;camp&#39; or &#39;logcamp&#39;)</span>
+<span class="sd">           camps (list): optionally pass in a list of camp so they don&#39;t have to be recomputed</span>
+<span class="sd">           force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
+
+<span class="sd">           debias (bool): If True, debias amplitudes.</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">camps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">([],</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;camps list must be same length as obslist!&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">ctype</span><span class="o">==</span><span class="s1">&#39;camp&#39;</span><span class="p">:</span>
+            <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">camp</span><span class="o">=</span><span class="n">camps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">ctype</span><span class="o">==</span><span class="s1">&#39;logcamp&#39;</span><span class="p">:</span>
+            <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">logcamp</span><span class="o">=</span><span class="n">camps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="p">(</span><span class="n">obslist_plot</span><span class="p">,</span> <span class="n">clist_plot</span><span class="p">,</span> <span class="n">legendlabels_plot</span><span class="p">,</span> <span class="n">markers</span><span class="p">)</span> <span class="o">=</span> <span class="n">prep_plot_lists</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">clist</span><span class="p">,</span> 
+                                                                             <span class="n">legendlabels</span><span class="o">=</span><span class="n">legendlabels</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist_plot</span><span class="p">)):</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist_plot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_camp</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span>
+                               <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="n">ctype</span><span class="p">,</span> <span class="n">force_recompute</span><span class="o">=</span><span class="n">force_recompute</span><span class="p">,</span>
+                               <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
+                               <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> 
+                               <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
+                               <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                               <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span> 
+                               <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">legend</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="n">axis</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">axis</span></div>
 
 
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Aliases</span>
+<span class="c1">##################################################################################################</span>
+<div class="viewcode-block" id="plotall_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot data from observations compared to ground truth from an image on the same axes.</span>
 
-<div class="viewcode-block" id="plot_camp_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                          <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                          <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="n">camps</span><span class="o">=</span><span class="p">[],</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                          <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           field1 (str): x-axis field (from FIELDS)</span>
+<span class="sd">           field2 (str): y-axis field (from FIELDS)</span>
+
+<span class="sd">           conj (bool): Plot conjuage baseline data points if True</span>
+<span class="sd">           debias (bool): If True, debias amplitudes.</span>
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           legendlabels (str): should be a list of labels of the same length of obslist or imlist</span>
+
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plotall_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="p">[],</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axis</span></div>
+
+<div class="viewcode-block" id="plotall_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Plot data from observations compared to ground truth from an image on the same axes.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           imlist (list): list of images to plot</span>
+<span class="sd">           field1 (str): x-axis field (from FIELDS)</span>
+<span class="sd">           field2 (str): y-axis field (from FIELDS)</span>
+
+<span class="sd">           conj (bool): Plot conjuage baseline data points if True</span>
+<span class="sd">           debias (bool): If True, debias amplitudes.</span>
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           legendlabels (str): should be a list of labels of the same length of obslist</span>
+
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plotall_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axis</span></div>
+
+
+<div class="viewcode-block" id="plot_bl_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Plot data from multiple observations vs time on a single baseline on the same axes.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           field (str): y-axis field (from FIELDS)</span>
+
+<span class="sd">           debias (bool): If True and plotting vis amplitudes, debias them</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legendlabels (str): should be a list of labels of the same length of obslist or imlist</span>
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+
+<span class="sd">           rangex (list): [xmin, xmax] x-axis (time) limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           clist (list): list of color strings of scatterplot points</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plot_bl_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="p">[],</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axis</span></div>
+
+
+<div class="viewcode-block" id="plot_bl_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Plot data from multiple observations vs time on a single baseline on the same axes.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           imlist (list): list of ground truth images  to compare to</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           field (str): y-axis field (from FIELDS)</span>
+
+<span class="sd">           debias (bool): If True and plotting vis amplitudes, debias them</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legendlabels (str): should be a list of labels of the same length of obslist or imlist</span>
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+
+<span class="sd">           rangex (list): [xmin, xmax] x-axis (time) limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           clist (list): list of color strings of scatterplot points</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plot_bl_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axis</span></div>
+
+<div class="viewcode-block" id="plot_cphase_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Plot closure phase on a triangle vs time from multiple observations on the same axes.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           site3 (str): station 3 name</span>
+
+<span class="sd">           vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
+<span class="sd">           cphases (list): optionally pass in a list of cphases so they don&#39;t have to be recomputed</span>
+<span class="sd">           force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
+
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plot_cphase_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="p">[],</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axis</span></div>
+
+<div class="viewcode-block" id="plot_cphase_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Plot closure phase on a triangle vs time from multiple observations on the same axes.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           imlist (list): list of ground truth images to compare to</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           site3 (str): station 3 name</span>
+
+<span class="sd">           vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
+<span class="sd">           cphases (list): optionally pass in a list of cphases so they don&#39;t have to be recomputed</span>
+<span class="sd">           force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
+
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plot_cphase_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axis</span></div>
+
+
+<div class="viewcode-block" id="plot_camp_obs_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_obs_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</span>
 
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               site1 (str): station 1 name</span>
-<span class="sd">               site2 (str): station 2 name</span>
-<span class="sd">               site3 (str): station 3 name</span>
-<span class="sd">               site4 (str): station 4 name</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           site3 (str): station 3 name</span>
+<span class="sd">           site4 (str): station 4 name</span>
 
-<span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble closure amplitudes</span>
-<span class="sd">               ctype (str): The closure amplitude type (&#39;camp&#39; or &#39;logcamp&#39;)</span>
-<span class="sd">               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</span>
-<span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">           vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
+<span class="sd">           ctype (str): The closure amplitude type (&#39;camp&#39; or &#39;logcamp&#39;)</span>
+<span class="sd">           camps (list): optionally pass in a list of camps so they don&#39;t have to be recomputed</span>
+<span class="sd">           force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
 
-<span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis (phase) limits</span>
+<span class="sd">           debias (bool): If True, debias amplitudes.</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): List of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 
-<span class="sd">               camps (list): optionally pass in the time-sorted camps so they don&#39;t have to be recomputed</span>
-<span class="sd">               force_recompute (bool): if True, recompute closure amplitudes instead of using stored  data</span>
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plot_camp_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="p">[],</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axis</span></div>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
+<div class="viewcode-block" id="plot_camp_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span>  <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-        <span class="n">cphases</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">([],</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</span>
 
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obslist (list): list of observations to plot</span>
+<span class="sd">           image (Image): ground truth image to compare to</span>
+<span class="sd">           site1 (str): station 1 name</span>
+<span class="sd">           site2 (str): station 2 name</span>
+<span class="sd">           site3 (str): station 3 name</span>
+<span class="sd">           site4 (str): station 4 name</span>
 
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_camp</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span>
-                               <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="n">ctype</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">camps</span><span class="o">=</span><span class="n">camps</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+<span class="sd">           vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
+<span class="sd">           ctype (str): The closure amplitude type (&#39;camp&#39; or &#39;logcamp&#39;)</span>
+<span class="sd">           camps (list): optionally pass in a list of camps so they don&#39;t have to be recomputed</span>
+<span class="sd">           force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
 
-    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="sd">           debias (bool): If True, debias amplitudes.</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 
-    <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 
+<span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
+<span class="sd">           clist (list): list of colors scatterplot points</span>
+<span class="sd">           legendlabels (list): list of labels of the same length of obslist or imlist</span>
+<span class="sd">           markersize (int): size of plot markers</span>
+<span class="sd">           export_pdf (str): path to pdf file to save figure</span>
+<span class="sd">           grid (bool): Plot gridlines if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
+<span class="sd">           legend (bool): Show legend if True</span>
+<span class="sd">           show (bool): Display the plot if true</span>
+
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">plot_camp_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">axis</span></div>
 
 <span class="c1">##################################################################################################</span>
 <span class="c1"># Plotters: Compare Observations to Image</span>
 <span class="c1">##################################################################################################</span>
-<div class="viewcode-block" id="plotall_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span>
-                           <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                           <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                           <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-
-    <span class="sd">&quot;&quot;&quot;Plot data from observations compared to ground truth from an image on the same axes.</span>
-
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               image (Image): ground truth image to compare to</span>
-<span class="sd">               field1 (str): x-axis field (from FIELDS)</span>
-<span class="sd">               field2 (str): y-axis field (from FIELDS)</span>
-
-<span class="sd">               conj (bool): Plot conjuage baseline data points if True</span>
-<span class="sd">               debias (bool): If True, debias amplitudes.</span>
-<span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
-<span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
-
-<span class="sd">               rangex (list): [xmin, xmax] x-axis limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis limits</span>
-
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): list of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
-
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
-
-    <span class="n">obslist_true</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obstrue</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
-        <span class="n">obstrue</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
-        <span class="n">obslist_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-    <span class="n">obstrue</span> <span class="o">=</span> <span class="n">merge_obs</span><span class="p">(</span><span class="n">obslist_true</span><span class="p">)</span>
-    <span class="n">obslist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plotall</span><span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">conj</span><span class="o">=</span><span class="n">conj</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                           <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
-
-
-    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">axis</span></div>
-
-<div class="viewcode-block" id="plot_bl_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                           <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span><span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                           <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Plot data vs time on a single baseline compared to ground truth from an image on the same axes.</span>
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               image (Image): ground truth image to compare to</span>
-<span class="sd">               site1 (str): station 1 name</span>
-<span class="sd">               site2 (str): station 2 name</span>
-<span class="sd">               field (str): y-axis field (from FIELDS)</span>
-
-<span class="sd">               debias (bool): If True and plotting vis amplitudes, debias them</span>
-<span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
-<span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
-<span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
-
-<span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis limits</span>
-
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): list of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
-
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
-
-    <span class="n">obslist_true</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obstrue</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
-        <span class="n">obstrue</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
-        <span class="n">obslist_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-    <span class="n">obstrue</span> <span class="o">=</span> <span class="n">merge_obs</span><span class="p">(</span><span class="n">obslist_true</span><span class="p">)</span>
-    <span class="n">obslist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_bl</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
-                           <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
-
-
-    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">axis</span></div>
-
-
-
-<div class="viewcode-block" id="plot_cphase_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                               <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span>
-                               <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-
-    <span class="sd">&quot;&quot;&quot;Plot closure phase on a triangle compared to ground truth from an image on the same axes.</span>
-
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               image (Image): ground truth image to compare to</span>
-<span class="sd">               site1 (str): station 1 name</span>
-<span class="sd">               site2 (str): station 2 name</span>
-<span class="sd">               site3 (str): station 3 name</span>
-
-<span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
-<span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
-<span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
-<span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
-
-<span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis (phase) limits</span>
-
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): List of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
-
-<span class="sd">               cphases (list): optionally pass in the time-sorted cphases so they don&#39;t have to be recomputed</span>
-<span class="sd">               force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
-
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
-
-    <span class="n">obslist_true</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obstrue</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
-        <span class="n">obstrue</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
-        <span class="n">obslist_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-    <span class="n">obstrue</span> <span class="o">=</span> <span class="n">merge_obs</span><span class="p">(</span><span class="n">obslist_true</span><span class="p">)</span>
-    <span class="n">obslist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
-
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_cphase</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span>
-                               <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">axis</span></div>
-
-
-
-<div class="viewcode-block" id="plot_camp_obs_im_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_obs_im_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_obs_im_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                             <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span>
-                              <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-
-
-
-    <span class="sd">&quot;&quot;&quot;Plot closure amplitude on a triangle vs time from multiple observations on the same axes.</span>
-
-<span class="sd">           Args:</span>
-<span class="sd">               obslist (list): list of observations to plot</span>
-<span class="sd">               image (Image): ground truth image to compare to</span>
-<span class="sd">               site1 (str): station 1 name</span>
-<span class="sd">               site2 (str): station 2 name</span>
-<span class="sd">               site3 (str): station 3 name</span>
-<span class="sd">               site4 (str): station 4 name</span>
-
-<span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble closure amplitudes</span>
-<span class="sd">               ctype (str): The closure amplitude type (&#39;camp&#39; or &#39;logcamp&#39;)</span>
-<span class="sd">               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.</span>
-<span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
-<span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
-
-<span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis (phase) limits</span>
-
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               axis (matplotlib.axes.Axes): add plot to this axis</span>
-<span class="sd">               clist (list): List of color strings of scatterplot points</span>
-<span class="sd">               export_pdf (str): path to pdf file to save figure</span>
-
-<span class="sd">               camps (list): optionally pass in the time-sorted camps so they don&#39;t have to be recomputed</span>
-<span class="sd">               force_recompute (bool): if True, recompute closure amplitudes instead of using stored  data</span>
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
-
-    <span class="n">obslist_true</span><span class="o">=</span><span class="p">[]</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obstrue</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
-        <span class="n">obstrue</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
-        <span class="n">obslist_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-    <span class="n">obstrue</span> <span class="o">=</span> <span class="n">merge_obs</span><span class="p">(</span><span class="n">obslist_true</span><span class="p">)</span>
-    <span class="n">obslist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
-        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-
-        <span class="n">axis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">plot_camp</span><span class="p">(</span><span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">)],</span>
-                               <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="n">vtype</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="n">ctype</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">pad_inches</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">axis</span></div>
-
-
-<span class="c1">#TODO: make this work with multiple observations??</span>
-<div class="viewcode-block" id="plotall_obs_im_cphases"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_cphases">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_im_cphases</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                           <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span><span class="mi">180</span><span class="p">],</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                           <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span><span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span>
-                           <span class="n">display_mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="plotall_obs_im_cphases"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_obs_im_cphases">[docs]</a><span class="k">def</span> <span class="nf">plotall_obs_im_cphases</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> 
+                           <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span>
+                           <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span><span class="mi">180</span><span class="p">],</span> 
+                           <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">display_mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Plot all observation closure phases on  top of image ground truth values.</span>
 
-<span class="sd">           Args:</span>
-<span class="sd">               Obsdata (Obsdata): observation to plot</span>
-<span class="sd">               image (Image): ground truth image to compare to</span>
+<span class="sd">       Args:</span>
+<span class="sd">           obs (Obsdata): observation to plot</span>
+<span class="sd">           image (Image): ground truth image to compare to</span>
 
-<span class="sd">               vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
-<span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
-<span class="sd">               timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
-<span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
-<span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           vtype (str): The visibilty type (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) from which to assemble bispectra</span>
+<span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
+<span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
+<span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 
-<span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
-<span class="sd">               rangey (list): [ymin, ymax] y-axis (phase) limits</span>
+<span class="sd">           rangex (list): [xmin, xmax] x-axis (time) limits</span>
+<span class="sd">           rangey (list): [ymin, ymax] y-axis (phase) limits</span>
 
-<span class="sd">               ebar (bool): Plot error bars if True</span>
-<span class="sd">               labels (bool): Show axis labels if True</span>
-<span class="sd">               show (bool): Display the plot if true</span>
-<span class="sd">               display_mode (str): &#39;all&#39; or &#39;individual&#39; to plot a giant single plot or multiple small Jones</span>
+<span class="sd">           show (bool): Display the plot if True</span>
+<span class="sd">           ebar (bool): Plot error bars if True</span>
+<span class="sd">           axislabels (bool): Show axis labels if True</span>
 
-<span class="sd">               cphases (list): optionally pass in the time-sorted cphases so they don&#39;t have to be recomputed</span>
-<span class="sd">               force_recompute (bool): if True, recompute closure phases instead of using stored data</span>
+<span class="sd">           display_mode (str): &#39;all&#39; or &#39;individual&#39; to plot a giant single plot or multiple small Jones</span>
 
-<span class="sd">           Returns:</span>
-<span class="sd">               (matplotlib.axes.Axes): Axes object with data plot</span>
+<span class="sd">       Returns:</span>
+<span class="sd">           (matplotlib.axes.Axes): Axes object with data plot</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-
 
     <span class="c1"># get closure triangle combinations</span>
     <span class="n">sites</span> <span class="o">=</span> <span class="p">[]</span>
@@ -772,6 +903,97 @@
         <span class="n">f</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">f</span></div>
+
+<span class="c1">##################################################################################################</span>
+<span class="c1"># Misc</span>
+<span class="c1">##################################################################################################</span>
+
+<div class="viewcode-block" id="prep_plot_lists"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.prep_plot_lists">[docs]</a><span class="k">def</span> <span class="nf">prep_plot_lists</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">SCOLORS</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return observation, color, marker, legend lists for comp plots&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">imlist</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">imlist</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+        <span class="n">imlist</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+
+    <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">imlist</span> <span class="o">=</span> <span class="p">[</span><span class="n">imlist</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">))</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)</span><span class="o">&lt;=</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span><span class="o">&lt;=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;imlist and obslist must be the same length, or either must have length 1&quot;</span><span class="p">)</span> 
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">legendlabels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">legendlabels</span><span class="p">)</span><span class="o">!=</span><span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">))):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;legendlabels should be the same length of the longer of imlist, obslist!&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">legendlabels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">legendlabels</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)))]</span>
+
+    <span class="n">obslist_plot</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">clist_plot</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">clist</span><span class="p">)</span>
+    <span class="n">legendlabels_plot</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">legendlabels</span><span class="p">)</span>
+
+    <span class="c1">#one image, multiple observations</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">markers</span> <span class="o">=</span>  <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
+            <span class="n">obslist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;o&#39;</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span> 
+        <span class="n">obslist_true</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">markers</span> <span class="o">=</span>  <span class="p">[</span><span class="s1">&#39;s&#39;</span><span class="p">]</span>
+        <span class="n">clist_plot</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
+            <span class="n">obslist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">obstrue</span> <span class="o">=</span> <span class="n">imlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
+            <span class="n">obstrue</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
+            <span class="n">obslist_true</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
+            <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;o&#39;</span><span class="p">)</span>
+            <span class="n">clist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="n">obstrue</span> <span class="o">=</span> <span class="n">merge_obs</span><span class="p">(</span><span class="n">obslist_true</span><span class="p">)</span>
+        <span class="n">obslist_plot</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">obstrue</span><span class="p">)</span>
+        <span class="n">legendlabels_plot</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;Image&#39;</span><span class="p">)</span>
+
+    <span class="c1">#one observation, multiple images</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">obslist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">markers</span> <span class="o">=</span>  <span class="p">[</span><span class="s1">&#39;o&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imlist</span><span class="p">)):</span>
+            <span class="n">obstrue</span> <span class="o">=</span> <span class="n">imlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
+            <span class="n">obstrue</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
+            <span class="n">obslist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
+            <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;s&#39;</span><span class="p">)</span>
+
+        <span class="n">clist_plot</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+        <span class="n">legendlabels_plot</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;Observation&#39;</span><span class="p">)</span>
+
+    <span class="c1">#same number of images and observations</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">markers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">legendlabels_plot</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">clist_plot</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">)):</span>
+            <span class="n">obstrue</span> <span class="o">=</span> <span class="n">imlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">)</span>
+            <span class="n">obstrue</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
+            <span class="n">obslist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obstrue</span><span class="p">)</span>
+            <span class="n">clist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">legendlabels_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">legendlabels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;_im&#39;</span><span class="p">)</span>
+            <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;s&#39;</span><span class="p">)</span>
+
+            <span class="n">obslist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obslist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">clist_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">legendlabels_plot</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">legendlabels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;_obs&#39;</span><span class="p">)</span>
+            <span class="n">markers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;o&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist_plot</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">clist</span><span class="p">):</span>
+        <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;More observations than colors -- Add more colors to clist!&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">(</span><span class="n">obslist_plot</span><span class="p">,</span> <span class="n">clist_plot</span><span class="p">,</span> <span class="n">legendlabels_plot</span><span class="p">,</span> <span class="n">markers</span><span class="p">)</span></div>
+
+
+
 </pre></div>
 
            </div>

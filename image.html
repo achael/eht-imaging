@@ -1204,17 +1204,24 @@ ttype (str): if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visi
 
 <dl class="function">
 <dt id="ehtim.image.load_fits">
-<code class="descclassname">ehtim.image.</code><code class="descname">load_fits</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#load_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.load_fits" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.image.</code><code class="descname">load_fits</code><span class="sig-paren">(</span><em>fname</em>, <em>aipscc=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#load_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.load_fits" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read in an image from a FITS file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input fits file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input fits file</li>
+<li><strong>aipscc</strong> (<em>boolean</em>) &#8211; if True, then AIPS CC table will be loaded instead
+of the original brightness distribution.</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">loaded image object</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">loaded image object</p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>

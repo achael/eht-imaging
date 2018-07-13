@@ -169,7 +169,7 @@
 <span id="imager"></span><h1>Stokes I Imager<a class="headerlink" href="#stokes-i-imager" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="ehtim.imaging.imager_utils.imager_func">
-<code class="descclassname">ehtim.imaging.imager_utils.</code><code class="descname">imager_func</code><span class="sig-paren">(</span><em>Obsdata</em>, <em>InitIm</em>, <em>Prior</em>, <em>flux</em>, <em>d1='vis'</em>, <em>d2=False</em>, <em>s1='simple'</em>, <em>s2=False</em>, <em>alpha_s1=1</em>, <em>alpha_s2=1</em>, <em>alpha_d1=100</em>, <em>alpha_d2=100</em>, <em>alpha_flux=500</em>, <em>alpha_cm=500</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.imaging.imager_utils.</code><code class="descname">imager_func</code><span class="sig-paren">(</span><em>Obsdata</em>, <em>InitIm</em>, <em>Prior</em>, <em>flux</em>, <em>d1='vis'</em>, <em>d2=False</em>, <em>d3=False</em>, <em>alpha_d1=100</em>, <em>alpha_d2=100</em>, <em>alpha_d3=100</em>, <em>s1='simple'</em>, <em>s2=False</em>, <em>s3=False</em>, <em>alpha_s1=1</em>, <em>alpha_s2=1</em>, <em>alpha_s3=1</em>, <em>alpha_flux=500</em>, <em>alpha_cm=500</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a general interferometric imager.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -182,20 +182,25 @@
 <li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The total flux of the output image in Jy</li>
 <li><strong>d1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The first data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;, &#8216;logcamp&#8217;</li>
 <li><strong>d2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The second data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;, &#8216;logcamp&#8217;</li>
+<li><strong>d3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The third data term; options are &#8216;vis&#8217;, &#8216;bs&#8217;, &#8216;amp&#8217;, &#8216;cphase&#8217;, &#8216;camp&#8217;, &#8216;logcamp&#8217;</li>
 <li><strong>s1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The first regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;tv2&#8217;, &#8216;l1&#8217;, &#8216;patch&#8217;,&#8217;compact&#8217;,&#8217;compact2&#8217;,&#8217;rgauss&#8217;</li>
 <li><strong>s2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The second regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;tv2&#8217;,&#8217;l1&#8217;, &#8216;patch&#8217;,&#8217;compact&#8217;,&#8217;compact2&#8217;,&#8217;rgauss&#8217;</li>
+<li><strong>s3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The third regularizer; options are &#8216;simple&#8217;, &#8216;gs&#8217;, &#8216;tv&#8217;, &#8216;tv2&#8217;,&#8217;l1&#8217;, &#8216;patch&#8217;,&#8217;compact&#8217;,&#8217;compact2&#8217;,&#8217;rgauss&#8217;</li>
 <li><strong>alpha_d1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The first data term weighting</li>
 <li><strong>alpha_d2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The second data term weighting</li>
+<li><strong>alpha_d2</strong> &#8211; The third data term weighting</li>
 <li><strong>alpha_s1</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The first regularizer term weighting</li>
 <li><strong>alpha_s2</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The second regularizer term weighting</li>
+<li><strong>alpha_s3</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The third regularizer term weighting</li>
 <li><strong>alpha_flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The weighting for the total flux constraint</li>
 <li><strong>alpha_cm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The weighting for the center of mass constraint</li>
-<li><strong>maxit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; Maximum number of minimizer iterations</li>
-<li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The convergence criterion</li>
-<li><strong>clipfloor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The Jy/pixel level above which prior image pixels are varied</li>
+<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;uniform&#8217; or &#8216;natural&#8217; (default)</li>
 <li><strong>systematic_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Fractional systematic noise tolerance to add to sigmas</li>
 <li><strong>systematic_cphase_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Systematic noise tolerance  in degree to add to cphase sigmas</li>
+<li><strong>clipfloor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The Jy/pixel level above which prior image pixels are varied</li>
 <li><strong>beam_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; beam size in radians for normalizing the regularizers</li>
+<li><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The convergence criterion</li>
+<li><strong>maxit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; Maximum number of minimizer iterations</li>
 <li><strong>grads</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, analytic gradients are used</li>
 <li><strong>logim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, uses I = exp(I&#8217;) change of variables</li>
 <li><strong>norm_reg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, normalizes regularizer terms</li>
@@ -433,6 +438,12 @@ Returns the estimated unscattered image.</p>
 <dt id="ehtim.imager.Imager.transform_last">
 <code class="descname">transform_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.transform_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.transform_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return last image transfrom used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.imager.Imager.weighting_last">
+<code class="descname">weighting_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.weighting_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.weighting_last" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return last weighting value.</p>
 </dd></dl>
 
 </dd></dl>
