@@ -299,10 +299,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
     snr4 = p4/sig4
 
     # debias
-    p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=False)
-    p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=False)
-    p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=False)
-    p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=False)
+    p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=True)
+    p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=True)
+    p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=True)
+    p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=True)
 
     if ctype=='camp':
         camp = np.abs((p1*p2)/(p3*p4))

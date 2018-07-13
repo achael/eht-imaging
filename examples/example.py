@@ -68,7 +68,7 @@ emptyprior = eh.image.make_square(obs, npix, fov)
 flatprior = emptyprior.add_flat(zbl)
 gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
 
-# Image total flux with amplitudes and closure phases
+# Image total flux with bispectrum
 flux = zbl
 out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
                       d1='bs', s1='simple',
@@ -90,6 +90,32 @@ out = eh.imager_func(obs, out, out, flux,
                 alpha_s1=1, alpha_d1=10,
                 alpha_flux=100, alpha_cm=50,
                 maxit=100,ttype='nfft')
+
+#alternate imaging with amplitude and closure phase
+# Image total flux with amplitudes and closure phases
+#flux = zbl
+#out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
+#                      d1='amp', d2='cphase',
+#                      s1='simple',
+#                      alpha_s1=1, alpha_d1=400, alpha_d2=100,
+#                      alpha_flux=100, alpha_cm=50,
+#                      maxit=100, ttype='nfft')
+
+## Blur the image with a circular beam and image again to help convergance
+#out = out.blur_circ(res)
+#out = eh.imager_func(obs, out, out, flux,
+#                d1='amp', d2='cphase', #s1='tv',
+#                alpha_s1=1, alpha_d1=50, alpha_d2=200,
+#                alpha_flux=100, alpha_cm=50,
+#                maxit=100,ttype='nfft')
+
+#out = out.blur_circ(res/2.0)
+#out = eh.imager_func(obs, out, out, flux,
+#                d1='amp', d2='cphase', s1='tv', alpha_d1=50, alpha_d2=200,
+#                alpha_s1=1, 
+#                alpha_flux=100, alpha_cm=50,
+#                maxit=100,ttype='nfft')
+
 
 # Self - calibrate and image with vis amplitudes
 obs_sc = sc.self_cal(obs, out)
