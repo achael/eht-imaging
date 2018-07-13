@@ -216,12 +216,6 @@ def make_bispectrum(l1, l2, l3,vtype):
                                  var2/np.abs(p2)**2 +
                                  var3/np.abs(p3)**2)
 
-    # Katie's 2nd + 3rd order corrections - see CHIRP supplement
-    #bisig = np.sqrt(bisig**2 + var1*var2*np.abs(p3)**2 +
-    #                           var1*var3*np.abs(p2)**2 +
-    #                           var2*var3*np.abs(p1)**2 +
-    #                           var1*var2*var3)
-
     return (bi, bisig)
 
 #TODO: debiasing strategy?? 
@@ -1014,6 +1008,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr= "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+
     elif msgtype=='bh':
         message_all = BHIMAGE
         bar_width = len(message_all)
@@ -1024,6 +1019,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
                 message_line = ''.join(message_all[i])
                 message_line = '%03i'%int(complete_percent) + message_line
                 print(message_line)
+
     elif msgtype=='gitstash':
         message_all = GITSTASHIMAGE
         bar_width = len(message_all)
@@ -1035,10 +1031,9 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
                 message_line = '%03i'%int(complete_percent) + message_line
                 print(message_line)
 
-
     else:# msgtype=='default':
         barparams = (nscan, totscans,tint, complete_percent)
-        prinstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
+        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
 

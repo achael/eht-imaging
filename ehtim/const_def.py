@@ -18,7 +18,10 @@
 
 from __future__ import division
 
+
 from ehtim.observing.pulses import *
+
+import sys
 import matplotlib as mpl
 mpl.rc('font',**{'family':'serif','size':12})
 
@@ -159,6 +162,78 @@ def recarr_to_ndarr(x,typ):
     return y
 
 
+def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
+    """print a progress method for calibration
+    """
+    complete_percent_last = int(100*float(nscan_last)/float(totscans))
+    complete_percent = int(100*float(nscan)/float(totscans))
+    ndigit = str(len(str(totscans)))
+
+    if msgtype=='bar':
+        bar_width = 30
+        progress = int(bar_width * complete_percent/float(100))
+        barparams = (nscan, totscans, ("-"*progress) + (" " * (bar_width-progress)),complete_percent)
+
+        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]%i%%"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+    elif msgtype=='casa':
+        message_list = [".",".",".","10",".",".",".","20",".",".",".","30",".",".",".","40",
+                        ".",".",".","50",".",".",".","60",".",".",".","70",".",".",".","80",
+                        ".",".",".","90",".",".",".","DONE"]
+        bar_width = len(message_list)
+        progress = int(bar_width * complete_percent/float(100))
+        message = ''.join(message_list[:progress])
+
+        barparams = (nscan, totscans, message)
+        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : %s"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+    elif msgtype=='itcrowd':
+        message_list = ["0","1","1","8"," ","9","9","9"," ","8","8","1","9","9"," ",
+                        "9","1","1","9"," ","7","2","5"," "," "," ","3"]
+        bar_width = len(message_list)
+        progress = int(bar_width * complete_percent/float(100))
+        message = ''.join(message_list[:progress])
+        if complete_percent<100:
+            message += "." 
+            message += " "*(bar_width-progress-1)
+
+        barparams = (nscan, totscans, message)
+
+        printstr= "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+    elif msgtype=='bh':
+        message_all = BHIMAGE
+        bar_width = len(message_all)
+        progress = int(np.floor(bar_width * complete_percent/float(100)))-1
+        progress_last = int(np.floor(bar_width * complete_percent_last/float(100)))-1
+        if progress>progress_last:
+            for i in range(progress_last+1,progress+1):
+                message_line = ''.join(message_all[i])
+                message_line = '%03i'%int(complete_percent) + message_line
+                print(message_line)
+
+    elif msgtype=='gitstash':
+        message_all = GITSTASHIMAGE
+        bar_width = len(message_all)
+        progress = int(np.floor(bar_width * complete_percent/float(100)))-1
+        progress_last = int(np.floor(bar_width * complete_percent_last/float(100)))-1
+        if progress>progress_last:
+            for i in range(progress_last+1,progress+1):
+                message_line = ''.join(message_all[i])
+                message_line = '%03i'%int(complete_percent) + message_line
+                print(message_line)
+    elif msgtype=='dots':
+        sys.stdout.write('.')
+        sys.stdout.flush()
+    else:# msgtype=='default':
+        barparams = (nscan, totscans, complete_percent)
+        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : %i%% done . . ."
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
 
 BHIMAGE = [
 '                                                            ..                                                                                                 ',
@@ -210,40 +285,6 @@ BHIMAGE = [
  '                                                                               ...................                                                             ',
  '                                                                                                                                                        ',
  '']
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 GITSTASHIMAGE = [
@@ -344,9 +385,6 @@ GITSTASHIMAGE = [
 '            .     ............,,,,***,,,,,**,,,,..................,,,,,,,,*****************************////***/**///(////((/,,,,,,,,.,,..........,,*/.         ',
 '   .. ,            ........,,....,,,********,****,,.....................,****************************//////**/////((((/**(#(*,,,,,,,,**,............  .,,      ',
  '']
-
-
-
 
 
 

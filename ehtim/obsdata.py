@@ -368,7 +368,6 @@ class Obsdata(object):
         for scan in tlist:
             for obs in scan:
                 if (obs['t1'], obs['t2']) == (site1, site2):
-                #if (obs['t1'].decode(), obs['t2'].decode()) == (site1, site2):
                     obs = np.array([obs])
                     out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias, timetype=timetype)
 
@@ -705,10 +704,7 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype,nscan_last=t)
-#            sys.stdout.write('\rAveraging Scans %i/%i in %0.2f s ints : Reduced Data %i/%i'
-#                              % (t,len(timesplit),inttime, tavg,t))
-#            sys.stdout.flush()
+            prog_msg(t+1, len(timesplit), msgtype=msgtype,nscan_last=t)
 
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
@@ -813,10 +809,8 @@ class Obsdata(object):
         tavg = 1
 
         for t in range(0, len(timesplit)):
-            avg_prog_msg(t+1, len(timesplit), inttime, msgtype=msgtype,nscan_last=t)
-#            sys.stdout.write('\rAveraging Scans %i/%i in %f sec ints : Reduced Data %i/%i'
-#                                % (t,len(timesplit),inttime, tavg,t))
-#            sys.stdout.flush()
+            prog_msg(t+1, len(timesplit), msgtype=msgtype,nscan_last=t)
+
             # accumulate data in a time region
             if (timesplit[t]['time'][0] - time_current < inttime_hr):
 
@@ -894,7 +888,6 @@ class Obsdata(object):
     def add_amp(self, return_type='rec', 
                       avg_time=0, debias=True, err_type='predicted'):
 
-        #TODO store averaging timescale/other parameters?
         """Adds attribute self.amp: amplitude table with incoherently averaged amplitudes
 
            Args:
@@ -922,7 +915,6 @@ class Obsdata(object):
     def add_bispec(self, return_type='rec', count='max',
                          avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
-        #TODO store averaging timescale/other parameters?
         """Adds attribute self.bispec: bispectra table with bispectra averaged for dt
 
 
@@ -937,7 +929,6 @@ class Obsdata(object):
 
         """
 
-        #TODO store averaging timescale/other parameters?
         cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>0:
             cdf_av = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples)
@@ -964,7 +955,6 @@ class Obsdata(object):
 
         """
 
-        #TODO store averaging timescale/other parameters?
         cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>0:
             cdf_av = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
@@ -994,7 +984,6 @@ class Obsdata(object):
 
         """
 
-        #TODO store averaging timescale/other parameters?
         if avg_time>0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else: foo = self
@@ -1598,7 +1587,7 @@ class Obsdata(object):
                (Obsdata): a new reverse-tapered observation object
         """
         datatable = self.data.copy()
-        #PIN
+       
         vis = datatable['vis']
         qvis = datatable['qvis']
         uvis = datatable['uvis']
@@ -2066,7 +2055,6 @@ class Obsdata(object):
                 quadsets = quad_minimal_set(sites, self.tarr, self.tkey)
                 for quad in quadsets:
                     # Blue is numerator, red is denominator
-                    # TODO behavior when no baseline?
 
                     if (quad[0], quad[1]) not in l_dict.keys():
                         continue
@@ -2107,7 +2095,6 @@ class Obsdata(object):
                     for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
 
                         # Blue is numerator, red is denominator
-                        # TODO behavior when no baseline?
                         try:
                             blue1 = l_dict[quad[0], quad[1]]
                             blue2 = l_dict[quad[2], quad[3]]
@@ -2183,7 +2170,6 @@ class Obsdata(object):
             camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype)
 
         # camps does not contain inverses
-        # ANDREW TODO what about reorderings????
         for obs in camps:
 
             obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
@@ -2236,8 +2222,8 @@ class Obsdata(object):
                 ang_unit='deg', timetype=False,
                 axis=False, rangex=False, rangey=False, 
                 color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                export_pdf="", grid=False, ebar=True, 
-                axislabels=True, legend=True, show=True):
+                export_pdf="", grid=True, ebar=True, 
+                axislabels=True, legend=False, show=True):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2284,7 +2270,7 @@ class Obsdata(object):
         # Label individual baselines
         # ANDREW TODO WAAY too slow could this be faster??
         if tag_bl:
-            clist = SCOLORS #TODO allow for custom colors??
+            clist = SCOLORS
            
             # make a color coding dictionary
             cdict = {}
@@ -2425,8 +2411,8 @@ class Obsdata(object):
                 debias=True, ang_unit='deg', timetype=False,
                 axis=False, rangex=False, rangey=False, 
                 color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                export_pdf="", grid=False, ebar=True, 
-                axislabels=True, legend=True, show=True):
+                export_pdf="", grid=True, ebar=True, 
+                axislabels=True, legend=False, show=True):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2526,8 +2512,8 @@ class Obsdata(object):
                     vtype='vis', cphases=[], force_recompute=False, ang_unit='deg', timetype=False,  
                     axis=False, rangex=False, rangey=False, 
                     color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                    export_pdf="", grid=False, ebar=True, 
-                    axislabels=True, legend=True, show=True):
+                    export_pdf="", grid=True, ebar=True, 
+                    axislabels=True, legend=False, show=True):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2634,8 +2620,8 @@ class Obsdata(object):
                     debias=False, timetype=False,  
                     axis=False, rangex=False, rangey=False, 
                     color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                    export_pdf="", grid=False, ebar=True, 
-                    axislabels=True, legend=True, show=True):
+                    export_pdf="", grid=True, ebar=True, 
+                    axislabels=True, legend=False, show=True):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2776,7 +2762,6 @@ class Obsdata(object):
         """
 
         #Antenna diameter currently incorrect and the exact times are not correct in the datetime object
-        #Please contact Katie Bouman (klbouman@mit.edu) for any questions on this function
         ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
         return
 
@@ -2806,10 +2791,14 @@ def merge_obs(obs_List):
 
     #The important things to merge are the mjd, the data, and the list of telescopes
     data_merge = np.hstack([obs.data for obs in obs_List])
+    #TODO merge scan table??
+    scan_merge = []
+    for obs in obs_List:
+        if not (scan_merge is None): scan_merge.append(obs.scans)
+    scan_merge = np.hstack(scan_merge)
 
-    #TODO scan table??
     mergeobs = Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge,
-                       np.unique(np.concatenate([obs.tarr for obs in obs_List])),
+                       np.unique(np.concatenate([obs.tarr for obs in obs_List])), scantable=scan_merge,
                        source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal,
                        phasecal=obs_List[0].phasecal, opacitycal=obs_List[0].opacitycal, 
                        dcal=obs_List[0].dcal, frcal=obs_List[0].frcal,

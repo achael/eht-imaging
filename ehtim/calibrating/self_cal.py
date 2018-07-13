@@ -131,7 +131,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
     else: # run on a single core
 
         for i in range(len(scans)):
-            cal_prog_msg(i, len(scans),msgtype=msgtype,nscan_last=i-1)
+            prog_msg(i, len(scans),msgtype=msgtype,nscan_last=i-1)
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
                                  method=method, show_solution=show_solution, debias=debias,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
@@ -323,7 +323,7 @@ def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, 
     if n > 1:
         global counter
         counter.increment()
-        cal_prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
+        prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
     return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, 
                          pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable, debias=debias)
