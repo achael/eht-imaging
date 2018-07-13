@@ -244,10 +244,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = red1[sigmatype]
         sig4 = red2[sigmatype]
 
-        p1 = np.abs(blue1[vtype])
-        p2 = np.abs(blue2[vtype])
-        p3 = np.abs(red1[vtype])
-        p4 = np.abs(red2[vtype])
+        p1 = amp_debias(blue1[vtype], sig1,actually_debias=debias,force_nonzero=True)
+        p2 = amp_debias(blue2[vtype], sig2,actually_debias=debias,force_nonzero=True)
+        p3 = amp_debias(red1[vtype], sig3,actually_debias=debias,force_nonzero=True)
+        p4 = amp_debias(red2[vtype], sig4,actually_debias=debias,force_nonzero=True)
 
     elif vtype == "rrvis":
         sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
@@ -255,10 +255,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
         sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
 
-        p1 = np.abs(blue1['vis'] + blue1['vvis'])
-        p2 = np.abs(blue2['vis'] + blue2['vvis'])
-        p3 = np.abs(red1['vis'] + red1['vvis'])
-        p4 = np.abs(red2['vis'] + red2['vvis'])
+        p1 = amp_debias(blue1['vis'] + blue1['vvis'], sig1,actually_debias=debias,force_nonzero=True)
+        p2 = amp_debias(blue2['vis'] + blue2['vvis'], sig2,actually_debias=debias,force_nonzero=True)
+        p3 = amp_debias(red1['vis'] + red1['vvis'], sig3,actually_debias=debias,force_nonzero=True)
+        p4 = amp_debias(red2['vis'] + red2['vvis'], sig4,actually_debias=debias,force_nonzero=True)
 
     elif vtype == "llvis":
         sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
@@ -266,10 +266,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
         sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
 
-        p1 = np.abs(blue1['vis'] - blue1['vvis'])
-        p2 = np.abs(blue2['vis'] - blue2['vvis'])
-        p3 = np.abs(red1['vis'] - red1['vvis'])
-        p4 = np.abs(red2['vis'] - red2['vvis'])
+        p1 = amp_debias(blue1['vis'] - blue1['vvis'], sig1, actually_debias=debias, force_nonzero=True)
+        p2 = amp_debias(blue2['vis'] - blue2['vvis'], sig2, actually_debias=debias, force_nonzero=True)
+        p3 = amp_debias(red1['vis'] - red1['vvis'], sig3, actually_debias=debias, force_nonzero=True)
+        p4 = amp_debias(red2['vis'] - red2['vvis'], sig4, actually_debias=debias, force_nonzero=True)
 
     elif vtype == "lrvis":
         sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
@@ -277,10 +277,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
         sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
 
-        p1 = np.abs(blue1['qvis'] - 1j*blue1['uvis'])
-        p2 = np.abs(blue2['qvis'] - 1j*blue2['uvis'])
-        p3 = np.abs(red1['qvis'] - 1j*red1['uvis'])
-        p4 = np.abs(red2['qvis'] - 1j*red2['uvis'])
+        p1 = amp_debias(blue1['qvis'] - 1j*blue1['uvis'], sig1, actually_debias=debias, force_nonzero=True)
+        p2 = amp_debias(blue2['qvis'] - 1j*blue2['uvis'], sig2, actually_debias=debias, force_nonzero=True)
+        p3 = amp_debias(red1['qvis'] - 1j*red1['uvis'], sig3, actually_debias=debias, force_nonzero=True)
+        p4 = amp_debias(red2['qvis'] - 1j*red2['uvis'], sig4, actually_debias=debias, force_nonzero=True)
 
     elif vtype in ["pvis","rlvis"]:
         sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
@@ -288,18 +288,11 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
         sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
 
-        p1 = np.abs(blue1['qvis'] + 1j*blue1['uvis'])
-        p2 = np.abs(blue2['qvis'] + 1j*blue2['uvis'])
-        p3 = np.abs(red1['qvis'] + 1j*red1['uvis'])
-        p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
+        p1 = amp_debias(blue1['qvis'] + 1j*blue1['uvis'], sig1, actually_debias=debias, force_nonzero=True)
+        p2 = amp_debias(blue2['qvis'] + 1j*blue2['uvis'], sig2, actually_debias=debias, force_nonzero=True)
+        p3 = amp_debias(red1['qvis'] + 1j*red1['uvis'], sig3, actually_debias=debias, force_nonzero=True)
+        p4 = amp_debias(red2['qvis'] + 1j*red2['uvis'], sig4, actually_debias=debias, force_nonzero=True)
 
-    # debias
-    p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=True)
-    p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=True)
-    p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=True)
-    p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=True)
-
-    # get snrs
     snr1 = p1/sig1
     snr2 = p2/sig2
     snr3 = p3/sig3
@@ -322,6 +315,7 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
             camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
 
     return (camp, camperr)
+
 
 def amp_debias(amp, sigma, actually_debias=True, force_nonzero=False):
     """Return debiased visibility amplitudes
@@ -346,6 +340,135 @@ def amp_debias(amp, sigma, actually_debias=True, force_nonzero=False):
 #            lowsnr = deb2 < 0.0
 #            deb2[lowsnr] = np.abs(amp[lowsnr])**2
 #            return np.sqrt(deb2)
+
+##TODO: debiasing strategy?? 
+#def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True):
+#    """make a list of closure amplitudes and errors
+#       red1 and red2 are full datatables of denominator entries
+#       blue1 and blue2 are full datatables numerator entries
+#       vtype is the  visibility type
+#       we always debias the individual amplitudes
+#       debias controls if we debias the closure amplitude at the end
+#       exact debiasing in log space, it will turn off any debiasing in 'amp_debias',
+#       and apply debiasing only to closure quantities
+#    """
+
+#    if not (ctype in ['camp', 'logcamp']):
+#        raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
+
+#    if vtype in ["vis", "qvis", "uvis", "vvis"]:
+#        if vtype=='vis':  sigmatype='sigma'
+#        if vtype=='qvis': sigmatype='qsigma'
+#        if vtype=='uvis': sigmatype='usigma'
+#        if vtype=='vvis': sigmatype='vsigma'
+
+#        sig1 = blue1[sigmatype]
+#        sig2 = blue2[sigmatype]
+#        sig3 = red1[sigmatype]
+#        sig4 = red2[sigmatype]
+
+#        p1 = np.abs(blue1[vtype])
+#        p2 = np.abs(blue2[vtype])
+#        p3 = np.abs(red1[vtype])
+#        p4 = np.abs(red2[vtype])
+
+#    elif vtype == "rrvis":
+#        sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
+#        sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
+#        sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
+#        sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
+
+#        p1 = np.abs(blue1['vis'] + blue1['vvis'])
+#        p2 = np.abs(blue2['vis'] + blue2['vvis'])
+#        p3 = np.abs(red1['vis'] + red1['vvis'])
+#        p4 = np.abs(red2['vis'] + red2['vvis'])
+
+#    elif vtype == "llvis":
+#        sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
+#        sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
+#        sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
+#        sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
+
+#        p1 = np.abs(blue1['vis'] - blue1['vvis'])
+#        p2 = np.abs(blue2['vis'] - blue2['vvis'])
+#        p3 = np.abs(red1['vis'] - red1['vvis'])
+#        p4 = np.abs(red2['vis'] - red2['vvis'])
+
+#    elif vtype == "lrvis":
+#        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+#        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+#        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+#        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
+
+#        p1 = np.abs(blue1['qvis'] - 1j*blue1['uvis'])
+#        p2 = np.abs(blue2['qvis'] - 1j*blue2['uvis'])
+#        p3 = np.abs(red1['qvis'] - 1j*red1['uvis'])
+#        p4 = np.abs(red2['qvis'] - 1j*red2['uvis'])
+
+#    elif vtype in ["pvis","rlvis"]:
+#        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+#        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+#        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+#        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
+
+#        p1 = np.abs(blue1['qvis'] + 1j*blue1['uvis'])
+#        p2 = np.abs(blue2['qvis'] + 1j*blue2['uvis'])
+#        p3 = np.abs(red1['qvis'] + 1j*red1['uvis'])
+#        p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
+
+#    # debias
+#    p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=True)
+#    p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=True)
+#    p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=True)
+#    p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=True)
+
+#    # get snrs
+#    snr1 = p1/sig1
+#    snr2 = p2/sig2
+#    snr3 = p3/sig3
+#    snr4 = p4/sig4
+
+#    if ctype=='camp':
+#        camp = np.abs((p1*p2)/(p3*p4))
+#        camperr = camp * np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
+
+#        # Debias
+#        if debias:
+#            camp = camp_debias(camp, snr3, snr4)
+
+#    elif ctype=='logcamp':
+#        camp = np.log(np.abs(p1)) + np.log(np.abs(p2)) - np.log(np.abs(p3)) - np.log(np.abs(p4))
+#        camperr = np.sqrt(1./(snr1**2) + 1./(snr2**2) + 1./(snr3**2) + 1./(snr4**2))
+
+#        # Debias
+#        if debias:
+#            camp = logcamp_debias(camp, snr1, snr2, snr3, snr4)
+
+#    return (camp, camperr)
+
+#def amp_debias(amp, sigma, actually_debias=True, force_nonzero=False):
+#    """Return debiased visibility amplitudes
+#    """
+
+#    if not actually_debias:
+#        return np.abs(amp)
+#    else:
+#        deb2 = np.abs(amp)**2 - np.abs(sigma)**2
+
+#        # puts amplitude at 0 if snr < 1
+#        deb2 *= (np.abs(amp) > np.abs(sigma))
+#        if force_nonzero:
+#            # puts amplitude at 0 if snr < 1
+#            deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
+#        return np.sqrt(deb2)
+
+##        if type(deb2) == float or type(deb2)==np.float64:
+##            if deb2 < 0.0: return np.abs(amp)
+##            else: return np.sqrt(deb2)
+##        else:
+##            lowsnr = deb2 < 0.0
+##            deb2[lowsnr] = np.abs(amp[lowsnr])**2
+##            return np.sqrt(deb2)
 
 def camp_debias(camp, snr3, snr4):
     """Debias closure amplitudes
