@@ -244,10 +244,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         sig3 = red1[sigmatype]
         sig4 = red2[sigmatype]
 
-        p1 = blue1[vtype]
-        p2 = blue2[vtype]
-        p3 = red1[vtype]
-        p4 = red2[vtype]
+        p1 = np.abs(blue1[vtype])
+        p2 = np.abs(blue2[vtype])
+        p3 = np.abs(red1[vtype])
+        p4 = np.abs(red2[vtype])
 
     elif vtype == "rrvis":
         sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
@@ -293,16 +293,17 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
         p3 = np.abs(red1['qvis'] + 1j*red1['uvis'])
         p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
 
-    snr1 = p1/sig1
-    snr2 = p2/sig2
-    snr3 = p3/sig3
-    snr4 = p4/sig4
-
     # debias
     p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=True)
     p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=True)
     p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=True)
     p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=True)
+
+    # get snrs
+    snr1 = p1/sig1
+    snr2 = p2/sig2
+    snr3 = p3/sig3
+    snr4 = p4/sig4
 
     if ctype=='camp':
         camp = np.abs((p1*p2)/(p3*p4))

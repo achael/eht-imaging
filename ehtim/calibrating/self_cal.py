@@ -239,7 +239,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         if method=="phase":
             g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
-             g = np.abs(np.real(g))
+            g = np.abs(np.real(g))
             #g = np.abs(g)
 
         # append the default values to g for missing gains
@@ -309,8 +309,6 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         out = scan
 
     return out
-
-
 
 def init(x):
     global counter
