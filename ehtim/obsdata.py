@@ -755,7 +755,7 @@ class Obsdata(object):
                                np.mean(bldata['qvis']),
                                np.mean(bldata['uvis']),
                                np.mean(bldata['vvis']),
-                               np.sqrt(np.sum(bldata['sigma']**2)/len(bldata)**2),
+                               np.sqrt(np.sum(bldata['sigma']**2) /len(bldata)**2),
                                np.sqrt(np.sum(bldata['qsigma']**2)/len(bldata)**2),
                                np.sqrt(np.sum(bldata['usigma']**2)/len(bldata)**2),
                                np.sqrt(np.sum(bldata['vsigma']**2)/len(bldata)**2)

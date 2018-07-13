@@ -803,6 +803,17 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
         legendlabels_plot.insert(0,'Observation')
 
     #same number of images and observations
+    elif len(obslist)==1 and len(imlist)==1:
+        obslist_plot.append(obslist[0])
+
+        obstrue = imlist[0].observe_same(obslist[0], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
+        obstrue.data['sigma'] *= 0
+        obslist_plot.append(obstrue)
+
+        markers =  ['o','s']
+        clist_plot = ['k',clist[0]]
+        legendlabels_plot = [legendlabels[0]+'_obs', legendlabels[0]+'_im']
+
     else:
         markers = []
         legendlabels_plot = []

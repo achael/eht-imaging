@@ -847,8 +847,14 @@ class Imager(object):
                          uvec.reshape(self.prior_next.ydim, self.prior_next.xdim))
 
         # Print stats
+        outstr = ""
+        chi2_term_dict = self.make_chisq_dict(out)
+        for dname in sorted(self.dat_term_next.keys()):
+            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
+
         print("time: %f s" % (tstop - tstart))
         print("J: %f" % res.fun)
+        print(outstr)
         print(res.message.decode())
         print("==============================")
 
