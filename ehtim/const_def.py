@@ -174,7 +174,7 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
         progress = int(bar_width * complete_percent/float(100))
         barparams = (nscan, totscans, ("-"*progress) + (" " * (bar_width-progress)),complete_percent)
 
-        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]%i%%"
+        printstr = "\rScan %0"+ndigit+"i/%i : [%s]%i%%"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
     elif msgtype=='casa':
@@ -186,7 +186,7 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
         message = ''.join(message_list[:progress])
 
         barparams = (nscan, totscans, message)
-        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : %s"
+        printstr = "\rScan %0"+ndigit+"i/%i : %s"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
     elif msgtype=='itcrowd':
@@ -201,7 +201,7 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
 
         barparams = (nscan, totscans, message)
 
-        printstr= "\rCalibrating Scan %0"+ndigit+"i/%i : [%s]"
+        printstr= "\rScan %0"+ndigit+"i/%i : [%s]"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
     elif msgtype=='bh':
@@ -225,12 +225,14 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
                 message_line = ''.join(message_all[i])
                 message_line = '%03i'%int(complete_percent) + message_line
                 print(message_line)
+
     elif msgtype=='dots':
         sys.stdout.write('.')
         sys.stdout.flush()
+
     else:# msgtype=='default':
         barparams = (nscan, totscans, complete_percent)
-        printstr = "\rCalibrating Scan %0"+ndigit+"i/%i : %i%% done . . ."
+        printstr = "\rScan %0"+ndigit+"i/%i : %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
 
