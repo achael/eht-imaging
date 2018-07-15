@@ -1,4 +1,4 @@
-# closure.py
+# imager.py
 # a general interferometric imager class
 #
 #    Copyright (C) 2018 Andrew Chael
@@ -114,6 +114,7 @@ class Imager(object):
         self.norm_init=kwargs.get('norm_init',True)
         self.norm_reg=kwargs.get('norm_reg',False)
         self.beam_size=self.obs_next.res()
+        self.regparams = {k:kwargs.get(k, 1.0) for k in ('major', 'minor', 'PA')}
 
         # FFT parameters
         self._ttype = kwargs.get('ttype','fast')
@@ -508,7 +509,8 @@ class Imager(object):
                               self.flux_next, self.prior_next.xdim,
                               self.prior_next.ydim, self.prior_next.psize,
                               regname,
-                              norm_reg=self.norm_reg, beam_size=self.beam_size)
+                              norm_reg=self.norm_reg, beam_size=self.beam_size,
+                              **self.regparams)
             reg_dict[regname] = reg
 
         return reg_dict
@@ -523,7 +525,8 @@ class Imager(object):
                                   self.flux_next, self.prior_next.xdim,
                                   self.prior_next.ydim, self.prior_next.psize,
                                   regname,
-                                  norm_reg=self.norm_reg, beam_size=self.beam_size)
+                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                  **self.regparams)
             reggrad_dict[regname] = reg
 
         return reggrad_dict

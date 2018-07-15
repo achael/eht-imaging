@@ -106,6 +106,11 @@ def save_im_fits(im, fname, mjd=False, time=False):
     header['OBSDEC'] = im.dec
     header['FREQ'] = im.rf
 
+    #TODO these are the default values for centered images
+    #TODO support for arbitrary CRPIX? 
+    header['CDELT1'] = im.xdim/2. + .5
+    header['CDELT2'] = im.ydim/2. + .5
+
     if not mjd: mjd = float(im.mjd)
     if not time: time = im.time
     mjd += (time/24.)
