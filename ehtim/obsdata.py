@@ -689,7 +689,8 @@ class Obsdata(object):
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
-        if (scan_avg==True)&(self.scans==None):
+        if (scan_avg==True)&(getattr(self.scans, "shape", None) is None):
+            #(self.scans==None):
             print('No scan data, ignoring scan_avg!')
             scan_avg=False
         vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
@@ -1079,6 +1080,22 @@ class Obsdata(object):
         beginning and end time of the scan)
         '''
         scanlist = np.loadtxt(txtfile)
+        self.scans = scanlist
+
+    def add_scans_from_vex(self,vexfile):
+        '''Add scaninfo based on vextfile
+
+        Args:
+        vexfile (str): path to vextfile
+        '''
+        vex0 = ehtim.vex.Vex(vexfile)
+        t_min = [vex0.sched[x]['start_hr'] for x in range(len(vex0.sched))]
+        duration=[]
+        for x in range(len(vex0.sched)):
+            duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] for y in range(len(vex0.sched[x]['scan']))])
+            duration.append(duration_foo)
+        t_max = [tmin + dur/3600. for (tmin,dur) in zip(t_min,duration)] 
+        scanlist = np.array([[tmin,tmax] for (tmin,tmax) in zip(t_min,t_max)])
         self.scans = scanlist
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
