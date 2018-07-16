@@ -680,7 +680,24 @@ class Obsdata(object):
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                          timetype=self.timetype, scantable=self.scans)
 
-    def avg_coherent(self, inttime, msgtype='bar'):
+    
+    def avg_coherent(self, inttime=0, scan_avg=False, msgtype='bar'):
+        """Coherently average data along u,v tracks in chunks of length inttime (sec)
+        using pandas library
+           Args:
+                inttime (float): coherent integration time in seconds
+           Returns:
+                (Obsdata): Obsdata object containing averaged data
+        """
+        if (scan_avg==True)&(self.scans==None):
+            print('No scan data, ignoring scan_avg!')
+            scan_avg=False
+        vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, vis_avg, self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                       timetype=self.timetype, scantable=self.scans)
+    
+    def avg_coherent_old(self, inttime, msgtype='bar'):
 
         """Coherently average data along u,v tracks in chunks of length inttime (sec).
 
@@ -1053,6 +1070,16 @@ class Obsdata(object):
                      count=count, debias=debias,  
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
+
+    def add_scans_from_txt(self,txtfile):
+        '''Add scaninfo based on textfile
+
+        Args:
+        txtfile (str): path to textfile with scan times (two columns,
+        beginning and end time of the scan)
+        '''
+        scanlist = np.loadtxt(txtfile)
+        self.scans = scanlist
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
 
