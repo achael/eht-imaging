@@ -426,7 +426,7 @@ def get_bins_labels(intervals,dt=0.00001):
         return sorted([tuple(x) for x in fooarr[indic_not_overlap]]+[merge_overlapping_intervals(list(fooarr[indic_overlap]))])
     
     intervals = sorted(list(set(zip(intervals[:,0],intervals[:,1]))))
-    #intervals = [fix_midnight_overlap(x) for x in intervals]
+    intervals = [fix_midnight_overlap(x) for x in intervals]
     cou=0
     while cou < len(intervals): 
         intervals = replace_overlapping_intervals(intervals,cou)
