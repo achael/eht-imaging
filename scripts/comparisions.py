@@ -116,7 +116,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
     plt.rcParams['axes.linewidth'] = 2 #set the value globally
     plt.rcParams["font.weight"] = "bold"
     fig, ax = plt.subplots()
-
+    cycol = cycle('bgrcmk')
 
     for c, column in enumerate(clique_fraclevels):
         colorc = cycol.next()
