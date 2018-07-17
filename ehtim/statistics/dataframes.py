@@ -122,7 +122,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         else:
             #drop values that couldn't be matched to any scan
             vis_avg.drop(list(vis_avg[vis_avg.scan<0].index.values),inplace=True)
-            pass
+            
         if return_type=='rec':
             return df_to_rec(vis_avg,'vis')
         elif return_type=='df':
