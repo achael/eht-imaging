@@ -174,6 +174,10 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
         item.patch.set_visible(False)
     fig.patch.set_visible(False)
     ax.axis('off')
+
+    
+    if show == True:
+        plt.show()
            
 
            
