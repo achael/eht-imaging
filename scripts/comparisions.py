@@ -110,7 +110,11 @@ def image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=0.95):
            
 
 def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True):
-
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams.update({'font.size': 16})
+    plt.rcParams['axes.linewidth'] = 2 #set the value globally
+    plt.rcParams["font.weight"] = "bold"
     fig, ax = plt.subplots()
 
 
