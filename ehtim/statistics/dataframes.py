@@ -85,7 +85,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
         else:
             bins, labs = get_bins_labels(obs.scans)
-            vis['scan'] = list(pd.cut(vis.time/24., bins,labels=labs))
+            vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
         #column just for counting the elements
         vis['number'] = 1
@@ -120,7 +120,9 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             vis_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), vis_avg['round_time']))
             vis_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., vis_avg['datetime']))
         else:
+            #drop values that couldn't be matched to any scan
             vis_avg.drop(list(vis_avg[vis_avg.scan<0].index.values),inplace=True)
+            pass
         if return_type=='rec':
             return df_to_rec(vis_avg,'vis')
         elif return_type=='df':
@@ -424,7 +426,7 @@ def get_bins_labels(intervals,dt=0.00001):
         return sorted([tuple(x) for x in fooarr[indic_not_overlap]]+[merge_overlapping_intervals(list(fooarr[indic_overlap]))])
     
     intervals = sorted(list(set(zip(intervals[:,0],intervals[:,1]))))
-    intervals = [fix_midnight_overlap(x) for x in intervals]
+    #intervals = [fix_midnight_overlap(x) for x in intervals]
     cou=0
     while cou < len(intervals): 
         intervals = replace_overlapping_intervals(intervals,cou)
