@@ -112,14 +112,14 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def plot_gains(self, sites, gain_type='amp', pol='R', 
+    def plot_gains(self, sites, gain_type='amp', pol='R',
                    ang_unit='deg',timetype=False, yscale='log',
                    clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
                    show=True, grid=False, labels=True, axis=False, export_pdf=""):
 
         """Plot gains on multiple sites vs time.
            Args:
-               sites (list): a list of site names for which to plot gains. Empty list is all sites. 
+               sites (list): a list of site names for which to plot gains. Empty list is all sites.
                gain_type (str): 'amp' or 'phase'
                pol str(str): 'R' or 'L'
                ang_unit (str): phase unit 'deg' or 'rad'
@@ -129,7 +129,7 @@ class Caltable(object):
 
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (gain) limits
-            
+
                grid (bool): Plot gridlines if True
                labels (bool): Show axis labels if True
                show (bool): Display the plot if true
@@ -137,7 +137,7 @@ class Caltable(object):
                markersize (int): size of plot markers
                export_pdf (str): path to pdf file to save figure
 
-           Returns:  
+           Returns:
                (matplotlib.axes.Axes): Axes object with the plot
         """
 
@@ -248,7 +248,7 @@ class Caltable(object):
         for scope in self.data.keys():
             caldata = self.data[scope].copy()
 
-            # Gather data into "scans" 
+            # Gather data into "scans"
             # TODO we could use a scan table for this as well!
             gathered_data=[]
             scandata = [caldata[0]]
@@ -276,7 +276,7 @@ class Caltable(object):
                     medL = np.median(gg['lscale'])
                     preR = medR
                     postR = medR
-                    preL = medL 
+                    preL = medL
                     postL = medL
                 elif padtype=='endval': # pad with endpoints
                     preR = gg['rscale'][0]
@@ -296,13 +296,13 @@ class Caltable(object):
                 gg = np.append(gg,valspost)
 
                 # output data table
-                if i==0: 
+                if i==0:
                     caldata_out = gg
                 else:
                     caldata_out = np.append(caldata_out, gg)
 
             outdict[scope] = caldata_out
-            return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr, 
+            return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
                             source=self.source, mjd=self.mjd, timetype=self.timetype)
 
     def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol=False):
@@ -311,7 +311,7 @@ class Caltable(object):
            Args:
                obs (Obsdata): The observation  with data to be calibrated
                interp (str): Interpolation method ('linear','nearest','cubic')
-               extrapolate (bool): If True, points outside interpolation range will be extrapolated. 
+               extrapolate (bool): If True, points outside interpolation range will be extrapolated.
                force_singlepol (str): If 'L' or 'R', will set opposite polarization gains equal to chosen polarization
 
            Returns:
@@ -410,7 +410,7 @@ class Caltable(object):
            Args:
                caltablelist (list): The list of caltables to be merged
                interp (str): Interpolation method ('linear','nearest','cubic')
-               extrapolate (bool): If True, points outside interpolation range will be extrapolated. 
+               extrapolate (bool): If True, points outside interpolation range will be extrapolated.
 
            Returns:
                (Caltable): the merged Caltable object
@@ -491,20 +491,20 @@ class Caltable(object):
            Args:
                obs (Obsdata): The observation object associated with the Caltable
                datadir (str): directory to save caltable in
-               sqrt_gains (bool): If True, we square gains before saving. 
+               sqrt_gains (bool): If True, we square gains before saving.
 
            Returns:
         """
 
         return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
-       
+
 
 def load_caltable(obs, datadir, sqrt_gains=False ):
     """Load apriori Caltable object from text files in the given directory
        Args:
            obs (Obsdata): The observation object associated with the Caltable
            datadir (str): directory to save caltable in
-           sqrt_gains (bool): If True, we take the sqrt of table gains before loading. 
+           sqrt_gains (bool): If True, we take the sqrt of table gains before loading.
 
        Returns:
            (Caltable): a caltable object
@@ -559,7 +559,7 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
        Args:
            obs (Obsdata): The observation object associated with the Caltable
            datadir (str): directory to save caltable in
-           sqrt_gains (bool): If True, we square gains before saving. 
+           sqrt_gains (bool): If True, we square gains before saving.
 
        Returns:
     """
