@@ -119,7 +119,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
         for r, row in enumerate(column):
             lenx = len(clique_fraclevels)
             leny = 0
-            for li in row:
+            for li in clique_fraclevels:
                 if len(li) > leny:
                     leny = len(li)
             sample_image = im_clique_fraclevels[c][r]
