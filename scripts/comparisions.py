@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 from itertools import cycle
+from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
+                                  AnnotationBbox)
 
 import sys
 import os
@@ -176,7 +178,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
     fig.patch.set_visible(False)
     ax.axis('off')
 
-    
+
     if show == True:
         plt.show()
            
