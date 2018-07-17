@@ -404,7 +404,7 @@ class Caltable(object):
 
         return calobs
 
-    def merge(self, caltablelist, interp=None, extrapolate=1):
+    def merge(self, caltablelist, interp='linear', extrapolate=1):
         """Merge the calibration table with a list of other calibration tables
 
            Args:
