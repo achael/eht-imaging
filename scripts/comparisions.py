@@ -110,6 +110,7 @@ def image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=0.95):
            
 
 def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True):
+    # matplotlib aesthetics
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.rcParams.update({'font.size': 16})
@@ -121,6 +122,8 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
     for c, column in enumerate(clique_fraclevels):
         colorc = cycol.next()
         for r, row in enumerate(column):
+
+            # adding the images
             lenx = len(clique_fraclevels)
             leny = 0
             for li in clique_fraclevels:
@@ -137,6 +140,8 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
                                 arrowprops=None)
 
             ax.add_artist(ab)
+
+            # adding the arrows
             if c+1 != len(clique_fraclevels):
                 for a, ro in enumerate(clique_fraclevels[c+1]):
                     if set(row).issubset(ro):
@@ -155,6 +160,8 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
                             color=colorc
                         )
             row.sort()
+
+            # adding the text
             txtstring = str(row)
             if len(row) == len(clique_fraclevels[-1][0]):
                 txtstring = '[all]'
