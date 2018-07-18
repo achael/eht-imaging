@@ -301,8 +301,9 @@ class Caltable(object):
                     caldata_out = np.append(caldata_out, gg)
 
             outdict[scope] = caldata_out
-            return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
-                            source=self.source, mjd=self.mjd, timetype=self.timetype)
+
+        return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
+                        source=self.source, mjd=self.mjd, timetype=self.timetype)
 
     def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol=False):
         """Apply the calibration table to an observation.

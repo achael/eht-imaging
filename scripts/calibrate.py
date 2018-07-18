@@ -48,6 +48,7 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
         # network calibrate the amplitudes
         datadir = '{}-{}-amp'.format(stepname, i)
         caltab = eh.network_cal(pick(obs,sites), amp0, method='amp', **common)
+        caltab = caltab.pad_scans()
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
         caltab.save_txt(obs, datadir=datadir)
         obs_cal_avg.save_uvfits(datadir+'/'+args.output)
@@ -62,6 +63,7 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
         # network calibrate the phases
         datadir = '{}-{}-phase'.format(stepname, i)
         caltab = eh.network_cal(pick(obs,sites), amp0, method='phase', **common)
+        caltab = caltab.pad_scans()
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
         caltab.save_txt(obs, datadir=datadir)
         obs_cal_avg.save_uvfits(datadir+'/'+args.output)
