@@ -301,7 +301,12 @@ class Caltable(object):
                 else:
                     caldata_out = np.append(caldata_out, gg)
 
-            outdict[scope] = caldata_out
+            try:
+                caldata_out # TODO: refractor to avoid using exception
+            except NameError:
+                print("No gathered_data")
+            else:
+                outdict[scope] = caldata_out
 
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
                         source=self.source, mjd=self.mjd, timetype=self.timetype)
