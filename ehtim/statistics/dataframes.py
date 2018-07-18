@@ -49,7 +49,7 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
     df['fmjd'] = df['time']/24.
     df['mjd'] = obs.mjd + df['fmjd']
     telescopes = list(zip(df['t1'],df['t2']))
-    telescopes = [(x[0].decode('unicode_escape'),x[1].decode('unicode_escape')) for x in telescopes]
+    telescopes = [(x[0],x[1]) for x in telescopes]
     df['baseline'] = [x[0]+'-'+x[1] for x in telescopes]
     df['amp'] = list(map(np.abs,df['vis']))
     df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df['vis']))
@@ -62,6 +62,71 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
     df['source'] = sour
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
+
+def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3)):
+    """coherently averages visibilities
+    Args:
+        obs: ObsData object
+        dt (float): integration time in seconds
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+        err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+        num_samples: 'bootstrap' resample set size for measured error
+        scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
+    Returns:
+        vis_avg: coherently averaged visibilities
+    """
+    if (dt<=0)&(scan_avg==False):
+        return obs.data
+    else:
+        vis = make_df(obs)
+        if scan_avg==False:
+            t0 = datetime.datetime(1960,1,1)
+            vis['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),vis.datetime))  
+            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
+        else:
+            bins, labs = get_bins_labels(obs.scans)
+            vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
+            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
+        #column just for counting the elements
+        vis['number'] = 1
+        aggregated = {'datetime': np.min, 'time': np.min,
+        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum,
+        'qvis': lambda x: 0*1j, 'uvis': lambda x: 0*1j, 'vvis': lambda x: 0*1j,'qsigma':lambda x: 0,'usigma': lambda x: 0, 'vsigma': lambda x: 0}
+
+        #AVERAGING-------------------------------    
+        if err_type=='measured':
+            vis['dummy'] = vis['vis']
+            aggregated['vis'] = np.mean
+            aggregated['dummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+        elif err_type=='predicted':
+            aggregated['vis'] = np.mean
+            aggregated['sigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+        else:
+            print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
+            aggregated['vis'] = np.mean
+            aggregated['sigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+
+        #ACTUAL AVERAGING
+        vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()
+        
+        if err_type=='measured':
+            vis_avg['sigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['dummy'])]
+
+        vis_avg['amp'] = list(map(np.abs,vis_avg['vis']))
+        vis_avg['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),vis_avg['vis']))
+        vis_avg['snr'] = vis_avg['amp']/vis_avg['sigma']
+        if scan_avg==False:
+            #round datetime and time to the begining of the bucket
+            vis_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), vis_avg['round_time']))
+            vis_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., vis_avg['datetime']))
+        else:
+            #drop values that couldn't be matched to any scan
+            vis_avg.drop(list(vis_avg[vis_avg.scan<0].index.values),inplace=True)
+            
+        if return_type=='rec':
+            return df_to_rec(vis_avg,'vis')
+        elif return_type=='df':
+            return vis_avg
 
 def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
 
@@ -80,7 +145,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
     df['mjd'] = obs.mjd + df['fmjd']
-    df['triangle'] = list(map(lambda x: x[0].decode('unicode_escape')+'-'+x[1].decode('unicode_escape')+'-'+x[2].decode('unicode_escape'),zip(df['t1'],df['t2'],df['t3'])))
+    df['triangle'] = list(map(lambda x: x[0]+'-'+x[1]+'-'+x[2],zip(df['t1'],df['t2'],df['t3'])))
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
     df['jd'] = Time(df['mjd'], format='mjd').jd
@@ -106,7 +171,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
     df['mjd'] = obs.mjd + df['fmjd']
-    df['quadrangle'] = list(map(lambda x: x[0].decode('unicode_escape')+'-'+x[1].decode('unicode_escape')+'-'+x[2].decode('unicode_escape')+'-'+x[3].decode('unicode_escape'),zip(df['t1'],df['t2'],df['t3'],df['t4'])))
+    df['quadrangle'] = list(map(lambda x: x[0]+'-'+x[1]+'-'+x[2]+'-'+x[3],zip(df['t1'],df['t2'],df['t3'],df['t4'])))
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
     df['jd'] = Time(df['mjd'], format='mjd').jd
@@ -133,7 +198,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min'
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
     df['mjd'] = obs.mjd + df['fmjd']
-    df['triangle'] = list(map(lambda x: x[0].decode('unicode_escape')+'-'+x[1].decode('unicode_escape')+'-'+x[2].decode('unicode_escape'),zip(df['t1'],df['t2'],df['t3'])))
+    df['triangle'] = list(map(lambda x: x[0]+'-'+x[1]+'-'+x[2],zip(df['t1'],df['t2'],df['t3'])))
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
     df['jd'] = Time(df['mjd'], format='mjd').jd
@@ -331,3 +396,47 @@ def round_time(t,round_s=0.1):
     microseconds = int(1e6*(foo_s - days*3600*24 - seconds))
     round_t = t0+datetime.timedelta(days,seconds,microseconds)
     return round_t
+
+
+
+def get_bins_labels(intervals,dt=0.00001):
+    '''gets bins and labels necessary to perform averaging by scan
+    Args:
+        intervals:
+        dt (float): time margin to add to the scan limits
+    ''' 
+
+    def fix_midnight_overlap(x):
+        if x[1] < x[0]:
+            x[1]+= 24.
+        return x
+
+    def is_overlapping(interval0,interval1):
+        if ((interval1[0]<=interval0[0])&(interval1[1]>=interval0[0]))|((interval1[0]<=interval0[1])&(interval1[1]>=interval0[1])):
+            return True
+        else: return False
+    
+    def merge_overlapping_intervals(intervals):
+        return (np.min([x[0] for x in intervals]),np.max([x[1] for x in intervals]))
+
+    def replace_overlapping_intervals(intervals,element_ind):
+        indic_not_overlap=[not is_overlapping(x,intervals[element_ind]) for x in intervals]
+        indic_overlap=[is_overlapping(x,intervals[element_ind]) for x in intervals]
+        fooarr=np.asarray(intervals)
+        return sorted([tuple(x) for x in fooarr[indic_not_overlap]]+[merge_overlapping_intervals(list(fooarr[indic_overlap]))])
+    
+    intervals = sorted(list(set(zip(intervals[:,0],intervals[:,1]))))
+    intervals = [fix_midnight_overlap(x) for x in intervals]
+    cou=0
+    while cou < len(intervals): 
+        intervals = replace_overlapping_intervals(intervals,cou)
+        cou+=1
+        
+    binsT=[None]*(2*np.shape(intervals)[0])
+    binsT[::2] = [x[0]-dt for x in intervals]
+    binsT[1::2] = [x[1]+dt for x in intervals]
+    labels=[None]*(2*np.shape(intervals)[0]-1)
+    labels[::2] = [cou for cou in range(1,len(intervals)+1)]
+    labels[1::2] = [-cou for cou in range(1,len(intervals))]
+    
+    return binsT, labels

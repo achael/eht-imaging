@@ -680,7 +680,25 @@ class Obsdata(object):
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                          timetype=self.timetype, scantable=self.scans)
 
-    def avg_coherent(self, inttime, msgtype='bar'):
+    
+    def avg_coherent(self, inttime=0, scan_avg=False, msgtype='bar'):
+        """Coherently average data along u,v tracks in chunks of length inttime (sec)
+        using pandas library
+           Args:
+                inttime (float): coherent integration time in seconds
+           Returns:
+                (Obsdata): Obsdata object containing averaged data
+        """
+        if (scan_avg==True)&(getattr(self.scans, "shape", None) is None):
+            #(self.scans==None):
+            print('No scan data, ignoring scan_avg!')
+            scan_avg=False
+        vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, vis_avg, self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                       timetype=self.timetype, scantable=self.scans)
+    
+    def avg_coherent_old(self, inttime, msgtype='bar'):
 
         """Coherently average data along u,v tracks in chunks of length inttime (sec).
 
@@ -1054,6 +1072,32 @@ class Obsdata(object):
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
 
+    def add_scans_from_txt(self,txtfile):
+        '''Add scaninfo based on textfile
+
+        Args:
+        txtfile (str): path to textfile with scan times (two columns,
+        beginning and end time of the scan)
+        '''
+        scanlist = np.loadtxt(txtfile)
+        self.scans = scanlist
+
+    def add_scans_from_vex(self,vexfile):
+        '''Add scaninfo based on vextfile
+
+        Args:
+        vexfile (str): path to vextfile
+        '''
+        vex0 = ehtim.vex.Vex(vexfile)
+        t_min = [vex0.sched[x]['start_hr'] for x in range(len(vex0.sched))]
+        duration=[]
+        for x in range(len(vex0.sched)):
+            duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] for y in range(len(vex0.sched[x]['scan']))])
+            duration.append(duration_foo)
+        t_max = [tmin + dur/3600. for (tmin,dur) in zip(t_min,duration)] 
+        scanlist = np.array([[tmin,tmax] for (tmin,tmax) in zip(t_min,t_max)])
+        self.scans = scanlist
+
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
 
         """Make an image of the observation dirty beam.
@@ -1297,6 +1341,41 @@ class Obsdata(object):
                     print(tri, np.std(s_list))
                
         return np.median(std_list)
+
+    def flag_elev(self, elev_min = 0.0, elev_max = 90, output='kept'):
+        """Flag visibilities for which either station is outside a stated elevation range
+
+           Args:
+               elev_min (float): Minimum elevation (deg)
+               elev_max (float): Maximum elevation (deg)
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
+
+           Returns:
+               (Obsdata): a observation object with flagged data points removed
+        """
+
+        el_pairs = self.unpack(['el1','el2'])
+        mask = (np.min((el_pairs['el1'],el_pairs['el2']),axis=0) > elev_min) * (np.max((el_pairs['el1'],el_pairs['el2']),axis=0) < elev_max)
+
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('Flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
+
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
+
 
     def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
 
