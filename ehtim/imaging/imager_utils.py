@@ -2146,7 +2146,7 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
-    if Obsdata.amp is None:
+    if (Obsdata.amp is None) or (len(Obsdata.amp)==0):
         data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     else:
         print("Using pre-computed amplitude table in amplitude chi^2!")
@@ -2180,7 +2180,7 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
-    if Obsdata.bispec is None:
+    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
         biarr = Obsdata.bispectra(mode="all", count="min")
     else:
         print("Using pre-computed bispectrum table in cphase chi^2!")
@@ -2223,7 +2223,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
-    if Obsdata.cphase is None:
+    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
         clphasearr = Obsdata.c_phases(mode="all", count="min")
     else:
         print("Using pre-computed cphase table in cphase chi^2!")
@@ -2263,7 +2263,7 @@ def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
-    if Obsdata.camp is None:
+    if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
         clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
@@ -2303,7 +2303,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
-    if Obsdata.logcamp is None:
+    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
         clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
     else:
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
@@ -2387,7 +2387,7 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    if Obsdata.amp is None:
+    if (Obsdata.amp is None) or (len(Obsdata.amp)==0):
         data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     else:
         print("Using pre-computed amplitude table in amplitude chi^2!")
@@ -2431,7 +2431,7 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    if Obsdata.bispec is None:
+    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
         biarr = Obsdata.bispectra(mode="all", count="min")
     else:
         print("Using pre-computed bispectrum table in cphase chi^2!")
@@ -2482,7 +2482,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    if Obsdata.cphase is None:
+    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
         clphasearr = Obsdata.c_phases(mode="all", count="min")
     else:
         print("Using pre-computed cphase table in cphase chi^2!")
@@ -2533,7 +2533,7 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data & mask low snr points
-    if Obsdata.camp is None:
+    if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
         clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
@@ -2582,7 +2582,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data & mask low snr points
-    if Obsdata.logcamp is None:
+    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
         clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
@@ -2665,7 +2665,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    if Obsdata.amp is None:
+    if (Obsdata.amp is None) or (len(Obsdata.amp)==0):
         data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     else:
         print("Using pre-computed amplitude table in amplitude chi^2!")
@@ -2704,7 +2704,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    if Obsdata.bispec is None:
+    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
         biarr = Obsdata.bispectra(mode="all", count="min")
     else:
         print("Using pre-computed bispectrum table in cphase chi^2!")
@@ -2751,7 +2751,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    if Obsdata.cphase is None:
+    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
         clphasearr = Obsdata.c_phases(mode="all", count="min")
     else:
         print("Using pre-computed cphase table in cphase chi^2!")
@@ -2799,7 +2799,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data & mask low snr points
-    if Obsdata.camp is None:
+    if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
         clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
@@ -2846,7 +2846,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data & mask low snr points
-    if Obsdata.logcamp is None:
+    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
         clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
     else:
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")

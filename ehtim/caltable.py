@@ -260,7 +260,6 @@ class Caltable(object):
                 else:
                     scandata.append(caldata[i])
 
-
             # Compute padding values and pad scans
             for i in range(len(gathered_data)):
                 gg = gathered_data[i]

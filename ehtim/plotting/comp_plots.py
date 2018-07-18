@@ -220,7 +220,10 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
 
     if len(cphases) != len(obslist):
         raise Exception("cphases list must be same length as obslist!")
+
+    cphases_back = []
     for i in range(len(obslist)):
+        cphases_back.append(obslist[i].cphase)
         obslist[i].cphase=cphases[i]
 
     (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
@@ -236,6 +239,11 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
                                show=False, legend=False,
                                label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
                                marker=markers[i], markersize=markersize)
+ 
+   # return to original cphase attribute
+    for i in range(len(obslist)):
+        obslist[i].cphase=cphase_back[i]
+
     if legend:
         plt.legend()
     if grid:
@@ -302,11 +310,16 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
 
     if len(camps) != len(obslist):
         raise Exception("camps list must be same length as obslist!")
+
+    camps_back = []
     for i in range(len(obslist)):
         if ctype=='camp':
+            camps_back.append(obslist[i].camp)
             obslist[i].camp=camps[i]
         elif ctype=='logcamp':
+            camps_back.append(obslist[i].logcamp)
             obslist[i].logcamp=camps[i]
+
 
     (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
                                                                              legendlabels=legendlabels, sgrscat=sgrscat, ttype=ttype)
@@ -321,6 +334,13 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
                                show=False, legend=False,
                                label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
                                marker=markers[i], markersize=markersize)
+
+    for i in range(len(obslist)):
+        if ctype=='camp':
+            obslist[i].camp=camps_back[i]
+        elif ctype=='logcamp':
+            obslist[i].logcamp=camps_back[i]
+
     if legend:
         plt.legend()
     if grid:
