@@ -1022,6 +1022,9 @@ class Image(object):
         """
 
         image = self
+        if frac <= 0.0:
+            return image
+        
         im = (image.imvec).reshape(image.ydim, image.xdim)
         if len(image.qvec):
             qim = (image.qvec).reshape(image.ydim, image.xdim)
