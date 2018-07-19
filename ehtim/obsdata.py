@@ -1342,6 +1342,41 @@ class Obsdata(object):
                
         return np.median(std_list)
 
+    def flag_elev(self, elev_min = 0.0, elev_max = 90, output='kept'):
+        """Flag visibilities for which either station is outside a stated elevation range
+
+           Args:
+               elev_min (float): Minimum elevation (deg)
+               elev_max (float): Maximum elevation (deg)
+               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
+
+           Returns:
+               (Obsdata): a observation object with flagged data points removed
+        """
+
+        el_pairs = self.unpack(['el1','el2'])
+        mask = (np.min((el_pairs['el1'],el_pairs['el2']),axis=0) > elev_min) * (np.max((el_pairs['el1'],el_pairs['el2']),axis=0) < elev_max)
+
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('Flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
+
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
+
+
     def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
 
         """Flag data points outside a given uv range
