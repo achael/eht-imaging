@@ -667,17 +667,17 @@ def plot_camp_obs_im_compare(obslist,  imlist, site1, site2, site3, site4, **kwa
 ##################################################################################################
 # Plotters: Compare Observations to Image
 ##################################################################################################
-def plotall_obs_im_cphases(obs, image, 
+def plotall_obs_im_cphases(obs, imlist, 
                            vtype='vis', ang_unit='deg', timetype='UTC',
                            ttype='nfft', sgrscat=False,
                            rangex=False, rangey=[-180,180], 
-                           show=True, ebar=True,axislabels=False,
+                           show=True, ebar=True,axislabels=False,print_chisqs=True,
                            display_mode='all'):
-    """Plot all observation closure phases on  top of image ground truth values.
+    """Plot all observation closure phases on  top of image ground truth values. Works with ONE obs and MULTIPLE images. 
 
        Args:
            obs (Obsdata): observation to plot
-           image (Image): ground truth image to compare to
+           imlist (list): list of ground truth images to compare to
 
            vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
            ang_unit (str): phase unit 'deg' or 'rad'
@@ -691,6 +691,7 @@ def plotall_obs_im_cphases(obs, image,
            show (bool): Display the plot if True
            ebar (bool): Plot error bars if True
            axislabels (bool): Show axis labels if True
+           print_chisqs (bool): print individual chisqs if True
 
            display_mode (str): 'all' or 'individual' to plot a giant single plot or multiple small Jones
 
@@ -699,6 +700,9 @@ def plotall_obs_im_cphases(obs, image,
 
     """
 
+    try: len(imlist)
+    except TypeError: imlist = [imlist]
+
     # get closure triangle combinations
     sites = []
     for i in range(0, len(obs.tarr)):
@@ -706,9 +710,14 @@ def plotall_obs_im_cphases(obs, image,
     uniqueclosure_tri = list(it.combinations(sites,3))
 
     # generate data
-    obs_model = image.observe_same(obs, sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
     cphases_obs = obs.c_phases(mode='all', count='max', vtype=vtype)
-    cphases_model = obs_model.c_phases(mode='all', count='max', vtype=vtype)
+    obs_all = [obs]
+    cphases_all = [cphases_obs]
+    for image in imlist:
+        obs_model = image.observe_same(obs, sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
+        cphases_model = obs_model.c_phases(mode='all', count='max', vtype=vtype)
+        obs_all.append(obs_model)
+        cphases_all.append(cphases_model)
 
     # display  as individual plots or as a huge sheet
     if display_mode=='individual':
@@ -721,7 +730,7 @@ def plotall_obs_im_cphases(obs, image,
         fig = plt.figure(figsize=(nrows*20, 40))
 
     # plot closure phases
-    print()
+    print("\n")
 
     nplot = 0
     for c in range(0, len(uniqueclosure_tri)):
@@ -729,12 +738,16 @@ def plotall_obs_im_cphases(obs, image,
                                      vtype=vtype, ang_unit='deg', cphases=cphases_obs)
 
         if len(cphases_obs_tri)>0:
-            cphases_model_tri = obs_model.cphase_tri(uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
-                                         vtype=vtype, ang_unit='deg', cphases=cphases_model)
-            chisq_tri= np.sum((1.0 - np.cos(cphases_obs_tri['cphase']*DEGREE-cphases_model_tri['cphase']*DEGREE))/
-                              ((cphases_obs_tri['sigmacp']*DEGREE)**2))
-            chisq_tri *= (2.0/len(cphases_obs_tri))
-            print ("%s %s %s : cphase_chisq: %0.2f" % (uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],chisq_tri))
+            if print_chisqs:
+                printstr = "%s %s %s :" % (uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2])
+                for i in range(1,len(obs_all)):
+                    cphases_model_tri = obs_all[i].cphase_tri(uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
+                                                 vtype=vtype, ang_unit='deg', cphases=cphases_all[i])
+                    chisq_tri= np.sum((1.0 - np.cos(cphases_obs_tri['cphase']*DEGREE-cphases_model_tri['cphase']*DEGREE))/
+                                      ((cphases_obs_tri['sigmacp']*DEGREE)**2))
+                    chisq_tri *= (2.0/len(cphases_obs_tri))
+                    printstr += " chisq%i: %0.2f" % (i, chisq_tri)
+                print(printstr)
 
             if display_mode=='individual':
                 ax=False
@@ -743,10 +756,10 @@ def plotall_obs_im_cphases(obs, image,
                 ax = plt.subplot2grid((nrows,ncols), (nplot/ncols, nplot%ncols), fig=fig)
                 axislabels=False
 
-            f = plot_cphase_obs_compare([obs, obs_model],
+            f = plot_cphase_obs_compare(obs_all,
                                         uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
-                                        vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show,
-                                        cphases=[cphases_obs, cphases_model], axis=ax, axislabels=axislabels)
+                                        vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show, legend=False,
+                                        cphases=cphases_all, axis=ax, axislabels=axislabels)
             nplot += 1
 
     if display_mode!='individual':
