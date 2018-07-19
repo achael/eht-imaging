@@ -596,7 +596,7 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
             outfile.write(outline)
         outfile.close()
 
-        return
+    return
 
 def make_caltable(obs, gains, sites, times):
     """Create a Caltable object for an observation
