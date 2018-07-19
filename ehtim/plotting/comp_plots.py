@@ -670,7 +670,7 @@ def plot_camp_obs_im_compare(obslist,  imlist, site1, site2, site3, site4, **kwa
 def plotall_obs_im_cphases(obs, imlist, 
                            vtype='vis', ang_unit='deg', timetype='UTC',
                            ttype='nfft', sgrscat=False,
-                           rangex=False, rangey=[-180,180], 
+                           rangex=False, rangey=[-180,180],legend=False,legendlabels=None,
                            show=True, ebar=True,axislabels=False,print_chisqs=True,
                            display_mode='all'):
     """Plot all observation closure phases on  top of image ground truth values. Works with ONE obs and MULTIPLE images. 
@@ -758,7 +758,7 @@ def plotall_obs_im_cphases(obs, imlist,
 
             f = plot_cphase_obs_compare(obs_all,
                                         uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
-                                        vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show, legend=False,
+                                        vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show, legend=legend, legendlabels=legendlabels,
                                         cphases=cphases_all, axis=ax, axislabels=axislabels)
             nplot += 1
 
