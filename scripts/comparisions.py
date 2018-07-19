@@ -14,6 +14,15 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
+from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
+                                  AnnotationBbox)
+import glob
+from itertools import cycle
+ 
+
+
 def image_consistancy(imarr, beamparams, metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[]):
     
     # get the pixel sizes and fov to compare images at
@@ -39,7 +48,7 @@ def image_consistancy(imarr, beamparams, metric='nxcorr', blursmall=True, beam_m
                 if fracsteps[fracidx]>0:
                     img2 = img2.blur_gauss(beamparams, fracsteps[fracidx])
                 
-                print(j, i, fracidx)
+                #print(j, i, fracidx)
             
                 # compute image comparision under a specified blur_frac
                 (error, im1_pad, im2_shift) = img1.compare_images(img2, metric = [metric], psize = min_psize, target_fov = max_fov, blur_frac=0.0, beamparams=beamparams) 
@@ -77,7 +86,7 @@ def image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=0.95):
     im_cliques_fraclevels = []
     cliques_fraclevels = []
     for fracidx in range(len(fracsteps)):
-        print(fracidx)
+        #print(fracidx)
     
         slice_metric_mtx = metric_mtx[:,:,fracidx] 
         cuttoffidx = np.where( slice_metric_mtx >= cutoff)
@@ -90,7 +99,7 @@ def image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=0.95):
         
         # find all cliques
         cliques = list(nx.find_cliques(G))
-        print(cliques)
+        #print(cliques)
         
         cliques_fraclevels.append(cliques)
         
@@ -184,3 +193,5 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, show=True
            
 
            
+
+ 
