@@ -242,7 +242,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
  
    # return to original cphase attribute
     for i in range(len(obslist)):
-        obslist[i].cphase=cphase_back[i]
+        obslist[i].cphase=cphases_back[i]
 
     if legend:
         plt.legend()
