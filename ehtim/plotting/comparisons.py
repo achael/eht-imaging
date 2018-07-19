@@ -106,10 +106,10 @@ def image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=0.95):
         im_clique = []
         for c in range(len(cliques)):
             clique = cliques[c]
-            im_avg = imarr[clique[0]] 
+            im_avg = imarr[clique[0]].blur_gauss(beamparams,fracsteps[fracidx]) 
             
             for n in range(1,len(clique)):
-                (error, im_avg, im2_shift) = im_avg.compare_images(imarr[clique[n]], metric = ['xcorr'], psize = min_psize, target_fov = max_fov, blur_frac=fracsteps[fracidx],
+                (error, im_avg, im2_shift) = im_avg.compare_images(imarr[clique[n]].blur_gauss(beamparams,fracsteps[fracidx]) , metric = ['xcorr'], psize = min_psize, target_fov = max_fov, blur_frac=0.0,
                          beamparams=beamparams)
                 im_avg.imvec = (im_avg.imvec + im2_shift.imvec ) / 2.0
                 
