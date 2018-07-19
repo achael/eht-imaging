@@ -738,15 +738,15 @@ def plotall_obs_im_cphases(obs, image,
 
             if display_mode=='individual':
                 ax=False
-                labels=True
+                axislabels=axislabels
             else:
                 ax = plt.subplot2grid((nrows,ncols), (nplot/ncols, nplot%ncols), fig=fig)
-                labels=False
+                axislabels=False
 
             f = plot_cphase_obs_compare([obs, obs_model],
                                         uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
                                         vtype=vtype, rangex=rangex, rangey=rangey, ebar=ebar, show=show,
-                                        cphases=[cphases_obs, cphases_model], axis=ax, labels=labels)
+                                        cphases=[cphases_obs, cphases_model], axis=ax, axislabels=axislabels)
             nplot += 1
 
     if display_mode!='individual':
