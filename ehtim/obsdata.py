@@ -683,7 +683,7 @@ class Obsdata(object):
     
     def avg_coherent(self, inttime=0, scan_avg=False, msgtype='bar'):
         """Coherently average data along u,v tracks in chunks of length inttime (sec)
-        using pandas library
+
            Args:
                 inttime (float): coherent integration time in seconds
            Returns:
@@ -1342,13 +1342,13 @@ class Obsdata(object):
                
         return np.median(std_list)
 
-    def flag_elev(self, elev_min = 0.0, elev_max = 90, output='kept'):
+    def flag_elev(self, elev_min=0.0, elev_max=90, output='kept'):
         """Flag visibilities for which either station is outside a stated elevation range
 
            Args:
                elev_min (float): Minimum elevation (deg)
                elev_max (float): Maximum elevation (deg)
-               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1377,13 +1377,14 @@ class Obsdata(object):
             return obs_kept
 
 
-    def flag_uvdist(self, uv_min = 0.0, uv_max = 1e12):
+    def flag_uvdist(self, uv_min=0.0, uv_max=1e12, output='kept'):
 
         """Flag data points outside a given uv range
 
            Args:
                uv_min (float): remove points with uvdist less than  this
                uv_max (float): remove points with uvdist greater than  this
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1391,14 +1392,24 @@ class Obsdata(object):
 
         uvdist_list = self.unpack('uvdist')['uvdist']
         mask = np.array([uv_min <= uvdist_list[j] <= uv_max for j in range(len(uvdist_list))])
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
 
-        datatable = self.data.copy()
-        datatable = datatable[mask]
-        print('uvdist flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('U-V flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
 
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
 
     def flag_sites(self, sites, output='kept'):
 
@@ -1406,7 +1417,7 @@ class Obsdata(object):
 
            Args:
                sites (list): list of sites to remove from the data
-               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1444,7 +1455,7 @@ class Obsdata(object):
 
            Args:
                sites (list): baseline to remove from the data
-               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')                
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1486,7 +1497,7 @@ class Obsdata(object):
 
            Args:
                snr_cut (float): remove points with snr lower than  this
-               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1520,7 +1531,7 @@ class Obsdata(object):
 
            Args:
                sigma_cut (float): remove points with sigma higher than  this
-               output (str): What to return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary of 'kept' and 'flagged')
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1555,7 +1566,7 @@ class Obsdata(object):
            Args:
                UT_start_hour (float): start of  time window
                UT_stop_hour (float): end of time window
-               flag_or_keep (bool): set as True to keep the time range instead of excising
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1568,47 +1579,26 @@ class Obsdata(object):
         if flag_or_keep:
             UT_mask = np.invert(UT_mask)
 
-        datatable = datatable[UT_mask]
-        print('time flagged %d/%d visibilities' % ((len(self.data)-len(datatable)), (len(self.data))))
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
 
-    def flag_large_scatter(self, field = 'amp', scatter_cut = 1.0, max_diff_seconds = 100):
+        datatable_kept    = datatable_kept[UT_mask]
+        datatable_flagged = datatable_flagged[np.invert(UT_mask)]
+        print('time flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
 
-        """Flag data points with scatter in the field greater than a prescribed amount
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
 
-           Args:
-               field (str): The quantity to test for
-               max_diff_seconds (float): The moving window size for testing outliers
-               scatter_cut (float): Outliers further than this many sigmas from the mean are removed
+        if output == 'flagged': #return only the points flagged as anomalous
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
 
-           Returns:
-               (Obsdata): a observation object with flagged data points removed
-        """
-
-        stats = dict()
-        for t1 in set(self.data['t1']):
-            for t2 in set(self.data['t2']):
-                vals = self.unpack_bl(t1,t2,field)
-                for j in range(len(vals)):
-                    near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
-                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]
-
-                    # robust estimator of the scatter
-                    dfields = np.median(np.abs(fields-np.median(fields)))
-                    stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = dfields
-
-        mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))] < scatter_cut for rec in self.data])
-
-        datatable =  self.data.copy()
-        datatable = datatable[mask]
-        print('%s scatter flagged %d/%d visibilities' % (field, (len(self.data)-len(datatable)), (len(self.data))))
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
-
-    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'): # Is this depriciated? It appears identical to flag_anomalous. 
+    def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'):
         """Flag anomalous data points
 
            Args:
