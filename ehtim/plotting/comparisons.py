@@ -36,7 +36,7 @@ def image_consistency(imarr, beamparams, metric='nxcorr', blursmall=True, beam_m
     
     # loop over the different beam sizes
     for fracidx in range(beam_steps):
-        print(fracidx)
+        #print(fracidx)
         # look at every pair of images and compute their beam convolved metrics
         for i in range(len(imarr)):
             img1 = imarr[i]
@@ -144,6 +144,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             sample_image = im_clique_fraclevels[c][r].regrid_image(fov*im_clique_fraclevels[c][r].fovx(), 512)
             arr_img = sample_image.imvec.reshape(sample_image.xdim, sample_image.ydim)
             imagebox = OffsetImage(arr_img, zoom=zoom, cmap='afmhot')
+            
             imagebox.image.axes = ax
              
             ab = AnnotationBbox(imagebox, ((20./lenx)*c,(20./leny)*r),
@@ -172,12 +173,15 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
                             color=colorc
                         )
             row.sort()
- 
             # adding the text
             txtstring = str(row)
+            print ("TEST")
+            print(ab.get_window_extent())
+            raw_input()
             if len(row) == len(clique_fraclevels[-1][0]):
                 txtstring = '[all]'
-            ax.text((20./lenx)*c - (0./lenx), (20./leny)*r  - (10./leny), txtstring, fontsize=6, horizontalalignment='center')
+#             ax.text((20./lenx)*c - (0./lenx), (20./leny)*r-int(zoom*arr_img.shape[1])/2., txtstring, fontsize=6, horizontalalignment='center')
+            ax.text((20./lenx)*c,(20./leny)*r-0.4*imagebox.get_extent()[0], txtstring, fontsize=20, horizontalalignment='center', color='white', zorder=1000)
  
     ax.set_xlim(0, 22)
     ax.set_ylim(-10, 22)
