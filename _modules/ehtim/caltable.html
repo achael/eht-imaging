@@ -279,14 +279,14 @@
         <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_caltable</span></div>
 
-<div class="viewcode-block" id="Caltable.plot_gains"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.plot_gains">[docs]</a>    <span class="k">def</span> <span class="nf">plot_gains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">gain_type</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;R&#39;</span><span class="p">,</span> 
+<div class="viewcode-block" id="Caltable.plot_gains"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.plot_gains">[docs]</a>    <span class="k">def</span> <span class="nf">plot_gains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">gain_type</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;R&#39;</span><span class="p">,</span>
                    <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span><span class="n">timetype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">yscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span>
                    <span class="n">clist</span><span class="o">=</span><span class="n">SCOLORS</span><span class="p">,</span><span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                    <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Plot gains on multiple sites vs time.</span>
 <span class="sd">           Args:</span>
-<span class="sd">               sites (list): a list of site names for which to plot gains. Empty list is all sites. </span>
+<span class="sd">               sites (list): a list of site names for which to plot gains. Empty list is all sites.</span>
 <span class="sd">               gain_type (str): &#39;amp&#39; or &#39;phase&#39;</span>
 <span class="sd">               pol str(str): &#39;R&#39; or &#39;L&#39;</span>
 <span class="sd">               ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
@@ -296,7 +296,7 @@
 
 <span class="sd">               rangex (list): [xmin, xmax] x-axis (time) limits</span>
 <span class="sd">               rangey (list): [ymin, ymax] y-axis (gain) limits</span>
-<span class="sd">            </span>
+
 <span class="sd">               grid (bool): Plot gridlines if True</span>
 <span class="sd">               labels (bool): Show axis labels if True</span>
 <span class="sd">               show (bool): Display the plot if true</span>
@@ -304,7 +304,7 @@
 <span class="sd">               markersize (int): size of plot markers</span>
 <span class="sd">               export_pdf (str): path to pdf file to save figure</span>
 
-<span class="sd">           Returns:  </span>
+<span class="sd">           Returns:</span>
 <span class="sd">               (matplotlib.axes.Axes): Axes object with the plot</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -415,7 +415,7 @@
         <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">caldata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-            <span class="c1"># Gather data into &quot;scans&quot; </span>
+            <span class="c1"># Gather data into &quot;scans&quot;</span>
             <span class="c1"># TODO we could use a scan table for this as well!</span>
             <span class="n">gathered_data</span><span class="o">=</span><span class="p">[]</span>
             <span class="n">scandata</span> <span class="o">=</span> <span class="p">[</span><span class="n">caldata</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
@@ -426,7 +426,6 @@
                     <span class="n">scandata</span> <span class="o">=</span> <span class="p">[</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">scandata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-
 
             <span class="c1"># Compute padding values and pad scans</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gathered_data</span><span class="p">)):</span>
@@ -443,7 +442,7 @@
                     <span class="n">medL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">gg</span><span class="p">[</span><span class="s1">&#39;lscale&#39;</span><span class="p">])</span>
                     <span class="n">preR</span> <span class="o">=</span> <span class="n">medR</span>
                     <span class="n">postR</span> <span class="o">=</span> <span class="n">medR</span>
-                    <span class="n">preL</span> <span class="o">=</span> <span class="n">medL</span> 
+                    <span class="n">preL</span> <span class="o">=</span> <span class="n">medL</span>
                     <span class="n">postL</span> <span class="o">=</span> <span class="n">medL</span>
                 <span class="k">elif</span> <span class="n">padtype</span><span class="o">==</span><span class="s1">&#39;endval&#39;</span><span class="p">:</span> <span class="c1"># pad with endpoints</span>
                     <span class="n">preR</span> <span class="o">=</span> <span class="n">gg</span><span class="p">[</span><span class="s1">&#39;rscale&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -463,14 +462,20 @@
                 <span class="n">gg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gg</span><span class="p">,</span><span class="n">valspost</span><span class="p">)</span>
 
                 <span class="c1"># output data table</span>
-                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> 
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
                     <span class="n">caldata_out</span> <span class="o">=</span> <span class="n">gg</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">caldata_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">caldata_out</span><span class="p">,</span> <span class="n">gg</span><span class="p">)</span>
 
-            <span class="n">outdict</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span> <span class="o">=</span> <span class="n">caldata_out</span>
-            <span class="k">return</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">outdict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> 
-                            <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span></div>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">caldata_out</span> <span class="c1"># TODO: refractor to avoid using exception</span>
+            <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No gathered_data&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">outdict</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span> <span class="o">=</span> <span class="n">caldata_out</span>
+
+        <span class="k">return</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">outdict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
+                        <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Caltable.applycal"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.applycal">[docs]</a>    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Apply the calibration table to an observation.</span>
@@ -478,7 +483,7 @@
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): The observation  with data to be calibrated</span>
 <span class="sd">               interp (str): Interpolation method (&#39;linear&#39;,&#39;nearest&#39;,&#39;cubic&#39;)</span>
-<span class="sd">               extrapolate (bool): If True, points outside interpolation range will be extrapolated. </span>
+<span class="sd">               extrapolate (bool): If True, points outside interpolation range will be extrapolated.</span>
 <span class="sd">               force_singlepol (str): If &#39;L&#39; or &#39;R&#39;, will set opposite polarization gains equal to chosen polarization</span>
 
 <span class="sd">           Returns:</span>
@@ -571,13 +576,13 @@
 
         <span class="k">return</span> <span class="n">calobs</span></div>
 
-<div class="viewcode-block" id="Caltable.merge"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caltablelist</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="Caltable.merge"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caltablelist</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Merge the calibration table with a list of other calibration tables</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               caltablelist (list): The list of caltables to be merged</span>
 <span class="sd">               interp (str): Interpolation method (&#39;linear&#39;,&#39;nearest&#39;,&#39;cubic&#39;)</span>
-<span class="sd">               extrapolate (bool): If True, points outside interpolation range will be extrapolated. </span>
+<span class="sd">               extrapolate (bool): If True, points outside interpolation range will be extrapolated.</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (Caltable): the merged Caltable object</span>
@@ -658,20 +663,20 @@
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): The observation object associated with the Caltable</span>
 <span class="sd">               datadir (str): directory to save caltable in</span>
-<span class="sd">               sqrt_gains (bool): If True, we square gains before saving. </span>
+<span class="sd">               sqrt_gains (bool): If True, we square gains before saving.</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="n">save_caltable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="n">sqrt_gains</span><span class="p">)</span></div></div>
-       
+
 
 <div class="viewcode-block" id="load_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.load_caltable">[docs]</a><span class="k">def</span> <span class="nf">load_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load apriori Caltable object from text files in the given directory</span>
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
 <span class="sd">           datadir (str): directory to save caltable in</span>
-<span class="sd">           sqrt_gains (bool): If True, we take the sqrt of table gains before loading. </span>
+<span class="sd">           sqrt_gains (bool): If True, we take the sqrt of table gains before loading.</span>
 
 <span class="sd">       Returns:</span>
 <span class="sd">           (Caltable): a caltable object</span>
@@ -726,7 +731,7 @@
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
 <span class="sd">           datadir (str): directory to save caltable in</span>
-<span class="sd">           sqrt_gains (bool): If True, we square gains before saving. </span>
+<span class="sd">           sqrt_gains (bool): If True, we square gains before saving.</span>
 
 <span class="sd">       Returns:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -763,7 +768,7 @@
             <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outline</span><span class="p">)</span>
         <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-        <span class="k">return</span></div>
+    <span class="k">return</span></div>
 
 <div class="viewcode-block" id="make_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.make_caltable">[docs]</a><span class="k">def</span> <span class="nf">make_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">gains</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">times</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create a Caltable object for an observation</span>

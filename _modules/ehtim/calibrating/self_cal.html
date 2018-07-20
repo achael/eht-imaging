@@ -406,7 +406,7 @@
         <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s2">&quot;phase&quot;</span><span class="p">:</span>
             <span class="n">g</span> <span class="o">=</span> <span class="n">g</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="c1"># TODO: use exp(i*np.arg())?</span>
         <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s2">&quot;amp&quot;</span><span class="p">:</span>
-             <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">g</span><span class="p">))</span>
             <span class="c1">#g = np.abs(g)</span>
 
         <span class="c1"># append the default values to g for missing gains</span>
@@ -476,8 +476,6 @@
         <span class="n">out</span> <span class="o">=</span> <span class="n">scan</span>
 
     <span class="k">return</span> <span class="n">out</span></div>
-
-
 
 <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
     <span class="k">global</span> <span class="n">counter</span>

@@ -358,10 +358,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
-        <span class="k">if</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;I&quot;</span><span class="p">:</span> <span class="n">imarr</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;Q&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span> <span class="n">imarr</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;U&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="p">):</span> <span class="n">imarr</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;V&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span> <span class="n">imarr</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;I&quot;</span><span class="p">:</span> <span class="n">imarr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;Q&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span> <span class="n">imarr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;U&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">uvec</span><span class="p">):</span> <span class="n">imarr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">stokes</span><span class="o">==</span><span class="s2">&quot;V&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">vvec</span><span class="p">):</span> <span class="n">imarr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">imarr</span></div>
 
 <div class="viewcode-block" id="Image.fovx"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fovx">[docs]</a>    <span class="k">def</span> <span class="nf">fovx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1189,6 +1189,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="n">frac</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
         <span class="n">im</span> <span class="o">=</span> <span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
             <span class="n">qim</span> <span class="o">=</span> <span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
@@ -1272,141 +1275,141 @@
         <span class="n">imgrad</span><span class="o">.</span><span class="n">imvec</span> <span class="o">=</span> <span class="n">gradarr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">imgrad</span></div>
 
-<div class="viewcode-block" id="Image.fit_ring"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.fit_ring">[docs]</a>    <span class="k">def</span> <span class="nf">fit_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">edgetype</span><span class="o">=</span><span class="s1">&#39;canny&#39;</span><span class="p">,</span><span class="n">thresh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">display_results</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_circles</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Use Andrew&#39;s hough transform esque algorithm for fitting a ring</span>
+<span class="c1">#    def fit_ring(self, edgetype=&#39;canny&#39;,thresh=None, display_results=True, num_circles=3):</span>
+<span class="c1">#        &quot;&quot;&quot;Use Andrew&#39;s hough transform esque algorithm for fitting a ring</span>
 
-<span class="sd">           Args:</span>
-<span class="sd">               num_circles (int) : number of circles to return</span>
-<span class="sd">               edgetype (str): edge detection type, &#39;gradient&#39; or &#39;canny&#39;</span>
-<span class="sd">               thresh (float): fractional threshold for the gradient image</span>
-<span class="sd">               display_results (bool): True to display results of the fit</span>
+<span class="c1">#           Args:</span>
+<span class="c1">#               num_circles (int) : number of circles to return</span>
+<span class="c1">#               edgetype (str): edge detection type, &#39;gradient&#39; or &#39;canny&#39;</span>
+<span class="c1">#               thresh (float): fractional threshold for the gradient image</span>
+<span class="c1">#               display_results (bool): True to display results of the fit</span>
 
-<span class="sd">           Returns:</span>
-<span class="sd">               list : a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian</span>
+<span class="c1">#           Returns:</span>
+<span class="c1">#               list : a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># coordinate values</span>
-        <span class="n">pdim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span>
-        <span class="n">xlist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">pdim</span> <span class="o">+</span> <span class="p">(</span><span class="n">pdim</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span> <span class="o">-</span> <span class="n">pdim</span><span class="o">/</span><span class="mf">2.0</span>
-        <span class="n">ylist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">pdim</span> <span class="o">+</span> <span class="p">(</span><span class="n">pdim</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span> <span class="o">-</span> <span class="n">pdim</span><span class="o">/</span><span class="mf">2.0</span>
+<span class="c1">#        &quot;&quot;&quot;</span>
+<span class="c1">#        # coordinate values</span>
+<span class="c1">#        pdim = self.psize</span>
+<span class="c1">#        xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0</span>
+<span class="c1">#        ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0</span>
 
-        <span class="c1">#normalize to range 0, 1</span>
-        <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">maxval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-        <span class="n">meanval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-        <span class="n">im_norm</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="p">(</span><span class="n">maxval</span> <span class="o">+</span> <span class="o">.</span><span class="mi">01</span><span class="o">*</span><span class="n">meanval</span><span class="p">)</span>
-        <span class="n">im_norm</span> <span class="o">=</span> <span class="n">im_norm</span>
-        <span class="n">im_norm</span> <span class="o">=</span> <span class="n">im_norm</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">)</span> <span class="c1"># is it a problem if it&#39;s double??</span>
-        <span class="n">im_norm</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1">#mask nans to 0</span>
-        <span class="n">im</span><span class="o">.</span><span class="n">imvec</span> <span class="o">=</span> <span class="n">im_norm</span>
+<span class="c1">#        #normalize to range 0, 1</span>
+<span class="c1">#        im = self.copy()</span>
+<span class="c1">#        maxval = np.max(im.imvec)</span>
+<span class="c1">#        meanval = np.mean(im.imvec)</span>
+<span class="c1">#        im_norm = im.imvec / (maxval + .01*meanval)</span>
+<span class="c1">#        im_norm = im_norm</span>
+<span class="c1">#        im_norm = im_norm.astype(&#39;float&#39;) # is it a problem if it&#39;s double??</span>
+<span class="c1">#        im_norm[np.isnan(im.imvec)] = 0 #mask nans to 0</span>
+<span class="c1">#        im.imvec = im_norm</span>
 
-        <span class="c1"># detect edges</span>
-        <span class="k">def</span> <span class="nf">edgeFilter</span><span class="p">(</span><span class="n">thresh</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">edgetype</span><span class="o">==</span><span class="s1">&#39;canny&#39;</span><span class="p">:</span>
-                <span class="n">imarr</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-                <span class="n">edges</span> <span class="o">=</span> <span class="n">canny</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high_threshold</span><span class="o">=</span><span class="n">thresh</span><span class="p">,</span>  <span class="n">low_threshold</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
-                <span class="n">im_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-                <span class="n">im_edges</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
-            <span class="k">else</span><span class="p">:</span> <span class="c1">#edgetype==&#39;grad&#39;:</span>
-                <span class="n">im_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">im_grad</span><span class="p">()</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">thresh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-                    <span class="n">thresh_val</span> <span class="o">=</span> <span class="n">thresh</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
-                    <span class="n">mask</span> <span class="o">=</span> <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&gt;</span> <span class="n">thresh_val</span>
-                    <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-                    <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="c1">#        # detect edges</span>
+<span class="c1">#        def edgeFilter(thresh):</span>
+<span class="c1">#            if edgetype==&#39;canny&#39;:</span>
+<span class="c1">#                imarr = im.imvec.reshape(self.ydim,self.xdim)</span>
+<span class="c1">#                edges = canny(imarr, sigma=0, high_threshold=thresh,  low_threshold=0.01)</span>
+<span class="c1">#                im_edges = self.copy()</span>
+<span class="c1">#                im_edges.imvec = edges.flatten()</span>
+<span class="c1">#                im_edges.display()</span>
+<span class="c1">#            else: #edgetype==&#39;grad&#39;:</span>
+<span class="c1">#                im_edges = self.im_grad()</span>
+<span class="c1">#                if not (thresh is None):</span>
+<span class="c1">#                    thresh_val = thresh*np.max(im_edges.imvec)</span>
+<span class="c1">#                    mask = im_edges.imvec &gt; thresh_val</span>
+<span class="c1">#                    im_edges.imvec[mask] = 1</span>
+<span class="c1">#                    im_edges.imvec[~mask] = 0</span>
 
-            <span class="c1"># interpolation function on edges</span>
-            <span class="n">edges</span> <span class="o">=</span> <span class="n">im_edges</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="n">edges_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
-            <span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-            <span class="n">ys</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">)</span>
-            <span class="c1">#im_interp = scipy.interpolate.RectBivariateSpline(ys,xs,imarr)</span>
-            <span class="n">edges_interp</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">interp2d</span><span class="p">(</span><span class="n">ys</span><span class="p">,</span><span class="n">xs</span><span class="p">,</span><span class="n">edges</span><span class="p">,</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+<span class="c1">#            # interpolation function on edges</span>
+<span class="c1">#            edges = im_edges.imvec.reshape(self.ydim,self.xdim)</span>
+<span class="c1">#            edges_tot = np.sum(edges)</span>
+<span class="c1">#            xs = np.arange(self.xdim)</span>
+<span class="c1">#            ys = np.arange(self.ydim)</span>
+<span class="c1">#            #im_interp = scipy.interpolate.RectBivariateSpline(ys,xs,imarr)</span>
+<span class="c1">#            edges_interp = scipy.interpolate.interp2d(ys,xs,edges,kind=&#39;linear&#39;)</span>
 
-            <span class="k">return</span> <span class="p">(</span><span class="n">edges_interp</span><span class="p">,</span> <span class="n">edges_tot</span><span class="p">)</span>
-
-
-        <span class="c1"># define the objective function</span>
-        <span class="n">nrays</span> <span class="o">=</span> <span class="mi">100</span>
-        <span class="n">thetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">nrays</span><span class="p">)</span>
-        <span class="n">costhetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">thetas</span><span class="p">)</span>
-        <span class="n">sinthetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">thetas</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">ringSum</span><span class="p">(</span><span class="n">im_interp</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">r</span><span class="p">):</span>
-            <span class="n">xxs</span> <span class="o">=</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">r</span><span class="o">*</span><span class="n">costhetas</span>
-            <span class="n">yys</span> <span class="o">=</span> <span class="n">y0</span> <span class="o">+</span> <span class="n">r</span><span class="o">*</span><span class="n">sinthetas</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">im_interp</span><span class="p">(</span><span class="n">yys</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">xxs</span><span class="p">[</span><span class="n">i</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nrays</span><span class="p">)]</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">out</span>
-
-        <span class="k">def</span> <span class="nf">lnLike</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
-            <span class="n">x0</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">y0</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-            <span class="n">thresh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
-            <span class="n">im_interp</span><span class="p">,</span> <span class="n">edges_tot</span> <span class="o">=</span> <span class="n">edgeFilter</span><span class="p">(</span><span class="n">thresh</span><span class="p">)</span>
-            <span class="n">like</span> <span class="o">=</span> <span class="n">ringSum</span><span class="p">(</span><span class="n">im_interp</span><span class="p">,</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">r</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">edges_tot</span><span class="o">*</span><span class="n">r</span><span class="p">)</span>
+<span class="c1">#            return (edges_interp, edges_tot)</span>
 
 
-            <span class="k">if</span> <span class="n">like</span> <span class="o">&lt;=</span> <span class="mf">0.</span><span class="p">:</span> <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-            <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">like</span><span class="p">)</span>
+<span class="c1">#        # define the objective function</span>
+<span class="c1">#        nrays = 100</span>
+<span class="c1">#        thetas = np.linspace(0,2*np.pi,nrays)</span>
+<span class="c1">#        costhetas = np.cos(thetas)</span>
+<span class="c1">#        sinthetas = np.sin(thetas)</span>
+<span class="c1">#        def ringSum(im_interp, x0,y0,r):</span>
+<span class="c1">#            xxs = x0 + r*costhetas</span>
+<span class="c1">#            yys = y0 + r*sinthetas</span>
+<span class="c1">#            vals = [im_interp(yys[i],xxs[i])[0] for i in np.arange(nrays)]</span>
+<span class="c1">#            out = np.sum(vals)</span>
+<span class="c1">#            return out</span>
+
+<span class="c1">#        def lnLike(params):</span>
+<span class="c1">#            x0 = params[0]</span>
+<span class="c1">#            y0 = params[1]</span>
+<span class="c1">#            r = np.abs(params[2])</span>
+<span class="c1">#            thresh = np.abs(params[3])</span>
+<span class="c1">#            im_interp, edges_tot = edgeFilter(thresh)</span>
+<span class="c1">#            like = ringSum(im_interp,x0,y0,r)/float(edges_tot*r)</span>
 
 
-        <span class="c1"># data ranges</span>
-        <span class="n">cm</span> <span class="o">=</span> <span class="n">ndi</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
-        <span class="n">rangex</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-.</span><span class="mi">25</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+.</span><span class="mi">25</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
-        <span class="n">rangey</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-.</span><span class="mi">25</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+.</span><span class="mi">25</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span>
-        <span class="n">ranger</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="mi">50</span><span class="o">*</span><span class="n">RADPERUAS</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">)</span>
-
-        <span class="k">def</span> <span class="nf">lnPrior</span><span class="p">(</span><span class="n">ringparams</span><span class="p">):</span>
-            <span class="n">lnprior</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">if</span> <span class="n">rangex</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">ringparams</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">rangex</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">lnprior</span><span class="o">+=</span><span class="mi">0</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">lnprior</span> <span class="o">+=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-
-            <span class="k">if</span> <span class="n">rangey</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">ringparams</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">rangey</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">lnprior</span><span class="o">+=</span><span class="mi">0</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">lnprior</span> <span class="o">+=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-
-            <span class="k">if</span> <span class="n">ranger</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">ringparams</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">ranger</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">lnprior</span><span class="o">+=</span><span class="mi">0</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">lnprior</span> <span class="o">+=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-
-            <span class="k">if</span> <span class="mf">1.e-3</span> <span class="o">&lt;</span> <span class="n">ringparams</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">5</span> <span class="p">:</span> <span class="n">lnprior</span><span class="o">+=</span><span class="mi">0</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">lnprior</span> <span class="o">+=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
-
-            <span class="k">return</span> <span class="n">lnprior</span>
-
-        <span class="k">def</span> <span class="nf">lnPost</span><span class="p">(</span><span class="n">ringparams</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">lnPrior</span><span class="p">(</span><span class="n">ringparams</span><span class="p">)</span> <span class="o">+</span> <span class="n">lnLike</span><span class="p">(</span><span class="n">ringparams</span><span class="p">)</span>
+<span class="c1">#            if like &lt;= 0.: return -np.inf</span>
+<span class="c1">#            else: return np.log(like)</span>
 
 
-        <span class="c1"># initial conditions from hough</span>
-        <span class="n">nhough</span><span class="o">=</span><span class="mi">5</span>
-        <span class="n">rings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hough_ring</span><span class="p">(</span><span class="n">num_circles</span><span class="o">=</span><span class="n">nhough</span><span class="p">,</span><span class="n">display_results</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;pixel&#39;</span><span class="p">)</span>
+<span class="c1">#        # data ranges</span>
+<span class="c1">#        cm = ndi.center_of_mass(self.imvec.reshape(self.ydim,self.xdim))</span>
+<span class="c1">#        rangex = (int(cm[1]-.25*self.xdim),int(cm[1]+.25*self.xdim))</span>
+<span class="c1">#        rangey = (int(cm[0]-.25*self.ydim),int(cm[0]+.25*self.ydim))</span>
+<span class="c1">#        ranger = (10*RADPERUAS/self.psize, 50*RADPERUAS/self.psize)</span>
 
-        <span class="c1"># set up the MCMC</span>
-        <span class="n">ndim</span><span class="p">,</span> <span class="n">nwalkers</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">100</span>
-        <span class="n">p0</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">rings</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">5</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mf">1.e-2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">()),</span>
-                        <span class="n">rings</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">5</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mf">1.e-2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">()),</span>
-                        <span class="n">rings</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="mi">5</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mf">1.e-2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">()),</span>
-                       <span class="o">.</span><span class="mi">1</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mf">1.e-2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">())</span> <span class="p">))</span>
-              <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nwalkers</span><span class="p">)]</span>
+<span class="c1">#        def lnPrior(ringparams):</span>
+<span class="c1">#            lnprior = 0</span>
+<span class="c1">#            if rangex[0] &lt; ringparams[0] &lt; rangex[1]: lnprior+=0</span>
+<span class="c1">#            else: lnprior += -np.inf</span>
 
-        <span class="n">sampler</span> <span class="o">=</span> <span class="n">emcee</span><span class="o">.</span><span class="n">EnsembleSampler</span><span class="p">(</span><span class="n">nwalkers</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">lnPost</span><span class="p">)</span>
-        <span class="n">pos</span><span class="p">,</span><span class="n">prob</span><span class="p">,</span><span class="n">state</span><span class="o">=</span><span class="n">sampler</span><span class="o">.</span><span class="n">run_mcmc</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-        <span class="n">sampler</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-        <span class="n">pos</span><span class="p">,</span><span class="n">prob</span><span class="p">,</span><span class="n">state</span><span class="o">=</span><span class="n">sampler</span><span class="o">.</span><span class="n">run_mcmc</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="c1">#            if rangey[0] &lt; ringparams[1] &lt; rangey[1]: lnprior+=0</span>
+<span class="c1">#            else: lnprior += -np.inf</span>
 
-        <span class="n">chain</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">chain</span>
-        <span class="n">ndim</span> <span class="o">=</span> <span class="n">chain</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="c1">#        samples = chain[:, 50:, :].reshape((-1, ndim))</span>
-<span class="c1">#        results = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),</span>
-<span class="c1">#                  zip(*np.percentile(samples, [16, 50, 84], axis=0)))</span>
-<span class="c1">#        allparams=np.array(results)[:,0]</span>
-<span class="c1">#        print (allparams)</span>
+<span class="c1">#            if ranger[0] &lt; ringparams[2] &lt; ranger[1]: lnprior+=0</span>
+<span class="c1">#            else: lnprior += -np.inf</span>
 
-        <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">ndim</span><span class="p">))[:,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">100</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s2">&quot;step&quot;</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="c1">#            if 1.e-3 &lt; ringparams[3] &lt; .5 : lnprior+=0</span>
+<span class="c1">#            else: lnprior += -np.inf</span>
 
-        <span class="k">return</span> <span class="n">outlist</span></div>
+<span class="c1">#            return lnprior</span>
+
+<span class="c1">#        def lnPost(ringparams):</span>
+<span class="c1">#            return lnPrior(ringparams) + lnLike(ringparams)</span>
+
+
+<span class="c1">#        # initial conditions from hough</span>
+<span class="c1">#        nhough=5</span>
+<span class="c1">#        rings = self.hough_ring(num_circles=nhough,display_results=True,return_type=&#39;pixel&#39;)</span>
+
+<span class="c1">#        # set up the MCMC</span>
+<span class="c1">#        ndim, nwalkers = 4, 100</span>
+<span class="c1">#        p0 = [np.array((rings[i%5][0] * (1+1.e-2*np.random.randn()),</span>
+<span class="c1">#                        rings[i%5][1] * (1+1.e-2*np.random.randn()),</span>
+<span class="c1">#                        rings[i%5][2] * (1+1.e-2*np.random.randn()),</span>
+<span class="c1">#                       .1 * (1+1.e-2*np.random.randn()) ))</span>
+<span class="c1">#              for i in range(nwalkers)]</span>
+
+<span class="c1">#        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnPost)</span>
+<span class="c1">#        pos,prob,state=sampler.run_mcmc(p0, 100)</span>
+<span class="c1">#        sampler.reset()</span>
+<span class="c1">#        pos,prob,state=sampler.run_mcmc(pos, 1000)</span>
+
+<span class="c1">#        chain = sampler.chain</span>
+<span class="c1">#        ndim = chain.shape[-1]</span>
+<span class="c1">##        samples = chain[:, 50:, :].reshape((-1, ndim))</span>
+<span class="c1">##        results = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),</span>
+<span class="c1">##                  zip(*np.percentile(samples, [16, 50, 84], axis=0)))</span>
+<span class="c1">##        allparams=np.array(results)[:,0]</span>
+<span class="c1">##        print (allparams)</span>
+
+<span class="c1">#        plt.hist(chain.reshape((-1,ndim))[:,0], 100, color=&quot;k&quot;, histtype=&quot;step&quot;)</span>
+<span class="c1">#        plt.show()</span>
+
+<span class="c1">#        return outlist</span>
 
 <div class="viewcode-block" id="Image.hough_ring"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.hough_ring">[docs]</a>    <span class="k">def</span> <span class="nf">hough_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">edgetype</span><span class="o">=</span><span class="s1">&#39;canny&#39;</span><span class="p">,</span><span class="n">thresh</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">num_circles</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">radius_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                          <span class="n">return_type</span><span class="o">=</span><span class="s1">&#39;rad&#39;</span><span class="p">,</span> <span class="n">display_results</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -1537,6 +1540,7 @@
         <span class="sd">&quot;&quot;&quot;Determine the Gaussian parameters that short baselines would measure for the source by fitting short baselines.</span>
 
 <span class="sd">           Args:</span>
+<span class="sd">                paramguess (tuple): Initial guess (fwhm_maj, fwhm_min, theta) of fit parameters</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</span>
@@ -1621,32 +1625,94 @@
         <span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="mf">0.0</span><span class="o">*</span><span class="n">ylist</span><span class="o">+</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">xlist</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">*</span><span class="n">im</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
         <span class="n">y0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">ylist</span><span class="p">,</span> <span class="mf">0.0</span><span class="o">*</span><span class="n">xlist</span><span class="o">+</span><span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">*</span><span class="n">im</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">))</span></div>
-
-<div class="viewcode-block" id="Image.threshold"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.threshold">[docs]</a>    <span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frac_i</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">):</span>
-
-        <span class="sd">&quot;&quot;&quot;Apply a hard threshold to the image.</span>
+        
+<div class="viewcode-block" id="Image.mask"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.mask">[docs]</a>    <span class="k">def</span> <span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Produce an image mask that shows all pixels above the specified cutoff percentage of the max flux.</span>
 
 <span class="sd">           Args:</span>
-<span class="sd">               frac_i (float): Stokes I floor as a fraction of maximum stokes I point</span>
+<span class="sd">               cutoff (float): Pixels with intensities greater than the cuttoff * max intensity are masked </span>
+<span class="sd">               beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm</span>
+<span class="sd">               frac (float): the fraction of nominal beam to blur with</span>
+
 <span class="sd">           Returns:</span>
-<span class="sd">               (Image): output image</span>
+<span class="sd">               (Image): output mask image</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">beamparams</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">beamparams</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">beamparams</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">frac</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;beamparams should be a length 3 array [maj, min, posang]!&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="n">image</span><span class="o">=</span><span class="bp">self</span>
-        <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">maxval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">minval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">imvec</span><span class="p">),</span><span class="mf">0.</span><span class="p">))</span>
+        <span class="n">intensityrange</span> <span class="o">=</span> <span class="n">maxval</span> <span class="o">-</span> <span class="n">minval</span>
+        <span class="n">mask</span><span class="o">.</span><span class="n">imvec</span>  <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">imvec</span> <span class="o">&gt;</span> <span class="p">(</span> <span class="n">intensityrange</span> <span class="o">*</span> <span class="n">cutoff</span> <span class="o">+</span>  <span class="n">minval</span><span class="p">)</span>  
+        <span class="k">return</span> <span class="n">mask</span></div>
 
-        <span class="n">thresh</span> <span class="o">=</span> <span class="n">frac_i</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imvec</span><span class="p">))</span>
-        <span class="n">lowval</span> <span class="o">=</span> <span class="n">thresh</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+    <span class="c1">#TODO make this work with mask with different dimensions, fov??</span>
+<div class="viewcode-block" id="Image.apply_mask"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.apply_mask">[docs]</a>    <span class="k">def</span> <span class="nf">apply_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_im</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
 
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">imvec</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="n">imvec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">thresh</span><span class="p">:</span>
-                <span class="n">imvec</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">=</span><span class="n">lowval</span>
+        <span class="sd">&quot;&quot;&quot;Apply a mask to the image </span>
 
-        <span class="n">imvec</span> <span class="o">=</span> <span class="n">flux</span><span class="o">*</span><span class="n">imvec</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="n">image</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span> <span class="n">image</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
-                       <span class="n">image</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+<span class="sd">           Args:</span>
+<span class="sd">               mask_im (Image): a mask image with the same dimensions as the Image</span>
+<span class="sd">               fill_val (float): masked pixels are set to this value</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               (Image): the masked image </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psize</span> <span class="o">!=</span> <span class="n">mask_im</span><span class="o">.</span><span class="n">psize</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="n">mask_im</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="n">mask_im</span><span class="o">.</span><span class="n">ydim</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;mask image does not match dimensions of the current image!&quot;</span><span class="p">)</span>
+        <span class="n">maskvec</span> <span class="o">=</span> <span class="n">mask_im</span><span class="o">.</span><span class="n">imvec</span>
+        <span class="n">maskvec</span><span class="p">[</span><span class="n">maskvec</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">maskvec</span><span class="p">[</span><span class="n">maskvec</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">out_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">out_image</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="o">~</span><span class="n">maskvec</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_val</span>
+        <span class="k">return</span> <span class="n">out_image</span></div>
+
+
+<div class="viewcode-block" id="Image.threshold"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.threshold">[docs]</a>    <span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">frac_i</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply a hard threshold to an image</span>
+
+<span class="sd">           Args:</span>
+<span class="sd">               cutoff (float): Pixels with intensities greater than the cuttoff * max intensity are masked</span>
+<span class="sd">               frac_i (float): the old name for cutoff: should not be used except in old scripts!  </span>
+<span class="sd">               beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm</span>
+<span class="sd">               frac (float): the fraction of nominal beam to blur with</span>
+<span class="sd">               fill_val (float): masked pixels are set to this value</span>
+
+<span class="sd">           Returns:</span>
+<span class="sd">               (Image): output mask image</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">frac_i</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">cutoff</span><span class="o">=</span><span class="n">frac_i</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning!: using frac_i=</span><span class="si">%f</span><span class="s2"> as cutoff in threshold(). Rename &#39;frac_i&#39; to &#39;cutoff&#39; in future scripts!&quot;</span><span class="p">)</span>
+
+        <span class="c1">#TODO change frac_i to cutoff? Is fill_val important?? </span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">cutoff</span><span class="o">=</span><span class="n">frac_i</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="n">frac</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">fill_val</span><span class="o">=</span><span class="n">fill_val</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span></div>
+
+<span class="c1">#        imvec = np.copy(self.imvec)</span>
+<span class="c1">#        thresh = frac_i*np.abs(np.max(imvec))</span>
+<span class="c1">#        lowval = thresh</span>
+<span class="c1">#        flux = np.sum(imvec)</span>
+<span class="c1">#        for j in range(len(imvec)):</span>
+<span class="c1">#            if imvec[j] &lt; thresh:</span>
+<span class="c1">#                imvec[j]=lowval</span>
+<span class="c1">#        imvec = flux*imvec/np.sum(imvec)</span>
+<span class="c1">#        out = Image(imvec.reshape(self.ydim,self.xdim), self.psize,</span>
+<span class="c1">#                       self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd)</span>
+<span class="c1">#        return out</span>
 
 <div class="viewcode-block" id="Image.display"><a class="viewcode-back" href="../../image.html#ehtim.image.Image.display">[docs]</a>    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1.e3</span><span class="p">,</span>
                       <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">label_type</span><span class="o">=</span><span class="s1">&#39;ticks&#39;</span><span class="p">,</span> <span class="n">has_title</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1930,7 +1996,6 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dynamic_range</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
             <span class="n">dynamic_range</span> <span class="o">=</span> <span class="n">dynamic_range</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">im_array</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
 
-
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">shift</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">shift</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">:</span>
             <span class="n">shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">im_array</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -2012,6 +2077,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_im_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
         <span class="k">return</span></div></div>
+        
 
 <span class="c1">###########################################################################################################################################</span>
 <span class="c1">#Image creation functions</span>

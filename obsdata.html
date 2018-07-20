@@ -433,8 +433,40 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.obsdata.Obsdata.add_scans_from_txt">
+<code class="descname">add_scans_from_txt</code><span class="sig-paren">(</span><em>txtfile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_scans_from_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_scans_from_txt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add scaninfo based on textfile</p>
+<p>Args:
+txtfile (str): path to textfile with scan times (two columns,
+beginning and end time of the scan)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.add_scans_from_vex">
+<code class="descname">add_scans_from_vex</code><span class="sig-paren">(</span><em>vexfile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_scans_from_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_scans_from_vex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add scaninfo based on vextfile</p>
+<p>Args:
+vexfile (str): path to vextfile</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.obsdata.Obsdata.avg_coherent">
-<code class="descname">avg_coherent</code><span class="sig-paren">(</span><em>inttime</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.avg_coherent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.avg_coherent" title="Permalink to this definition">¶</a></dt>
+<code class="descname">avg_coherent</code><span class="sig-paren">(</span><em>inttime=0</em>, <em>scan_avg=False</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.avg_coherent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.avg_coherent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coherently average data along u,v tracks in chunks of length inttime (sec)
+using pandas library</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Args:</dt>
+<dd>inttime (float): coherent integration time in seconds</dd>
+<dt>Returns:</dt>
+<dd>(Obsdata): Obsdata object containing averaged data</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.avg_coherent_old">
+<code class="descname">avg_coherent_old</code><span class="sig-paren">(</span><em>inttime</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.avg_coherent_old"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.avg_coherent_old" title="Permalink to this definition">¶</a></dt>
 <dd><p>Coherently average data along u,v tracks in chunks of length inttime (sec).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -950,6 +982,31 @@ If 0.0, auto-estimates this value to twice the median scan length.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; baseline to remove from the data</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; What to return: &#8216;kept&#8217; (data after flagging), &#8216;flagged&#8217; (data that were flagged), or &#8216;both&#8217; (a dictionary of &#8216;kept&#8217; and &#8216;flagged&#8217;)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a observation object with flagged data points removed</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.flag_elev">
+<code class="descname">flag_elev</code><span class="sig-paren">(</span><em>elev_min=0.0</em>, <em>elev_max=90</em>, <em>output='kept'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.flag_elev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.flag_elev" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flag visibilities for which either station is outside a stated elevation range</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>elev_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Minimum elevation (deg)</li>
+<li><strong>elev_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Maximum elevation (deg)</li>
 <li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; What to return: &#8216;kept&#8217; (data after flagging), &#8216;flagged&#8217; (data that were flagged), or &#8216;both&#8217; (a dictionary of &#8216;kept&#8217; and &#8216;flagged&#8217;)</li>
 </ul>
 </td>

@@ -463,6 +463,30 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.image.Image.apply_mask">
+<code class="descname">apply_mask</code><span class="sig-paren">(</span><em>mask_im</em>, <em>fill_val=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.apply_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.apply_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a mask to the image</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mask_im</strong> (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; a mask image with the same dimensions as the Image</li>
+<li><strong>fill_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; masked pixels are set to this value</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the masked image</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.image.Image.blur_circ">
 <code class="descname">blur_circ</code><span class="sig-paren">(</span><em>fwhm_i</em>, <em>fwhm_pol=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.blur_circ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.blur_circ" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply a circular gaussian filter to the image, with FWHM in radians.</p>
@@ -670,40 +694,15 @@
 <dt id="ehtim.image.Image.fit_gauss_empirical">
 <code class="descname">fit_gauss_empirical</code><span class="sig-paren">(</span><em>paramguess=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fit_gauss_empirical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fit_gauss_empirical" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine the Gaussian parameters that short baselines would measure for the source by fitting short baselines.</p>
-<p>Args:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>paramguess</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) &#8211; Initial guess (fwhm_maj, fwhm_min, theta) of fit parameters</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</td>
 </tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="ehtim.image.Image.fit_ring">
-<code class="descname">fit_ring</code><span class="sig-paren">(</span><em>edgetype='canny'</em>, <em>thresh=None</em>, <em>display_results=True</em>, <em>num_circles=3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fit_ring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fit_ring" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use Andrew&#8217;s hough transform esque algorithm for fitting a ring</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>num_circles</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; number of circles to return</li>
-<li><strong>edgetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; edge detection type, &#8216;gradient&#8217; or &#8216;canny&#8217;</li>
-<li><strong>thresh</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fractional threshold for the gradient image</li>
-<li><strong>display_results</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to display results of the fit</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a></p>
-</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -830,6 +829,31 @@
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">2D image array of dimension (ydim, xdim)</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(numpy.array)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.mask">
+<code class="descname">mask</code><span class="sig-paren">(</span><em>cutoff=0.05</em>, <em>beamparams=None</em>, <em>frac=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce an image mask that shows all pixels above the specified cutoff percentage of the max flux.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cutoff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Pixels with intensities greater than the cuttoff * max intensity are masked</li>
+<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm</li>
+<li><strong>frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fraction of nominal beam to blur with</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">output mask image</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -1167,17 +1191,26 @@ ttype (str): if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visi
 
 <dl class="method">
 <dt id="ehtim.image.Image.threshold">
-<code class="descname">threshold</code><span class="sig-paren">(</span><em>frac_i=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.threshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply a hard threshold to the image.</p>
+<code class="descname">threshold</code><span class="sig-paren">(</span><em>cutoff=0.05</em>, <em>frac_i=None</em>, <em>beamparams=None</em>, <em>frac=0.0</em>, <em>fill_val=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a hard threshold to an image</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>frac_i</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Stokes I floor as a fraction of maximum stokes I point</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cutoff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Pixels with intensities greater than the cuttoff * max intensity are masked</li>
+<li><strong>frac_i</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the old name for cutoff: should not be used except in old scripts!</li>
+<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm</li>
+<li><strong>frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fraction of nominal beam to blur with</li>
+<li><strong>fill_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; masked pixels are set to this value</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">output image</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">output mask image</p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>

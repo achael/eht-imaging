@@ -165,7 +165,7 @@
            <div itemprop="articleBody">
             
   <h1>Source code for ehtim.imager</h1><div class="highlight"><pre>
-<span></span><span class="c1"># closure.py</span>
+<span></span><span class="c1"># imager.py</span>
 <span class="c1"># a general interferometric imager class</span>
 <span class="c1">#</span>
 <span class="c1">#    Copyright (C) 2018 Andrew Chael</span>
@@ -281,6 +281,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">norm_init</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;norm_init&#39;</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;norm_reg&#39;</span><span class="p">,</span><span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">res</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regparams</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;major&#39;</span><span class="p">,</span> <span class="s1">&#39;minor&#39;</span><span class="p">,</span> <span class="s1">&#39;PA&#39;</span><span class="p">)}</span>
 
         <span class="c1"># FFT parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ttype&#39;</span><span class="p">,</span><span class="s1">&#39;fast&#39;</span><span class="p">)</span>
@@ -675,7 +676,8 @@
                               <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
                               <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
                               <span class="n">regname</span><span class="p">,</span>
-                              <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+                              <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
+                              <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
             <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
 
         <span class="k">return</span> <span class="n">reg_dict</span></div>
@@ -690,7 +692,8 @@
                                   <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
                                   <span class="n">regname</span><span class="p">,</span>
-                                  <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">)</span>
+                                  <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
+                                  <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
             <span class="n">reggrad_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
 
         <span class="k">return</span> <span class="n">reggrad_dict</span></div>
@@ -1014,8 +1017,14 @@
                          <span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
 
         <span class="c1"># Print stats</span>
+        <span class="n">outstr</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;chi2_</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time: </span><span class="si">%f</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tstop</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">))</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;J: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">outstr</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;==============================&quot;</span><span class="p">)</span>
 

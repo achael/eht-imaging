@@ -702,15 +702,15 @@
 
 <dl class="function">
 <dt id="ehtim.plotting.comp_plots.plotall_obs_im_cphases">
-<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_im_cphases</code><span class="sig-paren">(</span><em>obs, image, vtype='vis', ang_unit='deg', timetype='UTC', ttype='nfft', sgrscat=False, rangex=False, rangey=[-180, 180], show=True, ebar=True, axislabels=False, display_mode='all'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_im_cphases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_im_cphases" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot all observation closure phases on  top of image ground truth values.</p>
+<code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plotall_obs_im_cphases</code><span class="sig-paren">(</span><em>obs, imlist, vtype='vis', ang_unit='deg', timetype='UTC', ttype='nfft', sgrscat=False, rangex=False, rangey=[-180, 180], legend=False, legendlabels=None, show=True, ebar=True, axislabels=False, print_chisqs=True, display_mode='all'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plotall_obs_im_cphases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plotall_obs_im_cphases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot all observation closure phases on  top of image ground truth values. Works with ONE obs and MULTIPLE images.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; observation to plot</li>
-<li><strong>image</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; ground truth image to compare to</li>
+<li><strong>imlist</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of ground truth images to compare to</li>
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;) from which to assemble bispectra</li>
 <li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
@@ -721,6 +721,7 @@
 <li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if True</li>
 <li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
 <li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
+<li><strong>print_chisqs</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; print individual chisqs if True</li>
 <li><strong>display_mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;all&#8217; or &#8216;individual&#8217; to plot a giant single plot or multiple small Jones</li>
 </ul>
 </td>
