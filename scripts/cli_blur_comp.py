@@ -4,10 +4,12 @@ import subprocess
 from itertools import cycle
 import matplotlib.pyplot as plt
 
-# sys.path.append("../fork-eht-imaging/eht-imaging/scripts/")
-import comparisions as comp
+sys.path.append("../../../fork-eht-imaging/eht-imaging/ehtim/plotting/")
+# import comparisions as comp
 import os
 import ehtim as eh
+# from "../fork-eht-imaging/eht-imaging/" import plotting.comparisons as comp
+import comparisons as comp
 
 
 #### global dictionaries containing parameters and system/command line arguments
@@ -49,7 +51,7 @@ def generate_metricmtx(fpath_, directory_):
         imarr.append(eh.image.load_fits(path + dirname + '/images/' + filenames[i]))
 
     # do the image comparisions 
-    (metric_mtx, fracsteps) = comp.image_consistancy(imarr, beamparams, metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[])
+    (metric_mtx, fracsteps) = comp.image_consistency(imarr, beamparams, metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[])
 
     return (metric_mtx, fracsteps, beamparams, imarr)
 
@@ -57,7 +59,7 @@ def generate_graph(metric_mtx, fracsteps, beamparams, imarr):
     print "Using settings: "
     print_dicts()
     (cliques_fraclevels, im_cliques_fraclevels) = comp.image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=params['cutoff'])
-    comp.generate_consistency_plot(cliques_fraclevels, im_cliques_fraclevels, show=True)
+    comp.generate_consistency_plot(cliques_fraclevels, im_cliques_fraclevels, zoom=params['zoom'], fov=params['fov'], show=True)
 
 def print_dicts():
     global dictionaries
