@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# test edit
 from __future__ import print_function
 from itertools import cycle
 from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
@@ -35,7 +36,7 @@ def image_consistency(imarr, beamparams, metric='nxcorr', blursmall=True, beam_m
     
     # loop over the different beam sizes
     for fracidx in range(beam_steps):
-    
+        print(fracidx)
         # look at every pair of images and compute their beam convolved metrics
         for i in range(len(imarr)):
             img1 = imarr[i]
@@ -140,7 +141,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             for li in clique_fraclevels:
                 if len(li) > leny:
                     leny = len(li)
-            sample_image = im_clique_fraclevels[c][r]
+            sample_image = im_clique_fraclevels[c][r].regrid_image(fov*im_clique_fraclevels[c][r].fovx(), 512)
             arr_img = sample_image.imvec.reshape(sample_image.xdim, sample_image.ydim)
             imagebox = OffsetImage(arr_img, zoom=zoom, cmap='afmhot')
             imagebox.image.axes = ax
@@ -179,7 +180,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             ax.text((20./lenx)*c - (0./lenx), (20./leny)*r  - (10./leny), txtstring, fontsize=6, horizontalalignment='center')
  
     ax.set_xlim(0, 22)
-    ax.set_ylim(-1, 22)
+    ax.set_ylim(-10, 22)
  
 #     for item in [fig, ax]:
 #         item.patch.set_visible(False)
