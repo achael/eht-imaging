@@ -2444,12 +2444,14 @@ class Obsdata(object):
             rangex = [np.min(xmins) - 0.2 * np.abs(np.min(xmins)),
                       np.max(xmaxes) + 0.2 * np.abs(np.max(xmaxes))]
             if np.any(np.isnan(np.array(rangex))):
-                raise Exception("NaN in data x range: try specifying rangex manually")
+                print: "Warning: NaN in data x range: specifying rangex to default")
+                rangex = [-100,100]
         if not rangey:
             rangey = [np.min(ymins) - 0.2 * np.abs(np.min(ymins)),
                       np.max(ymaxes) + 0.2 * np.abs(np.max(ymaxes))]
             if np.any(np.isnan(np.array(rangey))):
-                raise Exception("NaN in data y range: try specifying rangey manually")
+                print: "Warning: NaN in data y range: specifying rangey to default")
+                rangey = [-100,100]
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -2533,12 +2535,14 @@ class Obsdata(object):
         if not rangex:
             rangex = [self.tstart,self.tstop]
             if np.any(np.isnan(np.array(rangex))):
-                raise Exception("NaN in data x range: try specifying rangex manually")
+                print: "Warning: NaN in data x range: specifying rangex to default")
+                rangex = [0,24]
         if not rangey:
             rangey = [np.min(plotdata[field]) - 0.2 * np.abs(np.min(plotdata[field])),
                       np.max(plotdata[field]) + 0.2 * np.abs(np.max(plotdata[field]))]
             if np.any(np.isnan(np.array(rangey))):
-                raise Exception("NaN in data y range: try specifying rangey manually")
+                print: "Warning: NaN in data y range: specifying rangex to default")
+                rangey = [-100,100]
 
         # Plot the data
         if axis:
@@ -2552,7 +2556,7 @@ class Obsdata(object):
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0], 
                        fmt=marker, markersize=markersize, color=color, linestyle='none', label=label)
         else:
-            x.plot(plotdata['time'][:,0], plotdata[field][:,0],fmt=marker, markersize=markersize,
+            x.plot(plotdata['time'][:,0], plotdata[field][:,0], marker, markersize=markersize,
                    color=color, label=label, linestyle='none')
 
         x.set_xlim(rangex)
@@ -2642,7 +2646,9 @@ class Obsdata(object):
         if not rangex:
             rangex = [self.tstart,self.tstop]
             if np.any(np.isnan(np.array(rangex))):
-                raise Exception("NaN in data x range: try specifying rangex manually")
+                print: "Warning: NaN in data x range: specifying rangex to default")
+                rangex = [0, 24]
+
         if not rangey:
             if ang_unit=='deg':rangey = [-190,190]
             else: rangey=[-np.pi,np.pi]
@@ -2756,12 +2762,16 @@ class Obsdata(object):
         if not rangex:
             rangex = [self.tstart,self.tstop]
             if np.any(np.isnan(np.array(rangex))):
-                raise Exception("NaN in data x range: try specifying rangex manually")
+                print: "Warning: NaN in data x range: specifying rangex to default")
+                rangex = [0, 24]
+
         if not rangey:
             rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])),
                       np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))]
             if np.any(np.isnan(np.array(rangey))):
-                raise Exception("NaN in data y range: try specifying rangey manually")
+                print: "Warning: NaN in data y range: specifying rangey to default")
+                if ctype=='camp': rangey = [0,100]
+                if ctype=='logcamp': rangey = [-10,10]
 
         # Plot the data
         if axis:
