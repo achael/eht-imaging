@@ -1483,6 +1483,22 @@ class Image(object):
         out = Image(imvec.reshape(image.ydim,image.xdim), image.psize,
                        image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
         return out
+        
+    def mask(self, cutoff=5.0, beamparams=np.array([1,1,1]), frac=0.0):
+        """Produce an image mask that shows all pixels above the specified cutoff percentage of the max flux.
+
+           Args:
+               cutoff (float): The cutoff percentage which is used to calculate which pixels are masked. Pixels that are masked greater 
+                        than cuttoff percentage of the max intensity if there is 0 intensity pixels in the image.
+
+           Returns:
+               (Image): output mask image
+
+        """
+        
+        mask = self.blur_gauss(beamparams, frac)
+        mask.imvec  = (mask.imvec > ((np.max(mask.imvec) - np.min(mask.imvec)) * cutoff/100.0) +  np.min(mask.imvec))   
+        return mask
 
     def display(self, cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
@@ -1848,6 +1864,7 @@ class Image(object):
         """
         ehtim.io.save.save_im_fits(self, fname)
         return
+        
 
 ###########################################################################################################################################
 #Image creation functions

@@ -7,5 +7,6 @@
 
 """
 from . import comp_plots
+from . import comparisons
 
 from ..const_def import *
