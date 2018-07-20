@@ -22,7 +22,7 @@ from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
 import glob
 from itertools import cycle
 
-
+ 
 def image_consistency(imarr, beamparams, metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[]):
     
     # get the pixel sizes and fov to compare images at
