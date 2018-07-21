@@ -21,6 +21,7 @@ from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
                                   AnnotationBbox)
 import glob
 from itertools import cycle
+import copy
 
 
 def image_consistency(imarr, beamparams, metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[]):
@@ -177,7 +178,8 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             txtstring = str(row)
             if len(row) == len(clique_fraclevels[-1][0]):
                 txtstring = '[all]'
-            ax.text((20./lenx)*c - (0./lenx), (20./leny)*r  - (10./leny), txtstring, fontsize=6, horizontalalignment='center')
+            # ax.text((20./lenx)*c - (0./lenx), (20./leny)*r  - (10./leny), txtstring, fontsize=6, horizontalalignment='center')
+            ax.text((20./lenx)*c,(20./leny)*(r-0.5), txtstring, fontsize=10, horizontalalignment='center', color='black', zorder=1000)
  
     ax.set_xlim(0, 22)
     ax.set_ylim(-10, 22)
@@ -186,7 +188,9 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
 #         item.patch.set_visible(False)
 #     fig.patch.set_visible(False)
 #     ax.axis('off')
- 
- 
+    
+    sdhlk = [copy.copy(imagebox), copy.copy(ab)]
     if show == True:
         plt.show()
+
+    return sdhlk

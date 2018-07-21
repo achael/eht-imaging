@@ -15,8 +15,8 @@ import comparisons as comp
 #### global dictionaries containing parameters and system/command line arguments
 # command line arguments
 args = {
-    'folderpath':sys.argv[1],
-    'directory':sys.argv[2]
+    'folderpath':'../../../imaging_website/sample_data/',#sys.argv[1],
+    'directory':'M87_0'#sys.argv[2]
 }
 
 # comparison parameters
@@ -40,7 +40,7 @@ def generate_metricmtx(fpath_, directory_):
 
     # get the image names
     filenames = [x for x in os.listdir(path + dirname + '/images/') if x.endswith('.fits') ]
-
+    # filenames = filenames[:5]
     # load the obs file
     obs = eh.obsdata.load_uvfits(path + dirname + '/' + dirname + '.uvfits')
     beamparams = obs.fit_beam()
