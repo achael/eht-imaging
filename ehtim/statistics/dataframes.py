@@ -90,27 +90,45 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         #column just for counting the elements
         vis['number'] = 1
         aggregated = {'datetime': np.min, 'time': np.min,
-        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum,
-        'qvis': lambda x: 0*1j, 'uvis': lambda x: 0*1j, 'vvis': lambda x: 0*1j,'qsigma':lambda x: 0,'usigma': lambda x: 0, 'vsigma': lambda x: 0}
+        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
+
+        if err_type not in ['measured', 'predicted']:
+            print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
+            err_type='predicted'
 
         #AVERAGING-------------------------------    
         if err_type=='measured':
             vis['dummy'] = vis['vis']
+            vis['udummy'] = vis['uvis']
+            vis['vdummy'] = vis['vvis']
+            vis['qdummy'] = vis['qvis']
             aggregated['vis'] = np.mean
+            aggregated['uvis'] = np.mean
+            aggregated['qvis'] = np.mean
+            aggregated['vvis'] = np.mean
             aggregated['dummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+            aggregated['udummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+            aggregated['vdummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+            aggregated['qdummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+   
         elif err_type=='predicted':
             aggregated['vis'] = np.mean
+            aggregated['uvis'] = np.mean
+            aggregated['qvis'] = np.mean
+            aggregated['vvis'] = np.mean
             aggregated['sigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
-        else:
-            print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
-            aggregated['vis'] = np.mean
-            aggregated['sigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+            aggregated['usigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+            aggregated['qsigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+            aggregated['vsigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
 
         #ACTUAL AVERAGING
         vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()
         
         if err_type=='measured':
             vis_avg['sigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['dummy'])]
+            vis_avg['usigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['udummy'])]
+            vis_avg['qsigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['qdummy'])]
+            vis_avg['vsigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['vdummy'])]
 
         vis_avg['amp'] = list(map(np.abs,vis_avg['vis']))
         vis_avg['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),vis_avg['vis']))
