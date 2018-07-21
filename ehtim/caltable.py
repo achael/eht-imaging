@@ -205,13 +205,13 @@ class Caltable(object):
             rangex = [np.min(tmins) - 0.2 * np.abs(np.min(tmins)),
                       np.max(tmaxes) + 0.2 * np.abs(np.max(tmaxes))]
             if np.any(np.isnan(np.array(rangex))):
-                print: "Warning: NaN in data x range: specifying rangex to default")
+                print("Warning: NaN in data x range: specifying rangex to default")
                 rangex = [0,24]
         if not rangey:
             rangey = [np.min(gmins) - 0.2 * np.abs(np.min(gmins)),
                       np.max(gmaxes) + 0.2 * np.abs(np.max(gmaxes))]
             if np.any(np.isnan(np.array(rangey))):
-                print: "Warning: NaN in data x range: specifying rangey to default")
+                print("Warning: NaN in data x range: specifying rangey to default")
                 rangey = [1.e-2,1.e2]
 
         plt.plot(np.linspace(rangex[0],rangex[1],5), np.ones(5),'k--')
