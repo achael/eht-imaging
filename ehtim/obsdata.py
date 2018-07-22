@@ -2917,7 +2917,7 @@ class Obsdata(object):
                 fname (str): path to output text file
         """
 
-        ehtim.io.save.save_obs_txt(self,fname)
+        ehtim.io.save.save_obs_txt(self, fname)
         return
 
 
@@ -2928,8 +2928,11 @@ class Obsdata(object):
                 fname (str): path to output text file
                 force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
         """
+        #TODO POL -- does force_singlepol make sense  here ???
+        if force_singlepol!=False and self.polrep!='stokes':
+            raise Exception("force_singlepol is incompatible with polrep!='stokes'")
 
-        ehtim.io.save.save_obs_uvfits(self,fname,force_singlepol=force_singlepol)
+        ehtim.io.save.save_obs_uvfits(self, fname, force_singlepol=force_singlepol)
         return
 
     def save_oifits(self, fname, flux=1.0):
@@ -2940,6 +2943,8 @@ class Obsdata(object):
                 fname (str): path to output text file
                 flux (float): normalization total flux
         """
+        if self.polrep!='stokes':
+            raise Exception("save_oifits not yet implemented for polreps other than 'stokes'")
 
         #Antenna diameter currently incorrect and the exact times are not correct in the datetime object
         ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
@@ -2997,25 +3002,28 @@ def merge_obs(obs_List, force_merge=False):
 
     return mergeobs
 
-def load_txt(fname):
+def load_txt(fname, polrep='stokes'):
 
     """Read an observation from a text file.
 
        Args:
            fname (str): path to input text file
+           polrep (str): load data as either 'stokes' or 'polprod_circ'
+
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_txt(fname)
+    return ehtim.io.load.load_obs_txt(fname, polrep=polrep)
 
-def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all):
+def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, polrep='stokes'):
 
     """Load observation data from a uvfits file.
 
        Args:
            fname (str): path to input text file
            flipbl (bool): flip baseline phases if True.
+           polrep (str): load data as either 'stokes' or 'polprod_circ'
            force_singlepol (str): 'R' or 'L' to load only 1 polarization
            channel (list): list of channels to average in the import. channel=all averages all channels
            IF (list): list of IFs to  average in  the import. IF=all averages all IFS
@@ -3023,7 +3031,7 @@ def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all):
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep)
 
 def load_oifits(fname, flux=1.0):
 

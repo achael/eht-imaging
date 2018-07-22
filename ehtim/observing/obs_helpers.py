@@ -38,7 +38,6 @@ import os
 import ehtim.const_def 
 from ehtim.const_def import *
 
-
 import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
@@ -271,8 +270,6 @@ def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
                                  var3/np.abs(p3)**2)
 
     return (bi, bisig)
-
-
 
 #TODO: debiasing strategy?? 
 def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, polrep='stokes'):
@@ -1112,6 +1109,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]%i%%"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+
     elif msgtype=='casa':
         message_list = [".",".",".","10",".",".",".","20",".",".",".","30",".",".",".","40",
                         ".",".",".","50",".",".",".","60",".",".",".","70",".",".",".","80",
@@ -1124,6 +1122,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: %s"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+
     elif msgtype=='itcrowd':
         message_list = ["0","1","1","8"," ","9","9","9"," ","8","8","1","9","9"," ",
                         "9","1","1","9"," ","7","2","5"," "," "," ","3"]

@@ -132,6 +132,7 @@ def save_im_fits(im, fname, mjd=False, time=False):
         header['STOKES'] = 'U'
         hduu = fits.ImageHDU(uimage, name='U', header=header)
         hdulist = [hdu, hduq, hduu]
+
     if len(im.vvec):
         vimage = np.reshape(im.vvec,(im.xdim,im.ydim))[::-1,:]
         header['STOKES'] = 'V'
@@ -215,7 +216,6 @@ def save_mov_txt(mov, fname):
 ##################################################################################################
 # Array IO
 ##################################################################################################
-
 def save_array_txt(arr, fname):
     """Save the array data in a text file.
     """
@@ -248,6 +248,7 @@ def save_obs_txt(obs, fname):
     outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
                            'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
                            'sigma', 'qsigma', 'usigma', 'vsigma'])
+
     head = ("SRC: %s \n" % obs.source +
                 "RA: " + rastring(obs.ra) + "\n" + "DEC: " + decstring(obs.dec) + "\n" +
                 "MJD: %i \n" % obs.mjd +
@@ -286,6 +287,7 @@ def save_obs_txt(obs, fname):
     fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %16.4f %16.4f    "+
            "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f %10.4f    "+
            "%10.8f    %10.8f    %10.8f    %10.8f")
+
     np.savetxt(fname, outdata, header=head, fmt=fmts)
     return
 
@@ -380,7 +382,8 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     header['history'] = "AIPS SORT ORDER='TB'"
 
     # Get data
-    obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
+    obsdata = obs.unpack(['time','tint','u','v','vis','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma','t1','t2','tau1','tau2'])
+    #obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
     ndat = len(obsdata['time'])
 
     # times and tints
@@ -406,15 +409,25 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     v = obsdata['v']
 
     # rr, ll, lr, rl, weights
-    rr = obsdata['vis'] + obsdata['vvis']
-    ll = obsdata['vis'] - obsdata['vvis']
-    rl = obsdata['qvis'] + 1j*obsdata['uvis']
-    lr = obsdata['qvis'] - 1j*obsdata['uvis']
+#    rr = obsdata['vis'] + obsdata['vvis']
+#    ll = obsdata['vis'] - obsdata['vvis']
+#    rl = obsdata['qvis'] + 1j*obsdata['uvis']
+#    lr = obsdata['qvis'] - 1j*obsdata['uvis']
 
-    weightrr = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
-    weightll = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
-    weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
-    weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
+#    weightrr = 1.0/(obsdata['sigma']**2 + obsdata['vsigma']**2)
+#    weightll = 1.0/(obsdata['sigma']**2 + obsdata['vsigma']**2)
+#    weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
+#    weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
+
+    rr = obsdata['rrvis']
+    ll = obsdata['llvis']
+    rl = obsdata['rlvis']
+    lr = obsdata['lrvis']
+
+    weightrr = 1.0/(obsdata['rrsigma']**2)
+    weightll = 1.0/(obsdata['llsigma']**2)
+    weightrl = 1.0/(obsdata['rlsigma']**2)
+    weightlr = 1.0/(obsdata['lrsigma']**2)
 
     # If necessary, enforce single polarization
     if force_singlepol == 'L':
@@ -481,7 +494,6 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     colfin = fits.Column(name='SEFD', format='1D', array=sefd)
 
     #TODO these antenna fields+header are questionable - look into them
-
     col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
     col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
     col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['R' for i in range(nsta)], dtype='|S1'))
@@ -505,12 +517,6 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     head['ARRAYY'] = 0.e0
     head['ARRAYZ'] = 0.e0
 
-    # TODO change the reference date
-    #rdate_out = '2000-01-01T00:00:00.0'
-    #rdate_gstiao_out = 114.38389781355
-    #rdate_offset_out = 0.e0
-
-
     rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
     rdate_out = rdate_tt_new.iso
     rdate_jd_out = rdate_tt_new.jd
@@ -528,7 +534,6 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     head['FREQ']= obs.rf
     head['POLARX'] = 0.e0
     head['POLARY'] = 0.e0
-
 
     head['ARRNAM'] = 'VLBA'  # TODO must be recognized by aips/casa
     head['XYZHAND'] = 'RIGHT'
@@ -615,6 +620,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
             print (jj, len(jds), round(jds[jj], ROUND_SCAN_INT))
             print("WARNING!!!: in save_uvfits NX table, didn't get to all entries when computing scan start/stop!")
             print (scan_times)
+
         time_nx = fits.Column(name="TIME", format="1D", unit='DAYS', array=np.array(scan_times))
         timeint_nx = fits.Column(name="TIME INTERVAL", format="1E", unit='DAYS', array=np.array(scan_time_ints))
         sourceid_nx = fits.Column(name="SOURCE ID",format="1J", unit='', array=np.ones(len(scan_times)))
