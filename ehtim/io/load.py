@@ -757,11 +757,11 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         lrweight = rrweight * 0.0
 
     # If necessary, enforce single polarization
-    if force_singlepol == 'L':
+    if force_singlepol in ['L' or 'LL']:
         rrweight = rrweight * 0.0
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
-    elif force_singlepol == 'R':
+    elif force_singlepol in ['R' or 'RR']:
         llweight = llweight * 0.0
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0

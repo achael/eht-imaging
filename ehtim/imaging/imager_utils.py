@@ -183,6 +183,8 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         nprior = (flux * Prior.imvec / np.sum((Prior.imvec)[embed_mask]))[embed_mask]
         ninit = (flux * InitIm.imvec / np.sum((InitIm.imvec)[embed_mask]))[embed_mask]
 
+    if len(nprior)==0:
+        raise Exception("clipfloor too large: all prior pixels have been clipped!")
 
     # Get data and fourier matrices for the data terms
     (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, **kwargs)
