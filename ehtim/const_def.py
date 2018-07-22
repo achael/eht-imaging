@@ -66,6 +66,13 @@ DTPOL = [('time','f8'),('tint','f8'),
          ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
          ('sigma','f8'),('qsigma','f8'),('usigma','f8'),('vsigma','f8')]
 
+DTPOL2 = [('time','f8'),('tint','f8'),
+         ('t1','U32'),('t2','U32'),
+         ('tau1','f8'),('tau2','f8'),
+         ('u','f8'),('v','f8'),
+         ('rris','c16'),('llvis','c16'),('rlvis','c16'),('lrvis','c16'),
+         ('rrsigma','f8'),('llsigma','f8'),('rlsigma','f8'),('lrsigma','f8')]
+
 DTBIS = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),
          ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
          ('bispec','c16'),('sigmab','f8')]
