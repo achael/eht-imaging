@@ -80,8 +80,11 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
     else:
         vis = make_df(obs)
         if scan_avg==False:
-            t0 = datetime.datetime(1960,1,1)
-            vis['round_time'] = list(map(lambda x: np.round((x- t0).total_seconds()/float(dt)),vis.datetime))  
+            #TODO
+            #we don't have to work on datetime products at all
+            #change it to only use 'time' in mjd
+            t0 = datetime.datetime(1960,1,1) 
+            vis['round_time'] = list(map(lambda x: np.floor((x- t0).total_seconds()/float(dt)),vis.datetime))  
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
         else:
             bins, labs = get_bins_labels(obs.scans)
@@ -134,8 +137,9 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         vis_avg['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),vis_avg['vis']))
         vis_avg['snr'] = vis_avg['amp']/vis_avg['sigma']
         if scan_avg==False:
-            #round datetime and time to the begining of the bucket
-            vis_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), vis_avg['round_time']))
+            #round datetime and time to the begining of the bucket and add half of a bucket time
+            half_bucket = dt/2.
+            vis_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x) + half_bucket), vis_avg['round_time']))
             vis_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., vis_avg['datetime']))
         else:
             #drop values that couldn't be matched to any scan
