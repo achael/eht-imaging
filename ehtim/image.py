@@ -271,7 +271,7 @@ class Image(object):
 
            Args:
                obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
-                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
 
@@ -307,8 +307,10 @@ class Image(object):
             obsdata['uvis'] = data[2]
             obsdata['vvis'] = data[3]
 
-        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata,
-                                             obs.tarr, source=self.source, mjd=obs.mjd)
+        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata, obs.tarr,
+                                             source=self.source, mjd=self.mjd, polrep='stokes',
+                                             ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
+                                             timetype=obs.timetype, scantable=obs.scans)
         return obs_no_noise
 
     def observe_same(self, obsin,
@@ -356,18 +358,20 @@ class Image(object):
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dtermp=dtermp,dterm_offset=dterm_offset)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
-                                             obs.tarr, source=obs.source, mjd=obs.mjd,
-                                             ampcal=ampcal, phasecal=phasecal,
-                                             opacitycal=opacitycal, dcal=dcal, frcal=frcal)
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+                                         source=obs.source, mjd=obs.mjd, polrep='stokes',
+                                         ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal,
+                                         timetype=obs.timetype, scantable=obs.scans)
+
             if inv_jones:
                 obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
-                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
-                                                 obs.tarr, source=obs.source, mjd=obs.mjd,
-                                                 ampcal=ampcal, phasecal=phasecal,
-                                                 opacitycal=True, dcal=True, frcal=True)
-                                                 #these are always set to True after inverse jones call
+                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+                                             source=obs.source, mjd=obs.mjd, polrep='stokes',
+                                             ampcal=ampcal, phasecal=phasecal, 
+                                             opacitycal=True, dcal=True, frcal=True,
+                                             timetype=obs.timetype, scantable=obs.scans)
+                                             #these are always set to True after inverse jones call
 
         # No Jones Matrices, Add noise the old way
         # There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
@@ -376,11 +380,11 @@ class Image(object):
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
-                                             obs.tarr, source=obs.source, mjd=obs.mjd,
-                                             ampcal=ampcal, phasecal=phasecal,
-                                             opacitycal=True, dcal=True, frcal=True)
-                                             #these are always set to True after inverse jones cal
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+                                         source=obs.source, mjd=obs.mjd, polrep='stokes',
+                                         ampcal=ampcal, phasecal=phasecal, opacitycal=True, dcal=True, frcal=True,
+                                         timetype=obs.timetype, scantable=obs.scans)
+                                         #these are always set to True after inverse jones cal
         return obs
 
     def observe(self, array, tint, tadv, tstart, tstop, bw,
@@ -438,7 +442,7 @@ class Image(object):
             mjd = self.mjd
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd,
-                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST = fix_theta_GMST)
+                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
