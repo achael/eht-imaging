@@ -681,7 +681,7 @@ class Obsdata(object):
                          timetype=self.timetype, scantable=self.scans)
 
     
-    def avg_coherent(self, inttime=0, scan_avg=False, msgtype='bar'):
+    def avg_coherent(self, inttime, scan_avg=False, msgtype='bar'):
         """Coherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
