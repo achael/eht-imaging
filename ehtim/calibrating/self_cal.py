@@ -42,7 +42,7 @@ from ehtim.calibrating.cal_helpers import *
 #Self-Calibration
 ###################################################################################################################################
 def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2, 
-             ttype='direct', fft_pad_factor=2, caltable=False, debias=True,
+             ttype='nfft', fft_pad_factor=2, caltable=False, debias=True,
              processes=-1,show_solution=False,msgtype='bar'):
     """Self-calibrate a dataset to an image.
 
@@ -77,25 +77,11 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
         sites = obs.tarr['site']
 
     # First, sample the model visibilities
+    # TODO POL -- sample different visibilities than just stokes I? 
     print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
-    obs_clean = im.observe_same_nonoise(obs, ttype=ttype, fft_pad_factor=fft_pad_factor)
+    obs_stokes = obs.switch_polrep('stokes')
+    obs_clean = im.observe_same_nonoise(obs_stokes, ttype=ttype, fft_pad_factor=fft_pad_factor)
     V = obs_clean.data['vis']
-#    if ttype == 'nfft':
-#        (data, sigma, nfft_A) = iu.chisqdata_vis_nfft(obs, im, fft_pad_factor=fft_pad_factor)
-#        nfft_info = nfft_A[0]
-#        plan = nfft_info.plan
-#        pulsefac = nfft_info.pulsefac
-#        plan.f_hat = (im.imvec).copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-#        plan.trafo()
-#        V = plan.f.copy()*pulsefac
-#    elif ttype=='fast':
-#        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_factor=fft_pad_factor)
-#        im_info, sampler_info_list, gridder_info_list = fft_A
-#        vis_arr = iu.fft_imvec(im.imvec, im_info)
-#        V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
-#    else:
-#        (data, sigma, A, im.imvec>0) = iu.chisqdata_vis(obs, im)
-#        V = np.dot(A, im.imvec)
 
     # Partition the list of model visibilities into scans
     from itertools import islice
@@ -123,8 +109,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
     # loop over scans and calibrate
     tstart = time.time()
     if processes > 0: # run on multiple cores with multiprocessing
-
-        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method,
+        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, obs.polrep, method,
                                                               show_solution, pad_amp, gain_tol, caltable, debias, msgtype
                                                              ] for i in range(len(scans))]))
 
@@ -132,7 +117,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
 
         for i in range(len(scans)):
             prog_msg(i, len(scans),msgtype=msgtype,nscan_last=i-1)
-            scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
+            scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites, polrep=obs.polrep,
                                  method=method, show_solution=show_solution, debias=debias,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
 
@@ -155,10 +140,10 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
     else: # return a calibrated observation
-        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
-                                        np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
+        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.concatenate(scans_cal), obs.tarr, 
+                                        polrep=obs.polrep, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
-                                        timetype=obs.timetype)
+                                        timetype=obs.timetype, scantable=obs.scans)
 
         out = obs_cal
 
@@ -168,7 +153,7 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
 
     return out
 
-def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=False, 
+def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', method="both", show_solution=False, 
                   pad_amp=0., gain_tol=.2, debias=True,caltable=False):
     """Self-calibrate a scan to an image.
 
@@ -178,6 +163,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
            V_scan (list) : precomputed scan visibilities
 
+           polrep (str): 'stokes' or 'polprod_circ' to specify the  polarization products in scan
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
@@ -196,6 +182,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         sites = list(set(scan['t1']).union(set(scan['t2'])))
 
     if len(V_scan) < 1:
+        # compute visibilities by DTFT if not given
         uv = np.hstack((scan['u'].reshape(-1,1), scan['v'].reshape(-1,1)))
         A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V_scan = np.dot(A, im.imvec)
@@ -218,15 +205,22 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         except KeyError:
             g2_keys.append(-1)
 
-    # scan visibilities and sigmas with extra padding
+    # TODO POL -- individual cal on different pol products?
+    # get scan visibilities -- just calibrate on stokes I for now
+    if polrep=='stokes': 
+        vis = scan['vis']
+        sigma = scan['sigma']
+    elif polrep=='polprod_circ':
+        vis = 0.5*(scan['rrvis'] +  scan['llvis'])
+        sigma = 0.5*np.sqrt(scan['rrsigma']**2 + scan['llsigma']**2)
+
     if method=='amp':
         if debias:
-            vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+            vis = amp_debias(np.abs(vis), np.abs(sigma))
         else:
-            vis = np.abs(amp)
-    else:
-        vis = scan['vis']
-    sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
+            vis = np.abs(vis)
+
+    sigma_inv = 1.0/np.sqrt(sigma**2+ (pad_amp*np.abs(vis))**2)
 
 
     # initial guess for gains
@@ -240,18 +234,12 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
             g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
             g = np.abs(np.real(g))
-            #g = np.abs(g)
 
         # append the default values to g for missing gains
         g = np.append(g, 1.)
         g1 = g[g1_keys]
         g2 = g[g2_keys]
 
-        #TODO debias!
-#        if method=='amp':
-#            verr = np.abs(scan['vis']) - g1*g2.conj() * np.abs(V_scan)
-#        else:
-#            verr = scan['vis'] - g1*g2.conj() * V_scan
         if method=='amp':
             verr = np.abs(vis) - g1*g2.conj() * np.abs(V_scan)
         else:
@@ -294,18 +282,21 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
         out = caldict
 
-    else: # apply the solution to the scan
+    else: # apply calibration solution
+        if polrep=='stokes': poldict = POLDICT_STOKES
+        elif polrep=='polprod_circ': poldict = POLDICT_PRODC
+
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
         gij_inv = (g1_fit * g2_fit.conj())**(-1)
-        scan['vis']  = gij_inv * scan['vis']
-        scan['qvis'] = gij_inv * scan['qvis']
-        scan['uvis'] = gij_inv * scan['uvis']
-        scan['vvis'] = gij_inv * scan['vvis']
-        scan['sigma']  = np.abs(gij_inv) * scan['sigma']
-        scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
-        scan['usigma'] = np.abs(gij_inv) * scan['usigma']
-        scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
+
+        # scale visibilities
+        for vistype in ['vis1','vis2','vis3','vis4']:
+            scan[poldict[vistype]]  *= gij_inv
+        # scale sigmas
+        for sigtype in ['sigma1','sigma2','sigma3','sigma4']:
+            scan[poldict[vistype]]  *= np.abs(gij_inv)
+
         out = scan
 
     return out
@@ -317,13 +308,13 @@ def init(x):
 def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
-def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable,debias,msgtype):
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, method, show_solution, pad_amp, gain_tol, caltable,debias,msgtype):
     if n > 1:
         global counter
         counter.increment()
         prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
-    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, 
+    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, method=method, show_solution=show_solution, 
                          pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable, debias=debias)
 
 

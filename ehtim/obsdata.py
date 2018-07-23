@@ -46,10 +46,7 @@ from ehtim.statistics.stats import *
 import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
 
-POLDICT_STOKES = {'vis1': 'vis', 'vis2': 'qvis', 'vis3': 'uvis', 'vis4': 'vvis', 
-                  'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma4': 'vsigma'} 
-POLDICT_PRODC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis', 
-                  'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'} 
+
 
 ##################################################################################################
 # Obsdata object
@@ -198,6 +195,61 @@ class Obsdata(object):
 
         return newobs
 
+    def switch_polrep(self, polrep_out='stokes'):
+        """Return a new observation with the polarization representation changed
+           Args:
+               polrep_out (str):  the polrep of the output data
+           Returns:
+               (Obsdata): new Obsdata object with potentially different polrep
+        """ 
+        if polrep_out not in ['stokes','polprod_circ']:
+            raise Exception("polrep_out must be either 'stokes' or 'polprod_circ'")
+        if polrep_out==self.polrep:
+            return self.copy()
+        elif polrep_out=='stokes': #polprod_circ -> stokes
+            data = np.empty(len(self.data), dtype=DTPOL)
+            for f in DTPOL:
+                f = f[0]
+                if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
+                    data[f] = self.data[f]
+                elif f=='vis':
+                    data[f] = 0.5*(self.data['rrvis'] + self.data['llvis'])
+                elif f=='qvis':
+                    data[f] = 0.5*(self.data['lrvis'] + self.data['rlvis'])
+                elif f=='uvis':
+                    data[f] = 0.5j*(self.data['lrvis'] - self.data['rlvis'])
+                elif f=='vvis':
+                    data[f] = 0.5*(self.data['rrvis'] - self.data['llvis'])
+                elif f in ['sigma','visgma']:
+                    data[f] = 0.5*np.sqrt(self.data['rrsigma']**2 + self.data['llsigma']**2)
+                elif f in ['qsigma','usigma']:
+                    data[f] = 0.5*np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
+
+        elif polrep_out=='polprod_circ': #stokes -> polprod_circ
+            data = np.empty(len(self.data), dtype=DTPOL)
+            for f in DTPOL:
+                f = f[0]
+                if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
+                    data[f] = self.data[f]
+                elif f=='rrvis':
+                    data[f] = (self.data['vis'] + self.data['vvis'])
+                elif f=='llvis':
+                    data[f] = (self.data['vis'] - self.data['vvis'])
+                elif f=='rlvis':
+                    data[f] = (self.data['qvis'] + 1j*self.data['uvis'])
+                elif f=='lrvis':
+                    data[f] = (self.data['qvis'] - 1j*self.data['uvis'])
+                elif f in ['rrsigma','llvisgma']:
+                    data[f] = np.sqrt(self.data['sigma']**2 + self.data['vsigma']**2)
+                elif f in ['rlsigma','lrsigma']:
+                    data[f] = np.sqrt(self.data['qsigma']**2 + self.data['usigma']**2)
+
+        newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, data, self.tarr, 
+                         source=self.source, mjd=self.mjd, polrep=polrep_out,
+                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                         timetype=self.timetype, scantable=self.scans)
+        return newobs
+
     def reorder_baselines(self):
         """Reorder baselines to match uvfits convention, based on the telescope array ordering
         """
@@ -248,6 +300,7 @@ class Obsdata(object):
         # Save the data
         self.data = obsdata
         return
+
 
     def reorder_tarr_sefd(self):
         """Reorder the telescope array by SEFD minimal to maximum
@@ -703,10 +756,11 @@ class Obsdata(object):
         print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
 
         # note that the tarr of the output includes all sites, even those that don't participate in the scan
-        splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, source=self.source, polrep=self.polrep,
+        splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, 
+                             source=self.source, polrep=self.polrep,
                              ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
                              dcal=self.dcal, frcal=self.frcal,
-                             timetype=self.timetype, scantable=self.scans)
+                             timetype=self.timetype) #No scantable
                      for tdata in self.tlist()
                     ]
 
@@ -761,9 +815,11 @@ class Obsdata(object):
         datatable = self.data.copy()
         datatable['u'] = uout
         datatable['v'] = vout
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd, polrep=self.polrep,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                         timetype=self.timetype, scantable=self.scans)
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, 
+                       source=self.source, mjd=self.mjd, polrep=self.polrep,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                       dcal=self.dcal, frcal=self.frcal,
+                       timetype=self.timetype, scantable=self.scans)
 
     
     def avg_coherent(self, inttime=0, scan_avg=False, msgtype='bar'):
@@ -779,8 +835,10 @@ class Obsdata(object):
             print('No scan data, ignoring scan_avg!')
             scan_avg=False
         vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, vis_avg, self.tarr, source=self.source, mjd=self.mjd,polrep=self.polrep,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, vis_avg, self.tarr, 
+                       source=self.source, mjd=self.mjd,polrep=self.polrep,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                       dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
     
     def avg_coherent_old(self, inttime, msgtype='bar'):
@@ -839,8 +897,11 @@ class Obsdata(object):
             # average data in a time region
             else:
                 tavg += 1
-                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion),
-                                         self.tarr, polrep=self.polrep, source=self.source, mjd=self.mjd)
+                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion), self.tarr,
+                                           source=self.source, mjd=self.mjd,polrep=self.polrep,
+                                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                                           dcal=self.dcal, frcal=self.frcal,
+                                           timetype=self.timetype, scantable=self.scans)
 
                 blsplit = obs_timeregion.unpack(alldata_list, mode='bl')
                 for bl in range(0,len(blsplit)):
@@ -883,9 +944,11 @@ class Obsdata(object):
                                timesplit[t][self.poldict['sigma3']][i], timesplit[t][self.poldict['sigma4']][i]
                                ), dtype=self.poltype
                              ))
-        print()
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, polrep=self.polrep, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+        print("\n")
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, 
+                       polrep=self.polrep, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                       dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
 
 
@@ -950,7 +1013,10 @@ class Obsdata(object):
             else:
                 tavg += 1
                 obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion), self.tarr, 
-                                         polrep=self.polrep, source=self.source, mjd=self.mjd)
+                                           source=self.source, mjd=self.mjd,polrep=self.polrep,
+                                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                                           dcal=self.dcal, frcal=self.frcal,
+                                           timetype=self.timetype, scantable=self.scans)
 
                 blsplit = obs_timeregion.unpack(alldata_list, mode='bl')
                 for bl in range(0,len(blsplit)):
@@ -994,11 +1060,12 @@ class Obsdata(object):
                                 ), dtype=self.poltype
                                 ))
         print()
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, polrep=self.polrep,
-                       source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, 
+                       source=self.source, mjd=self.mjd,polrep=self.polrep,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                       dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
-  
+
     def add_amp(self, return_type='rec', 
                       avg_time=0, debias=True, err_type='predicted'):
 
@@ -1376,8 +1443,9 @@ class Obsdata(object):
             d[-1] = d[-1] * noise_rescale_factor
 
         return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr,
-                       polrep=self.polrep, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                       source=self.source, mjd=self.mjd,polrep=self.polrep,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                       dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
 
     def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max'):
@@ -1779,8 +1847,9 @@ class Obsdata(object):
         datatable[self.poldict['sigma4']] = sigma4/ker
 
         obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
-                           polrep=self.polrep, source=self.source, mjd=self.mjd,
-                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                           source=self.source, mjd=self.mjd,polrep=self.polrep,
+                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                           dcal=self.dcal, frcal=self.frcal,
                            timetype=self.timetype, scantable=self.scans)
         return obstaper
 
@@ -1819,8 +1888,9 @@ class Obsdata(object):
         datatable[self.poldict['sigma4']] = sigma4*ker
 
         obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
-                           polrep=self.polrep, source=self.source, mjd=self.mjd,
-                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                           source=self.source, mjd=self.mjd,polrep=self.polrep,
+                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                           dcal=self.dcal, frcal=self.frcal,
                            timetype=self.timetype, scantable=self.scans)
         return obstaper
 
@@ -1869,8 +1939,9 @@ class Obsdata(object):
         datatable[self.poldict['sigma4']] = sigma4
 
         obsdeblur = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
-                            polrep=self.polrep, source=self.source, mjd=self.mjd,
-                            ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                            source=self.source, mjd=self.mjd,polrep=self.polrep,
+                            ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                            dcal=self.dcal, frcal=self.frcal,
                             timetype=self.timetype, scantable=self.scans)
         return obsdeblur
 
