@@ -126,13 +126,21 @@ def change_cut_off(metric_mtx, fracsteps, imarr, beamparams, cutoff=0.95, zoom=0
     generate_consistency_plot(cliques_fraclevels, im_cliques_fraclevels, metric_mtx=metric_mtx, fracsteps=fracsteps, beamparams=beamparams, zoom=zoom, fov=fov)
            
  
-def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1, fov=1, show=True, framesize=(20,10)):
-
+def change_cut_off(metric_mtx, fracsteps, imarr, beamparams, cutoff=0.95, zoom=0.1, fov=1):
+    (cliques_fraclevels, im_cliques_fraclevels) = image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=cutoff)
+    generate_consistency_plot(cliques_fraclevels, im_cliques_fraclevels, metric_mtx=metric_mtx, fracsteps=fracsteps, beamparams=beamparams, zoom=zoom, fov=fov, cutoff=cutoff)
+           
+ 
+def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1, fov=1, show=True, framesize=(20,10), fracsteps=None, cutoff=None):
+ 
     fig, ax = plt.subplots(figsize=framesize)
     cycol = cycle('bgrcmk')
+ 
+    x_loc = []
      
     for c, column in enumerate(clique_fraclevels):
         colorc = cycol.next()
+        x_loc.append(((20./len(clique_fraclevels))*c))
         for r, row in enumerate(column):
  
             # adding the images
@@ -144,9 +152,10 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             sample_image = im_clique_fraclevels[c][r].regrid_image(fov*im_clique_fraclevels[c][r].fovx(), 512)
             arr_img = sample_image.imvec.reshape(sample_image.xdim, sample_image.ydim)
             imagebox = OffsetImage(arr_img, zoom=zoom, cmap='afmhot')
-            
+           
             imagebox.image.axes = ax
              
+       
             ab = AnnotationBbox(imagebox, ((20./lenx)*c,(20./leny)*r),
                                 xycoords='data',
                                 pad=0.0,
@@ -175,22 +184,34 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             row.sort()
             # adding the text
             txtstring = str(row)
-            print ("TEST")
-            print(ab.get_window_extent())
-            raw_input()
+            # print(ab.get_window_extent())
             if len(row) == len(clique_fraclevels[-1][0]):
                 txtstring = '[all]'
-#             ax.text((20./lenx)*c - (0./lenx), (20./leny)*r-int(zoom*arr_img.shape[1])/2., txtstring, fontsize=6, horizontalalignment='center')
-            ax.text((20./lenx)*c,(20./leny)*r-0.4*imagebox.get_extent()[0], txtstring, fontsize=20, horizontalalignment='center', color='white', zorder=1000)
+ 
+            # ax.text((20./lenx)*c - (0./lenx), (20./leny)*r  - (10./leny), txtstring, fontsize=6, horizontalalignment='center')
+            ax.text((20./lenx)*c,(20./leny)*(r-0.5), txtstring, fontsize=10, horizontalalignment='center', color='black', zorder=1000)
  
     ax.set_xlim(0, 22)
     ax.set_ylim(-10, 22)
+ 
+    ax.set_xticks(x_loc)
+    ax.set_xticklabels(fracsteps)
+ 
+ 
+    ax.set_yticks([])
+    ax.set_yticklabels([])
+ 
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+ 
+    ax.set_title('Blurred comparison of all images; cutoff={0}, fov (uas)={1}'.format(str(cutoff), str(im_clique_fraclevels[0][0].fovx()/eh.RADPERUAS)))
+ 
  
 #     for item in [fig, ax]:
 #         item.patch.set_visible(False)
 #     fig.patch.set_visible(False)
 #     ax.axis('off')
- 
- 
     if show == True:
         plt.show()
