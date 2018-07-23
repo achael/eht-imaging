@@ -2873,7 +2873,8 @@ def merge_obs(obs_List):
     #TODO merge scan table??
     scan_merge = []
     for obs in obs_List:
-        if not (scan_merge is None): scan_merge.append(obs.scans)
+        if not (scan_merge is None):
+            scan_merge.append(obs.scans)
     scan_merge = np.hstack(scan_merge)
 
     mergeobs = Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge,
