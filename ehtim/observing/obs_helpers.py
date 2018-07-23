@@ -201,11 +201,11 @@ def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
             var2 = l2['qsigma']**2 + l2['usigma']**2
             var3 = l3['qsigma']**2 + l3['usigma']**2
 
+
         elif vtype in ["pvis","rlvis"]:
-            p1 = l1['qvis'] + 1j*l2['uvis']
+            p1 = l1['qvis'] + 1j*l1['uvis']
             p2 = l2['qvis'] + 1j*l2['uvis']
             p3 = l3['qvis'] + 1j*l3['uvis']
-            bi = p1 * p2 * p3
 
             var1 = l1['qsigma']**2 + l1['usigma']**2
             var2 = l2['qsigma']**2 + l2['usigma']**2
@@ -263,6 +263,8 @@ def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
             var1 = 0.25*(l1['lrsigma']**2 + l1['rlsigma']**2)
             var2 = 0.25*(l2['lrsigma']**2 + l2['rlsigma']**2)
             var3 = 0.25*(l3['lrsigma']**2 + l3['rlsigma']**2)
+    else:
+        raise Exception("only 'stokes' and 'polprod_circ' are supported polreps!")
 
     bi = p1*p2*p3
     bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +
@@ -411,7 +413,8 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
             p2 = 0.5*np.abs(blue2['lrvis'] - blue2['rlvis'])
             p3 = 0.5*np.abs(red1['lrvis'] - red1['rlvis'])
             p4 = 0.5*np.abs(red2['lrvis'] - red2['rlvis'])
-
+    else:
+        raise Exception("only 'stokes' and 'polprod_circ' are supported polreps!")
 
 
     # debias

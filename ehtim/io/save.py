@@ -585,10 +585,11 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     ROUND_SCAN_INT = 5
     comp_fac = 3600*24*100 # compare to 100th of a second
     scan_arr = obs.scans
-    print ('Building NX table')
+
     if (scan_arr is None):
         print ("No NX table in saved uvfits")
     else:
+        print ('Building NX table')
         scan_arr = scan_arr/24.
         for scan in  scan_arr:
             scan_start = round(scan[0], ROUND_SCAN_INT)

@@ -438,6 +438,8 @@ def load_obs_txt(filename, polrep='stokes'):
            obs (Obsdata): Obsdata object loaded from file
     """
 
+    if not(polrep in ['stokes' , 'polprod_circ']):
+        raise Exception("polrep should be 'stokes' or 'polprod_circ' in load_uvfits")
     print ("\nLoading text observation: ", filename)
 
     # Read the header parameters
@@ -523,7 +525,7 @@ def load_obs_txt(filename, polrep='stokes'):
             v = float(row[7])
             vis = float(row[8]) * np.exp(1j * float(row[9]) * DEGREE)
             qvis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-            uvis = float(row[12]) * np.exp(1j * float(row[14]) * DEGREE)
+            uvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
             vvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
             sigma = float(row[16])
             qsigma = float(row[17])
@@ -533,20 +535,20 @@ def load_obs_txt(filename, polrep='stokes'):
         else:
             raise Exception('Text file does not have the right number of fields!')
 
-        if poltype=='stokes':
+        if polrep=='stokes':
             datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
                                         u, v, vis, qvis, uvis, vvis,
                                         sigma, qsigma, usigma, vsigma), dtype=DTPOL))
-        elif poltype=='polprod_circ':
-            rr = vis  +  vvis
-            ll = vis - vvis
-            rl = qvis + 1j*uvis
-            lr = qvis - 1j*uvis
+        elif polrep=='polprod_circ':
+            rrvis = vis  +  vvis
+            llvis = vis - vvis
+            rlvis = qvis + 1j*uvis
+            lrvis = qvis - 1j*uvis
 
-            rrisg = (sigma**2 + vsigma**2)
-            llsig = (sigma**2 + vsigma**2)
-            rlsig = (qsigma**2 + usigma**2)
-            lrsig = (qsigma**2 + usigma**2)
+            rrsigma = np.sqrt(sigma**2 + vsigma**2)
+            llsigma = np.sqrt(sigma**2 + vsigma**2)
+            rlsigma = np.sqrt(qsigma**2 + usigma**2)
+            lrsigma = np.sqrt(qsigma**2 + usigma**2)
 
             datatable2.append(np.array((time, tint, t1, t2, tau1, tau2, u, v, 
                                         rrvis, llvis, rlvis, lrvis,
@@ -679,7 +681,9 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    if force_singlepol!=False and self.polrep!='stokes':
+    if not(polrep in ['stokes' , 'polprod_circ']):
+        raise Exception("polrep should be 'stokes' or 'polprod_circ' in load_uvfits")
+    if not(force_singlepol is None or force_singlepol==False) and polrep!='stokes':
         raise Exception("force_singlepol is incompatible with polrep!='stokes' in load_uvfits")
 
     # Load the uvfits file
@@ -1020,9 +1024,49 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
         v = -v
 
     if polrep=='stokes':
-        # TODO POL do we need any masking here??
+        # Stokes I
+        ivis = 0.5 * (rr + ll)
+        ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
+        ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
+
+        isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
+        isigma[~llmask_dsize] = rrsig[~llmask_dsize]
+        isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
+
+        # TODO what should the polarization  sigmas be if no data?
+        # Stokes V
+        vvis = 0.5 * (rr - ll)
+        vvis[~vmask_dsize] = 0.
+
+        vsigma = copy.deepcopy(isigma)
+        vsigma[~vmask_dsize] = isigma[~vmask_dsize]
+
+        # Stokes Q,U
+        qvis = 0.5 * (rl + lr)
+        uvis = 0.5j * (lr - rl)
+        qvis[~qumask_dsize] = 0.
+        uvis[~qumask_dsize] = 0.
+
+        qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
+        usigma = qsigma
+        qsigma[~qumask_dsize] = isigma[~qumask_dsize]
+        usigma[~qumask_dsize] = isigma[~qumask_dsize]
 
         # Make a datatable
+        datatable = []
+        for i in range(len(times)):
+            datatable.append(np.array
+                             ((
+                               times[i], tints[i],
+                               t1[i], t2[i], tau1[i], tau2[i],
+                               u[i], v[i],
+                               ivis[i], qvis[i], uvis[i], vvis[i],
+                               isigma[i], qsigma[i], usigma[i], vsigma[i]
+                               ), dtype=DTPOL
+                              ))
+
+    elif polrep=='polprod_circ':
+        # TODO POL do we need any masking here??
         datatable = []
         for i in range(len(times)):
             datatable.append(np.array

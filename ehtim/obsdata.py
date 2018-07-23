@@ -47,9 +47,9 @@ import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
 
 POLDICT_STOKES = {'vis1': 'vis', 'vis2': 'qvis', 'vis3': 'uvis', 'vis4': 'vvis', 
-                  'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma3': 'vsigma'} 
-POLDICT_PRODC = {'vis1': 'rris', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis', 
-                  'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma3': 'lrsigma'} 
+                  'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma4': 'vsigma'} 
+POLDICT_PRODC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis', 
+                  'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'} 
 
 ##################################################################################################
 # Obsdata object
@@ -118,14 +118,14 @@ class Obsdata(object):
 
         if len(datatable) == 0:
             raise Exception("No data in input table!")
-        if (datatable.dtype in [DTPOL, DTPOL2]):
+        if not (datatable.dtype in [DTPOL, DTPOL2]):
             raise Exception("Data table should be a recarray with datatable.dtype = %s" % DTPOL)
 
         if polrep=='stokes':
             self.polrep = 'stokes'
             self.poldict = POLDICT_STOKES
             self.poltype = DTPOL
-        elif polrep=='polprod_circ'
+        elif polrep=='polprod_circ':
             self.polrep = 'polprod_circ'
             self.poldict = POLDICT_PRODC
             self.poltype = DTPOL2
@@ -229,18 +229,18 @@ class Obsdata(object):
                         elif self.polrep=='polprod_circ':
                             dat['rrvis'] = np.conj(dat['rrvis'])
                             dat['llvis'] = np.conj(dat['llvis'])
-                            dat['rlvis'] = np.conj(dat['lrvis']) #must switch l & r !!
-                            dat['lrvis'] = np.conj(dat['rlvis'])
+                            #must switch l & r !!
+                            rl = dat['rlvis'].copy()
+                            lr = dat['lrvis'].copy()
+                            dat['rlvis'] = np.conj(lr) 
+                            dat['lrvis'] = np.conj(rl)
                         else:
                             raise Exception("polrep must be either 'stokes' or 'polprod_circ'")
-#                       dat[self.poldict('vis1')] = np.conj(dat[self.poldict('vis1')])
-#                       dat[self.poldict('vis2')] = np.conj(dat[self.poldict('vis2')])
-#                       dat[self.poldict('vis3')] = np.conj(dat[self.poldict('vis3')])
-#                       dat[self.poldict('vis4')] = np.conj(dat[self.poldict('vis4')])
 
                      # Append the data point
                      blpairs.append(set((dat['t1'],dat['t2'])))
                      obsdata.append(dat)
+
         obsdata = np.array(obsdata, dtype=self.poltype)
         # Timesort data
         obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
@@ -311,18 +311,17 @@ class Obsdata(object):
                 data[f] = np.hstack((self.data[f], -self.data[f]))
 
             #elif f in ['vis','qvis','uvis','vvis']:
-            elif f in [self.poldict('vis1'),self.poldict('vis2'),
-                       self.poldict('vis3'),self.poldict('vis4')]:
+            elif f in [self.poldict['vis1'],self.poldict['vis2'],
+                       self.poldict['vis3'],self.poldict['vis4']]:
                 if self.polrep=='stokes':
                     data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
                 elif self.polrep=='polprod_circ':
                     if f in ['rrvis','llvis']:
                         data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
-                    if f=='rlvis':
+                    elif f=='rlvis':
                         data[f] = np.hstack((self.data['rlvis'], np.conj(self.data['lrvis'])))
-                    if f=='lrvis':
+                    elif f=='lrvis':
                         data[f] = np.hstack((self.data['lrvis'], np.conj(self.data['rlvis'])))
-
                 else:
                     raise Exception("polrep must be either 'stokes' or 'polprod_circ'")
 
@@ -523,82 +522,82 @@ class Obsdata(object):
                 ty = 'U32'
             elif field in ['vis','amp','phase','snr','sigma','sigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['vis']
                     sig = data['sigma']
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = 0.5*(data['rrvis'] + data['llvis'])
                     sig = 0.5*np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
             elif field in ['qvis','qamp','qphase','qsnr','qsigma','qsigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['qvis']
                     sig = data['qsigma']
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = 0.5*(data['lrvis'] + data['rlvis'])
                     sig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
             elif field in ['uvis','uamp','uphase','usnr','usigma','usigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['uvis']
                     sig = data['usigma']
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = 0.5j*(data['lrvis'] - data['rlvis'])
                     sig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
             elif field in ['vvis','vamp','vphase','vsnr','vsigma','vsigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['vvis']
                     sig = data['vsigma']
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = 0.5*(data['rrvis'] - data['llvis'])
                     sig = 0.5*np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
             elif field in ['pvis','pamp','pphase','psnr','psigma','psigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['qvis'] + 1j * data['uvis']
                     sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = data['rlvis']
                     sig = data['rlsigma']
             elif field in ['m','mamp','mphase','msnr','msigma','msigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = (data['qvis'] + 1j * data['uvis'])/data['vis']
                     sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
                     sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'], 0.5*(data['rrvis']+data['llvis']), out) #TODO POL
             elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['vis'] + data['vvis']
                     sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = data['rrvis']
                     sig = data['rrsigma']
             elif field in ['llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['vis'] - data['vvis']
                     sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = data['llvis']
                     sig = data['llsigma']
             elif field in ['rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['qvis'] + 1j*data['uvis']
                     sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = data['rlvis']
                     sig = data['rlsigma']
             elif field in ['lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase']:
                 ty = 'c16'
-                if self.poltype=='stokes':
+                if self.polrep=='stokes':
                     out = data['qvis'] - 1j*data['uvis']
                     sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.poltype=='polprod_circ':
+                elif self.polrep=='polprod_circ':
                     out = data['lrvis']
                     sig = data['lrsigma']
 
@@ -795,8 +794,10 @@ class Obsdata(object):
         """
 
         alldata_list = ['u', 'v','t1', 't2', 'tau1', 'tau2', 'tint', 'time',
-                        self.poldict('vis1'),self.poldict('vis2'),self.poldict('vis3'),self.poldict('vis4'),
-                        self.poldict('sigma1'),self.poldict('sigma2'),self.poldict('sigma3'),self.poldict('sigma4')]
+                        self.poldict['vis1'],self.poldict['vis2'],
+                        self.poldict['vis3'],self.poldict['vis4'],
+                        self.poldict['sigma1'],self.poldict['sigma2'],
+                        self.poldict['sigma3'],self.poldict['sigma4']]
 
 
         timesplit = self.unpack(alldata_list, mode='time')
@@ -824,14 +825,14 @@ class Obsdata(object):
                                timesplit[t]['tau2'][i],
                                timesplit[t]['u'][i],
                                timesplit[t]['v'][i],
-                               timesplit[t][self.poldict('vis1')][i],
-                               timesplit[t][self.poldict('vis2')][i],
-                               timesplit[t][self.poldict('vis3')][i],
-                               timesplit[t][self.poldict('vis4')][i],
-                               timesplit[t][self.poldict('sigma1')][i],
-                               timesplit[t][self.poldict('sigma2')][i],
-                               timesplit[t][self.poldict('sigma3')][i],
-                               timesplit[t][self.poldict('sigma4')][i]
+                               timesplit[t][self.poldict['vis1']][i],
+                               timesplit[t][self.poldict['vis2']][i],
+                               timesplit[t][self.poldict['vis3']][i],
+                               timesplit[t][self.poldict['vis4']][i],
+                               timesplit[t][self.poldict['sigma1']][i],
+                               timesplit[t][self.poldict['sigma2']][i],
+                               timesplit[t][self.poldict['sigma3']][i],
+                               timesplit[t][self.poldict['sigma4']][i]
                                ), dtype=self.poltype
                              ))
 
@@ -855,14 +856,14 @@ class Obsdata(object):
                                np.mean(bldata['tau2']),
                                np.mean(bldata['u']),
                                np.mean(bldata['v']),
-                               np.mean(bldata[self.poldict('vis1')]),
-                               np.mean(bldata[self.poldict('vis2')]),
-                               np.mean(bldata[self.poldict('vis3')]),
-                               np.mean(bldata[self.poldict('vis4')]),
-                               np.sqrt(np.sum(bldata[self.poldict('sigma1')]**2)/len(bldata)**2),
-                               np.sqrt(np.sum(bldata[self.poldict('sigma2')]**2)/len(bldata)**2),
-                               np.sqrt(np.sum(bldata[self.poldict('sigma3')]**2)/len(bldata)**2),
-                               np.sqrt(np.sum(bldata[self.poldict('sigma4')]**2)/len(bldata)**2)
+                               np.mean(bldata[self.poldict['vis1']]),
+                               np.mean(bldata[self.poldict['vis2']]),
+                               np.mean(bldata[self.poldict['vis3']]),
+                               np.mean(bldata[self.poldict['vis4']]),
+                               np.sqrt(np.sum(bldata[self.poldict['sigma1']]**2)/len(bldata)**2),
+                               np.sqrt(np.sum(bldata[self.poldict['sigma2']]**2)/len(bldata)**2),
+                               np.sqrt(np.sum(bldata[self.poldict['sigma3']]**2)/len(bldata)**2),
+                               np.sqrt(np.sum(bldata[self.poldict['sigma4']]**2)/len(bldata)**2)
                                ), dtype=self.poltype
                              ))
 
@@ -876,10 +877,10 @@ class Obsdata(object):
                                timesplit[t]['t1'][i], timesplit[t]['t2'][i], 
                                timesplit[t]['tau1'][i], timesplit[t]['tau2'][i],
                                timesplit[t]['u'][i], timesplit[t]['v'][i],
-                               timesplit[t][self.poldict('vis1')][i], timesplit[t][self.poldict('vis2')][i], 
-                               timesplit[t][self.poldict('vis3')][i], timesplit[t][self.poldict('vis4')][i],
-                               timesplit[t][self.poldict('sigma1')][i], timesplit[t][self.poldict('sigma2')][i],
-                               timesplit[t][self.poldict('sigma3')][i], timesplit[t][self.poldict('sigma4')][i]
+                               timesplit[t][self.poldict['vis1']][i], timesplit[t][self.poldict['vis2']][i], 
+                               timesplit[t][self.poldict['vis3']][i], timesplit[t][self.poldict['vis4']][i],
+                               timesplit[t][self.poldict['sigma1']][i], timesplit[t][self.poldict['sigma2']][i],
+                               timesplit[t][self.poldict['sigma3']][i], timesplit[t][self.poldict['sigma4']][i]
                                ), dtype=self.poltype
                              ))
         print()
@@ -903,8 +904,10 @@ class Obsdata(object):
         """
 
         alldata_list = ['u', 'v','t1', 't2', 'tau1', 'tau2', 'tint', 'time',
-                        self.poldict('vis1'),self.poldict('vis2'),self.poldict('vis3'),self.poldict('vis4'),
-                        self.poldict('sigma1'),self.poldict('sigma2'),self.poldict('sigma3'),self.poldict('sigma4')]
+                        self.poldict['vis1'],self.poldict['vis2'],
+                        self.poldict['vis3'],self.poldict['vis4'],
+                        self.poldict['sigma1'],self.poldict['sigma2'],
+                        self.poldict['sigma3'],self.poldict['sigma4']]
 
 
         timesplit = self.unpack(alldata_list, mode='time')
@@ -932,14 +935,14 @@ class Obsdata(object):
                                 timesplit[t]['tau2'][i],
                                 timesplit[t]['u'][i],
                                 timesplit[t]['v'][i],
-                                timesplit[t][self.poldict('vis1')][i],
-                                timesplit[t][self.poldict('vis2')][i],
-                                timesplit[t][self.poldict('vis3')][i],
-                                timesplit[t][self.poldict('vis4')][i],
-                                timesplit[t][self.poldict('sigma1')][i],
-                                timesplit[t][self.poldict('sigma2')][i],
-                                timesplit[t][self.poldict('sigma3')][i],
-                                timesplit[t][self.poldict('sigma4')][i]
+                                timesplit[t][self.poldict['vis1']][i],
+                                timesplit[t][self.poldict['vis2']][i],
+                                timesplit[t][self.poldict['vis3']][i],
+                                timesplit[t][self.poldict['vis4']][i],
+                                timesplit[t][self.poldict['sigma1']][i],
+                                timesplit[t][self.poldict['sigma2']][i],
+                                timesplit[t][self.poldict['sigma3']][i],
+                                timesplit[t][self.poldict['sigma4']][i]
                                 ), dtype=self.poltype
                                 ))
 
@@ -953,10 +956,10 @@ class Obsdata(object):
                 for bl in range(0,len(blsplit)):
 
                     bldata = blsplit[bl]
-                    amp_vis1, sig_vis1 = mean_incoh_amp_from_vis(bldata[self.poldict('vis1')],bldata[self.poldict('sigma1')],debias=debias,err_type=err_type) #TODO POL??
-                    amp_vis2, sig_vis2 = mean_incoh_amp_from_vis(bldata[self.poldict('vis2')],bldata[self.poldict('sigma2')],debias=debias,err_type=err_type)
-                    amp_vis3, sig_vis3 = mean_incoh_amp_from_vis(bldata[self.poldict('vis3')],bldata[self.poldict('sigma3')],debias=debias,err_type=err_type)
-                    amp_vis4, sig_vis4 = mean_incoh_amp_from_vis(bldata[self.poldict('vis4')],bldata[self.poldict('sigma4')],debias=debias,err_type=err_type)
+                    amp_vis1, sig_vis1 = mean_incoh_amp_from_vis(bldata[self.poldict['vis1']],bldata[self.poldict['sigma1']],debias=debias,err_type=err_type)
+                    amp_vis2, sig_vis2 = mean_incoh_amp_from_vis(bldata[self.poldict['vis2']],bldata[self.poldict['sigma2']],debias=debias,err_type=err_type)
+                    amp_vis3, sig_vis3 = mean_incoh_amp_from_vis(bldata[self.poldict['vis3']],bldata[self.poldict['sigma3']],debias=debias,err_type=err_type)
+                    amp_vis4, sig_vis4 = mean_incoh_amp_from_vis(bldata[self.poldict['vis4']],bldata[self.poldict['sigma4']],debias=debias,err_type=err_type)
 
                     datatable.append(np.array
                                 ((
@@ -984,10 +987,10 @@ class Obsdata(object):
                                 timesplit[t]['t1'][i], timesplit[t]['t2'][i], 
                                 timesplit[t]['tau1'][i], timesplit[t]['tau2'][i],
                                 timesplit[t]['u'][i], timesplit[t]['v'][i],
-                                timesplit[t][self.poldict('vis1')][i], timesplit[t][self.poldict('vis2')][i], 
-                                timesplit[t][self.poldict('vis3')][i], timesplit[t][self.poldict('vis4')][i],
-                                timesplit[t][self.poldict('sigma1')][i], timesplit[t][self.poldict('sigma2')][i],
-                                timesplit[t][self.poldict('sigma3')][i], timesplit[t][self.poldict('sigma4')][i]
+                                timesplit[t][self.poldict['vis1']][i], timesplit[t][self.poldict['vis2']][i], 
+                                timesplit[t][self.poldict['vis3']][i], timesplit[t][self.poldict['vis4']][i],
+                                timesplit[t][self.poldict['sigma1']][i], timesplit[t][self.poldict['sigma2']][i],
+                                timesplit[t][self.poldict['sigma3']][i], timesplit[t][self.poldict['sigma4']][i]
                                 ), dtype=self.poltype
                                 ))
         print()
@@ -1016,10 +1019,10 @@ class Obsdata(object):
             self.amp = foo.data
         else:
             data = copy.deepcopy(self.data)
-            data[self.poldict('vis1')] = np.abs(data[self.poldict('vis1')])
-            data[self.poldict('vis2')] = np.abs(data[self.poldict('vis2')])
-            data[self.poldict('vis3')] = np.abs(data[self.poldict('vis3')])
-            data[self.poldict('vis4')] = np.abs(data[self.poldict('vis4')])
+            data[self.poldict['vis1']] = np.abs(data[self.poldict['vis1']])
+            data[self.poldict['vis2']] = np.abs(data[self.poldict['vis2']])
+            data[self.poldict['vis3']] = np.abs(data[self.poldict['vis3']])
+            data[self.poldict['vis4']] = np.abs(data[self.poldict['vis4']])
             self.amp = data
         print("updated self.amp: avg_time %f s\n"%avg_time)
 
@@ -1752,28 +1755,28 @@ class Obsdata(object):
         """
         datatable = self.data.copy()
        
-        vis1 = datatable[self.poldict('vis1')]
-        vis2 = datatable[self.poldict('vis2')]
-        vis3 = datatable[self.poldict('vis3')]
-        vis4 = datatable[self.poldict('vis4')]
-        sigma1 = datatable[self.poldict('sigma1')]
-        sigma2 = datatable[self.poldict('sigma2')]
-        sigma3 = datatable[self.poldict('sigma3')]
-        sigma4 = datatable[self.poldict('sigma4')]
+        vis1 = datatable[self.poldict['vis1']]
+        vis2 = datatable[self.poldict['vis2']]
+        vis3 = datatable[self.poldict['vis3']]
+        vis4 = datatable[self.poldict['vis4']]
+        sigma1 = datatable[self.poldict['sigma1']]
+        sigma2 = datatable[self.poldict['sigma2']]
+        sigma3 = datatable[self.poldict['sigma3']]
+        sigma4 = datatable[self.poldict['sigma4']]
         u = datatable['u']
         v = datatable['v']
 
         fwhm_sigma = fwhm / (2*np.sqrt(2*np.log(2)))
         ker = np.exp(-2 * np.pi**2 * fwhm_sigma**2*(u**2+v**2))
 
-        datatable[self.poldict('vis1')] = vis1/ker
-        datatable[self.poldict('vis2')] = vis2/ker
-        datatable[self.poldict('vis3')] = vis3/ker
-        datatable[self.poldict('vis4')] = vis4/ker
-        datatable[self.poldict('sigma1')] = sigma1/ker
-        datatable[self.poldict('sigma2')] = sigma2/ker
-        datatable[self.poldict('sigma3')] = sigma3/ker
-        datatable[self.poldict('sigma4')] = sigma4/ker
+        datatable[self.poldict['vis1']] = vis1/ker
+        datatable[self.poldict['vis2']] = vis2/ker
+        datatable[self.poldict['vis3']] = vis3/ker
+        datatable[self.poldict['vis4']] = vis4/ker
+        datatable[self.poldict['sigma1']] = sigma1/ker
+        datatable[self.poldict['sigma2']] = sigma2/ker
+        datatable[self.poldict['sigma3']] = sigma3/ker
+        datatable[self.poldict['sigma4']] = sigma4/ker
 
         obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
                            polrep=self.polrep, source=self.source, mjd=self.mjd,
@@ -1792,28 +1795,28 @@ class Obsdata(object):
         """
         datatable = self.data.copy()
 
-        vis1 = datatable[self.poldict('vis1')]
-        vis2 = datatable[self.poldict('vis2')]
-        vis3 = datatable[self.poldict('vis3')]
-        vis4 = datatable[self.poldict('vis4')]
-        sigma1 = datatable[self.poldict('sigma1')]
-        sigma2 = datatable[self.poldict('sigma2')]
-        sigma3 = datatable[self.poldict('sigma3')]
-        sigma4 = datatable[self.poldict('sigma4')]
+        vis1 = datatable[self.poldict['vis1']]
+        vis2 = datatable[self.poldict['vis2']]
+        vis3 = datatable[self.poldict['vis3']]
+        vis4 = datatable[self.poldict['vis4']]
+        sigma1 = datatable[self.poldict['sigma1']]
+        sigma2 = datatable[self.poldict['sigma2']]
+        sigma3 = datatable[self.poldict['sigma3']]
+        sigma4 = datatable[self.poldict['sigma4']]
         u = datatable['u']
         v = datatable['v']
 
         fwhm_sigma = fwhm / (2*np.sqrt(2*np.log(2)))
         ker = np.exp(-2 * np.pi**2 * fwhm_sigma**2*(u**2+v**2))
 
-        datatable[self.poldict('vis1')] = vis1*ker
-        datatable[self.poldict('vis2')] = vis2*ker
-        datatable[self.poldict('vis3')] = vis3*ker
-        datatable[self.poldict('vis4')] = vis4*ker
-        datatable[self.poldict('sigma1')] = sigma1*ker
-        datatable[self.poldict('sigma2')] = sigma2*ker
-        datatable[self.poldict('sigma3')] = sigma3*ker
-        datatable[self.poldict('sigma4')] = sigma4*ker
+        datatable[self.poldict['vis1']] = vis1*ker
+        datatable[self.poldict['vis2']] = vis2*ker
+        datatable[self.poldict['vis3']] = vis3*ker
+        datatable[self.poldict['vis4']] = vis4*ker
+        datatable[self.poldict['sigma1']] = sigma1*ker
+        datatable[self.poldict['sigma2']] = sigma2*ker
+        datatable[self.poldict['sigma3']] = sigma3*ker
+        datatable[self.poldict['sigma4']] = sigma4*ker
 
         obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
                            polrep=self.polrep, source=self.source, mjd=self.mjd,
@@ -1833,14 +1836,14 @@ class Obsdata(object):
         # make a copy of observation data
         datatable = self.data.copy()
 
-        vis1 = datatable[self.poldict('vis1')]
-        vis2 = datatable[self.poldict('vis2')]
-        vis3 = datatable[self.poldict('vis3')]
-        vis4 = datatable[self.poldict('vis4')]
-        sigma1 = datatable[self.poldict('sigma1')]
-        sigma2 = datatable[self.poldict('sigma2')]
-        sigma3 = datatable[self.poldict('sigma3')]
-        sigma4 = datatable[self.poldict('sigma4')]
+        vis1 = datatable[self.poldict['vis1']]
+        vis2 = datatable[self.poldict['vis2']]
+        vis3 = datatable[self.poldict['vis3']]
+        vis4 = datatable[self.poldict['vis4']]
+        sigma1 = datatable[self.poldict['sigma1']]
+        sigma2 = datatable[self.poldict['sigma2']]
+        sigma3 = datatable[self.poldict['sigma3']]
+        sigma4 = datatable[self.poldict['sigma4']]
         u = datatable['u']
         v = datatable['v']
 
@@ -1856,14 +1859,14 @@ class Obsdata(object):
             sigma3[i] = sigma3[i]/ker
             sigma4[i] = sigma4[i]/ker
 
-        datatable[self.poldict('vis1')] = vis1
-        datatable[self.poldict('vis2')] = vis2
-        datatable[self.poldict('vis3')] = vis3
-        datatable[self.poldict('vis4')] = vis4
-        datatable[self.poldict('sigma1')] = sigma1
-        datatable[self.poldict('sigma2')] = sigma2
-        datatable[self.poldict('sigma3')] = sigma3
-        datatable[self.poldict('sigma4')] = sigma4
+        datatable[self.poldict['vis1']] = vis1
+        datatable[self.poldict['vis2']] = vis2
+        datatable[self.poldict['vis3']] = vis3
+        datatable[self.poldict['vis4']] = vis4
+        datatable[self.poldict['sigma1']] = sigma1
+        datatable[self.poldict['sigma2']] = sigma2
+        datatable[self.poldict['sigma3']] = sigma3
+        datatable[self.poldict['sigma4']] = sigma4
 
         obsdeblur = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
                             polrep=self.polrep, source=self.source, mjd=self.mjd,
@@ -1927,8 +1930,8 @@ class Obsdata(object):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('min', 'max'):
             raise Exception("possible options for count are 'min' and 'max'")
-        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
@@ -1984,10 +1987,11 @@ class Obsdata(object):
                 except KeyError:
                     continue
 
-                (bi, bisig) = make_bispectrum(l1,l2,l3,vtype)
+                (bi, bisig) = make_bispectrum(l1,l2,l3,vtype,polrep=self.polrep)
 
                 # Append to the equal-time list
-                bis.append(np.array((time, tri[0], tri[1], tri[2],
+                bis.append(np.array((time, 
+                                     tri[0], tri[1], tri[2],
                                      l1['u'], l1['v'], 
                                      l2['u'], l2['v'], 
                                      l3['u'], l3['v'],
@@ -2023,8 +2027,8 @@ class Obsdata(object):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")
-        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
@@ -2244,6 +2248,7 @@ class Obsdata(object):
 
                     # Compute the closure amplitude and the error
                     (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
+                                                             polrep=self.polrep,
                                                              ctype=ctype, debias=debias)
 
                     # Add the closure amplitudes to the equal-time list
@@ -2275,6 +2280,7 @@ class Obsdata(object):
 
                         # Compute the closure amplitude and the error
                         (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
+                                                                 polrep=self.polrep,
                                                                  ctype=ctype, debias=debias)
 
                         # Add the closure amplitudes to the equal-time list
