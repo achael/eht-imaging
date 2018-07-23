@@ -81,7 +81,6 @@ def make_uvpoints(array,
     if tstop < tstart:
         tstop = tstop + 24.0;
 
-
     # Observing times
     # TODO: Scale - utc or tt?
     times = np.arange(tstart, tstop, tstep)

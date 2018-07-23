@@ -226,7 +226,7 @@ class Obsdata(object):
                     data[f] = 0.5*np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
 
         elif polrep_out=='polprod_circ': #stokes -> polprod_circ
-            data = np.empty(len(self.data), dtype=DTPOL)
+            data = np.empty(len(self.data), dtype=DTPOL2)
             for f in DTPOL:
                 f = f[0]
                 if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
