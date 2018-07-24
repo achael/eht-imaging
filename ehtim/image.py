@@ -1486,7 +1486,9 @@ class Image(object):
         maxval = np.max(mask.imvec)
         minval = np.max((np.min(mask.imvec),0.))
         intensityrange = maxval - minval
-        mask.imvec  = mask.imvec > (intensityrange * cutoff +  minval)  
+
+        mask.imvec  = (mask.imvec > ( intensityrange * cutoff +  minval) ).astype(float)
+
         return mask
 
     #TODO make this work with mask with different dimensions, fov??
