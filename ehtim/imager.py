@@ -816,7 +816,7 @@ class Imager(object):
         else: xinit = self._ninit_I
         self._nit = 0
 
-        # Print stats
+        # Print initial stats
 
         self._show_updates=kwargs.get('show_updates',True)
         self._update_interval=kwargs.get('update_interval',1)
@@ -836,8 +836,28 @@ class Imager(object):
         tstop = time.time()
 
         # Format output
-        out = res.x
-        if self.transform_next == 'log': out = np.exp(res.x)
+        print ("DONE")
+        out = res.x[:]
+        self.tmpout = res.x
+        #return
+
+
+
+        if self.transform_next == 'log': out = np.exp(out)
+
+        # Print final stats
+        outstr = ""
+        chi2_term_dict = self.make_chisq_dict(out)
+        for dname in sorted(self.dat_term_next.keys()):
+            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
+
+        print("time: %f s" % (tstop - tstart))
+        print("J: %f" % res.fun)
+        print(outstr)
+        print(res.message.decode())
+        print("==============================")
+
+        # return image
         if np.any(np.invert(self._embed_mask)): out = embed(out, self._embed_mask)
 
         outim = image.Image(out.reshape(self.prior_next.ydim, self.prior_next.xdim),
@@ -852,17 +872,6 @@ class Imager(object):
             outim.add_qu(qvec.reshape(self.prior_next.ydim, self.prior_next.xdim),
                          uvec.reshape(self.prior_next.ydim, self.prior_next.xdim))
 
-        # Print stats
-        outstr = ""
-        chi2_term_dict = self.make_chisq_dict(out)
-        for dname in sorted(self.dat_term_next.keys()):
-            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
-
-        print("time: %f s" % (tstop - tstart))
-        print("J: %f" % res.fun)
-        print(outstr)
-        print(res.message.decode())
-        print("==============================")
 
         # Append to history
         logstr = str(self.nruns) + ": make_image_I()" #TODO - what should the log string be?
