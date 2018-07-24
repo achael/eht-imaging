@@ -584,54 +584,56 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     if (scan_arr is None):
         print ("No NX table in saved uvfits")
     else:
-        scan_arr = scan_arr/24.
-        for scan in  scan_arr:
-            scan_start = round(scan[0], ROUND_SCAN_INT)
-            scan_stop = round(scan[1], ROUND_SCAN_INT)
-            scan_dur = (scan_stop - scan_start)
+        try: 
+            scan_arr = scan_arr/24.
+            for scan in  scan_arr:
+                scan_start = round(scan[0], ROUND_SCAN_INT)
+                scan_stop = round(scan[1], ROUND_SCAN_INT)
+                scan_dur = (scan_stop - scan_start)
 
-            if jj>=len(fractimes):
-                #print start_vis, stop_vis
-                break
+                if jj>=len(fractimes):
+                    #print start_vis, stop_vis
+                    break
 
-            print ("%.12f %.12f %.12f" % (fractimes[jj], scan_start, scan_stop)) 
-            jd = round(fractimes[jj], ROUND_SCAN_INT)*comp_fac # ANDREW TODO precision??   
+                print ("%.12f %.12f %.12f" % (fractimes[jj], scan_start, scan_stop)) 
+                jd = round(fractimes[jj], ROUND_SCAN_INT)*comp_fac # ANDREW TODO precision??   
 
-            if (np.floor(jd) >= np.floor(scan_start*comp_fac)) and (np.ceil(jd) <= np.ceil(comp_fac*scan_stop)):
-                start_vis.append(jj)
+                if (np.floor(jd) >= np.floor(scan_start*comp_fac)) and (np.ceil(jd) <= np.ceil(comp_fac*scan_stop)):
+                    start_vis.append(jj)
 
-                # TODO AIPS MEMO 117 says scan_times should be midpoint!, but AIPS data looks likes it's at the start? 
-                scan_times.append(scan_start + 0.5*scan_dur)# - rdate_jd_out)
-                scan_time_ints.append(scan_dur)
-                while (jj < len(fractimes) and np.floor(round(fractimes[jj],ROUND_SCAN_INT)*comp_fac) <= np.ceil(comp_fac*scan_stop)):
-                    jj += 1
-                stop_vis.append(jj-1)
-            else: 
-                continue
+                    # TODO AIPS MEMO 117 says scan_times should be midpoint!, but AIPS data looks likes it's at the start? 
+                    scan_times.append(scan_start + 0.5*scan_dur)# - rdate_jd_out)
+                    scan_time_ints.append(scan_dur)
+                    while (jj < len(fractimes) and np.floor(round(fractimes[jj],ROUND_SCAN_INT)*comp_fac) <= np.ceil(comp_fac*scan_stop)):
+                        jj += 1
+                    stop_vis.append(jj-1)
+                else: 
+                    continue
 
-        if jj < len(fractimes):
-            print (scan_arr[-1])
-            print (round(scan_arr[-1][0],ROUND_SCAN_INT),round(scan_arr[-1][1],ROUND_SCAN_INT))
-            print (jj, len(jds), round(jds[jj], ROUND_SCAN_INT))
-            print("WARNING!!!: in save_uvfits NX table, didn't get to all entries when computing scan start/stop!")
-            print (scan_times)
-        time_nx = fits.Column(name="TIME", format="1D", unit='DAYS', array=np.array(scan_times))
-        timeint_nx = fits.Column(name="TIME INTERVAL", format="1E", unit='DAYS', array=np.array(scan_time_ints))
-        sourceid_nx = fits.Column(name="SOURCE ID",format="1J", unit='', array=np.ones(len(scan_times)))
-        subarr_nx = fits.Column(name="SUBARRAY",format="1J", unit='', array=np.ones(len(scan_times)))
-        freqid_nx = fits.Column(name="FREQ ID",format="1J", unit='', array=np.ones(len(scan_times)))
-        startvis_nx = fits.Column(name="START VIS",format="1J", unit='', array=np.array(start_vis)+1)
-        endvis_nx = fits.Column(name="END VIS",format="1J", unit='', array=np.array(stop_vis)+1)
-        cols = fits.ColDefs([time_nx, timeint_nx, sourceid_nx, subarr_nx, freqid_nx, startvis_nx, endvis_nx])
+            if jj < len(fractimes):
+                print (scan_arr[-1])
+                print (round(scan_arr[-1][0],ROUND_SCAN_INT),round(scan_arr[-1][1],ROUND_SCAN_INT))
+                print (jj, len(jds), round(jds[jj], ROUND_SCAN_INT))
+                print("WARNING!!!: in save_uvfits NX table, didn't get to all entries when computing scan start/stop!")
+                print (scan_times)
+            time_nx = fits.Column(name="TIME", format="1D", unit='DAYS', array=np.array(scan_times))
+            timeint_nx = fits.Column(name="TIME INTERVAL", format="1E", unit='DAYS', array=np.array(scan_time_ints))
+            sourceid_nx = fits.Column(name="SOURCE ID",format="1J", unit='', array=np.ones(len(scan_times)))
+            subarr_nx = fits.Column(name="SUBARRAY",format="1J", unit='', array=np.ones(len(scan_times)))
+            freqid_nx = fits.Column(name="FREQ ID",format="1J", unit='', array=np.ones(len(scan_times)))
+            startvis_nx = fits.Column(name="START VIS",format="1J", unit='', array=np.array(start_vis)+1)
+            endvis_nx = fits.Column(name="END VIS",format="1J", unit='', array=np.array(stop_vis)+1)
+            cols = fits.ColDefs([time_nx, timeint_nx, sourceid_nx, subarr_nx, freqid_nx, startvis_nx, endvis_nx])
 
-        tbhdu = fits.BinTableHDU.from_columns(cols)
-     
-        # header information
-        tbhdu.header.append(("EXTNAME","AIPS NX"))
-        tbhdu.header.append(("EXTVER",1))
+            tbhdu = fits.BinTableHDU.from_columns(cols)
+         
+            # header information
+            tbhdu.header.append(("EXTNAME","AIPS NX"))
+            tbhdu.header.append(("EXTVER",1))
 
-        hdulist_new.append(tbhdu) 
-
+            hdulist_new.append(tbhdu) 
+        except TypeError:
+            print ("No NX table in saved uvfits")
     # Write final HDUList to file
     #hdulist.writeto(fname, overwrite=True)
     hdulist_new.writeto(fname, overwrite=True)
