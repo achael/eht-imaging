@@ -1559,7 +1559,7 @@ class Obsdata(object):
         else:
             return obs_kept
 
-    def flag_UT_range(self, UT_start_hour=0.0, UT_stop_hour=0.0, flag_or_keep=False):
+    def flag_UT_range(self, UT_start_hour=0.0, UT_stop_hour=0.0,  output='kept'):
 
         """Flag data points within a certain UT range
 
@@ -1576,8 +1576,8 @@ class Obsdata(object):
         datatable = self.data.copy()
         UT_mask = self.unpack('time')['time'] <= UT_start_hour
         UT_mask = UT_mask + (self.unpack('time')['time'] >= UT_stop_hour)
-        if flag_or_keep:
-            UT_mask = np.invert(UT_mask)
+        # if flag_or_keep:
+        #     UT_mask = np.invert(UT_mask)
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
