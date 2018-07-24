@@ -1487,7 +1487,7 @@ class Image(object):
         minval = np.max((np.min(mask.imvec),0.))
         intensityrange = maxval - minval
 
-        mask.imvec  = (mask.imvec > ( intensityrange * cutoff +  minval) ).astype(float)
+        mask.imvec  = (mask.imvec > ( intensityrange * cutoff +  minval) ).astype(int)
 
         return mask
 
@@ -1506,7 +1506,7 @@ class Image(object):
         """
         if (self.psize != mask_im.psize) or (self.xdim != mask_im.xdim) or (self.ydim != mask_im.ydim):
             raise Exception("mask image does not match dimensions of the current image!")
-        maskvec = mask_im.imvec
+        maskvec = mask_im.imvec.astype(bool)
         maskvec[maskvec <= 0] = 0
         maskvec[maskvec > 0] = 1
 

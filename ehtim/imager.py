@@ -148,7 +148,7 @@ class Imager(object):
         """
 
         self._embed_mask = self.prior_next.imvec > self.clipfloor_next
-        if np.any(~self._embed_mask):
+        if not np.any(self._embed_mask):
             raise Exception("clipfloor_next too large: all prior pixels have been clipped!")
 
         coord = np.array([[[x,y] for x in np.arange(self.prior_next.xdim//2,-self.prior_next.xdim//2,-1)]
