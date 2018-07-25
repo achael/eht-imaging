@@ -1071,6 +1071,22 @@ class Obsdata(object):
                      count=count, debias=debias,  
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
+    def add_scans(self,dt=0.0165,margin=0.0001):
+        '''Add scaninfo based on data itself
+        Args:
+        dt (float): minimal time interval between scans in hours
+        margin (float): padding scans by that time margin in hours
+        '''
+        times_uni = np.asarray(sorted(list(set(self.data['time']))))
+        scans = np.zeros_like(times_uni)
+        scan_id=0
+        for cou in range(len(times_uni)-1):
+            scans[cou] = scan_id
+            if (times_uni[cou+1]-times_uni[cou] > dt):
+                scan_id+=1
+        scans[-1]=scan_id
+        scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1]))])    
+        self.scans = scanlist
 
     def add_scans_from_txt(self,txtfile):
         '''Add scaninfo based on textfile
