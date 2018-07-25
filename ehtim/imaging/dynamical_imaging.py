@@ -1061,7 +1061,7 @@ stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for 
 Target_Dynamic_Range = 10000.0,
 maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, 
 minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0., processes = -1, 
-recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
+recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2, **kwargs):
 
     """Run dynamical imaging.
 
@@ -1269,9 +1269,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
 
         s_dynamic = cm = flux = s_dS = s_dF = 0.0
 
@@ -1345,9 +1345,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
 
         s_dynamic_grad = cm_grad = flux_grad = s_dS = s_dF = 0.0
         if R_dI['alpha'] != 0.0: s_dynamic_grad += RdI_gradient(Frames,**R_dI)*R_dI['alpha']
@@ -1533,18 +1533,18 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             if alpha_s1 != 0.0:
 
                 s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
             if alpha_s2 != 0.0:
                 s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
 
             s_dynamic = cm = s_dS = s_dF = 0.0
 
             if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
             if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
-            if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
-            if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
+            if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS1
+            if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS2
 
             if alpha_dF != 0.0: s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
 
