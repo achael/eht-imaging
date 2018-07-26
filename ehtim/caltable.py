@@ -113,7 +113,7 @@ class Caltable(object):
         return new_caltable
 
     def plot_gains(self, sites, gain_type='amp', pol='R',
-                   ang_unit='deg',timetype=False, yscale='log',
+                   ang_unit='deg',timetype=False, yscale='log', legend=True,
                    clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
                    show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
 
@@ -131,6 +131,7 @@ class Caltable(object):
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (gain) limits
 
+               legend (bool): Plot legend if True
                grid (bool): Plot gridlines if True
                axislabels (bool): Show axis labels if True
                show (bool): Display the plot if true
