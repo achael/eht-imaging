@@ -112,7 +112,7 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def plot_gains(self, sites, gain_type='amp', pol='R',
+    def plot_gains(self, sites, gain_type='amp', pol='R',label='None',
                    ang_unit='deg',timetype=False, yscale='log', legend=True,
                    clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
                    show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
