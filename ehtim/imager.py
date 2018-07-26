@@ -824,7 +824,7 @@ class Imager(object):
         self.plotcur(xinit, **kwargs)
 
         # Minimize
-        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next,
+        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next,# 'gtol':self.stop_next,
                    'maxcor':NHIST, 'maxls':MAXLS}
         tstart = time.time()
         if grads:
