@@ -627,7 +627,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', ttype='nfft', mask=[], fft_pad_factor=2, systematic_noise=0.0):
+    def chisq(self, im, dtype='vis', ttype='nfft', mask=[], fft_pad_factor=2, systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
@@ -638,6 +638,8 @@ class Obsdata(object):
                 ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                 fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                 systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
+                systematic_noise_cphase (float): a value in degrees to add to the closure phase sigmas
+                maxset (bool): set to True to use a maximal set instead of minimal set
 
            Returns:
                 (float): image chi^2
@@ -646,7 +648,9 @@ class Obsdata(object):
         # TODO -- import this at top, but circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype,
-                                        fft_pad_factor=fft_pad_factor,systematic_noise=systematic_noise)
+                                        fft_pad_factor=fft_pad_factor, maxset=maxset,
+                                        systematic_cphase_noise=systematic_cphase_noise,
+                                        systematic_noise=systematic_noise)
         chisq = iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
         return chisq
 
@@ -2286,7 +2290,6 @@ class Obsdata(object):
         return np.array(outdata)
 
     def plotall(self, field1, field2, 
-
                 conj=False, debias=True, tag_bl=False,
                 ang_unit='deg', timetype=False,
                 axis=False, rangex=False, rangey=False, 
@@ -2705,7 +2708,7 @@ class Obsdata(object):
                site2 (str): station 2 name
                field (str): y-axis field (from FIELDS)
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                camps (list): optionally pass in camps so they don't have to be recomputed
                force_recompute (bool): if True, recompute closure amplitudes instead of using stored data 
