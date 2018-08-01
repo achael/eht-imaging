@@ -54,7 +54,7 @@ def load_vex(fname):
        Assumes there is only 1 MODE in vex file
        Hotaka Shiokawa - 2017
     """
-    print ("\nLoading vexfile: ", fname)
+    print ("Loading vexfile: ", fname)
     return ehtim.vex.Vex(fname)
 
 
@@ -67,7 +67,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
        Make sure the header has exactly the same form!
     """
 
-    print ("\nLoading text image: ", filename)
+    print ("Loading text image: ", filename)
 
     # Read the header
     file = open(filename)
@@ -125,7 +125,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
 def load_im_fits(filename, aipscc=False, punit="deg", pulse=PULSE_DEFAULT):
     """Read in an image from a FITS file and create an Image object
     """
-    print ("\nLoading fits image: ", filename)
+    print ("Loading fits image: ", filename)
 
     # Radian or Degree?
     if punit=="deg":
@@ -430,7 +430,7 @@ def load_obs_txt(filename):
     """Read an observation from a text file and return an Obsdata object
        text file has the same format as output from Obsdata.savedata()
     """
-    print ("\nLoading text observation: ", filename)
+    print ("Loading text observation: ", filename)
 
     # Read the header parameters
     file = open(filename)
@@ -635,7 +635,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     """
 
     # Load the uvfits file
-    print ("\nLoading uvfits: ", filename)
+    print ("Loading uvfits: ", filename)
     hdulist = fits.open(filename)
     header = hdulist[0].header
     data = hdulist[0].data
@@ -757,11 +757,11 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         lrweight = rrweight * 0.0
 
     # If necessary, enforce single polarization
-    if force_singlepol == 'L':
+    if force_singlepol in ['L' or 'LL']:
         rrweight = rrweight * 0.0
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0
-    elif force_singlepol == 'R':
+    elif force_singlepol in ['R' or 'RR']:
         llweight = llweight * 0.0
         rlweight = rlweight * 0.0
         lrweight = lrweight * 0.0

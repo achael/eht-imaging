@@ -112,10 +112,10 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def plot_gains(self, sites, gain_type='amp', pol='R',
-                   ang_unit='deg',timetype=False, yscale='log',
+    def plot_gains(self, sites, gain_type='amp', pol='R',label=None,
+                   ang_unit='deg',timetype=False, yscale='log', legend=True,
                    clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
-                   show=True, grid=False, labels=True, axis=False, export_pdf=""):
+                   show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
 
         """Plot gains on multiple sites vs time.
            Args:
@@ -126,12 +126,14 @@ class Caltable(object):
                timetype (str): 'GMST' or 'UTC'
                yscale (str): 'log' or 'lin',
                clist (list): list of colors for the plot
+               label (str): base label for legend
 
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (gain) limits
 
+               legend (bool): Plot legend if True
                grid (bool): Plot gridlines if True
-               labels (bool): Show axis labels if True
+               axislabels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                markersize (int): size of plot markers
@@ -198,7 +200,12 @@ class Caltable(object):
             gmaxes.append(np.max(gains))
 
             # Plot the data
-            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, label=str(site), linestyle='none')
+            if label is None:
+                bllabel=str(site)
+            else:
+                bllabel = label + ' ' + str(site)
+            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, 
+                     label=bllabel, linestyle='none')
 
 
         if not rangex:
@@ -219,10 +226,12 @@ class Caltable(object):
         x.set_ylim(rangey)
 
         # labels
-        if labels:
+        if axislabels:
             x.set_xlabel(self.timetype + ' (hr)')
             x.set_ylabel(ylabel)
             plt.title('Caltable gains for %s on day %s' % (self.source, self.mjd))
+
+        if legend:
             plt.legend()
 
         if yscale=='log':

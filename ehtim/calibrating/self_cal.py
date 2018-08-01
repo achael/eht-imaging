@@ -37,7 +37,8 @@ from multiprocessing import Pool
 from multiprocessing import Process, Value, Lock
 
 from ehtim.calibrating.cal_helpers import *
-
+import warnings
+warnings.filterwarnings("ignore", message="divide by zero encountered in log")
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
