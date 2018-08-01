@@ -551,7 +551,6 @@ class Obsdata(object):
             # Get arg/amps/snr
             if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]:
                 out = np.abs(out)
-
                 if debias:
                     out = amp_debias(out, sig)
 

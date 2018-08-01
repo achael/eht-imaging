@@ -1097,7 +1097,6 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                             for i in range(len(tint))])
 
-
     # Seed for random number generators
     if seed==False:
         seed=str(ttime.time())

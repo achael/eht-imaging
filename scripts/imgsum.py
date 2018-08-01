@@ -15,6 +15,8 @@ import math
 import os
 import datetime
 
+#debias=False
+
 #display parameters
 SCOLORS = eh.SCOLORS
 FONTSIZE = 22
@@ -34,13 +36,12 @@ plt.rc('ytick', labelsize=FONTSIZE)
 plt.rc('legend', fontsize=FONTSIZE)    
 plt.rc('figure', titlesize=FONTSIZE) 
 
-
 ################################################################################
 ################################################################################
 #im = eh.image.load_fits('./out.fits')
 #obs = eh.obsdata.load_uvfits('./obs.uvfits')
 #sys = 0.1
-def main(im, obs, obs_uncal, basename, outname, 
+def main(im, obs, obs_uncal, basename, outname, debias=True,
          commentstr="", outdir='.',ebar=True,cfun='afmhot',sysnoise=0,syscnoise=0,fontsize=FONTSIZE,
          gainplots=True,cphaseplots=True,campplots=True):
 
@@ -264,7 +265,7 @@ def main(im, obs, obs_uncal, basename, outname,
 
         # get closure triangle combinations
         # ANDREW -- hacky, fix this!
-        debias=True
+
         cp = obs.c_amplitudes(mode="all", count="min",ctype='logcamp',debias=debias)
         n_camps = len(cp)
         allquads = [(str(cpp['t1']),str(cpp['t2']),str(cpp['t3']),str(cpp['t4'])) for cpp in cp]
@@ -275,8 +276,7 @@ def main(im, obs, obs_uncal, basename, outname,
               
         # generate data
         camps_obs = obs.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=debias)
-        camps_model = obs_model.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=debias)
-
+        camps_model = obs_model.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=False)
 
         #generate chi2 -- NO SYSTEMATIC NOISES
         ncamp = 0
@@ -290,6 +290,14 @@ def main(im, obs, obs_uncal, basename, outname,
                 camps_model_quad = obs.camp_quad(uniqueclosure_quad[c][0], uniqueclosure_quad[c][1], 
                                              uniqueclosure_quad[c][2],  uniqueclosure_quad[c][3],
                                              vtype='vis', camps=camps_model, ctype='logcamp')
+
+#                if np.any(np.isnan(camps_obs_quad['camp'])):
+#                    print("obs nan on ", uniqueclosure_quad[c])
+#                if np.any(np.isnan(camps_model_quad['camp'])):
+#                    print("model nan on ", uniqueclosure_quad[c])
+#                if np.any(np.isnan(camps_obs_quad['sigmaca'])):
+#                    print("sigma nan on ", uniqueclosure_quad[c])
+
                 chisq_quad = np.sum(np.abs((camps_obs_quad['camp'] - camps_model_quad['camp'])/camps_obs_quad['sigmaca'])**2)
                 #chisq_quad /= (len(camps_obs_quad))
                 npts = len(camps_obs_quad)
@@ -436,7 +444,7 @@ def main(im, obs, obs_uncal, basename, outname,
 
         # get closure triangle combinations
         # ANDREW -- hacky, fix this!
-        debias=True
+
         bl_unpk = obs.unpack(['t1','t2'],debias=debias)
         n_bl = len(bl_unpk)
         allbl = [(str(bl['t1']),str(bl['t2'])) for bl in bl_unpk]
@@ -450,7 +458,7 @@ def main(im, obs, obs_uncal, basename, outname,
         bl_chisq_data=[]
         for ii in range(0, len(uniquebl)):
             bl = uniquebl[ii]
-            amps_bl = obs.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=False)
+            amps_bl = obs.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=debias)
 
             if len(amps_bl)>0:
                 amps_bl_model = obs_model.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=False)
@@ -571,7 +579,7 @@ def main(im, obs, obs_uncal, basename, outname,
             obs_all = [obs, obs_model]
             camps_model['sigmaca'] *= 0
             camps_all = [camps_obs, camps_model]
-            cmax = 1.1*np.max(np.abs(camps_obs['logcamp']))
+            cmax = 1.1*np.max(np.abs(camps_obs['camp']))
             for quad in uniqueclosure_quad:
 
                 ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
@@ -723,6 +731,7 @@ if __name__=='__main__':
     parser.add_argument('--fontsize', type=int, default=FONTSIZE,help="font size")
     parser.add_argument('--cfun', type=str, default='afmhot',help="image color function")
     parser.add_argument('--no_ebar', default=False,action='store_true',help="remove ebars from amp")
+    parser.add_argument('--no_debias', default=False,action='store_true',help="don't debias amplitudes/closure amplitudes")
     parser.add_argument('--no_gains', default=False,action='store_true',help="remove gain plots")
     parser.add_argument('--no_cphase', default=False,action='store_true',help="remove closure phase plots")
     parser.add_argument('--no_camp', default=False,action='store_true',help="remove closure amp plots")
@@ -739,6 +748,8 @@ if __name__=='__main__':
     if outdir[-1] == '/': outname = outdir + basename + '.pdf'
     else: outname = outdir +'/' + basename + '.pdf'
 
+    if opt.no_debias: debias=False
+    else: debias=True
     if opt.no_ebar: ebar=False
     else: ebar=True
     if opt.no_gains: gainplots=False
@@ -750,5 +761,5 @@ if __name__=='__main__':
 
     main(im, obs, obs_uncal, basename, outname,  commentstr=opt.c, outdir=outdir,ebar=ebar,cfun=opt.cfun,
          sysnoise=opt.systematic_noise,syscnoise=opt.systematic_cphase_noise,fontsize=opt.fontsize,
-         gainplots=gainplots,cphaseplots=cphaseplots,campplots=campplots)
+         gainplots=gainplots,cphaseplots=cphaseplots,campplots=campplots, debias=debias)
 

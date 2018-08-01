@@ -295,11 +295,16 @@ def make_closure_amplitude(blue1, blue2, red1, red2, vtype, ctype='camp', debias
         p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
 
     # debias
-    p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=True)
-    p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=True)
-    p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=True)
-    p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=True)
-
+    if debias:
+        p1 = amp_debias(p1, sig1, force_nonzero=True)
+        p2 = amp_debias(p2, sig2, force_nonzero=True)
+        p3 = amp_debias(p3, sig3, force_nonzero=True)
+        p4 = amp_debias(p4, sig4, force_nonzero=True)
+    else:
+        p1 = np.abs(p1)
+        p2 = np.abs(p2)
+        p3 = np.abs(p3)
+        p4 = np.abs(p4)
     # get snrs
     snr1 = p1/sig1
     snr2 = p2/sig2
@@ -324,29 +329,20 @@ def make_closure_amplitude(blue1, blue2, red1, red2, vtype, ctype='camp', debias
 
     return (camp, camperr)
 
-def amp_debias(amp, sigma, actually_debias=True, force_nonzero=False):
+def amp_debias(amp, sigma, force_nonzero=False):
     """Return debiased visibility amplitudes
     """
 
-    if not actually_debias:
-        return np.abs(amp)
-    else:
-        deb2 = np.abs(amp)**2 - np.abs(sigma)**2
+    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
 
-        # puts amplitude at 0 if snr < 1
-        deb2 *= (np.abs(amp) > np.abs(sigma))
-        if force_nonzero:
-            # puts amplitude at 0 if snr < 1
-            deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
-        return np.sqrt(deb2)
+    # puts amplitude at 0 if snr < 1
+    deb2 *= (np.abs(amp) > np.abs(sigma))
 
-#        if type(deb2) == float or type(deb2)==np.float64:
-#            if deb2 < 0.0: return np.abs(amp)
-#            else: return np.sqrt(deb2)
-#        else:
-#            lowsnr = deb2 < 0.0
-#            deb2[lowsnr] = np.abs(amp[lowsnr])**2
-#            return np.sqrt(deb2)
+    # raises amplitude to sigma to force nonzero 
+    if force_nonzero:
+        deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
+    out = np.sqrt(deb2)
+    return out
 
 def camp_debias(camp, snr3, snr4):
     """Debias closure amplitudes
@@ -438,7 +434,6 @@ def blnoise(sefd1, sefd2, tint, bw):
        This is the noise on the rr/ll/rl/lr correlation, not the stokes parameter
        2-bit quantization is responsible for the 0.88 factor
     """
-
 
     noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
     #noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
