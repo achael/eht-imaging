@@ -575,7 +575,7 @@ def main(im, obs, obs_uncal, basename, outname,
 
                 ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
                 ax = eh.plotting.comp_plots.plot_camp_obs_compare(obs_all,quad[0],quad[1],quad[2],quad[3],markersize=MARKERSIZE,
-                                                                 ctype='logcamp',rangey=[-3,3],
+                                                                 ctype='logcamp',rangey=[-3,3],camps=camps_all,
                                                                  axis=ax,legend=False, clist=['k',SCOLORS[1]],
                                                                  ttype='nfft',show=False, ebar=ebar)
                 if ax is None: continue
