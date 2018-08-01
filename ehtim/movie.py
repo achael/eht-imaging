@@ -337,10 +337,11 @@ class Movie(object):
         for i_scan in range(len(vex.sched)):
             if vex.sched[i_scan]['source'] != source:
                 continue
-            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
+            scankeys = list(vex.sched[i_scan]['scan'].keys())
+            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in scankeys])
 
             if snapshot == 1.0:
-                t_int = np.max(np.array([vex.sched[i_scan]['scan'][site]['scan_sec'] for site in list(vex.sched[i_scan]['scan'].keys())]))
+                t_int = np.max(np.array([vex.sched[i_scan]['scan'][site]['scan_sec'] for site in scankeys]))
                 print(t_int)
                 #vex.sched[i_scan]['scan'][0]['scan_sec']
 

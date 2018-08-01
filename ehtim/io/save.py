@@ -658,7 +658,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
     biarr = obs.bispectra(mode="all", count="min")
 
     # extract the telescope names and parameters
-    antennaNames = obs.tarr['site'] #np.array(obs.tkey.keys())
+    antennaNames = obs.tarr['site'] 
     sefd = obs.tarr['sefdr']
     antennaX = obs.tarr['x']
     antennaY = obs.tarr['y']

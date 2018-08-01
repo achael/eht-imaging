@@ -498,7 +498,8 @@ class Image(object):
 
             if vex.sched[i_scan]['source'] != source:
                 continue
-            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
+            scankeys = list(vex.sched[i_scan]['scan'].keys())
+            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in scankeys])
 
             obs = self.observe(subarray, t_int, t_adv,
                                        vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0,

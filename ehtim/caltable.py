@@ -166,7 +166,7 @@ class Caltable(object):
 
         # sites
         if sites in ['all' or 'All'] or sites==[]:
-            sites = self.data.keys()
+            sites = list(self.data.keys())
 
         if not type(sites) is list:
             sites = [sites]
@@ -256,7 +256,8 @@ class Caltable(object):
                (Caltable):  a padded caltable object
         """
         outdict = {}
-        for scope in self.data.keys():
+        scopes = list(self.data.keys())
+        for scope in scopes:
             caldata = self.data[scope].copy()
 
             # Gather data into "scans"
@@ -455,11 +456,10 @@ class Caltable(object):
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
             data2 = caltable.data.copy()
-
-            for site in data2.keys():
-
-                # if site in both tables
-                if site in data1.keys():
+            sites2 = list(data2.keys())
+            sites1 = list(data1.keys())
+            for site in sites2:
+                if site in sites1: # if site in both tables
                     #merge the data by interpolating
                     time1 = data1[site]['time']
                     time2 = data2[site]['time']

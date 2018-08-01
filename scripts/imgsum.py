@@ -104,6 +104,7 @@ def main(im, obs, obs_uncal, basename, outname, debias=True,
         # SNR ordering
         #obs.reorder_tarr_snr()
         #obs_uncal.reorder_tarr_snr()
+
         maxset=False
         # compute chi^2
         chi2vis = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
@@ -124,11 +125,11 @@ def main(im, obs, obs_uncal, basename, outname, debias=True,
         chi2logcamp_uncal = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset)
         chi2camp_uncal = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset)
 
-        print("chi^2 vis: ", chi2vis, chi2vis_uncal)
-        print("chi^2 amp: ", chi2amp, chi2amp_uncal)
-        print("chi^2 cphase: ", chi2cphase, chi2cphase_uncal)
-        print("chi^2 logcamp: ", chi2logcamp, chi2logcamp_uncal)
-        print("chi^2 camp: ", chi2logcamp, chi2logcamp_uncal)
+        print("chi^2 vis: %0.2f %0.2f" % (chi2vis, chi2vis_uncal))
+        print("chi^2 amp: %0.2f %0.2f" % (chi2amp, chi2amp_uncal))
+        print("chi^2 cphase: %0.2f %0.2f" % (chi2cphase, chi2cphase_uncal))
+        print("chi^2 logcamp: %0.2f %0.2f" % (chi2logcamp, chi2logcamp_uncal))
+        print("chi^2 camp: %0.2f %0.2f" % (chi2logcamp, chi2logcamp_uncal))
 
         fs =int(1*fontsize)
         fs2 =int(.8*fontsize)
@@ -394,7 +395,7 @@ def main(im, obs, obs_uncal, basename, outname, debias=True,
                 else:
                     ct_out = ct
 
-            ax2 = ct_out.plot_gains('all',rangey=[.1,10],yscale='log',axis=ax2,legend=True)
+            ax2 = ct_out.plot_gains('all',rangey=[.1,10],yscale='log',axis=ax2,legend=True,show=False)
 
             #median gains
             ax = plt.subplot(gs[3:6,2:5])

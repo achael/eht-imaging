@@ -440,7 +440,7 @@ class Imager(object):
             if self.nruns>0:
                 print("Recomputing imager data products . . .")
             self._data_tuples = {}
-            for dname in list(self.dat_term_next.keys()):
+            for dname in sorted(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
                                 debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
                                 systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
