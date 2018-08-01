@@ -571,11 +571,12 @@ def main(im, obs, obs_uncal, basename, outname,
             obs_all = [obs, obs_model]
             camps_model['sigmaca'] *= 0
             camps_all = [camps_obs, camps_model]
+            cmax = 1.1*np.max(np.abs(camps_obs['logcamp']))
             for quad in uniqueclosure_quad:
 
                 ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
                 ax = eh.plotting.comp_plots.plot_camp_obs_compare(obs_all,quad[0],quad[1],quad[2],quad[3],markersize=MARKERSIZE,
-                                                                 ctype='logcamp',rangey=[-3,3],camps=camps_all,
+                                                                 ctype='logcamp',rangey=[-cmax,cmax],camps=camps_all,
                                                                  axis=ax,legend=False, clist=['k',SCOLORS[1]],
                                                                  ttype='nfft',show=False, ebar=ebar)
                 if ax is None: continue
