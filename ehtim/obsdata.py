@@ -1955,8 +1955,6 @@ class Obsdata(object):
         out = []
         cps = []
 
-        print('Reformatting bispectra to closure phase...')
-
         for bis in bispecs:
             for bi in bis:
                 if len(bi) == 0: continue

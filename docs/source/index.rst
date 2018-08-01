@@ -66,8 +66,6 @@ Acknowledgements
 ----------------
 The oifits_new code used for reading/writing .oifits files is a slightly modified version of Paul Boley's package at `<http://astro.ins.urfu.ru/pages/~pboley/oifits>`_. The oifits read/write functionality is still being tested and may not work with all versions of python or astropy.io.fits.
 
-The jdcal.py module is from Prasanth Nair at `<http://github.com/phn/jdcal>`_.
-
 This documentation is styled after `dfm's projects <https://github.com/dfm>`_ and the documentation for `scatterbrane <https://github.com/krosenfeld/scatterbrane>`_
 
 
