@@ -2001,22 +2001,99 @@ class Obsdata(object):
         for obs in bs:
             obstri = (obs['t1'],obs['t2'],obs['t3'])
             if set(obstri) == set(tri):
+                t1 = copy.deepcopy(obs['t1'])
+                t2 = copy.deepcopy(obs['t2'])
+                t3 = copy.deepcopy(obs['t3'])
+                u1 = copy.deepcopy(obs['u1'])
+                u2 = copy.deepcopy(obs['u2'])
+                u3 = copy.deepcopy(obs['u3'])
+                v1 = copy.deepcopy(obs['v1'])
+                v2 = copy.deepcopy(obs['v2'])
+                v3 = copy.deepcopy(obs['v3'])
+                
+                if t1==site1:
+                    if t2==site2:
+                        pass
+                    else:
+                        obs['t2']=t3
+                        obs['t3']=t2
+
+                        obs['u1']=-u3
+                        obs['v1']=-v3
+                        obs['u2']=-u2
+                        obs['v2']=-v2
+                        obs['u3']=-u1
+                        obs['v3']=-v1
+                        obs['bispec'] = np.conjugate(obs['bispec'])
+
+                elif t1==site2:
+                    if t2==site3:
+                        obs['t1']=t3
+                        obs['t2']=t1
+                        obs['t3']=t2
+
+                        obs['u1']=u3
+                        obs['v1']=v3
+                        obs['u2']=u1
+                        obs['v2']=v1
+                        obs['u3']=u2
+                        obs['v3']=v2
+
+                    else:
+                        obs['t1']=t2
+                        obs['t2']=t1
+
+                        obs['u1']=-u1
+                        obs['v1']=-v1
+                        obs['u2']=-u3
+                        obs['v2']=-v3
+                        obs['u3']=-u2
+                        obs['v3']=-v2
+                        obs['bispec'] = np.conjugate(obs['bispec'])
+
+                elif t1==site3:
+                    if t2==site1:
+                        obs['t1']=t2
+                        obs['t2']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=u2
+                        obs['v1']=v2
+                        obs['u2']=u3
+                        obs['v2']=v3
+                        obs['u3']=u1
+                        obs['v3']=v1
+
+                    else:
+                        obs['t1']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=-u2
+                        obs['v1']=-v2
+                        obs['u2']=-u1
+                        obs['v2']=-v1
+                        obs['u3']=-u3
+                        obs['v3']=-v3
+                        obs['bispec'] = np.conjugate(obs['bispec'])
+
                 # Flip the sign of the closure phase if necessary
-                parity = paritycompare(tri, obstri)
+                # TODO this should be more elegant & faster but doesn't work?
+                # Flip the sign of the closure phase if necessary
+#                parity = paritycompare(tri, obstri)
 
-                if parity==-1:
-                    obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
-                    t2 = copy.deepcopy(obs['t2'])
-                    u2 = copy.deepcopy(obs['u2'])
-                    v2 = copy.deepcopy(obs['v2'])
+#                if parity==-1:
+#                    obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
+#                    t2 = copy.deepcopy(obs['t2'])
+#                    u2 = copy.deepcopy(obs['u2'])
+#                    v2 = copy.deepcopy(obs['v2'])
 
-                    obs['t2'] = obs['t3']
-                    obs['u2'] = obs['u3']
-                    obs['v2'] = obs['v3']
+#                    obs['t2'] = obs['t3']
+#                    obs['u2'] = obs['u3']
+#                    obs['v2'] = obs['v3']
 
-                    obs['t3'] = t2
-                    obs['u3'] = u2
-                    obs['v3'] = v2
+#                    obs['t3'] = t2
+#                    obs['u3'] = u2
+#                    obs['v3'] = v2
 
                 outdata.append(np.array(obs, dtype=DTBIS))
                 continue
@@ -2056,23 +2133,100 @@ class Obsdata(object):
         for obs in cphases:
             obstri = (obs['t1'],obs['t2'],obs['t3'])
             if set(obstri) == set(tri):
+                t1 = copy.deepcopy(obs['t1'])
+                t2 = copy.deepcopy(obs['t2'])
+                t3 = copy.deepcopy(obs['t3'])
+                u1 = copy.deepcopy(obs['u1'])
+                u2 = copy.deepcopy(obs['u2'])
+                u3 = copy.deepcopy(obs['u3'])
+                v1 = copy.deepcopy(obs['v1'])
+                v2 = copy.deepcopy(obs['v2'])
+                v3 = copy.deepcopy(obs['v3'])
+                
+                if t1==site1:
+                    if t2==site2:
+                        pass
+                    else:
+                        obs['t2']=t3
+                        obs['t3']=t2
+
+                        obs['u1']=-u3
+                        obs['v1']=-v3
+                        obs['u2']=-u2
+                        obs['v2']=-v2
+                        obs['u3']=-u1
+                        obs['v3']=-v1
+                        obs['cphase'] *= -1
+
+                elif t1==site2:
+                    if t2==site3:
+                        obs['t1']=t3
+                        obs['t2']=t1
+                        obs['t3']=t2
+
+                        obs['u1']=u3
+                        obs['v1']=v3
+                        obs['u2']=u1
+                        obs['v2']=v1
+                        obs['u3']=u2
+                        obs['v3']=v2
+
+                    else:
+                        obs['t1']=t2
+                        obs['t2']=t1
+
+                        obs['u1']=-u1
+                        obs['v1']=-v1
+                        obs['u2']=-u3
+                        obs['v2']=-v3
+                        obs['u3']=-u2
+                        obs['v3']=-v2
+                        obs['cphase'] *= -1
+
+
+                elif t1==site3:
+                    if t2==site1:
+                        obs['t1']=t2
+                        obs['t2']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=u2
+                        obs['v1']=v2
+                        obs['u2']=u3
+                        obs['v2']=v3
+                        obs['u3']=u1
+                        obs['v3']=v1
+
+                    else:
+                        obs['t1']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=-u2
+                        obs['v1']=-v2
+                        obs['u2']=-u1
+                        obs['v2']=-v1
+                        obs['u3']=-u3
+                        obs['v3']=-v3
+                        obs['cphase'] *= -1
+
                 # Flip the sign of the closure phase if necessary
-                parity = paritycompare(tri, obstri)
+                # TODO this should be more elegant & faster but doesn't work?
+#                parity = paritycompare(tri, obstri)
 
-                obs['cphase'] *= parity
+#                obs['cphase'] *= parity
 
-                if parity==-1:
-                    t2 = copy.deepcopy(obs['t2'])
-                    u2 = copy.deepcopy(obs['u2'])
-                    v2 = copy.deepcopy(obs['v2'])
+#                if parity==-1:
+#                    t2 = copy.deepcopy(obs['t2'])
+#                    u2 = copy.deepcopy(obs['u2'])
+#                    v2 = copy.deepcopy(obs['v2'])
 
-                    obs['t2'] = obs['t3']
-                    obs['u2'] = obs['u3']
-                    obs['v2'] = obs['v3']
+#                    obs['t2'] = obs['t3']
+#                    obs['u2'] = obs['u3']
+#                    obs['v2'] = obs['v3']
 
-                    obs['t3'] = t2
-                    obs['u3'] = u2
-                    obs['v3'] = v2
+#                    obs['t3'] = t2
+#                    obs['u3'] = u2
+#                    obs['v3'] = v2
 
                 outdata.append(np.array(obs, dtype=DTCPHASE))
                 continue
