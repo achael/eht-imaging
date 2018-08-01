@@ -219,12 +219,11 @@ def make_bispectrum(l1, l2, l3,vtype):
     return (bi, bisig)
 
 
-
 #TODO: debiasing strategy?? 
-def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True):
+def make_closure_amplitude(blue1, blue2, red1, red2, vtype, ctype='camp', debias=True):
     """make a list of closure amplitudes and errors
-       red1 and red2 are full datatables of denominator entries
        blue1 and blue2 are full datatables numerator entries
+       red1 and red2 are full datatables of denominator entries
        vtype is the  visibility type
        we always debias the individual amplitudes
        debias controls if we debias the closure amplitude at the end
@@ -765,20 +764,13 @@ def tri_minimal_set(sites, tarr, tkey):
     """returns a minimal set of triangles for bispectra and closure phase"""
 
 
-    # determine ordering -- now choose based on order of  self.tarr
+    # determine ordering and reference site based on order of  self.tarr
     sites_ordered = [x for x in tarr['site'] if x in sites]
     ref = sites_ordered[0]
-    sites = sites_ordered
-#    sites = list(np.sort(sites))
-#    if len(set(tarr['sefdr'])) > 1:
-#        ref = sites[np.argmin([tarr[tkey[site]]['sefdr'] for site in sites])]
-#    else:
-#        ref = sites[np.argmax([tarr[tkey[site]]['z'] for site in sites])]
-
-    sites.remove(ref)
+    sites_ordered.remove(ref)
 
     # Find all triangles that contain the ref
-    tris = list(it.combinations(sites,2))
+    tris = list(it.combinations(sites_ordered,2))
     tris = [(ref, t[0], t[1]) for t in tris]
 
     return tris
@@ -786,31 +778,26 @@ def tri_minimal_set(sites, tarr, tkey):
 def quad_minimal_set(sites, tarr, tkey):
     """returns a minimal set of quadrangels for closure amplitude"""
 
-    # determine ordering -- now choose based on order of  self.tarr
-    #sites = np.sort(sites)
-    #sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])[::-1]]
-    #ref = sites[0]
-
+    # determine ordering and reference site based on order of  self.tarr
     sites_ordered = np.array([x for x in tarr['site'] if x in sites]) 
     ref = sites_ordered[0]
-    sites = sites_ordered
 
     # Loop over other sites >=3 and form minimal closure amplitude set
     quads = []
-    for i in range(3, len(sites)):
+    for i in range(3, len(sites_ordered)):
         for j in range(1, i):
             if j == i-1: k = 1
             else: k = j+1
 
             # convetion is (12)(34)/(14)(23)
-            quad = (ref, sites[i], sites[j], sites[k])
+            quad = (ref, sites_ordered[i], sites_ordered[j], sites_ordered[k])
             quads.append(quad)
 
     return quads
 
 # ANDREW TODO: 
 # Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_amplitudes(count='min). This is because of sign flips. 
+# minimal set as we would from  calling c_phases(count='min'). This is because of sign flips. 
 def reduce_tri_minimal(obs, datarr):
     """reduce a bispectrum or closure phase data array to a minimal set
        datarr can be either a bispectrum array of type DTBIS
@@ -840,13 +827,13 @@ def reduce_tri_minimal(obs, datarr):
 
         # determine a minimal set of trinagles
         sites = list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3']))))
-        #sites = np.sort(sites)
         tris = tri_minimal_set(sites, obs.tarr, obs.tkey)
         tris = [set(tri) for tri in tris]
 
         # add data points from original array to new array if in minimal set
+        # ANDREW TODO: should we care about sign flips?
         for dp in timegroup:
-            if set((dp['t1'],dp['t2'],dp['t3'])) in  tris: #ANDREW TODO: should we care about sign flips?
+            if set((dp['t1'],dp['t2'],dp['t3'])) in  tris:
                 outgroup.append(dp)
 
         if returnType=='time':
@@ -860,7 +847,7 @@ def reduce_tri_minimal(obs, datarr):
 
 # ANDREW TODO: 
 # Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_amplitudes(count='min). This is because of  inverses. 
+# minimal set as we would from  calling c_amplitudes(count='min'). This is because of  inverses. 
 def reduce_quad_minimal(obs, datarr,ctype='camp'):
     """reduce a closure amplitude or log closure amplitude array FROM a maximal set TO a minimal set"""
 
@@ -883,37 +870,33 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
     for timegroup in datalist:
         if returnType=='all': 
             outgroup = out
-            outgroup2=[]
         else:
             outgroup = []
+
         # determine a minimal set of quadrangles
         sites = np.array(list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3'],timegroup['t4'])))))
-        #sites =  np.sort(sites)
-        #sites = sites[np.argsort([obs.tarr[obs.tkey[site]]['sefdr'] for site in sites])[::-1]]
         if len(sites) < 4:
             continue
         quads = quad_minimal_set(sites, obs.tarr, obs.tkey)
 
         # add data points from original camp array to new array if in minimal set
-        # ANDREW TODO: there are ordering issues here that don't show up in cphase case....
+        # ANDREW TODO: do we need to change the ordering ??
         for dp in timegroup:
+
             # this is all same closure amplitude, but the ordering of labels is different
-            #num = [set((dp['t1'], dp['t2'])), set((dp['t3'], dp['t4']))]
-            #denom = [set((dp['t1'], dp['t4'])), set((dp['t2'], dp['t3']))]
             if ((dp['t1'],dp['t2'],dp['t3'],dp['t4']) in quads or
                 (dp['t2'],dp['t1'],dp['t4'],dp['t3']) in quads or
                 (dp['t3'],dp['t4'],dp['t1'],dp['t2']) in quads or
                 (dp['t4'],dp['t3'],dp['t2'],dp['t1']) in quads):
-                #print('num')
+
                 outgroup.append(np.array(dp,dtype=DTCAMP))
-                outgroup2.append(np.array(dp,dtype=DTCAMP))
 
             # flip the inverse closure amplitude
             elif ((dp['t1'],dp['t4'],dp['t3'],dp['t2']) in quads or
-                  (dp['t4'],dp['t1'],dp['t2'],dp['t3']) in quads or
+                  (dp['t2'],dp['t3'],dp['t4'],dp['t1']) in quads or
                   (dp['t3'],dp['t2'],dp['t1'],dp['t4']) in quads or
-                  (dp['t2'],dp['t3'],dp['t4'],dp['t1']) in quads):
-                #sprint('denom')
+                  (dp['t4'],dp['t1'],dp['t2'],dp['t3']) in quads):
+
                 dp2 = copy.deepcopy(dp)
                 campold = dp['camp']
                 sigmaold = dp['sigmaca']
@@ -930,14 +913,6 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                 v3old = dp['v3']
                 v4old = dp['v4']
 
-                if ctype=='camp':
-                    dp2['camp'] = 1./campold
-                    dp2['sigmaca'] = sigmaold/(campold**2)
-
-                elif ctype=='logcamp':
-                    dp2['camp'] = -campold
-                    dp2['sigmaca'] = sigmaold
-
                 dp2['t1'] = t1old
                 dp2['t2'] = t4old
                 dp2['t3'] = t3old
@@ -949,17 +924,22 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                 dp2['u2'] = -u4old
                 dp2['v2'] = -v4old
 
-                dp2['u3'] = -u2old
-                dp2['v3'] = -v2old
+                dp2['u3'] = u1old
+                dp2['v3'] = v1old
 
-                dp2['u4'] = u1old
-                dp2['v4'] = v1old
+                dp2['u4'] = -u2old
+                dp2['v4'] = -v2old
+
+                if ctype=='camp':
+                    dp2['camp'] = 1./campold
+                    dp2['sigmaca'] = sigmaold/(campold**2)
+
+                elif ctype=='logcamp':
+                    dp2['camp'] = -campold
+                    dp2['sigmaca'] = sigmaold
 
                 outgroup.append(dp2)
-                outgroup2.append(np.array(dp2,dtype=DTCAMP))
 
-#        if len(quads)!= len(outgroup2):
-#            print(timegroup[0]['time'], len(quads), len(timegroup),len(outgroup2))
         if returnType=='time':
             out.append(np.array(outgroup,dtype=dtype))
         else:
