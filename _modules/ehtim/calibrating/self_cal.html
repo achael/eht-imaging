@@ -204,7 +204,8 @@
 <span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Value</span><span class="p">,</span> <span class="n">Lock</span>
 
 <span class="kn">from</span> <span class="nn">ehtim.calibrating.cal_helpers</span> <span class="k">import</span> <span class="o">*</span>
-
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;divide by zero encountered in log&quot;</span><span class="p">)</span>
 <span class="c1">###################################################################################################################################</span>
 <span class="c1">#Self-Calibration</span>
 <span class="c1">###################################################################################################################################</span>

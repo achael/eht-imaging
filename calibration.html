@@ -324,7 +324,7 @@
 
 <dl class="method">
 <dt id="ehtim.caltable.Caltable.plot_gains">
-<code class="descname">plot_gains</code><span class="sig-paren">(</span><em>sites, gain_type='amp', pol='R', ang_unit='deg', timetype=False, yscale='log', clist=[(0.11764705882352941, 0.5647058823529412, 1.0), (1.0, 0.38823529411764707, 0.2784313725490196), (0.5411764705882353, 0.16862745098039217, 0.8862745098039215), (0.4196078431372549, 0.5568627450980392, 0.13725490196078433), (1.0, 0.6470588235294118, 0.0), (0.5450980392156862, 0.27058823529411763, 0.07450980392156863), (0.0, 0.0, 0.803921568627451), (1.0, 0.0, 0.0), (0.0, 1.0, 1.0), (1.0, 0.0, 1.0), (0.0, 0.39215686274509803, 0.0), (0.8235294117647058, 0.7058823529411765, 0.5490196078431373), (0.0, 0.0, 0.0)], rangex=False, rangey=False, markersize=3, show=True, grid=False, labels=True, axis=False, export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_gains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_gains" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plot_gains</code><span class="sig-paren">(</span><em>sites, gain_type='amp', pol='R', label=None, ang_unit='deg', timetype=False, yscale='log', legend=True, clist=[(0.11764705882352941, 0.5647058823529412, 1.0), (1.0, 0.38823529411764707, 0.2784313725490196), (0.5411764705882353, 0.16862745098039217, 0.8862745098039215), (0.4196078431372549, 0.5568627450980392, 0.13725490196078433), (1.0, 0.6470588235294118, 0.0), (0.5450980392156862, 0.27058823529411763, 0.07450980392156863), (0.0, 0.0, 0.803921568627451), (1.0, 0.0, 0.0), (0.0, 1.0, 1.0), (1.0, 0.0, 1.0), (0.0, 0.39215686274509803, 0.0), (0.8235294117647058, 0.7058823529411765, 0.5490196078431373), (0.0, 0.0, 0.0)], rangex=False, rangey=False, markersize=3, show=True, grid=False, axislabels=True, axis=False, export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.plot_gains"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.plot_gains" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot gains on multiple sites vs time.
 :param sites: a list of site names for which to plot gains. Empty list is all sites.
 :type sites: list
@@ -340,14 +340,18 @@
 :type yscale: str
 :param clist: list of colors for the plot
 :type clist: list
+:param label: base label for legend
+:type label: str
 :param rangex: [xmin, xmax] x-axis (time) limits
 :type rangex: list
 :param rangey: [ymin, ymax] y-axis (gain) limits
 :type rangey: list
+:param legend: Plot legend if True
+:type legend: bool
 :param grid: Plot gridlines if True
 :type grid: bool
-:param labels: Show axis labels if True
-:type labels: bool
+:param axislabels: Show axis labels if True
+:type axislabels: bool
 :param show: Display the plot if true
 :type show: bool
 :param axis: add plot to this axis
