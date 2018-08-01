@@ -219,7 +219,6 @@ def make_bispectrum(l1, l2, l3,vtype):
     return (bi, bisig)
 
 
-
 #TODO: debiasing strategy?? 
 def make_closure_amplitude(blue1, blue2, red1, red2, vtype, ctype='camp', debias=True):
     """make a list of closure amplitudes and errors

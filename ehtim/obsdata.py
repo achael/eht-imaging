@@ -1855,7 +1855,6 @@ class Obsdata(object):
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
                 time = gmst_to_utc(time, self.mjd)
             sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
-            #sites = np.sort(sites)
 
             # Create a dictionary of baselines at the current time incl. conjugates;
             l_dict = {}
@@ -1863,12 +1862,11 @@ class Obsdata(object):
                 l_dict[(dat['t1'], dat['t2'])] = dat
 
             # Determine the triangles in the time step
-
             # Minimal Set
             if count == 'min':
                 tris = tri_minimal_set(sites, self.tarr, self.tkey)
 
-            # Maximal  Set - find all triangles
+            # Maximal  Set 
             elif count == 'max':
                 tris = list(it.combinations(sites,3))
 
@@ -1876,10 +1874,10 @@ class Obsdata(object):
             for tri in tris:
                 # The ordering is north-south
                 # ANDREW what if there is no geographic information???
-                a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
-                a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
-                a2 = 3 - a1 - a3
-                tri = (tri[a1], tri[a2], tri[a3])
+#                a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
+#                a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
+#                a2 = 3 - a1 - a3
+#                tri = (tri[a1], tri[a2], tri[a3])
 
                 # Select triangle entries in the data dictionary
                 try:
@@ -2126,38 +2124,6 @@ class Obsdata(object):
             # Minimal set
             if count == 'min':
                 quadsets = quad_minimal_set(sites, self.tarr, self.tkey)
-#                for quad in quadsets:
-#                    # Blue is numerator, red is denominator
-
-#                    if (quad[0], quad[1]) not in l_dict.keys():
-#                        continue
-#                    if (quad[2], quad[3]) not in l_dict.keys():
-#                        continue
-#                    if (quad[1], quad[2]) not in l_dict.keys():
-#                        continue
-#                    if (quad[0], quad[3]) not in l_dict.keys():
-#                        continue
-
-#                    try:
-#                        blue1 = l_dict[quad[0], quad[1]]
-#                        blue2 = l_dict[quad[2], quad[3]]
-#                        red1 = l_dict[quad[0], quad[3]]
-#                        red2 = l_dict[quad[1], quad[2]]
-#                    except KeyError:
-#                        continue
-
-#                    # Compute the closure amplitude and the error
-#                    (camp, camperr) = make_closure_amplitude(blue1, blue2, red1, red2, vtype,
-#                                                             ctype=ctype, debias=debias)
-
-#                    # Add the closure amplitudes to the equal-time list
-#                    # Our site convention is (12)(34)/(14)(23)
-#                    cas.append(np.array((time,
-#                                         quad[0], quad[1], quad[2], quad[3],
-#                                         blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-#                                         red1['u'], red1['v'], red2['u'], red2['v'],
-#                                         camp, camperr),
-#                                         dtype=DTCAMP))
 
             # Maximal Set
             elif count == 'max':
@@ -2165,32 +2131,7 @@ class Obsdata(object):
                 quadsets = list(it.combinations(sites,4))
                 # Include 3 closure amplitudes on each quadrangle
                 quadsets = np.array([(q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]) for q in quadsets]).reshape((-1,4))
-#                for q in quadsets:
-#                    # Loop over 3 closure amplitudes
-#                    # Our site convention is (12)(34)/(14)(23)
-#                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
 
-#                        # Blue is numerator, red is denominator
-#                        try:
-#                            blue1 = l_dict[quad[0], quad[1]]
-#                            blue2 = l_dict[quad[2], quad[3]]
-#                            red1 = l_dict[quad[0], quad[3]]
-#                            red2 = l_dict[quad[1], quad[2]]
-#                        except KeyError:
-#                            continue
-
-#                        # Compute the closure amplitude and the error
-#                        (camp, camperr) = make_closure_amplitude(blue1, blue2, red1, red2, vtype,
-#                                                                 ctype=ctype, debias=debias)
-
-#                        # Add the closure amplitudes to the equal-time list
-#                        # Our site convention is (12)(34)/(14)(23)
-#                        cas.append(np.array((time,
-#                                             quad[0], quad[1], quad[2], quad[3],
-#                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-#                                             red1['u'], red1['v'], red2['u'], red2['v'],
-#                                             camp, camperr),
-#                                             dtype=DTCAMP))
             # Loop over all closure amplitudes
             for quad in quadsets:
                 # Blue is numerator, red is denominator
@@ -2290,19 +2231,8 @@ class Obsdata(object):
                 wrongup = (b1 in denom) and (b2 in denom) and (r1 in num) and (r2 in num)
                 if not (rightup or wrongup): continue
  
-                # right side up
-#                if ((obs['t1'],obs['t2'],obs['t3'],obs['t4']) == quad or
-#                    (obs['t2'],obs['t1'],obs['t4'],obs['t3']) == quad or
-#                    (obs['t3'],obs['t4'],obs['t1'],obs['t2']) == quad or
-#                    (obs['t4'],obs['t3'],obs['t2'],obs['t1']) == quad):
-#                    outdata.append(np.array(obs, dtype=DTCAMP))
-
                 #flip the inverse closure amplitudes
                 if wrongup:
-#                if ((obs['t1'],obs['t4'],obs['t3'],obs['t2']) == quad or
-#                      (obs['t2'],obs['t3'],obs['t4'],obs['t1']) == quad or
-#                      (obs['t3'],obs['t2'],obs['t1'],obs['t4']) == quad or
-#                      (obs['t4'],obs['t1'],obs['t2'],obs['t3']) == quad):
 #                    print("inverse!")
                     t1old = copy.deepcopy(obs['t1'])
                     u1old = copy.deepcopy(obs['u1'])
