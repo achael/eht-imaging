@@ -44,7 +44,7 @@ from ehtim.statistics.dataframes import *
 from ehtim.statistics.stats import *
 
 import warnings
-warnings.filterwarnings("ignore", type="Casting complex values to real discards the imaginary part")
+warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
 
 ##################################################################################################
 # Obsdata object

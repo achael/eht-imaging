@@ -715,8 +715,8 @@ if __name__=='__main__':
     parser.add_argument("inputobs",help='/path/to/uvfits.uvfits')
     parser.add_argument("inputobs_uncal",help='/path/to/uvfits_uncalibrated.uvfits')
 
-    parser.add_argument('--c', '-c',type=str,help="comments",default=" ", help="comments for top of sheet")
-    parser.add_argument('--o','-o', type=str,help="path/to/output",default='.', help="output directory")
+    parser.add_argument('--c', '-c',type=str,default=" ", help="comments for top of sheet")
+    parser.add_argument('--o','-o', type=str,help="path/to/output",default='.')
     parser.add_argument('--systematic_noise', type=float, default=0, help="systematic noise to add on amplitudes")
     parser.add_argument('--systematic_cphase_noise', type=float, default=0,help="systematic noise to add on cphase")
     parser.add_argument('--fontsize', type=int, default=FONTSIZE,help="font size")
