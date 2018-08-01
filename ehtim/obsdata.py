@@ -2126,69 +2126,103 @@ class Obsdata(object):
             # Minimal set
             if count == 'min':
                 quadsets = quad_minimal_set(sites, self.tarr, self.tkey)
-                for quad in quadsets:
-                    # Blue is numerator, red is denominator
+#                for quad in quadsets:
+#                    # Blue is numerator, red is denominator
 
-                    if (quad[0], quad[1]) not in l_dict.keys():
-                        continue
-                    if (quad[1], quad[2]) not in l_dict.keys():
-                        continue
-                    if (quad[0], quad[3]) not in l_dict.keys():
-                        continue
-                    if (quad[2], quad[3]) not in l_dict.keys():
-                        continue
-                    try:
-                        blue1 = l_dict[quad[0], quad[1]]
-                        blue2 = l_dict[quad[2], quad[3]]
-                        red1 = l_dict[quad[1], quad[2]]
-                        red2 = l_dict[quad[0], quad[3]]
-                    except KeyError:
-                        continue
+#                    if (quad[0], quad[1]) not in l_dict.keys():
+#                        continue
+#                    if (quad[2], quad[3]) not in l_dict.keys():
+#                        continue
+#                    if (quad[1], quad[2]) not in l_dict.keys():
+#                        continue
+#                    if (quad[0], quad[3]) not in l_dict.keys():
+#                        continue
 
-                    # Compute the closure amplitude and the error
-                    (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                             ctype=ctype, debias=debias)
+#                    try:
+#                        blue1 = l_dict[quad[0], quad[1]]
+#                        blue2 = l_dict[quad[2], quad[3]]
+#                        red1 = l_dict[quad[0], quad[3]]
+#                        red2 = l_dict[quad[1], quad[2]]
+#                    except KeyError:
+#                        continue
 
-                    # Add the closure amplitudes to the equal-time list
-                    # Our site convention is (12)(34)/(14)(23)
-                    cas.append(np.array((time,
-                                         quad[0], quad[1], quad[2], quad[3],
-                                         blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                         red1['u'], red1['v'], red2['u'], red2['v'],
-                                         camp, camperr),
-                                         dtype=DTCAMP))
+#                    # Compute the closure amplitude and the error
+#                    (camp, camperr) = make_closure_amplitude(blue1, blue2, red1, red2, vtype,
+#                                                             ctype=ctype, debias=debias)
+
+#                    # Add the closure amplitudes to the equal-time list
+#                    # Our site convention is (12)(34)/(14)(23)
+#                    cas.append(np.array((time,
+#                                         quad[0], quad[1], quad[2], quad[3],
+#                                         blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+#                                         red1['u'], red1['v'], red2['u'], red2['v'],
+#                                         camp, camperr),
+#                                         dtype=DTCAMP))
 
             # Maximal Set
             elif count == 'max':
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
-                for q in quadsets:
-                    # Loop over 3 closure amplitudes
-                    # Our site convention is (12)(34)/(14)(23)
-                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
+                # Include 3 closure amplitudes on each quadrangle
+                quadsets = np.array([(q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]) for q in quadsets]).reshape((-1,4))
+#                for q in quadsets:
+#                    # Loop over 3 closure amplitudes
+#                    # Our site convention is (12)(34)/(14)(23)
+#                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
 
-                        # Blue is numerator, red is denominator
-                        try:
-                            blue1 = l_dict[quad[0], quad[1]]
-                            blue2 = l_dict[quad[2], quad[3]]
-                            red1 = l_dict[quad[0], quad[3]]
-                            red2 = l_dict[quad[1], quad[2]]
-                        except KeyError:
-                            continue
+#                        # Blue is numerator, red is denominator
+#                        try:
+#                            blue1 = l_dict[quad[0], quad[1]]
+#                            blue2 = l_dict[quad[2], quad[3]]
+#                            red1 = l_dict[quad[0], quad[3]]
+#                            red2 = l_dict[quad[1], quad[2]]
+#                        except KeyError:
+#                            continue
 
-                        # Compute the closure amplitude and the error
-                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                                 ctype=ctype, debias=debias)
+#                        # Compute the closure amplitude and the error
+#                        (camp, camperr) = make_closure_amplitude(blue1, blue2, red1, red2, vtype,
+#                                                                 ctype=ctype, debias=debias)
 
-                        # Add the closure amplitudes to the equal-time list
-                        # Our site convention is (12)(34)/(14)(23)
-                        cas.append(np.array((time,
-                                             quad[0], quad[1], quad[2], quad[3],
-                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                             red1['u'], red1['v'], red2['u'], red2['v'],
-                                             camp, camperr),
-                                             dtype=DTCAMP))
+#                        # Add the closure amplitudes to the equal-time list
+#                        # Our site convention is (12)(34)/(14)(23)
+#                        cas.append(np.array((time,
+#                                             quad[0], quad[1], quad[2], quad[3],
+#                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+#                                             red1['u'], red1['v'], red2['u'], red2['v'],
+#                                             camp, camperr),
+#                                             dtype=DTCAMP))
+            # Loop over all closure amplitudes
+            for quad in quadsets:
+                # Blue is numerator, red is denominator
+                if (quad[0], quad[1]) not in l_dict.keys():
+                    continue
+                if (quad[2], quad[3]) not in l_dict.keys():
+                    continue
+                if (quad[1], quad[2]) not in l_dict.keys():
+                    continue
+                if (quad[0], quad[3]) not in l_dict.keys():
+                    continue
 
+                try:
+                    blue1 = l_dict[quad[0], quad[1]]
+                    blue2 = l_dict[quad[2], quad[3]]
+                    red1 = l_dict[quad[0], quad[3]]
+                    red2 = l_dict[quad[1], quad[2]]
+                except KeyError:
+                    continue
+
+                # Compute the closure amplitude and the error
+                (camp, camperr) = make_closure_amplitude(blue1, blue2, red1, red2, vtype,
+                                                         ctype=ctype, debias=debias)
+
+                # Add the closure amplitudes to the equal-time list
+                # Our site convention is (12)(34)/(14)(23)
+                cas.append(np.array((time,
+                                     quad[0], quad[1], quad[2], quad[3],
+                                     blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+                                     red1['u'], red1['v'], red2['u'], red2['v'],
+                                     camp, camperr),
+                                     dtype=DTCAMP))
             # Append all equal time closure amps to outlist
             if mode=='time':
                 out.append(np.array(cas))
@@ -2225,11 +2259,11 @@ class Obsdata(object):
             timetype=self.timetype
 
         quad = (site1, site2, site3, site4)
-        r1 = set((site1, site2))
-        r2 = set((site3, site4))
+        b1 = set((site1, site2))
+        b2 = set((site3, site4))
 
-        b1 = set((site1, site4))
-        b2 = set((site2, site3))
+        r1 = set((site1, site4))
+        r2 = set((site2, site3))
 
         # Get the closure amplitudes
         outdata = []
@@ -2245,47 +2279,142 @@ class Obsdata(object):
         # camps does not contain inverses
         for obs in camps:
 
+            num   = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
+            denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+
             obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
-
             if set(quad) == set(obsquad):
-                num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
-                denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
 
-                #flip inverse closure amplitudes
-                if ((r1 in denom) and (r2 in denom) and (b1 in num) and (b2 in num)):
+                # is this either  the closure amplitude or inverse? 
+                rightup = (b1 in num) and (b2 in num) and (r1 in denom) and (r2 in denom) 
+                wrongup = (b1 in denom) and (b2 in denom) and (r1 in num) and (r2 in num)
+                if not (rightup or wrongup): continue
+ 
+                # right side up
+#                if ((obs['t1'],obs['t2'],obs['t3'],obs['t4']) == quad or
+#                    (obs['t2'],obs['t1'],obs['t4'],obs['t3']) == quad or
+#                    (obs['t3'],obs['t4'],obs['t1'],obs['t2']) == quad or
+#                    (obs['t4'],obs['t3'],obs['t2'],obs['t1']) == quad):
+#                    outdata.append(np.array(obs, dtype=DTCAMP))
 
-                    t2 = copy.deepcopy(obs['t2'])
-                    u2 = copy.deepcopy(obs['u2'])
-                    v2 = copy.deepcopy(obs['v2'])
+                #flip the inverse closure amplitudes
+                if wrongup:
+#                if ((obs['t1'],obs['t4'],obs['t3'],obs['t2']) == quad or
+#                      (obs['t2'],obs['t3'],obs['t4'],obs['t1']) == quad or
+#                      (obs['t3'],obs['t2'],obs['t1'],obs['t4']) == quad or
+#                      (obs['t4'],obs['t1'],obs['t2'],obs['t3']) == quad):
+#                    print("inverse!")
+                    t1old = copy.deepcopy(obs['t1'])
+                    u1old = copy.deepcopy(obs['u1'])
+                    v1old = copy.deepcopy(obs['v1'])
+                    t2old = copy.deepcopy(obs['t2'])
+                    u2old = copy.deepcopy(obs['u2'])
+                    v2old = copy.deepcopy(obs['v2'])
+                    t3old = copy.deepcopy(obs['t3'])
+                    u3old = copy.deepcopy(obs['u3'])
+                    v3old = copy.deepcopy(obs['v3'])
+                    t4old = copy.deepcopy(obs['t4'])
+                    u4old = copy.deepcopy(obs['u4'])
+                    v4old = copy.deepcopy(obs['v4'])
+                    campold = copy.deepcopy(obs['camp'])
+                    csigmaold = copy.deepcopy(obs['sigmaca'])
 
-                    t3 = copy.deepcopy(obs['t3'])
-                    u3 = copy.deepcopy(obs['u3'])
-                    v3 = copy.deepcopy(obs['v3'])
+                    obs['t1'] = t1old
+                    obs['t2'] = t4old
+                    obs['t3'] = t3old
+                    obs['t4'] = t2old
+        
+                    obs['u1'] = u3old
+                    obs['v1'] = v3old
 
-                    obs['t2'] = obs['t4']
-                    obs['u2'] = obs['u4']
-                    obs['v2'] = obs['v4']
+                    obs['u2'] = -u4old
+                    obs['v2'] = -v4old
 
-                    obs['t3'] = t2
-                    obs['u3'] = u2
-                    obs['v3'] = v2
+                    obs['u3'] = u1old
+                    obs['v3'] = v1old
 
-                    obs['t4'] = t3
-                    obs['u4'] = u3
-                    obs['v4'] = v3
+                    obs['u4'] = -u2old
+                    obs['v4'] = -v2old
 
                     if ctype=='logcamp':
-                        obs['camp'] = -obs['camp']
+                        obs['camp'] = -campold
+                        obs['sigmaca'] = csigmaold
                     else:
-                        obs['camp'] = 1./obs['camp']
-                        obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
-                    outdata.append(np.array(obs, dtype=DTCAMP))
+                        obs['camp'] = 1./campold
+                        obs['sigmaca'] = csigmaold/(campold**2)
 
-                # not an inverse closure amplitude
-                elif ((r1 in num) and (r2 in num) and (b1 in denom) and (b2 in denom)):
-                    outdata.append(np.array(obs, dtype=DTCAMP))
 
-                continue
+                t1old = copy.deepcopy(obs['t1'])
+                u1old = copy.deepcopy(obs['u1'])
+                v1old = copy.deepcopy(obs['v1'])
+                t2old = copy.deepcopy(obs['t2'])
+                u2old = copy.deepcopy(obs['u2'])
+                v2old = copy.deepcopy(obs['v2'])
+                t3old = copy.deepcopy(obs['t3'])
+                u3old = copy.deepcopy(obs['u3'])
+                v3old = copy.deepcopy(obs['v3'])
+                t4old = copy.deepcopy(obs['t4'])
+                u4old = copy.deepcopy(obs['u4'])
+                v4old = copy.deepcopy(obs['v4'])
+
+                # this is all same closure amplitude, but the ordering of labels is different
+                # return the label ordering that the user requested!
+                if (obs['t2'],obs['t1'],obs['t4'],obs['t3']) == quad:
+                    obs['t1'] = t2old
+                    obs['t2'] = t1old
+                    obs['t3'] = t4old
+                    obs['t4'] = t3old
+        
+                    obs['u1'] = -u1old
+                    obs['v1'] = -v1old
+
+                    obs['u2'] = -u2old
+                    obs['v2'] = -v2old
+
+                    obs['u3'] = u4old
+                    obs['v3'] = v4old
+
+                    obs['u4'] = u3old
+                    obs['v4'] = v3old
+
+                elif (obs['t3'],obs['t4'],obs['t1'],obs['t2']) == quad:
+                    obs['t1'] = t3old
+                    obs['t2'] = t4old
+                    obs['t3'] = t1old
+                    obs['t4'] = t2old
+        
+                    obs['u1'] = u2old
+                    obs['v1'] = v2old
+
+                    obs['u2'] = u1old
+                    obs['v2'] = v1old
+
+                    obs['u3'] = -u4old
+                    obs['v3'] = -v4old
+
+                    obs['u4'] = -u3old
+                    obs['v4'] = -v3old
+
+                elif (obs['t4'],obs['t3'],obs['t2'],obs['t1']) == quad:
+                    obs['t1'] = t4old
+                    obs['t2'] = t3old
+                    obs['t3'] = t2old
+                    obs['t4'] = t1old
+        
+                    obs['u1'] = -u2old
+                    obs['v1'] = -v2old
+
+                    obs['u2'] = -u1old
+                    obs['v2'] = -v1old
+
+                    obs['u3'] = -u3old
+                    obs['v3'] = -v3old
+
+                    obs['u4'] = -u4old
+                    obs['v4'] = -v4old
+
+                # append to output array
+                outdata.append(np.array(obs, dtype=DTCAMP))
 
         return np.array(outdata)
 
@@ -2701,12 +2830,13 @@ class Obsdata(object):
                     export_pdf="", grid=True, ebar=True, 
                     axislabels=True, legend=False, show=True):
 
-        """Plot a field over time on a baseline site1-site2.
+        """Plot closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
-               field (str): y-axis field (from FIELDS)
+               site3 (str): station 3 name
+               site4 (str): station 4 name
 
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
@@ -2716,7 +2846,7 @@ class Obsdata(object):
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
                timetype (str): 'GMST' or 'UTC'
 
-               axis (matplotlib.axes.Axes): add plot to this axis
+               axis (matplotlib.axes.Axes): amake_cdd plot to this axis
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
                color (str): color for scatterplot points
@@ -2750,7 +2880,8 @@ class Obsdata(object):
             camps=self.logcamp
 
         # Get closure amplitudes (maximal set)
-        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype,
+        cpdata = self.camp_quad(site1, site2, site3, site4, 
+                                vtype=vtype, ctype=ctype,
                                 debias=debias, timetype=timetype, 
                                 camps=camps,force_recompute=force_recompute)
 
