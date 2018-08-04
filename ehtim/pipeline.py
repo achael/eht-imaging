@@ -69,11 +69,11 @@ def make_process(func_name, **kwargs):
 # Main script
 if __name__ == "__main__":
     pipeline = [make_process("load"),
-                make_process("scale_zbl", scale=0.1),
-                make_process("scale_noise"),
-                make_process("flag",      anomalous="amp"),
-                make_process("average",   old=True),
-                make_process("average",   sec=600)]
+                make_process("scale",   zbl=0.1),
+                make_process("scale",   noise='auto'),
+                make_process("flag",    anomalous="amp"),
+                make_process("average", old=True),
+                make_process("average", sec=600)]
 
     obs = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
     for p in pipeline:
