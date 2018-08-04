@@ -19,11 +19,11 @@ def scale(obs,
         for t in ["vis", "sigma"]:
             for p in ["", "q", "u", "v"]:
                 d[p+t][b] *= zbl
+        return obs
     if noise is not None:
         if noise == 'auto':
             noise = obs.estimate_noise_rescale_factor(max_diff_sec=max_diff_sec)
-        obs = obs.rescale_noise(noise_rescale_factor=noise)
-    return obs
+        return obs.rescale_noise(noise_rescale_factor=noise)
 
 def average(obs, sec=300, old=False):
     if old:
