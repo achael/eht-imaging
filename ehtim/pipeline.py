@@ -10,17 +10,20 @@ import ehtim as eh
 def load(name):
     return eh.obsdata.load_uvfits(name)
 
-def scale_zbl(obs, uvdist=1.0e9, scale=1.0):
-    d = obs.data
-    b = d['u']**2 + d['v']**2 < uvdist**2
-    for t in ["vis", "sigma"]:
-        for p in ["", "q", "u", "v"]:
-            d[p+t][b] *= scale
+def scale(obs,
+          zbl=None,   uvdist=1.0e9,
+          noise=None, max_diff_sec=100.0):
+    if zbl is not None:
+        d = obs.data
+        b = d['u']**2 + d['v']**2 < uvdist**2
+        for t in ["vis", "sigma"]:
+            for p in ["", "q", "u", "v"]:
+                d[p+t][b] *= zbl
+    if noise is not None:
+        if noise == 'auto':
+            noise = obs.estimate_noise_rescale_factor(max_diff_sec=max_diff_sec)
+        obs = obs.rescale_noise(noise_rescale_factor=noise)
     return obs
-
-def scale_noise(obs, max_diff_sec=100.0):
-    fac = obs.estimate_noise_rescale_factor(max_diff_sec=max_diff_sec)
-    return obs.rescale_noise(noise_rescale_factor=fac)
 
 def average(obs, sec=300, old=False):
     if old:
@@ -31,7 +34,7 @@ def average(obs, sec=300, old=False):
 
 def flag(obs,
          anomalous=None, max_diff_seconds=300,
-         low_snr=None, uv_min=None):
+         low_snr=None,   uv_min=None):
     if anomalous is not None:
         return obs.flag_anomalous(field=anomalous,
                                   max_diff_seconds=max_diff_seconds)
