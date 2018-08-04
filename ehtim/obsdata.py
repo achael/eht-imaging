@@ -1007,7 +1007,8 @@ class Obsdata(object):
 
         if avg_time>0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
-        else: foo = self
+        else: 
+            foo = self
         cdf = make_camp_df(foo,ctype=ctype,debias=False,count=count,
                            round_s=round_s)
 
