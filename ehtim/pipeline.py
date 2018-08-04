@@ -5,6 +5,7 @@
 # EHT Imaging Workshop.
 
 import ehtim as eh
+import yaml
 
 # Implement individual processes in an imaging pipeline
 def load(name):
@@ -68,12 +69,14 @@ def make_process(func_name, **kwargs):
 
 # Main script
 if __name__ == "__main__":
-    pipeline = [make_process("load"),
-                make_process("scale",   zbl=0.1),
-                make_process("scale",   noise='auto'),
-                make_process("flag",    anomalous="amp"),
-                make_process("average", old=True),
-                make_process("average", sec=600)]
+    with open("pipeline.yaml", 'r') as f:
+        dict = yaml.load(f)
+
+    pipeline = []
+    for p in dict['pipeline']:
+        for k, v in p.items():
+            pipeline += [make_process(k) if v is None else
+                         make_process(k, **v)]
 
     obs = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
     for p in pipeline:

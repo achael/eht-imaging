@@ -1,0 +1,12 @@
+pipeline:
+- load:
+- scale:
+    zbl: 0.1
+- scale:
+    noise: auto
+- flag:
+    anomalous: amp
+- average:
+    old: True
+- average:
+    sec: 600
