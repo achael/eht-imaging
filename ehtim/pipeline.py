@@ -53,9 +53,10 @@ def merge(obss):
         obss[i].bw  = obss[0].bw
     return eh.obsdata.merge_obs(obss).copy()
 
-def reorder_tarr_snr(obs):
-    obs.reorder_tarr_snr()
-    return obs
+def reorder(obs, according='snr'):
+    if according == 'snr':
+        obs.reorder_tarr_snr()
+        return obs
 
 def add_gaussprior(obs, fov=200, npix=64, prior_fwhm=100, zbl=1.0):
     fov        *= eh.RADPERUAS
