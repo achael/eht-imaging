@@ -64,6 +64,7 @@ def reorder(obs, according='snr'):
 def make_process(func_name, **kwargs):
     """A factory method that creates process in a pipeline"""
     def process(data): # closure
+        print(func_name, data, kwargs)
         return globals()[func_name](data, **kwargs)
     return process
 
