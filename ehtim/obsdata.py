@@ -1075,48 +1075,43 @@ class Obsdata(object):
                      count=count, debias=debias,  
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
-    def add_scans(self,dt=0.0165,margin=0.0001):
-        '''Add scaninfo based on data itself
+    
+    def add_scans(self,info='self',filepath='',dt=0.0165,margin=0.0001):
+        '''Add scaninfo to obsdata object
         Args:
+        info (str): 'self' for scans inferred from data, 'txt' for text file 
+        with scans begining and end time, 'vex' for vex schedule file
+        filepath (str): path to txt/vex file with scans info
         dt (float): minimal time interval between scans in hours
         margin (float): padding scans by that time margin in hours
+        
         '''
-        times_uni = np.asarray(sorted(list(set(self.data['time']))))
-        scans = np.zeros_like(times_uni)
-        scan_id=0
-        for cou in range(len(times_uni)-1):
-            scans[cou] = scan_id
-            if (times_uni[cou+1]-times_uni[cou] > dt):
-                scan_id+=1
-        scans[-1]=scan_id
-        scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1]))])    
+        if info=='self':
+            times_uni = np.asarray(sorted(list(set(self.data['time']))))
+            scans = np.zeros_like(times_uni)
+            scan_id=0
+            for cou in range(len(times_uni)-1):
+                scans[cou] = scan_id
+                if (times_uni[cou+1]-times_uni[cou] > dt):
+                    scan_id+=1
+            scans[-1]=scan_id
+            scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1]))])    
+        elif info=='txt':
+             scanlist = np.loadtxt(filepath)
+        elif info=='vex':
+            vex0 = ehtim.vex.Vex(filepath)
+            t_min = [vex0.sched[x]['start_hr'] for x in range(len(vex0.sched))]
+            duration=[]
+            for x in range(len(vex0.sched)):
+                duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] for y in range(len(vex0.sched[x]['scan']))])
+                duration.append(duration_foo)
+            t_max = [tmin + dur/3600. for (tmin,dur) in zip(t_min,duration)] 
+            scanlist = np.array([[tmin,tmax] for (tmin,tmax) in zip(t_min,t_max)])
+        else:
+            print("Parameter 'info' can only assume values 'self', 'txt' or 'vex'! ")
+            scanlist=None
         self.scans = scanlist
 
-    def add_scans_from_txt(self,txtfile):
-        '''Add scaninfo based on textfile
-
-        Args:
-        txtfile (str): path to textfile with scan times (two columns,
-        beginning and end time of the scan)
-        '''
-        scanlist = np.loadtxt(txtfile)
-        self.scans = scanlist
-
-    def add_scans_from_vex(self,vexfile):
-        '''Add scaninfo based on vextfile
-
-        Args:
-        vexfile (str): path to vextfile
-        '''
-        vex0 = ehtim.vex.Vex(vexfile)
-        t_min = [vex0.sched[x]['start_hr'] for x in range(len(vex0.sched))]
-        duration=[]
-        for x in range(len(vex0.sched)):
-            duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] for y in range(len(vex0.sched[x]['scan']))])
-            duration.append(duration_foo)
-        t_max = [tmin + dur/3600. for (tmin,dur) in zip(t_min,duration)] 
-        scanlist = np.array([[tmin,tmax] for (tmin,tmax) in zip(t_min,t_max)])
-        self.scans = scanlist
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
 
@@ -1579,13 +1574,16 @@ class Obsdata(object):
         else:
             return obs_kept
 
-    def flag_UT_range(self, UT_start_hour=0.0, UT_stop_hour=0.0,  output='kept'):
+
+    def flag_UT_range(self, UT_start_hour=0.0, UT_stop_hour=0.0,flag_type='all',flag_what='', flag_or_keep=False,output='kept'):
 
         """Flag data points within a certain UT range
 
            Args:
                UT_start_hour (float): start of  time window
                UT_stop_hour (float): end of time window
+               flag_type (str): 'all' for flagging everything, 'baseline' for flagginng given baseline, 'station' for flagging givern station
+               flag_what (str): baseline or station to flag (order of stations in baseline doesn't matter)
                output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
@@ -1596,14 +1594,29 @@ class Obsdata(object):
         datatable = self.data.copy()
         UT_mask = self.unpack('time')['time'] <= UT_start_hour
         UT_mask = UT_mask + (self.unpack('time')['time'] >= UT_stop_hour)
-        # if flag_or_keep:
-        #     UT_mask = np.invert(UT_mask)
+        if flag_type!='all':
+            t1_list = self.unpack('t1')['t1']
+            t2_list = self.unpack('t2')['t2']
+            if flag_type=='station':
+                station=flag_what
+                what_mask = np.array([not (t1_list[j] == station or t2_list[j] == station) for j in range(len(t1_list))])
+            elif flag_type=='baseline':
+                station1=flag_what.split('-')[0]
+                station2=flag_what.split('-')[1]
+                stations=[station1,station2]
+                what_mask = np.array([not ( (t1_list[j] in stations) and (t2_list[j] in stations) ) for j in range(len(t1_list))])
+        else:
+            what_mask = np.array([False for j in range(len(UT_mask))])
+        mask = UT_mask|what_mask
+
+        if flag_or_keep:
+            mask = np.invert(mask)
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
 
-        datatable_kept    = datatable_kept[UT_mask]
-        datatable_flagged = datatable_flagged[np.invert(UT_mask)]
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
         print('time flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
 
         obs_kept = self.copy()
@@ -1617,6 +1630,35 @@ class Obsdata(object):
             return {'kept':obs_kept,'flagged':obs_flagged}
         else:
             return obs_kept
+   
+    def flags_from_file(self,flagfile,flag_type='station'):
+        """Flagging data based on csv file
+
+            Args:
+                flagfile (str): path to csv file with mjd of flagging start / stop time
+                and optionally baseline / station to flag
+                flag_type (str): 'all' for flagging everything, 'baseline' for flagginng given baseline, 'station' for flagging givern station
+
+            Returns:
+                (Obsdata): a observation object with flagged data points removed
+        """
+        df = pd.read_csv(flagfile)
+        mjd_start = list(df['mjd_start'])
+        mjd_stop = list(df['mjd_stop'])
+        if flag_type=='station':
+            whatL = list(df['station'])
+        elif flag_type=='baseline':
+            whatL = list(df['baseline'])
+        elif flag_type=='all':
+            whatL = ['' for cou in range(len(mjd_start))]
+        foo = self.copy()
+        for cou in range(len(mjd_start)):
+            what = whatL[cou]
+            starth = (mjd_start[cou] % 1)*24.
+            stoph=(mjd_stop[cou] % 1)*24.
+            foo = foo.flag_UT_range( UT_start_hour=starth, UT_stop_hour=stoph, flag_type=flag_type,flag_what=what, flag_or_keep=False,output='kept')
+        return foo
+ 
 
     def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'):
         """Flag anomalous data points
