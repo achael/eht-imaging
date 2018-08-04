@@ -37,7 +37,8 @@ def flag(obs,
          low_snr=None,
          uv_min=None):
     if anomalous is not None:
-        return obs.flag_anomalous(field=anomalous, max_diff_sec=max_diff_sec)
+        return obs.flag_anomalous(field=anomalous,
+                                  max_diff_seconds=max_diff_sec)
     if low_snr is not None:
         return obs.flag_low_snr(low_snr)
     if uv_min is not None:
