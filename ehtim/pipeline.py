@@ -58,30 +58,6 @@ def reorder(obs, according='snr'):
         obs.reorder_tarr_snr()
         return obs
 
-def add_gaussprior(obs, fov=200, npix=64, prior_fwhm=100, zbl=1.0):
-    fov        *= eh.RADPERUAS
-    prior_fwhm *= eh.RADPERUAS
-    emptyprior  = eh.image.make_square(obs, npix, fov)
-    flatprior   = emptyprior.add_flat(zbl)
-    gaussprior  = emptyprior.add_gauss(zbl,
-                                       (prior_fwhm, prior_fwhm, -np.pi/4, 0, 0))
-    return obs, gaussprior, gaussprior
-
-def self_cal(obs, ref, **kwargs):
-    return eh.self_cal.self_cal(obs, ref, processes=0, **kwargs)
-
-def make_imager(obs, init, prior, npix=64, **kwargs):
-    return eh.imager.Imager(obs, init, prior_im=prior, **kwargs)
-
-def imaging(imgr, init, n=5, m=3, blursz=0.33, **kwargs):
-    imgr.init_next = init
-    for i in range(n):
-        for j in range(m):
-            imgr.make_image_I(**kwargs)
-            imgr.init_next = imgr.out_last()
-        imgr.init_next = imgr.out_liast().blur_circ(res * blursz)
-    return imgr.out_last().copy()
-
 # Factory method
 def make_process(func_name, **kwargs):
     """A factory method that creates process in a pipeline"""
@@ -98,6 +74,6 @@ if __name__ == "__main__":
                 make_process("average",   old=True),
                 make_process("average",   sec=600)]
 
-    bundle = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
+    obs = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
     for p in pipeline:
-        bundle = p(*bundle if isinstance(bundle, tuple) else bundle)
+        obs = p(obs)
