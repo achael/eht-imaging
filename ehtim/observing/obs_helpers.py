@@ -35,7 +35,7 @@ import copy
 import sys
 import os
 
-import ehtim.const_def 
+import ehtim.const_def
 from ehtim.const_def import *
 
 import warnings
@@ -273,8 +273,8 @@ def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
 
     return (bi, bisig)
 
-#TODO: debiasing strategy?? 
-def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, polrep='stokes'):
+#TODO: debiasing strategy??
+def make_closure_amplitude(blue1, blue2, red1, red2, vtype, ctype='camp', debias=True, polrep='stokes'):
     """make a list of closure amplitudes and errors
        red1 and red2 are full datatables of denominator entries
        blue1 and blue2 are full datatables numerator entries
@@ -418,10 +418,10 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 
 
     # debias
-    p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=True)
-    p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=True)
-    p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=True)
-    p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=True)
+    p1 = amp_debias(p1, sig1, force_nonzero=True)
+    p2 = amp_debias(p2, sig2, force_nonzero=True)
+    p3 = amp_debias(p3, sig3, force_nonzero=True)
+    p4 = amp_debias(p4, sig4, force_nonzero=True)
 
     # get snrs
     snr1 = p1/sig1
@@ -447,29 +447,18 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 
     return (camp, camperr)
 
-def amp_debias(amp, sigma, actually_debias=True, force_nonzero=False):
+def amp_debias(amp, sigma, force_nonzero=False):
     """Return debiased visibility amplitudes
     """
 
-    if not actually_debias:
-        return np.abs(amp)
-    else:
-        deb2 = np.abs(amp)**2 - np.abs(sigma)**2
+    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
 
+    # puts amplitude at 0 if snr < 1
+    deb2 *= (np.abs(amp) > np.abs(sigma))
+    if force_nonzero:
         # puts amplitude at 0 if snr < 1
-        deb2 *= (np.abs(amp) > np.abs(sigma))
-        if force_nonzero:
-            # puts amplitude at 0 if snr < 1
-            deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
-        return np.sqrt(deb2)
-
-#        if type(deb2) == float or type(deb2)==np.float64:
-#            if deb2 < 0.0: return np.abs(amp)
-#            else: return np.sqrt(deb2)
-#        else:
-#            lowsnr = deb2 < 0.0
-#            deb2[lowsnr] = np.abs(amp[lowsnr])**2
-#            return np.sqrt(deb2)
+        deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
+    return np.sqrt(deb2)
 
 def camp_debias(camp, snr3, snr4):
     """Debias closure amplitudes
@@ -601,17 +590,19 @@ def cerror_hash(sigma,*args):
     im = np.random.randn()
 
     err = sigma * (re + 1j*im)
-    return err 
+    return err
 
 def hashrandn(*args):
     """set the seed according to a collection of arguments and return random gaussian var
     """
+
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
     return np.random.randn()
 
 def hashrand(*args):
     """set the seed according to a collection of arguments and return random number in 0,1
     """
+    
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
     return np.random.rand()
 
@@ -919,7 +910,7 @@ def quad_minimal_set(sites, tarr, tkey):
     #sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])[::-1]]
     #ref = sites[0]
 
-    sites_ordered = np.array([x for x in tarr['site'] if x in sites]) 
+    sites_ordered = np.array([x for x in tarr['site'] if x in sites])
     ref = sites_ordered[0]
     sites = sites_ordered
 
@@ -936,13 +927,13 @@ def quad_minimal_set(sites, tarr, tkey):
 
     return quads
 
-# ANDREW TODO: 
-# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_amplitudes(count='min). This is because of sign flips. 
+# ANDREW TODO:
+# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same
+# minimal set as we would from  calling c_amplitudes(count='min). This is because of sign flips.
 def reduce_tri_minimal(obs, datarr):
     """reduce a bispectrum or closure phase data array to a minimal set
        datarr can be either a bispectrum array of type DTBIS
-       or a closure phase array of type DTCPHASE, or a time sorted 
+       or a closure phase array of type DTCPHASE, or a time sorted
        list of either
     """
 
@@ -953,7 +944,7 @@ def reduce_tri_minimal(obs, datarr):
         for key, group in it.groupby(datarr, lambda x: x['time']):
             datalist.append(np.array([gp for gp in group],dtype=dtype))
         returnType='all'
-    else: 
+    else:
         dtype = datarr[0].dtype
         datalist=datarr
         returnType='time'
@@ -961,7 +952,7 @@ def reduce_tri_minimal(obs, datarr):
     out = []
 
     for timegroup in datalist:
-        if returnType=='all': 
+        if returnType=='all':
             outgroup = out
         else:
             outgroup = []
@@ -986,9 +977,9 @@ def reduce_tri_minimal(obs, datarr):
         out = np.array(out,dtype=dtype)
     return out
 
-# ANDREW TODO: 
-# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_amplitudes(count='min). This is because of  inverses. 
+# ANDREW TODO:
+# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same
+# minimal set as we would from  calling c_amplitudes(count='min). This is because of  inverses.
 def reduce_quad_minimal(obs, datarr,ctype='camp'):
     """reduce a closure amplitude or log closure amplitude array FROM a maximal set TO a minimal set"""
 
@@ -1002,14 +993,14 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
         for key, group in it.groupby(datarr, lambda x: x['time']):
             datalist.append(np.array([x for x in group]))
         returnType='all'
-    else: 
+    else:
         dtype = datarr[0].dtype
         datalist=datarr
         returnType='time'
 
     out = []
     for timegroup in datalist:
-        if returnType=='all': 
+        if returnType=='all':
             outgroup = out
             outgroup2=[]
         else:
@@ -1070,7 +1061,7 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                 dp2['t2'] = t4old
                 dp2['t3'] = t3old
                 dp2['t4'] = t2old
-            
+
                 dp2['u1'] = u3old
                 dp2['v1'] = v3old
 
@@ -1133,7 +1124,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         progress = int(bar_width * complete_percent/float(100))
         message = ''.join(message_list[:progress])
         if complete_percent<100:
-            message += "." 
+            message += "."
             message += " "*(bar_width-progress-1)
 
         barparams = (nscan, totscans, tint,message)
@@ -1169,6 +1160,3 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-
-
-
