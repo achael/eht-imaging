@@ -62,7 +62,7 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 # Polarimetric Imager
 ##################################################################################################
 def pol_imager_func(Obsdata, InitIm, Prior,
-                       pol_rep="IMC", pol_solve = (0,1,1)
+                       pol_rep="IMC", pol_solve = (0,1,1),
                        d1='pvis', d2=False, s1='msimple', s2=False,
                        alpha_s1=1, alpha_s2=1,
                        alpha_d1=100, alpha_d2=100,
@@ -137,7 +137,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
         raise Exception("Only amp_phase pol_rep currently supported!")
 
     if (len(pol_solve)!=3):
-        raises Exception("pol_solve tuple must have 3 entries!")
+        raise Exception("pol_solve tuple must have 3 entries!")
 
     # Catch scale and dimension problems
     imsize = np.max([Prior.xdim, Prior.ydim]) * Prior.psize
@@ -162,14 +162,14 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     nimage = len(iimage)
 
     # initial pol image
-    if pol_rep =  "amp_phase":
+    if pol_rep ==  "amp_phase":
         if len(InitIm.qvec):
             init1 = (np.abs(InitIm.qvec + 1j*InitIm.uvec) / InitIm.imvec)[embed_mask]
             init2 = (np.arctan2(InitIm.uvec, InitIm.qvec) / 2.0)[embed_mask]
         else:
             # !AC TODO get the actual zero baseline pol. frac from the data!
             init1 = (0.2 * (np.ones(len(iimage)) + 1e-10 * np.random.rand(nimage)))[embed_mask]
-            init2 = (np.zeros(len(iimage)) + 1e-10 * np.random.rand(nimage)))[embed_mask]
+            init2 = (np.zeros(len(iimage)) + 1e-10 * np.random.rand(nimage))[embed_mask]
 
         # Change of variables    
         inittuple = mcv_r(init0, init1, init2)
@@ -215,7 +215,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     # Define the objective function and gradient
     def objfunc(allvec):
         # unpack allvec into image tuple
-        imtuple = unpack_poltuple(allvec, xtuple, nimage):
+        imtuple = unpack_poltuple(allvec, xtuple, nimage)
 
         # change of variables
         if pol_rep == "amp_phase":
@@ -228,7 +228,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
 
     def objgrad(allvec):
         # unpack allvec into image tuple
-        imtuple = unpack_poltuple(allvec, xtuple, nimage):
+        imtuple = unpack_poltuple(allvec, xtuple, nimage)
 
         # change of variables
         if pol_rep == "amp_phase":
@@ -259,7 +259,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     nit = 0
     def plotcur(im_step):
         global nit
-        imtuple = unpack_poltuple(im_step, xtuple, nimage):
+        imtuple = unpack_poltuple(im_step, xtuple, nimage)
         if pol_rep == "amp_phase":
             #change of variables
             imtuple = mcv(imtuple)

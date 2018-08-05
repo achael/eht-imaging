@@ -1,7 +1,7 @@
 # diagnostics.py
 # useful diagnostic tests on images
 #
-#    Copyright (C) 2018 Andrew Chael
+#    Copyright (C) 2018 Katie Bouman
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by

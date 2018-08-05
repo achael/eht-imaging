@@ -46,8 +46,6 @@ from ehtim.statistics.stats import *
 import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
 
-
-
 ##################################################################################################
 # Obsdata object
 ##################################################################################################
@@ -83,8 +81,8 @@ class Obsdata(object):
            camp (numpy.recarray): An array of saved (averaged) closure amplitudes
     """
 
-    def __init__(self, ra, dec, rf, bw, datatable, tarr, polrep='stokes',
-                       scantable=None, source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, timetype='UTC',
+    def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None,
+                       source=SOURCE_DEFAULT, mjd=MJD_DEFAULT, timetype='UTC',
                        ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True):
 
         """A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
@@ -95,7 +93,6 @@ class Obsdata(object):
                rf (float): The observation frequency in Hz
                bw (float): The observation bandwidth in Hz
 
-               polrep (str): polarization representation, either 'stokes' or 'polprod_circ'
                source (str): The source name
                mjd (int): The integer MJD of the observation
                ampcal (bool): True if amplitudes calibrated
@@ -115,19 +112,8 @@ class Obsdata(object):
 
         if len(datatable) == 0:
             raise Exception("No data in input table!")
-        if not (datatable.dtype in [DTPOL, DTPOL2]):
+        if (datatable.dtype != DTPOL):
             raise Exception("Data table should be a recarray with datatable.dtype = %s" % DTPOL)
-
-        if polrep=='stokes':
-            self.polrep = 'stokes'
-            self.poldict = POLDICT_STOKES
-            self.poltype = DTPOL
-        elif polrep=='polprod_circ':
-            self.polrep = 'polprod_circ'
-            self.poldict = POLDICT_PRODC
-            self.poltype = DTPOL2
-        else:
-            raise Exception("only 'stokes' and 'polprod_circ' are supported polreps!")
 
         # Set the various parameters
         self.source = str(source)
@@ -166,7 +152,7 @@ class Obsdata(object):
             self.tstop += 24.0
 
         # Saved closure quantity arrays
-        # TODO should we precompute??
+        # TODO should we precompute these?
         self.amp=None
         self.bispec=None
         self.cphase=None
@@ -182,7 +168,8 @@ class Obsdata(object):
            Returns:
                (Obsdata): a copy of the Obsdata object.
         """
-        newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, polrep=self.polrep,
+
+        newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd,
                          ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                          timetype=self.timetype, scantable=self.scans)
 
@@ -195,71 +182,18 @@ class Obsdata(object):
 
         return newobs
 
-    def switch_polrep(self, polrep_out='stokes'):
-        """Return a new observation with the polarization representation changed
-           Args:
-               polrep_out (str):  the polrep of the output data
-           Returns:
-               (Obsdata): new Obsdata object with potentially different polrep
-        """ 
-        if polrep_out not in ['stokes','polprod_circ']:
-            raise Exception("polrep_out must be either 'stokes' or 'polprod_circ'")
-        if polrep_out==self.polrep:
-            return self.copy()
-        elif polrep_out=='stokes': #polprod_circ -> stokes
-            data = np.empty(len(self.data), dtype=DTPOL)
-            for f in DTPOL:
-                f = f[0]
-                if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
-                    data[f] = self.data[f]
-                elif f=='vis':
-                    data[f] = 0.5*(self.data['rrvis'] + self.data['llvis'])
-                elif f=='qvis':
-                    data[f] = 0.5*(self.data['lrvis'] + self.data['rlvis'])
-                elif f=='uvis':
-                    data[f] = 0.5j*(self.data['lrvis'] - self.data['rlvis'])
-                elif f=='vvis':
-                    data[f] = 0.5*(self.data['rrvis'] - self.data['llvis'])
-                elif f in ['sigma','visgma']:
-                    data[f] = 0.5*np.sqrt(self.data['rrsigma']**2 + self.data['llsigma']**2)
-                elif f in ['qsigma','usigma']:
-                    data[f] = 0.5*np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
-
-        elif polrep_out=='polprod_circ': #stokes -> polprod_circ
-            data = np.empty(len(self.data), dtype=DTPOL2)
-            for f in DTPOL:
-                f = f[0]
-                if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
-                    data[f] = self.data[f]
-                elif f=='rrvis':
-                    data[f] = (self.data['vis'] + self.data['vvis'])
-                elif f=='llvis':
-                    data[f] = (self.data['vis'] - self.data['vvis'])
-                elif f=='rlvis':
-                    data[f] = (self.data['qvis'] + 1j*self.data['uvis'])
-                elif f=='lrvis':
-                    data[f] = (self.data['qvis'] - 1j*self.data['uvis'])
-                elif f in ['rrsigma','llvisgma']:
-                    data[f] = np.sqrt(self.data['sigma']**2 + self.data['vsigma']**2)
-                elif f in ['rlsigma','lrsigma']:
-                    data[f] = np.sqrt(self.data['qsigma']**2 + self.data['usigma']**2)
-
-        newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, data, self.tarr, 
-                         source=self.source, mjd=self.mjd, polrep=polrep_out,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                         timetype=self.timetype, scantable=self.scans)
-        return newobs
-
     def reorder_baselines(self):
+
         """Reorder baselines to match uvfits convention, based on the telescope array ordering
         """
+
         # Time partition the datatable
         datatable = self.data.copy()
         datalist = []
         for key, group in it.groupby(datatable, lambda x: x['time']):
             datalist.append(np.array([obs for obs in group]))
 
-        # Remove conjugate baselines 
+        # Remove conjugate baselines
         obsdata = []
         for tlist in datalist:
             blpairs = []
@@ -272,37 +206,26 @@ class Obsdata(object):
                         (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
                         dat['u'] = -dat['u']
                         dat['v'] = -dat['v']
-
-                        if self.polrep=='stokes':
-                            dat['vis'] = np.conj(dat['vis'])
-                            dat['qvis'] = np.conj(dat['qvis'])
-                            dat['uvis'] = np.conj(dat['uvis'])
-                            dat['vvis'] = np.conj(dat['vvis'])
-                        elif self.polrep=='polprod_circ':
-                            dat['rrvis'] = np.conj(dat['rrvis'])
-                            dat['llvis'] = np.conj(dat['llvis'])
-                            #must switch l & r !!
-                            rl = dat['rlvis'].copy()
-                            lr = dat['lrvis'].copy()
-                            dat['rlvis'] = np.conj(lr) 
-                            dat['lrvis'] = np.conj(rl)
-                        else:
-                            raise Exception("polrep must be either 'stokes' or 'polprod_circ'")
+                        dat['vis'] = np.conj(dat['vis'])
+                        dat['uvis'] = np.conj(dat['uvis'])
+                        dat['qvis'] = np.conj(dat['qvis'])
+                        dat['vvis'] = np.conj(dat['vvis'])
 
                      # Append the data point
                      blpairs.append(set((dat['t1'],dat['t2'])))
                      obsdata.append(dat)
+        obsdata = np.array(obsdata, dtype=DTPOL)
 
-        obsdata = np.array(obsdata, dtype=self.poltype)
         # Timesort data
         obsdata = obsdata[np.argsort(obsdata, order=['time','t1'])]
 
         # Save the data
         self.data = obsdata
+
         return
 
-
     def reorder_tarr_sefd(self):
+
         """Reorder the telescope array by SEFD minimal to maximum
         """
 
@@ -310,35 +233,35 @@ class Obsdata(object):
         self.tarr = np.array(sorted_list,dtype=DTARR)
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
         self.reorder_baselines()
-#        if np.any(self.tarr['sefdr']!=0):
-#            print ("ordered telescope array by SEFD!") 
-#        else:
-#            print ("telescope ordering unchanged!") 
+
         return
 
     def reorder_tarr_snr(self):
+
         """Reorder the telescope array by median SNR maximal to minimal
         """
+
         snr = self.unpack(['t1','t2','snr'])
         snr_median = [np.median(snr[(snr['t1']==site) + (snr['t2']==site)]['snr']) for site in self.tarr['site']]
         idx = np.argsort(snr_median)[::-1]
         self.tarr = self.tarr[idx]
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
         self.reorder_baselines()
-        #print ("ordered telescope array by median SNR!") 
-        return 
+
+        return
 
     def reorder_tarr_random(self):
+
         """Randomly reorder the telescope array
         """
-        
+
         idx = np.arange(len(self.tarr))
         np.random.shuffle(idx)
         self.tarr = self.tarr[idx]
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
         self.reorder_baselines()
-        #print ("randomly reordered telescope array")
-        return 
+
+        return
 
     def data_conj(self):
 
@@ -350,39 +273,25 @@ class Obsdata(object):
                (numpy.recarray): a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.
         """
 
-        data = np.empty(2*len(self.data), dtype=self.poltype)
+        data = np.empty(2*len(self.data), dtype=DTPOL)
 
         # Add the conjugate baseline data
-        for f in self.poltype:
+        for f in DTPOL:
             f = f[0]
-            if f in ['t1', 't2', 'tau1', 'tau2']:
+            if f in ["t1", "t2", "tau1", "tau2"]:
                 if f[-1]=='1': f2 = f[:-1]+'2'
                 else: f2 = f[:-1]+'1'
                 data[f] = np.hstack((self.data[f], self.data[f2]))
-
-            elif f in ['u','v']:
+            elif f in ["u","v"]:
                 data[f] = np.hstack((self.data[f], -self.data[f]))
-
-            #elif f in ['vis','qvis','uvis','vvis']:
-            elif f in [self.poldict['vis1'],self.poldict['vis2'],
-                       self.poldict['vis3'],self.poldict['vis4']]:
-                if self.polrep=='stokes':
-                    data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
-                elif self.polrep=='polprod_circ':
-                    if f in ['rrvis','llvis']:
-                        data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
-                    elif f=='rlvis':
-                        data[f] = np.hstack((self.data['rlvis'], np.conj(self.data['lrvis'])))
-                    elif f=='lrvis':
-                        data[f] = np.hstack((self.data['lrvis'], np.conj(self.data['rlvis'])))
-                else:
-                    raise Exception("polrep must be either 'stokes' or 'polprod_circ'")
-
+            elif f in ["vis","qvis","uvis","vvis"]:
+                data[f] = np.hstack((self.data[f], np.conj(self.data[f])))
             else:
                 data[f] = np.hstack((self.data[f], self.data[f]))
 
         # Sort the data by time
         data = data[np.argsort(data['time'])]
+
         return data
 
     def tlist(self, conj=False):
@@ -401,12 +310,12 @@ class Obsdata(object):
         else:
             data = self.data
 
-        # partition the data
+        # partition the data by time
         datalist = []
         for key, group in it.groupby(data, lambda x: x['time']):
             datalist.append(np.array([obs for obs in group]))
 
-        return datalist
+        return np.array(datalist)
 
     def bllist(self,conj=False):
 
@@ -422,9 +331,10 @@ class Obsdata(object):
             data = self.data_conj()
         else:
             data = self.data
-        idx = np.lexsort((data['t2'], data['t1']))
 
+        # partition the data by baseline
         datalist = []
+        idx = np.lexsort((data['t2'], data['t1']))
         for key, group in it.groupby(data[idx], lambda x: set((x['t1'], x['t2']))):
             datalist.append(np.array([obs for obs in group]))
 
@@ -458,10 +368,8 @@ class Obsdata(object):
         else:
             for i in range(len(fields)): allfields.append(fields[i])
 
-        # Get field data on selected baseline
-        allout = []
-
         # Get the data from data table on the selected baseline
+        allout = []
         tlist = self.tlist(conj=True)
         for scan in tlist:
             for obs in scan:
@@ -471,6 +379,8 @@ class Obsdata(object):
 
                     allout.append(out)
 
+        if len(allout)==0:
+            raise Exception("Baseline %s-%s has no data!"%(site1,site2))
 
         return np.array(allout)
 
@@ -489,7 +399,6 @@ class Obsdata(object):
                 (numpy.recarray): unpacked numpy array with data in fields requested
 
         """
-
 
         if not mode in ('time', 'all', 'bl'):
             raise Exception("possible options for mode are 'time', 'all' and 'bl'")
@@ -552,118 +461,78 @@ class Obsdata(object):
         # Get field data
         allout = []
         for field in fields:
-            if field in ['time','time_utc','time_gmst']:
+            if field in ["time","time_utc","time_gmst"]:
                 out = data['time']
                 ty='f8'
-            elif field in ['u','v','tint','tau1','tau2']:
+            elif field in ["u","v","tint","tau1","tau2"]:
                 out = data[field]
                 ty = 'f8'
-            elif field in ['uvdist']:
+            elif field in ["uvdist"]:
                 out = np.abs(data['u'] + 1j * data['v'])
                 ty = 'f8'
-            elif field in ['t1','el1','par_ang1','hr_ang1']:
-                sites = data['t1']
+            elif field in ["t1","el1","par_ang1","hr_ang1"]:
+                sites = data["t1"]
                 keys = [self.tkey[site] for site in sites]
                 tdata = self.tarr[keys]
                 out = sites
                 ty = 'U32'
-            elif field in ['t2','el2','par_ang2','hr_ang2']:
-                sites = data['t2']
+            elif field in ["t2","el2","par_ang2","hr_ang2"]:
+                sites = data["t2"]
                 keys = [self.tkey[site] for site in sites]
                 tdata = self.tarr[keys]
                 out = sites
                 ty = 'U32'
-            elif field in ['vis','amp','phase','snr','sigma','sigma_phase']:
+            elif field in ["vis","amp","phase","snr","sigma","sigma_phase"]:
+                out = data['vis']
+                sig = data['sigma']
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['vis']
-                    sig = data['sigma']
-                elif self.polrep=='polprod_circ':
-                    out = 0.5*(data['rrvis'] + data['llvis'])
-                    sig = 0.5*np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
-            elif field in ['qvis','qamp','qphase','qsnr','qsigma','qsigma_phase']:
+            elif field in ["qvis","qamp","qphase","qsnr","qsigma","qsigma_phase"]:
+                out = data['qvis']
+                sig = data['qsigma']
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['qvis']
-                    sig = data['qsigma']
-                elif self.polrep=='polprod_circ':
-                    out = 0.5*(data['lrvis'] + data['rlvis'])
-                    sig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-            elif field in ['uvis','uamp','uphase','usnr','usigma','usigma_phase']:
+            elif field in ["uvis","uamp","uphase","usnr","usigma","usigma_phase"]:
+                out = data['uvis']
+                sig = data['usigma']
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['uvis']
-                    sig = data['usigma']
-                elif self.polrep=='polprod_circ':
-                    out = 0.5j*(data['lrvis'] - data['rlvis'])
-                    sig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
-            elif field in ['vvis','vamp','vphase','vsnr','vsigma','vsigma_phase']:
+            elif field in ["vvis","vamp","vphase","vsnr","vsigma","vsigma_phase"]:
+                out = data['vvis']
+                sig = data['vsigma']
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['vvis']
-                    sig = data['vsigma']
-                elif self.polrep=='polprod_circ':
-                    out = 0.5*(data['rrvis'] - data['llvis'])
-                    sig = 0.5*np.sqrt(data['rrsigma']**2 + data['llsigma']**2)
-            elif field in ['pvis','pamp','pphase','psnr','psigma','psigma_phase']:
+            elif field in ["pvis","pamp","pphase","psnr","psigma","psigma_phase"]:
+                out = data['qvis'] + 1j * data['uvis']
+                sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['qvis'] + 1j * data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep=='polprod_circ':
-                    out = data['rlvis']
-                    sig = data['rlsigma']
-            elif field in ['m','mamp','mphase','msnr','msigma','msigma_phase']:
+            elif field in ["m","mamp","mphase","msnr","msigma","msigma_phase"]:
+                out = (data['qvis'] + 1j * data['uvis'])/data['vis']
+                sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = (data['qvis'] + 1j * data['uvis'])/data['vis']
-                    sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
-                elif self.polrep=='polprod_circ':
-                    out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
-                    sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'], 0.5*(data['rrvis']+data['llvis']), out) #TODO POL
-            elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
+            elif field in ["rrvis", "rramp", "rrphase", "rrsnr", "rrsigma", "rrsigma_phase"]:
+                out = data['vis'] + data['vvis']
+                sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['vis'] + data['vvis']
-                    sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.polrep=='polprod_circ':
-                    out = data['rrvis']
-                    sig = data['rrsigma']
-            elif field in ['llvis', 'llamp', 'llphase', 'llsnr', 'llsigma', 'llsigma_phase']:
+            elif field in ["llvis", "llamp", "llphase", "llsnr", "llsigma", "llsigma_phase"]:
+                out = data['vis'] - data['vvis']
+                sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['vis'] - data['vvis']
-                    sig = np.sqrt(data['sigma']**2 + data['vsigma']**2)
-                elif self.polrep=='polprod_circ':
-                    out = data['llvis']
-                    sig = data['llsigma']
-            elif field in ['rlvis', 'rlamp', 'rlphase', 'rlsnr', 'rlsigma', 'rlsigma_phase']:
+            elif field in ["rlvis", "rlamp", "rlphase", "rlsnr", "rlsigma", "rlsigma_phase"]:
+                out = data['qvis'] + 1j*data['uvis']
+                sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['qvis'] + 1j*data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep=='polprod_circ':
-                    out = data['rlvis']
-                    sig = data['rlsigma']
-            elif field in ['lrvis', 'lramp', 'lrphase', 'lrsnr', 'lrsigma', 'lrsigma_phase']:
+            elif field in ["lrvis", "lramp", "lrphase", "lrsnr", "lrsigma", "lrsigma_phase"]:
+                out = data['qvis'] - 1j*data['uvis']
+                sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
                 ty = 'c16'
-                if self.polrep=='stokes':
-                    out = data['qvis'] - 1j*data['uvis']
-                    sig = np.sqrt(data['qsigma']**2 + data['usigma']**2)
-                elif self.polrep=='polprod_circ':
-                    out = data['lrvis']
-                    sig = data['lrsigma']
 
             else: raise Exception("%s is not a valid field \n" % field +
                                   "valid field values are: " + ' '.join(FIELDS))
 
-            if field in ['time_utc'] and timetype=='GMST':
+            if field in ["time_utc"] and timetype=='GMST':
                 out = gmst_to_utc(out, self.mjd)
-            if field in ['time_gmst'] and timetype=='UTC':
+            if field in ["time_gmst"] and timetype=='UTC':
                 out = utc_to_gmst(out, self.mjd)
 
-            # Elevation and Parallactic Angles
-            if field in ['el1','el2','hr_ang1','hr_ang2','par_ang1','par_ang2']:
+            # Compute elevation and parallactic angles
+            if field in ["el1","el2","hr_ang1","hr_ang2","par_ang1","par_ang2"]:
                 if self.timetype=='GMST':
                     times_sid = data['time']
                 else:
@@ -675,39 +544,38 @@ class Obsdata(object):
                 latlon = xyz_2_latlong(coords)
                 hr_angles = hr_angle(times_sid*HOUR, latlon[:,1], self.ra*HOUR)
 
-                if field in ['el1','el2']:
+                if field in ["el1","el2"]:
                     out = el_angle/angle
                     ty  = 'f8'
-                if field in ['hr_ang1','hr_ang2']:
+                if field in ["hr_ang1","hr_ang2"]:
                     out = hr_angles/angle
                     ty  = 'f8'
-                if field in ['par_ang1','par_ang2']:
+                if field in ["par_ang1","par_ang2"]:
                     par_ang = par_angle(hr_angles, latlon[:,0], self.dec*DEGREE)
                     out = par_ang/angle
                     ty  = 'f8'
 
             # Get arg/amps/snr
-            if field in ['amp', 'qamp', 'uamp','vamp','pamp','mamp','rramp','llamp','rlamp','lramp']:
+            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]:
                 out = np.abs(out)
-
                 if debias:
                     out = amp_debias(out, sig)
 
                 ty = 'f8'
-            elif field in ['phase', 'qphase', 'uphase', 'vphase','pphase',
-                           'mphase','rrphase','llphase','lrphase','rlphase']:
+            elif field in ["phase", "qphase", "uphase", "vphase","pphase",
+                           "mphase","rrphase","llphase","lrphase","rlphase"]:
                 out = np.angle(out)/angle
                 ty = 'f8'
-            elif field in ['sigma','qsigma','usigma','vsigma','psigma','msigma',
-                           'rrsigma','llsigma','rlsigma','lrsigma']:
+            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma",
+                           "rrsigma","llsigma","rlsigma","lrsigma"]:
                 out = np.abs(sig)
                 ty = 'f8'
-            elif field in ['sigma_phase','qsigma_phase','usigma_phase',
-                           'vsigma_phase','psigma_phase','msigma_phase',
-                           'rrsigma_phase','llsigma_phase','rlsigma_phase','lrsigma_phase']:
+            elif field in ["sigma_phase","qsigma_phase","usigma_phase",
+                           "vsigma_phase","psigma_phase","msigma_phase",
+                           "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]:
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'
-            elif field in ['snr', 'qsnr', 'usnr', 'vsnr', 'psnr', 'msnr','rrsnr','llsnr','rlsnr','lrsnr']:
+            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr","rrsnr","llsnr","rlsnr","lrsnr"]:
                 out = np.abs(out)/np.abs(sig)
                 ty = 'f8'
 
@@ -730,7 +598,10 @@ class Obsdata(object):
            Returns:
                 (numpy.array): normal vector pointing to source in geocentric coordinates (m)
         """
-        return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
+
+        sourcevec = np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
+
+        return sourcevec
 
     def res(self):
 
@@ -741,7 +612,10 @@ class Obsdata(object):
            Returns:
                 (float): normal array resolution in radians
         """
-        return 1.0/np.max(self.unpack('uvdist')['uvdist'])
+
+        res = 1.0/np.max(self.unpack('uvdist')['uvdist'])
+
+        return res
 
     def split_obs(self):
 
@@ -755,18 +629,19 @@ class Obsdata(object):
 
         print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
 
-        # note that the tarr of the output includes all sites, even those that don't participate in the scan
-        splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, 
-                             source=self.source, polrep=self.polrep,
-                             ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+        # NOTE that the tarr of the output includes all sites, even those that don't participate in the scan
+        splitlist = [Obsdata(self.ra, self.dec, self.rf, self.bw, tdata, self.tarr, source=self.source,
+                             ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal,
                              dcal=self.dcal, frcal=self.frcal,
-                             timetype=self.timetype) #No scantable
+                             timetype=self.timetype, scantable=self.scans)
                      for tdata in self.tlist()
                     ]
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', ttype='nfft', mask=[], fft_pad_factor=2, systematic_noise=0.0):
+    def chisq(self, im, dtype='vis', mask=[],
+              systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False,
+              ttype='nfft',fft_pad_factor=2):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
@@ -774,19 +649,26 @@ class Obsdata(object):
                 im (Image): image to test chi^2
                 dtype (str): data type of chi^2
                 mask (arr): mask of same dimension as im.imvec to screen out pixels in chi^2 computation
+
+                systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
+                systematic_noise_cphase (float): a value in degrees to add to the closure phase sigmas
+                maxset (bool): set to True to use a maximal set instead of minimal set
+
                 ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                 fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-                systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
 
            Returns:
                 (float): image chi^2
         """
 
-        # TODO -- import this at top, but circular dependencies create a mess...
+        # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype,
-                                        fft_pad_factor=fft_pad_factor,systematic_noise=systematic_noise)
+                                        fft_pad_factor=fft_pad_factor, maxset=maxset,
+                                        systematic_cphase_noise=systematic_cphase_noise,
+                                        systematic_noise=systematic_noise)
         chisq = iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+
         return chisq
 
     def recompute_uv(self):
@@ -815,35 +697,37 @@ class Obsdata(object):
         datatable = self.data.copy()
         datatable['u'] = uout
         datatable['v'] = vout
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, 
-                       source=self.source, mjd=self.mjd, polrep=self.polrep,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                       dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
 
-    
-    def avg_coherent(self, inttime=0, scan_avg=False, msgtype='bar'):
+        out = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
+                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                         timetype=self.timetype, scantable=self.scans)
+        return  out
+
+    def avg_coherent(self, inttime, scan_avg=False, msgtype='bar'):
+
         """Coherently average data along u,v tracks in chunks of length inttime (sec)
+           Uses new (fast) method with pandas
 
            Args:
                 inttime (float): coherent integration time in seconds
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
+
         if (scan_avg==True)&(getattr(self.scans, "shape", None) is None):
-            #(self.scans==None):
             print('No scan data, ignoring scan_avg!')
             scan_avg=False
+
         vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, vis_avg, self.tarr, 
-                       source=self.source, mjd=self.mjd,polrep=self.polrep,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                       dcal=self.dcal, frcal=self.frcal,
+        out = Obsdata(self.ra, self.dec, self.rf, self.bw, vis_avg, self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
-    
+        return out
+
     def avg_coherent_old(self, inttime, msgtype='bar'):
 
         """Coherently average data along u,v tracks in chunks of length inttime (sec).
+           Uses old (slow) method.
 
            Args:
                 inttime (float): coherent integration time in seconds
@@ -851,13 +735,10 @@ class Obsdata(object):
                 (Obsdata): Obsdata object containing averaged data
         """
 
-        alldata_list = ['u', 'v','t1', 't2', 'tau1', 'tau2', 'tint', 'time',
-                        self.poldict['vis1'],self.poldict['vis2'],
-                        self.poldict['vis3'],self.poldict['vis4'],
-                        self.poldict['sigma1'],self.poldict['sigma2'],
-                        self.poldict['sigma3'],self.poldict['sigma4']]
-
-
+        alldata_list = ['vis', 'u', 'v',
+                        'sigma', 't1', 't2', 'tau1', 'tau2',
+                        'uvis', 'qvis', 'vvis', 'qsigma',
+                        'usigma', 'vsigma', 'tint', 'time']
         timesplit = self.unpack(alldata_list, mode='time')
 
         inttime_hr = inttime/3600.
@@ -883,25 +764,22 @@ class Obsdata(object):
                                timesplit[t]['tau2'][i],
                                timesplit[t]['u'][i],
                                timesplit[t]['v'][i],
-                               timesplit[t][self.poldict['vis1']][i],
-                               timesplit[t][self.poldict['vis2']][i],
-                               timesplit[t][self.poldict['vis3']][i],
-                               timesplit[t][self.poldict['vis4']][i],
-                               timesplit[t][self.poldict['sigma1']][i],
-                               timesplit[t][self.poldict['sigma2']][i],
-                               timesplit[t][self.poldict['sigma3']][i],
-                               timesplit[t][self.poldict['sigma4']][i]
-                               ), dtype=self.poltype
+                               timesplit[t]['vis'][i],
+                               timesplit[t]['qvis'][i],
+                               timesplit[t]['uvis'][i],
+                               timesplit[t]['vvis'][i],
+                               timesplit[t]['sigma'][i],
+                               timesplit[t]['qsigma'][i],
+                               timesplit[t]['usigma'][i],
+                               timesplit[t]['vsigma'][i]
+                               ), dtype=DTPOL
                              ))
 
             # average data in a time region
             else:
                 tavg += 1
-                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion), self.tarr,
-                                           source=self.source, mjd=self.mjd,polrep=self.polrep,
-                                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                                           dcal=self.dcal, frcal=self.frcal,
-                                           timetype=self.timetype, scantable=self.scans)
+                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion),
+                                         self.tarr, source=self.source, mjd=self.mjd)
 
                 blsplit = obs_timeregion.unpack(alldata_list, mode='bl')
                 for bl in range(0,len(blsplit)):
@@ -917,15 +795,15 @@ class Obsdata(object):
                                np.mean(bldata['tau2']),
                                np.mean(bldata['u']),
                                np.mean(bldata['v']),
-                               np.mean(bldata[self.poldict['vis1']]),
-                               np.mean(bldata[self.poldict['vis2']]),
-                               np.mean(bldata[self.poldict['vis3']]),
-                               np.mean(bldata[self.poldict['vis4']]),
-                               np.sqrt(np.sum(bldata[self.poldict['sigma1']]**2)/len(bldata)**2),
-                               np.sqrt(np.sum(bldata[self.poldict['sigma2']]**2)/len(bldata)**2),
-                               np.sqrt(np.sum(bldata[self.poldict['sigma3']]**2)/len(bldata)**2),
-                               np.sqrt(np.sum(bldata[self.poldict['sigma4']]**2)/len(bldata)**2)
-                               ), dtype=self.poltype
+                               np.mean(bldata['vis']),
+                               np.mean(bldata['qvis']),
+                               np.mean(bldata['uvis']),
+                               np.mean(bldata['vvis']),
+                               np.sqrt(np.sum(bldata['sigma']**2) /len(bldata)**2),
+                               np.sqrt(np.sum(bldata['qsigma']**2)/len(bldata)**2),
+                               np.sqrt(np.sum(bldata['usigma']**2)/len(bldata)**2),
+                               np.sqrt(np.sum(bldata['vsigma']**2)/len(bldata)**2)
+                               ), dtype=DTPOL
                              ))
 
                 # start a new time region
@@ -935,26 +813,21 @@ class Obsdata(object):
                     timeregion.append(np.array
                              ((
                                timesplit[t]['time'][i], timesplit[t]['tint'][i],
-                               timesplit[t]['t1'][i], timesplit[t]['t2'][i], 
-                               timesplit[t]['tau1'][i], timesplit[t]['tau2'][i],
+                               timesplit[t]['t1'][i], timesplit[t]['t2'][i], timesplit[t]['tau1'][i], timesplit[t]['tau2'][i],
                                timesplit[t]['u'][i], timesplit[t]['v'][i],
-                               timesplit[t][self.poldict['vis1']][i], timesplit[t][self.poldict['vis2']][i], 
-                               timesplit[t][self.poldict['vis3']][i], timesplit[t][self.poldict['vis4']][i],
-                               timesplit[t][self.poldict['sigma1']][i], timesplit[t][self.poldict['sigma2']][i],
-                               timesplit[t][self.poldict['sigma3']][i], timesplit[t][self.poldict['sigma4']][i]
-                               ), dtype=self.poltype
+                               timesplit[t]['vis'][i], timesplit[t]['qvis'][i], timesplit[t]['uvis'][i], timesplit[t]['vvis'][i],
+                               timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
+                               ), dtype=DTPOL
                              ))
-        print("\n")
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, 
-                       polrep=self.polrep, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                       dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
 
+        out = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                       timetype=self.timetype, scantable=self.scans)
+        return out
 
     def avg_incoherent(self, inttime, debias=True, err_type='predicted', msgtype='bar'):
 
-        #ANDREW TODO should this really return an obsdata object? Better to just make this part of add_amp
+        #ANDREW TODO Make this part of add_amp instead of returning obsdata
         """Incoherently average data along u,v tracks in chunks of length inttime (sec).
 
            Args:
@@ -966,13 +839,10 @@ class Obsdata(object):
                (Obsdata): Obsdata object containing averaged data
         """
 
-        alldata_list = ['u', 'v','t1', 't2', 'tau1', 'tau2', 'tint', 'time',
-                        self.poldict['vis1'],self.poldict['vis2'],
-                        self.poldict['vis3'],self.poldict['vis4'],
-                        self.poldict['sigma1'],self.poldict['sigma2'],
-                        self.poldict['sigma3'],self.poldict['sigma4']]
-
-
+        alldata_list = ['vis', 'u', 'v',
+                        'sigma', 't1', 't2', 'tau1', 'tau2',
+                        'uvis', 'qvis', 'vvis', 'qsigma',
+                        'usigma', 'vsigma', 'tint', 'time']
         timesplit = self.unpack(alldata_list, mode='time')
 
         inttime_hr = inttime/3600.
@@ -998,34 +868,31 @@ class Obsdata(object):
                                 timesplit[t]['tau2'][i],
                                 timesplit[t]['u'][i],
                                 timesplit[t]['v'][i],
-                                timesplit[t][self.poldict['vis1']][i],
-                                timesplit[t][self.poldict['vis2']][i],
-                                timesplit[t][self.poldict['vis3']][i],
-                                timesplit[t][self.poldict['vis4']][i],
-                                timesplit[t][self.poldict['sigma1']][i],
-                                timesplit[t][self.poldict['sigma2']][i],
-                                timesplit[t][self.poldict['sigma3']][i],
-                                timesplit[t][self.poldict['sigma4']][i]
-                                ), dtype=self.poltype
+                                timesplit[t]['vis'][i],
+                                timesplit[t]['qvis'][i],
+                                timesplit[t]['uvis'][i],
+                                timesplit[t]['vvis'][i],
+                                timesplit[t]['sigma'][i],
+                                timesplit[t]['qsigma'][i],
+                                timesplit[t]['usigma'][i],
+                                timesplit[t]['vsigma'][i]
+                                ), dtype=DTPOL
                                 ))
 
             # average data in a time region
             else:
                 tavg += 1
-                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion), self.tarr, 
-                                           source=self.source, mjd=self.mjd,polrep=self.polrep,
-                                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                                           dcal=self.dcal, frcal=self.frcal,
-                                           timetype=self.timetype, scantable=self.scans)
+                obs_timeregion = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(timeregion),
+                                            self.tarr, source=self.source, mjd=self.mjd)
 
                 blsplit = obs_timeregion.unpack(alldata_list, mode='bl')
                 for bl in range(0,len(blsplit)):
 
                     bldata = blsplit[bl]
-                    amp_vis1, sig_vis1 = mean_incoh_amp_from_vis(bldata[self.poldict['vis1']],bldata[self.poldict['sigma1']],debias=debias,err_type=err_type)
-                    amp_vis2, sig_vis2 = mean_incoh_amp_from_vis(bldata[self.poldict['vis2']],bldata[self.poldict['sigma2']],debias=debias,err_type=err_type)
-                    amp_vis3, sig_vis3 = mean_incoh_amp_from_vis(bldata[self.poldict['vis3']],bldata[self.poldict['sigma3']],debias=debias,err_type=err_type)
-                    amp_vis4, sig_vis4 = mean_incoh_amp_from_vis(bldata[self.poldict['vis4']],bldata[self.poldict['sigma4']],debias=debias,err_type=err_type)
+                    amp_vis,  sig_vis  = mean_incoh_amp_from_vis(bldata['vis'], bldata['sigma'], debias=debias,err_type=err_type)
+                    amp_qvis, sig_qvis = mean_incoh_amp_from_vis(bldata['qvis'],bldata['qsigma'],debias=debias,err_type=err_type)
+                    amp_uvis, sig_uvis = mean_incoh_amp_from_vis(bldata['uvis'],bldata['usigma'],debias=debias,err_type=err_type)
+                    amp_vvis, sig_vvis = mean_incoh_amp_from_vis(bldata['vvis'],bldata['vsigma'],debias=debias,err_type=err_type)
 
                     datatable.append(np.array
                                 ((
@@ -1037,9 +904,9 @@ class Obsdata(object):
                                 np.mean(bldata['tau2']),
                                 np.mean(bldata['u']),
                                 np.mean(bldata['v']),
-                                amp_vis1, amp_vis2, amp_vis3, amp_vis4,
-                                sig_vis1, sig_vis2, sig_vis3, sig_vis4
-                                ), dtype=self.poltype
+                                amp_vis, amp_qvis, amp_uvis, amp_vvis,
+                                sig_vis, sig_qvis, sig_uvis, sig_vvis
+                                ), dtype=DTPOL
                                 ))
 
 
@@ -1050,25 +917,22 @@ class Obsdata(object):
                     timeregion.append(np.array
                                 ((
                                 timesplit[t]['time'][i], timesplit[t]['tint'][i],
-                                timesplit[t]['t1'][i], timesplit[t]['t2'][i], 
-                                timesplit[t]['tau1'][i], timesplit[t]['tau2'][i],
+                                timesplit[t]['t1'][i], timesplit[t]['t2'][i], timesplit[t]['tau1'][i], timesplit[t]['tau2'][i],
                                 timesplit[t]['u'][i], timesplit[t]['v'][i],
-                                timesplit[t][self.poldict['vis1']][i], timesplit[t][self.poldict['vis2']][i], 
-                                timesplit[t][self.poldict['vis3']][i], timesplit[t][self.poldict['vis4']][i],
-                                timesplit[t][self.poldict['sigma1']][i], timesplit[t][self.poldict['sigma2']][i],
-                                timesplit[t][self.poldict['sigma3']][i], timesplit[t][self.poldict['sigma4']][i]
-                                ), dtype=self.poltype
+                                timesplit[t]['vis'][i], timesplit[t]['qvis'][i], timesplit[t]['uvis'][i], timesplit[t]['vvis'][i],
+                                timesplit[t]['sigma'][i], timesplit[t]['qsigma'][i], timesplit[t]['usigma'][i], timesplit[t]['vsigma'][i]
+                                ), dtype=DTPOL
                                 ))
-        print()
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, 
-                       source=self.source, mjd=self.mjd,polrep=self.polrep,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                       dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
 
-    def add_amp(self, return_type='rec', 
+        out = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                       timetype=self.timetype, scantable=self.scans)
+        return out
+
+    def add_amp(self, return_type='rec',
                       avg_time=0, debias=True, err_type='predicted'):
 
+        #ANDREW TODO we should get rid of avg_incoherent and just have its  functionality in this function
         """Adds attribute self.amp: amplitude table with incoherently averaged amplitudes
 
            Args:
@@ -1079,19 +943,19 @@ class Obsdata(object):
                err_type (str): 'predicted' or 'measured'
         """
 
-        #ANDREW TODO -- dataframes??
-        #ANDREW TODO -- we should get rid of avg_incoherent and just have its  functionality in this function
         if avg_time>0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
             self.amp = foo.data
         else:
             data = copy.deepcopy(self.data)
-            data[self.poldict['vis1']] = np.abs(data[self.poldict['vis1']])
-            data[self.poldict['vis2']] = np.abs(data[self.poldict['vis2']])
-            data[self.poldict['vis3']] = np.abs(data[self.poldict['vis3']])
-            data[self.poldict['vis4']] = np.abs(data[self.poldict['vis4']])
+            data['vis'] = np.abs(data['vis'])
+            data['qvis'] = np.abs(data['vis'])
+            data['uvis'] = np.abs(data['vis'])
+            data['vvis'] = np.abs(data['vis'])
             self.amp = data
-        print("updated self.amp: avg_time %f s\n"%avg_time)
+        print("Updated self.amp: avg_time %f s\n"%avg_time)
+
+        return
 
     def add_bispec(self, return_type='rec', count='max',
                          avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
@@ -1115,10 +979,12 @@ class Obsdata(object):
             cdf_av = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples)
             self.bispec = cdf_av
         else:
-            if return_type=='rec': 
+            if return_type=='rec':
                 cdf = df_to_rec(cdf,'bispec')
             self.bispec = cdf
-        print("updated self.bispec: avg_time %f s\n"%avg_time)
+        print("Updated self.bispec: avg_time %f s\n"%avg_time)
+
+        return
 
     def add_cphase(self,return_type='rec',count='max',
                         avg_time=0,err_type='predicted', num_samples=1000, round_s=0.1):
@@ -1141,13 +1007,15 @@ class Obsdata(object):
             cdf_av = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
             self.cphase = cdf_av
         else:
-            if return_type=='rec': 
+            if return_type=='rec':
                 cdf = df_to_rec(cdf,'cphase')
             self.cphase = cdf
         print("updated self.cphase: avg_time %f s\n"%avg_time)
 
+        return
+
     def add_camp(self, return_type='rec', ctype='camp',
-                       count='max', debias=True,  
+                       count='max', debias=True,
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.camp or self.logcamp: closure amplitudes table
@@ -1167,7 +1035,8 @@ class Obsdata(object):
 
         if avg_time>0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
-        else: foo = self
+        else:
+            foo = self
         cdf = make_camp_df(foo,ctype=ctype,debias=False,count=count,
                            round_s=round_s)
 
@@ -1181,9 +1050,10 @@ class Obsdata(object):
             self.camp = cdf
             print("updated self.camp: avg_time %f s\n" % avg_time)
 
+        return
 
     def add_logcamp(self, return_type='rec', ctype='camp',
-                       count='max', debias=True,  
+                       count='max', debias=True,
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds attribute self.logcamp: closure amplitudes table
@@ -1201,12 +1071,13 @@ class Obsdata(object):
 
         """
         self.add_camp(return_type=return_type, ctype='logcamp',
-                     count=count, debias=debias, 
+                     count=count, debias=debias,
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
+        return
 
     def add_all(self, return_type='rec',
-                       count='max', debias=True,  
+                       count='max', debias=True,
                        avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
 
         """Adds tables of all all averaged derived quantities self.amp,self.bispec,self.cphase,self.camp,self.logcamp
@@ -1223,43 +1094,57 @@ class Obsdata(object):
 
         """
         self.add_amp(return_type=return_type, avg_time=avg_time, debias=debias, err_type=err_type)
-        self.add_bispec(return_type=return_type, count=count, avg_time=avg_time, 
+        self.add_bispec(return_type=return_type, count=count, avg_time=avg_time,
                         err_type=err_type, num_samples=num_samples, round_s=round_s)
-        self.add_cphase(return_type=return_type, count=count, avg_time=avg_time, 
+        self.add_cphase(return_type=return_type, count=count, avg_time=avg_time,
                         err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='camp',
-                     count=count, debias=debias,  
+                     count=count, debias=debias,
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='logcamp',
-                     count=count, debias=debias,  
+                     count=count, debias=debias,
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
+        return
 
-    def add_scans_from_txt(self,txtfile):
-        '''Add scaninfo based on textfile
+    def add_scans(self,info='self',filepath='',dt=0.0165,margin=0.0001):
+        '''Add scan info (self.scans) to obsdata object.
 
-        Args:
-        txtfile (str): path to textfile with scan times (two columns,
-        beginning and end time of the scan)
+            Args:
+                info (str): 'self' for scans inferred from data, 'txt' for text file
+                with scans begining and end time, 'vex' for vex schedule file
+                filepath (str): path to txt/vex file with scans info
+                dt (float): minimal time interval between scans in hours
+                margin (float): padding scans by that time margin in hours
+
         '''
-        scanlist = np.loadtxt(txtfile)
+        if info=='self':
+            times_uni = np.asarray(sorted(list(set(self.data['time']))))
+            scans = np.zeros_like(times_uni)
+            scan_id=0
+            for cou in range(len(times_uni)-1):
+                scans[cou] = scan_id
+                if (times_uni[cou+1]-times_uni[cou] > dt):
+                    scan_id+=1
+            scans[-1]=scan_id
+            scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1]))])
+        elif info=='txt':
+             scanlist = np.loadtxt(filepath)
+        elif info=='vex':
+            vex0 = ehtim.vex.Vex(filepath)
+            t_min = [vex0.sched[x]['start_hr'] for x in range(len(vex0.sched))]
+            duration=[]
+            for x in range(len(vex0.sched)):
+                duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] for y in range(len(vex0.sched[x]['scan']))])
+                duration.append(duration_foo)
+            t_max = [tmin + dur/3600. for (tmin,dur) in zip(t_min,duration)]
+            scanlist = np.array([[tmin,tmax] for (tmin,tmax) in zip(t_min,t_max)])
+        else:
+            print("Parameter 'info' can only assume values 'self', 'txt' or 'vex'! ")
+            scanlist=None
         self.scans = scanlist
 
-    def add_scans_from_vex(self,vexfile):
-        '''Add scaninfo based on vextfile
-
-        Args:
-        vexfile (str): path to vextfile
-        '''
-        vex0 = ehtim.vex.Vex(vexfile)
-        t_min = [vex0.sched[x]['start_hr'] for x in range(len(vex0.sched))]
-        duration=[]
-        for x in range(len(vex0.sched)):
-            duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] for y in range(len(vex0.sched[x]['scan']))])
-            duration.append(duration_foo)
-        t_max = [tmin + dur/3600. for (tmin,dur) in zip(t_min,duration)] 
-        scanlist = np.array([[tmin,tmax] for (tmin,tmax) in zip(t_min,t_max)])
-        self.scans = scanlist
+        return
 
     def dirtybeam(self, npix, fov, pulse=PULSE_DEFAULT):
 
@@ -1280,6 +1165,7 @@ class Obsdata(object):
 
         xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
 
+        # TODO -- use NFFT
         im = np.array([[np.mean(np.cos(-2*np.pi*(i*u + j*v)))
                   for i in xlist]
                   for j in xlist])
@@ -1290,7 +1176,9 @@ class Obsdata(object):
         im = im/np.sum(im)
 
         src = self.source + "_DB"
-        return ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
+        outim = ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
+
+        return outim
 
     def cleanbeam(self, npix, fov, pulse=PULSE_DEFAULT):
 
@@ -1308,6 +1196,7 @@ class Obsdata(object):
         im = ehtim.image.make_square(self, npix, fov, pulse=pulse)
         beamparams = self.fit_beam()
         im = im.add_gauss(1.0, beamparams)
+
         return im
 
     def fit_beam(self):
@@ -1356,7 +1245,9 @@ class Obsdata(object):
             fwhm_min = 1e-10*np.sqrt(params.x[0])
             theta = np.mod(params.x[2] + np.pi/2.0, np.pi)
 
-        return np.array((fwhm_maj, fwhm_min, theta))
+        gparams = np.array((fwhm_maj, fwhm_min, theta))
+
+        return gparams
 
     def dirtyimage(self, npix, fov, pulse=PULSE_DEFAULT):
 
@@ -1372,16 +1263,16 @@ class Obsdata(object):
         """
 
         pdim = fov/npix
-        data = self.unpack(['u','v','vis','qvis','uvis','vvis'])
-        u = data['u']
-        v = data['v']
-        vis = data['vis']
-        qvis = data['qvis']
-        uvis = data['uvis']
-        vvis = data['vvis']
+        u = self.unpack('u')['u']
+        v = self.unpack('v')['v']
+        vis = self.unpack('vis')['vis']
+        qvis = self.unpack('qvis')['qvis']
+        uvis = self.unpack('uvis')['uvis']
+        vvis = self.unpack('vvis')['vvis']
 
         xlist = np.arange(0,-npix,-1)*pdim + (pdim*npix)/2.0 - pdim/2.0
 
+        # TODO -- use NFFT
         # Take the DFTS
         # Shouldn't need to real about conjugate baselines b/c unpack does not return them
         im  = np.array([[np.mean(np.real(vis)*np.cos(-2*np.pi*(i*u + j*v)) -
@@ -1442,22 +1333,21 @@ class Obsdata(object):
             d[-2] = d[-2] * noise_rescale_factor
             d[-1] = d[-1] * noise_rescale_factor
 
-        return Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr,
-                       source=self.source, mjd=self.mjd,polrep=self.polrep,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                       dcal=self.dcal, frcal=self.frcal,
+        out = Obsdata(self.ra, self.dec, self.rf, self.bw, np.array(datatable), self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
+
+        return out
 
     def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max'):
 
-        """Estimate a singe, constant rescaling factor for thermal noise across all baselines, times, and polarizations.
+        """Estimate a constant rescaling factor for thermal noise across all baselines, times, and polarizations.
            Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise.
            This is useful for AIPS data, which has a single constant factor missing that relates 'weights' to thermal noise.
-           The output can be non-sensical if there are higher-order terms in the closure phase error budget.
 
            Args:
                max_diff_sec (float): The maximum difference of adjacent closure phases (in seconds) to be included in the estimate.
-                                     If 0.0, auto-estimates this value to twice the median scan length.
+                                     If 0, auto-estimates this value to twice the median scan length.
                min_num (int): The minimum number of closure phase differences for a triangle to be included in the set of estimators.
                print_std (bool): Whether or not to print the normalized standard deviation for each closure triangle.
                count (str): If 'min', use minimal set of phases, if 'max' use all closure phases up to reordering
@@ -1505,10 +1395,13 @@ class Obsdata(object):
                 std_list.append(np.std(s_list))
                 if print_std == True:
                     print(tri, np.std(s_list))
-               
-        return np.median(std_list)
+
+        median = np.median(std_list)
+
+        return median
 
     def flag_elev(self, elev_min=0.0, elev_max=90, output='kept'):
+
         """Flag visibilities for which either station is outside a stated elevation range
 
            Args:
@@ -1535,7 +1428,7 @@ class Obsdata(object):
         obs_kept.data    = datatable_kept
         obs_flagged.data = datatable_flagged
 
-        if output == 'flagged': #return only the points flagged as anomalous
+        if output == 'flagged':
             return obs_flagged
         elif output == 'both':
             return {'kept':obs_kept,'flagged':obs_flagged}
@@ -1570,7 +1463,7 @@ class Obsdata(object):
         obs_kept.data    = datatable_kept
         obs_flagged.data = datatable_flagged
 
-        if output == 'flagged': #return only the points flagged as anomalous
+        if output == 'flagged':
             return obs_flagged
         elif output == 'both':
             return {'kept':obs_kept,'flagged':obs_flagged}
@@ -1653,10 +1546,6 @@ class Obsdata(object):
             return obs_kept
 
 
-        obs_out.data = obs_out.data[site_mask]
-        print('Flagged %d/%d visibilities' % ((len(self.data)-len(obs_out.data)), (len(self.data))))
-        return obs_out
-
     def flag_low_snr(self, snr_cut=3, output='kept'):
 
         """Flag low snr data points
@@ -1725,13 +1614,16 @@ class Obsdata(object):
         else:
             return obs_kept
 
-    def flag_UT_range(self, UT_start_hour=0.0, UT_stop_hour=0.0, flag_or_keep=False):
+
+    def flag_UT_range(self, UT_start_hour=0., UT_stop_hour=0.,flag_type='all',flag_what='',output='kept'):
 
         """Flag data points within a certain UT range
 
            Args:
                UT_start_hour (float): start of  time window
                UT_stop_hour (float): end of time window
+               flag_type (str): 'all' for flagging everything, 'baseline' for flagginng given baseline, 'station' for flagging givern station
+               flag_what (str): baseline or station to flag (order of stations in baseline doesn't matter)
                output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
@@ -1742,14 +1634,26 @@ class Obsdata(object):
         datatable = self.data.copy()
         UT_mask = self.unpack('time')['time'] <= UT_start_hour
         UT_mask = UT_mask + (self.unpack('time')['time'] >= UT_stop_hour)
-        if flag_or_keep:
-            UT_mask = np.invert(UT_mask)
+        if flag_type!='all':
+            t1_list = self.unpack('t1')['t1']
+            t2_list = self.unpack('t2')['t2']
+            if flag_type=='station':
+                station=flag_what
+                what_mask = np.array([not (t1_list[j] == station or t2_list[j] == station) for j in range(len(t1_list))])
+            elif flag_type=='baseline':
+                station1=flag_what.split('-')[0]
+                station2=flag_what.split('-')[1]
+                stations=[station1,station2]
+                what_mask = np.array([not ( (t1_list[j] in stations) and (t2_list[j] in stations) ) for j in range(len(t1_list))])
+        else:
+            what_mask = np.array([False for j in range(len(UT_mask))])
+        mask = UT_mask|what_mask
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
 
-        datatable_kept    = datatable_kept[UT_mask]
-        datatable_flagged = datatable_flagged[np.invert(UT_mask)]
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
         print('time flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
 
         obs_kept = self.copy()
@@ -1764,7 +1668,39 @@ class Obsdata(object):
         else:
             return obs_kept
 
+    def flags_from_file(self,flagfile,flag_type='station'):
+
+        """Flagging data based on csv file
+
+            Args:
+                flagfile (str): path to csv file with mjd of flagging start / stop time
+                and optionally baseline / station to flag
+                flag_type (str): 'all' for flagging everything, 'baseline' for flagginng given baseline, 'station' for flagging givern station
+
+            Returns:
+                (Obsdata): a observation object with flagged data points removed
+        """
+        df = pd.read_csv(flagfile)
+        mjd_start = list(df['mjd_start'])
+        mjd_stop = list(df['mjd_stop'])
+        if flag_type=='station':
+            whatL = list(df['station'])
+        elif flag_type=='baseline':
+            whatL = list(df['baseline'])
+        elif flag_type=='all':
+            whatL = ['' for cou in range(len(mjd_start))]
+        obs = self.copy()
+        for cou in range(len(mjd_start)):
+            what = whatL[cou]
+            starth = (mjd_start[cou] % 1)*24.
+            stoph=(mjd_stop[cou] % 1)*24.
+            obs = obs.flag_UT_range( UT_start_hour=starth, UT_stop_hour=stoph, flag_type=flag_type,flag_what=what,output='kept')
+
+        return obs
+
+
     def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'):
+
         """Flag anomalous data points
 
            Args:
@@ -1813,6 +1749,7 @@ class Obsdata(object):
             return obs_kept
 
     def reverse_taper(self, fwhm):
+
         """Reverse taper the observation with a circular Gaussian kernel
 
            Args:
@@ -1822,38 +1759,37 @@ class Obsdata(object):
                (Obsdata): a new reverse-tapered observation object
         """
         datatable = self.data.copy()
-       
-        vis1 = datatable[self.poldict['vis1']]
-        vis2 = datatable[self.poldict['vis2']]
-        vis3 = datatable[self.poldict['vis3']]
-        vis4 = datatable[self.poldict['vis4']]
-        sigma1 = datatable[self.poldict['sigma1']]
-        sigma2 = datatable[self.poldict['sigma2']]
-        sigma3 = datatable[self.poldict['sigma3']]
-        sigma4 = datatable[self.poldict['sigma4']]
+
+        vis = datatable['vis']
+        qvis = datatable['qvis']
+        uvis = datatable['uvis']
+        vvis = datatable['vvis']
+        sigma = datatable['sigma']
+        qsigma = datatable['qsigma']
+        usigma = datatable['usigma']
+        vsigma = datatable['vsigma']
         u = datatable['u']
         v = datatable['v']
 
         fwhm_sigma = fwhm / (2*np.sqrt(2*np.log(2)))
         ker = np.exp(-2 * np.pi**2 * fwhm_sigma**2*(u**2+v**2))
 
-        datatable[self.poldict['vis1']] = vis1/ker
-        datatable[self.poldict['vis2']] = vis2/ker
-        datatable[self.poldict['vis3']] = vis3/ker
-        datatable[self.poldict['vis4']] = vis4/ker
-        datatable[self.poldict['sigma1']] = sigma1/ker
-        datatable[self.poldict['sigma2']] = sigma2/ker
-        datatable[self.poldict['sigma3']] = sigma3/ker
-        datatable[self.poldict['sigma4']] = sigma4/ker
+        datatable['vis'] = vis/ker
+        datatable['qvis'] = qvis/ker
+        datatable['uvis'] = uvis/ker
+        datatable['vvis'] = vvis/ker
+        datatable['sigma'] = sigma/ker
+        datatable['qsigma'] = qsigma/ker
+        datatable['usigma'] = usigma/ker
+        datatable['vsigma'] = vsigma/ker
 
-        obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
-                           source=self.source, mjd=self.mjd,polrep=self.polrep,
-                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                           dcal=self.dcal, frcal=self.frcal,
+        obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr, source=self.source, mjd=self.mjd,
+                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                            timetype=self.timetype, scantable=self.scans)
         return obstaper
 
     def taper(self, fwhm):
+
         """Taper the observation with a circular Gaussian kernel
 
            Args:
@@ -1864,37 +1800,36 @@ class Obsdata(object):
         """
         datatable = self.data.copy()
 
-        vis1 = datatable[self.poldict['vis1']]
-        vis2 = datatable[self.poldict['vis2']]
-        vis3 = datatable[self.poldict['vis3']]
-        vis4 = datatable[self.poldict['vis4']]
-        sigma1 = datatable[self.poldict['sigma1']]
-        sigma2 = datatable[self.poldict['sigma2']]
-        sigma3 = datatable[self.poldict['sigma3']]
-        sigma4 = datatable[self.poldict['sigma4']]
+        vis = datatable['vis']
+        qvis = datatable['qvis']
+        uvis = datatable['uvis']
+        vvis = datatable['vvis']
+        sigma = datatable['sigma']
+        qsigma = datatable['qsigma']
+        usigma = datatable['usigma']
+        vsigma = datatable['vsigma']
         u = datatable['u']
         v = datatable['v']
 
         fwhm_sigma = fwhm / (2*np.sqrt(2*np.log(2)))
         ker = np.exp(-2 * np.pi**2 * fwhm_sigma**2*(u**2+v**2))
 
-        datatable[self.poldict['vis1']] = vis1*ker
-        datatable[self.poldict['vis2']] = vis2*ker
-        datatable[self.poldict['vis3']] = vis3*ker
-        datatable[self.poldict['vis4']] = vis4*ker
-        datatable[self.poldict['sigma1']] = sigma1*ker
-        datatable[self.poldict['sigma2']] = sigma2*ker
-        datatable[self.poldict['sigma3']] = sigma3*ker
-        datatable[self.poldict['sigma4']] = sigma4*ker
+        datatable['vis'] = vis*ker
+        datatable['qvis'] = qvis*ker
+        datatable['uvis'] = uvis*ker
+        datatable['vvis'] = vvis*ker
+        datatable['sigma'] = sigma*ker
+        datatable['qsigma'] = qsigma*ker
+        datatable['usigma'] = usigma*ker
+        datatable['vsigma'] = vsigma*ker
 
-        obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
-                           source=self.source, mjd=self.mjd,polrep=self.polrep,
-                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                           dcal=self.dcal, frcal=self.frcal,
+        obstaper = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr, source=self.source, mjd=self.mjd,
+                           ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                            timetype=self.timetype, scantable=self.scans)
         return obstaper
 
     def deblur(self):
+
         """Deblur the observation obs by dividing by the Sgr A* scattering kernel.
 
            Args:
@@ -1902,46 +1837,44 @@ class Obsdata(object):
            Returns:
                (Obsdata): a new deblurred observation object.
         """
-        print("Deblurring data with Sgr A* kernel ...")
+
         # make a copy of observation data
         datatable = self.data.copy()
 
-        vis1 = datatable[self.poldict['vis1']]
-        vis2 = datatable[self.poldict['vis2']]
-        vis3 = datatable[self.poldict['vis3']]
-        vis4 = datatable[self.poldict['vis4']]
-        sigma1 = datatable[self.poldict['sigma1']]
-        sigma2 = datatable[self.poldict['sigma2']]
-        sigma3 = datatable[self.poldict['sigma3']]
-        sigma4 = datatable[self.poldict['sigma4']]
+        vis = datatable['vis']
+        qvis = datatable['qvis']
+        uvis = datatable['uvis']
+        vvis = datatable['vvis']
+        sigma = datatable['sigma']
+        qsigma = datatable['qsigma']
+        usigma = datatable['usigma']
+        vsigma = datatable['vsigma']
         u = datatable['u']
         v = datatable['v']
 
         # divide visibilities by the scattering kernel
         for i in range(len(vis)):
             ker = sgra_kernel_uv(self.rf, u[i], v[i])
-            vis1[i] = vis1[i]/ker
-            vis2[i] = vis2[i]/ker
-            vis2[i] = vis3[i]/ker
-            vis4[i] = vis4[i]/ker
-            sigma1[i] = sigma1[i]/ker
-            sigma2[i] = sigma2[i]/ker
-            sigma3[i] = sigma3[i]/ker
-            sigma4[i] = sigma4[i]/ker
+            vis[i] = vis[i]/ker
+            qvis[i] = qvis[i]/ker
+            uvis[i] = uvis[i]/ker
+            vvis[i] = vvis[i]/ker
+            sigma[i] = sigma[i]/ker
+            qsigma[i] = qsigma[i]/ker
+            usigma[i] = usigma[i]/ker
+            vsigma[i] = vsigma[i]/ker
 
-        datatable[self.poldict['vis1']] = vis1
-        datatable[self.poldict['vis2']] = vis2
-        datatable[self.poldict['vis3']] = vis3
-        datatable[self.poldict['vis4']] = vis4
-        datatable[self.poldict['sigma1']] = sigma1
-        datatable[self.poldict['sigma2']] = sigma2
-        datatable[self.poldict['sigma3']] = sigma3
-        datatable[self.poldict['sigma4']] = sigma4
+        datatable['vis'] = vis
+        datatable['qvis'] = qvis
+        datatable['uvis'] = uvis
+        datatable['vvis'] = vvis
+        datatable['sigma'] = sigma
+        datatable['qsigma'] = qsigma
+        datatable['usigma'] = usigma
+        datatable['vsigma'] = vsigma
 
-        obsdeblur = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr,
-                            source=self.source, mjd=self.mjd,polrep=self.polrep,
-                            ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
-                            dcal=self.dcal, frcal=self.frcal,
+        obsdeblur = Obsdata(self.ra, self.dec, self.rf, self.bw, datatable, self.tarr, source=self.source, mjd=self.mjd,
+                            ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                             timetype=self.timetype, scantable=self.scans)
         return obsdeblur
 
@@ -1958,12 +1891,11 @@ class Obsdata(object):
                 (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
         """
 
-        #TODO this fit doesn't work very well!
-        data = self.unpack(['vis','u','v','sigma'])
-        vis = data['vis']
-        u = data['u']
-        v = data['v']
-        sig = data['sigma']
+        #TODO this fit doesn't work very well!!
+        vis = self.data['vis']
+        u = self.data['u']
+        v = self.data['v']
+        sig = self.data['sigma']
 
         # error function
         if fittype=='amp':
@@ -1979,7 +1911,9 @@ class Obsdata(object):
 
         optdict = {'maxiter':5000} # minimizer params
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
-        return res.x
+        gparams = res.x
+
+        return gparams
 
     def bispectra(self, vtype='vis', mode='all', count='min',timetype=False):
 
@@ -1993,16 +1927,16 @@ class Obsdata(object):
 
            Returns:
                (numpy.recarry): A recarray of the bispectra values with datatype DTBIS
-
         """
+
         if timetype==False:
             timetype=self.timetype
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('min', 'max'):
             raise Exception("possible options for count are 'min' and 'max'")
-        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
@@ -2024,7 +1958,6 @@ class Obsdata(object):
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
                 time = gmst_to_utc(time, self.mjd)
             sites = list(set(np.hstack((tdata['t1'],tdata['t2']))))
-            #sites = np.sort(sites)
 
             # Create a dictionary of baselines at the current time incl. conjugates;
             l_dict = {}
@@ -2032,23 +1965,23 @@ class Obsdata(object):
                 l_dict[(dat['t1'], dat['t2'])] = dat
 
             # Determine the triangles in the time step
-
             # Minimal Set
             if count == 'min':
                 tris = tri_minimal_set(sites, self.tarr, self.tkey)
 
-            # Maximal  Set - find all triangles
+            # Maximal  Set
             elif count == 'max':
                 tris = list(it.combinations(sites,3))
 
             # Generate bispectra for each triangle
             for tri in tris:
-                # The ordering is north-south
-                # ANDREW what if there is no geographic information???
-                a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
-                a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
-                a2 = 3 - a1 - a3
-                tri = (tri[a1], tri[a2], tri[a3])
+                 # Keep default ordering !
+
+#                # The ordering is north-south
+#                a1 = np.argmax([self.tarr[self.tkey[site]]['z'] for site in tri])
+#                a3 = np.argmin([self.tarr[self.tkey[site]]['z'] for site in tri])
+#                a2 = 3 - a1 - a3
+#                tri = (tri[a1], tri[a2], tri[a3])
 
                 # Select triangle entries in the data dictionary
                 try:
@@ -2058,14 +1991,11 @@ class Obsdata(object):
                 except KeyError:
                     continue
 
-                (bi, bisig) = make_bispectrum(l1,l2,l3,vtype,polrep=self.polrep)
+                (bi, bisig) = make_bispectrum(l1,l2,l3,vtype)
 
                 # Append to the equal-time list
-                bis.append(np.array((time, 
-                                     tri[0], tri[1], tri[2],
-                                     l1['u'], l1['v'], 
-                                     l2['u'], l2['v'], 
-                                     l3['u'], l3['v'],
+                bis.append(np.array((time, tri[0], tri[1], tri[2],
+                                     l1['u'], l1['v'], l2['u'], l2['v'], l3['u'], l3['v'],
                                      bi, bisig), dtype=DTBIS))
 
             # Append to outlist
@@ -2075,7 +2005,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(bis)
-        print()
+
         return out
 
     def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg', timetype=False):
@@ -2092,17 +2022,17 @@ class Obsdata(object):
            Returns:
                (numpy.recarry): A recarray of the closure phases with datatype DTPHASE
         """
+
         if timetype==False:
             timetype=self.timetype
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")
-        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis','pvis'")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
-
 
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
@@ -2113,8 +2043,6 @@ class Obsdata(object):
         # Reformat into a closure phase list/array
         out = []
         cps = []
-
-        print('Reformatting bispectra to closure phase...')
 
         for bis in bispecs:
             for bi in bis:
@@ -2132,7 +2060,7 @@ class Obsdata(object):
 
         return out
 
-    def bispectra_tri(self, site1, site2, site3, vtype='vis', timetype=False, bs=[]):
+    def bispectra_tri(self, site1, site2, site3, vtype='vis', timetype=False, bs=[],force_recompute=False):
 
         """Return complex bispectrum  over time on a triangle (1-2-3).
 
@@ -2142,7 +2070,9 @@ class Obsdata(object):
                site3 (str): station 3 name
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
                timetype (str): 'UTC' or 'GMST'
+
                bs (list): optionally pass in the time-sorted bispectra so they don't have to be recomputed
+               force_recompute (bool): if True, recompute bispectra instead of using obs.cphase saved data
 
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
@@ -2151,7 +2081,9 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get bispectra (maximal set)
-        if len(bs) == 0:
+        if (len(bs)==0) and not (self.bispec is None) and not (len(self.bispec)==0) and not force_recompute:
+            cphases=self.bispecra
+        elif (len(bs) == 0) or force_recompute:
             bs = self.bispectra(mode='all', count='max', vtype=vtype, timetype=timetype)
 
         # Get requested closure phases over time
@@ -2160,25 +2092,100 @@ class Obsdata(object):
         for obs in bs:
             obstri = (obs['t1'],obs['t2'],obs['t3'])
             if set(obstri) == set(tri):
-                # Flip the sign of the closure phase if necessary
-                parity = paritycompare(tri, obstri)
+                t1 = copy.deepcopy(obs['t1'])
+                t2 = copy.deepcopy(obs['t2'])
+                t3 = copy.deepcopy(obs['t3'])
+                u1 = copy.deepcopy(obs['u1'])
+                u2 = copy.deepcopy(obs['u2'])
+                u3 = copy.deepcopy(obs['u3'])
+                v1 = copy.deepcopy(obs['v1'])
+                v2 = copy.deepcopy(obs['v2'])
+                v3 = copy.deepcopy(obs['v3'])
 
-                if parity==-1:
-                    obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
-                    t2 = copy.deepcopy(obs['t2'])
-                    u2 = copy.deepcopy(obs['u2'])
-                    v2 = copy.deepcopy(obs['v2'])
+                # Reorder baselines and flip the sign of the closure phase if necessary
+                if t1==site1:
+                    if t2==site2:
+                        pass
+                    else:
+                        obs['t2']=t3
+                        obs['t3']=t2
 
-                    obs['t2'] = obs['t3']
-                    obs['u2'] = obs['u3']
-                    obs['v2'] = obs['v3']
+                        obs['u1']=-u3
+                        obs['v1']=-v3
+                        obs['u2']=-u2
+                        obs['v2']=-v2
+                        obs['u3']=-u1
+                        obs['v3']=-v1
+                        obs['bispec'] = np.conjugate(obs['bispec'])
 
-                    obs['t3'] = t2
-                    obs['u3'] = u2
-                    obs['v3'] = v2
+                elif t1==site2:
+                    if t2==site3:
+                        obs['t1']=t3
+                        obs['t2']=t1
+                        obs['t3']=t2
+
+                        obs['u1']=u3
+                        obs['v1']=v3
+                        obs['u2']=u1
+                        obs['v2']=v1
+                        obs['u3']=u2
+                        obs['v3']=v2
+
+                    else:
+                        obs['t1']=t2
+                        obs['t2']=t1
+
+                        obs['u1']=-u1
+                        obs['v1']=-v1
+                        obs['u2']=-u3
+                        obs['v2']=-v3
+                        obs['u3']=-u2
+                        obs['v3']=-v2
+                        obs['bispec'] = np.conjugate(obs['bispec'])
+
+                elif t1==site3:
+                    if t2==site1:
+                        obs['t1']=t2
+                        obs['t2']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=u2
+                        obs['v1']=v2
+                        obs['u2']=u3
+                        obs['v2']=v3
+                        obs['u3']=u1
+                        obs['v3']=v1
+
+                    else:
+                        obs['t1']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=-u2
+                        obs['v1']=-v2
+                        obs['u2']=-u1
+                        obs['v2']=-v1
+                        obs['u3']=-u3
+                        obs['v3']=-v3
+                        obs['bispec'] = np.conjugate(obs['bispec'])
+
+                # TODO this should be more elegant & faster but doesn't work?
+#                # Flip the sign of the closure phase if necessary
+#                parity = paritycompare(tri, obstri)
+#                if parity==-1:
+#                    obs['bispec'] = np.abs(obs['bispec'])*np.exp(-1j*np.angle(obs['bispec']))
+#                    t2 = copy.deepcopy(obs['t2'])
+#                    u2 = copy.deepcopy(obs['u2'])
+#                    v2 = copy.deepcopy(obs['v2'])
+#                    obs['t2'] = obs['t3']
+#                    obs['u2'] = obs['u3']
+#                    obs['v2'] = obs['v3']
+#                    obs['t3'] = t2
+#                    obs['u3'] = u2
+#                    obs['v3'] = v2
 
                 outdata.append(np.array(obs, dtype=DTBIS))
                 continue
+
         return np.array(outdata)
 
 
@@ -2196,9 +2203,11 @@ class Obsdata(object):
 
                cphases (list): optionally pass in the cphase so they are not recomputed if you are plotting multiple triangles
                force_recompute (bool): if True, recompute closure phases instead of using obs.cphase saved data
+
            Returns:
                (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTPHASE
         """
+
         if timetype==False:
             timetype=self.timetype
 
@@ -2215,30 +2224,104 @@ class Obsdata(object):
         for obs in cphases:
             obstri = (obs['t1'],obs['t2'],obs['t3'])
             if set(obstri) == set(tri):
-                # Flip the sign of the closure phase if necessary
-                parity = paritycompare(tri, obstri)
+                t1 = copy.deepcopy(obs['t1'])
+                t2 = copy.deepcopy(obs['t2'])
+                t3 = copy.deepcopy(obs['t3'])
+                u1 = copy.deepcopy(obs['u1'])
+                u2 = copy.deepcopy(obs['u2'])
+                u3 = copy.deepcopy(obs['u3'])
+                v1 = copy.deepcopy(obs['v1'])
+                v2 = copy.deepcopy(obs['v2'])
+                v3 = copy.deepcopy(obs['v3'])
 
-                obs['cphase'] *= parity
+                # Reorder baselines and flip the sign of the closure phase if necessary
+                if t1==site1:
+                    if t2==site2:
+                        pass
+                    else:
+                        obs['t2']=t3
+                        obs['t3']=t2
 
-                if parity==-1:
-                    t2 = copy.deepcopy(obs['t2'])
-                    u2 = copy.deepcopy(obs['u2'])
-                    v2 = copy.deepcopy(obs['v2'])
+                        obs['u1']=-u3
+                        obs['v1']=-v3
+                        obs['u2']=-u2
+                        obs['v2']=-v2
+                        obs['u3']=-u1
+                        obs['v3']=-v1
+                        obs['cphase'] *= -1
 
-                    obs['t2'] = obs['t3']
-                    obs['u2'] = obs['u3']
-                    obs['v2'] = obs['v3']
+                elif t1==site2:
+                    if t2==site3:
+                        obs['t1']=t3
+                        obs['t2']=t1
+                        obs['t3']=t2
 
-                    obs['t3'] = t2
-                    obs['u3'] = u2
-                    obs['v3'] = v2
+                        obs['u1']=u3
+                        obs['v1']=v3
+                        obs['u2']=u1
+                        obs['v2']=v1
+                        obs['u3']=u2
+                        obs['v3']=v2
+
+                    else:
+                        obs['t1']=t2
+                        obs['t2']=t1
+
+                        obs['u1']=-u1
+                        obs['v1']=-v1
+                        obs['u2']=-u3
+                        obs['v2']=-v3
+                        obs['u3']=-u2
+                        obs['v3']=-v2
+                        obs['cphase'] *= -1
+
+
+                elif t1==site3:
+                    if t2==site1:
+                        obs['t1']=t2
+                        obs['t2']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=u2
+                        obs['v1']=v2
+                        obs['u2']=u3
+                        obs['v2']=v3
+                        obs['u3']=u1
+                        obs['v3']=v1
+
+                    else:
+                        obs['t1']=t3
+                        obs['t3']=t1
+
+                        obs['u1']=-u2
+                        obs['v1']=-v2
+                        obs['u2']=-u1
+                        obs['v2']=-v1
+                        obs['u3']=-u3
+                        obs['v3']=-v3
+                        obs['cphase'] *= -1
+
+#                # Flip the sign of the closure phase if necessary
+#                # TODO this should be more elegant & faster but doesn't work?
+#                parity = paritycompare(tri, obstri)
+#                obs['cphase'] *= parity
+#                if parity==-1:
+#                    t2 = copy.deepcopy(obs['t2'])
+#                    u2 = copy.deepcopy(obs['u2'])
+#                    v2 = copy.deepcopy(obs['v2'])
+#                    obs['t2'] = obs['t3']
+#                    obs['u2'] = obs['u3']
+#                    obs['v2'] = obs['v3']
+#                    obs['t3'] = t2
+#                    obs['u3'] = u2
+#                    obs['v3'] = v2
 
                 outdata.append(np.array(obs, dtype=DTCPHASE))
                 continue
+
         return np.array(outdata)
 
-    def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp',
-                           debias=True, timetype=False):
+    def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp', debias=True, timetype=False):
 
         """Return a recarray of the equal time closure amplitudes.
 
@@ -2254,6 +2337,7 @@ class Obsdata(object):
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
 
         """
+
         if timetype==False:
             timetype=self.timetype
         if not mode in ('time','all'):
@@ -2275,7 +2359,7 @@ class Obsdata(object):
         for tdata in tlist:
 
             sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % (vtype, ctype, count, tt, len(tlist)))
-            sys.stdout.flush()            
+            sys.stdout.flush()
             tt += 1
 
             time = tdata[0]['time']
@@ -2285,8 +2369,6 @@ class Obsdata(object):
                 time = gmst_to_utc(time, self.mjd)
 
             sites = np.array(list(set(np.hstack((tdata['t1'], tdata['t2'])))))
-            #sites = np.sort(sites)
-            #sites = sites[np.argsort([self.tarr[self.tkey[site]]['sefdr'] for site in sites])[::-1]]
             if len(sites) < 4:
                 continue
 
@@ -2298,70 +2380,46 @@ class Obsdata(object):
             # Minimal set
             if count == 'min':
                 quadsets = quad_minimal_set(sites, self.tarr, self.tkey)
-                for quad in quadsets:
-                    # Blue is numerator, red is denominator
-
-                    if (quad[0], quad[1]) not in l_dict.keys():
-                        continue
-                    if (quad[1], quad[2]) not in l_dict.keys():
-                        continue
-                    if (quad[0], quad[3]) not in l_dict.keys():
-                        continue
-                    if (quad[2], quad[3]) not in l_dict.keys():
-                        continue
-                    try:
-                        blue1 = l_dict[quad[0], quad[1]]
-                        blue2 = l_dict[quad[2], quad[3]]
-                        red1 = l_dict[quad[1], quad[2]]
-                        red2 = l_dict[quad[0], quad[3]]
-                    except KeyError:
-                        continue
-
-                    # Compute the closure amplitude and the error
-                    (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                             polrep=self.polrep,
-                                                             ctype=ctype, debias=debias)
-
-                    # Add the closure amplitudes to the equal-time list
-                    # Our site convention is (12)(34)/(14)(23)
-                    cas.append(np.array((time,
-                                         quad[0], quad[1], quad[2], quad[3],
-                                         blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                         red1['u'], red1['v'], red2['u'], red2['v'],
-                                         camp, camperr),
-                                         dtype=DTCAMP))
 
             # Maximal Set
             elif count == 'max':
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
-                for q in quadsets:
-                    # Loop over 3 closure amplitudes
-                    # Our site convention is (12)(34)/(14)(23)
-                    for quad in (q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]):
+                # Include 3 closure amplitudes on each quadrangle
+                quadsets = np.array([(q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]) for q in quadsets]).reshape((-1,4))
 
-                        # Blue is numerator, red is denominator
-                        try:
-                            blue1 = l_dict[quad[0], quad[1]]
-                            blue2 = l_dict[quad[2], quad[3]]
-                            red1 = l_dict[quad[0], quad[3]]
-                            red2 = l_dict[quad[1], quad[2]]
-                        except KeyError:
-                            continue
+            # Loop over all closure amplitudes
+            for quad in quadsets:
+                # Blue is numerator, red is denominator
+                if (quad[0], quad[1]) not in l_dict.keys():
+                    continue
+                if (quad[2], quad[3]) not in l_dict.keys():
+                    continue
+                if (quad[1], quad[2]) not in l_dict.keys():
+                    continue
+                if (quad[0], quad[3]) not in l_dict.keys():
+                    continue
 
-                        # Compute the closure amplitude and the error
-                        (camp, camperr) = make_closure_amplitude(red1, red2, blue1, blue2, vtype,
-                                                                 polrep=self.polrep,
-                                                                 ctype=ctype, debias=debias)
+                try:
+                    blue1 = l_dict[quad[0], quad[1]]
+                    blue2 = l_dict[quad[2], quad[3]]
+                    red1 = l_dict[quad[0], quad[3]]
+                    red2 = l_dict[quad[1], quad[2]]
+                except KeyError:
+                    continue
 
-                        # Add the closure amplitudes to the equal-time list
-                        # Our site convention is (12)(34)/(14)(23)
-                        cas.append(np.array((time,
-                                             quad[0], quad[1], quad[2], quad[3],
-                                             blue1['u'], blue1['v'], blue2['u'], blue2['v'],
-                                             red1['u'], red1['v'], red2['u'], red2['v'],
-                                             camp, camperr),
-                                             dtype=DTCAMP))
+                # Compute the closure amplitude and the error
+                (camp, camperr) = make_closure_amplitude(blue1, blue2, red1, red2, vtype,
+                                                         ctype=ctype, debias=debias)
+
+                # Add the closure amplitudes to the equal-time list
+                # Our site convention is (12)(34)/(14)(23)
+                cas.append(np.array((time,
+                                     quad[0], quad[1], quad[2], quad[3],
+                                     blue1['u'], blue1['v'], blue2['u'], blue2['v'],
+                                     red1['u'], red1['v'], red2['u'], red2['v'],
+                                     camp, camperr),
+                                     dtype=DTCAMP))
 
             # Append all equal time closure amps to outlist
             if mode=='time':
@@ -2370,7 +2428,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(cas)
-        print()
+
         return out
 
     def camp_quad(self, site1, site2, site3, site4,
@@ -2392,18 +2450,17 @@ class Obsdata(object):
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
-
         """
 
         if timetype==False:
             timetype=self.timetype
 
         quad = (site1, site2, site3, site4)
-        r1 = set((site1, site2))
-        r2 = set((site3, site4))
+        b1 = set((site1, site2))
+        b2 = set((site3, site4))
 
-        b1 = set((site1, site4))
-        b2 = set((site2, site3))
+        r1 = set((site1, site4))
+        r2 = set((site2, site3))
 
         # Get the closure amplitudes
         outdata = []
@@ -2419,58 +2476,140 @@ class Obsdata(object):
         # camps does not contain inverses
         for obs in camps:
 
+            num   = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
+            denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
+
             obsquad = (obs['t1'], obs['t2'], obs['t3'], obs['t4'])
-
             if set(quad) == set(obsquad):
-                num = [set((obs['t1'], obs['t2'])), set((obs['t3'], obs['t4']))]
-                denom = [set((obs['t1'], obs['t4'])), set((obs['t2'], obs['t3']))]
 
-                #flip inverse closure amplitudes
-                if ((r1 in denom) and (r2 in denom) and (b1 in num) and (b2 in num)):
+                # is this either  the closure amplitude or inverse?
+                rightup = (b1 in num) and (b2 in num) and (r1 in denom) and (r2 in denom)
+                wrongup = (b1 in denom) and (b2 in denom) and (r1 in num) and (r2 in num)
+                if not (rightup or wrongup): continue
 
-                    t2 = copy.deepcopy(obs['t2'])
-                    u2 = copy.deepcopy(obs['u2'])
-                    v2 = copy.deepcopy(obs['v2'])
+                #flip the inverse closure amplitudes
+                if wrongup:
+                    t1old = copy.deepcopy(obs['t1'])
+                    u1old = copy.deepcopy(obs['u1'])
+                    v1old = copy.deepcopy(obs['v1'])
+                    t2old = copy.deepcopy(obs['t2'])
+                    u2old = copy.deepcopy(obs['u2'])
+                    v2old = copy.deepcopy(obs['v2'])
+                    t3old = copy.deepcopy(obs['t3'])
+                    u3old = copy.deepcopy(obs['u3'])
+                    v3old = copy.deepcopy(obs['v3'])
+                    t4old = copy.deepcopy(obs['t4'])
+                    u4old = copy.deepcopy(obs['u4'])
+                    v4old = copy.deepcopy(obs['v4'])
+                    campold = copy.deepcopy(obs['camp'])
+                    csigmaold = copy.deepcopy(obs['sigmaca'])
 
-                    t3 = copy.deepcopy(obs['t3'])
-                    u3 = copy.deepcopy(obs['u3'])
-                    v3 = copy.deepcopy(obs['v3'])
+                    obs['t1'] = t1old
+                    obs['t2'] = t4old
+                    obs['t3'] = t3old
+                    obs['t4'] = t2old
 
-                    obs['t2'] = obs['t4']
-                    obs['u2'] = obs['u4']
-                    obs['v2'] = obs['v4']
+                    obs['u1'] = u3old
+                    obs['v1'] = v3old
 
-                    obs['t3'] = t2
-                    obs['u3'] = u2
-                    obs['v3'] = v2
+                    obs['u2'] = -u4old
+                    obs['v2'] = -v4old
 
-                    obs['t4'] = t3
-                    obs['u4'] = u3
-                    obs['v4'] = v3
+                    obs['u3'] = u1old
+                    obs['v3'] = v1old
+
+                    obs['u4'] = -u2old
+                    obs['v4'] = -v2old
 
                     if ctype=='logcamp':
-                        obs['camp'] = -obs['camp']
+                        obs['camp'] = -campold
+                        obs['sigmaca'] = csigmaold
                     else:
-                        obs['camp'] = 1./obs['camp']
-                        obs['sigmaca'] = obs['sigmaca']*(obs['camp']**2)
-                    outdata.append(np.array(obs, dtype=DTCAMP))
+                        obs['camp'] = 1./campold
+                        obs['sigmaca'] = csigmaold/(campold**2)
 
-                # not an inverse closure amplitude
-                elif ((r1 in num) and (r2 in num) and (b1 in denom) and (b2 in denom)):
-                    outdata.append(np.array(obs, dtype=DTCAMP))
 
-                continue
+                t1old = copy.deepcopy(obs['t1'])
+                u1old = copy.deepcopy(obs['u1'])
+                v1old = copy.deepcopy(obs['v1'])
+                t2old = copy.deepcopy(obs['t2'])
+                u2old = copy.deepcopy(obs['u2'])
+                v2old = copy.deepcopy(obs['v2'])
+                t3old = copy.deepcopy(obs['t3'])
+                u3old = copy.deepcopy(obs['u3'])
+                v3old = copy.deepcopy(obs['v3'])
+                t4old = copy.deepcopy(obs['t4'])
+                u4old = copy.deepcopy(obs['u4'])
+                v4old = copy.deepcopy(obs['v4'])
+
+                # this is all same closure amplitude, but the ordering of labels is different
+                # return the label ordering that the user requested!
+                if (obs['t2'],obs['t1'],obs['t4'],obs['t3']) == quad:
+                    obs['t1'] = t2old
+                    obs['t2'] = t1old
+                    obs['t3'] = t4old
+                    obs['t4'] = t3old
+
+                    obs['u1'] = -u1old
+                    obs['v1'] = -v1old
+
+                    obs['u2'] = -u2old
+                    obs['v2'] = -v2old
+
+                    obs['u3'] = u4old
+                    obs['v3'] = v4old
+
+                    obs['u4'] = u3old
+                    obs['v4'] = v3old
+
+                elif (obs['t3'],obs['t4'],obs['t1'],obs['t2']) == quad:
+                    obs['t1'] = t3old
+                    obs['t2'] = t4old
+                    obs['t3'] = t1old
+                    obs['t4'] = t2old
+
+                    obs['u1'] = u2old
+                    obs['v1'] = v2old
+
+                    obs['u2'] = u1old
+                    obs['v2'] = v1old
+
+                    obs['u3'] = -u4old
+                    obs['v3'] = -v4old
+
+                    obs['u4'] = -u3old
+                    obs['v4'] = -v3old
+
+                elif (obs['t4'],obs['t3'],obs['t2'],obs['t1']) == quad:
+                    obs['t1'] = t4old
+                    obs['t2'] = t3old
+                    obs['t3'] = t2old
+                    obs['t4'] = t1old
+
+                    obs['u1'] = -u2old
+                    obs['v1'] = -v2old
+
+                    obs['u2'] = -u1old
+                    obs['v2'] = -v1old
+
+                    obs['u3'] = -u3old
+                    obs['v3'] = -v3old
+
+                    obs['u4'] = -u4old
+                    obs['v4'] = -v4old
+
+                # append to output array
+                outdata.append(np.array(obs, dtype=DTCAMP))
 
         return np.array(outdata)
 
-    def plotall(self, field1, field2, 
-
-                conj=False, debias=True, tag_bl=False,
-                ang_unit='deg', timetype=False,
-                axis=False, rangex=False, rangey=False, 
-                color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                export_pdf="", grid=True, ebar=True, 
-                axislabels=True, legend=False, show=True):
+    def plotall(self, field1, field2,
+                    conj=False, debias=True, tag_bl=False,
+                    ang_unit='deg', timetype=False,
+                    axis=False, rangex=False, rangey=False,
+                    color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
+                    export_pdf="", grid=True, ebar=True,
+                    axislabels=True, legend=False, show=True):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2491,7 +2630,7 @@ class Obsdata(object):
                color (str): color for scatterplot points
                marker (str): matplotlib plot marker
                markersize (int): size of plot markers
-               label (str): plot legend label 
+               label (str): plot legend label
 
                export_pdf (str): path to pdf file to save figure
                grid (bool): Plot gridlines if True
@@ -2515,20 +2654,20 @@ class Obsdata(object):
             print ("Warning: plotall is not using amplitudes in Obsdata.amp array!")
 
         # Label individual baselines
-        # ANDREW TODO WAAY too slow could this be faster??
+        # ANDREW TODO way too slow could this be faster??
         if tag_bl:
             clist = SCOLORS
-           
+
             # make a color coding dictionary
             cdict = {}
-            ii = 0 
+            ii = 0
             baselines = list(it.combinations(self.tarr['site'],2))
             for baseline in baselines:
                 cdict[(baseline[0],baseline[1])] = clist[ii%len(clist)]
                 cdict[(baseline[1],baseline[0])] = clist[ii%len(clist)]
                 ii+=1
 
-            # get unique baselines -- TODO easier way? separate function? 
+            # get unique baselines -- TODO easier way? separate function?
             alldata = []
             allsigx = []
             allsigy = []
@@ -2543,7 +2682,7 @@ class Obsdata(object):
 
                 # Unpack data
                 dat = self.unpack_dat(bl, [field1,field2], ang_unit=ang_unit, debias=debias, timetype=timetype)
-                alldata.append(dat)       
+                alldata.append(dat)
 
                 # X error bars
                 if sigtype(field1):
@@ -2557,11 +2696,11 @@ class Obsdata(object):
                 else:
                     allsigy.append(None)
 
-               
         # Don't Label individual baselines
         else:
             bllist = [['All','All']]
             colors = [color]
+
             # unpack data
             alldata = [self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)]
 
@@ -2576,7 +2715,6 @@ class Obsdata(object):
                 allsigy = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field2)]]
             else:
                 allsigy = [None]
-
 
         # make plot(s)
         if axis:
@@ -2593,7 +2731,7 @@ class Obsdata(object):
             data = alldata[i]
             sigy = allsigy[i]
             sigx = allsigx[i]
-            color = colors[i]   
+            color = colors[i]
 
             bl = bllist[i]
 
@@ -2614,7 +2752,7 @@ class Obsdata(object):
                 x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label=label,
                            fmt=marker, markersize=markersize, color=color,picker=tolerance)
             else:
-                x.plot(data[field1], data[field2], marker, markersize=markersize, color=color, 
+                x.plot(data[field1], data[field2], marker, markersize=markersize, color=color,
                        label=label, picker=tolerance)
 
         # Data ranges
@@ -2624,6 +2762,7 @@ class Obsdata(object):
             if np.any(np.isnan(np.array(rangex))):
                 print("Warning: NaN in data x range: specifying rangex to default")
                 rangex = [-100,100]
+
         if not rangey:
             rangey = [np.min(ymins) - 0.2 * np.abs(np.min(ymins)),
                       np.max(ymaxes) + 0.2 * np.abs(np.max(ymaxes))]
@@ -2633,7 +2772,6 @@ class Obsdata(object):
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
-
 
         # label and save
         if axislabels:
@@ -2658,9 +2796,9 @@ class Obsdata(object):
 
     def plot_bl(self, site1, site2, field,
                 debias=True, ang_unit='deg', timetype=False,
-                axis=False, rangex=False, rangey=False, 
+                axis=False, rangex=False, rangey=False,
                 color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                export_pdf="", grid=True, ebar=True, 
+                export_pdf="", grid=True, ebar=True,
                 axislabels=True, legend=False, show=True):
 
         """Plot a field over time on a baseline site1-site2.
@@ -2680,7 +2818,7 @@ class Obsdata(object):
                color (str): color for scatterplot points
                marker (str): matplotlib plot marker
                markersize (int): size of plot markers
-               label (str): plot legend label 
+               label (str): plot legend label
 
                export_pdf (str): path to pdf file to save figure
                grid (bool): Plot gridlines if True
@@ -2692,6 +2830,7 @@ class Obsdata(object):
            Returns:
                (matplotlib.axes.Axes): Axes object with data plot
         """
+
         if timetype==False:
             timetype=self.timetype
         if ang_unit=='deg': angle=DEGREE
@@ -2731,7 +2870,7 @@ class Obsdata(object):
 
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
-            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0], 
+            x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0],
                        fmt=marker, markersize=markersize, color=color, linestyle='none', label=label)
         else:
             x.plot(plotdata['time'][:,0], plotdata[field][:,0], marker, markersize=markersize,
@@ -2760,11 +2899,11 @@ class Obsdata(object):
         return x
 
     def plot_cphase(self, site1, site2, site3,
-                    vtype='vis', cphases=[], force_recompute=False, ang_unit='deg', timetype=False,  
-                    axis=False, rangex=False, rangey=False, 
-                    color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                    export_pdf="", grid=True, ebar=True, 
-                    axislabels=True, legend=False, show=True):
+                        vtype='vis', cphases=[], force_recompute=False, ang_unit='deg', timetype=False,
+                        axis=False, rangex=False, rangey=False,
+                        color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
+                        export_pdf="", grid=True, ebar=True,
+                        axislabels=True, legend=False, show=True):
 
         """Plot a field over time on a baseline site1-site2.
 
@@ -2775,7 +2914,7 @@ class Obsdata(object):
 
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
                cphases (list): optionally pass in the closure phases so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure phases instead of using stored data 
+               force_recompute (bool): if True, recompute closure phases instead of using stored data
 
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
@@ -2786,7 +2925,7 @@ class Obsdata(object):
                color (str): color for scatterplot points
                marker (str): matplotlib plot marker
                markersize (int): size of plot markers
-               label (str): plot legend label 
+               label (str): plot legend label
 
                export_pdf (str): path to pdf file to save figure
                grid (bool): Plot gridlines if True
@@ -2820,6 +2959,13 @@ class Obsdata(object):
             print("%s %s %s : No closure phases on this triangle!" % (site1,site2,site3))
             return
 
+        # Plot the data
+        if axis:
+            x = axis
+        else:
+            fig=plt.figure()
+            x = fig.add_subplot(1,1,1)
+
         # Data ranges
         if not rangex:
             rangex = [self.tstart,self.tstop]
@@ -2829,33 +2975,25 @@ class Obsdata(object):
 
         if not rangey:
             if ang_unit=='deg':rangey = [-190,190]
-            else: rangey=[-np.pi,np.pi]
-            #rangey = [np.min(plotdata[:,1]) - 0.2 * np.abs(np.min(plotdata[:,1])),
-            #          np.max(plotdata[:,1]) + 0.2 * np.abs(np.max(plotdata[:,1]))]
-            #if np.any(np.isnan(np.array(rangex))):
-            #    raise Exception("NaN in data y range: try specifying rangey manually")
+            else: rangey=[-1.1*np.pi,1.1*np.pi]
 
-        # Plot the data
-        if axis:
-            x = axis
-        else:
-            fig=plt.figure()
-            x = fig.add_subplot(1,1,1)
+        x.set_xlim(rangex)
+        x.set_ylim(rangey)
+
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt=marker, markersize=markersize, 
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt=marker, markersize=markersize,
                        color=color, linestyle='none',label=label)
         else:
             x.plot(plotdata[:,0], plotdata[:,1], marker, markersize=markersize, color=color, linestyle='none', label=label)
 
-        x.set_xlim(rangex)
-        x.set_ylim(rangey)
         if axislabels:
             x.set_xlabel(self.timetype + ' (h)')
-            if ang_unit=='deg': 
+            if ang_unit=='deg':
                 x.set_ylabel(r'Closure Phase $(^\circ)$')
             else:
                 x.set_ylabel(r'Closure Phase (radian)')
+
         x.set_title('%s - %s - %s' % (site1,site2,site3))
 
         if grid:
@@ -2866,38 +3004,40 @@ class Obsdata(object):
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
             plt.show(block=False)
+
         return x
 
     def plot_camp(self, site1, site2, site3, site4,
-                    vtype='vis', ctype='camp', camps=[], force_recompute=False, 
-                    debias=False, timetype=False,  
-                    axis=False, rangex=False, rangey=False, 
-                    color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                    export_pdf="", grid=True, ebar=True, 
-                    axislabels=True, legend=False, show=True):
+                        vtype='vis', ctype='camp', camps=[], force_recompute=False,
+                        debias=False, timetype=False,
+                        axis=False, rangex=False, rangey=False,
+                        color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
+                        export_pdf="", grid=True, ebar=True,
+                        axislabels=True, legend=False, show=True):
 
-        """Plot a field over time on a baseline site1-site2.
+        """Plot closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
 
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
-               field (str): y-axis field (from FIELDS)
+               site3 (str): station 3 name
+               site4 (str): station 4 name
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                camps (list): optionally pass in camps so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure amplitudes instead of using stored data 
+               force_recompute (bool): if True, recompute closure amplitudes instead of using stored data
 
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
                timetype (str): 'GMST' or 'UTC'
 
-               axis (matplotlib.axes.Axes): add plot to this axis
+               axis (matplotlib.axes.Axes): amake_cdd plot to this axis
                rangex (list): [xmin, xmax] x-axis limits
                rangey (list): [ymin, ymax] y-axis limits
                color (str): color for scatterplot points
                marker (str): matplotlib plot marker
                markersize (int): size of plot markers
-               label (str): plot legend label 
+               label (str): plot legend label
 
                export_pdf (str): path to pdf file to save figure
                grid (bool): Plot gridlines if True
@@ -2912,9 +3052,9 @@ class Obsdata(object):
 
         if timetype==False:
             timetype=self.timetype
-
         if label is None:
             label=str(self.source)
+
         else:
             label=str(label)
 
@@ -2925,8 +3065,9 @@ class Obsdata(object):
             camps=self.logcamp
 
         # Get closure amplitudes (maximal set)
-        cpdata = self.camp_quad(site1, site2, site3, site4, vtype=vtype, ctype=ctype,
-                                debias=debias, timetype=timetype, 
+        cpdata = self.camp_quad(site1, site2, site3, site4,
+                                vtype=vtype, ctype=ctype,
+                                debias=debias, timetype=timetype,
                                 camps=camps,force_recompute=force_recompute)
 
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
@@ -2974,7 +3115,7 @@ class Obsdata(object):
             elif ctype=='logcamp':
                 x.set_ylabel('Log Closure Amplitude')
             x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
-                                                               site1,site4,site2,site3))
+                                                                 site1,site4,site2,site3))
         if grid:
             x.grid()
         if legend:
@@ -2988,28 +3129,28 @@ class Obsdata(object):
             return x
 
     def save_txt(self, fname):
+
         """Save visibility data to a text file.
 
            Args:
                 fname (str): path to output text file
         """
 
-        ehtim.io.save.save_obs_txt(self, fname)
+        ehtim.io.save.save_obs_txt(self,fname)
+
         return
 
-
     def save_uvfits(self, fname, force_singlepol=False):
+
         """Save visibility data to uvfits file.
 
            Args:
                 fname (str): path to output text file
                 force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
         """
-        #TODO POL -- does force_singlepol make sense  here ???
-        if force_singlepol!=False and self.polrep!='stokes':
-            raise Exception("force_singlepol is incompatible with polrep!='stokes'")
 
-        ehtim.io.save.save_obs_uvfits(self, fname, force_singlepol=force_singlepol)
+        ehtim.io.save.save_obs_uvfits(self,fname,force_singlepol=force_singlepol)
+
         return
 
     def save_oifits(self, fname, flux=1.0):
@@ -3020,32 +3161,24 @@ class Obsdata(object):
                 fname (str): path to output text file
                 flux (float): normalization total flux
         """
-        if self.polrep!='stokes':
-            raise Exception("save_oifits not yet implemented for polreps other than 'stokes'")
 
         #Antenna diameter currently incorrect and the exact times are not correct in the datetime object
         ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
-        return
 
+        return
 
 ##################################################################################################
 # Observation creation functions
 ##################################################################################################
-def merge_obs(obs_List, force_merge=False):
+def merge_obs(obs_List):
 
     """Merge a list of observations into a single observation file.
 
        Args:
            obs_List (list): list of split observation Obsdata objects.
-           force_merge (bool): True to  force merge even if some header parameters are different
-
        Returns:
            mergeobs (Obsdata): merged Obsdata object containing all scans in input list
     """
-
-    if (len(set([obs.polrep for obs in obs_List])) > 1):
-        raise Exception("All observations must have the same polarization representaiton !")
-        return
 
     if (len(set([obs.ra for obs in obs_List])) > 1 or
         len(set([obs.dec for obs in obs_List])) > 1 or
@@ -3054,11 +3187,8 @@ def merge_obs(obs_List, force_merge=False):
         len(set([obs.source for obs in obs_List])) > 1 or
         len(set([np.floor(obs.mjd) for obs in obs_List])) > 1):
 
-        if force_merge:
-            print("Warning: force_merge=True, but observations don't have the same parameters!")
-        else:
-            raise Exception("All observations must have the same parameters!")
-            return
+        raise Exception("All observations must have the same parameters!")
+        return
 
     #The important things to merge are the mjd, the data, and the list of telescopes
     data_merge = np.hstack([obs.data for obs in obs_List])
@@ -3066,41 +3196,38 @@ def merge_obs(obs_List, force_merge=False):
     #TODO merge scan table??
     scan_merge = []
     for obs in obs_List:
-        if not (scan_merge is None): scan_merge.append(obs.scans)
+        if not (scan_merge is None):
+            scan_merge.append(obs.scans)
     scan_merge = np.hstack(scan_merge)
 
     mergeobs = Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge,
-                       np.unique(np.concatenate([obs.tarr for obs in obs_List])), 
-                       polrep=obs_List[0].polrep, scantable=scan_merge,
+                       np.unique(np.concatenate([obs.tarr for obs in obs_List])), scantable=scan_merge,
                        source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal,
-                       phasecal=obs_List[0].phasecal, opacitycal=obs_List[0].opacitycal, 
+                       phasecal=obs_List[0].phasecal, opacitycal=obs_List[0].opacitycal,
                        dcal=obs_List[0].dcal, frcal=obs_List[0].frcal,
                        timetype=obs_List[0].timetype)
 
     return mergeobs
 
-def load_txt(fname, polrep='stokes'):
+def load_txt(fname):
 
     """Read an observation from a text file.
 
        Args:
            fname (str): path to input text file
-           polrep (str): load data as either 'stokes' or 'polprod_circ'
-
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_txt(fname, polrep=polrep)
+    return ehtim.io.load.load_obs_txt(fname)
 
-def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, polrep='stokes'):
+def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all):
 
     """Load observation data from a uvfits file.
 
        Args:
            fname (str): path to input text file
            flipbl (bool): flip baseline phases if True.
-           polrep (str): load data as either 'stokes' or 'polprod_circ'
            force_singlepol (str): 'R' or 'L' to load only 1 polarization
            channel (list): list of channels to average in the import. channel=all averages all channels
            IF (list): list of IFs to  average in  the import. IF=all averages all IFS
@@ -3108,7 +3235,7 @@ def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, 
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF)
 
 def load_oifits(fname, flux=1.0):
 
@@ -3142,5 +3269,5 @@ def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEF
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile, 
+    return ehtim.io.load.load_obs_maps(arrfile, obsspec, ifile, qfile=qfile, ufile=ufile, vfile=vfile,
                                        src=src, mjd=mjd, ampcal=ampcal, phasecal=phasecal)

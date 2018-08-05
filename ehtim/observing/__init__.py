@@ -7,6 +7,5 @@
 
 """
 from . import pulses
-#from . import jdcal
 from . import obs_helpers
 from . import obs_simulate

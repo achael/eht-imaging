@@ -132,7 +132,6 @@ def save_im_fits(im, fname, mjd=False, time=False):
         header['STOKES'] = 'U'
         hduu = fits.ImageHDU(uimage, name='U', header=header)
         hdulist = [hdu, hduq, hduu]
-
     if len(im.vvec):
         vimage = np.reshape(im.vvec,(im.xdim,im.ydim))[::-1,:]
         header['STOKES'] = 'V'
@@ -216,6 +215,7 @@ def save_mov_txt(mov, fname):
 ##################################################################################################
 # Array IO
 ##################################################################################################
+
 def save_array_txt(arr, fname):
     """Save the array data in a text file.
     """
@@ -248,7 +248,6 @@ def save_obs_txt(obs, fname):
     outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
                            'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
                            'sigma', 'qsigma', 'usigma', 'vsigma'])
-
     head = ("SRC: %s \n" % obs.source +
                 "RA: " + rastring(obs.ra) + "\n" + "DEC: " + decstring(obs.dec) + "\n" +
                 "MJD: %i \n" % obs.mjd +
@@ -287,7 +286,6 @@ def save_obs_txt(obs, fname):
     fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %16.4f %16.4f    "+
            "%10.8f %10.4f   %10.8f %10.4f    %10.8f %10.4f    %10.8f %10.4f    "+
            "%10.8f    %10.8f    %10.8f    %10.8f")
-
     np.savetxt(fname, outdata, header=head, fmt=fmts)
     return
 
@@ -382,8 +380,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     header['history'] = "AIPS SORT ORDER='TB'"
 
     # Get data
-    obsdata = obs.unpack(['time','tint','u','v','vis','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma','t1','t2','tau1','tau2'])
-    #obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
+    obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
     ndat = len(obsdata['time'])
 
     # times and tints
@@ -409,25 +406,15 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     v = obsdata['v']
 
     # rr, ll, lr, rl, weights
-#    rr = obsdata['vis'] + obsdata['vvis']
-#    ll = obsdata['vis'] - obsdata['vvis']
-#    rl = obsdata['qvis'] + 1j*obsdata['uvis']
-#    lr = obsdata['qvis'] - 1j*obsdata['uvis']
+    rr = obsdata['vis'] + obsdata['vvis']
+    ll = obsdata['vis'] - obsdata['vvis']
+    rl = obsdata['qvis'] + 1j*obsdata['uvis']
+    lr = obsdata['qvis'] - 1j*obsdata['uvis']
 
-#    weightrr = 1.0/(obsdata['sigma']**2 + obsdata['vsigma']**2)
-#    weightll = 1.0/(obsdata['sigma']**2 + obsdata['vsigma']**2)
-#    weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
-#    weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
-
-    rr = obsdata['rrvis']
-    ll = obsdata['llvis']
-    rl = obsdata['rlvis']
-    lr = obsdata['lrvis']
-
-    weightrr = 1.0/(obsdata['rrsigma']**2)
-    weightll = 1.0/(obsdata['llsigma']**2)
-    weightrl = 1.0/(obsdata['rlsigma']**2)
-    weightlr = 1.0/(obsdata['lrsigma']**2)
+    weightrr = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
+    weightll = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
+    weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
+    weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
 
     # If necessary, enforce single polarization
     if force_singlepol == 'L':
@@ -494,6 +481,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     colfin = fits.Column(name='SEFD', format='1D', array=sefd)
 
     #TODO these antenna fields+header are questionable - look into them
+
     col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
     col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
     col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['R' for i in range(nsta)], dtype='|S1'))
@@ -517,6 +505,12 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     head['ARRAYY'] = 0.e0
     head['ARRAYZ'] = 0.e0
 
+    # TODO change the reference date
+    #rdate_out = '2000-01-01T00:00:00.0'
+    #rdate_gstiao_out = 114.38389781355
+    #rdate_offset_out = 0.e0
+
+
     rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
     rdate_out = rdate_tt_new.iso
     rdate_jd_out = rdate_tt_new.jd
@@ -534,6 +528,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     head['FREQ']= obs.rf
     head['POLARX'] = 0.e0
     head['POLARY'] = 0.e0
+
 
     head['ARRNAM'] = 'VLBA'  # TODO must be recognized by aips/casa
     head['XYZHAND'] = 'RIGHT'
@@ -585,60 +580,60 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     ROUND_SCAN_INT = 5
     comp_fac = 3600*24*100 # compare to 100th of a second
     scan_arr = obs.scans
-
+    print ('Building NX table')
     if (scan_arr is None):
         print ("No NX table in saved uvfits")
     else:
-        print ('Building NX table')
-        scan_arr = scan_arr/24.
-        for scan in  scan_arr:
-            scan_start = round(scan[0], ROUND_SCAN_INT)
-            scan_stop = round(scan[1], ROUND_SCAN_INT)
-            scan_dur = (scan_stop - scan_start)
+        try: 
+            scan_arr = scan_arr/24.
+            for scan in  scan_arr:
+                scan_start = round(scan[0], ROUND_SCAN_INT)
+                scan_stop = round(scan[1], ROUND_SCAN_INT)
+                scan_dur = (scan_stop - scan_start)
 
-            if jj>=len(fractimes):
-                #print start_vis, stop_vis
-                break
+                if jj>=len(fractimes):
+                    #print start_vis, stop_vis
+                    break
 
-            print ("%.12f %.12f %.12f" % (fractimes[jj], scan_start, scan_stop)) 
-            jd = round(fractimes[jj], ROUND_SCAN_INT)*comp_fac # ANDREW TODO precision??   
+                print ("%.12f %.12f %.12f" % (fractimes[jj], scan_start, scan_stop)) 
+                jd = round(fractimes[jj], ROUND_SCAN_INT)*comp_fac # ANDREW TODO precision??   
 
-            if (np.floor(jd) >= np.floor(scan_start*comp_fac)) and (np.ceil(jd) <= np.ceil(comp_fac*scan_stop)):
-                start_vis.append(jj)
+                if (np.floor(jd) >= np.floor(scan_start*comp_fac)) and (np.ceil(jd) <= np.ceil(comp_fac*scan_stop)):
+                    start_vis.append(jj)
 
-                # TODO AIPS MEMO 117 says scan_times should be midpoint!, but AIPS data looks likes it's at the start? 
-                scan_times.append(scan_start + 0.5*scan_dur)# - rdate_jd_out)
-                scan_time_ints.append(scan_dur)
-                while (jj < len(fractimes) and np.floor(round(fractimes[jj],ROUND_SCAN_INT)*comp_fac) <= np.ceil(comp_fac*scan_stop)):
-                    jj += 1
-                stop_vis.append(jj-1)
-            else: 
-                continue
+                    # TODO AIPS MEMO 117 says scan_times should be midpoint!, but AIPS data looks likes it's at the start? 
+                    scan_times.append(scan_start + 0.5*scan_dur)# - rdate_jd_out)
+                    scan_time_ints.append(scan_dur)
+                    while (jj < len(fractimes) and np.floor(round(fractimes[jj],ROUND_SCAN_INT)*comp_fac) <= np.ceil(comp_fac*scan_stop)):
+                        jj += 1
+                    stop_vis.append(jj-1)
+                else: 
+                    continue
 
-        if jj < len(fractimes):
-            print (scan_arr[-1])
-            print (round(scan_arr[-1][0],ROUND_SCAN_INT),round(scan_arr[-1][1],ROUND_SCAN_INT))
-            print (jj, len(jds), round(jds[jj], ROUND_SCAN_INT))
-            print("WARNING!!!: in save_uvfits NX table, didn't get to all entries when computing scan start/stop!")
-            print (scan_times)
+            if jj < len(fractimes):
+                print (scan_arr[-1])
+                print (round(scan_arr[-1][0],ROUND_SCAN_INT),round(scan_arr[-1][1],ROUND_SCAN_INT))
+                print (jj, len(jds), round(jds[jj], ROUND_SCAN_INT))
+                print("WARNING!!!: in save_uvfits NX table, didn't get to all entries when computing scan start/stop!")
+                print (scan_times)
+            time_nx = fits.Column(name="TIME", format="1D", unit='DAYS', array=np.array(scan_times))
+            timeint_nx = fits.Column(name="TIME INTERVAL", format="1E", unit='DAYS', array=np.array(scan_time_ints))
+            sourceid_nx = fits.Column(name="SOURCE ID",format="1J", unit='', array=np.ones(len(scan_times)))
+            subarr_nx = fits.Column(name="SUBARRAY",format="1J", unit='', array=np.ones(len(scan_times)))
+            freqid_nx = fits.Column(name="FREQ ID",format="1J", unit='', array=np.ones(len(scan_times)))
+            startvis_nx = fits.Column(name="START VIS",format="1J", unit='', array=np.array(start_vis)+1)
+            endvis_nx = fits.Column(name="END VIS",format="1J", unit='', array=np.array(stop_vis)+1)
+            cols = fits.ColDefs([time_nx, timeint_nx, sourceid_nx, subarr_nx, freqid_nx, startvis_nx, endvis_nx])
 
-        time_nx = fits.Column(name="TIME", format="1D", unit='DAYS', array=np.array(scan_times))
-        timeint_nx = fits.Column(name="TIME INTERVAL", format="1E", unit='DAYS', array=np.array(scan_time_ints))
-        sourceid_nx = fits.Column(name="SOURCE ID",format="1J", unit='', array=np.ones(len(scan_times)))
-        subarr_nx = fits.Column(name="SUBARRAY",format="1J", unit='', array=np.ones(len(scan_times)))
-        freqid_nx = fits.Column(name="FREQ ID",format="1J", unit='', array=np.ones(len(scan_times)))
-        startvis_nx = fits.Column(name="START VIS",format="1J", unit='', array=np.array(start_vis)+1)
-        endvis_nx = fits.Column(name="END VIS",format="1J", unit='', array=np.array(stop_vis)+1)
-        cols = fits.ColDefs([time_nx, timeint_nx, sourceid_nx, subarr_nx, freqid_nx, startvis_nx, endvis_nx])
+            tbhdu = fits.BinTableHDU.from_columns(cols)
+         
+            # header information
+            tbhdu.header.append(("EXTNAME","AIPS NX"))
+            tbhdu.header.append(("EXTVER",1))
 
-        tbhdu = fits.BinTableHDU.from_columns(cols)
-     
-        # header information
-        tbhdu.header.append(("EXTNAME","AIPS NX"))
-        tbhdu.header.append(("EXTVER",1))
-
-        hdulist_new.append(tbhdu) 
-
+            hdulist_new.append(tbhdu) 
+        except TypeError:
+            print ("No NX table in saved uvfits")
     # Write final HDUList to file
     #hdulist.writeto(fname, overwrite=True)
     hdulist_new.writeto(fname, overwrite=True)
@@ -663,7 +658,7 @@ def save_obs_oifits(obs, fname, flux=1.0):
     biarr = obs.bispectra(mode="all", count="min")
 
     # extract the telescope names and parameters
-    antennaNames = obs.tarr['site'] #np.array(obs.tkey.keys())
+    antennaNames = obs.tarr['site'] 
     sefd = obs.tarr['sefdr']
     antennaX = obs.tarr['x']
     antennaY = obs.tarr['y']

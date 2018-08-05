@@ -148,7 +148,7 @@ class Imager(object):
         """
 
         self._embed_mask = self.prior_next.imvec > self.clipfloor_next
-        if np.any(~self._embed_mask):
+        if not np.any(self._embed_mask):
             raise Exception("clipfloor_next too large: all prior pixels have been clipped!")
 
         coord = np.array([[[x,y] for x in np.arange(self.prior_next.xdim//2,-self.prior_next.xdim//2,-1)]
@@ -440,7 +440,7 @@ class Imager(object):
             if self.nruns>0:
                 print("Recomputing imager data products . . .")
             self._data_tuples = {}
-            for dname in list(self.dat_term_next.keys()):
+            for dname in sorted(self.dat_term_next.keys()):
                 tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
                                 debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
                                 systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
@@ -816,7 +816,7 @@ class Imager(object):
         else: xinit = self._ninit_I
         self._nit = 0
 
-        # Print stats
+        # Print initial stats
 
         self._show_updates=kwargs.get('show_updates',True)
         self._update_interval=kwargs.get('update_interval',1)
@@ -824,7 +824,7 @@ class Imager(object):
         self.plotcur(xinit, **kwargs)
 
         # Minimize
-        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next,
+        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next,# 'gtol':self.stop_next,
                    'maxcor':NHIST, 'maxls':MAXLS}
         tstart = time.time()
         if grads:
@@ -836,8 +836,28 @@ class Imager(object):
         tstop = time.time()
 
         # Format output
-        out = res.x
-        if self.transform_next == 'log': out = np.exp(res.x)
+        print ("DONE")
+        out = res.x[:]
+        self.tmpout = res.x
+        #return
+
+
+
+        if self.transform_next == 'log': out = np.exp(out)
+
+        # Print final stats
+        outstr = ""
+        chi2_term_dict = self.make_chisq_dict(out)
+        for dname in sorted(self.dat_term_next.keys()):
+            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
+
+        print("time: %f s" % (tstop - tstart))
+        print("J: %f" % res.fun)
+        print(outstr)
+        print(res.message.decode())
+        print("==============================")
+
+        # return image
         if np.any(np.invert(self._embed_mask)): out = embed(out, self._embed_mask)
 
         outim = image.Image(out.reshape(self.prior_next.ydim, self.prior_next.xdim),
@@ -852,17 +872,6 @@ class Imager(object):
             outim.add_qu(qvec.reshape(self.prior_next.ydim, self.prior_next.xdim),
                          uvec.reshape(self.prior_next.ydim, self.prior_next.xdim))
 
-        # Print stats
-        outstr = ""
-        chi2_term_dict = self.make_chisq_dict(out)
-        for dname in sorted(self.dat_term_next.keys()):
-            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
-
-        print("time: %f s" % (tstop - tstart))
-        print("J: %f" % res.fun)
-        print(outstr)
-        print(res.message.decode())
-        print("==============================")
 
         # Append to history
         logstr = str(self.nruns) + ": make_image_I()" #TODO - what should the log string be?

@@ -66,13 +66,6 @@ DTPOL = [('time','f8'),('tint','f8'),
          ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
          ('sigma','f8'),('qsigma','f8'),('usigma','f8'),('vsigma','f8')]
 
-DTPOL2 = [('time','f8'),('tint','f8'),
-         ('t1','U32'),('t2','U32'),
-         ('tau1','f8'),('tau2','f8'),
-         ('u','f8'),('v','f8'),
-         ('rrvis','c16'),('llvis','c16'),('rlvis','c16'),('lrvis','c16'),
-         ('rrsigma','f8'),('llsigma','f8'),('rlsigma','f8'),('lrsigma','f8')]
-
 DTBIS = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),
          ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
          ('bispec','c16'),('sigmab','f8')]
@@ -90,10 +83,7 @@ DTCAL = [('time','f8'), ('rscale','c16'), ('lscale','c16')]
 
 DTSCANS = [('time','f8'),('interval','f8'),('startvis','f8'),('endvis','f8')]
 
-POLDICT_STOKES = {'vis1': 'vis', 'vis2': 'qvis', 'vis3': 'uvis', 'vis4': 'vvis', 
-                  'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma4': 'vsigma'} 
-POLDICT_PRODC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis', 
-                  'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'} 
+
 # Observation fields for plotting and retrieving data
 FIELDS = ['time','time_utc','time_gmst',
           'tint','u','v','uvdist',
@@ -126,23 +116,21 @@ FIELD_LABELS = {'time':'Time','time_utc':'Time (UTC)','time_gmst':'Time (GMST)',
           'qvis':'Q-Visibility','qamp':'Q-Amplitude','qphase':'Q-Phase','qsnr':'Q-SNR',
           'uvis':'U-Visibility','uamp':'U-Amplitude','uphase':'U-Phase','usnr':'U-SNR',
           'vvis':'V-Visibility','vamp':'V-Amplitude','vphase':'V-Phase','vsnr':'V-SNR',
-          'sigma':r'$\sigma$',
-          'qsigma':r'$\sigma_{Q}$',
-          'usigma':r'$\sigma_{U}$',
-          'vsigma':r'$\sigma_{V}$',
-          'sigma_phase':r'$\sigma_{phase}$','qsigma_phase':r'$\sigma_{Q phase}$',
-          'usigma_phase':r'$\sigma_{U phase}$','vsigma_phase':r'$\sigma_{V phase}$',
-          'psigma_phase':r'$\sigma_{P phase}$','msigma_phase':r'$\sigma_{m phase}$',
+          'sigma':r'$\sigma$','qsigma':r'$\sigma_\text{Q}$','usigma':r'$\sigma_\text{U}$',
+          'vsigma':r'$\sigma_\text{V}$',
+          'sigma_phase':r'$\sigma_\text{phase}$','qsigma_phase':r'$\sigma_\text{Q phase}$',
+          'usigma_phase':r'$\sigma_\text{U phase}$','vsigma_phase':r'$\sigma_\text{V phase}$',
+          'psigma_phase':r'$\sigma_\text{P phase}$','msigma_phase':r'$\sigma_\text{m phase}$',
           'pvis':r'P-Visibility','pamp':r'P-Amplitude','pphase':'P-Phase','psnr':'P-SNR',
           'mvis':r'm-Visibility','mamp':r'm-Amplitude','mphase':'m-Phase','msnr':'m-SNR',
           'rrvis':r'RR-Visibility','rramp':r'RR-Amplitude','rrphase':'RR-Phase','rrsnr':'RR-SNR',
-          'rrsigma':r'$\sigma_{RR}$','rrsigma_phase':r'$\sigma_{RR phase}$',
+          'rrsigma':r'$\sigma_\text{RR}$','rrsigma_phase':r'$\sigma_\text{RR phase}$',
           'llvis':r'LL-Visibility','llamp':r'LL-Amplitude','llphase':'LL-Phase','llsnr':'LL-SNR',
-          'llsigma':r'$\sigma_{LL}$','llsigma_phase':r'$\sigma_{LL phase}$',
+          'llsigma':r'$\sigma_\text{LL}$','llsigma_phase':r'$\sigma_\text{LL phase}$',
           'rlvis':r'RL-Visibility','rlamp':r'RL-Amplitude','rlphase':'RL-Phase','rlsnr':'RL-SNR',
-          'rlsigma':r'$\sigma_{RL}$','rlsigma_phase':r'$\sigma_{RL phase}$',
+          'rlsigma':r'$\sigma_\text{RL}$','rlsigma_phase':r'$\sigma_\text{RL phase}$',
           'lrvis':r'LR-Visibility','lramp':r'LR-Amplitude','lrphase':'LR-Phase','lrsnr':'LR-SNR',
-          'lrsigma':r'$\sigma_{LR}$','lrsigma_phase':r'$\sigma_{LR phase}$'}
+          'lrsigma':r'$\sigma_\text{LR}$','lrsigma_phase':r'$\sigma_\text{LR phase}$'}
 
 #Seaborn Colors from Maciek
 #['dodgerblue','tomato','blueviolet','olivedrab','orange','saddlebrown','mediumblue','red','cyan','magenta','darkgreen','tan','k']

@@ -35,8 +35,9 @@ import copy
 import sys
 import os
 
-import ehtim.const_def 
+import ehtim.const_def
 from ehtim.const_def import *
+
 
 import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
@@ -46,6 +47,8 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 ##################################################################################################
 
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC', elevmin=ELEV_LOW,  elevmax=ELEV_HIGH, fix_theta_GMST = False):
+    """Compute u,v coordinates for an array at a given time for a source at a given ra,dec,rf
+    """
 
     if not isinstance(time, np.ndarray): time = np.array([time]).flatten()
     if not isinstance(site1, np.ndarray): site1 = np.array([site1]).flatten()
@@ -86,7 +89,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     coord1 = np.vstack((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z'])).T
     coord2 = np.vstack((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z'])).T
 
-    # TODO SPEED UP!??
+    # TODO speed up?
     # use spacecraft ephemeris to get position of site 1
     spacemask1 = [np.all(coord == (0.,0.,0.)) for coord in coord1]
     if np.any(spacemask1):
@@ -153,118 +156,63 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     # return times and uv points where we have  data
     return (time, u, v)
 
-def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
+def make_bispectrum(l1, l2, l3, vtype):
     """make a list of bispectra and errors
        l1,l2,l3 are full datatables of visibility entries
        vtype is visibility types
     """
+
     # Choose the appropriate polarization and compute the bs and err
-    if polrep=='stokes':
-        if vtype in ["vis", "qvis", "uvis","vvis"]:
-            if vtype=='vis':  sigmatype='sigma'
-            if vtype=='qvis': sigmatype='qsigma'
-            if vtype=='uvis': sigmatype='usigma'
-            if vtype=='vvis': sigmatype='vsigma'
+    if vtype in ["vis", "qvis", "uvis","vvis"]:
+        if vtype=='vis':  sigmatype='sigma'
+        if vtype=='qvis': sigmatype='qsigma'
+        if vtype=='uvis': sigmatype='usigma'
+        if vtype=='vvis': sigmatype='vsigma'
 
-            p1 = l1[vtype]
-            p2 = l2[vtype]
-            p3 = l3[vtype]
+        p1 = l1[vtype]
+        p2 = l2[vtype]
+        p3 = l3[vtype]
 
-            var1 = l1[sigmatype]**2
-            var2 = l2[sigmatype]**2
-            var3 = l3[sigmatype]**2
+        var1 = l1[sigmatype]**2
+        var2 = l2[sigmatype]**2
+        var3 = l3[sigmatype]**2
 
-        elif vtype == "rrvis":
-            p1 = l1['vis'] + l1['vvis']
-            p2 = l2['vis'] + l2['vvis']
-            p3 = l3['vis'] + l3['vvis']
+    elif vtype == "rrvis":
+        p1 = l1['vis'] + l1['vvis']
+        p2 = l2['vis'] + l2['vvis']
+        p3 = l3['vis'] + l3['vvis']
 
-            var1 = l1['sigma']**2 + l1['vsigma']**2
-            var2 = l2['sigma']**2 + l2['vsigma']**2
-            var3 = l3['sigma']**2 + l3['vsigma']**2
+        var1 = l1['sigma']**2 + l1['vsigma']**2
+        var2 = l2['sigma']**2 + l2['vsigma']**2
+        var3 = l3['sigma']**2 + l3['vsigma']**2
 
-        elif vtype == "llvis":
-            p1 = l1['vis'] - l1['vvis']
-            p2 = l2['vis'] - l2['vvis']
-            p3 = l3['vis'] - l3['vvis']
+    elif vtype == "llvis":
+        p1 = l1['vis'] - l1['vvis']
+        p2 = l2['vis'] - l2['vvis']
+        p3 = l3['vis'] - l3['vvis']
 
-            var1 = l1['sigma']**2 + l1['vsigma']**2
-            var2 = l2['sigma']**2 + l2['vsigma']**2
-            var3 = l3['sigma']**2 + l3['vsigma']**2
+        var1 = l1['sigma']**2 + l1['vsigma']**2
+        var2 = l2['sigma']**2 + l2['vsigma']**2
+        var3 = l3['sigma']**2 + l3['vsigma']**2
 
-        elif vtype == "lrvis":
-            p1 = l1['qvis'] - 1j*l1['uvis']
-            p2 = l2['qvis'] - 1j*l2['uvis']
-            p3 = l3['qvis'] - 1j*l3['uvis']
+    elif vtype == "lrvis":
+        p1 = l1['qvis'] - 1j*l1['uvis']
+        p2 = l2['qvis'] - 1j*l2['uvis']
+        p3 = l3['qvis'] - 1j*l3['uvis']
 
-            var1 = l1['qsigma']**2 + l1['usigma']**2
-            var2 = l2['qsigma']**2 + l2['usigma']**2
-            var3 = l3['qsigma']**2 + l3['usigma']**2
+        var1 = l1['qsigma']**2 + l1['usigma']**2
+        var2 = l2['qsigma']**2 + l2['usigma']**2
+        var3 = l3['qsigma']**2 + l3['usigma']**2
 
+    elif vtype in ["pvis","rlvis"]:
+        p1 = l1['qvis'] + 1j*l2['uvis']
+        p2 = l2['qvis'] + 1j*l2['uvis']
+        p3 = l3['qvis'] + 1j*l3['uvis']
+        bi = p1 * p2 * p3
 
-        elif vtype in ["pvis","rlvis"]:
-            p1 = l1['qvis'] + 1j*l1['uvis']
-            p2 = l2['qvis'] + 1j*l2['uvis']
-            p3 = l3['qvis'] + 1j*l3['uvis']
-
-            var1 = l1['qsigma']**2 + l1['usigma']**2
-            var2 = l2['qsigma']**2 + l2['usigma']**2
-            var3 = l3['qsigma']**2 + l3['usigma']**2
-
-    elif polrep=='polprod_circ':
-        if vtype in ["rrvis", "llvis", "rlvis","lrvis",'pvis']:
-            if vtype=='pvis': vtype='rlvis'
-
-            if vtype=='rrvis': sigmatype='rrsigma'
-            if vtype=='llvis': sigmatype='llsigma'
-            if vtype=='rlvis': sigmatype='rlsigma'
-            if vtype=='lrvis': sigmatype='lrsigma'
-
-            p1 = l1[vtype]
-            p2 = l2[vtype]
-            p3 = l3[vtype]
-
-            var1 = l1[sigmatype]**2
-            var2 = l2[sigmatype]**2
-            var3 = l3[sigmatype]**2
-
-        elif vtype == "vis":
-            p1 = 0.5*(l1['rrvis'] + l1['llvis'])
-            p2 = 0.5*(l2['rrvis'] + l2['llvis'])
-            p3 = 0.5*(l3['rrvis'] + l3['llvis'])
-
-            var1 = 0.25*(l1['rrsigma']**2 + l1['llsigma']**2)
-            var2 = 0.25*(l2['rrsigma']**2 + l2['llsigma']**2)
-            var3 = 0.25*(l3['rrsigma']**2 + l3['llsigma']**2)
-
-        elif vtype == "vvis":
-            p1 = 0.5*(l1['rrvis'] - l1['llvis'])
-            p2 = 0.5*(l2['rrvis'] - l2['llvis'])
-            p3 = 0.5*(l3['rrvis'] - l3['llvis'])
-
-            var1 = 0.25*(l1['rrsigma']**2 + l1['llsigma']**2)
-            var2 = 0.25*(l2['rrsigma']**2 + l2['llsigma']**2)
-            var3 = 0.25*(l3['rrsigma']**2 + l3['llsigma']**2)
-
-        elif vtype == "qvis":
-            p1 = 0.5*(l1['lrvis'] + l1['rlvis'])
-            p2 = 0.5*(l2['lrvis'] + l2['rlvis'])
-            p3 = 0.5*(l3['lrvis'] + l3['rlvis'])
-
-            var1 = 0.25*(l1['lrsigma']**2 + l1['rlsigma']**2)
-            var2 = 0.25*(l2['lrsigma']**2 + l2['rlsigma']**2)
-            var3 = 0.25*(l3['lrsigma']**2 + l3['rlsigma']**2)
-
-        elif vtype == "uvis":
-            p1 = 0.5j*(l1['lrvis'] - l1['rlvis'])
-            p2 = 0.5j*(l2['lrvis'] - l2['rlvis'])
-            p3 = 0.5j*(l3['lrvis'] - l3['rlvis'])
-
-            var1 = 0.25*(l1['lrsigma']**2 + l1['rlsigma']**2)
-            var2 = 0.25*(l2['lrsigma']**2 + l2['rlsigma']**2)
-            var3 = 0.25*(l3['lrsigma']**2 + l3['rlsigma']**2)
-    else:
-        raise Exception("only 'stokes' and 'polprod_circ' are supported polreps!")
+        var1 = l1['qsigma']**2 + l1['usigma']**2
+        var2 = l2['qsigma']**2 + l2['usigma']**2
+        var3 = l3['qsigma']**2 + l3['usigma']**2
 
     bi = p1*p2*p3
     bisig = np.abs(bi) * np.sqrt(var1/np.abs(p1)**2 +
@@ -273,156 +221,89 @@ def make_bispectrum(l1, l2, l3, vtype, polrep='stokes'):
 
     return (bi, bisig)
 
-#TODO: debiasing strategy?? 
-def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias=True, polrep='stokes'):
+
+def make_closure_amplitude(blue1, blue2, red1, red2, vtype, ctype='camp', debias=True):
     """make a list of closure amplitudes and errors
-       red1 and red2 are full datatables of denominator entries
        blue1 and blue2 are full datatables numerator entries
+       red1 and red2 are full datatables of denominator entries
        vtype is the  visibility type
-       we always debias the individual amplitudes
-       debias controls if we debias the closure amplitude at the end
-       exact debiasing in log space, it will turn off any debiasing in 'amp_debias',
-       and apply debiasing only to closure quantities
     """
 
     if not (ctype in ['camp', 'logcamp']):
         raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
 
-    # Choose the appropriate polarization and compute the bs and err
-    if polrep=='stokes':
+    # get visibility of correct data type
+    if vtype in ["vis", "qvis", "uvis", "vvis"]:
+        if vtype=='vis':  sigmatype='sigma'
+        if vtype=='qvis': sigmatype='qsigma'
+        if vtype=='uvis': sigmatype='usigma'
+        if vtype=='vvis': sigmatype='vsigma'
 
-        if vtype in ["vis", "qvis", "uvis", "vvis"]:
-            if vtype=='vis':  sigmatype='sigma'
-            if vtype=='qvis': sigmatype='qsigma'
-            if vtype=='uvis': sigmatype='usigma'
-            if vtype=='vvis': sigmatype='vsigma'
+        sig1 = blue1[sigmatype]
+        sig2 = blue2[sigmatype]
+        sig3 = red1[sigmatype]
+        sig4 = red2[sigmatype]
 
-            sig1 = blue1[sigmatype]
-            sig2 = blue2[sigmatype]
-            sig3 = red1[sigmatype]
-            sig4 = red2[sigmatype]
+        p1 = np.abs(blue1[vtype])
+        p2 = np.abs(blue2[vtype])
+        p3 = np.abs(red1[vtype])
+        p4 = np.abs(red2[vtype])
 
-            p1 = np.abs(blue1[vtype])
-            p2 = np.abs(blue2[vtype])
-            p3 = np.abs(red1[vtype])
-            p4 = np.abs(red2[vtype])
+    elif vtype == "rrvis":
+        sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
+        sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
+        sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
+        sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
 
-        elif vtype == "rrvis":
-            sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
-            sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
-            sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
-            sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
+        p1 = np.abs(blue1['vis'] + blue1['vvis'])
+        p2 = np.abs(blue2['vis'] + blue2['vvis'])
+        p3 = np.abs(red1['vis'] + red1['vvis'])
+        p4 = np.abs(red2['vis'] + red2['vvis'])
 
-            p1 = np.abs(blue1['vis'] + blue1['vvis'])
-            p2 = np.abs(blue2['vis'] + blue2['vvis'])
-            p3 = np.abs(red1['vis'] + red1['vvis'])
-            p4 = np.abs(red2['vis'] + red2['vvis'])
+    elif vtype == "llvis":
+        sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
+        sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
+        sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
+        sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
 
-        elif vtype == "llvis":
-            sig1 = np.sqrt(blue1['sigma']**2 + blue1['vsigma']**2)
-            sig2 = np.sqrt(blue2['sigma']**2 + blue2['vsigma']**2)
-            sig3 = np.sqrt(red1['sigma']**2 + red1['vsigma']**2)
-            sig4 = np.sqrt(red2['sigma']**2 + red2['vsigma']**2)
+        p1 = np.abs(blue1['vis'] - blue1['vvis'])
+        p2 = np.abs(blue2['vis'] - blue2['vvis'])
+        p3 = np.abs(red1['vis'] - red1['vvis'])
+        p4 = np.abs(red2['vis'] - red2['vvis'])
 
-            p1 = np.abs(blue1['vis'] - blue1['vvis'])
-            p2 = np.abs(blue2['vis'] - blue2['vvis'])
-            p3 = np.abs(red1['vis'] - red1['vvis'])
-            p4 = np.abs(red2['vis'] - red2['vvis'])
+    elif vtype == "lrvis":
+        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
 
-        elif vtype == "lrvis":
-            sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
-            sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
-            sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
-            sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
+        p1 = np.abs(blue1['qvis'] - 1j*blue1['uvis'])
+        p2 = np.abs(blue2['qvis'] - 1j*blue2['uvis'])
+        p3 = np.abs(red1['qvis'] - 1j*red1['uvis'])
+        p4 = np.abs(red2['qvis'] - 1j*red2['uvis'])
 
-            p1 = np.abs(blue1['qvis'] - 1j*blue1['uvis'])
-            p2 = np.abs(blue2['qvis'] - 1j*blue2['uvis'])
-            p3 = np.abs(red1['qvis'] - 1j*red1['uvis'])
-            p4 = np.abs(red2['qvis'] - 1j*red2['uvis'])
+    elif vtype in ["pvis","rlvis"]:
+        sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
+        sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
+        sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
+        sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
 
-        elif vtype in ["pvis","rlvis"]:
-            sig1 = np.sqrt(blue1['qsigma']**2 + blue1['usigma']**2)
-            sig2 = np.sqrt(blue2['qsigma']**2 + blue2['usigma']**2)
-            sig3 = np.sqrt(red1['qsigma']**2 + red1['usigma']**2)
-            sig4 = np.sqrt(red2['qsigma']**2 + red2['usigma']**2)
-
-            p1 = np.abs(blue1['qvis'] + 1j*blue1['uvis'])
-            p2 = np.abs(blue2['qvis'] + 1j*blue2['uvis'])
-            p3 = np.abs(red1['qvis'] + 1j*red1['uvis'])
-            p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
-
-    elif polrep=='polprod_circ':
-        if vtype in ["rrvis", "llvis", "rlvis","lrvis",'pvis']:
-            if vtype=='pvis': vtype='rlvis' # p = rl
-
-            if vtype=='rrvis': sigmatype='rrsigma'
-            if vtype=='llvis': sigmatype='llsigma'
-            if vtype=='rlvis': sigmatype='rlsigma'
-            if vtype=='lrvis': sigmatype='lrsigma'
-
-            sig1 = blue1[sigmatype]
-            sig2 = blue2[sigmatype]
-            sig3 = red1[sigmatype]
-            sig4 = red2[sigmatype]
-
-            p1 = np.abs(blue1[vtype])
-            p2 = np.abs(blue2[vtype])
-            p3 = np.abs(red1[vtype])
-            p4 = np.abs(red2[vtype])
-
-        elif vtype == "vis":
-            sig1 = 0.5*np.sqrt(blue1['rrsigma']**2 + blue1['llsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['rrsigma']**2 + blue2['llsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['rrsigma']**2 + red1['llsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['rrsigma']**2 + red2['llsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['rrvis'] + blue1['llvis'])
-            p2 = 0.5*np.abs(blue2['rrvis'] + blue2['llvis'])
-            p3 = 0.5*np.abs(red1['rrvis'] + red1['llvis'])
-            p4 = 0.5*np.abs(red2['rrvis'] + red2['llvis'])
-
-        elif vtype == "vvis":
-            sig1 = 0.5*np.sqrt(blue1['rrsigma']**2 + blue1['llsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['rrsigma']**2 + blue2['llsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['rrsigma']**2 + red1['llsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['rrsigma']**2 + red2['llsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['rrvis'] - blue1['llvis'])
-            p2 = 0.5*np.abs(blue2['rrvis'] - blue2['llvis'])
-            p3 = 0.5*np.abs(red1['rrvis'] - red1['llvis'])
-            p4 = 0.5*np.abs(red2['rrvis'] - red2['llvis'])
-
-        elif vtype == "qvis":
-            sig1 = 0.5*np.sqrt(blue1['lrsigma']**2 + blue1['rlsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['lrsigma']**2 + blue2['rlsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['lrsigma']**2 + red1['rlsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['lrsigma']**2 + red2['rlsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['lrvis'] + blue1['rlvis'])
-            p2 = 0.5*np.abs(blue2['lrvis'] + blue2['rlvis'])
-            p3 = 0.5*np.abs(red1['lrvis'] + red1['rlvis'])
-            p4 = 0.5*np.abs(red2['lrvis'] + red2['rlvis'])
-
-        elif vtype == "uvis":
-            sig1 = 0.5*np.sqrt(blue1['lrsigma']**2 + blue1['rlsigma']**2)
-            sig2 = 0.5*np.sqrt(blue2['lrsigma']**2 + blue2['rlsigma']**2)
-            sig3 = 0.5*np.sqrt(red1['lrsigma']**2 + red1['rlsigma']**2)
-            sig4 = 0.5*np.sqrt(red2['lrsigma']**2 + red2['rlsigma']**2)
-
-            p1 = 0.5*np.abs(blue1['lrvis'] - blue1['rlvis'])
-            p2 = 0.5*np.abs(blue2['lrvis'] - blue2['rlvis'])
-            p3 = 0.5*np.abs(red1['lrvis'] - red1['rlvis'])
-            p4 = 0.5*np.abs(red2['lrvis'] - red2['rlvis'])
-    else:
-        raise Exception("only 'stokes' and 'polprod_circ' are supported polreps!")
-
+        p1 = np.abs(blue1['qvis'] + 1j*blue1['uvis'])
+        p2 = np.abs(blue2['qvis'] + 1j*blue2['uvis'])
+        p3 = np.abs(red1['qvis'] + 1j*red1['uvis'])
+        p4 = np.abs(red2['qvis'] + 1j*red2['uvis'])
 
     # debias
-    p1 = amp_debias(p1, sig1, actually_debias=debias, force_nonzero=True)
-    p2 = amp_debias(p2, sig2, actually_debias=debias, force_nonzero=True)
-    p3 = amp_debias(p3, sig3, actually_debias=debias, force_nonzero=True)
-    p4 = amp_debias(p4, sig4, actually_debias=debias, force_nonzero=True)
-
+    if debias:
+        p1 = amp_debias(p1, sig1, force_nonzero=True)
+        p2 = amp_debias(p2, sig2, force_nonzero=True)
+        p3 = amp_debias(p3, sig3, force_nonzero=True)
+        p4 = amp_debias(p4, sig4, force_nonzero=True)
+    else:
+        p1 = np.abs(p1)
+        p2 = np.abs(p2)
+        p3 = np.abs(p3)
+        p4 = np.abs(p4)
     # get snrs
     snr1 = p1/sig1
     snr2 = p2/sig2
@@ -447,33 +328,25 @@ def make_closure_amplitude(red1, red2, blue1, blue2, vtype, ctype='camp', debias
 
     return (camp, camperr)
 
-def amp_debias(amp, sigma, actually_debias=True, force_nonzero=False):
+def amp_debias(amp, sigma, force_nonzero=False):
     """Return debiased visibility amplitudes
     """
 
-    if not actually_debias:
-        return np.abs(amp)
-    else:
-        deb2 = np.abs(amp)**2 - np.abs(sigma)**2
+    deb2 = np.abs(amp)**2 - np.abs(sigma)**2
 
-        # puts amplitude at 0 if snr < 1
-        deb2 *= (np.abs(amp) > np.abs(sigma))
-        if force_nonzero:
-            # puts amplitude at 0 if snr < 1
-            deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
-        return np.sqrt(deb2)
+    # puts amplitude at 0 if snr < 1
+    deb2 *= (np.abs(amp) > np.abs(sigma))
 
-#        if type(deb2) == float or type(deb2)==np.float64:
-#            if deb2 < 0.0: return np.abs(amp)
-#            else: return np.sqrt(deb2)
-#        else:
-#            lowsnr = deb2 < 0.0
-#            deb2[lowsnr] = np.abs(amp[lowsnr])**2
-#            return np.sqrt(deb2)
+    # raises amplitude to sigma to force nonzero
+    if force_nonzero:
+        deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
+    out = np.sqrt(deb2)
+
+    return out
 
 def camp_debias(camp, snr3, snr4):
     """Debias closure amplitudes
-       snr3 and snr4 are snr of visibility amplitudes # 3 and 4.
+       snr3 and snr4 are snr of visibility amplitudes #3 and 4.
     """
 
     camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
@@ -481,7 +354,7 @@ def camp_debias(camp, snr3, snr4):
 
 def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
     """Debias log closure amplitudes
-       The snrs are the snr of visibility amplitudes
+       The snrs are the snr of the component visibility amplitudes
     """
 
     log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
@@ -490,18 +363,12 @@ def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
 def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     """Return the value of the Gaussian FT with
        beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
-       theta is the orientation angle measured E of N
+       x,y are the center coordinates
     """
 
     sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
     sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
     theta = -beamparams[2] # theta needs to be negative in this convention!
-
-    #try:
-    #	x=beamparams[3]
-    #	y=beamparams[4]
-    #except IndexError:
-    #	x=y=0.0
 
     # Covariance matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
@@ -511,7 +378,7 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
 
     uv = np.array([[u[i],v[i]] for i in range(len(u))])
     x2 = np.array([np.dot(uvi,np.dot(m,uvi)) for uvi in uv])
-    #x2 = np.dot(uv, np.dot(m, uv.T))
+
     g = np.exp(-2 * np.pi**2 * x2)
     p = np.exp(-2j * np.pi * (u*x + v*y))
 
@@ -519,17 +386,12 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
 
 def sgra_kernel_uv(rf, u, v):
     """Return the value of the Sgr A* scattering kernel at a given u,v pt (in lambda),
-       at a given frequency rf (in Hz).
-       Values from Bower et al.
     """
 
     lcm = (C/rf) * 100 # in cm
     sigma_maj = FWHM_MAJ * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     sigma_min = FWHM_MIN * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     theta = -POS_ANG * DEGREE # theta needs to be negative in this convention!
-
-    #bp = [fwhm_maj, fwhm_min, theta]
-    #g = gauss_uv(u, v, 1., bp, x=0., y=0.)
 
     # Covariance matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
@@ -545,7 +407,6 @@ def sgra_kernel_uv(rf, u, v):
 
 def sgra_kernel_params(rf):
     """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse at a given frequency
-       Values from Bower et al.
     """
 
     lcm = (C/rf) * 100 # in cm
@@ -558,10 +419,9 @@ def sgra_kernel_params(rf):
 
 def blnoise(sefd1, sefd2, tint, bw):
     """Determine the standard deviation of Gaussian thermal noise on a baseline
-       This is the noise on the rr/ll/rl/lr correlation, not the stokes parameter
+       This is the noise on the rr/ll/rl/lr product, not the Stokes parameter
        2-bit quantization is responsible for the 0.88 factor
     """
-
 
     noise = np.sqrt(sefd1*sefd2/(2*bw*tint))/0.88
     #noise = np.sqrt(sefd1*sefd2/(bw*tint))/0.88
@@ -569,27 +429,23 @@ def blnoise(sefd1, sefd2, tint, bw):
     return noise
 
 def merr(sigma, qsigma, usigma, I, m):
-    """Return the error in mbreve real and imaginary parts given stokes input"""
+    """Return the error in fractional polarization real and imaginary parts
+    """
 
     err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/(np.abs(I) ** 2))
-
-    return err
-
-def merr2(rlsigma, rrsigma, llsigma, I, m):
-    """Return the error in mbreve real and imaginary parts given polprod input"""
-
-    err = np.sqrt((rlsigma**2 + (rrsigma**2 + llsigma**2)*np.abs(m)**2)/(np.abs(I) ** 2))
-
     return err
 
 def cerror(sigma):
     """Return a complex number drawn from a circular complex Gaussian of zero mean
     """
-    return np.random.normal(loc=0,scale=sigma) + 1j*np.random.normal(loc=0,scale=sigma)
+
+    noise = np.random.normal(loc=0,scale=sigma) + 1j*np.random.normal(loc=0,scale=sigma)
+    return noise
 
 def cerror_hash(sigma,*args):
     """Return a complex number drawn from a circular complex Gaussian of zero mean
     """
+
     reargs = list(args)
     reargs.append('re')
     np.random.seed(hash(",".join(map(repr,reargs))) % 4294967295)
@@ -601,19 +457,23 @@ def cerror_hash(sigma,*args):
     im = np.random.randn()
 
     err = sigma * (re + 1j*im)
-    return err 
+
+    return err
 
 def hashrandn(*args):
     """set the seed according to a collection of arguments and return random gaussian var
     """
+
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
-    return np.random.randn()
+    noise = np.random.randn()
+    return noise
 
 def hashrand(*args):
     """set the seed according to a collection of arguments and return random number in 0,1
     """
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
-    return np.random.rand()
+    noise = np.random.rand()
+    return noise
 
 def image_centroid(im):
     """Return the image centroid (in radians)
@@ -635,12 +495,8 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT, mask=[]):
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
 
-    # original sign convention
-    #ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
-
     # changed the sign convention to agree with BU data (Jan 2017)
     ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
-
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
 
     if len(mask):
@@ -655,7 +511,6 @@ def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT):
     """
 
     # TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
-    # Coordinate matrix for COM constraint
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
     x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
@@ -665,11 +520,10 @@ def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT):
     xlist = xlist - x0
     ylist = ylist - y0
 
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
+    #list of matrices at each spatial freq
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist]
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
     return ftmatrices
-
-
 
 def ticks(axisdim, psize, nticks=8):
     """Return a list of ticklocs and ticklabels
@@ -683,6 +537,7 @@ def ticks(axisdim, psize, nticks=8):
     tickspacing = float((axisdim-1))/nticks
     ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
     ticklabels= np.around(psize * np.arange((axisdim-1)/2.0, -(axisdim)/2.0, -tickspacing), decimals=1)
+
     return (ticklocs, ticklabels)
 
 def power_of_two(target):
@@ -758,6 +613,7 @@ def rastring(ra):
     m = int((ra-h)*60.)
     s = (ra-h-m/60.)*3600.
     out = "%2i h %2i m %2.4f s" % (h,m,s)
+
     return out
 
 def decstring(dec):
@@ -768,6 +624,7 @@ def decstring(dec):
     m = int((abs(dec)-abs(deg))*60.)
     s = (abs(dec)-abs(deg)-m/60.)*3600.
     out = "%2i deg %2i m %2.4f s" % (deg,m,s)
+
     return out
 
 def gmtstring(gmt):
@@ -779,6 +636,7 @@ def gmtstring(gmt):
     m = int((gmt-h)*60.)
     s = (gmt-h-m/60.)*3600.
     out = "%02i:%02i:%2.4f" % (h,m,s)
+
     return out
 
 #TODO fix this hacky way to do it!!
@@ -790,14 +648,17 @@ def gmst_to_utc(gmst,mjd):
     time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
     time_sidereal_ref = time_obj_ref.sidereal_time('mean', 'greenwich').hour
     time_utc = (gmst - time_sidereal_ref) * 0.9972695601848
+
     return time_utc
 
 def utc_to_gmst(utc, mjd):
     """Convert utc times in hours to gmst using astropy
     """
+
     mjd=int(mjd) #MJD should always be an integer, but was float in older versions of the code
     time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
     time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
+
     return time_sidereal
 
 def earthrot(vecs, thetas):
@@ -825,7 +686,6 @@ def earthrot(vecs, thetas):
     else:
         raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")
 
-    #if rotvec.shape[0]==1: rotvec = rotvec[0]
     return rotvec
 
 def elev(obsvecs, sourcevec):
@@ -851,11 +711,11 @@ def elevcut(obsvecs, sourcevec, elevmin=ELEV_LOW, elevmax=ELEV_HIGH):
 
 def hr_angle(gst, lon, ra):
     """Computes the hour angle for a source at RA, observer at longitude long, and GMST time gst
-       gst in hours, ra & lon ALL in radian
-       longitude positive east
+       gst in hours, ra & lon ALL in radian, longitude positive east
     """
 
     hr_angle = np.mod(gst + lon - ra, 2*np.pi)
+
     return hr_angle
 
 def par_angle(hr_angle, lat, dec):
@@ -886,27 +746,18 @@ def xyz_2_latlong(obsvecs):
 
     out = np.array(out)
 
-    #if out.shape[0]==1: out = out[0]
     return out
 
 def tri_minimal_set(sites, tarr, tkey):
     """returns a minimal set of triangles for bispectra and closure phase"""
 
-
-    # determine ordering -- now choose based on order of  self.tarr
+    # determine ordering and reference site based on order of  self.tarr
     sites_ordered = [x for x in tarr['site'] if x in sites]
     ref = sites_ordered[0]
-    sites = sites_ordered
-#    sites = list(np.sort(sites))
-#    if len(set(tarr['sefdr'])) > 1:
-#        ref = sites[np.argmin([tarr[tkey[site]]['sefdr'] for site in sites])]
-#    else:
-#        ref = sites[np.argmax([tarr[tkey[site]]['z'] for site in sites])]
-
-    sites.remove(ref)
+    sites_ordered.remove(ref)
 
     # Find all triangles that contain the ref
-    tris = list(it.combinations(sites,2))
+    tris = list(it.combinations(sites_ordered,2))
     tris = [(ref, t[0], t[1]) for t in tris]
 
     return tris
@@ -914,36 +765,29 @@ def tri_minimal_set(sites, tarr, tkey):
 def quad_minimal_set(sites, tarr, tkey):
     """returns a minimal set of quadrangels for closure amplitude"""
 
-    # determine ordering -- now choose based on order of  self.tarr
-    #sites = np.sort(sites)
-    #sites = sites[np.argsort([tarr[tkey[site]]['sefdr'] for site in sites])[::-1]]
-    #ref = sites[0]
-
-    sites_ordered = np.array([x for x in tarr['site'] if x in sites]) 
+    # determine ordering and reference site based on order of  self.tarr
+    sites_ordered = np.array([x for x in tarr['site'] if x in sites])
     ref = sites_ordered[0]
-    sites = sites_ordered
 
     # Loop over other sites >=3 and form minimal closure amplitude set
     quads = []
-    for i in range(3, len(sites)):
+    for i in range(3, len(sites_ordered)):
         for j in range(1, i):
             if j == i-1: k = 1
             else: k = j+1
 
             # convetion is (12)(34)/(14)(23)
-            quad = (ref, sites[i], sites[j], sites[k])
+            quad = (ref, sites_ordered[i], sites_ordered[j], sites_ordered[k])
             quads.append(quad)
 
     return quads
 
-# ANDREW TODO: 
-# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_amplitudes(count='min). This is because of sign flips. 
+# TODO This returns A minimal set if input is maximal, but it is not necessarily the same
+# minimal set as we would from  calling c_phases(count='min'). This is because of sign flips.
 def reduce_tri_minimal(obs, datarr):
     """reduce a bispectrum or closure phase data array to a minimal set
        datarr can be either a bispectrum array of type DTBIS
-       or a closure phase array of type DTCPHASE, or a time sorted 
-       list of either
+       or a closure phase array of type DTCPHASE, or a time sorted list of either
     """
 
     # time sort or not
@@ -953,7 +797,7 @@ def reduce_tri_minimal(obs, datarr):
         for key, group in it.groupby(datarr, lambda x: x['time']):
             datalist.append(np.array([gp for gp in group],dtype=dtype))
         returnType='all'
-    else: 
+    else:
         dtype = datarr[0].dtype
         datalist=datarr
         returnType='time'
@@ -961,20 +805,20 @@ def reduce_tri_minimal(obs, datarr):
     out = []
 
     for timegroup in datalist:
-        if returnType=='all': 
+        if returnType=='all':
             outgroup = out
         else:
             outgroup = []
 
         # determine a minimal set of trinagles
         sites = list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3']))))
-        #sites = np.sort(sites)
         tris = tri_minimal_set(sites, obs.tarr, obs.tkey)
         tris = [set(tri) for tri in tris]
 
         # add data points from original array to new array if in minimal set
         for dp in timegroup:
-            if set((dp['t1'],dp['t2'],dp['t3'])) in  tris: #ANDREW TODO: should we care about sign flips?
+            # TODO: sign flips?
+            if set((dp['t1'],dp['t2'],dp['t3'])) in tris:
                 outgroup.append(dp)
 
         if returnType=='time':
@@ -986,11 +830,11 @@ def reduce_tri_minimal(obs, datarr):
         out = np.array(out,dtype=dtype)
     return out
 
-# ANDREW TODO: 
-# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_amplitudes(count='min). This is because of  inverses. 
+# TODO This returns A minimal set if input is maximal, but it is not necessarily the same
+# minimal set as we would from  calling c_amplitudes(count='min'). This is because of  inverses.
 def reduce_quad_minimal(obs, datarr,ctype='camp'):
-    """reduce a closure amplitude or log closure amplitude array FROM a maximal set TO a minimal set"""
+    """reduce a closure amplitude or log closure amplitude array FROM a maximal set TO a minimal set
+    """
 
     if not ctype in ['camp','logcamp']:
         raise Exception("ctype must be 'camp' or 'logcamp'")
@@ -1002,46 +846,42 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
         for key, group in it.groupby(datarr, lambda x: x['time']):
             datalist.append(np.array([x for x in group]))
         returnType='all'
-    else: 
+    else:
         dtype = datarr[0].dtype
         datalist=datarr
         returnType='time'
 
     out = []
     for timegroup in datalist:
-        if returnType=='all': 
+        if returnType=='all':
             outgroup = out
-            outgroup2=[]
         else:
             outgroup = []
+
         # determine a minimal set of quadrangles
         sites = np.array(list(set(np.hstack((timegroup['t1'],timegroup['t2'],timegroup['t3'],timegroup['t4'])))))
-        #sites =  np.sort(sites)
-        #sites = sites[np.argsort([obs.tarr[obs.tkey[site]]['sefdr'] for site in sites])[::-1]]
         if len(sites) < 4:
             continue
         quads = quad_minimal_set(sites, obs.tarr, obs.tkey)
 
         # add data points from original camp array to new array if in minimal set
-        # ANDREW TODO: there are ordering issues here that don't show up in cphase case....
+        # ANDREW TODO: do we need to change the ordering ??
         for dp in timegroup:
+
             # this is all same closure amplitude, but the ordering of labels is different
-            #num = [set((dp['t1'], dp['t2'])), set((dp['t3'], dp['t4']))]
-            #denom = [set((dp['t1'], dp['t4'])), set((dp['t2'], dp['t3']))]
             if ((dp['t1'],dp['t2'],dp['t3'],dp['t4']) in quads or
                 (dp['t2'],dp['t1'],dp['t4'],dp['t3']) in quads or
                 (dp['t3'],dp['t4'],dp['t1'],dp['t2']) in quads or
                 (dp['t4'],dp['t3'],dp['t2'],dp['t1']) in quads):
-                #print('num')
+
                 outgroup.append(np.array(dp,dtype=DTCAMP))
-                outgroup2.append(np.array(dp,dtype=DTCAMP))
 
             # flip the inverse closure amplitude
             elif ((dp['t1'],dp['t4'],dp['t3'],dp['t2']) in quads or
-                  (dp['t4'],dp['t1'],dp['t2'],dp['t3']) in quads or
+                  (dp['t2'],dp['t3'],dp['t4'],dp['t1']) in quads or
                   (dp['t3'],dp['t2'],dp['t1'],dp['t4']) in quads or
-                  (dp['t2'],dp['t3'],dp['t4'],dp['t1']) in quads):
-                #sprint('denom')
+                  (dp['t4'],dp['t1'],dp['t2'],dp['t3']) in quads):
+
                 dp2 = copy.deepcopy(dp)
                 campold = dp['camp']
                 sigmaold = dp['sigmaca']
@@ -1058,6 +898,23 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                 v3old = dp['v3']
                 v4old = dp['v4']
 
+                dp2['t1'] = t1old
+                dp2['t2'] = t4old
+                dp2['t3'] = t3old
+                dp2['t4'] = t2old
+
+                dp2['u1'] = u3old
+                dp2['v1'] = v3old
+
+                dp2['u2'] = -u4old
+                dp2['v2'] = -v4old
+
+                dp2['u3'] = u1old
+                dp2['v3'] = v1old
+
+                dp2['u4'] = -u2old
+                dp2['v4'] = -v2old
+
                 if ctype=='camp':
                     dp2['camp'] = 1./campold
                     dp2['sigmaca'] = sigmaold/(campold**2)
@@ -1066,28 +923,8 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                     dp2['camp'] = -campold
                     dp2['sigmaca'] = sigmaold
 
-                dp2['t1'] = t1old
-                dp2['t2'] = t4old
-                dp2['t3'] = t3old
-                dp2['t4'] = t2old
-            
-                dp2['u1'] = u3old
-                dp2['v1'] = v3old
-
-                dp2['u2'] = -u4old
-                dp2['v2'] = -v4old
-
-                dp2['u3'] = -u2old
-                dp2['v3'] = -v2old
-
-                dp2['u4'] = u1old
-                dp2['v4'] = v1old
-
                 outgroup.append(dp2)
-                outgroup2.append(np.array(dp2,dtype=DTCAMP))
 
-#        if len(quads)!= len(outgroup2):
-#            print(timegroup[0]['time'], len(quads), len(timegroup),len(outgroup2))
         if returnType=='time':
             out.append(np.array(outgroup,dtype=dtype))
         else:
@@ -1100,6 +937,7 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
 def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
     """print a progress method for averaging
     """
+
     complete_percent_last = int(100*float(nscan_last)/float(totscans))
     complete_percent = int(100*float(nscan)/float(totscans))
     ndigit = str(len(str(totscans)))
@@ -1112,7 +950,6 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: [%s]%i%%"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-
     elif msgtype=='casa':
         message_list = [".",".",".","10",".",".",".","20",".",".",".","30",".",".",".","40",
                         ".",".",".","50",".",".",".","60",".",".",".","70",".",".",".","80",
@@ -1125,7 +962,6 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rAveraging Scan %0"+ndigit+"i/%i in %0.2f s ints: %s"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-
     elif msgtype=='itcrowd':
         message_list = ["0","1","1","8"," ","9","9","9"," ","8","8","1","9","9"," ",
                         "9","1","1","9"," ","7","2","5"," "," "," ","3"]
@@ -1133,7 +969,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         progress = int(bar_width * complete_percent/float(100))
         message = ''.join(message_list[:progress])
         if complete_percent<100:
-            message += "." 
+            message += "."
             message += " "*(bar_width-progress-1)
 
         barparams = (nscan, totscans, tint,message)
@@ -1169,6 +1005,3 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-
-
-
