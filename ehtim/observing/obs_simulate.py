@@ -113,7 +113,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                 if coord2 == (0.,0.,0.): tau2 = 0.
 
                 # Noise on the correlations
-                if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <=0):
+                if np.any(array.tarr['sefdr'] <= 0) or np.any(array.tarr['sefdl'] <=0):
                     print("Warning!: in make_uvpoints, some SEFDs are <= 0!")
 
                 sig_rr = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdr'], tint, bw)

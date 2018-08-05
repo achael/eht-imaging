@@ -601,7 +601,7 @@ class Obsdata(object):
 
         sourcevec = np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
 
-        return allout
+        return sourcevec
 
     def res(self):
 
@@ -2794,7 +2794,7 @@ class Obsdata(object):
 
         return x
 
-def plot_bl(self, site1, site2, field,
+    def plot_bl(self, site1, site2, field,
                 debias=True, ang_unit='deg', timetype=False,
                 axis=False, rangex=False, rangey=False,
                 color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
@@ -3004,6 +3004,7 @@ def plot_bl(self, site1, site2, field,
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
             plt.show(block=False)
+
         return x
 
     def plot_camp(self, site1, site2, site3, site4,
@@ -3052,12 +3053,7 @@ def plot_bl(self, site1, site2, field,
         if timetype==False:
             timetype=self.timetype
         if label is None:
-            label=str(self.source)                    vtype='vis', ctype='camp', camps=[], force_recompute=False,
-                    debias=False, timetype=False,
-                    axis=False, rangex=False, rangey=False,
-                    color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                    export_pdf="", grid=True, ebar=True,
-                    axislabels=True, legend=False, show=True):
+            label=str(self.source)
 
         else:
             label=str(label)
@@ -3251,12 +3247,6 @@ def load_oifits(fname, flux=1.0):
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
-                    vtype='vis', ctype='camp', camps=[], force_recompute=False,
-                    debias=False, timetype=False,
-                    axis=False, rangex=False, rangey=False,
-                    color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
-                    export_pdf="", grid=True, ebar=True,
-                    axislabels=True, legend=False, show=True):
 
     return ehtim.io.load.load_obs_oifits(fname, flux=flux)
 
