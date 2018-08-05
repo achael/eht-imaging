@@ -150,6 +150,17 @@ class Movie(object):
            Returns:
                Obsdata: an observation object
         """
+        # Check for agreement in coordinates and frequency
+        tolerance = 1e-8
+        if (np.abs(self.ra - obs.ra) > tolerance) or (np.abs(self.dec - obs.dec) > tolerance):
+            raise Exception("Movie coordinates are not the same as observtion coordinates!")
+        if (np.abs(self.rf - obs.rf)/obs.rf > tolerance):
+            raise Exception("Movie frequency is not the same as observation frequency!")
+
+        if ttype=='direct' or ttype=='fast' or ttype=='nfft':
+            print("Producing clean visibilities from movie with " + ttype + " FT . . . ")
+        else:
+            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
 
         obsdata = simobs.observe_movie_nonoise(self, obs, ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, repeat=repeat)
 
@@ -319,7 +330,7 @@ class Movie(object):
         """
 
         obs_List=[]
-        movie = self.copy() 
+        movie = self.copy()
 
         if synchronize_start:
             movie.mjd = vex.sched[0]['mjd_floor']
@@ -384,7 +395,7 @@ class Movie(object):
             im.add_v(self.vframes[frame_num].reshape((self.ydim,self.xdim)))
 
         return im
-        
+
 
     def im_list(self):
         """Return a list of the movie frames
@@ -398,7 +409,7 @@ class Movie(object):
            Returns:
                 Image : averaged image of all frames
         """
-        
+
         avg_imvec = np.mean(self.frames,axis=0)
         avg_imarr = avg_imvec.reshape((self.ydim, self.xdim))
         im = ehtim.image.Image(avg_imarr, self.psize, self.ra, self.dec, self.rf, self.pulse, self.source, self.mjd, time=self.start_hr)
@@ -414,7 +425,7 @@ class Movie(object):
             avg_varr = avg_vvec.reshape((self.ydim, self.xdim))
             im.add_v(avg_varr)
         return im
-        
+
     def save_txt(self, fname):
         """Save the Movie data to text files with basename fname and filenames basename + 00001, etc.
         """
@@ -453,7 +464,7 @@ class Movie(object):
             raise Exception("Scale not recognized!")
 
         fig = plt.figure()
-        
+
         #extent = self.psize/RADPERUAS*self.xdim*np.array((1,-1,-1,1)) / 2.
         maxi = np.max(np.concatenate([im for im in self.frames]))
         #thin = 1
@@ -476,7 +487,7 @@ class Movie(object):
                        width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
             Q2 = plt.quiver(x, y, a, b,
                        headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)   
+                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
 
         def im_data(n):
 
@@ -488,16 +499,16 @@ class Movie(object):
 
                 Q1.set_UVC(a,b)
                 Q2.set_UVC(a,b)
-            
+
             if scale == 'lin':
-                return self.frames[n_data].reshape((self.ydim,self.xdim))                
+                return self.frames[n_data].reshape((self.ydim,self.xdim))
             elif scale == 'log':
-                return np.log(self.frames[n_data].reshape((self.ydim,self.xdim)) + maxi/dynamic_range)                
+                return np.log(self.frames[n_data].reshape((self.ydim,self.xdim)) + maxi/dynamic_range)
             elif scale=='gamma':
                 return (self.frames[n_data]**(gamma)).reshape((self.ydim,self.xdim))
 
-        plt_im = plt.imshow(im_data(0), cmap=plt.get_cmap(cfun), interpolation=interp) 
-        plt.colorbar(plt_im, fraction=0.046, pad=0.04, label=unit)       
+        plt_im = plt.imshow(im_data(0), cmap=plt.get_cmap(cfun), interpolation=interp)
+        plt.colorbar(plt_im, fraction=0.046, pad=0.04, label=unit)
 
         if scale == 'lin':
 
@@ -519,7 +530,7 @@ class Movie(object):
             if verbose:
                 print("processing frame {0} of {1}".format(n, len(self.frames)*frame_pad_factor))
             plt_im.set_data(im_data(n))
-            #plt_im = plt.imshow(im_data(n), extent=extent, cmap=plt.get_cmap(cfun), interpolation=interp) 
+            #plt_im = plt.imshow(im_data(n), extent=extent, cmap=plt.get_cmap(cfun), interpolation=interp)
             return plt_im
 
         ani = animation.FuncAnimation(fig,update_img,len(self.frames)*frame_pad_factor,interval=1e3/fps)
@@ -593,7 +604,7 @@ def merge_im_list(imlist, framedur=-1):
 
     if framedur == -1:
         framedur = ((hour - hour0)/float(nframes))*3600.0
-            
+
     mov = Movie(framelist, framedur, psize0, ra0, dec0, rf=rf0, source=src0, mjd=mjd0, start_hr=hour0, pulse=pulse)
 
     if len(qlist):
@@ -639,8 +650,3 @@ def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
            Movie: a Movie object
     """
     return ehtim.io.load.load_movie_fits(basename, nframes, framedur=framedur, pulse=pulse)
-
-
-
-
-

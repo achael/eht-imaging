@@ -1,5 +1,3 @@
-# Andrew Chael, 10/15/2016
-
 # comp_plots.py
 # Make data plots with multiple observations,images etc.
 #
@@ -29,9 +27,6 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 from ehtim.obsdata import merge_obs
 
-
-
-#COLORLIST = ['b','m','g','c','y','k','r']
 COLORLIST = SCOLORS
 ##################################################################################################
 # Plotters
@@ -39,11 +34,11 @@ COLORLIST = SCOLORS
 
 
 def plotall_compare(obslist, imlist, field1, field2,
-                    conj=False, debias=True, sgrscat=False, 
-                    ang_unit='deg', timetype='UTC', ttype='nfft', 
-                    axis=False, rangex=False, rangey=False, 
+                    conj=False, debias=True, sgrscat=False,
+                    ang_unit='deg', timetype='UTC', ttype='nfft',
+                    axis=False, rangex=False, rangey=False,
                     clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
-                    export_pdf="", grid=False, ebar=True, 
+                    export_pdf="", grid=False, ebar=True,
                     axislabels=True, legend=True, show=True):
 
     """Plot data from observations compared to ground truth from an image on the same axes.
@@ -78,20 +73,20 @@ def plotall_compare(obslist, imlist, field1, field2,
        Returns:
            (matplotlib.axes.Axes): Axes object with data plot
     """
-    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist,
                                                                              legendlabels=legendlabels, sgrscat=sgrscat, ttype=ttype)
 
     for i in range(len(obslist_plot)):
         obs = obslist_plot[i]
-        axis = obs.plotall(field1, field2, 
-                           conj=conj, debias=debias, 
-                           ang_unit=ang_unit, timetype=timetype, 
-                           axis=axis, rangex=rangex, rangey=rangey, 
+        axis = obs.plotall(field1, field2,
+                           conj=conj, debias=debias,
+                           ang_unit=ang_unit, timetype=timetype,
+                           axis=axis, rangex=rangex, rangey=rangey,
                            grid=grid,ebar=ebar,axislabels=axislabels,
                            show=False, tag_bl=False, legend=False,
-                           label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                           label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                            marker=markers[i], markersize=markersize)
-                           
+
     if legend:
         plt.legend()
     if grid:
@@ -105,11 +100,11 @@ def plotall_compare(obslist, imlist, field1, field2,
     return axis
 
 def plot_bl_compare(obslist, imlist, site1, site2, field,
-                    debias=True, sgrscat=False, 
-                    ang_unit='deg', timetype='UTC', ttype='nfft', 
-                    axis=False, rangex=False, rangey=False, 
+                    debias=True, sgrscat=False,
+                    ang_unit='deg', timetype='UTC', ttype='nfft',
+                    axis=False, rangex=False, rangey=False,
                     clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
-                    export_pdf="", grid=False, ebar=True, 
+                    export_pdf="", grid=False, ebar=True,
                     axislabels=True, legend=True, show=True):
 
     """Plot data from multiple observations vs time on a single baseline on the same axes.
@@ -145,17 +140,17 @@ def plot_bl_compare(obslist, imlist, site1, site2, field,
            (matplotlib.axes.Axes): Axes object with data plot
 
     """
-    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist,
                                                                              legendlabels=legendlabels, sgrscat=sgrscat, ttype=ttype)
 
     for i in range(len(obslist_plot)):
         obs = obslist_plot[i]
         axis = obs.plot_bl(site1, site2, field,
                            debias=debias, ang_unit=ang_unit, timetype=timetype,
-                           axis=axis, rangex=rangex, rangey=rangey, 
+                           axis=axis, rangex=rangex, rangey=rangey,
                            grid=grid,ebar=ebar,axislabels=axislabels,
                            show=False, legend=False,
-                           label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                           label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                            marker=markers[i], markersize=markersize)
     if legend:
         plt.legend()
@@ -169,12 +164,12 @@ def plot_bl_compare(obslist, imlist, site1, site2, field,
 
     return axis
 
-def plot_cphase_compare(obslist, imlist, site1, site2, site3, 
+def plot_cphase_compare(obslist, imlist, site1, site2, site3,
                         vtype='vis', cphases=[],force_recompute=False,
-                        ang_unit='deg', timetype='UTC', ttype='nfft', 
-                        axis=False, rangex=False, rangey=False, 
+                        ang_unit='deg', timetype='UTC', ttype='nfft',
+                        axis=False, rangex=False, rangey=False,
                         clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
-                        export_pdf="", grid=False, ebar=True, 
+                        export_pdf="", grid=False, ebar=True,
                         axislabels=True, legend=True, show=True):
 
 
@@ -226,20 +221,20 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
         cphases_back.append(obslist[i].cphase)
         obslist[i].cphase=cphases[i]
 
-    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist,
                                                                              legendlabels=legendlabels, sgrscat=False, ttype=ttype)
 
     for i in range(len(obslist_plot)):
         obs = obslist_plot[i]
         axis = obs.plot_cphase(site1, site2, site3,
                                vtype=vtype, force_recompute=force_recompute,
-                               ang_unit=ang_unit, timetype=timetype, 
-                               axis=axis, rangex=rangex, rangey=rangey, 
+                               ang_unit=ang_unit, timetype=timetype,
+                               axis=axis, rangex=rangex, rangey=rangey,
                                grid=grid,ebar=ebar,axislabels=axislabels,
                                show=False, legend=False,
-                               label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                               label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                                marker=markers[i], markersize=markersize)
- 
+
    # return to original cphase attribute
     for i in range(len(obslist)):
         obslist[i].cphase=cphases_back[i]
@@ -257,10 +252,10 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
 
 def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
                       vtype='vis', ctype='camp', camps=[], force_recompute=False,
-                      debias=True, sgrscat=False, timetype='UTC', ttype='nfft', 
-                      axis=False, rangex=False, rangey=False, 
+                      debias=True, sgrscat=False, timetype='UTC', ttype='nfft',
+                      axis=False, rangex=False, rangey=False,
                       clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
-                      export_pdf="", grid=False, ebar=True, 
+                      export_pdf="", grid=False, ebar=True,
                       axislabels=True, legend=True, show=True):
 
     """Plot closure amplitude on a triangle vs time from multiple observations on the same axes.
@@ -321,7 +316,7 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
             obslist[i].logcamp=camps[i]
 
 
-    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist, 
+    (obslist_plot, clist_plot, legendlabels_plot, markers) = prep_plot_lists(obslist, imlist, clist=clist,
                                                                              legendlabels=legendlabels, sgrscat=sgrscat, ttype=ttype)
 
     for i in range(len(obslist_plot)):
@@ -329,10 +324,10 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
         axis = obs.plot_camp(site1, site2, site3, site4,
                                vtype=vtype, ctype=ctype, force_recompute=force_recompute,
                                debias=debias, timetype=timetype,
-                               axis=axis, rangex=rangex, rangey=rangey, 
+                               axis=axis, rangex=rangex, rangey=rangey,
                                grid=grid,ebar=ebar,axislabels=axislabels,
                                show=False, legend=False,
-                               label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)], 
+                               label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                                marker=markers[i], markersize=markersize)
 
     for i in range(len(obslist)):
@@ -667,13 +662,13 @@ def plot_camp_obs_im_compare(obslist,  imlist, site1, site2, site3, site4, **kwa
 ##################################################################################################
 # Plotters: Compare Observations to Image
 ##################################################################################################
-def plotall_obs_im_cphases(obs, imlist, 
+def plotall_obs_im_cphases(obs, imlist,
                            vtype='vis', ang_unit='deg', timetype='UTC',
                            ttype='nfft', sgrscat=False,
                            rangex=False, rangey=[-180,180],legend=False,legendlabels=None,
                            show=True, ebar=True,axislabels=False,print_chisqs=True,
                            display_mode='all'):
-    """Plot all observation closure phases on  top of image ground truth values. Works with ONE obs and MULTIPLE images. 
+    """Plot all observation closure phases on  top of image ground truth values. Works with ONE obs and MULTIPLE images.
 
        Args:
            obs (Obsdata): observation to plot
@@ -787,7 +782,7 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
     except TypeError: imlist = [imlist]
 
     if not((len(imlist)==len(obslist)) or len(imlist)<=1 or len(obslist)<=1):
-        raise Exception("imlist and obslist must be the same length, or either must have length 1") 
+        raise Exception("imlist and obslist must be the same length, or either must have length 1")
 
     if not (legendlabels is None) and (len(legendlabels)!=max(len(imlist),len(obslist))):
         raise Exception("legendlabels should be the same length of the longer of imlist, obslist!")
@@ -806,7 +801,7 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
             obslist_plot.append(obslist[i])
             markers.append('o')
 
-    elif len(imlist)==1 and len(obslist)>1: 
+    elif len(imlist)==1 and len(obslist)>1:
         obslist_true=[]
         markers =  ['s']
         clist_plot = ['k']
@@ -866,8 +861,5 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
 
     if len(obslist_plot) > len(clist):
         Exception("More observations than colors -- Add more colors to clist!")
-    
+
     return (obslist_plot, clist_plot, legendlabels_plot, markers)
-
-
-

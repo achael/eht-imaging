@@ -35,7 +35,7 @@ import copy
 import sys
 import os
 
-import ehtim.const_def 
+import ehtim.const_def
 from ehtim.const_def import *
 
 
@@ -47,6 +47,8 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 ##################################################################################################
 
 def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC', elevmin=ELEV_LOW,  elevmax=ELEV_HIGH, fix_theta_GMST = False):
+    """Compute u,v coordinates for an array at a given time for a source at a given ra,dec,rf
+    """
 
     if not isinstance(time, np.ndarray): time = np.array([time]).flatten()
     if not isinstance(site1, np.ndarray): site1 = np.array([site1]).flatten()
@@ -87,7 +89,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     coord1 = np.vstack((array.tarr[i1]['x'], array.tarr[i1]['y'], array.tarr[i1]['z'])).T
     coord2 = np.vstack((array.tarr[i2]['x'], array.tarr[i2]['y'], array.tarr[i2]['z'])).T
 
-    # TODO SPEED UP!??
+    # TODO speed up?
     # use spacecraft ephemeris to get position of site 1
     spacemask1 = [np.all(coord == (0.,0.,0.)) for coord in coord1]
     if np.any(spacemask1):
@@ -154,11 +156,12 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
     # return times and uv points where we have  data
     return (time, u, v)
 
-def make_bispectrum(l1, l2, l3,vtype):
+def make_bispectrum(l1, l2, l3, vtype):
     """make a list of bispectra and errors
        l1,l2,l3 are full datatables of visibility entries
        vtype is visibility types
     """
+
     # Choose the appropriate polarization and compute the bs and err
     if vtype in ["vis", "qvis", "uvis","vvis"]:
         if vtype=='vis':  sigmatype='sigma'
@@ -219,21 +222,17 @@ def make_bispectrum(l1, l2, l3,vtype):
     return (bi, bisig)
 
 
-#TODO: debiasing strategy?? 
 def make_closure_amplitude(blue1, blue2, red1, red2, vtype, ctype='camp', debias=True):
     """make a list of closure amplitudes and errors
        blue1 and blue2 are full datatables numerator entries
        red1 and red2 are full datatables of denominator entries
        vtype is the  visibility type
-       we always debias the individual amplitudes
-       debias controls if we debias the closure amplitude at the end
-       exact debiasing in log space, it will turn off any debiasing in 'amp_debias',
-       and apply debiasing only to closure quantities
     """
 
     if not (ctype in ['camp', 'logcamp']):
         raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
 
+    # get visibility of correct data type
     if vtype in ["vis", "qvis", "uvis", "vvis"]:
         if vtype=='vis':  sigmatype='sigma'
         if vtype=='qvis': sigmatype='qsigma'
@@ -338,15 +337,16 @@ def amp_debias(amp, sigma, force_nonzero=False):
     # puts amplitude at 0 if snr < 1
     deb2 *= (np.abs(amp) > np.abs(sigma))
 
-    # raises amplitude to sigma to force nonzero 
+    # raises amplitude to sigma to force nonzero
     if force_nonzero:
         deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
     out = np.sqrt(deb2)
+
     return out
 
 def camp_debias(camp, snr3, snr4):
     """Debias closure amplitudes
-       snr3 and snr4 are snr of visibility amplitudes # 3 and 4.
+       snr3 and snr4 are snr of visibility amplitudes #3 and 4.
     """
 
     camp_debias = camp / (1 + 1./(snr3**2) + 1./(snr4**2))
@@ -354,7 +354,7 @@ def camp_debias(camp, snr3, snr4):
 
 def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
     """Debias log closure amplitudes
-       The snrs are the snr of visibility amplitudes
+       The snrs are the snr of the component visibility amplitudes
     """
 
     log_camp_debias = log_camp + 0.5*(1./(snr1**2) + 1./(snr2**2) - 1./(snr3**2) - 1./(snr4**2))
@@ -363,18 +363,12 @@ def logcamp_debias(log_camp, snr1, snr2, snr3, snr4):
 def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     """Return the value of the Gaussian FT with
        beamparams is [FWHMmaj, FWHMmin, theta, x, y], all in radian
-       theta is the orientation angle measured E of N
+       x,y are the center coordinates
     """
 
     sigma_maj = beamparams[0]/(2*np.sqrt(2*np.log(2)))
     sigma_min = beamparams[1]/(2*np.sqrt(2*np.log(2)))
     theta = -beamparams[2] # theta needs to be negative in this convention!
-
-    #try:
-    #	x=beamparams[3]
-    #	y=beamparams[4]
-    #except IndexError:
-    #	x=y=0.0
 
     # Covariance matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
@@ -384,7 +378,7 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
 
     uv = np.array([[u[i],v[i]] for i in range(len(u))])
     x2 = np.array([np.dot(uvi,np.dot(m,uvi)) for uvi in uv])
-    #x2 = np.dot(uv, np.dot(m, uv.T))
+
     g = np.exp(-2 * np.pi**2 * x2)
     p = np.exp(-2j * np.pi * (u*x + v*y))
 
@@ -392,17 +386,12 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
 
 def sgra_kernel_uv(rf, u, v):
     """Return the value of the Sgr A* scattering kernel at a given u,v pt (in lambda),
-       at a given frequency rf (in Hz).
-       Values from Bower et al.
     """
 
     lcm = (C/rf) * 100 # in cm
     sigma_maj = FWHM_MAJ * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     sigma_min = FWHM_MIN * (lcm**2) / (2*np.sqrt(2*np.log(2))) * RADPERUAS
     theta = -POS_ANG * DEGREE # theta needs to be negative in this convention!
-
-    #bp = [fwhm_maj, fwhm_min, theta]
-    #g = gauss_uv(u, v, 1., bp, x=0., y=0.)
 
     # Covariance matrix
     a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
@@ -418,7 +407,6 @@ def sgra_kernel_uv(rf, u, v):
 
 def sgra_kernel_params(rf):
     """Return elliptical gaussian parameters in radian for the Sgr A* scattering ellipse at a given frequency
-       Values from Bower et al.
     """
 
     lcm = (C/rf) * 100 # in cm
@@ -431,7 +419,7 @@ def sgra_kernel_params(rf):
 
 def blnoise(sefd1, sefd2, tint, bw):
     """Determine the standard deviation of Gaussian thermal noise on a baseline
-       This is the noise on the rr/ll/rl/lr correlation, not the stokes parameter
+       This is the noise on the rr/ll/rl/lr product, not the Stokes parameter
        2-bit quantization is responsible for the 0.88 factor
     """
 
@@ -441,21 +429,23 @@ def blnoise(sefd1, sefd2, tint, bw):
     return noise
 
 def merr(sigma, qsigma, usigma, I, m):
-    """Return the error in mbreve real and imaginary parts"""
+    """Return the error in fractional polarization real and imaginary parts
+    """
 
     err = np.sqrt((qsigma**2 + usigma**2 + (sigma*np.abs(m))**2)/(np.abs(I) ** 2))
-    # old formula assumes all sigmas the same
-    #err = sigma * np.sqrt((2 + np.abs(m)**2)/ (np.abs(I) ** 2))
     return err
 
 def cerror(sigma):
     """Return a complex number drawn from a circular complex Gaussian of zero mean
     """
-    return np.random.normal(loc=0,scale=sigma) + 1j*np.random.normal(loc=0,scale=sigma)
+
+    noise = np.random.normal(loc=0,scale=sigma) + 1j*np.random.normal(loc=0,scale=sigma)
+    return noise
 
 def cerror_hash(sigma,*args):
     """Return a complex number drawn from a circular complex Gaussian of zero mean
     """
+
     reargs = list(args)
     reargs.append('re')
     np.random.seed(hash(",".join(map(repr,reargs))) % 4294967295)
@@ -467,19 +457,23 @@ def cerror_hash(sigma,*args):
     im = np.random.randn()
 
     err = sigma * (re + 1j*im)
-    return err 
+
+    return err
 
 def hashrandn(*args):
     """set the seed according to a collection of arguments and return random gaussian var
     """
+
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
-    return np.random.randn()
+    noise = np.random.randn()
+    return noise
 
 def hashrand(*args):
     """set the seed according to a collection of arguments and return random number in 0,1
     """
     np.random.seed(hash(",".join(map(repr,args))) % 4294967295)
-    return np.random.rand()
+    noise = np.random.rand()
+    return noise
 
 def image_centroid(im):
     """Return the image centroid (in radians)
@@ -501,12 +495,8 @@ def ftmatrix(pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT, mask=[]):
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
 
-    # original sign convention
-    #ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
-
     # changed the sign convention to agree with BU data (Jan 2017)
     ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(2j*np.pi*ylist*uv[1]), np.exp(2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
-
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
 
     if len(mask):
@@ -521,7 +511,6 @@ def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT):
     """
 
     # TODO : there is a residual value for the center being around 0, maybe we should chop this off to be exactly 0
-    # Coordinate matrix for COM constraint
     xlist = np.arange(0,-xdim,-1)*pdim + (pdim*xdim)/2.0 - pdim/2.0
     ylist = np.arange(0,-ydim,-1)*pdim + (pdim*ydim)/2.0 - pdim/2.0
     x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
@@ -531,11 +520,10 @@ def ftmatrix_centered(im, pdim, xdim, ydim, uvlist, pulse=PULSE_DEFAULT):
     xlist = xlist - x0
     ylist = ylist - y0
 
-    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist] #list of matrices at each freq
+    #list of matrices at each spatial freq
+    ftmatrices = [pulse(2*np.pi*uv[0], 2*np.pi*uv[1], pdim, dom="F") * np.outer(np.exp(-2j*np.pi*ylist*uv[1]), np.exp(-2j*np.pi*xlist*uv[0])) for uv in uvlist]
     ftmatrices = np.reshape(np.array(ftmatrices), (len(uvlist), xdim*ydim))
     return ftmatrices
-
-
 
 def ticks(axisdim, psize, nticks=8):
     """Return a list of ticklocs and ticklabels
@@ -549,6 +537,7 @@ def ticks(axisdim, psize, nticks=8):
     tickspacing = float((axisdim-1))/nticks
     ticklocs = np.arange(0, axisdim+1, tickspacing) - 0.5
     ticklabels= np.around(psize * np.arange((axisdim-1)/2.0, -(axisdim)/2.0, -tickspacing), decimals=1)
+
     return (ticklocs, ticklabels)
 
 def power_of_two(target):
@@ -624,6 +613,7 @@ def rastring(ra):
     m = int((ra-h)*60.)
     s = (ra-h-m/60.)*3600.
     out = "%2i h %2i m %2.4f s" % (h,m,s)
+
     return out
 
 def decstring(dec):
@@ -634,6 +624,7 @@ def decstring(dec):
     m = int((abs(dec)-abs(deg))*60.)
     s = (abs(dec)-abs(deg)-m/60.)*3600.
     out = "%2i deg %2i m %2.4f s" % (deg,m,s)
+
     return out
 
 def gmtstring(gmt):
@@ -645,6 +636,7 @@ def gmtstring(gmt):
     m = int((gmt-h)*60.)
     s = (gmt-h-m/60.)*3600.
     out = "%02i:%02i:%2.4f" % (h,m,s)
+
     return out
 
 #TODO fix this hacky way to do it!!
@@ -656,14 +648,17 @@ def gmst_to_utc(gmst,mjd):
     time_obj_ref = at.Time(mjd, format='mjd', scale='utc')
     time_sidereal_ref = time_obj_ref.sidereal_time('mean', 'greenwich').hour
     time_utc = (gmst - time_sidereal_ref) * 0.9972695601848
+
     return time_utc
 
 def utc_to_gmst(utc, mjd):
     """Convert utc times in hours to gmst using astropy
     """
+
     mjd=int(mjd) #MJD should always be an integer, but was float in older versions of the code
     time_obj = at.Time(utc/24.0 + np.floor(mjd), format='mjd', scale='utc')
     time_sidereal = time_obj.sidereal_time('mean','greenwich').hour
+
     return time_sidereal
 
 def earthrot(vecs, thetas):
@@ -691,7 +686,6 @@ def earthrot(vecs, thetas):
     else:
         raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")
 
-    #if rotvec.shape[0]==1: rotvec = rotvec[0]
     return rotvec
 
 def elev(obsvecs, sourcevec):
@@ -717,11 +711,11 @@ def elevcut(obsvecs, sourcevec, elevmin=ELEV_LOW, elevmax=ELEV_HIGH):
 
 def hr_angle(gst, lon, ra):
     """Computes the hour angle for a source at RA, observer at longitude long, and GMST time gst
-       gst in hours, ra & lon ALL in radian
-       longitude positive east
+       gst in hours, ra & lon ALL in radian, longitude positive east
     """
 
     hr_angle = np.mod(gst + lon - ra, 2*np.pi)
+
     return hr_angle
 
 def par_angle(hr_angle, lat, dec):
@@ -752,12 +746,10 @@ def xyz_2_latlong(obsvecs):
 
     out = np.array(out)
 
-    #if out.shape[0]==1: out = out[0]
     return out
 
 def tri_minimal_set(sites, tarr, tkey):
     """returns a minimal set of triangles for bispectra and closure phase"""
-
 
     # determine ordering and reference site based on order of  self.tarr
     sites_ordered = [x for x in tarr['site'] if x in sites]
@@ -774,7 +766,7 @@ def quad_minimal_set(sites, tarr, tkey):
     """returns a minimal set of quadrangels for closure amplitude"""
 
     # determine ordering and reference site based on order of  self.tarr
-    sites_ordered = np.array([x for x in tarr['site'] if x in sites]) 
+    sites_ordered = np.array([x for x in tarr['site'] if x in sites])
     ref = sites_ordered[0]
 
     # Loop over other sites >=3 and form minimal closure amplitude set
@@ -790,14 +782,12 @@ def quad_minimal_set(sites, tarr, tkey):
 
     return quads
 
-# ANDREW TODO: 
-# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_phases(count='min'). This is because of sign flips. 
+# TODO This returns A minimal set if input is maximal, but it is not necessarily the same
+# minimal set as we would from  calling c_phases(count='min'). This is because of sign flips.
 def reduce_tri_minimal(obs, datarr):
     """reduce a bispectrum or closure phase data array to a minimal set
        datarr can be either a bispectrum array of type DTBIS
-       or a closure phase array of type DTCPHASE, or a time sorted 
-       list of either
+       or a closure phase array of type DTCPHASE, or a time sorted list of either
     """
 
     # time sort or not
@@ -807,7 +797,7 @@ def reduce_tri_minimal(obs, datarr):
         for key, group in it.groupby(datarr, lambda x: x['time']):
             datalist.append(np.array([gp for gp in group],dtype=dtype))
         returnType='all'
-    else: 
+    else:
         dtype = datarr[0].dtype
         datalist=datarr
         returnType='time'
@@ -815,7 +805,7 @@ def reduce_tri_minimal(obs, datarr):
     out = []
 
     for timegroup in datalist:
-        if returnType=='all': 
+        if returnType=='all':
             outgroup = out
         else:
             outgroup = []
@@ -826,9 +816,9 @@ def reduce_tri_minimal(obs, datarr):
         tris = [set(tri) for tri in tris]
 
         # add data points from original array to new array if in minimal set
-        # ANDREW TODO: should we care about sign flips?
         for dp in timegroup:
-            if set((dp['t1'],dp['t2'],dp['t3'])) in  tris:
+            # TODO: sign flips?
+            if set((dp['t1'],dp['t2'],dp['t3'])) in tris:
                 outgroup.append(dp)
 
         if returnType=='time':
@@ -840,11 +830,11 @@ def reduce_tri_minimal(obs, datarr):
         out = np.array(out,dtype=dtype)
     return out
 
-# ANDREW TODO: 
-# Problem! This returns A minimal set if input is maximal, but it is not necessarily the same 
-# minimal set as we would from  calling c_amplitudes(count='min'). This is because of  inverses. 
+# TODO This returns A minimal set if input is maximal, but it is not necessarily the same
+# minimal set as we would from  calling c_amplitudes(count='min'). This is because of  inverses.
 def reduce_quad_minimal(obs, datarr,ctype='camp'):
-    """reduce a closure amplitude or log closure amplitude array FROM a maximal set TO a minimal set"""
+    """reduce a closure amplitude or log closure amplitude array FROM a maximal set TO a minimal set
+    """
 
     if not ctype in ['camp','logcamp']:
         raise Exception("ctype must be 'camp' or 'logcamp'")
@@ -856,14 +846,14 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
         for key, group in it.groupby(datarr, lambda x: x['time']):
             datalist.append(np.array([x for x in group]))
         returnType='all'
-    else: 
+    else:
         dtype = datarr[0].dtype
         datalist=datarr
         returnType='time'
 
     out = []
     for timegroup in datalist:
-        if returnType=='all': 
+        if returnType=='all':
             outgroup = out
         else:
             outgroup = []
@@ -912,7 +902,7 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
                 dp2['t2'] = t4old
                 dp2['t3'] = t3old
                 dp2['t4'] = t2old
-            
+
                 dp2['u1'] = u3old
                 dp2['v1'] = v3old
 
@@ -947,6 +937,7 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
 def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
     """print a progress method for averaging
     """
+
     complete_percent_last = int(100*float(nscan_last)/float(totscans))
     complete_percent = int(100*float(nscan)/float(totscans))
     ndigit = str(len(str(totscans)))
@@ -978,7 +969,7 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         progress = int(bar_width * complete_percent/float(100))
         message = ''.join(message_list[:progress])
         if complete_percent<100:
-            message += "." 
+            message += "."
             message += " "*(bar_width-progress-1)
 
         barparams = (nscan, totscans, tint,message)
@@ -1014,6 +1005,3 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
-
-
-
