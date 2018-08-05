@@ -2082,7 +2082,7 @@ class Obsdata(object):
 
         # Get bispectra (maximal set)
         if (len(bs)==0) and not (self.bispec is None) and not (len(self.bispec)==0) and not force_recompute:
-            cphases=self.bispecra
+            cphases=self.bispec
         elif (len(bs) == 0) or force_recompute:
             bs = self.bispectra(mode='all', count='max', vtype=vtype, timetype=timetype)
 
