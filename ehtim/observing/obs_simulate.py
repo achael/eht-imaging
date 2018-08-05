@@ -26,15 +26,12 @@ import time as ttime
 import scipy.ndimage as nd
 import numpy as np
 import datetime
-
 try:
     import ephem
 except ImportError:
     print("Warning: ephem not installed: cannot simulate space VLBI")
-
 import astropy.coordinates as coords
 import copy
-
 try:
     from pynfft.nfft import NFFT
 except ImportError:

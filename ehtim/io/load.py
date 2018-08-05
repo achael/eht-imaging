@@ -426,21 +426,11 @@ def load_array_txt(filename, ephemdir='ephemeris'):
 # Observation IO
 ##################################################################################################
 
-def load_obs_txt(filename, polrep='stokes'):
-
-    """Read an observation from a text file.
-
-       Args:
-           fname (str): path to input text file
-           polrep (str): load data as either 'stokes' or 'polprod_circ'
-
-       Returns:
-           obs (Obsdata): Obsdata object loaded from file
+def load_obs_txt(filename):
+    """Read an observation from a text file and return an Obsdata object
+       text file has the same format as output from Obsdata.savedata()
     """
-    
-    if not(polrep in ['stokes' , 'polprod_circ']):
-        raise Exception("polrep should be 'stokes' or 'polprod_circ' in load_uvfits")
-    print ("\nLoading text observation: ", filename)
+    print ("Loading text observation: ", filename)
 
     # Read the header parameters
     file = open(filename)
@@ -525,7 +515,7 @@ def load_obs_txt(filename, polrep='stokes'):
             v = float(row[7])
             vis = float(row[8]) * np.exp(1j * float(row[9]) * DEGREE)
             qvis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-            uvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
+            uvis = float(row[12]) * np.exp(1j * float(row[14]) * DEGREE)
             vvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
             sigma = float(row[16])
             qsigma = float(row[17])
@@ -535,49 +525,20 @@ def load_obs_txt(filename, polrep='stokes'):
         else:
             raise Exception('Text file does not have the right number of fields!')
 
-        if polrep=='stokes':
-            datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
-                                        u, v, vis, qvis, uvis, vvis,
-                                        sigma, qsigma, usigma, vsigma), dtype=DTPOL))
-        elif polrep=='polprod_circ':
-            rrvis = vis  +  vvis
-            llvis = vis - vvis
-            rlvis = qvis + 1j*uvis
-            lrvis = qvis - 1j*uvis
 
-            rrsigma = np.sqrt(sigma**2 + vsigma**2)
-            llsigma = np.sqrt(sigma**2 + vsigma**2)
-            rlsigma = np.sqrt(qsigma**2 + usigma**2)
-            lrsigma = np.sqrt(qsigma**2 + usigma**2)
-
-            datatable2.append(np.array((time, tint, t1, t2, tau1, tau2, u, v, 
-                                        rrvis, llvis, rlvis, lrvis,
-                                        rrsigma, llsigma, rlsigma, lrsigma), dtype=DTPOL2))
+        datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
+                                    u, v, vis, qvis, uvis, vvis,
+                                    sigma, qsigma, usigma, vsigma), dtype=DTPOL))
 
     # Return the data object
     datatable2 = np.array(datatable2)
-    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, polrep=polrep, source=src, mjd=mjd,
+    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, source=src, mjd=mjd,
                                  ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
     return out
 
 def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
-    """Read an observation from a maps text file and return an Obsdata object.
-
-       Args:
-           arrfile (str): path to input array file
-           obsspec (str): path to input obs spec file
-           ifile (str): path to input Stokes I data file
-           qfile (str): path to input Stokes Q data file
-           ufile (str): path to input Stokes U data file
-           vfile (str): path to input Stokes V data file
-           src (str): source name
-           mjd (int): integer observation  MJD
-           ampcal (bool): True if amplitude calibrated
-           phasecal (bool): True if phase calibrated
-       Returns:
-           obs (Obsdata): Obsdata object loaded from file
+    """Read an observation from a maps text file and return an Obsdata object
     """
-
     # Read telescope parameters from the array file
     tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
     tdata = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0.), dtype=DTARR) for x in tdata]
@@ -664,27 +625,14 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
                 i += 1
 
     # Return the datatable
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd, polrep='stokes')
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)
+
 
 #TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes', channel=all, IF=all):
-    """Load observation data from a uvfits file.
-
-       Args:
-           fname (str): path to input text file
-           flipbl (bool): flip baseline phases if True.
-           polrep (str): load data as either 'stokes' or 'polprod_circ'
-           force_singlepol (str): 'R' or 'L' to load only 1 polarization
-           channel (list): list of channels to average in the import. channel=all averages all channels
-           IF (list): list of IFs to  average in  the import. IF=all averages all IFS
-       Returns:
-           obs (Obsdata): Obsdata object loaded from file
+def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, IF=all):
+    """Load uvfits data from a uvfits file.
+       To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R', 'L', 'RL', or 'LR'
     """
-
-    if not(polrep in ['stokes' , 'polprod_circ']):
-        raise Exception("polrep should be 'stokes' or 'polprod_circ' in load_uvfits")
-    if not(force_singlepol is None or force_singlepol==False) and polrep!='stokes':
-        raise Exception("force_singlepol is incompatible with polrep!='stokes' in load_uvfits")
 
     # Load the uvfits file
     print ("Loading uvfits: ", filename)
@@ -894,7 +842,6 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
         tints = data['INTTIM'][mask]
     except KeyError:
         tints = np.zeros(len(mask))
-
     # Sites - add names
     t1 = data['BASELINE'][mask].astype(int)//256
     t2 = data['BASELINE'][mask].astype(int) - t1*256
@@ -1018,82 +965,61 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
     qumask_dsize = (rlmask_dsize * lrmask_dsize) # must have both RL & LR data to get Q, U
     vmask_dsize  = (rrmask_dsize * llmask_dsize) # must have both RR & LL data to get V
 
+    # Stokes I
+    ivis = 0.5 * (rr + ll)
+    ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
+    ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
+
+    isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
+    isigma[~llmask_dsize] = rrsig[~llmask_dsize]
+    isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
+
+    # TODO what should the polarization  sigmas be if no data?
+    # Stokes V
+    vvis = 0.5 * (rr - ll)
+    vvis[~vmask_dsize] = 0.
+
+    vsigma = copy.deepcopy(isigma)
+    vsigma[~vmask_dsize] = isigma[~vmask_dsize]
+
+    # Stokes Q,U
+    qvis = 0.5 * (rl + lr)
+    uvis = 0.5j * (lr - rl)
+    qvis[~qumask_dsize] = 0.
+    uvis[~qumask_dsize] = 0.
+
+    qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
+    usigma = qsigma
+    qsigma[~qumask_dsize] = isigma[~qumask_dsize]
+    usigma[~qumask_dsize] = isigma[~qumask_dsize]
+
     # Reverse sign of baselines for correct imaging?
     if flipbl:
         u = -u
         v = -v
 
-    if polrep=='stokes':
-        # Stokes I
-        ivis = 0.5 * (rr + ll)
-        ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
-        ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
-
-        isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
-        isigma[~llmask_dsize] = rrsig[~llmask_dsize]
-        isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
-
-        # TODO what should the polarization  sigmas be if no data?
-        # Stokes V
-        vvis = 0.5 * (rr - ll)
-        vvis[~vmask_dsize] = 0.
-
-        vsigma = copy.deepcopy(isigma)
-        vsigma[~vmask_dsize] = isigma[~vmask_dsize]
-
-        # Stokes Q,U
-        qvis = 0.5 * (rl + lr)
-        uvis = 0.5j * (lr - rl)
-        qvis[~qumask_dsize] = 0.
-        uvis[~qumask_dsize] = 0.
-
-        qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
-        usigma = qsigma
-        qsigma[~qumask_dsize] = isigma[~qumask_dsize]
-        usigma[~qumask_dsize] = isigma[~qumask_dsize]
-
-        # Make a datatable
-        datatable = []
-        for i in range(len(times)):
-            datatable.append(np.array
-                             ((
-                               times[i], tints[i],
-                               t1[i], t2[i], tau1[i], tau2[i],
-                               u[i], v[i],
-                               ivis[i], qvis[i], uvis[i], vvis[i],
-                               isigma[i], qsigma[i], usigma[i], vsigma[i]
-                               ), dtype=DTPOL
-                              ))
-
-    elif polrep=='polprod_circ':
-        # TODO POL do we need any masking here??
-        datatable = []
-        for i in range(len(times)):
-            datatable.append(np.array
-                             ((
-                               times[i], tints[i],
-                               t1[i], t2[i], tau1[i], tau2[i],
-                               u[i], v[i],
-                               rr[i], ll[i], rl[i], lr[i],
-                               rrsig[i], llsig[i], rlsig[i], lrsig[i]
-                               ), dtype=DTPOL2
-                             ))
+    # Make a datatable
+    datatable = []
+    for i in range(len(times)):
+        datatable.append(np.array
+                         ((
+                           times[i], tints[i],
+                           t1[i], t2[i], tau1[i], tau2[i],
+                           u[i], v[i],
+                           ivis[i], qvis[i], uvis[i], vvis[i],
+                           isigma[i], qsigma[i], usigma[i], vsigma[i]
+                           ), dtype=DTPOL
+                         ))
 
     datatable = np.array(datatable)
 
     #TODO get calibration flags from uvfits?
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep, source=src, mjd=mjd, scantable=scantable)
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd, scantable=scantable)
 
 
 def load_obs_oifits(filename, flux=1.0):
-
-    """Load data from an oifits file. Does NOT currently support polarization.
-
-       Args:
-           fname (str): path to input text file
-           flux (float): normalization total flux
-       Returns:
-           obs (Obsdata): Obsdata object loaded from file
+    """Load data from an oifits file
+       Does NOT currently support polarization
     """
 
     print('Warning: load_obs_oifits does NOT currently support polarimetric data!')
@@ -1199,4 +1125,4 @@ def load_obs_oifits(filename, flux=1.0):
 
     # return object
 
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep='stokes', source=src, mjd=time[0])
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0])
