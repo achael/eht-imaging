@@ -112,10 +112,10 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def plot_gains(self, sites, gain_type='amp', pol='R',
-                   ang_unit='deg',timetype=False, yscale='log',
+    def plot_gains(self, sites, gain_type='amp', pol='R',label=None,
+                   ang_unit='deg',timetype=False, yscale='log', legend=True,
                    clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
-                   show=True, grid=False, labels=True, axis=False, export_pdf=""):
+                   show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
 
         """Plot gains on multiple sites vs time.
            Args:
@@ -126,12 +126,14 @@ class Caltable(object):
                timetype (str): 'GMST' or 'UTC'
                yscale (str): 'log' or 'lin',
                clist (list): list of colors for the plot
+               label (str): base label for legend
 
                rangex (list): [xmin, xmax] x-axis (time) limits
                rangey (list): [ymin, ymax] y-axis (gain) limits
 
+               legend (bool): Plot legend if True
                grid (bool): Plot gridlines if True
-               labels (bool): Show axis labels if True
+               axislabels (bool): Show axis labels if True
                show (bool): Display the plot if true
                axis (matplotlib.axes.Axes): add plot to this axis
                markersize (int): size of plot markers
@@ -164,7 +166,7 @@ class Caltable(object):
 
         # sites
         if sites in ['all' or 'All'] or sites==[]:
-            sites = self.data.keys()
+            sites = list(self.data.keys())
 
         if not type(sites) is list:
             sites = [sites]
@@ -198,7 +200,12 @@ class Caltable(object):
             gmaxes.append(np.max(gains))
 
             # Plot the data
-            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, label=str(site), linestyle='none')
+            if label is None:
+                bllabel=str(site)
+            else:
+                bllabel = label + ' ' + str(site)
+            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, 
+                     label=bllabel, linestyle='none')
 
 
         if not rangex:
@@ -219,10 +226,12 @@ class Caltable(object):
         x.set_ylim(rangey)
 
         # labels
-        if labels:
+        if axislabels:
             x.set_xlabel(self.timetype + ' (hr)')
             x.set_ylabel(ylabel)
             plt.title('Caltable gains for %s on day %s' % (self.source, self.mjd))
+
+        if legend:
             plt.legend()
 
         if yscale=='log':
@@ -247,7 +256,8 @@ class Caltable(object):
                (Caltable):  a padded caltable object
         """
         outdict = {}
-        for scope in self.data.keys():
+        scopes = list(self.data.keys())
+        for scope in scopes:
             caldata = self.data[scope].copy()
 
             # Gather data into "scans"
@@ -382,59 +392,32 @@ class Caltable(object):
             rlscale = rscale1 * lscale2.conj()
             lrscale = lscale1 * rscale2.conj()
 
-            if obs.polrep=='stokes':
-                rrvis = (bl_obs['vis']  +    bl_obs['vvis']) * rrscale
-                llvis = (bl_obs['vis']  -    bl_obs['vvis']) * llscale
-                rlvis = (bl_obs['qvis'] + 1j*bl_obs['uvis']) * rlscale
-                lrvis = (bl_obs['qvis'] - 1j*bl_obs['uvis']) * lrscale
+            rrvis = (bl_obs['vis']  +    bl_obs['vvis']) * rrscale
+            llvis = (bl_obs['vis']  -    bl_obs['vvis']) * llscale
+            rlvis = (bl_obs['qvis'] + 1j*bl_obs['uvis']) * rlscale
+            lrvis = (bl_obs['qvis'] - 1j*bl_obs['uvis']) * lrscale
 
-                bl_obs['vis']  = 0.5  * (rrvis + llvis)
-                bl_obs['qvis'] = 0.5  * (rlvis + lrvis)
-                bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
-                bl_obs['vvis'] = 0.5  * (rrvis - llvis)
+            bl_obs['vis']  = 0.5  * (rrvis + llvis)
+            bl_obs['qvis'] = 0.5  * (rlvis + lrvis)
+            bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
+            bl_obs['vvis'] = 0.5  * (rrvis - llvis)
 
-                rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
-                llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
-                rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
-                lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
+            rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
+            llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
+            rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
+            lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
 
-                bl_obs['sigma']  = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
-                bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
-                bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 )
-                bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+            bl_obs['sigma']  = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+            bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
+            bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 )
+            bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
 
-                if len(datatable):
-                    datatable = np.hstack((datatable,bl_obs))
-                else:
-                    datatable = bl_obs
-            elif obs.polrep=='polprod_circ':
+            if len(datatable):
+                datatable = np.hstack((datatable,bl_obs))
+            else:
+                datatable = bl_obs
 
-                bl_obs['rrvis'] = (bl_obs['rrvis']) * rrscale
-                bl_obs['llvis'] = (bl_obs['llvis']) * llscale
-                bl_obs['lrvis'] = (bl_obs['rlvis']) * rlscale
-                bl_obs['rlvis'] = (bl_obs['lrvis']) * lrscale
-
-                rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
-                llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
-                rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
-                lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
-
-                bl_obs['rrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['llsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['rlsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['lrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-
-                if len(datatable):
-                    datatable = np.hstack((datatable,bl_obs))
-                else:
-                    datatable = bl_obs
-
-
-        calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr,
-                                       polrep=obs.polrep, scantable=obs.scans, source=obs.source, mjd=obs.mjd,
-                                       ampcal=obs.ampcal, phasecal=obs.phasecal, opacitycal=obs.opacitycal, 
-                                       dcal=obs.dcal, frcal=obs.frcal,timetype=obs.timetype,)
-
+        calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr, source=obs.source, mjd=obs.mjd)
 
         return calobs
 
@@ -473,11 +456,10 @@ class Caltable(object):
             tarr2 = caltable.tarr.copy()
             tkey2 = caltable.tkey.copy()
             data2 = caltable.data.copy()
-
-            for site in data2.keys():
-
-                # if site in both tables
-                if site in data1.keys():
+            sites2 = list(data2.keys())
+            sites1 = list(data1.keys())
+            for site in sites2:
+                if site in sites1: # if site in both tables
                     #merge the data by interpolating
                     time1 = data1[site]['time']
                     time2 = data2[site]['time']

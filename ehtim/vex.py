@@ -1,7 +1,7 @@
 # vex.py
 # a interferometric array vex schedule class
 #
-#    Copyright (C) 2018 Andrew Chael
+#    Copyright (C) 2018 Hotaka Shiokawa
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@ from builtins import object
 import numpy as np
 import re
 
-import jdcal
+#import jdcal
+from astropy.time import Time
 import os
 import ehtim.array
 from ehtim.const_def import *
@@ -296,9 +297,14 @@ class Vex(object):
 def vexdate_to_MJD_hr(vexdate):
     """Find the integer MJD and UT hour from vex format date. 
     """
+
     time = re.findall("[-+]?\d+[\.]?\d*",vexdate)
     year = int(time[0])
     date = int(time[1])
-    mjd = jdcal.gcal2jd(year,1,1)[1]+date-1
+    yeardatetime = ("%04i"%year)+':'+("%03i"%date)+":00:00:00.000"
+    t = Time(yeardatetime, format='yday')
+    mjd = t.mjd
+    #mjd = jdcal.gcal2jd(year,1,1)[1]+date-1
+    #print (mjd,mjd2,mjd-mjd2)
     hour = int(time[2]) + float(time[3])/60. + float(time[4])/60./60.
     return mjd,hour

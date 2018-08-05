@@ -120,7 +120,7 @@ class Array(object):
         """
         all_sites = [t[0] for t in self.tarr]
         mask = np.array([t in sites for t in all_sites])
-        return Array(self.tarr[mask])
+        return Array(self.tarr[mask],ephem=self.ephem)
 
     def save_txt(self, fname):
         """Save the array data in a text file.

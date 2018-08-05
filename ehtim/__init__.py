@@ -6,6 +6,9 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
+
 import ehtim.obsdata
 import ehtim.imager
 

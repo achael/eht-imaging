@@ -2177,20 +2177,25 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
 
     # unpack keyword args
     #systematic_noise = kwargs.get('systematic_noise',0.) #this will break with a systematic noise dict
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
     if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
-        biarr = Obsdata.bispectra(mode="all", count="min")
+        biarr = Obsdata.bispectra(mode="all", count=count)
     else:
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
-        # reduce to a minimal set    
-        biarr = reduce_tri_minimal(Obsdata, biarr)
+        # reduce to a minimal set 
+        if count!='max':   
+            biarr = reduce_tri_minimal(Obsdata, biarr)
 
     snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
@@ -2220,20 +2225,25 @@ def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
     """
 
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     systematic_cphase_noise = kwargs.get('systematic_cphase_noise',0.)
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
-        clphasearr = Obsdata.c_phases(mode="all", count="min")
+        clphasearr = Obsdata.c_phases(mode="all", count=count)
     else:
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
         clphasearr = Obsdata.cphase
-        # reduce to a minimal set    
-        clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
+        # reduce to a minimal set
+        if count!='max':       
+            clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
 
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
@@ -2260,20 +2270,25 @@ def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
     """Return the data, sigmas, and fourier matrices for closure amplitudes
     """
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
     weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
     if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.camp
-        # reduce to a minimal set    
-        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
+        # reduce to a minimal set
+        if count!='max':       
+            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
@@ -2300,20 +2315,25 @@ def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
     """Return the data, sigmas, and fourier matrices for log closure amplitudes
     """
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
     weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
     if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='logcamp', debias=debias)
     else:
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
-        # reduce to a minimal set    
-        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
+        # reduce to a minimal set
+        if count!='max':       
+            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
@@ -2425,6 +2445,10 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
 
     # unpack keyword args
     #systematic_noise = kwargs.get('systematic_noise',0.) #this will break with a systematic noise dict
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -2434,16 +2458,17 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
 
     # unpack data
     if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
-        biarr = Obsdata.bispectra(mode="all", count="min")
+        biarr = Obsdata.bispectra(mode="all", count=count)
     else:
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
-        # reduce to a minimal set    
-        biarr = reduce_tri_minimal(Obsdata, biarr)
+        # reduce to a minimal set
+        if count!='max':       
+            biarr = reduce_tri_minimal(Obsdata, biarr)
 
-    snrmask = np.abs(biarr['bspec']/biarr['sigmab']) > snrcut
+    snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
@@ -2475,6 +2500,10 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
     """Return the data, sigmas, uv points, and FFT info for closure phases
     """
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     weighting = kwargs.get('weighting','natural')
     systematic_cphase_noise = kwargs.get('systematic_cphase_noise', 0.)
@@ -2485,14 +2514,15 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
 
     # unpack data
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
-        clphasearr = Obsdata.c_phases(mode="all", count="min")
+        clphasearr = Obsdata.c_phases(mode="all", count=count)
     else:
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
         clphasearr = Obsdata.cphase
-        # reduce to a minimal set    
-        clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
+        # reduce to a minimal set
+        if count!='max':       
+            clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
 
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
@@ -2526,6 +2556,10 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
     """
 
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
     weighting = kwargs.get('weighting','natural')
@@ -2536,14 +2570,15 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
 
     # unpack data & mask low snr points
     if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.camp
-        # reduce to a minimal set    
-        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
+        # reduce to a minimal set
+        if count!='max':       
+            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
@@ -2575,6 +2610,10 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
     """Return the data, sigmas, uv points, and FFT info for log closure amplitudes
     """
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
     weighting = kwargs.get('weighting','natural')
@@ -2585,14 +2624,15 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
 
     # unpack data & mask low snr points
     if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='logcamp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
-        # reduce to a minimal set    
-        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
+        # reduce to a minimal set
+        if count!='max':       
+            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
@@ -2700,6 +2740,10 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
 
     # unpack keyword args
     #systematic_noise = kwargs.get('systematic_noise',0.) #this will break with a systematic_noise dict
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     weighting = kwargs.get('weighting','natural')
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
@@ -2707,14 +2751,15 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
 
     # unpack data
     if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
-        biarr = Obsdata.bispectra(mode="all", count="min")
+        biarr = Obsdata.bispectra(mode="all", count=count)
     else:
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
-        # reduce to a minimal set    
-        biarr = reduce_tri_minimal(Obsdata, biarr)
+        # reduce to a minimal set
+        if count!='max':       
+            biarr = reduce_tri_minimal(Obsdata, biarr)
 
     snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
@@ -2745,7 +2790,11 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
-    # unpack keyword args
+    # unpack keyword args    
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     weighting = kwargs.get('weighting','natural')
     systematic_cphase_noise = kwargs.get('systematic_cphase_noise',0.)
@@ -2754,14 +2803,15 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
 
     # unpack data
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
-        clphasearr = Obsdata.c_phases(mode="all", count="min")
+        clphasearr = Obsdata.c_phases(mode="all", count=count)
     else:
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
         clphasearr = Obsdata.cphase
-        # reduce to a minimal set    
-        clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
+        # reduce to a minimal set
+        if count!='max':       
+            clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
 
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
 
@@ -2794,6 +2844,10 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
     weighting = kwargs.get('weighting','natural')
@@ -2802,14 +2856,15 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
 
     # unpack data & mask low snr points
     if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='camp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
     else:
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.camp
-        # reduce to a minimal set    
-        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
+        # reduce to a minimal set
+        if count!='max':       
+            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 
@@ -2841,6 +2896,10 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
         raise Exception("NFFT doesn't work with odd image dimensions!")
 
     # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
     snrcut = kwargs.get('snrcut',0.)
     debias = kwargs.get('debias',True)
     weighting = kwargs.get('weighting','natural')
@@ -2849,14 +2908,15 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
 
     # unpack data & mask low snr points
     if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count='min', ctype='logcamp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='logcamp', debias=debias)
     else:
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
-        # reduce to a minimal set    
-        clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
+        # reduce to a minimal set
+        if count!='max':    
+            clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
 

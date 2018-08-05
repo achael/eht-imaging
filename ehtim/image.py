@@ -41,9 +41,11 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
 #import emcee
+
 ###########################################################################################################################################
 #Image object
 ###########################################################################################################################################
+
 class Image(object):
     """A polarimetric image (in units of Jy/pixel).
 
@@ -110,7 +112,7 @@ class Image(object):
 
     def add_qu(self, qimage, uimage):
 
-        """Add Stokes Q and U image.
+        """Add Stokes Q and U images.
 
            Args:
                qimage (numpy.array): The 2D Stokes Q values in Jy/pixel array
@@ -124,6 +126,8 @@ class Image(object):
         self.qvec = qimage.flatten()
         self.uvec = uimage.flatten()
 
+        return
+
     def add_v(self, vimage):
 
         """Add Stokes V image.
@@ -135,6 +139,8 @@ class Image(object):
         if vimage.shape != (self.ydim, self.xdim):
             raise Exception("V image shape incompatible with I image!")
         self.vvec = vimage.flatten()
+
+        return
 
     def add_pol(self, qimage, uimage, vimage):
 
@@ -148,6 +154,8 @@ class Image(object):
 
         self.add_qu(qimage, uimage)
         self.add_v(vimage)
+
+        return
 
     def copy(self):
 
@@ -177,7 +185,8 @@ class Image(object):
                 (numpy.array): normal vector pointing to source in geocentric coordinates (m)
         """
 
-        return np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
+        sourcevec = np.array([np.cos(self.dec*DEGREE), 0, np.sin(self.dec*DEGREE)])
+        return sourcevec
 
     def imarr(self, stokes="I"):
 
@@ -195,6 +204,7 @@ class Image(object):
         elif stokes=="Q" and len(im.qvec): imarr=self.qvec.reshape(self.ydim, self.xdim)
         elif stokes=="U" and len(im.uvec): imarr=self.uvec.reshape(self.ydim, self.xdim)
         elif stokes=="V" and len(im.vvec): imarr=self.vvec.reshape(self.ydim, self.xdim)
+
         return imarr
 
     def fovx(self):
@@ -245,7 +255,6 @@ class Image(object):
         self.qvec = - self.qvec
         return
 
-
     def sample_uv(self, uv, ttype='nfft', fft_pad_factor=2, sgrscat=False):
 
         """Sample the image on the selected uv points without adding noise.
@@ -263,9 +272,7 @@ class Image(object):
         data = simobs.sample_vis(self, uv, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
         return data
 
-    def observe_same_nonoise(self, obs,
-                                   ttype="nfft", fft_pad_factor=2,
-                                   sgrscat=False):
+    def observe_same_nonoise(self, obs, ttype="nfft", fft_pad_factor=2, sgrscat=False):
 
         """Observe the image on the same baselines as an existing observation object without adding noise.
 
@@ -294,10 +301,8 @@ class Image(object):
         # Copy data to be safe
         obsdata = obs.copy().data
 
-
         # Extract uv datasample
         uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
-
         data = simobs.sample_vis(self, uv, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
 
         # put visibilities into the obsdata
@@ -307,14 +312,11 @@ class Image(object):
             obsdata['uvis'] = data[2]
             obsdata['vvis'] = data[3]
 
-        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata, obs.tarr,
-                                             source=self.source, mjd=self.mjd, polrep='stokes',
-                                             ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
-                                             timetype=obs.timetype, scantable=obs.scans)
+        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata,
+                                             obs.tarr, source=self.source, mjd=obs.mjd)
         return obs_no_noise
 
-    def observe_same(self, obsin,
-                           ttype='nfft', fft_pad_factor=2,
+    def observe_same(self, obsin, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                            jones=False, inv_jones=False,
@@ -326,8 +328,10 @@ class Image(object):
 
            Args:
                obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
+
                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
                opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
@@ -337,6 +341,7 @@ class Image(object):
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
+
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
                gainp (float): the fractional std. dev. of the random error on the gains
                gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
@@ -358,46 +363,43 @@ class Image(object):
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dtermp=dtermp,dterm_offset=dterm_offset)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
-                                         source=obs.source, mjd=obs.mjd, polrep='stokes',
-                                         ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal,
-                                         timetype=obs.timetype, scantable=obs.scans)
-
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
+                                             obs.tarr, source=obs.source, mjd=obs.mjd,
+                                             ampcal=ampcal, phasecal=phasecal,
+                                             opacitycal=opacitycal, dcal=dcal, frcal=frcal)
             if inv_jones:
                 obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
-                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
-                                             source=obs.source, mjd=obs.mjd, polrep='stokes',
-                                             ampcal=ampcal, phasecal=phasecal, 
-                                             opacitycal=True, dcal=True, frcal=True,
-                                             timetype=obs.timetype, scantable=obs.scans)
-                                             #these are always set to True after inverse jones call
+                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
+                                                 obs.tarr, source=obs.source, mjd=obs.mjd,
+                                                 ampcal=ampcal, phasecal=phasecal,
+                                                 opacitycal=True, dcal=True, frcal=True)
+                                                 #these are always set to True after inverse jones call
 
         # No Jones Matrices, Add noise the old way
-        # There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
+        # NOTE There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
         else:
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
-                                         source=obs.source, mjd=obs.mjd, polrep='stokes',
-                                         ampcal=ampcal, phasecal=phasecal, opacitycal=True, dcal=True, frcal=True,
-                                         timetype=obs.timetype, scantable=obs.scans)
-                                         #these are always set to True after inverse jones cal
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata,
+                                             obs.tarr, source=obs.source, mjd=obs.mjd,
+                                             ampcal=ampcal, phasecal=phasecal,
+                                             opacitycal=True, dcal=True, frcal=True)
+                                             #these are always set to True after inverse jones cal
         return obs
 
     def observe(self, array, tint, tadv, tstart, tstop, bw,
                       mjd=None, timetype='UTC',
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
                       ttype='nfft', fft_pad_factor=2,
-                      sgrscat=False, add_th_noise=True,
+                      fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
-                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
-                      fix_theta_GMST = False):
+                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF):
 
         """Generate baselines from an array object and observe the image.
 
@@ -408,12 +410,16 @@ class Image(object):
                tstart (float): the start time of the observation in hours
                tstop (float): the end time of the observation in hours
                bw (float): the observing bandwidth in Hz
+
                mjd (int): the mjd of the observation, if different from the image mjd
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
+
                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
+
+               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points through time
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
                opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
@@ -423,13 +429,13 @@ class Image(object):
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
+
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
                gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points through time
 
            Returns:
                (Obsdata): an observation object
@@ -442,7 +448,7 @@ class Image(object):
             mjd = self.mjd
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd,
-                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
+                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST = fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
@@ -452,17 +458,26 @@ class Image(object):
 
         return obs
 
-    def observe_vex(self, vex, source, t_int=0.0, tight_tadv = False,
-                      ttype='nfft', fft_pad_factor=2, sgrscat=False, add_th_noise=True,
-                      opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
-                      jones=False, inv_jones=False,
-                      tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF,
-                      dterm_offset=DTERMPDEF, dtermp=DTERMPDEF):
+    def observe_vex(self, vex, source, t_int=0.0, tight_tadv=False,
+                          ttype='nfft', fft_pad_factor=2,
+                          sgrscat=False, add_th_noise=True,
+                          opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                          jones=False, inv_jones=False,
+                          tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF,
+                          dterm_offset=DTERMPDEF, dtermp=DTERMPDEF):
 
         """Generate baselines from a vex file and observes the image.
 
            Args:
                vex (Vex): an vex object containing sites and scan information
+               source (str): the source to observe
+
+               t_int (float): if not zero, overrides the vex scans to produce visibilities for each t_int seconds
+               tight_tadv (float): if True, advance right after each integration, otherwise advance after 2x the scan length
+
+               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
                opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
@@ -472,13 +487,13 @@ class Image(object):
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
+
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
                gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
                taup (float): the fractional std. dev. of the random error on the opacities
-               dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-               t_int (float): if not zero, overrides the vex scans to produce visibilities for each t_int seconds
+               dtermp (float): the fractional std. dev. of the random error on the D-terms
 
            Returns:
                (Obsdata): an observation object
@@ -489,21 +504,26 @@ class Image(object):
         if t_int == 0.0:
             t_int_flag = True
 
+        # Loop over all scans and assemble a list of scan observations
         obs_List=[]
         for i_scan in range(len(vex.sched)):
 
             if t_int_flag:
                  t_int = vex.sched[i_scan]['scan'][0]['scan_sec']
-
             if tight_tadv:
                 t_adv = t_int
             else:
                 t_adv = 2.0*vex.sched[i_scan]['scan'][0]['scan_sec']
 
+            # If this scan doesn't observe the source, advance
             if vex.sched[i_scan]['source'] != source:
                 continue
-            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in list(vex.sched[i_scan]['scan'].keys())])
 
+            # What subarray is observing now?
+            scankeys = list(vex.sched[i_scan]['scan'].keys())
+            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in scankeys])
+
+            # Observe with the subarray over the scan interval
             obs = self.observe(subarray, t_int, t_adv,
                                        vex.sched[i_scan]['start_hr'], vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0,
                                        vex.bw_hz, mjd=vex.sched[i_scan]['mjd_floor'],
@@ -516,7 +536,10 @@ class Image(object):
 
             obs_List.append(obs)
 
-        return ehtim.obsdata.merge_obs(obs_List)
+        # Merge the scans together
+        obs = ehtim.obsdata.merge_obs(obs_List)
+
+        return obs
 
     def rotate(self, angle):
 
@@ -641,7 +664,7 @@ class Image(object):
         """Shift the image by a given number of pixels.
 
          Args:
-             shiftidx (list): pixel offsets for image shift
+             shiftidx (list): pixel offsets [x_offset, y_offset] for image shift
 
          Returns:
              (Image): shifted images
@@ -724,7 +747,6 @@ class Image(object):
 
         return [idx, xcorr, im1_pad, im2_pad]
 
-
     def resample_square(self, xdim_new, ker_size=5):
 
         """Resample the image to new (square) dimensions
@@ -791,6 +813,7 @@ class Image(object):
                           for y in np.arange(0, -ydim_new, -1)] )
             outv *= scaling
             outim.add_v(outv)
+
         return outim
 
     def im_pad(self, fovx, fovy):
@@ -803,6 +826,7 @@ class Image(object):
            Returns:
                 im_pad (Image): padded image
         """
+
         im = self
         fovoldx=im.psize*im.xdim
         fovoldy=im.psize*im.ydim
@@ -830,6 +854,7 @@ class Image(object):
 
            Args:
                 flux  (float): total flux to add to image
+
            Returns:
                 (Image): output image
         """
@@ -846,6 +871,7 @@ class Image(object):
            Args:
                 flux  (float): total flux to add to image
                 radius  (float): radius of top hat flux in radians
+
            Returns:
                 (Image): output image
         """
@@ -1001,6 +1027,7 @@ class Image(object):
            Returns:
                 (Image): output image
         """
+
         im = self
         if not (0 < mag < 1):
             raise Exception("fractional polarization magnitude must be beween 0 and 1!")
@@ -1010,6 +1037,7 @@ class Image(object):
         imu = uimage(im.imvec, mag * np.ones(len(im.imvec)), angle*np.ones(len(im.imvec))).reshape(im.ydim,im.xdim)
         out = Image(imi, im.psize, im.ra, im.dec, rf=im.rf, source=im.source, mjd=im.mjd, pulse=im.pulse)
         out.add_qu(imq, imu)
+
         return out
 
     def blur_gauss(self, beamparams, frac=1., frac_pol=0):
@@ -1028,7 +1056,7 @@ class Image(object):
         image = self
         if frac <= 0.0:
             return image.copy()
-        
+
         im = (image.imvec).reshape(image.ydim, image.xdim)
         if len(image.qvec):
             qim = (image.qvec).reshape(image.ydim, image.xdim)
@@ -1084,9 +1112,11 @@ class Image(object):
             out.add_qu(qim, uim)
         if len(image.vvec):
             out.add_v(vim)
+
         return out
 
     def im_grad(self, gradtype='abs'):
+
         """Return the gradient image
 
            Args:
@@ -1094,6 +1124,7 @@ class Image(object):
            Returns:
                Image : an image object containing the gradient image
         """
+
         imgrad = self.copy()
         #gradlist = np.gradient(imgrad.imvec.reshape(self.ydim,self.xdim))
         imarr = imgrad.imvec.reshape(self.ydim,self.xdim)
@@ -1250,6 +1281,7 @@ class Image(object):
 
     def hough_ring(self, edgetype='canny',thresh=0.2, num_circles=3, radius_range=None,
                          return_type='rad', display_results=True):
+
         """Use a circular hough transform to find a circle in the image
 
            Args:
@@ -1340,7 +1372,6 @@ class Image(object):
                 ax.add_patch(circ)
             i+=1
 
-
         return outlist
 
     def fit_gauss(self, units='rad'):
@@ -1353,6 +1384,7 @@ class Image(object):
            Returns:
                (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians or natural units.
         """
+
         (x1,y1) = self.centroid()
         pdim = self.psize
         im = self.imvec
@@ -1462,12 +1494,13 @@ class Image(object):
         x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*im)/np.sum(im)
         y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*im)/np.sum(im)
         return np.array((x0,y0))
-        
+
     def mask(self, cutoff=0.05, beamparams=None, frac=0.0):
+
         """Produce an image mask that shows all pixels above the specified cutoff percentage of the max flux.
 
            Args:
-               cutoff (float): Pixels with intensities greater than the cuttoff * max intensity are masked 
+               cutoff (float): Pixels with intensities greater than the cuttoff * max intensity are masked
                beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm
                frac (float): the fraction of nominal beam to blur with
 
@@ -1475,7 +1508,7 @@ class Image(object):
                (Image): output mask image
 
         """
-        
+
         if not beamparams is None:
             try: len(beamparams)
             except TypeError:
@@ -1490,25 +1523,27 @@ class Image(object):
         maxval = np.max(mask.imvec)
         minval = np.max((np.min(mask.imvec),0.))
         intensityrange = maxval - minval
-        mask.imvec  = mask.imvec > (intensityrange * cutoff +  minval)  
+
+        mask.imvec  = (mask.imvec > ( intensityrange * cutoff +  minval) ).astype(int)
+
         return mask
 
-    #TODO make this work with mask with different dimensions, fov??
+    #TODO make this work with a mask image with different dimensions & fov
     def apply_mask(self, mask_im, fill_val=0.):
 
-        """Apply a mask to the image 
+        """Apply a mask to the image
 
            Args:
                mask_im (Image): a mask image with the same dimensions as the Image
                fill_val (float): masked pixels are set to this value
 
            Returns:
-               (Image): the masked image 
+               (Image): the masked image
 
         """
         if (self.psize != mask_im.psize) or (self.xdim != mask_im.xdim) or (self.ydim != mask_im.ydim):
             raise Exception("mask image does not match dimensions of the current image!")
-        maskvec = mask_im.imvec
+        maskvec = mask_im.imvec.astype(bool)
         maskvec[maskvec <= 0] = 0
         maskvec[maskvec > 0] = 1
 
@@ -1518,11 +1553,12 @@ class Image(object):
 
 
     def threshold(self, cutoff=0.05, frac_i=None, beamparams=None, frac=0.0, fill_val=0.):
+
         """Apply a hard threshold to an image
 
            Args:
                cutoff (float): Pixels with intensities greater than the cuttoff * max intensity are masked
-               frac_i (float): the old name for cutoff: should not be used except in old scripts!  
+               frac_i (float): the old name for cutoff: should not be used except in old scripts!
                beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm
                frac (float): the fraction of nominal beam to blur with
                fill_val (float): masked pixels are set to this value
@@ -1530,11 +1566,11 @@ class Image(object):
            Returns:
                (Image): output mask image
         """
+
         if not (frac_i is None):
             cutoff=frac_i
             print("Warning!: using frac_i=%f as cutoff in threshold(). Rename 'frac_i' to 'cutoff' in future scripts!")
 
-        #TODO change frac_i to cutoff? Is fill_val important?? 
         mask = self.mask(cutoff=frac_i, beamparams=beamparams, frac=frac)
         out = self.apply_mask(mask, fill_val=fill_val)
         return out
@@ -1747,29 +1783,9 @@ class Image(object):
 
         return f
 
-    def save_txt(self, fname):
-        """Save image data to text file.
-
-           Args:
-                fname (str): path to output text file
-           Returns:
-        """
-
-        ehtim.io.save.save_im_txt(self, fname)
-        return
-
-    def save_fits(self, fname):
-        """Save image data to a fits file.
-
-           Args:
-                fname (str): path to output fits file
-           Returns:
-        """
-        ehtim.io.save.save_im_fits(self, fname)
-        return
-
     def align_images(self, im_array, shift=True, final_fov=False, scale='lin', gamma=0.5,  dynamic_range=[1.e3]):
-        """Align the images in im_array to the image in self
+
+        """Align all the images in im_array to the image in self
 
            Args:
 
@@ -1808,7 +1824,6 @@ class Image(object):
             tmp = im_pad.shift(idx)
             shifts.append(idx)
             im_array_shift.append( tmp.regrid_image(final_fov, npix) )
-
 
         return (im_array_shift, shifts, im0_pad)
 
@@ -1895,6 +1910,7 @@ class Image(object):
         return (f, shift)
 
     def save_txt(self, fname):
+
         """Save image data to text file.
 
            Args:
@@ -1906,6 +1922,7 @@ class Image(object):
         return
 
     def save_fits(self, fname):
+
         """Save image data to a fits file.
 
            Args:
@@ -1914,12 +1931,13 @@ class Image(object):
         """
         ehtim.io.save.save_im_fits(self, fname)
         return
-        
+
 
 ###########################################################################################################################################
 #Image creation functions
 ###########################################################################################################################################
 def make_square(obs, npix, fov, pulse=PULSE_DEFAULT):
+
     """Make an empty square image.
 
        Args:
@@ -1937,6 +1955,7 @@ def make_square(obs, npix, fov, pulse=PULSE_DEFAULT):
     return Image(im, pdim, obs.ra, obs.dec, rf=obs.rf, source=obs.source, mjd=obs.mjd, pulse=pulse)
 
 def load_txt(fname):
+
     """Read in an image from a text file.
 
        Args:
@@ -1948,6 +1967,7 @@ def load_txt(fname):
     return ehtim.io.load.load_im_txt(fname)
 
 def load_fits(fname, aipscc=False):
+
     """Read in an image from a FITS file.
 
        Args:

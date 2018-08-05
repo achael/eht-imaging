@@ -781,6 +781,272 @@ def get_chisqgrad_wrap(args):
 # Imagers
 ##################################################################################################
 
+
+def dynamical_imaging_minimal(Obsdata_List, InitIm_List, Prior, flux_List = [],
+d1='vis', d2=False, d3=False,
+alpha_d1=10, alpha_d2=10, alpha_d3=10,
+systematic_noise1=0.0, systematic_noise2=0.0, systematic_noise3=0.0,
+entropy1="tv2", entropy2="l1",
+alpha_s1=1.0, alpha_s2=1.0, norm_reg=True, alpha_A=1.0,
+R_dt  ={'alpha':0.0, 'metric':'SymKL', 'p':2.0},
+maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, 
+minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0., 
+ttype = 'nfft', fft_pad_factor=2):
+
+    global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
+
+    N_frame = len(Obsdata_List)
+    N_pixel = Prior.xdim #pixel dimension
+
+    # Determine the appropriate final resolution
+    all_res = []
+    for obs in Obsdata_List:
+        if len(obs.data) > 0:
+            all_res.append(obs.res())
+
+    beam_size = np.min(np.array(all_res))
+    print("Maximal Resolution:",beam_size)
+
+    # Find an observation with data
+    for j in range(N_frame):
+        if len(Obsdata_List[j].data) > 0:
+            first_obs = Obsdata_List[j]
+            break
+
+    # Catch problem if uvrange < largest baseline
+    if 1./Prior.psize < np.max(first_obs.unpack(['uvdist'])['uvdist']):
+        raise Exception("pixel spacing is larger than smallest spatial wavelength!")
+
+    if alpha_flux > 0.0 and len(flux_List) != N_frame:
+        raise Exception("Number of elements in the list of total flux densities does not match the number of frames!")
+
+    # Make the blurring kernel for R_dt
+    # Note: There are odd problems when sigma_dt is too small. I can't figure out why it causes the convolution to crash.
+    # However, having sigma_dt -> 0 is not a problem in theory. So we'll just set the kernel to be zero in that case and then ignore it later in the convolution.
+
+    B_dt = np.zeros((Prior.ydim,Prior.xdim))
+
+    embed_mask_List = [Prior.imvec > clipfloor for j in range(N_frame)]
+    embed_mask_All = np.array(embed_mask_List).flatten()
+
+    embed_totals = [np.sum(embed_mask) for embed_mask in embed_mask_List]
+
+    logprior_List = [None,] * N_frame
+    loginit_List = [None,] * N_frame
+
+    nprior_embed_List = [None,] * N_frame
+    nprior_List = [None,] * N_frame
+
+    ninit_embed_List = [InitIm_List[i].imvec for i in range(N_frame)]
+    ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_frame)]
+
+    print ("Calculating lists/matrices for chi-squared terms...")
+    A1_List = [None,] * N_frame
+    A2_List = [None,] * N_frame
+    A3_List = [None,] * N_frame
+    data1_List = [[],] * N_frame
+    data2_List = [[],] * N_frame
+    data3_List = [[],] * N_frame
+    sigma1_List = [None,] * N_frame
+    sigma2_List = [None,] * N_frame
+    sigma3_List = [None,] * N_frame
+
+    # Get data and Fourier matrices for the data terms
+    for i in range(N_frame):
+        pixel_max = np.max(InitIm_List[i].imvec)
+        prior_flux_rescale = 1.0
+        if len(flux_List) > 0:
+            prior_flux_rescale = flux_List[i]/Prior.total_flux()
+
+        nprior_embed_List[i] = Prior.imvec * prior_flux_rescale
+
+        nprior_List[i] = nprior_embed_List[i][embed_mask_List[i]]
+        logprior_List[i] = np.log(nprior_List[i])
+        loginit_List[i] = np.log(ninit_List[i] + pixel_max/Target_Dynamic_Range/1.e6)  #add the dynamic range floor here
+
+        if len(Obsdata_List[i].data) == 0:  #This allows the algorithm to create frames for periods with no data
+            continue
+
+        (data1_List[i], sigma1_List[i], A1_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d1, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise1)
+        (data2_List[i], sigma2_List[i], A2_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d2, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise2)
+        (data3_List[i], sigma3_List[i], A3_List[i]) = chisqdata(Obsdata_List[i], Prior, embed_mask_List[i], d3, ttype=ttype, fft_pad_factor=fft_pad_factor, systematic_noise=systematic_noise3)
+
+    # Define the objective function and gradient
+    def objfunc(x):
+        # Frames is a list of the *unscattered* frames
+        Frames = np.zeros((N_frame, N_pixel, N_pixel))
+        log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+
+        init_i = 0
+        for i in range(N_frame):
+            cur_len = np.sum(embed_mask_List[i])
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            init_i += cur_len
+
+        s1 = s2 = 0.0
+
+        if alpha_s1 != 0.0:
+            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+        if alpha_s2 != 0.0:
+            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+
+        s_dynamic = 0.0
+
+        if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
+
+        chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+
+        chisq = ((np.sum(chisq[:,0])/N_frame - 1.0)*alpha_d1 +
+                 (np.sum(chisq[:,1])/N_frame - 1.0)*alpha_d2 +
+                 (np.sum(chisq[:,2])/N_frame - 1.0)*alpha_d3)
+
+        return (s1 + s2 + s_dynamic + chisq)*J_factor
+
+    def objgrad(x):
+        Frames = np.zeros((N_frame, N_pixel, N_pixel))
+        log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+
+        init_i = 0
+        for i in range(N_frame):
+            cur_len = np.sum(embed_mask_List[i])
+            log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+            Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+            init_i += cur_len
+
+        s1 = s2 = 0.0
+
+        if alpha_s1 != 0.0:
+            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+        if alpha_s2 != 0.0:
+            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+
+        s_dynamic_grad = 0.0
+        if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, **R_dt)*R_dt['alpha']
+
+
+        chisq_grad = np.array([get_chisqgrad(j, Frames[j].ravel()[embed_mask_List[j]], d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+
+        # Now add the Jacobian factor and concatenate
+        for j in range(N_frame):
+            chisq_grad[j,0] = chisq_grad[j,0]*Frames[j].ravel()[embed_mask_List[j]]
+            chisq_grad[j,1] = chisq_grad[j,1]*Frames[j].ravel()[embed_mask_List[j]]
+            chisq_grad[j,2] = chisq_grad[j,2]*Frames[j].ravel()[embed_mask_List[j]]
+
+        chisq_grad = (np.concatenate([embed(chisq_grad[i,0], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d1
+                    + np.concatenate([embed(chisq_grad[i,1], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d2
+                    + np.concatenate([embed(chisq_grad[i,2], embed_mask_List[i]) for i in range(N_frame)])/N_frame*alpha_d3)
+
+        return (np.concatenate((s1 + s2 + (s_dynamic_grad + chisq_grad)[embed_mask_All]))*J_factor)
+
+    # Plotting function for each iteration
+    global nit
+    nit = 0
+    def plotcur(x, final=False):
+        global nit
+        nit += 1
+
+        if nit%update_interval == 0 or final == True:
+            print ("iteration %d" % nit)
+
+            Frames = np.zeros((N_frame, N_pixel, N_pixel))
+            log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+
+            init_i = 0
+            for i in range(N_frame):
+                cur_len = np.sum(embed_mask_List[i])
+                log_Frames[i] = embed(x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+                Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+                init_i += cur_len
+
+            s1 = s2 = 0.0
+
+            if alpha_s1 != 0.0:
+
+                s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
+                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+            if alpha_s2 != 0.0:
+                s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
+                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+
+            s_dynamic = 0.0
+
+            if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
+
+            chisq = np.array([get_chisq(j, Frames[j].ravel()[embed_mask_List[j]],
+                              d1, d2, d3, ttype, embed_mask_List[j]) for j in range(N_frame)])
+
+            chisq1_List = chisq[:,0]
+            chisq2_List = chisq[:,1]
+            chisq3_List = chisq[:,2]
+            chisq1 = np.sum(chisq1_List)/N_frame
+            chisq2 = np.sum(chisq2_List)/N_frame
+            chisq3 = np.sum(chisq3_List)/N_frame
+            chisq1_max = np.max(chisq1_List)
+            chisq2_max = np.max(chisq2_List)
+            chisq3_max = np.max(chisq3_List)
+            if d1 != False: print ("chi2_1: %f" % chisq1)
+            if d2 != False: print ("chi2_2: %f" % chisq2)
+            if d3 != False: print ("chi2_3: %f" % chisq3)
+            if d1 != False: print ("weighted chi2_1: %f" % (chisq1 * alpha_d1))
+            if d2 != False: print ("weighted chi2_2: %f" % (chisq2 * alpha_d2))
+            if d3 != False: print ("weighted chi2_3: %f" % (chisq3 * alpha_d3))
+            if d1 != False: print ("Max Frame chi2_1: %f" % chisq1_max)
+            if d2 != False: print ("Max Frame chi2_2: %f" % chisq2_max)
+            if d3 != False: print ("Max Frame chi2_3: %f" % chisq3_max)
+
+            if final == True:
+                if d1 != False: print ("All chisq1:",chisq1_List)
+                if d2 != False: print ("All chisq2:",chisq2_List)
+                if d3 != False: print ("All chisq3:",chisq3_List)
+
+            if s1 != 0.0: print ("weighted s1: %f" % (s1))
+            if s2 != 0.0: print ("weighted s2: %f" % (s2))
+            print ("weighted s_dynamic: %f" % (s_dynamic))
+
+            if nit%refresh_interval == 0:
+                print ("Plotting Functionality Temporarily Disabled...")
+
+    loginit = np.hstack(loginit_List).flatten()
+    x0 = loginit
+
+    print ("Total Pixel #: ",(N_pixel*N_pixel*N_frame))
+    print ("Clipped Pixel #: ",(len(loginit)))
+
+    print ("Initial Values:")
+    plotcur(x0)
+
+    # Minimize
+    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST, 'gtol': 1e-10} # minimizer params
+    tstart = time.time()
+    res = opt.minimize(objfunc, x0, method=minimizer_method, jac=objgrad, options=optdict, callback=plotcur)
+    tstop = time.time()
+
+    Frames = np.zeros((N_frame, N_pixel, N_pixel))
+    log_Frames = np.zeros((N_frame, N_pixel, N_pixel))
+
+    init_i = 0
+    for i in range(N_frame):
+        cur_len = np.sum(embed_mask_List[i])
+        log_Frames[i] = embed(res.x[init_i:(init_i+cur_len)], embed_mask_List[i]).reshape((N_pixel, N_pixel))
+        #Impose the prior mask in linear space for the output
+        Frames[i] = np.exp(log_Frames[i])*(embed_mask_List[i].reshape((N_pixel, N_pixel)))
+        init_i += cur_len
+
+    plotcur(res.x, final=True)
+
+    # Print stats
+    print ("time: %f s" % (tstop - tstart))
+    print ("J: %f" % res.fun)
+    print (res.message)
+
+    outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
+                         Prior.ra, Prior.dec, rf=Obsdata_List[i].rf, source=Prior.source,
+                         mjd=Prior.mjd, pulse=Prior.pulse) for i in range(N_frame)]
+
+    return outim
+
+
 def dynamical_imaging(Obsdata_List, InitIm_List, Prior, Flow_Init = [], flux_List = [],
 d1='vis', d2=False, d3=False,
 alpha_d1=10, alpha_d2=10, alpha_d3=10,
@@ -795,7 +1061,7 @@ stochastic_optics=False, scattering_model=False, alpha_phi = 1.e4, #options for 
 Target_Dynamic_Range = 10000.0,
 maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000, 
 minimizer_method = 'L-BFGS-B', NHIST = 25, update_interval = 1, clipfloor=0., processes = -1, 
-recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2):
+recalculate_chisqdata = True,  ttype = 'nfft', fft_pad_factor=2, **kwargs):
 
     """Run dynamical imaging.
 
@@ -1003,9 +1269,9 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+            s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+            s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
 
         s_dynamic = cm = flux = s_dS = s_dF = 0.0
 
@@ -1079,13 +1345,13 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         s1 = s2 = 0.0
 
         if alpha_s1 != 0.0:
-            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+            s1 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
         if alpha_s2 != 0.0:
-            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+            s2 = static_regularizer_gradient(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
 
         s_dynamic_grad = cm_grad = flux_grad = s_dS = s_dF = 0.0
-        if R_dI['alpha'] != 0.0: s_dynamic_grad += RdI_gradient(Frames,R_dI)*R_dI['alpha']
-        if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, R_dt)*R_dt['alpha']
+        if R_dI['alpha'] != 0.0: s_dynamic_grad += RdI_gradient(Frames,**R_dI)*R_dI['alpha']
+        if R_dt['alpha'] != 0.0: s_dynamic_grad += Rdt_gradient(Frames, B_dt, **R_dt)*R_dt['alpha']
 
         if alpha_dS1 != 0.0: s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
         if alpha_dS2 != 0.0: s_dS += RdS_gradient(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
@@ -1267,18 +1533,18 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
             if alpha_s1 != 0.0:
 
                 s1 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s1
+                                        Prior.psize, entropy1, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s1
             if alpha_s2 != 0.0:
                 s2 = static_regularizer(Frames, nprior_embed_List, embed_mask_List, Prior.total_flux(),
-                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_s2
+                                        Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_s2
 
             s_dynamic = cm = s_dS = s_dF = 0.0
 
             if R_dI['alpha'] != 0.0: s_dynamic += RdI(Frames, **R_dI)*R_dI['alpha']
             if R_dt['alpha'] != 0.0: s_dynamic += Rdt(Frames, B_dt, **R_dt)*R_dt['alpha']
 
-            if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS1
-            if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A)*alpha_dS2
+            if alpha_dS1 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy1, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS1
+            if alpha_dS2 != 0.0: s_dS += RdS(Frames, nprior_embed_List, embed_mask_List, entropy2, norm_reg, beam_size=beam_size, alpha_A=alpha_A, **kwargs)*alpha_dS2
 
             if alpha_dF != 0.0: s_dF += RdF_clip(Frames, embed_mask_List)*alpha_dF
 
@@ -1632,8 +1898,8 @@ maxit=200, J_factor = 0.001, stop=1.0e-10, ipynb=False, refresh_interval = 1000,
             if alpha_s2 != 0.0:
                 s2[mf1:mf2] = static_regularizer_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], Prior.total_flux(), Prior.psize, entropy2, norm_reg=norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_s2
 
-            if R_dI['alpha'] != 0.0: s_dynamic_grad[f1:f2] += RdI_gradient(Frames[i1:i2],R_dI)*R_dI['alpha']
-            if R_dt['alpha'] != 0.0: s_dynamic_grad[f1:f2] += Rdt_gradient(Frames[i1:i2], B_dt, R_dt)*R_dt['alpha']
+            if R_dI['alpha'] != 0.0: s_dynamic_grad[f1:f2] += RdI_gradient(Frames[i1:i2],**R_dI)*R_dI['alpha']
+            if R_dt['alpha'] != 0.0: s_dynamic_grad[f1:f2] += Rdt_gradient(Frames[i1:i2], B_dt, **R_dt)*R_dt['alpha']
 
             if alpha_dS1 != 0.0: s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy1, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS1
             if alpha_dS2 != 0.0: s_dS[mf1:mf2] += RdS_gradient(Frames[i1:i2], nprior_embed_List[i1:i2], embed_mask_List[i1:i2], entropy2, norm_reg, beam_size=beam_size[j], alpha_A=alpha_A)*alpha_dS2

@@ -26,15 +26,12 @@ import time as ttime
 import scipy.ndimage as nd
 import numpy as np
 import datetime
-
 try:
     import ephem
 except ImportError:
     print("Warning: ephem not installed: cannot simulate space VLBI")
-
 import astropy.coordinates as coords
 import copy
-
 try:
     from pynfft.nfft import NFFT
 except ImportError:
@@ -47,10 +44,8 @@ from ehtim.observing.obs_helpers import *
 # Generate U-V Points
 ##################################################################################################
 
-def make_uvpoints(array,
-                  ra, dec, rf, bw,
-                  tint, tadv, tstart, tstop, mjd=MJD_DEFAULT,
-                  tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
+def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
+                  mjd=MJD_DEFAULT,tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
                   timetype='UTC', fix_theta_GMST = False):
 
     """Generate u,v points and baseline sigmas for a given array.
@@ -118,6 +113,9 @@ def make_uvpoints(array,
                 if coord2 == (0.,0.,0.): tau2 = 0.
 
                 # Noise on the correlations
+                if np.any(array.tarr['sefdr'] <= 0) or np.any(array.tarr['sefdl'] <=0):
+                    print("Warning!: in make_uvpoints, some SEFDs are <= 0!")
+
                 sig_rr = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdr'], tint, bw)
                 sig_ll = blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdl'], tint, bw)
                 sig_rl = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdl'], tint, bw)
@@ -164,6 +162,7 @@ def make_uvpoints(array,
 ##################################################################################################
 
 def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
+
     """Observe a image on given baselines with no noise.
 
        Args:
@@ -177,30 +176,9 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
            (Obsdata): an observation object
     """
 
-    #TODO -- be careful with these imports!!
-    #it may be redundant and all imports should go at the top
+    #TODO -- all imports should go at the top
+    #but circular imports cause headaches....
     from ehtim.obsdata import Obsdata
-
-#    if type(obs) == Obsdata:
-#        # Check for agreement in coordinates and frequency
-#        tolerance = 1e-8
-#        if (np.abs(im.ra - obs.ra) > tolerance) or (np.abs(im.dec - obs.dec) > tolerance):
-#            raise Exception("Image coordinates are not the same as observtion coordinates!")
-#        if (np.abs(im.rf - obs.rf)/obs.rf > tolerance):
-#            raise Exception("Image frequency is not the same as observation frequency!")
-
-#        if ttype=='direct' or ttype=='fast' or ttype=='nfft':
-#            print("Producing clean visibilities from image with " + ttype + " FT . . . ")
-#        else:
-#            raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
-
-#        # Copy data to be safe
-#        obsdata = obs.copy().data
-
-#        # Extract uv data
-#        #uv = obsdata[['u','v']].view(('f8',2))
-#        uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
-#    else:
 
     uv = np.array(uv)
     if uv.shape[1] != 2:
@@ -219,13 +197,12 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
     uvis = np.zeros(len(uv))
     vvis = np.zeros(len(uv))
 
-    #visibilities from FFT
+    # Get visibilities from straightforward FFT
     if ttype=="fast":
 
         # Pad image
-        #npad = int(np.ceil(pad_frac*1./(im.psize*umin)))
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))
-        npad = power_of_two(npad) #TODO good in all cases??
+        npad = power_of_two(npad)
 
         padvalx1 = padvalx2 = int(np.floor((npad - im.xdim)/2.0))
         if im.xdim % 2:
@@ -246,7 +223,6 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
         uv2 = (uv2/du + 0.5*npad).T
 
         # FFT for visibilities
-        # TODO can we get rid of the fftshifts?
         vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
 
         # Sample the visibilities
@@ -256,17 +232,14 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
         vis = visre + 1j*visim
 
         # Extra phase to match centroid convention
-        # TODO -- is the convention right??
-        #phase = np.exp(-1j*np.pi*im.psize*(uv[:,0] + uv[:,1]))
         phase = np.exp(-1j*np.pi*im.psize*((1+im.xdim%2)*uv[:,0] + (1+im.ydim%2)*uv[:,1]))
         vis = vis * phase
 
         # Multiply by the pulse function
-        # TODO make faster?
         pulsefac = np.array([im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv])
         vis = vis * pulsefac
 
-        # FT of polarimetric quantities
+        # FFT of polarimetric quantities
         if len(im.qvec):
             qarr = im.qvec.reshape(im.ydim, im.xdim)
             qarr = np.pad(qarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
@@ -297,7 +270,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
             vvis = phase*(vvisre + 1j*vvisim)
             vvis = vvis*pulsefac
 
-    #visibilities from NFFT
+    # Get visibilities from NFFT library
     elif ttype=="nfft":
 
         uvdim = len(uv)
@@ -312,6 +285,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
             nker = 50
         elif (im.xdim<50 or im.ydim<50):
             nker = np.min((im.xdim,im.ydim))/2
+
         #TODO y & x reversed?
         plan = NFFT([im.xdim,im.ydim],uvdim, m=nker, n=[npad,npad])
 
@@ -345,7 +319,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
             plan.trafo()
             vvis = plan.f.copy()*phase*pulsefac
 
-    #visibilities from DFT
+    # Get visibilities from DTFT
     else:
         mat = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         vis = np.dot(mat, im.imvec)
@@ -374,7 +348,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
 
     return obsdata
 
-#TODO MAKE THIS COMPATIBLE WITH ABOVE FOR IMAGE ??
+#TODO make this more similar to sample_vis for an image
 #TODO is it even possible given that we need time information?
 def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_factor=2, repeat=False):
 
@@ -391,13 +365,6 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
        Returns:
            (Obsdata): an observation object
     """
-
-    # Check for agreement in coordinates and frequency
-    tolerance = 1e-8
-    if (np.abs(mov.ra - obs.ra) > tolerance) or (np.abs(mov.dec - obs.dec) > tolerance):
-        raise Exception("Image coordinates are not the same as observation coordinates!")
-    if (np.abs(mov.rf - obs.rf)/obs.rf > tolerance):
-        raise Exception("Image frequency is not the same as observation frequency!")
 
     mjdstart = float(mov.mjd) + float(mov.start_hr/24.0)
     mjdend = mjdstart + (len(mov.frames)*mov.framedur)/86400.0
@@ -425,7 +392,6 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
             else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
         # Extract uv data & perform DFT
-        #uv = obsdata[['u','v']].view(('f8',2))
         uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
         umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
         umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
@@ -440,7 +406,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
         uvis = np.zeros(len(uv))
         vvis = np.zeros(len(uv))
 
-        #visibilities from FFT with interpolation
+        # Get visibilities from FFT with interpolation
         if ttype=="fast":
 
             # Pad image
@@ -479,7 +445,6 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
             vis = vis * phase
 
             # Multiply by the pulse function
-            # TODO make faster?
             pulsefac = np.array([mov.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], mov.psize, dom="F") for uvpt in uv])
             vis = vis * pulsefac
 
@@ -513,7 +478,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
                 vvis = phase*(vvisre + 1j*qvisim)
                 qvis = vvis*pulsefac
 
-        #visibilities from NFFT
+        # Get visibilities from NFFT
         elif ttype=="nfft":
 
             uvdim = len(uv)
@@ -559,7 +524,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
                 plan.trafo()
                 vvis = plan.f.copy()*phase*pulsefac
 
-        #visibilities from DFT
+        # Get visibilities from DTFT
         else:
             mat = ftmatrix(mov.psize, mov.xdim, mov.ydim, uv, pulse=mov.pulse)
             vis = np.dot(mat, mov.frames[n])
@@ -595,7 +560,7 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
 # Noise + miscalibration funcitons
 ##################################################################################################
 
-def make_jones(obs,  opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
                seed=False):
@@ -893,10 +858,18 @@ def add_jones_and_noise(obs, add_th_noise=True,
     lr = obsdata['qvis'] - 1j*obsdata['uvis']
 
     # Recompute the noise std. deviations from the SEFDs
-    sig_rr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
-    sig_ll = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
-    sig_rl = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
-    sig_lr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
+    if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <=0):
+        print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
+        sigmas = obs.unpack(['rrsigma','llsigma','rlsigma','lrsigma'])
+        sig_rr = sigmas['rrsigma']
+        sig_ll = sigmas['llsigma']
+        sig_rl = sigmas['rlsigma']
+        sig_lr = sigmas['lrsigma']
+    else:
+        sig_rr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
+        sig_ll = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
+        sig_rl = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
+        sig_lr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal:
@@ -979,11 +952,18 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, deepcopy=Tr
     lr = obsdata['qvis'] - 1j*obsdata['uvis']
 
     # Recompute the noise std. deviations from the SEFDs
-    #!AC should we instead get them from the file?
-    sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
-    sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
-    sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
-    sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
+    if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <=0):
+        print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
+        sigmas = obs.unpack(['rrsigma','llsigma','rlsigma','lrsigma'])
+        sig_rr = sigmas['rrsigma']
+        sig_ll = sigmas['llsigma']
+        sig_rl = sigmas['rlsigma']
+        sig_lr = sigmas['lrsigma']
+    else:
+        sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
+        sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
+        sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
+        sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
 
     ampcal = obs.ampcal
     phasecal = obs.phasecal
@@ -1022,7 +1002,6 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, deepcopy=Tr
         sig_rl_matrix_new = np.dot(inv_j1, np.dot(sig_rl_matrix, np.conjugate(inv_j2.T)))
         sig_lr_matrix_new = np.dot(inv_j1, np.dot(sig_lr_matrix, np.conjugate(inv_j2.T)))
 
-        # TODO is this correct?
         # Get the final sigma matrix as a quadrature sum
         sig_matrix_new = np.sqrt(np.abs(sig_rr_matrix_new)**2 + np.abs(sig_ll_matrix_new)**2 +
                                  np.abs(sig_rl_matrix_new)**2 + np.abs(sig_lr_matrix_new)**2)
@@ -1096,9 +1075,12 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
 
     # Recompute perfect sigmas from SEFDs
     bw = obs.bw
-    sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
-                            for i in range(len(tint))])
-
+    if np.any(obs.tarr['sefdr'] <= 0):
+        print("Warning!: in add_noise, some SEFDs are <= 0 -- not recomputing sigmas, which may result in double systematic noise")
+        sigma_perf = np.array(obsdata['sigma'])
+    else:
+        sigma_perf = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
+                               for i in range(len(tint))])
 
     # Seed for random number generators
     if seed==False:
@@ -1135,7 +1117,6 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         tau_true = tau_est = 1
 
     # Add the noise
-    #TODO -- sigma perf here??
     sigma_true = sigma_perf
     sigma_est = sigma_perf * gain_true * tau_est
 
@@ -1168,7 +1149,7 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     obsdata['vvis'] = vvis
     obsdata['sigma'] = sigma_est
 
-    # This function doesn't use different visibility sigmas!
+    # This function doesn't use different Stokes sigmas!
     obsdata['qsigma'] = obsdata['usigma'] = obsdata['vsigma'] = sigma_est
 
 	# Return observation data
