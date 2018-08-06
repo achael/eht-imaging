@@ -10,10 +10,15 @@ class Process(object):
 
     def __get__(self, obj, type=None):
         def func(**kwargs):
+            def apply(data):
+                if isinstance(data, list):
+                    return [self.f(d, **kwargs) for d in data]
+                else:
+                    return self.f(data, **kwargs)
             if obj is None:
-                return lambda data: self.f(data, **kwargs)
+                return apply
             else:
-                return Pipeline(self.f(obj.data, **kwargs))
+                return Pipeline(apply(obj.data))
         return func
 
 class Pipeline(object):

@@ -10,3 +10,4 @@ pipeline:
     old: True
 - average:
     sec: 600
+- merge:
