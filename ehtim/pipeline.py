@@ -5,21 +5,25 @@
 import ehtim as eh
 
 class Process(object):
-    def __init__(self, f):
-        self.f = f
+    def __init__(self, func, merge=False):
+        self.func  = func
+        self.merge = merge
 
     def __get__(self, obj, type=None):
-        def func(**kwargs):
+        def wrapper(**kwargs):
             def apply(data):
-                if isinstance(data, list):
-                    return [self.f(d, **kwargs) for d in data]
+                if isinstance(data, list) and not self.merge:
+                    return [self.func(d, **kwargs) for d in data]
                 else:
-                    return self.f(data, **kwargs)
+                    return self.func(data, **kwargs)
             if obj is None:
                 return apply
             else:
                 return Pipeline(apply(obj.data))
-        return func
+        return wrapper
+
+def process(merge=False):
+    return lambda f: Process(f, merge=merge)
 
 class Pipeline(object):
     def __init__(self, input):
@@ -36,11 +40,11 @@ class Pipeline(object):
         return data
 
     # Implement individual processes in an imaging pipeline
-    @Process
+    @process()
     def load(name):
         return eh.obsdata.load_uvfits(name)
 
-    @Process
+    @process()
     def scale(obs,
               zbl=None,   uvdist=1.0e9,
               noise=None, max_diff_sec=100.0):
@@ -56,7 +60,7 @@ class Pipeline(object):
                 noise = obs.estimate_noise_rescale_factor(max_diff_sec=max_diff_sec)
             return obs.rescale_noise(noise_rescale_factor=noise)
 
-    @Process
+    @process()
     def average(obs, sec=300, old=False):
         if old:
             print("WARNING: using old coherent average method")
@@ -64,7 +68,7 @@ class Pipeline(object):
         else:
             return obs.avg_coherent(sec)
 
-    @Process
+    @process()
     def flag(obs,
              anomalous=None, max_diff_sec=300,
              low_snr=None,
@@ -77,9 +81,9 @@ class Pipeline(object):
         if uv_min is not None:
             return obs.flag_uvdist(uv_mind)
 
-    @Process
+    @process(merge=True)
     def merge(obss):
-        for i in range(1, obss):
+        for i in range(1, len(obss)):
             obss[i].data['time'] += i * 1e-6
             obss[i].mjd = obss[0].mjd
             obss[i].rf  = obss[0].rf
@@ -88,7 +92,7 @@ class Pipeline(object):
             obss[i].bw  = obss[0].bw
         return eh.obsdata.merge_obs(obss).copy()
 
-    @Process
+    @process()
     def reorder(obs, according='snr'):
         if according == 'snr':
             obs.reorder_tarr_snr()
