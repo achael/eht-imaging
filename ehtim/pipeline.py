@@ -1,11 +1,8 @@
-#!/usr/bin/env python2
-#
 # This EHT imaging pipeline generator is built on algorithms developed
 # by Team 1 members of the EHT imaging working group during the 2nd
 # EHT Imaging Workshop.
 
 import ehtim as eh
-import yaml
 
 class Process(object):
     def __init__(self, f):
@@ -93,19 +90,3 @@ class Pipeline(object):
         if according == 'snr':
             obs.reorder_tarr_snr()
             return obs
-
-# Main script
-if __name__ == "__main__":
-    with open("pipeline.yaml", 'r') as f:
-        dict = yaml.load(f)
-
-    obs = Pipeline(dict) \
-        .apply("M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits")
-
-    obs = Pipeline("M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits") \
-        .load() \
-        .scale(zbl=0.1) \
-        .scale(noise='auto') \
-        .flag(anomalous='amp') \
-        .average(old=True) \
-        .average(sec=600)
