@@ -11,10 +11,8 @@ class Process(object):
     def __get__(self, obj, type=None):
         def func(**kwargs):
             if obj is None:
-                print("Called as class method: this is a closure maker")
                 return lambda data: self.f(data, **kwargs)
             else:
-                print("Called as instance method: this is a method")
                 return Pipeline(self.f(obj.data, **kwargs))
         return func
 
