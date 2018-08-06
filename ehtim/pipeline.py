@@ -15,9 +15,7 @@ class Process(object):
         if obj is None:
             print("Called as class method: return closure maker")
             def maker(**kwargs):
-                def closure(data):
-                    return self.f(data, **kwargs)
-                return closure
+                return lambda data: self.f(data, **kwargs)
             return maker
         else:
             print("Called as instance method: return method")
