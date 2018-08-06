@@ -16,6 +16,5 @@ obs = eh.Pipeline(["M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits",
     .scale(zbl=0.1) \
     .scale(noise='auto') \
     .flag(anomalous='amp') \
-    .average(old=True) \
-    .average(sec=600) \
+    .average(sec=600, old=True) \
     .merge()
