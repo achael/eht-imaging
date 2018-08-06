@@ -22,8 +22,23 @@ class Process(object):
         return func
 
 class Pipeline(object):
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, input):
+        if "pipeline" in input:
+            self.processes = self.make(input['pipeline'])
+        else:
+            self.data = data
+
+    def make(self, pros):
+        processes = []
+        for p in pros:
+            for k, v in p.items():
+                processes += [getattr(Pipeline, k)(**({} if v is None else v))]
+        return processes
+
+    def apply(self, data):
+        for p in self.processes:
+            data = p(data)
+        return data
 
     # Implement individual processes in an imaging pipeline
     @Process
@@ -89,11 +104,5 @@ if __name__ == "__main__":
     with open("pipeline.yaml", 'r') as f:
         dict = yaml.load(f)
 
-    pipeline = []
-    for p in dict['pipeline']:
-        for k, v in p.items():
-            pipeline += [getattr(Pipeline, k)(**({} if v is None else v))]
-
-    obs = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
-    for p in pipeline:
-        obs = p(obs)
+    p = Pipeline(dict)
+    p.apply("M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits")
