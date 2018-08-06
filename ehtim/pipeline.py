@@ -28,7 +28,7 @@ class Pipeline(object):
             self.processes = [getattr(Pipeline, k)(**({} if v is None else v))
                               for p in ps for k, v in p.items()]
         except Exception:
-            self.data = data
+            self.data = input
 
     def apply(self, data):
         for p in self.processes:
@@ -99,5 +99,13 @@ if __name__ == "__main__":
     with open("pipeline.yaml", 'r') as f:
         dict = yaml.load(f)
 
-    p = Pipeline(dict)
-    p.apply("M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits")
+    obs = Pipeline(dict) \
+        .apply("M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits")
+
+    obs = Pipeline("M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits") \
+        .load() \
+        .scale(zbl=0.1) \
+        .scale(noise='auto') \
+        .flag(anomalous='amp') \
+        .average(old=True) \
+        .average(sec=600)
