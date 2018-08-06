@@ -96,8 +96,7 @@ if __name__ == "__main__":
     pipeline = []
     for p in dict['pipeline']:
         for k, v in p.items():
-            pipeline += [make_process(k) if v is None else
-                         make_process(k, **v)]
+            pipeline += [getattr(Pipeline, k)(**({} if v is None else v))]
 
     obs = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
     for p in pipeline:
