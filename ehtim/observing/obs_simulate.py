@@ -366,14 +366,15 @@ def observe_movie_nonoise(mov, obs, sgrscat=False, ttype="direct", fft_pad_facto
            (Obsdata): an observation object
     """
 
-    mjdstart = float(mov.mjd) + float(mov.start_hr/24.0)
+    mjdstart = float(mov.mjd)   #+ float(mov.start_hr/24.0)
     mjdend = mjdstart + (len(mov.frames)*mov.framedur)/86400.0
 
     # Get data
     obslist = obs.tlist()
 
     # times
-    obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+    #obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+    obsmjds = np.array([(np.floor(obs.mjd) +  (utc_to_gmst(obslist[0][0]['time'], mov.mjd) + (obsdata[0]['time'] - obslist[0][0]['time']) )/24.0 ) for obsdata in obslist])
 
     if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
         raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
