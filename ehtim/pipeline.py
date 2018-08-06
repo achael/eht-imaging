@@ -12,16 +12,14 @@ class Process(object):
         self.f = f
 
     def __get__(self, obj, type=None):
-        if obj is None:
-            print("Called as class method: return closure maker")
-            def maker(**kwargs):
+        def func(**kwargs):
+            if obj is None:
+                print("Called as class method: this is a closure maker")
                 return lambda data: self.f(data, **kwargs)
-            return maker
-        else:
-            print("Called as instance method: return method")
-            def method(**kwargs):
+            else:
+                print("Called as instance method: this is a method")
                 return Pipeline(self.f(obj.data, **kwargs))
-            return method
+        return func
 
 class Pipeline(object):
     def __init__(self, data):
