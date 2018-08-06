@@ -7,11 +7,34 @@
 import ehtim as eh
 import yaml
 
-class Pipeline:
+class Process(object):
+    def __init__(self, f):
+        self.f = f
+
+    def __get__(self, obj, type=None):
+        if obj is None:
+            print("Called as class method: return closure maker")
+            def maker(**kwargs):
+                def closure(data):
+                    return self.f(data, **kwargs)
+                return closure
+            return maker
+        else:
+            print("Called as instance method: return method")
+            def method(**kwargs):
+                return Pipeline(self.f(obj.data, **kwargs))
+            return method
+
+class Pipeline(object):
+    def __init__(self, data):
+        self.data = data
+
     # Implement individual processes in an imaging pipeline
+    @Process
     def load(name):
         return eh.obsdata.load_uvfits(name)
 
+    @Process
     def scale(obs,
               zbl=None,   uvdist=1.0e9,
               noise=None, max_diff_sec=100.0):
@@ -27,6 +50,7 @@ class Pipeline:
                 noise = obs.estimate_noise_rescale_factor(max_diff_sec=max_diff_sec)
             return obs.rescale_noise(noise_rescale_factor=noise)
 
+    @Process
     def average(obs, sec=300, old=False):
         if old:
             print("WARNING: using old coherent average method")
@@ -34,6 +58,7 @@ class Pipeline:
         else:
             return obs.avg_coherent(sec)
 
+    @Process
     def flag(obs,
              anomalous=None, max_diff_sec=300,
              low_snr=None,
@@ -46,6 +71,7 @@ class Pipeline:
         if uv_min is not None:
             return obs.flag_uvdist(uv_mind)
 
+    @Process
     def merge(obss):
         for i in range(1, obss):
             obss[i].data['time'] += i * 1e-6
@@ -56,18 +82,11 @@ class Pipeline:
             obss[i].bw  = obss[0].bw
         return eh.obsdata.merge_obs(obss).copy()
 
+    @Process
     def reorder(obs, according='snr'):
         if according == 'snr':
             obs.reorder_tarr_snr()
             return obs
-
-# Factory method
-def make_process(func_name, **kwargs):
-    """A factory method that creates process in a pipeline"""
-    def process(data): # closure
-        print(func_name, data, kwargs)
-        return globals()[func_name](data, **kwargs)
-    return process
 
 # Main script
 if __name__ == "__main__":
