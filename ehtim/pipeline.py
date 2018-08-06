@@ -23,14 +23,12 @@ class Process(object):
 
 class Pipeline(object):
     def __init__(self, input):
-        if "pipeline" in input:
-            self.processes = self.make(input['pipeline'])
-        else:
+        try:
+            ps = input['pipeline']
+            self.processes = [getattr(Pipeline, k)(**({} if v is None else v))
+                              for p in ps for k, v in p.items()]
+        except Exception:
             self.data = data
-
-    def make(self, pros):
-        return [getattr(Pipeline, k)(**({} if v is None else v))
-                for p in pros for k, v in p.items()]
 
     def apply(self, data):
         for p in self.processes:
