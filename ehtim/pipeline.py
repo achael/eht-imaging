@@ -29,11 +29,8 @@ class Pipeline(object):
             self.data = data
 
     def make(self, pros):
-        processes = []
-        for p in pros:
-            for k, v in p.items():
-                processes += [getattr(Pipeline, k)(**({} if v is None else v))]
-        return processes
+        return [getattr(Pipeline, k)(**({} if v is None else v))
+                for p in pros for k, v in p.items()]
 
     def apply(self, data):
         for p in self.processes:
