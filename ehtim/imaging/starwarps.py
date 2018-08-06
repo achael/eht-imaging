@@ -313,10 +313,10 @@ def backwardUpdates(mu, Lambda_orig, obs_List, A_orig, Q_orig, measurement='visi
                 print('no prop error')
                 z_star_t_tp1[t].imvec[mask], P_star_t_tp1[t] = prodGaussiansLem2( A, Q, z_t_t[t+1].imvec[mask], mu_t.imvec[mask], Lambda_t)
 
-        z_star_t_tp1[t].display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/backwards_mean_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar=False) #cbar_lims = (0,0.4),
-        tmp = z_star_t_tp1[t].copy()
-        tmp.imvec = np.diag(P_star_t_tp1[t])
-        tmp.display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/backwards_stdev_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar = False) #cbar_lims = (0,0.0025),
+#z_star_t_tp1[t].display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/backwards_mean_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar=False) #cbar_lims = (0,0.4),
+#tmp = z_star_t_tp1[t].copy()
+#tmp.imvec = np.diag(P_star_t_tp1[t])
+#tmp.display(cbar_unit = ('m-Jy', '$\mu$-arcseconds$^2$'), export_pdf='/Users/klbouman/Downloads/backwards_stdev_' + str(t) + '.png' , has_title = False, label_type = 'none', has_cbar = False) #cbar_lims = (0,0.0025),
 
         # update
 
