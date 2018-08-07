@@ -2057,7 +2057,8 @@ class Obsdata(object):
 
         if mode == 'all':
             out = np.array(cps)
-
+            
+        print("\n")
         return out
 
     def bispectra_tri(self, site1, site2, site3, vtype='vis', timetype=False, bs=[],force_recompute=False):
@@ -2428,7 +2429,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(cas)
-
+        print("\n")
         return out
 
     def camp_quad(self, site1, site2, site3, site4,
