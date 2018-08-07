@@ -1986,7 +1986,8 @@ def load_image(image, display=False, aipscc=False):
       print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got {0}. Returning False.".format(type(image)))
       return False
 
-    if display: im.display()
+    if display: 
+      im.display()
 
     return im
 
