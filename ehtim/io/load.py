@@ -61,14 +61,15 @@ def load_vex(fname):
 ##################################################################################################
 # Image IO
 ##################################################################################################
-def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I'):
+def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', zero_pol=False):
     """Read in an image from a text file.
 
        Args:
             filename (str): path to input text file
+            pulse (function): The function convolved with the pixel values for continuous image.
             polrep (str): polarization representation, either 'stokes' or 'circ'
             pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
-            pulse (function): The function convolved with the pixel values for continuous image.
+            zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
             (Image): loaded image object
@@ -121,27 +122,36 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I'):
     elif np.any((vimage != 0)):
         #print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
+        if zero_pol: 
+            outim.add_qu(0*vimage, 0*vimage)
     elif np.any((qimage != 0) + (uimage != 0)):
         #print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)
+        if zero_pol: 
+            outim.add_v(0*qimage)
     else:
-        pass
+        if zero_pol: 
+            outim.add_qu(0*image, 0*image)
+            outim.add_v(0*image)
         #print('Loaded Stokes I Image Only')
 
     # Transform to desired pol rep
     if not (polrep=='stokes' and pol_prim=='I'):
-        outim = switch_polrep(polrep_out=polrep, pol_prim_out=pol_prim)
+        outim = outim.switch_polrep(polrep_out=polrep, pol_prim_out=pol_prim)
 
     return outim
 
-def load_im_fits(filename, aipscc=False,  polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT, punit="deg"):
+def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT, 
+                 punit="deg", polrep='stokes', pol_prim=None, zero_pol=False):
     """Read in an image from a FITS file.
 
        Args:
            fname (str): path to input fits file
            aipscc (bool): if True, then AIPS CC table will be loaded 
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
            pulse (function): The function convolved with the pixel values for continuous image.
+           polrep (str): polarization representation, either 'stokes' or 'circ'          
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
            (Image): loaded image object
@@ -310,16 +320,22 @@ def load_im_fits(filename, aipscc=False,  polrep='stokes', pol_prim=None, pulse=
     elif vimage.shape == image.shape:
         #print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
+        if zero_pol: 
+            outim.add_qu(0*vimage, 0*vimage)
     elif qimage.shape == uimage.shape == image.shape:
         #print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)
+        if zero_pol: 
+            outim.add_v(0*qimage)
     else:
-        pass
+        if zero_pol: 
+            outim.add_qu(0*image, 0*image)
+            outim.add_v(0*image)
         #print('Loaded Stokes I Image Only')
 
     # Transform to desired pol rep
     if not (polrep=='stokes' and pol_prim=='I'):
-        outim = switch_polrep(polrep_out=polrep, pol_prim_out=pol_prim)
+        outim = outim.switch_polrep(polrep_out=polrep, pol_prim_out=pol_prim)
 
     return outim
 

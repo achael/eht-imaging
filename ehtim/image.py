@@ -209,15 +209,15 @@ class Image(object):
 
         if self.polrep=='stokes':
             if pol=='I': self.ivec = image.flatten()
-            if pol=='Q': self.qvec = image.flatten()
-            if pol=='U': self.uvec = image.flatten()
-            if pol=='V': self.vvec = image.flatten()
-            self._imdict = {'I':self.ivec,'Q':self.ivec,'U':self.ivec,'V':self.ivec}
+            elif pol=='Q': self.qvec = image.flatten()
+            elif pol=='U': self.uvec = image.flatten()
+            elif pol=='V': self.vvec = image.flatten()
+            self._imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
         elif self.polrep=='circ':
             if pol=='RR': self.rrvec = image.flatten()
-            if pol=='LL': self.llvec = image.flatten()
-            if pol=='RL': self.rlvec = image.flatten()
-            if pol=='LR': self.lrvec = image.flatten()
+            elif pol=='LL': self.llvec = image.flatten()
+            elif pol=='RL': self.rlvec = image.flatten()
+            elif pol=='LR': self.lrvec = image.flatten()
             self._imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
 
         return
@@ -270,57 +270,60 @@ class Image(object):
 
         if polrep_out not in ['stokes','circ']:
             raise Exception("polrep_out must be either 'stokes' or 'circ'")
+        if pol_prim_out is None: 
+            if polrep_out=='stokes': pol_prim_out = 'I'
+            elif polrep_out=='circ': pol_prim_out = 'RR'
 
         # Simply copy if the polrep is unchanged
-        if polrep_out==self.polrep:
+        if polrep_out==self.polrep and pol_prim_out==self.pol_prim:
             return self.copy()
 
         # Assemble a dictionary of new polarization vectors
-        if polrep_out=='stokes': #circ -> stokes
-            if pol_prim_out is None: 
-                pol_prim_out = 'I'
-                                
-            if len(self.rrvec==0) or len(self.llvec==0):
-                ivec = []
-                vvec = []
+        if polrep_out=='stokes':                 
+            if self.polrep=='stokes':
+                imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
             else:
-                ivec = 0.5*(self.rrvec + self.llvec)
-                vvec = 0.5*(self.rrvec - self.llvec)
+                if len(self.rrvec)==0 or len(self.llvec)==0:
+                    ivec = []
+                    vvec = []
+                else:
+                    ivec = 0.5*(self.rrvec + self.llvec)
+                    vvec = 0.5*(self.rrvec - self.llvec)
 
-            if len(self.rlvec==0) or len(self.lrvec==0):
-                qvec = []
-                uvec = []
-            else:
-                qvec = 0.5*(self.lrvec + self.rlvec)
-                uvec = 0.5j*(self.lrvec - self.rlvec)
+                if len(self.rlvec)==0 or len(self.lrvec)==0:
+                    qvec = []
+                    uvec = []
+                else:
+                    qvec = np.real(0.5*(self.lrvec + self.rlvec))
+                    uvec = np.real(0.5j*(self.lrvec - self.rlvec))
 
-            imdict = {'I':ivec,'Q':qvec,'U':uvec,'V':vvec}
+                imdict = {'I':ivec,'Q':qvec,'U':uvec,'V':vvec}
 
-        elif polrep_out=='circ': #stokes -> circ
-            if pol_prim_out is None: 
-                print("polrep_out is 'circ' and no pol_prim specified! Setting pol_prim_out='RR'")
-                pol_prim_out = 'RR'
-                                
-            if len(self.ivec==0) or len(self.vvec==0):
-                rrvec = []
-                llvec = []
-            else:
-                rrvec = (self.ivec + self.vvec)
-                llvec = (self.ivec - self.vvec)
+        elif polrep_out=='circ':
+            if self.polrep=='circ':
+                imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
+            else:   
+                if len(self.ivec)==0 or len(self.vvec)==0:
+                    rrvec = []
+                    llvec = []
+                else:
+                    rrvec = (self.ivec + self.vvec)
+                    llvec = (self.ivec - self.vvec)
 
-            if len(self.qvec==0) or len(self.uvec==0):
-                rlvec = []
-                lrvec = []
-            else:
-                rlvec = (self.qvec + 1j*self.uvec)
-                lrvec = (self.qvec - 1j*self.uvec)
+                if len(self.qvec)==0 or len(self.uvec)==0:
+                    rlvec = []
+                    lrvec = []
+                else:
+                    rlvec = (self.qvec + 1j*self.uvec)
+                    lrvec = (self.qvec - 1j*self.uvec)
 
-            imdict = {'RR':rrvec,'LL':llvec,'RL':rlvec,'LR':lrvec}
+                imdict = {'RR':rrvec,'LL':llvec,'RL':rlvec,'LR':lrvec}
 
         # Assemble the new image
         imvec = imdict[pol_prim_out]
         if len(imvec)==0:
-            raise Exception("for switch_polrep to %s with pol_prim_out = %s, \n"%(polrep_out,pol_prim_out) +
+            print("YO")
+            raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n"%(polrep_out,pol_prim_out) +
                             "output image is not defined")
 
         newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, 
@@ -624,7 +627,7 @@ class Image(object):
         xtarget = np.linspace(-targetfov/2, targetfov/2, npix)
         ytarget = np.linspace(-targetfov/2, targetfov/2, npix)
 
-        def interp_imvec(imvec);
+        def interp_imvec(imvec):
             #interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(imvec, (self.ydim, self.xdim) ) )
             interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim) ) , kind=interp)
             tmpimg = interpfunc(ytarget, xtarget)
@@ -667,7 +670,7 @@ class Image(object):
         elif interp=='quintic': order=5
         
         # Define an interpolation function
-        def rot_imvec(imvec);
+        def rot_imvec(imvec):
             imarr_rot = scipy.ndimage.interpolation.rotate(imvec.reshape((self.ydim, self.xdim)),
                                                            angle*180.0/np.pi, reshape=False, order=order,
                                                            mode='constant', cval=0.0, prefilter=True)
@@ -748,7 +751,7 @@ class Image(object):
         cth = np.cos(beamparams[2])
         sth = np.sin(beamparams[2])
 
-        def gaussim(blurfrac)
+        def gaussim(blurfrac):
             gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*(blurfrac*sigma_maj)**2) - (i*cth - j*sth)**2/(2.*(blurfrac*sigma_min)**2))
                                for i in xlist]
                                for j in ylist])
@@ -962,7 +965,7 @@ class Image(object):
             minval = np.min(self.imvec)
             #minval = np.max((np.min(self.imvec),0.))
             intensityrange = maxval - minval
-            fill_val = (intensityrange * cutoff +  minval))
+            fill_val = (intensityrange * cutoff +  minval)
 
         mask = self.mask(cutoff=cutoff, beamparams=beamparams, frac=frac)
         out = self.apply_mask(mask, fill_val=fill_val)
@@ -2064,13 +2067,15 @@ class Image(object):
                 imvec = np.array(self._imdict[pol]).reshape(-1)
             except KeyError:
                 try: 
-                    if self.polrep=='stokes': im2 = self.switch_polrep(polrep_out='circ')
-                    elif self.polrep=='circ': im2 = self.switch_polrep(polrep_out='stokes')
+                    if self.polrep=='stokes': im2 = self.switch_polrep('circ')
+                    elif self.polrep=='circ': im2 = self.switch_polrep('stokes')
                     imvec = np.array(im2._imdict[pol]).reshape(-1)
                 except KeyError:
                     raise Exception("Cannot make pol %s image in display()!" % pol)
 
-            imvec = np.array(self.imvec).reshape(-1)
+            if np.any(np.imag(imvec)):
+                print('casting complex image to real')
+
             imvec = imvec * factor
             imarr = (imvec).reshape(self.ydim, self.xdim)
             unit = cbar_unit[0] + ' per ' + cbar_unit[1]
@@ -2093,7 +2098,8 @@ class Image(object):
                 imarr[imarr>cbar_lims[1]] = cbar_lims[1]
                 imarr[imarr<cbar_lims[0]] = cbar_lims[0]
 
-            if has_title: plt.title('%s %s MJD %i  %.2f GHz' % (self.source, self.pol_prim, self.mjd, self.rf/1e9), fontsize=`18)
+            if has_title:
+                plt.title("%s MJD %i  %.2f GHz %s" % (self.source, self.mjd, self.rf/1e9, pol), fontsize=16)
 
             if cbar_lims:
                 im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
@@ -2173,7 +2179,6 @@ class Image(object):
             if has_title: plt.title('I')
 
             axV = plt.subplot2grid(25,03)
-            if cbar_lims:
             im = plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp, vmin=-maxval, vmax=maxval)
             plt.contour(varr.T, color='k',linewidth=1)
 
@@ -2225,7 +2230,8 @@ class Image(object):
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                    width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
 
-            if has_title: plt.title('%s  MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
+            if has_title: 
+                plt.title("%s MJD %i  %.2f GHz %s" % (self.source, self.mjd, self.rf/1e9, self.pol_prim), fontsize=16)
 
         # Label the plot
         ax = plt.gca()
@@ -2245,7 +2251,7 @@ class Image(object):
             start = self.xdim * roughfactor / 3.0 # select the start location
             end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
             plt.plot([start, end], [self.ydim-start, self.ydim-start], color="white", lw=1) # plot line
-            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$-arcseconds", color="white", ha="center", va="center", fontsize=12./nsubplots)
+            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$-as", color="white", ha="center", va="center", fontsize=12)
             ax = plt.gca()
             ax.axes.get_xaxis().set_visible(False)
             ax.axes.get_yaxis().set_visible(False)
@@ -2404,7 +2410,7 @@ def make_square(obs, npix, fov, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=N
     """
 
     outim = make_empty(npix, fov, obs.ra, obs.dec, rf=obs.rf, source=obs.source,
-                       polrep=polrep, pol_prim=pol_prim, pulse=pulse
+                       polrep=polrep, pol_prim=pol_prim, pulse=pulse,
                        mjd=obs.mjd, time=obs.tstart)
 
     return outim
@@ -2443,34 +2449,39 @@ def make_empty(npix, fov, ra, dec, rf=RF_DEFAULT,source=SOURCE_DEFAULT,
                   rf=rf, source=source, mjd=mjd, time=time, pulse=pulse)
     return outim
 
-def load_txt(fname, polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT):
+def load_txt(fname, polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT, zero_pol=True):
 
     """Read in an image from a text file.
 
        Args:
             fname (str): path to input text file
+            pulse (function): The function convolved with the pixel values for continuous image.
             polrep (str): polarization representation, either 'stokes' or 'circ'
             pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
-            pulse (function): The function convolved with the pixel values for continuous image.
+            zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
             (Image): loaded image object
     """
 
-    return ehtim.io.load.load_im_txt(fname, polrep=polrep, pol_prim=pol_prim)
+    return ehtim.io.load.load_im_txt(fname, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=True)
 
-def load_fits(fname, aipscc=False, polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT):
+def load_fits(fname, aipscc=False, pulse=PULSE_DEFAULT, 
+              polrep='stokes', pol_prim=None,  zero_pol=False):
 
     """Read in an image from a FITS file.
 
        Args:
            fname (str): path to input fits file
            aipscc (bool): if True, then AIPS CC table will be loaded 
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
            pulse (function): The function convolved with the pixel values for continuous image.
+           polrep (str): polarization representation, either 'stokes' or 'circ'          
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
            (Image): loaded image object
     """
 
-    return ehtim.io.load.load_im_fits(fname, aipscc=aipscc, polrep=polrep, pol_prim=pol_prim)
+    return ehtim.io.load.load_im_fits(fname, aipscc=aipscc,pulse=pulse,
+                                      polrep=polrep, pol_prim=pol_prim,  zero_pol=zero_pol)

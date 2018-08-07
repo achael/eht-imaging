@@ -103,18 +103,18 @@ def save_im_txt(im, fname, mjd=False, time=False):
     return
 
 def save_im_fits(im, fname, mjd=False, time=False):
-        """Save image data to a fits file.
+    """Save image data to a fits file.
 
-           Args:
-                fname (str): path to output fits file
-                mjd (int): MJD of saved image
-                time (float): UTC time of saved image
+       Args:
+            fname (str): path to output fits file
+            mjd (int): MJD of saved image
+            time (float): UTC time of saved image
 
-           Returns:
-        """
+       Returns:
+    """
 
     # Transform to Stokes parameters:
-    if im.polrep!='stokes' or im.pol_prim!='I':
+    if (im.polrep!='stokes') or (im.pol_prim!='I'):
         im = im.switch_polrep(polrep_out='stokes', pol_prim_out=None)
 
     # Create header and fill in some values
