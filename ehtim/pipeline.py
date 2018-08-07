@@ -82,7 +82,7 @@ class Pipeline(object):
         if low_snr is not None:
             return obs.flag_low_snr(low_snr)
         if uv_min is not None:
-            return obs.flag_uvdist(uv_mind)
+            return obs.flag_uvdist(uv_min)
         if site is not None:
             obs.tarr = obs.tarr[obs.tarr['site']!=site]
             return obs
