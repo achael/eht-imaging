@@ -1072,3 +1072,11 @@ def reduce_quad_minimal(obs, datarr,ctype='camp'):
         out = np.array(out,dtype=dtype)
     return out
 
+def qimage(iimage, mimage, chiimage):
+    """Return the Q image from m and chi"""
+    return iimage * mimage * np.cos(2*chiimage)
+    
+def uimage(iimage, mimage, chiimage):
+    """Return the U image from m and chi"""
+    return iimage * mimage * np.sin(2*chiimage) 
+
