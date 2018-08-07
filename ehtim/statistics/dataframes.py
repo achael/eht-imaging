@@ -393,7 +393,7 @@ def df_to_rec(df,product_type):
          return np.array(out,dtype=DTCAMP)
     elif product_type=='vis':
          out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
-         return np.array(out,dtype=DTPOL)
+         return np.array(out,dtype=DTPOL_STOKES)
     elif product_type=='bispec':
          out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
          return np.array(out,dtype=DTBIS)

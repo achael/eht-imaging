@@ -37,7 +37,18 @@ from ehtim.observing.obs_helpers import *
 ##################################################################################################
 def save_im_txt(im, fname, mjd=False, time=False):
     """Save image data to text file.
+
+       Args:
+            fname (str): path to output text file
+            mjd (int): MJD of saved image
+            time (float): UTC time of saved image
+
+       Returns:
     """
+
+    # Transform to Stokes parameters:
+    if im.polrep!='stokes' or im.pol_prim!='I':
+        im = im.switch_polrep(polrep_out='stokes', pol_prim_out=None)
 
     # Coordinate values
     pdimas = im.psize/RADPERAS
@@ -92,8 +103,19 @@ def save_im_txt(im, fname, mjd=False, time=False):
     return
 
 def save_im_fits(im, fname, mjd=False, time=False):
-    """Save image data to FITS file.
-    """
+        """Save image data to a fits file.
+
+           Args:
+                fname (str): path to output fits file
+                mjd (int): MJD of saved image
+                time (float): UTC time of saved image
+
+           Returns:
+        """
+
+    # Transform to Stokes parameters:
+    if im.polrep!='stokes' or im.pol_prim!='I':
+        im = im.switch_polrep(polrep_out='stokes', pol_prim_out=None)
 
     # Create header and fill in some values
     header = fits.Header()
@@ -649,6 +671,9 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
     #TODO: Add polarization to oifits??
     print('Warning: save_oifits does NOT save polarimetric visibility data!')
+
+    if (obs.polrep!='stokes'):
+        raise Exception("save_obs_oifits only works with polrep 'stokes'!")
 
     # Normalizing by the total flux passed in - note this is changing the data inside the obs structure
     obs.data['vis'] /= flux

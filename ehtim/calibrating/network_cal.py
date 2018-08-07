@@ -104,14 +104,15 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
     if processes > 0: # with multiprocessing
         scans_cal = pool.map(get_network_scan_cal,
                                              [[i, len(scans), scans[i],
-                                               zbl, sites, cluster_data, method, pad_amp, gain_tol,
+                                               zbl, sites, cluster_data, obs.polrep,
+                                               method, pad_amp, gain_tol,
                                                caltable, show_solution,debias,msgtype]
                                               for i in range(len(scans))
                                              ])
     else: # without multiprocessing
         for i in range(len(scans)):
             prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i-1)
-            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data,
+            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, polrep=obs.polrep,
                                             method=method, show_solution=show_solution, caltable=caltable,
                                             pad_amp=pad_amp, gain_tol=gain_tol,debias=debias)
 
@@ -141,7 +142,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
         obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
                                         np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
-                                        timetype=obs.timetype, scantable=obs.scans)
+                                        timetype=obs.timetype, scantable=obs.scans, polrep=obs.polrep)
         out = obs_cal
 
     # close multiprocessing jobs
@@ -150,7 +151,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
 
     return out
 
-def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", 
+def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes',
+                     zbl_uvidst_max=ZBLCUTOFF, method="both", 
                      show_solution=False, pad_amp=0., gain_tol=.2, caltable=False, debias=True):
     """Network-calibrate a scan with zero baseline constraints.
 
@@ -160,6 +162,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
            clustered_sites (tuple): information  on clustered sites, returned by make_cluster_data function
 
+           polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
            zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
@@ -216,21 +219,26 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
             bl_index = clusterbls.index(set((clusternum1, clusternum2)))
             scan_keys.append(bl_index)
 
-
     # no sites to calibrate on this scan!
     if np.all(g1_keys == -1):
         return scan
 
-    # scan visibilities and sigmas with extra padding
+    # TODO POL -- individual cal on different pol products?
+    # get scan visibilities -- just calibrate on stokes I for now
+    if polrep=='stokes': 
+        vis = scan['vis']
+        sigma = scan['sigma']
+    elif polrep=='circ':
+        vis = 0.5*(scan['rrvis'] +  scan['llvis'])
+        sigma = 0.5*np.sqrt(scan['rrsigma']**2 + scan['llsigma']**2)
+
     if method=='amp':
         if debias:
-            vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+            vis = amp_debias(np.abs(vis), np.abs(sigma))
         else:
             vis = np.abs(vis)
-    else:
-        vis = scan['vis']
 
-    sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
+    sigma_inv = 1.0/np.sqrt(sigma**2+ (pad_amp*np.abs(vis))**2)
 
     # initial guesses for parameters
     n_gains = len(sites)
@@ -248,6 +256,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
         # all the forward site gains (complex)
         g = gvpar[0:2*n_gains].astype(np.float64).view(dtype=np.complex128)
+
         # all the intercluster visibilities (complex)
         v = gvpar[2*n_gains:].astype(np.float64).view(dtype=np.complex128)
 
@@ -318,17 +327,20 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         out = caldict
 
     else: # apply calibration solution
+        if polrep=='stokes': poldict = POLDICT_STOKES
+        elif polrep=='circ': poldict = POLDICT_CIRC
+
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
         gij_inv = (g1_fit * g2_fit.conj())**(-1)
-        scan['vis']  = gij_inv * scan['vis']
-        scan['qvis'] = gij_inv * scan['qvis']
-        scan['uvis'] = gij_inv * scan['uvis']
-        scan['vvis'] = gij_inv * scan['vvis']
-        scan['sigma']  = np.abs(gij_inv) * scan['sigma']
-        scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
-        scan['usigma'] = np.abs(gij_inv) * scan['usigma']
-        scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
+
+        # scale visibilities
+        for vistype in ['vis1','vis2','vis3','vis4']:
+            scan[poldict[vistype]]  *= gij_inv
+        # scale sigmas
+        for sigtype in ['sigma1','sigma2','sigma3','sigma4']:
+            scan[poldict[vistype]]  *= np.abs(gij_inv)
+
         out = scan
 
     return out
@@ -340,14 +352,14 @@ def init(x):
 def get_network_scan_cal(args):
     return get_network_scan_cal2(*args)
 
-def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution,debias,msgtype):
+def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, polrep, 
+                          method, pad_amp,gain_tol,caltable, show_solution,debias,msgtype):
     if n > 1:
         global counter
         counter.increment()
         prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
-    return network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, 
+    return network_cal_scan(scan, zbl, sites, cluster_data, polrep=polrep, zbl_uvidst_max=ZBLCUTOFF, 
                             method=method,caltable=caltable, show_solution=show_solution, 
                             pad_amp=pad_amp, gain_tol=gain_tol,debias=debias)
-
 

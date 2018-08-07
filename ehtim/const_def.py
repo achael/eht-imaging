@@ -59,12 +59,19 @@ DTARR = [('site', 'U32'), ('x','f8'), ('y','f8'), ('z','f8'),
          ('sefdr','f8'),('sefdl','f8'),('dr','c16'),('dl','c16'),
          ('fr_par','f8'),('fr_elev','f8'),('fr_off','f8')]
 
-DTPOL = [('time','f8'),('tint','f8'),
-         ('t1','U32'),('t2','U32'),
-         ('tau1','f8'),('tau2','f8'),
-         ('u','f8'),('v','f8'),
-         ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
-         ('sigma','f8'),('qsigma','f8'),('usigma','f8'),('vsigma','f8')]
+DTPOL_STOKES = [('time','f8'),('tint','f8'),
+                 ('t1','U32'),('t2','U32'),
+                 ('tau1','f8'),('tau2','f8'),
+                 ('u','f8'),('v','f8'),
+                 ('vis','c16'),('qvis','c16'),('uvis','c16'),('vvis','c16'),
+                 ('sigma','f8'),('qsigma','f8'),('usigma','f8'),('vsigma','f8')]
+
+DTPOL_CIRC = [('time','f8'),('tint','f8'),
+                 ('t1','U32'),('t2','U32'),
+                 ('tau1','f8'),('tau2','f8'),
+                 ('u','f8'),('v','f8'),
+                 ('rrvis','c16'),('llvis','c16'),('rlvis','c16'),('lrvis','c16'),
+                 ('rrsigma','f8'),('llsigma','f8'),('rlsigma','f8'),('lrsigma','f8')]
 
 DTBIS = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),
          ('u1','f8'),('v1','f8'),('u2','f8'),('v2','f8'),('u3','f8'),('v3','f8'),
@@ -83,6 +90,10 @@ DTCAL = [('time','f8'), ('rscale','c16'), ('lscale','c16')]
 
 DTSCANS = [('time','f8'),('interval','f8'),('startvis','f8'),('endvis','f8')]
 
+POLDICT_STOKES = {'vis1': 'vis', 'vis2': 'qvis', 'vis3': 'uvis', 'vis4': 'vvis', 
+                  'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma4': 'vsigma'} 
+POLDICT_CIRC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis', 
+                  'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'} 
 
 # Observation fields for plotting and retrieving data
 FIELDS = ['time','time_utc','time_gmst',

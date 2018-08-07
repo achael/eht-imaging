@@ -147,7 +147,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                               sig_qu, # Q Sigma
                               sig_qu, # U Sigma
                               sig_iv  # V Sigma
-                            ), dtype=DTPOL
+                            ), dtype=DTPOL_STOKES
                             ))
 
     obsarr = np.array(outlist)
