@@ -44,7 +44,7 @@ from ehtim.observing.obs_helpers import *
 # Generate U-V Points
 ##################################################################################################
 
-def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
+def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, polrep='stokes',
                   mjd=MJD_DEFAULT,tau=TAUDEF, elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
                   timetype='UTC', fix_theta_GMST = False):
 
@@ -60,6 +60,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
            tadv (float): the uniform cadence between scans in seconds
            tstart (float): the start time of the observation in hours
            tstop (float): the end time of the observation in hours
+           polrep (str): 'stokes' or 'circ' sets the data polarimetric representtion
            mjd (int): the mjd of the observation, if different from the image mjd
            timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
            elevmin (float): station minimum elevation in degrees
@@ -185,7 +186,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', ttype="direct", fft_p
            im (Image): the image to be observed
            uv (ndarray): an array of u,v coordinates
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
+           polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
            ttype (str): if "fast" or 'nfft', use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
@@ -196,6 +197,15 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', ttype="direct", fft_p
     #TODO -- all imports should go at the top
     #but circular imports cause headaches....
     from ehtim.obsdata import Obsdata
+
+    if polrep_obs=='stokes':
+        im = im.switch_polrep('stokes','I')
+        pollist = ['I','Q','U','V'] #TODO what if we have to I image?
+    elif polrep=='circ':
+        im = im.switch_polrep('stokes','RR')
+        pollist = ['RR','LL','RL','LR'] #TODO what if we have to RR image?
+    else:
+        raise Exception("only 'stokes' and 'circ' are supported polreps!")
 
     uv = np.array(uv)
     if uv.shape[1] != 2:
@@ -209,16 +219,12 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', ttype="direct", fft_p
     if not im.psize*np.sqrt(im.xdim*im.ydim) > 1.0/(0.5*umin):
         print("    Warning!: shortest baseline < 2 x minimum image spatial wavelength!")
 
-    vis1 = np.zeros(len(uv))
-    vis2 = np.zeros(len(uv))
-    vis3 = np.zeros(len(uv))
-    vis4 = np.zeros(len(uv))
+    obsdata = []
 
-    #TODO TODO TODO ----------------
     # Get visibilities from straightforward FFT
     if ttype=="fast":
 
-        # Pad image
+        # Padded image size
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))
         npad = power_of_two(npad)
 
@@ -240,55 +246,37 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', ttype="direct", fft_p
         uv2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
         uv2 = (uv2/du + 0.5*npad).T
 
-        # FFT for visibilities
-        vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
-
-        # Sample the visibilities
-        # default is cubic spline interpolation
-        visre = nd.map_coordinates(np.real(vis_im), uv2)
-        visim = nd.map_coordinates(np.imag(vis_im), uv2)
-        vis = visre + 1j*visim
-
         # Extra phase to match centroid convention
         phase = np.exp(-1j*np.pi*im.psize*((1+im.xdim%2)*uv[:,0] + (1+im.ydim%2)*uv[:,1]))
-        vis = vis * phase
 
-        # Multiply by the pulse function
+        # Pulse function
         pulsefac = np.array([im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv])
-        vis = vis * pulsefac
 
-        # FFT of polarimetric quantities
-        if len(im.qvec):
-            qarr = im.qvec.reshape(im.ydim, im.xdim)
-            qarr = np.pad(qarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
-            uarr = im.uvec.reshape(im.ydim, im.xdim)
-            uarr = np.pad(uarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+        for i in range(4):
+            pol = pollist[i]
+            imvec = im._imdict[pol]
+            if len(imvec)==0:
+                obsdata.append(None)                
 
-            qvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(qarr)))
-            uvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(uarr)))
+            # FFT for visibilities
+            imarr = imvec.reshape(im.ydim, im.xdim)
+            imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+            vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
 
-            qvisre = nd.map_coordinates(np.real(qvis_im), uv2)
-            qvisim = nd.map_coordinates(np.imag(qvis_im), uv2)
-            qvis = phase*(qvisre + 1j*qvisim)
-            qvis = qvis*pulsefac
+            # Sample the visibilities
+            # default is cubic spline interpolation
+            visre = nd.map_coordinates(np.real(vis_im), uv2)
+            visim = nd.map_coordinates(np.imag(vis_im), uv2)
+            vis = visre + 1j*visim
 
-            uvisre = nd.map_coordinates(np.real(uvis_im), uv2)
-            uvisim = nd.map_coordinates(np.imag(uvis_im), uv2)
-            uvis = phase*(uvisre + 1j*uvisim)
-            uvis = uvis*pulsefac
+            # Extra phase and pulse factor
+            vis = vis * phase * pulsefac
 
-        if len(im.vvec):
-            varr = im.vvec.reshape(im.ydim, im.xdim)
-            varr = np.pad(varr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+            # Return visibilities
+            obsdata.append(vis)
 
-            vvis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(varr)))
 
-            vvisre = nd.map_coordinates(np.real(vvis_im), uv2)
-            vvisim = nd.map_coordinates(np.imag(vvis_im), uv2)
-            vvis = phase*(vvisre + 1j*vvisim)
-            vvis = vvis*pulsefac
-
-    # Get visibilities from NFFT library
+    # Get visibilities from the NFFT 
     elif ttype=="nfft":
 
         uvdim = len(uv)
@@ -297,72 +285,63 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', ttype="direct", fft_p
 
         npad = fft_pad_factor * np.max((im.xdim, im.ydim))
 
-        #TODO kernel size??
+        #TODO what is a good kernel size??
         nker = np.floor(np.min((im.xdim,im.ydim))/5)
         if (nker>50):
             nker = 50
         elif (im.xdim<50 or im.ydim<50):
             nker = np.min((im.xdim,im.ydim))/2
 
-        #TODO y & x reversed?
+        #TODO are y & x reversed?
         plan = NFFT([im.xdim,im.ydim],uvdim, m=nker, n=[npad,npad])
 
-        #sampled points
+        # Sampled uv points
         uvlist = uv*im.psize
 
-        #precompute
+        # Precompute
         plan.x = uvlist
         plan.precompute()
 
-        #phase and pulsefac
+        # Extra phase and pulsefac
         phase = np.exp(-1j*np.pi*(uvlist[:,0] + uvlist[:,1]))
         pulsefac = np.array([im.pulse(2*np.pi*uvlist[i,0], 2*np.pi*uvlist[i,1], 1., dom="F") for i in range(uvdim)])
 
-        #compute uniform --> nonuniform transform
-        plan.f_hat = im.imvec.copy().reshape((im.ydim,im.xdim)).T
-        plan.trafo()
-        vis = plan.f.copy()*phase*pulsefac
+        # Compute the uniform --> nonuniform transform for different polarizations
+        for i in range(4):
+            pol = pollist[i]
+            imvec = im._imdict[pol]
+            if len(imvec)==0:
+                obsdata.append(None)                
 
-        if len(im.qvec):
-            plan.f_hat = im.qvec.copy().reshape((im.ydim,im.xdim)).T
+            plan.f_hat = imvec.copy().reshape((im.ydim,im.xdim)).T
             plan.trafo()
-            qvis = plan.f.copy()*phase*pulsefac
+            vis = plan.f.copy()*phase*pulsefac
 
-            plan.f_hat = im.uvec.copy().reshape((im.ydim,im.xdim)).T
-            plan.trafo()
-            uvis = plan.f.copy()*phase*pulsefac
-
-        if len(im.vvec):
-            plan.f_hat = im.vvec.copy().reshape((im.ydim,im.xdim)).T
-            plan.trafo()
-            vvis = plan.f.copy()*phase*pulsefac
+            obsdata.append(vis)
 
     # Get visibilities from DTFT
     else:
+        # Construct Fourier matrix
         mat = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
-        vis = np.dot(mat, im.imvec)
 
-        if len(im.qvec):
-            qvis = np.dot(mat, im.qvec)
-            uvis = np.dot(mat, im.uvec)
-        if len(im.vvec):
-            vvis = np.dot(mat, im.vvec)
+        # Compute DTFT for different polarizations
+        for i in range(4):
+            pol = pollist[i]
+            imvec = im._imdict[pol]
+            if len(imvec)==0:
+                obsdata.append(None)                
+
+            vis = np.dot(mat, im.imvec)
+            obsdata.append(vis)
 
     # Scatter the visibilities with the SgrA* kernel
+    # TODO: fix sgra_kernel_uv so you can take this out of a  loop!
     if sgrscat:
         print('Scattering Visibilities with Sgr A* kernel!')
-        for i in range(len(vis)):
-            ker = sgra_kernel_uv(im.rf, uv[i,0], uv[i,1])
-            vis[i]  *= ker
-            qvis[i] *= ker
-            uvis[i] *= ker
-            vvis[i] *= ker
-
-    # Put the visibilities back in the obsdata array
-    if len(im.qvec):
-        obsdata = [vis, qvis, uvis, vvis]
-    else:
-        obsdata = [vis, None, None, None]
+        ker =  np.array([sgra_kernel_uv(im.rf, uv[i,0], uv[i,1]) for i in range(len(vis))])
+        for data in obsdata:
+            if data is None: continue
+            data *= ker
 
     return obsdata
 
