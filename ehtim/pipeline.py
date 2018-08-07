@@ -61,7 +61,9 @@ class Pipeline(object):
             return obs.rescale_noise(noise_rescale_factor=noise)
 
     @process()
-    def average(obs, sec=300, old=False):
+    def average(obs, minlen=None, sec=300, old=False):
+        if len(obs.data) <= minlen:
+            return obs
         if old:
             print("WARNING: using old coherent average method")
             return obs.avg_coherent_old(sec)
@@ -72,7 +74,8 @@ class Pipeline(object):
     def flag(obs,
              anomalous=None, max_diff_sec=300,
              low_snr=None,
-             uv_min=None):
+             uv_min=None,
+             site=None):
         if anomalous is not None:
             return obs.flag_anomalous(field=anomalous,
                                       max_diff_seconds=max_diff_sec)
@@ -80,6 +83,9 @@ class Pipeline(object):
             return obs.flag_low_snr(low_snr)
         if uv_min is not None:
             return obs.flag_uvdist(uv_mind)
+        if site is not None:
+            obs.tarr = obs.tarr[obs.tarr['site']!=site]
+            return obs
 
     @process(merge=True)
     def merge(obss):
