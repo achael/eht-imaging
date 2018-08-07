@@ -9,6 +9,5 @@ output = "cache.uvfits"
 
 with open(config, 'r') as f:
     config = yaml.load(f)
-    pipeline = eh.Pipeline(config)
-    data = pipeline.apply(input)
-    data.data.save_uvfits(output)
+    obs = eh.Pipeline(config).apply(input).data
+    obs.save_uvfits(output)
