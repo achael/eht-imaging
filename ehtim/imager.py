@@ -838,9 +838,8 @@ class Imager(object):
         # Format output
         print ("DONE")
         out = res.x[:]
-        self.tmpout = res.x
+        self.tmpout = res
         #return
-
 
 
         if self.transform_next == 'log': out = np.exp(out)

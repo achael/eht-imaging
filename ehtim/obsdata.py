@@ -379,8 +379,8 @@ class Obsdata(object):
 
                     allout.append(out)
 
-        if len(allout)==0:
-            raise Exception("Baseline %s-%s has no data!"%(site1,site2))
+        #if len(allout)==0:
+            #raise Exception("Baseline %s-%s has no data!"%(site1,site2))
 
         return np.array(allout)
 
