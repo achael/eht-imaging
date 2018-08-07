@@ -71,6 +71,13 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
            (Obsdata): an observation object with all visibilities zeroed
     """
 
+    if polrep=='stokes':
+        poltype = DTPOL_STOKES
+    elif polrep=='circ':
+        poltype = DTPOL_CIRC
+    else:
+        raise Exception("only 'stokes' and 'circ' are supported polreps!")
+
     # Set up time start and steps
     tstep = tadv/3600.0
     if tstop < tstart:
@@ -120,15 +127,24 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                 sig_ll = blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdl'], tint, bw)
                 sig_rl = blnoise(array.tarr[i1]['sefdr'], array.tarr[i2]['sefdl'], tint, bw)
                 sig_lr = blnoise(array.tarr[i1]['sefdl'], array.tarr[i2]['sefdr'], tint, bw)
-                sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
-                sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
-
+                if polrep=='stokes':
+                    sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
+                    sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
+                    sig1 = sig_iv
+                    sig2 = sig_qu
+                    sig3 = sig_qu
+                    sig4 = sig_iv
+                elif polrep=='circ':
+                    sig1 = sig_rr
+                    sig2 = sig_ll
+                    sig3 = sig_rl
+                    sig4 = sig_lr
 
                 (timesout,uout,vout) = compute_uv_coordinates(array, site1, site2, times, mjd,
                                                               ra, dec, rf, timetype=timetype,
                                                               elevmin=elevmin, elevmax=elevmax,
                                                               fix_theta_GMST=fix_theta_GMST)
-
+  
                 for k in range(len(timesout)):
                     outlist.append(np.array((
                               timesout[k],
@@ -139,15 +155,15 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                               tau2, # Station 1 zenith optical depth
                               uout[k], # u (lambda)
                               vout[k], # v (lambda)
-                              0.0, # I Visibility (Jy)
-                              0.0, # Q Visibility
-                              0.0, # U Visibility
-                              0.0, # V Visibilities
-                              sig_iv, # I Sigma (Jy)
-                              sig_qu, # Q Sigma
-                              sig_qu, # U Sigma
-                              sig_iv  # V Sigma
-                            ), dtype=DTPOL_STOKES
+                              0.0, # 1st Visibility (Jy)
+                              0.0, # 2nd Visibility
+                              0.0, # 3rd Visibility
+                              0.0, # 4th Visibility
+                              sig1, # 1st Sigma (Jy)
+                              sig2, # 2nd Sigma
+                              sig3, # 3rd Sigma
+                              sig4  # 4th Sigma
+                            ), dtype=poltype
                             ))
 
     obsarr = np.array(outlist)
@@ -161,7 +177,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
 # Observe w/o noise
 ##################################################################################################
 
-def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
+def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', ttype="direct", fft_pad_factor=2):
 
     """Observe a image on given baselines with no noise.
 
@@ -169,6 +185,7 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
            im (Image): the image to be observed
            uv (ndarray): an array of u,v coordinates
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
            ttype (str): if "fast" or 'nfft', use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
@@ -192,11 +209,12 @@ def sample_vis(im, uv, sgrscat=False, ttype="direct", fft_pad_factor=2):
     if not im.psize*np.sqrt(im.xdim*im.ydim) > 1.0/(0.5*umin):
         print("    Warning!: shortest baseline < 2 x minimum image spatial wavelength!")
 
-    vis = np.zeros(len(uv))
-    qvis = np.zeros(len(uv))
-    uvis = np.zeros(len(uv))
-    vvis = np.zeros(len(uv))
+    vis1 = np.zeros(len(uv))
+    vis2 = np.zeros(len(uv))
+    vis3 = np.zeros(len(uv))
+    vis4 = np.zeros(len(uv))
 
+    #TODO TODO TODO ----------------
     # Get visibilities from straightforward FFT
     if ttype=="fast":
 

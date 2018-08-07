@@ -76,8 +76,8 @@ class Array(object):
 
         return np.array(bls)
 
-    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT,
-                      timetype='UTC', elevmin=ELEV_LOW, elevmax=ELEV_HIGH, tau=TAUDEF, fix_theta_GMST = False):
+    def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT, timetype='UTC',
+                      polrep='stokes', elevmin=ELEV_LOW, elevmax=ELEV_HIGH, tau=TAUDEF, fix_theta_GMST=False):
 
         """Generate u,v points and baseline uncertainties.
 
@@ -90,6 +90,7 @@ class Array(object):
                tstop (float): the end time of the observation in hours
                mjd (int): the mjd of the observation
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
+               polrep (str): polarization representation, either 'stokes' or 'circ'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
@@ -101,13 +102,17 @@ class Array(object):
 
         obsarr = simobs.make_uvpoints(self, ra, dec, rf, bw,
                                             tint, tadv, tstart, tstop,
-                                            mjd=mjd, tau=tau,
+                                            mjd=mjd, polrep=polrep, tau=tau,
                                             elevmin=elevmin, elevmax=elevmax,
                                             timetype=timetype, fix_theta_GMST = fix_theta_GMST)
 
-        obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, obsarr, self.tarr,
-                                    source=str(ra) + ":" + str(dec),
-                                    mjd=mjd, timetype=timetype)
+        uniquetimes = np.sort(np.unique(obsarr['time']))
+        scans = np.array([[time-0.5*tadv, time+0.5*tadv] for time in uniquetimes]) 
+        source=str(ra) + ":" + str(dec)
+        obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, obsarr, self.tarr, 
+                                    source=source, mjd=mjd, timetype=timetype, polrep=polrep,
+                                    ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
+                                    scantable=scans)
         return obs
 
     def make_subarray(self, sites):
