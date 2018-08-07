@@ -1968,18 +1968,21 @@ def load_image(image, display=False, aipscc=False):
             (Image):    loaded image object
             (boolean):  False if the image cannot be read
     """
-    
+
     if type(image) == type("str"):
       if image.endswith('.fits'):  
         im = ehtim.io.load.load_im_fits(image, aipscc=aipscc)
       elif image.endswith('.txt'):   
         im = ehtim.io.load.load_im_txt(image)
+      else:
+        print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got <.{0}>. Returning False.".format(image.split('.')[-1]))
+        return False
 
 
     elif isinstance(image, ehtim.image.Image): im = image
 
     else: 
-      print("Image format is not recognized. Returning False.")
+      print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got {0}. Returning False.".format(type(image)))
       return False
 
     if display: im.display()
