@@ -135,13 +135,13 @@ def mean_incoh_amp(amp,sigma,debias=True,err_type='predicted',num_samples=int(1e
         return amp0,sigma0
 
 def mean_incoh_amp_from_vis(vis,sigma,debias=True,err_type='predicted',num_samples=int(1e3)):
-    """amplitude from ensemble of visibility measurements with debiasing
-    Args:
-        amp: vector of (biased) amplitudes
-        sigma: vector of errors
-        debias: whether debiasing is applied
-    Returns:
-        amp0: estimator of unbiased amplitude
+    """Amplitude from ensemble of visibility measurements with debiasing
+        Args:
+            amp: vector of (biased) amplitudes
+            sigma: vector of errors
+            debias: whether debiasing is applied
+        Returns:
+            amp0: estimator of unbiased amplitude
     """
     if (not hasattr(vis, "__len__")):
         vis = [vis]
