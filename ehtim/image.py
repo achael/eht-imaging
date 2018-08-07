@@ -1979,7 +1979,8 @@ def load_image(image, display=False, aipscc=False):
         return False
 
 
-    elif isinstance(image, ehtim.image.Image): im = image
+    elif isinstance(image, ehtim.image.Image): 
+      im = image
 
     else: 
       print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got {0}. Returning False.".format(type(image)))
