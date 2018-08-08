@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*- 
+
 # const_def.py
 # useful constants and definitions
 #
@@ -17,6 +19,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import division
+from __future__ import unicode_literals
 
 
 from ehtim.observing.pulses import *
@@ -264,7 +267,7 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
                 print(message_line)
 
     elif msgtype=='confused':
-        message = "¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯"
+        message = u"¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯"
         message_list  = [char  for char in message]
         bar_width = len(message_list)
         progress = int(bar_width * complete_percent/float(100))
@@ -377,10 +380,10 @@ EHTIMAGE = [
 '              .smMMMMMMMMMMMMMMmhyo+/:---hMMMMMMMMMMMMMMMMMMMMMd+`                       -/.    .:+++:` `/:   `:+++:. `:+++:.   `:++/.  `-++/-   .Mh-/+/.    `:+++:`  ',     
 '               `+dNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNh:`                                                                                  .Mh                  ',     
 '                  -odNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNh/.                                                                                     `+:                  ',     
-'                     ./sdNMMMMMMMMMMMMMMMMMMMMMMMMMMNho:`                                                                                                             ']     
-'                         `-/symNNMMMMMMMMMMMNNNdyo/.`                                                                                                                     
-'                                .----::::---.`                                                                                                                            
-                                                                                                                                                                               
+'                     ./sdNMMMMMMMMMMMMMMMMMMMMMMMMMMNho:`                                                                                                             ',    
+'                         `-/symNNMMMMMMMMMMMNNNdyo/.`                                                                                                                 ',   
+'                                .----::::---.`                                                                                                                        ']   
+                                                                                                                                                                              
                                                                                                                                                                                
                                                                                                                                                                                
 

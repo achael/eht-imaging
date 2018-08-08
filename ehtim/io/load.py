@@ -30,6 +30,7 @@ import os
 import copy
 import sys
 import time as ttime
+import h5py
 
 import ehtim.obsdata
 import ehtim.image
@@ -61,7 +62,7 @@ def load_vex(fname):
 ##################################################################################################
 # Image IO
 ##################################################################################################
-def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', zero_pol=False):
+def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', zero_pol=True):
     """Read in an image from a text file.
 
        Args:
@@ -142,7 +143,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', ze
     return outim
 
 def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT, 
-                 punit="deg", polrep='stokes', pol_prim=None, zero_pol=False):
+                 punit="deg", polrep='stokes', pol_prim=None, zero_pol=True):
     """Read in an image from a FITS file.
 
        Args:
@@ -343,28 +344,63 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
 # Movie IO
 ##################################################################################################
 
-def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1,
-                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
-    """Read in a movie from a hdf5 file and create a Movie object
-       file_name should be the name of the hdf5 file
-       thisdoes not use the header of the hdf5 file so you need to give it
-       psize, framedur_sec, ra and dec
+def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1, 
+                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, source='SgrA',
+                    pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+
+
+    """Read in a movie from an hdf5 file and create a Movie object.
+
+       Args:
+           file_name (str): The name of the hdf5 file.
+           framedur_sec (float): The frame duration in seconds (default=-1, corresponding to framedur tahen from file header)
+           psize (float): Pixel size in radian, (default=-1, corresponding to framedur taken from file header)
+           ra (float): The movie right ascension
+           dec (float): The movie declination
+           rf (float): The movie frequency
+           pulse (function): The function convolved with the pixel values for continuous image
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+           Movie: a Movie object
     """
 
-    import h5py
+    # Currently only supports one polarization!
+
     file    = h5py.File(file_name, 'r')
     name    = list(file.keys())[0]
     d       = file[str(name)]
-    sim  = d[:]
+    frames  = d[:]
     file.close()
-    return Movie(sim, framedur_sec, psize, ra, dec, rf)
+    movie =  Movie(frames, 
+                   framedur_sec, psize, ra, dec, rf=rf, 
+                   polrep=polrep, pol_prim=pol_prim, start_hr=0,
+                   source=source, mjd=MJD_DEFAULT, pulse=pulse)
 
+    if zero_pol: 
+        for pol in list(movie._movdict.keys()):
+            if pol==movie.pol_prim: continue
+            polframes = np.zeros(frames.shape)
+            newmov.add_pol_movie(polframes, pol)
 
-def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
-    """Read in a movie from text files and create a Movie object
-       Text files should be filename + 00001, etc.
-       Text files should have the same format as output from Image.save_txt()
-       Make sure the header has exactly the same form!
+    return movie
+
+def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+    """Read in a movie from text files and create a Movie object.
+
+       Args:
+           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
+           nframes (int): The total number of frames
+           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           pulse (function): The function convolved with the pixel values for continuous image
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+           Movie: a Movie object
     """
 
     imlist = []
@@ -375,7 +411,7 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
         sys.stdout.write('\rReading Movie Image %i/%i...' % (i,nframes))
         sys.stdout.flush()
 
-        im = load_im_txt(filename, pulse=pulse)
+        im = load_im_txt(filename, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
         imlist.append(im)
 
         hour = im.time
@@ -391,10 +427,20 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
 
     return out_mov
 
+def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+    """Read in a movie from fits files and create a Movie object.
 
-def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
-    """Read in a movie from fits files and create a Movie object
-       Fits files should be filename + 00001, etc.
+       Args:
+           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
+           nframes (int): The total number of frames
+           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           pulse (function): The function convolved with the pixel values for continuous image
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+           Movie: a Movie object
     """
 
     imlist = []
@@ -405,7 +451,7 @@ def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
         sys.stdout.write('\rReading Movie Image %i/%i...' % (i,nframes))
         sys.stdout.flush()
 
-        im = load_im_fits(filename, pulse=pulse)
+        im = load_im_fits(filename, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
         imlist.append(im)
 
         hour = im.time

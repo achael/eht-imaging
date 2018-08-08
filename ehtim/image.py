@@ -103,7 +103,6 @@ class Image(object):
 
         # Save the image vector
         self.imvec = image.flatten()
-
         if polrep=='stokes':
             if pol_prim is None: pol_prim = 'I'
             if pol_prim=='I':
@@ -128,7 +127,7 @@ class Image(object):
                 self.vvec = []
             else:
                 raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
-            self._imdict = {'I':self.ivec,'Q':self.ivec,'U':self.ivec,'V':self.ivec}
+            self._imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
         elif polrep=='circ':
             if pol_prim is None: 
                 print("polrep is 'circ' and no pol_prim specified! Setting pol_prim='RR'")
@@ -170,12 +169,12 @@ class Image(object):
 
     def copy(self):
 
-        """Return a copy of the image object.
+        """Return a copy of the Image object.
 
            Args:
 
            Returns:
-               newim (Image): copy of the Image.
+               (Image): copy of the Image.
         """
 
         # Make new  image with primary polarization
@@ -192,37 +191,6 @@ class Image(object):
 
         return newim
 
-    def add_pol_image(self, image, pol):
-
-        """Add another image polarization. 
-
-           Args:
-               image (numpy.array): The 2D values (possibly complex) in a Jy/pixel array
-               pol (str): The image type: 'I','Q','U','V' for stokes, 'RR','LL','RL','LR' for circ
-        """
-
-        if pol==self.pol_prim:
-            raise Exception("new pol in add_pol_image is the same as pol_prim!")
-        if image.shape != (self.ydim, self.xdim):
-            raise Exception("add_pol_image image shapes incompatible with primary image!")
-        if not (pol in list(self._imdict.keys())): 
-            raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._imdict.keys())))
-
-        if self.polrep=='stokes':
-            if pol=='I': self.ivec = image.flatten()
-            elif pol=='Q': self.qvec = image.flatten()
-            elif pol=='U': self.uvec = image.flatten()
-            elif pol=='V': self.vvec = image.flatten()
-            self._imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
-        elif self.polrep=='circ':
-            if pol=='RR': self.rrvec = image.flatten()
-            elif pol=='LL': self.llvec = image.flatten()
-            elif pol=='RL': self.rlvec = image.flatten()
-            elif pol=='LR': self.lrvec = image.flatten()
-            self._imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
-
-        return
-
     # TODO deprecated -- replace with generic add_pol_image
     def add_qu(self, qimage, uimage):
 
@@ -231,15 +199,14 @@ class Image(object):
            Args:
                qimage (numpy.array): The 2D Stokes Q values in Jy/pixel array
                uimage (numpy.array): The 2D Stokes U values in Jy/pixel array
+
+           Returns:
         """
 
         if self.polrep!='stokes':
             raise Excpetion("polrep must be 'stokes' for add_qu() !")
         self.add_pol_image(qimage,'Q')
         self.add_pol_image(uimage,'U')
-
-        self.qvec = qimage.flatten()
-        self.uvec = uimage.flatten()
 
         return
 
@@ -355,8 +322,8 @@ class Image(object):
             im.qvec *= -1
 
         elif im.polrep=='circ':
-            im.lrvec = -np.real(im.lrvec) + 1j*np.imag(im.lrvec)
-            im.rlvec = -np.real(im.rlvec) + 1j*np.imag(im.rlvec)
+            im.lrvec = -np.conjugate(im.lrvec)
+            im.rlvec = -np.conjugate(im.rlvec)
 
         return im
 
@@ -483,12 +450,12 @@ class Image(object):
            Args:
 
            Returns:
-                (float) : image fractional linear polarized flux
+                (float) : image fractional circular polarized flux
         """
         if self.polrep=='stokes':
-            frac = np.abs(np.sum(self.vvec)) / np.abs(np.sum(self.ivec))
+            frac = np.sum(self.vvec) / np.abs(np.sum(self.ivec))
         elif self.polrep=='circ':
-            frac = np.abs(np.sum(self.rrvec-self.llvec)) / np.abs(np.sum(self.rrvec + self.llvec))
+            frac = np.sum(self.rrvec-self.llvec) / np.abs(np.sum(self.rrvec + self.llvec))
 
         return frac
 
@@ -1374,14 +1341,13 @@ class Image(object):
                                        ttype=ttype, fft_pad_factor=fft_pad_factor)
         return data
 
-    def observe_same_nonoise(self, obs, sgrscat=False, polrep_obs='stokes', ttype="nfft", fft_pad_factor=2):
+    def observe_same_nonoise(self, obs, sgrscat=False,  ttype="nfft", fft_pad_factor=2):
 
         """Observe the image on the same baselines as an existing observation object without adding noise.
 
            Args:
                obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
 
                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
@@ -1390,8 +1356,6 @@ class Image(object):
                (Obsdata): an observation object with no noise
         """
 
-        if polrep_obs not in ['stokes','circ']:
-            raise Exception("polrep_obs must be either 'stokes' or 'circ'")
 
         # Check for agreement in coordinates and frequency
         tolerance = 1e-8
@@ -1406,12 +1370,11 @@ class Image(object):
             raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
 
         # Copy data to be safe
-        obs2 = obs.switch_polrep(polrep_out=polrep_obs)
-        obsdata = obs2.data # TODO unpack?
+        obsdata = copy.deepcopy(obs.data)
 
         # Extract uv datasample
         uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
-        data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=polrep_obs, 
+        data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=obs.polrep, 
                                        ttype=ttype, fft_pad_factor=fft_pad_factor)
 
         # put visibilities into the obsdata
@@ -1424,20 +1387,20 @@ class Image(object):
 
         elif polrep_obs=='circ':
             obsdata['rrvis'] = data[0]
-            if not(data[1] is None): # TODO ??
+            if not(data[1] is None):
                 obsdata['llvis'] = data[1]
-            if not(data[2] is None): # TODO ??
+            if not(data[2] is None):
                 obsdata['rlvis'] = data[2]
                 obsdata['lrvis'] = data[3]
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata, obs.tarr,
-                                             source=self.source, mjd=self.mjd, polrep=polrep_obs,
+                                             source=self.source, mjd=self.mjd, polrep=obs.polrep,
                                              ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
 
         return obs_no_noise
 
-    def observe_same(self, obsin, polrep_obs='stokes', ttype='nfft', fft_pad_factor=2,
+    def observe_same(self, obsin, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                            jones=False, inv_jones=False,
@@ -1450,7 +1413,6 @@ class Image(object):
            Args:
                obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
 
-               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
@@ -1475,9 +1437,8 @@ class Image(object):
                (Obsdata): an observation object
         """
 
-        obs = self.observe_same_nonoise(obsin, polrep_obs=polrep_obs, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
+        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
 
-        # TODO Pol!!
         # Jones Matrix Corruption & Calibration
         if jones:
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
@@ -1487,7 +1448,7 @@ class Image(object):
                                                  dtermp=dtermp,dterm_offset=dterm_offset)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
-                                         source=obs.source, mjd=obs.mjd, polrep='stokes',
+                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                          ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal,
                                          timetype=obs.timetype, scantable=obs.scans)
 
@@ -1495,7 +1456,7 @@ class Image(object):
                 obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
                 obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
-                                             source=obs.source, mjd=obs.mjd, polrep='stokes',
+                                             source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                              ampcal=ampcal, phasecal=phasecal, 
                                              opacitycal=True, dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
@@ -1510,10 +1471,10 @@ class Image(object):
                                        gainp=gainp, taup=taup, gain_offset=gain_offset)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
-                                         source=obs.source, mjd=obs.mjd, polrep='stokes',
+                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                          ampcal=ampcal, phasecal=phasecal, opacitycal=True, dcal=True, frcal=True,
                                          timetype=obs.timetype, scantable=obs.scans)
-                                         #these are always set to True after inverse jones cal
+                                         #these are always set to True after inverse jones call
 
         return obs
 
@@ -1576,13 +1537,15 @@ class Image(object):
             mjd = self.mjd
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, polrep=polrep_obs,
-                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST = fix_theta_GMST)
+                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, 
-                                     polrep_obs=polrep_obs, sgrscat=sgrscat, add_th_noise=add_th_noise,
+                                     sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
-                                     gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,taup=taup,dterm_offset=dterm_offset,
+                                     gainp=gainp,gain_offset=gain_offset,
+                                     tau=tau, taup=taup,
+                                     dterp=dtermp, dterm_offset=dterm_offset,
                                      jones=jones, inv_jones=inv_jones)
 
         return obs
@@ -1592,7 +1555,7 @@ class Image(object):
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                           jones=False, inv_jones=False,
-                          tau=TAUDEF, gainp=GAINPDEF, taup=GAINPDEF, gain_offset=GAINPDEF,
+                          tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                           dterm_offset=DTERMPDEF, dtermp=DTERMPDEF):
 
         """Generate baselines from a vex file and observes the image.
@@ -2071,17 +2034,6 @@ class Image(object):
 
         """
 
-        FONTSIZE=12
-        plt.rc('font', family='serif')
-        plt.rc('text', usetex=True)
-        plt.rc('font', size=FONTSIZE)      
-        plt.rc('axes', titlesize=FONTSIZE)
-        plt.rc('axes', labelsize=FONTSIZE) 
-        plt.rc('xtick', labelsize=FONTSIZE)
-        plt.rc('ytick', labelsize=FONTSIZE) 
-        plt.rc('legend', fontsize=FONTSIZE)    
-        plt.rc('figure', titlesize=FONTSIZE) 
-
         if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
             interp = 'gaussian'
         else:
@@ -2479,6 +2431,7 @@ class Image(object):
 
            Args:
                 fname (str): path to output text file
+
            Returns:
         """
 
@@ -2491,6 +2444,7 @@ class Image(object):
 
            Args:
                 fname (str): path to output fits file
+
            Returns:
         """
         ehtim.io.save.save_im_fits(self, fname)
