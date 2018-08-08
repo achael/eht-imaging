@@ -968,6 +968,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
         tints = data['INTTIM'][mask]
     except KeyError:
         tints = np.zeros(len(mask))
+
     # Sites - add names
     t1 = data['BASELINE'][mask].astype(int)//256
     t2 = data['BASELINE'][mask].astype(int) - t1*256

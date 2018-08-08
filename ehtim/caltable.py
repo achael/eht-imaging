@@ -252,9 +252,11 @@ class Caltable(object):
            Args:
                maxdiff (float): "scan" separation length (seconds)
                padtype (str): padding type, 'endval' or 'median'
+           
            Returns:
                (Caltable):  a padded caltable object
         """
+
         outdict = {}
         scopes = list(self.data.keys())
         for scope in scopes:
@@ -264,7 +266,7 @@ class Caltable(object):
             # TODO we could use a scan table for this as well!
             gathered_data=[]
             scandata = [caldata[0]]
-            for i in range(1,len(caldata)):
+            for i in range(1, len(caldata)):
                 if (caldata[i]['time']-caldata[i-1]['time'])*3600 > maxdiff:
                     scandata = np.array(scandata, dtype=DTCAL)
                     gathered_data.append(scandata)
