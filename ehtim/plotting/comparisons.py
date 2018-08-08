@@ -142,7 +142,7 @@ def change_cut_off(metric_mtx, fracsteps, imarr, beamparams, cutoff=0.95, zoom=0
     generate_consistency_plot(cliques_fraclevels, im_cliques_fraclevels, metric_mtx=metric_mtx, fracsteps=fracsteps, beamparams=beamparams, zoom=zoom, fov=fov)
 
 
-def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1, fov=1, show=True, framesize=(20,10), fracsteps=None, cutoff=None):
+def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1, fov=1, show=True, framesize=(20,10), fracsteps=None, cutoff=None, r_offset = 1):
 
     fig, ax = plt.subplots(figsize=framesize)
     cycol = cycle('bgrcmk')
@@ -170,7 +170,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             imagebox.image.axes = ax
 
 
-            ab = AnnotationBbox(imagebox, ((20./lenx)*c,(20./leny)*r),
+            ab = AnnotationBbox(imagebox, ((20./lenx)*c+r_offset,(20./leny)*r),
                                 xycoords='data',
                                 pad=0.0,
                                 arrowprops=None)
@@ -182,12 +182,12 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
                 for a, ro in enumerate(clique_fraclevels[c+1]):
                     if set(row).issubset(ro):
                         px = c+1
-                        px = ((20./lenx)*px)
+                        px = ((20./lenx)*px) + r_offset
                         py = a
                         py = (20./leny)*py
                         break
 
-                xx = (20./lenx)*c + (8./lenx)
+                xx = (20./lenx)*c + (8./lenx) + r_offset
                 yy = (20./leny)*r
                 ax.arrow(   xx, yy,
                             px - xx - (9./lenx), py- yy,
@@ -199,8 +199,8 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
             # adding the text
             txtstring = str(row)
             # print(ab.get_window_extent())
-            if len(row) == len(clique_fraclevels[-1][0]):
-                txtstring = '[all]'
+            # if len(row) == len(clique_fraclevels[-1][0]):
+            #     txtstring = '[all]'
 
             # ax.text((20./lenx)*c - (0./lenx), (20./leny)*r  - (10./leny), txtstring, fontsize=6, horizontalalignment='center')
             ax.text((20./lenx)*c,(20./leny)*(r-0.5), txtstring, fontsize=10, horizontalalignment='center', color='black', zorder=1000)
