@@ -801,8 +801,14 @@ class Obsdata(object):
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
 
+    def avg_incoherent(self,inttime,debias=True,scan_avg=False,err_type='predicted', msgtype='bar'):
+        print('Incoherently averaging data, putting phases to zero!')
+        amp_rec = incoh_avg_vis(self,dt=inttime,debias=debias,scan_avg=scan_avg,return_type='rec',rec_type='vis',err_type='predicted')
+        return Obsdata(self.ra, self.dec, self.rf, self.bw, amp_rec, self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                       timetype=self.timetype, scantable=self.scans)
 
-    def avg_incoherent(self, inttime, debias=True, err_type='predicted', msgtype='bar'):
+    def avg_incoherent_old(self, inttime, debias=True, err_type='predicted', msgtype='bar'):
 
         #ANDREW TODO should this really return an obsdata object? Better to just make this part of add_amp
         """Incoherently average data along u,v tracks in chunks of length inttime (sec).
@@ -906,7 +912,7 @@ class Obsdata(object):
                        ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
                        timetype=self.timetype, scantable=self.scans)
   
-    def add_amp(self, return_type='rec', 
+    def add_amp_old(self, return_type='rec', 
                       avg_time=0, debias=True, err_type='predicted'):
 
         """Adds attribute self.amp: amplitude table with incoherently averaged amplitudes
@@ -932,6 +938,10 @@ class Obsdata(object):
             data['vvis'] = np.abs(data['vis'])
             self.amp = data
         print("updated self.amp: avg_time %f s\n"%avg_time)
+
+    def add_amp(self, avg_time=0,scan_avg=False, debias=True, err_type='predicted',return_type='rec'):
+        amp = incoh_avg_vis(self,dt=avg_time,debias=debias,scan_avg=scan_avg,return_type='rec',rec_type='amp',err_type='predicted')
+        self.amp=amp
 
     def add_bispec(self, return_type='rec', count='max',
                          avg_time=0, err_type='predicted', num_samples=1000, round_s=0.1):
@@ -1094,7 +1104,7 @@ class Obsdata(object):
                 if (times_uni[cou+1]-times_uni[cou] > dt):
                     scan_id+=1
             scans[-1]=scan_id
-            scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1]))])    
+            scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1])+1)])    
         elif info=='txt':
              scanlist = np.loadtxt(filepath)
         elif info=='vex':
