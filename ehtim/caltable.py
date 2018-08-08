@@ -247,6 +247,7 @@ class Caltable(object):
 
     #TODO default extrapolation?
     def pad_scans(self, maxdiff=60, padtype='median'):
+        
         """Pad data points around scans.
 
            Args:
@@ -255,6 +256,7 @@ class Caltable(object):
            Returns:
                (Caltable):  a padded caltable object
         """
+        
         outdict = {}
         scopes = list(self.data.keys())
         for scope in scopes:
@@ -271,6 +273,10 @@ class Caltable(object):
                     scandata = [caldata[i]]
                 else:
                     scandata.append(caldata[i])
+                    
+            # This adds the last scan        
+            scandata = np.array(scandata)
+            gathered_data.append(scandata)
 
             # Compute padding values and pad scans
             for i in range(len(gathered_data)):
