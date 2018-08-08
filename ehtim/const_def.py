@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*- 
-
 # const_def.py
 # useful constants and definitions
 #
@@ -19,16 +17,15 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import division
-from __future__ import unicode_literals
-
 
 from ehtim.observing.pulses import *
 
 import sys
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-mpl.rc('font',**{'family':'serif','size':12})
+
 FONTSIZE=12
+mpl.rc('font',**{'family':'serif','size':12})
 plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
 plt.rc('font', size=FONTSIZE)      
@@ -38,6 +35,7 @@ plt.rc('xtick', labelsize=FONTSIZE)
 plt.rc('ytick', labelsize=FONTSIZE) 
 plt.rc('legend', fontsize=FONTSIZE)    
 plt.rc('figure', titlesize=FONTSIZE) 
+
 
 EP = 1.0e-10
 C = 299792458.0
@@ -140,21 +138,21 @@ FIELD_LABELS = {'time':'Time','time_utc':'Time (UTC)','time_gmst':'Time (GMST)',
           'qvis':'Q-Visibility','qamp':'Q-Amplitude','qphase':'Q-Phase','qsnr':'Q-SNR',
           'uvis':'U-Visibility','uamp':'U-Amplitude','uphase':'U-Phase','usnr':'U-SNR',
           'vvis':'V-Visibility','vamp':'V-Amplitude','vphase':'V-Phase','vsnr':'V-SNR',
-          'sigma':r'$\sigma$','qsigma':r'$\sigma_\text{Q}$','usigma':r'$\sigma_\text{U}$',
-          'vsigma':r'$\sigma_\text{V}$',
-          'sigma_phase':r'$\sigma_\text{phase}$','qsigma_phase':r'$\sigma_\text{Q phase}$',
-          'usigma_phase':r'$\sigma_\text{U phase}$','vsigma_phase':r'$\sigma_\text{V phase}$',
-          'psigma_phase':r'$\sigma_\text{P phase}$','msigma_phase':r'$\sigma_\text{m phase}$',
+          'sigma':r'$\sigma$','qsigma':r'$\sigma_{Q}$','usigma':r'$\sigma_{U}$',
+          'vsigma':r'$\sigma_{V}$',
+          'sigma_phase':r'$\sigma_{phase}$','qsigma_phase':r'$\sigma_{Q phase}$',
+          'usigma_phase':r'$\sigma_{U phase}$','vsigma_phase':r'$\sigma_{V phase}$',
+          'psigma_phase':r'$\sigma_{P phase}$','msigma_phase':r'$\sigma_{m phase}$',
           'pvis':r'P-Visibility','pamp':r'P-Amplitude','pphase':'P-Phase','psnr':'P-SNR',
           'mvis':r'm-Visibility','mamp':r'm-Amplitude','mphase':'m-Phase','msnr':'m-SNR',
           'rrvis':r'RR-Visibility','rramp':r'RR-Amplitude','rrphase':'RR-Phase','rrsnr':'RR-SNR',
-          'rrsigma':r'$\sigma_\text{RR}$','rrsigma_phase':r'$\sigma_\text{RR phase}$',
+          'rrsigma':r'$\sigma_{RR}$','rrsigma_phase':r'$\sigma_{RR phase}$',
           'llvis':r'LL-Visibility','llamp':r'LL-Amplitude','llphase':'LL-Phase','llsnr':'LL-SNR',
-          'llsigma':r'$\sigma_\text{LL}$','llsigma_phase':r'$\sigma_\text{LL phase}$',
+          'llsigma':r'$\sigma_{LL}$','llsigma_phase':r'$\sigma_{LL phase}$',
           'rlvis':r'RL-Visibility','rlamp':r'RL-Amplitude','rlphase':'RL-Phase','rlsnr':'RL-SNR',
-          'rlsigma':r'$\sigma_\text{RL}$','rlsigma_phase':r'$\sigma_\text{RL phase}$',
+          'rlsigma':r'$\sigma_{RL}$','rlsigma_phase':r'$\sigma_{RL phase}$',
           'lrvis':r'LR-Visibility','lramp':r'LR-Amplitude','lrphase':'LR-Phase','lrsnr':'LR-SNR',
-          'lrsigma':r'$\sigma_\text{LR}$','lrsigma_phase':r'$\sigma_\text{LR phase}$'}
+          'lrsigma':r'$\sigma_{LR}$','lrsigma_phase':r'$\sigma_{LR phase}$'}
 
 #Seaborn Colors from Maciek
 #['dodgerblue','tomato','blueviolet','olivedrab','orange','saddlebrown','mediumblue','red','cyan','magenta','darkgreen','tan','k']
@@ -201,6 +199,16 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
         printstr = "\rScan %0"+ndigit+"i/%i : [%s]%i%%"
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+
+    if msgtype=='bar2':
+        bar_width = 30
+        progress = int(bar_width * complete_percent/float(100))
+        barparams = (nscan, totscans, ("/"*progress) + (" " * (bar_width-progress)),complete_percent)
+
+        printstr = "\rScan %0"+ndigit+"i/%i : [%s]%i%%"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
     elif msgtype=='casa':
         message_list = [".",".",".","10",".",".",".","20",".",".",".","30",".",".",".","40",
                         ".",".",".","50",".",".",".","60",".",".",".","70",".",".",".","80",
@@ -265,22 +273,6 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
                 message_line = ''.join(message_all[i])
                 message_line = '%03i'%int(complete_percent) + message_line
                 print(message_line)
-
-    elif msgtype=='confused':
-        message = u"¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯¯\_(ツ)_/¯"
-        message_list  = [char  for char in message]
-        bar_width = len(message_list)
-        progress = int(bar_width * complete_percent/float(100))
-        message = ''.join(message_list[:progress])
-        if complete_percent<100:
-            message += "." 
-            message += " "*(bar_width-progress-1)
-
-        barparams = (nscan, totscans, message)
-
-        printstr= "\rScan %0"+ndigit+"i/%i : [%s]"
-        sys.stdout.write(printstr % barparams)
-        sys.stdout.flush()
 
     elif msgtype=='dots':
         sys.stdout.write('.')

@@ -179,7 +179,7 @@ class Movie(object):
         return newmov
 
 
-    def add_pol_image(self, movie, pol):
+    def add_pol_movie(self, movie, pol):
 
         """Add another movie polarization. 
 
@@ -194,15 +194,15 @@ class Movie(object):
             raise Exception("new pol in add_pol_image is the same as pol_prim!")
         if np.any(~([image.shape != (self.ydim, self.xdim) for image in movie])):
             raise Exception("add_pol_movie image shapes incompatible with primary image!")
-        if not (pol in list(self._imdict.keys())): 
-            raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._imdict.keys())))
+        if not (pol in list(self._movdict.keys())): 
+            raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._movdict.keys())))
 
         if self.polrep=='stokes':
             if pol=='I': self.iframes = [image.flatten() for image in movie]
             elif pol=='Q': self.qframes = [image.flatten() for image in movie]
             elif pol=='U': self.uframes = [image.flatten() for image in movie]
             elif pol=='V': self.vframes = [image.flatten() for image in movie]
-            self._movdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
+            self._movdict = {'I':self.iframes,'Q':self.qframes,'U':self.uframes,'V':self.vframes}
         elif self.polrep=='circ':
             if pol=='RR': self.rrframes = [image.flatten() for image in movie]
             elif pol=='LL': self.llframes = [image.flatten() for image in movie]
@@ -683,7 +683,7 @@ class Movie(object):
         return obs
 
     def observe(self, array, tint, tadv, tstart, tstop, bw, repeat=False,
-                      mjd=None, timetype='UTC', polrep_obs='stokes',
+                      mjd=None, timetype='UTC', polrep_obs=None,
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
                       ttype='nfft', fft_pad_factor=2, 
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
@@ -740,6 +740,8 @@ class Movie(object):
         print("Generating empty observation file . . . ")
         if mjd == None:
             mjd = self.mjd
+        if polrep_obs is None:
+            polrep_obs=self.polrep
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, polrep=polrep_obs,
                             tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
@@ -758,7 +760,7 @@ class Movie(object):
         return obs
 
     def observe_vex(self, vex, source, synchronize_start=True, t_int=0.0,
-                          polrep_obs='stokes', ttype='nfft', fft_pad_factor=2,
+                          polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                           jones=False, inv_jones=False,
@@ -799,6 +801,9 @@ class Movie(object):
                (Obsdata): an observation object
 
         """
+
+        if polrep_obs is None:
+            polrep_obs=self.polrep
 
         obs_List=[]
         movie = self.copy()

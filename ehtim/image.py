@@ -191,6 +191,37 @@ class Image(object):
 
         return newim
 
+    def add_pol_image(self, image, pol):
+
+        """Add another image polarization. 
+
+           Args:
+               image (list): 2D image frame (possibly complex) in a Jy/pixel array
+               pol (str): The image type: 'I','Q','U','V' for stokes, 'RR','LL','RL','LR' for circ
+        """
+
+        if pol==self.pol_prim:
+            raise Exception("new pol in add_pol_image is the same as pol_prim!")
+        if image.shape != (self.ydim, self.xdim):
+            raise Exception("add_pol_movie image shapes incompatible with primary image!")
+        if not (pol in list(self._imdict.keys())): 
+            raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._imdict.keys())))
+
+        if self.polrep=='stokes':
+            if pol=='I': self.ivec = image.flatten()
+            elif pol=='Q': self.qvec = image.flatten()
+            elif pol=='U': self.uvec = image.flatten()
+            elif pol=='V': self.vvec = image.flatten()
+            self._imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
+        elif self.polrep=='circ':
+            if pol=='RR': self.rrvec = image.flatten()
+            elif pol=='LL': self.llvec = image.flatten()
+            elif pol=='RL': self.rlvec = image.flatten()
+            elif pol=='LR': self.lrvec = image.flatten()
+            self._imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
+
+        return
+
     # TODO deprecated -- replace with generic add_pol_image
     def add_qu(self, qimage, uimage):
 
@@ -1378,14 +1409,14 @@ class Image(object):
                                        ttype=ttype, fft_pad_factor=fft_pad_factor)
 
         # put visibilities into the obsdata
-        if polrep_obs=='stokes':
+        if obs.polrep=='stokes':
             obsdata['vis'] = data[0]
             if not(data[1] is None):
                 obsdata['qvis'] = data[1]
                 obsdata['uvis'] = data[2]
                 obsdata['vvis'] = data[3]
 
-        elif polrep_obs=='circ':
+        elif obs.polrep=='circ':
             obsdata['rrvis'] = data[0]
             if not(data[1] is None):
                 obsdata['llvis'] = data[1]
@@ -1400,7 +1431,7 @@ class Image(object):
 
         return obs_no_noise
 
-    def observe_same(self, obsin, ttype='nfft', fft_pad_factor=2,
+    def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                            jones=False, inv_jones=False,
@@ -1411,7 +1442,7 @@ class Image(object):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
-               obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
+               obs_in (Obsdata): the existing observation with  baselines where the image FT will be sampled
 
                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
@@ -1437,7 +1468,7 @@ class Image(object):
                (Obsdata): an observation object
         """
 
-        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
+        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
 
         # Jones Matrix Corruption & Calibration
         if jones:
@@ -1479,7 +1510,7 @@ class Image(object):
         return obs
 
     def observe(self, array, tint, tadv, tstart, tstop, bw,
-                      mjd=None, timetype='UTC', polrep_obs='stokes',
+                      mjd=None, timetype='UTC', polrep_obs=None,
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
                       ttype='nfft', fft_pad_factor=2,
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
@@ -1535,6 +1566,8 @@ class Image(object):
         print("Generating empty observation file . . . ")
         if mjd == None:
             mjd = self.mjd
+        if polrep_obs is None:
+            polrep_obs=self.polrep
 
         obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, polrep=polrep_obs,
                             tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
@@ -1545,13 +1578,13 @@ class Image(object):
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
-                                     dterp=dtermp, dterm_offset=dterm_offset,
+                                     dtermp=dtermp, dterm_offset=dterm_offset,
                                      jones=jones, inv_jones=inv_jones)
 
         return obs
 
     def observe_vex(self, vex, source, t_int=0.0, tight_tadv=False,
-                          polrep_obs='stokes', ttype='nfft', fft_pad_factor=2,
+                          polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
                           jones=False, inv_jones=False,
@@ -1592,6 +1625,9 @@ class Image(object):
                (Obsdata): an observation object
 
         """
+
+        if polrep_obs is None:
+            polrep_obs=self.polrep
 
         t_int_flag = False
         if t_int == 0.0:

@@ -39,3 +39,7 @@ print("Welcome to eht-imaging v 1.0.0")
 def logo():
     for line in BHIMAGE:    
         print(line)
+
+def eht():
+    for line in EHTIMAGE:    
+        print(line)

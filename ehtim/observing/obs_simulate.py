@@ -203,8 +203,8 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
     if polrep_obs=='stokes':
         im = im.switch_polrep('stokes','I')
         pollist = ['I','Q','U','V'] #TODO what if we have to I image?
-    elif polrep=='circ':
-        im = im.switch_polrep('stokes','RR')
+    elif polrep_obs=='circ':
+        im = im.switch_polrep('circ','RR')
         pollist = ['RR','LL','RL','LR'] #TODO what if we have to RR image?
     else:
         raise Exception("only 'stokes' and 'circ' are supported polreps!")
@@ -213,13 +213,13 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
     if uv.shape[1] != 2:
         raise Exception("When given as a list of uv points, the obs should be a list of pairs of u-v coordinates!")
 
-    umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
-    umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
+#    umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
+#    umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
 
-    if not im.psize < 1.0/(2.0*umax):
-        print("    Warning!: longest baseline > 1/2 x maximum image spatial wavelength!")
-    if not im.psize*np.sqrt(im.xdim*im.ydim) > 1.0/(0.5*umin):
-        print("    Warning!: shortest baseline < 2 x minimum image spatial wavelength!")
+#    if not im.psize < 1.0/(2.0*umax):
+#        print("    Warning!: longest baseline > 1/2 x maximum image spatial wavelength!")
+#    if not im.psize*np.sqrt(im.xdim*im.ydim) > 1.0/(0.5*umin):
+#        print("    Warning!: shortest baseline < 2 x minimum image spatial wavelength!")
 
     obsdata = []
 
@@ -342,7 +342,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                 else:
                     obsdata.append(None)                
 
-            vis = np.dot(mat, im.imvec)
+            vis = np.dot(mat, imvec)
             obsdata.append(vis)
 
     # Scatter the visibilities with the SgrA* kernel
@@ -644,8 +644,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
                          seed=seed)
 
     # Change pol rep:
-    obs_circ = obs.switch_polrep('circ','RR')
-    obsdata = deepcopy.copy(obs_circ.data)
+    obs_circ = obs.switch_polrep('circ')
+    obsdata = copy.copy(obs_circ.data)
 
     times = obsdata['time']
     t1 = obsdata['t1']
@@ -664,11 +664,10 @@ def add_jones_and_noise(obs, add_th_noise=True,
         sig_rl = obsdata['rlsigma']
         sig_lr = obsdata['lrsigma']
     else:
-        # TODO why are there sqrt(2)s here and not below?
-        sig_rr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
-        sig_ll = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
-        sig_rl = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
-        sig_lr = np.sqrt(2.)*np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
+        sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
+        sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
+        sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
+        sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal:
@@ -708,14 +707,14 @@ def add_jones_and_noise(obs, add_th_noise=True,
         obsdata['lrvis'][i] = corr_matrix_corrupt[1][0]
 
         # Put the recomputed sigmas back into the data table
-        obsdata['rrsigma'][i] = sig_rr[i]**2
-        obsdata['llsigma'][i] = sig_ll[i]**2
-        obsdata['rlsigma'][i] = sig_rl[i]**2
-        obsdata['lrsigma'][i] = sig_lr[i]**2
+        obsdata['rrsigma'][i] = sig_rr[i]
+        obsdata['llsigma'][i] = sig_ll[i]
+        obsdata['rlsigma'][i] = sig_rl[i]
+        obsdata['lrsigma'][i] = sig_lr[i]
 
     # put back into input polvec
     obs_circ.data = obsdata
-    obs_back = obs_circ.switch_polrep(obs.polrep, obs.pol_prim)
+    obs_back = obs_circ.switch_polrep(obs.polrep)
     obsdata_back = obs_back.data
 
     # Return observation data
@@ -739,12 +738,12 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
     jm_dict = make_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
     # Change pol rep:
-    obs_circ = obs.switch_polrep('circ','RR')
+    obs_circ = obs.switch_polrep('circ')
     ampcal = obs.ampcal
     phasecal = obs.phasecal
 
     # Get data
-    obsdata = deepcopy.copy(obs_circ.data)
+    obsdata = copy.deepcopy(obs_circ.data)
     times = obsdata['time']
     t1 = obsdata['t1']
     t2 = obsdata['t2']
@@ -825,7 +824,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
     # put back into input polvec
     obs_circ.data = obsdata
-    obs_back = obs_circ.switch_polrep(obs.polrep, obs.pol_prim)
+    obs_back = obs_circ.switch_polrep(obs.polrep)
     obsdata_back = obs_back.data
 
     # Return observation data
@@ -888,26 +887,26 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         sigma_perf3 = obsdata[obs.poldict['sigma3']]
         sigma_perf4 = obsdata[obs.poldict['sigma4']]
     else:
-        sigma_rr = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
+        sig_rr = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                                for i in range(len(tint))])
-        sigma_ll = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefd'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
+        sig_ll = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
                                for i in range(len(tint))])
-        sigma_rl = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
+        sig_rl = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
                                for i in range(len(tint))])
-        sigma_lr = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
+        sig_lr = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
                                for i in range(len(tint))])
         if obs.polrep=='stokes':
             sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
             sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
-            sig_perf1 = sig_iv
-            sig_perf2 = sig_qu
-            sig_perf3 = sig_qu
-            sig_perf4 = sig_iv
+            sigma_perf1 = sig_iv
+            sigma_perf2 = sig_qu
+            sigma_perf3 = sig_qu
+            sigma_perf4 = sig_iv
         elif obs.polrep=='circ':
-            sig_perf1 = sig_rr
-            sig_perf2 = sig_ll
-            sig_perf3 = sig_rl
-            sig_perf4 = sig_lr
+            sigma_perf1 = sig_rr
+            sigma_perf2 = sig_ll
+            sigma_perf3 = sig_rl
+            sigma_perf4 = sig_lr
 
     # Seed for random number generators
     if seed==False:
@@ -983,10 +982,10 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     obsdata[obs.poldict['vis3']] = vis3
     obsdata[obs.poldict['vis4']] = vis4
 
-    obsdata[obs.poldict['sigma1']] = sigma1
-    obsdata[obs.poldict['sigma2']] = sigma2
-    obsdata[obs.poldict['sigma3']] = sigma3
-    obsdata[obs.poldict['sigma4']] = sigma4
+    obsdata[obs.poldict['sigma1']] = sigma_est1
+    obsdata[obs.poldict['sigma2']] = sigma_est2
+    obsdata[obs.poldict['sigma3']] = sigma_est3
+    obsdata[obs.poldict['sigma4']] = sigma_est4
 
 	# Return observation data
     return obsdata

@@ -228,7 +228,7 @@ class Obsdata(object):
                     data[f] = 0.5j*(self.data['lrvis'] - self.data['rlvis'])
                 elif f=='vvis':
                     data[f] = 0.5*(self.data['rrvis'] - self.data['llvis'])
-                elif f in ['sigma','visgma']:
+                elif f in ['sigma','vsigma']:
                     data[f] = 0.5*np.sqrt(self.data['rrsigma']**2 + self.data['llsigma']**2)
                 elif f in ['qsigma','usigma']:
                     data[f] = 0.5*np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
@@ -247,7 +247,7 @@ class Obsdata(object):
                     data[f] = (self.data['qvis'] + 1j*self.data['uvis'])
                 elif f=='lrvis':
                     data[f] = (self.data['qvis'] - 1j*self.data['uvis'])
-                elif f in ['rrsigma','llvisgma']:
+                elif f in ['rrsigma','llsigma']:
                     data[f] = np.sqrt(self.data['sigma']**2 + self.data['vsigma']**2)
                 elif f in ['rlsigma','lrsigma']:
                     data[f] = np.sqrt(self.data['qsigma']**2 + self.data['usigma']**2)
@@ -634,7 +634,7 @@ class Obsdata(object):
                     sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
                 elif self.polrep=='circ':
                     out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
-                    sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'], 0.5*(data['rrvis']+data['llvis']), out) #TODO POL
+                    sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'], 0.5*(data['rrvis']+data['llvis']), out)
             elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
                 ty = 'c16'
                 if self.polrep=='stokes':
@@ -3329,7 +3329,7 @@ class Obsdata(object):
                 fname (str): path to output text file
                 force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
         """
-        #TODO POL -- does force_singlepol make sense  here ???
+        #TODO POL -- does force_singlepol stil make sense  here ???
         if force_singlepol!=False and self.polrep!='stokes':
             raise Exception("force_singlepol is incompatible with polrep!='stokes'")
 

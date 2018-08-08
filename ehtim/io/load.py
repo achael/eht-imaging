@@ -1139,7 +1139,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
                               ))
 
     elif polrep=='circ':
-        # TODO POL do we need any masking here??
+        # TODO POL do we need any additional masking here??
         datatable = []
         for i in range(len(times)):
             datatable.append(np.array
