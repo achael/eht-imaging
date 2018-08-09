@@ -232,10 +232,10 @@ def mean_incoh_avg(x,debias=True):
     Nc = len(sig)
     if Nc==0:
         amp0 = 0
-        sig0 = 0
+        sig0 = amp0
     elif Nc==1:
         amp0 = amp[0]
-        sig0 = 0
+        sig0 = amp0
     else:
         if debias==True:
             amp0 = deb_amp(amp,sig)

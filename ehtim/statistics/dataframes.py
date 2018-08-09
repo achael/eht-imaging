@@ -494,7 +494,7 @@ def df_to_rec(df,product_type):
          out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
          return np.array(out,dtype=DTPOL)
     elif product_type=='amp':
-         out=  df[['time','tint','t1','t2','u','v','amp','sigma']].to_records(index=False)
+         out=  df[['time','tint','t1','t2','u','v','vis','amp','sigma']].to_records(index=False)
          return np.array(out,dtype=DTAMP)
     elif product_type=='bispec':
          out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
