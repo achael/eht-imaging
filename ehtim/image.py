@@ -41,7 +41,6 @@ import ehtim.io.load
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
-
 #import emcee
 #TODO : add time to all images
 #TODO : add arbitrary center location

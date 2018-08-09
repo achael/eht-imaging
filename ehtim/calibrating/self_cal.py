@@ -331,7 +331,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         # TODO is this right??
         elif polrep=='circ': 
 
-            if pol='RR':
+            if pol=='RR':
                 scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
                 scan['llvis'] *= 1
                 scan['rlvis'] *= g1_fit**(-1)
@@ -342,7 +342,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
                 scan['rlsigma'] *= np.abs(g1_fit**(-1))
                 scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
 
-            elif pol='LL':
+            elif pol=='LL':
                 scan['rrvis'] *= 1
                 scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
                 scan['rlvis'] *= g2_fit.conj()**(-1)

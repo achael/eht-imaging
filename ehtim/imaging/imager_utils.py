@@ -44,9 +44,6 @@ from ehtim.observing.obs_helpers import *
 from IPython import display
 
 
-vis_poldict={'I':'vis','Q':'qvis','U':'uvis','V':'vvis','RR':'rrvis','LL':'llvis','RL':'rlvis','LR':'lrvis'}
-amp_poldict={'I':'amp','Q':'qamp','U':'uamp','V':'vamp','RR':'rramp','LL':'llamp','RL':'rlamp','LR':'lramp'}
-sig_poldict={'I':'sigma','Q':'qsigma','U':'usigma','V':'vsigma','RR':'rrsigma','LL':'llsigma','RL':'rlsigma','LR':'lrsigma'}
 
 ##################################################################################################
 # Constants & Definitions
@@ -1932,8 +1929,11 @@ def scompact(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=No
     """I r^2 source size regularizer
     """
 
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux* beam_size**2
+    else: norm = 1
+
     im = imvec.reshape(ny, nx)
-    im = im / flux
 
     xx, yy = np.meshgrid(range(nx), range(ny))
     xx = xx - (nx-1)/2.0
@@ -1941,16 +1941,22 @@ def scompact(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=No
     xxpsize = xx * psize
     yypsize = yy * psize
 
-    out = np.sum(np.sum(im * ( (xxpsize - np.sum(np.sum(im * xxpsize)) )**2 + (yypsize - np.sum(np.sum(im * yypsize)) )**2 ) ) )
-    return -out
+    x0 = np.sum(np.sum(im * xxpsize))/flux
+    y0 = np.sum(np.sum(im * yypsize))/flux
+
+    out = -np.sum(np.sum(im * ( (xxpsize - x0 )**2 + (yypsize - y0  )**2 ) ) )
+    return out/norm
 
 
 def scompactgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Gradient for I r^2 source size regularizer
     """
 
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux* beam_size**2
+    else: norm = 1
+
     im = imvec.reshape(ny, nx)
-    im = im / flux
 
     xx, yy = np.meshgrid(range(nx), range(ny))
     xx = xx - (nx-1)/2.0
@@ -1958,20 +1964,24 @@ def scompactgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_siz
     xxpsize = xx * psize
     yypsize = yy * psize
 
-    xcom = np.sum(np.sum( im * xxpsize))
-    ycom = np.sum(np.sum( im * yypsize))
+    x0 = np.sum(np.sum(im * xxpsize))/flux
+    y0 = np.sum(np.sum(im * yypsize))/flux
 
-    term1 = np.sum(np.sum( im * ( (xxpsize - xcom) ) ) )
-    term2 = np.sum(np.sum( im * ( (yypsize - ycom) ) ) )
+    term1 = np.sum(np.sum( im * ( (xxpsize - x0) ) ) )
+    term2 = np.sum(np.sum( im * ( (yypsize - y0) ) ) )
 
-    grad = -2*xxpsize*term1 - 2*yypsize*term2  + (xxpsize - xcom )**2 + (yypsize - ycom)**2
+    grad = -2*xxpsize*term1 - 2*yypsize*term2  + (xxpsize - x0 )**2 + (yypsize - y0)**2
 
-    return -grad.reshape(-1)
+    return -grad.reshape(-1)/norm
 
 def scompact2(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """I^2r^2 source size regularizer
     """
 
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux**2 * beam_size**2
+    else: norm = 1
+
     im = imvec.reshape(ny, nx)
 
     xx, yy = np.meshgrid(range(nx), range(ny))
@@ -1980,13 +1990,18 @@ def scompact2(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=N
     xxpsize = xx * psize
     yypsize = yy * psize
 
-    out = np.sum(np.sum(im**2 * ( xxpsize**2 + yypsize**2 ) ) )
-    return -out
+    out = -np.sum(np.sum(im**2 * ( xxpsize**2 + yypsize**2 ) ) )
+    return out/norm
 
 def scompact2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=None):
     """Gradient for I^2r^2 source size regularizer
     """
 
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = flux**2 * beam_size**2
+    else: norm = 1
+
+
     im = imvec.reshape(ny, nx)
 
     xx, yy = np.meshgrid(range(nx), range(ny))
@@ -1995,13 +2010,14 @@ def scompact2grad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_si
     xxpsize = xx * psize
     yypsize = yy * psize
 
-    grad = 2*im*(xxpsize**2 + yypsize**2)
+    grad = -2*im*(xxpsize**2 + yypsize**2)
 
-    return -grad.reshape(-1)
+    return grad.reshape(-1)/norm
 
 def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
     """Gaussian source size regularizer
     """
+
     #major, minor and PA are all in radians
     phi = PA 
 
@@ -2014,7 +2030,6 @@ def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
     sigyy_prime = lambda1*(np.sin(phi)**2.) + lambda2*(np.cos(phi)**2.)
     sigxy_prime = (lambda2 - lambda1)*np.cos(phi)*np.sin(phi) 
 
-
     #we get the dimensions and image vector     
     pdim = psize
     im = imvec.reshape(xdim, ydim)
@@ -2024,7 +2039,6 @@ def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
 
     xx = xlist * psize
     yy = ylist * psize
-
 
     #the centroid parameters
     x0 = np.sum(xx*im) / np.sum(im)

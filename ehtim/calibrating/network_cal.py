@@ -371,7 +371,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         elif polrep=='circ': 
 
 
-            if pol='RR':
+            if pol=='RR':
                 scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
                 scan['llvis'] *= 1
                 scan['rlvis'] *= g1_fit**(-1)
@@ -382,7 +382,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
                 scan['rlsigma'] *= np.abs(g1_fit**(-1))
                 scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
 
-            elif pol='LL':
+            elif pol=='LL':
                 scan['rrvis'] *= 1
                 scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
                 scan['rlvis'] *= g2_fit.conj()**(-1)

@@ -181,7 +181,7 @@ class Movie(object):
 
     def add_pol_movie(self, movie, pol):
 
-        """Add another movie polarization. 
+        """Add another movie polarization. f
 
            Args:
                movie (list): list of 2D frames (possibly complex) in a Jy/pixel array
@@ -191,11 +191,11 @@ class Movie(object):
             raise Exception("new pol movies must have same length as primary movie!")
 
         if pol==self.pol_prim:
-            raise Exception("new pol in add_pol_image is the same as pol_prim!")
-        if np.any(~([image.shape != (self.ydim, self.xdim) for image in movie])):
+            raise Exception("new pol in add_pol_movie is the same as pol_prim!")
+        if np.any(np.array([image.shape != (self.ydim, self.xdim) for image in movie])):
             raise Exception("add_pol_movie image shapes incompatible with primary image!")
         if not (pol in list(self._movdict.keys())): 
-            raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._movdict.keys())))
+            raise Exception("for polrep==%s, pol in add_pol_movie must be in "%self.polrep + ",".join(list(self._movdict.keys())))
 
         if self.polrep=='stokes':
             if pol=='I': self.iframes = [image.flatten() for image in movie]
@@ -277,15 +277,15 @@ class Movie(object):
                     iframes = []
                     vframes = []
                 else:
-                    iframes = [0.5*(self.rrframes[i] + self.llframes[i]) for i in range(self.nframes)]
-                    vframes = [0.5*(self.rrframes[i] - self.llframes[i]) for i in range(self.nframes)]
+                    iframes = [0.5*(self.rrframes[i] + self.llframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    vframes = [0.5*(self.rrframes[i] - self.llframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
 
                 if len(self.rlframes)==0 or len(self.lrframes)==0:
                     qframes = []
                     uframes = []
                 else:
-                    qframes = [np.real(0.5*(self.lrframes[i] + self.rlframes[i])) for i in range(self.nframes)]
-                    uframes = [np.real(0.5j*(self.lrframes[i] - self.rlframes[i])) for i in range(self.nframes)]
+                    qframes = [np.real(0.5*(self.lrframes[i] + self.rlframes[i])).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    uframes = [np.real(0.5j*(self.lrframes[i] - self.rlframes[i])).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
 
                 movdict = {'I':iframes,'Q':qframes,'U':uframes,'V':vframes}
 
@@ -297,15 +297,15 @@ class Movie(object):
                     rrframes = []
                     llframes = []
                 else:
-                    rrframes = [(self.iframes[i] + self.vframes[i]) for i in range(self.nframes)]
-                    llframes = [(self.iframes[i] - self.vframes[i]) for i in range(self.nframes)]
+                    rrframes = [(self.iframes[i] + self.vframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    llframes = [(self.iframes[i] - self.vframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
 
-                if len(self.qvec)==0 or len(self.uvec)==0:
+                if len(self.qframes)==0 or len(self.uframes)==0:
                     rlframes = []
                     lrframes = []
                 else:
-                    rlframes = [(self.qframes[i] + 1j*self.uframes[i]) for i in range(self.nframes)]
-                    lrframes = [(self.qframes[i] - 1j*self.uframes[i]) for i in range(self.nframes)]
+                    rlframes = [(self.qframes[i] + 1j*self.uframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    lrframes = [(self.qframes[i] - 1j*self.uframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
 
                 movdict = {'RR':rrframes,'LL':llframes,'RL':rlframes,'LR':lrframes}
 
@@ -321,9 +321,9 @@ class Movie(object):
                        rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Add in any other polarizations
-        for pol in list(self._movdict.keys()):
-            if pol==self.pol_prim: continue
-            polframes = self._movdict[pol]
+        for pol in list(movdict.keys()):
+            if pol==pol_prim_out: continue
+            polframes = movdict[pol]
             if len(polframes):
                 newmov.add_pol_movie([polvec.reshape(self.ydim,self.xdim) for polvec in polframes], pol)
 
@@ -419,7 +419,7 @@ class Movie(object):
         if self.polrep=='stokes':
             flux = [np.sum(ivec) for ivec in self.iframes]
         elif self.polrep=='circ':
-            flux = [0.5*(np.sum(rrframes[i])+np.sum(llframes[i])) for i in range(self.nframes)]
+            flux = [0.5*(np.sum(self.rrframes[i])+np.sum(self.llframes[i])) for i in range(self.nframes)]
 
         return np.array(flux)
 
@@ -472,13 +472,13 @@ class Movie(object):
         if n<0 or n>=len(self.frames):
             raise Exception("n must be in the range 0 - %i"% self.nframes)
 
-        time = self.start_hr + frame_num * self.framedur/3600
+        time = self.start_hr + n * self.framedur/3600
 
         # Make the primary image
         imarr = self.frames[n].reshape(self.ydim, self.xdim)
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        outim = ehtim.image.Image(imarr, self.psize, self.ra, self.dec, 
+                                    polrep=self.polrep, pol_prim=self.pol_prim, time=time,
+                                    rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the polarizations
         for pol in list(self._movdict.keys()):
@@ -510,14 +510,14 @@ class Movie(object):
                 (Image) : averaged image of all frames
         """
 
-        time = self.start_hr + frame_num * self.framedur/3600
+        time = self.start_hr
 
         # Make the primary image
         avg_imvec = np.mean(np.array(self.frames),axis=0)
         avg_imarr = avg_imvec.reshape(self.ydim, self.xdim)
-        outim = Image(avg_imarr, self.psize, self.ra, self.dec, 
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.start_hr,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        outim = ehtim.image.Image(avg_imarr, self.psize, self.ra, self.dec, 
+                                  polrep=self.polrep, pol_prim=self.pol_prim, time=self.start_hr,
+                                  rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the average polarizations
         for pol in list(self._movdict.keys()):
@@ -544,6 +544,8 @@ class Movie(object):
            Returns:
                (Obsdata): an observation object
         """
+
+
         # Check for agreement in coordinates and frequency
         tolerance = 1e-8
         if (np.abs(self.ra - obs.ra) > tolerance) or (np.abs(self.dec - obs.dec) > tolerance):
@@ -585,23 +587,40 @@ class Movie(object):
             # Get the frame visibilities
             uv = recarr_to_ndarr(obsdata[['u','v']],'f8')        
             im = self.get_frame(n) 
-            obsdata = sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep, 
-                                 ttype=ttype, fft_pad_factor=fft_pad_factor, zero_empty_pol=True)
+            data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep, 
+                                        ttype=ttype, fft_pad_factor=fft_pad_factor, zero_empty_pol=True)
             
+            # Put visibilities into the obsdata
+            if obs.polrep=='stokes':
+                obsdata['vis'] = data[0]
+                if not(data[1] is None):
+                    obsdata['qvis'] = data[1]
+                    obsdata['uvis'] = data[2]
+                    obsdata['vvis'] = data[3]
+
+            elif obs.polrep=='circ':
+                obsdata['rrvis'] = data[0]
+                if not(data[1] is None):
+                    obsdata['llvis'] = data[1]
+                if not(data[2] is None):
+                    obsdata['rlvis'] = data[2]
+                    obsdata['lrvis'] = data[3]
+
+
             if len(obsdata_out):
                 obsdata_out = np.hstack((obsdata_out, obsdata))
             else:
                 obsdata_out = obsdata
 
-
-        obs_no_noise = Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata_out, obs.tarr,
+        obsdata_out = np.array(obsdata_out, dtype=obs.poltype)
+        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata_out, obs.tarr,
                                source=self.source, mjd=np.floor(obs.mjd), polrep=obs.polrep,
                                ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
                                timetype=obs.timetype, scantable=obs.scans)
 
         return obs_no_noise
 
-    def observe_same(self, obsin, ttype='direct', fft_pad_factor=2,  repeat=False,
+    def observe_same(self, obs_in, ttype='direct', fft_pad_factor=2,  repeat=False,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
                            jones=False, inv_jones=False,
@@ -612,7 +631,7 @@ class Movie(object):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
-               obsin (Obsdata): the existing observation with  baselines where the image FT will be sampled
+               obs_in (Obsdata): the existing observation with  baselines where the image FT will be sampled
                ttype (str): if "fast" or "nfft", use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
                
@@ -641,7 +660,7 @@ class Movie(object):
         """
 
         print("Producing clean visibilities from movie . . . ")
-        obs = self.observe_same_nonoise(obsin, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat)
+        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat)
 
         # Jones Matrix Corruption & Calibration
         if jones:
@@ -753,7 +772,7 @@ class Movie(object):
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
-                                     dterp=dtermp, dterm_offset=dterm_offset,
+                                     dtermp=dtermp, dterm_offset=dterm_offset,
                                      jones=jones, inv_jones=inv_jones)
 
 
@@ -1051,13 +1070,13 @@ def merge_im_list(imlist, framedur=-1):
         framelist.append(imarr)
 
         # Look for other  polarizations
-        for pol in polkeys:
-            polvec = self._imdict[pol]
+        for pol in list(movdict.keys()):
+            polvec = im._imdict[pol]
             if len(polvec):
                 polarr = polvec.reshape(ydim0, xdim0)
                 movdict[pol].append(polarr)
             else:
-                if len(movdict[pol]!=0):
+                if movdict[pol]:
                     raise Exception("all frames in merge_im_list must have the same pol layout: error in  frame %i"%i)
 
     if framedur == -1:
@@ -1076,7 +1095,7 @@ def merge_im_list(imlist, framedur=-1):
         if len(polframes):
             newmov.add_pol_movie(polframes, pol)
 
-    return mov
+    return newmov
 
 
 
