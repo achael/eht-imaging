@@ -30,6 +30,7 @@ import os
 import copy
 import sys
 import time as ttime
+import h5py
 
 import ehtim.obsdata
 import ehtim.image
@@ -61,10 +62,18 @@ def load_vex(fname):
 ##################################################################################################
 # Image IO
 ##################################################################################################
-def load_im_txt(filename, pulse=PULSE_DEFAULT):
-    """Read in an image from a text file and create an Image object
-       Text file should have the same format as output from Image.save_txt()
-       Make sure the header has exactly the same form!
+def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', zero_pol=True):
+    """Read in an image from a text file.
+
+       Args:
+            filename (str): path to input text file
+            pulse (function): The function convolved with the pixel values for continuous image.
+            polrep (str): polarization representation, either 'stokes' or 'circ'
+            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+            zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+            (Image): loaded image object
     """
 
     print ("Loading text image: ", filename)
@@ -94,7 +103,8 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
     # Load the data, convert to list format, make object
     datatable = np.loadtxt(filename, dtype=float)
     image = datatable[:,2].reshape(ydim_p, xdim_p)
-    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, time=time, pulse=pulse)
+    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, time=time, pulse=pulse,
+                              polrep='stokes',pol_prim='I')
 
     # Look for Stokes Q and U
     qimage = uimage = vimage = np.zeros(image.shape)
@@ -113,18 +123,41 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT):
     elif np.any((vimage != 0)):
         #print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
+        if zero_pol: 
+            outim.add_qu(0*vimage, 0*vimage)
     elif np.any((qimage != 0) + (uimage != 0)):
         #print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)
+        if zero_pol: 
+            outim.add_v(0*qimage)
     else:
-        pass
+        if zero_pol: 
+            outim.add_qu(0*image, 0*image)
+            outim.add_v(0*image)
         #print('Loaded Stokes I Image Only')
+
+    # Transform to desired pol rep
+    if not (polrep=='stokes' and pol_prim=='I'):
+        outim = outim.switch_polrep(polrep_out=polrep, pol_prim_out=pol_prim)
 
     return outim
 
-def load_im_fits(filename, aipscc=False, punit="deg", pulse=PULSE_DEFAULT):
-    """Read in an image from a FITS file and create an Image object
+def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT, 
+                 punit="deg", polrep='stokes', pol_prim=None, zero_pol=True):
+    """Read in an image from a FITS file.
+
+       Args:
+           fname (str): path to input fits file
+           aipscc (bool): if True, then AIPS CC table will be loaded 
+           pulse (function): The function convolved with the pixel values for continuous image.
+           polrep (str): polarization representation, either 'stokes' or 'circ'          
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+           (Image): loaded image object
     """
+
     print ("Loading fits image: ", filename)
 
     # Radian or Degree?
@@ -246,10 +279,11 @@ def load_im_fits(filename, aipscc=False, punit="deg", pulse=PULSE_DEFAULT):
     else:
         image *= normalizer
 
-    # make image object
-    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, time=time, pulse=pulse)
+    # make image object in Stokes I
+    outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, time=time, pulse=pulse,
+                              polrep='stokes',pol_prim='I')
 
-    # Look for Stokes Q and U
+    # Look for Stokes Q and U and V
     qimage = uimage = vimage = np.array([])
 
     if stokes_in_hdu0: #stokes in top HDU
@@ -287,12 +321,22 @@ def load_im_fits(filename, aipscc=False, punit="deg", pulse=PULSE_DEFAULT):
     elif vimage.shape == image.shape:
         #print('Loaded Stokes I and V Images')
         outim.add_v(vimage)
+        if zero_pol: 
+            outim.add_qu(0*vimage, 0*vimage)
     elif qimage.shape == uimage.shape == image.shape:
         #print('Loaded Stokes I, Q, and U Images')
         outim.add_qu(qimage, uimage)
+        if zero_pol: 
+            outim.add_v(0*qimage)
     else:
-        pass
+        if zero_pol: 
+            outim.add_qu(0*image, 0*image)
+            outim.add_v(0*image)
         #print('Loaded Stokes I Image Only')
+
+    # Transform to desired pol rep
+    if not (polrep=='stokes' and pol_prim=='I'):
+        outim = outim.switch_polrep(polrep_out=polrep, pol_prim_out=pol_prim)
 
     return outim
 
@@ -300,28 +344,63 @@ def load_im_fits(filename, aipscc=False, punit="deg", pulse=PULSE_DEFAULT):
 # Movie IO
 ##################################################################################################
 
-def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1,
-                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
-    """Read in a movie from a hdf5 file and create a Movie object
-       file_name should be the name of the hdf5 file
-       thisdoes not use the header of the hdf5 file so you need to give it
-       psize, framedur_sec, ra and dec
+def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1, 
+                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, source='SgrA',
+                    pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+
+
+    """Read in a movie from an hdf5 file and create a Movie object.
+
+       Args:
+           file_name (str): The name of the hdf5 file.
+           framedur_sec (float): The frame duration in seconds (default=-1, corresponding to framedur tahen from file header)
+           psize (float): Pixel size in radian, (default=-1, corresponding to framedur taken from file header)
+           ra (float): The movie right ascension
+           dec (float): The movie declination
+           rf (float): The movie frequency
+           pulse (function): The function convolved with the pixel values for continuous image
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+           Movie: a Movie object
     """
 
-    import h5py
+    # Currently only supports one polarization!
+
     file    = h5py.File(file_name, 'r')
     name    = list(file.keys())[0]
     d       = file[str(name)]
-    sim  = d[:]
+    frames  = d[:]
     file.close()
-    return Movie(sim, framedur_sec, psize, ra, dec, rf)
+    movie =  Movie(frames, 
+                   framedur_sec, psize, ra, dec, rf=rf, 
+                   polrep=polrep, pol_prim=pol_prim, start_hr=0,
+                   source=source, mjd=MJD_DEFAULT, pulse=pulse)
 
+    if zero_pol: 
+        for pol in list(movie._movdict.keys()):
+            if pol==movie.pol_prim: continue
+            polframes = np.zeros(frames.shape)
+            newmov.add_pol_movie(polframes, pol)
 
-def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
-    """Read in a movie from text files and create a Movie object
-       Text files should be filename + 00001, etc.
-       Text files should have the same format as output from Image.save_txt()
-       Make sure the header has exactly the same form!
+    return movie
+
+def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+    """Read in a movie from text files and create a Movie object.
+
+       Args:
+           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
+           nframes (int): The total number of frames
+           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           pulse (function): The function convolved with the pixel values for continuous image
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+           Movie: a Movie object
     """
 
     imlist = []
@@ -332,7 +411,7 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
         sys.stdout.write('\rReading Movie Image %i/%i...' % (i,nframes))
         sys.stdout.flush()
 
-        im = load_im_txt(filename, pulse=pulse)
+        im = load_im_txt(filename, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
         imlist.append(im)
 
         hour = im.time
@@ -348,10 +427,20 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
 
     return out_mov
 
+def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+    """Read in a movie from fits files and create a Movie object.
 
-def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
-    """Read in a movie from fits files and create a Movie object
-       Fits files should be filename + 00001, etc.
+       Args:
+           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
+           nframes (int): The total number of frames
+           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           pulse (function): The function convolved with the pixel values for continuous image
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+       Returns:
+           Movie: a Movie object
     """
 
     imlist = []
@@ -362,7 +451,7 @@ def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT):
         sys.stdout.write('\rReading Movie Image %i/%i...' % (i,nframes))
         sys.stdout.flush()
 
-        im = load_im_fits(filename, pulse=pulse)
+        im = load_im_fits(filename, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
         imlist.append(im)
 
         hour = im.time
@@ -426,10 +515,17 @@ def load_array_txt(filename, ephemdir='ephemeris'):
 # Observation IO
 ##################################################################################################
 
-def load_obs_txt(filename):
-    """Read an observation from a text file and return an Obsdata object
-       text file has the same format as output from Obsdata.savedata()
+def load_obs_txt(filename, polrep='stokes'):
+    """Read an observation from a text file.
+       Args:
+           fname (str): path to input text file
+           polrep (str): load data as either 'stokes' or 'circ'
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
     """
+
+    if not(polrep in ['stokes' , 'circ']):
+        raise Exception("polrep should be 'stokes' or 'circ' in load_uvfits")
     print ("Loading text observation: ", filename)
 
     # Read the header parameters
@@ -526,15 +622,32 @@ def load_obs_txt(filename):
             raise Exception('Text file does not have the right number of fields!')
 
 
-        datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
-                                    u, v, vis, qvis, uvis, vvis,
-                                    sigma, qsigma, usigma, vsigma), dtype=DTPOL))
+        if polrep=='stokes':
+            datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
+                                        u, v, vis, qvis, uvis, vvis,
+                                        sigma, qsigma, usigma, vsigma), dtype=DTPOL_STOKES))
+        elif polrep=='circ':
+            rrvis = vis  +  vvis
+            llvis = vis - vvis
+            rlvis = qvis + 1j*uvis
+            lrvis = qvis - 1j*uvis
+
+            rrsigma = np.sqrt(sigma**2 + vsigma**2)
+            llsigma = np.sqrt(sigma**2 + vsigma**2)
+            rlsigma = np.sqrt(qsigma**2 + usigma**2)
+            lrsigma = np.sqrt(qsigma**2 + usigma**2)
+
+            datatable2.append(np.array((time, tint, t1, t2, tau1, tau2, u, v, 
+                                        rrvis, llvis, rlvis, lrvis,
+                                        rrsigma, llsigma, rlsigma, lrsigma), dtype=DTPOL_CIRC))
+
 
     # Return the data object
     datatable2 = np.array(datatable2)
-    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, source=src, mjd=mjd,
+    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, polrep=polrep, source=src, mjd=mjd,
                                  ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
     return out
+
 
 def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object
@@ -589,7 +702,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
             sigma = float(line[10])
             datatable.append(np.array((time, tint, t1, t2, tau1, tau2,
                                         u, v, vis, 0.0, 0.0, 0.0,
-                                        sigma, 0.0, 0.0, 0.0), dtype=DTPOL))
+                                        sigma, 0.0, 0.0, 0.0), dtype=DTPOL_STOKES))
 
     datatable = np.array(datatable)
 
@@ -624,15 +737,28 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
                 datatable[i]['vsigma'] = float(line[10])
                 i += 1
 
-    # Return the datatable
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd)
+    # Return the data object
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tdata, source=src, mjd=mjd, polrep='stokes')
 
 
 #TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, IF=all):
-    """Load uvfits data from a uvfits file.
-       To read a single polarization (e.g., only RR) from a full polarization file, set force_singlepol='R', 'L', 'RL', or 'LR'
+def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes', channel=all, IF=all):
+    """Load observation data from a uvfits file.
+       Args:
+           fname (str): path to input text file
+           flipbl (bool): flip baseline phases if True.
+           polrep (str): load data as either 'stokes' or 'circ'
+           force_singlepol (str): 'R' or 'L' to load only 1 polarization
+           channel (list): list of channels to average in the import. channel=all averages all channels
+           IF (list): list of IFs to  average in  the import. IF=all averages all IFS
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
     """
+
+    if not(polrep in ['stokes' , 'circ']):
+        raise Exception("polrep should be 'stokes' or 'circ' in load_uvfits")
+    if not(force_singlepol is None or force_singlepol==False) and polrep!='stokes':
+        raise Exception("force_singlepol is incompatible with polrep!='stokes' in load_uvfits")
 
     # Load the uvfits file
     print ("Loading uvfits: ", filename)
@@ -842,6 +968,7 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
         tints = data['INTTIM'][mask]
     except KeyError:
         tints = np.zeros(len(mask))
+
     # Sites - add names
     t1 = data['BASELINE'][mask].astype(int)//256
     t2 = data['BASELINE'][mask].astype(int) - t1*256
@@ -965,61 +1092,81 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, channel=all, I
     qumask_dsize = (rlmask_dsize * lrmask_dsize) # must have both RL & LR data to get Q, U
     vmask_dsize  = (rrmask_dsize * llmask_dsize) # must have both RR & LL data to get V
 
-    # Stokes I
-    ivis = 0.5 * (rr + ll)
-    ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
-    ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
-
-    isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
-    isigma[~llmask_dsize] = rrsig[~llmask_dsize]
-    isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
-
-    # TODO what should the polarization  sigmas be if no data?
-    # Stokes V
-    vvis = 0.5 * (rr - ll)
-    vvis[~vmask_dsize] = 0.
-
-    vsigma = copy.deepcopy(isigma)
-    vsigma[~vmask_dsize] = isigma[~vmask_dsize]
-
-    # Stokes Q,U
-    qvis = 0.5 * (rl + lr)
-    uvis = 0.5j * (lr - rl)
-    qvis[~qumask_dsize] = 0.
-    uvis[~qumask_dsize] = 0.
-
-    qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
-    usigma = qsigma
-    qsigma[~qumask_dsize] = isigma[~qumask_dsize]
-    usigma[~qumask_dsize] = isigma[~qumask_dsize]
-
     # Reverse sign of baselines for correct imaging?
     if flipbl:
         u = -u
         v = -v
 
-    # Make a datatable
-    datatable = []
-    for i in range(len(times)):
-        datatable.append(np.array
-                         ((
-                           times[i], tints[i],
-                           t1[i], t2[i], tau1[i], tau2[i],
-                           u[i], v[i],
-                           ivis[i], qvis[i], uvis[i], vvis[i],
-                           isigma[i], qsigma[i], usigma[i], vsigma[i]
-                           ), dtype=DTPOL
-                         ))
+    if polrep=='stokes':
+        # Stokes I
+        ivis = 0.5 * (rr + ll)
+        ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
+        ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
+
+        isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
+        isigma[~llmask_dsize] = rrsig[~llmask_dsize]
+        isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
+
+        # TODO what should the polarization  sigmas be if no data?
+        # Stokes V
+        vvis = 0.5 * (rr - ll)
+        vvis[~vmask_dsize] = 0.
+
+        vsigma = copy.deepcopy(isigma)
+        vsigma[~vmask_dsize] = isigma[~vmask_dsize]
+
+        # Stokes Q,U
+        qvis = 0.5 * (rl + lr)
+        uvis = 0.5j * (lr - rl)
+        qvis[~qumask_dsize] = 0.
+        uvis[~qumask_dsize] = 0.
+
+        qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
+        usigma = qsigma
+        qsigma[~qumask_dsize] = isigma[~qumask_dsize]
+        usigma[~qumask_dsize] = isigma[~qumask_dsize]
+
+        # Make a datatable
+        datatable = []
+        for i in range(len(times)):
+            datatable.append(np.array
+                             ((
+                               times[i], tints[i],
+                               t1[i], t2[i], tau1[i], tau2[i],
+                               u[i], v[i],
+                               ivis[i], qvis[i], uvis[i], vvis[i],
+                               isigma[i], qsigma[i], usigma[i], vsigma[i]
+                               ), dtype=DTPOL_STOKES
+                              ))
+
+    elif polrep=='circ':
+        # TODO POL do we need any additional masking here??
+        datatable = []
+        for i in range(len(times)):
+            datatable.append(np.array
+                             ((
+                               times[i], tints[i],
+                               t1[i], t2[i], tau1[i], tau2[i],
+                               u[i], v[i],
+                               rr[i], ll[i], rl[i], lr[i],
+                               rrsig[i], llsig[i], rlsig[i], lrsig[i]
+                               ), dtype=DTPOL_CIRC
+                             ))
 
     datatable = np.array(datatable)
 
     #TODO get calibration flags from uvfits?
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=mjd, scantable=scantable)
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep, source=src, mjd=mjd, scantable=scantable)
 
 
 def load_obs_oifits(filename, flux=1.0):
-    """Load data from an oifits file
-       Does NOT currently support polarization
+
+    """Load data from an oifits file. Does NOT currently support polarization.
+       Args:
+           fname (str): path to input text file
+           flux (float): normalization total flux
+       Returns:
+           obs (Obsdata): Obsdata object loaded from file
     """
 
     print('Warning: load_obs_oifits does NOT currently support polarimetric data!')
@@ -1115,7 +1262,7 @@ def load_obs_oifits(filename, flux=1.0):
                            flux*vis[i], qvis[i], uvis[i], vvis[i],
                            flux*amperr[i], flux*amperr[i], flux*amperr[i], flux*amperr[i]
                           ) for i in range(len(vis))
-                         ], dtype=DTPOL)
+                         ], dtype=DTPOL_STOKES)
 
     tarr = np.array([(sites[i], x[i], y[i], z[i],
                       sefdr[i], sefdl[i], dr[i], dl[i],
@@ -1125,4 +1272,5 @@ def load_obs_oifits(filename, flux=1.0):
 
     # return object
 
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, source=src, mjd=time[0])
+    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep='stokes', source=src, mjd=time[0])
+

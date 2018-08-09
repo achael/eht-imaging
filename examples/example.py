@@ -87,34 +87,9 @@ out = eh.imager_func(obs, out, out, flux,
 out = out.blur_circ(res/2.0)
 out = eh.imager_func(obs, out, out, flux,
                 d1='bs', s1='tv',
-                alpha_s1=1, alpha_d1=10,
+                alpha_s1=1, alpha_d1=10,cd
                 alpha_flux=100, alpha_cm=50,
                 maxit=100,ttype='nfft')
-
-#alternate imaging with amplitude and closure phase
-# Image total flux with amplitudes and closure phases
-#flux = zbl
-#out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
-#                      d1='amp', d2='cphase',
-#                      s1='simple',
-#                      alpha_s1=1, alpha_d1=400, alpha_d2=100,
-#                      alpha_flux=100, alpha_cm=50,
-#                      maxit=100, ttype='nfft')
-
-## Blur the image with a circular beam and image again to help convergance
-#out = out.blur_circ(res)
-#out = eh.imager_func(obs, out, out, flux,
-#                d1='amp', d2='cphase', #s1='tv',
-#                alpha_s1=1, alpha_d1=50, alpha_d2=200,
-#                alpha_flux=100, alpha_cm=50,
-#                maxit=100,ttype='nfft')
-
-#out = out.blur_circ(res/2.0)
-#out = eh.imager_func(obs, out, out, flux,
-#                d1='amp', d2='cphase', s1='tv', alpha_d1=50, alpha_d2=200,
-#                alpha_s1=1, 
-#                alpha_flux=100, alpha_cm=50,
-#                maxit=100,ttype='nfft')
 
 
 # Self - calibrate and image with vis amplitudes
@@ -138,9 +113,9 @@ out.display()
 
 # Save the images
 outname = "test"
-#out.save_txt(outname + '.txt')
-#out.save_fits(outname + '.fits')
-#outblur.save_txt(outname + '_blur.txt')
-#outblur.save_fits(outname + '_blur.fits')
+out.save_txt(outname + '.txt')
+out.save_fits(outname + '.fits')
+outblur.save_txt(outname + '_blur.txt')
+outblur.save_fits(outname + '_blur.fits')
 
 

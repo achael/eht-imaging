@@ -39,10 +39,14 @@ from multiprocessing import Process, Value, Lock
 from ehtim.calibrating.cal_helpers import *
 import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in log")
+
+MAXIT=10000 # maximum number of iterations in self-cal minimizer
+
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
-def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2, 
+def self_cal(obs, im, sites=[], method="both", pol='I',
+             pad_amp=0., gain_tol=.2, 
              ttype='direct', fft_pad_factor=2, caltable=False, debias=True,
              processes=-1,show_solution=False,msgtype='bar'):
     """Self-calibrate a dataset to an image.
@@ -53,6 +57,8 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
 
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           pol (str): which image polarization to self-calibrate visibilities to 
+
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
 
@@ -71,32 +77,27 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
            (Caltable): the derived calibration table, if caltable==True
     """
 
+    if pol not in ['I','Q','U','V','RR','LL']:
+        raise Exception("Can only self-calibrate to I, Q, U, V, RR, or LL images!")
+    if pol in ['I','Q','U','V']:
+        if obs.polrep!='stokes':
+            raise Exception("selfcal pol is a stokes parameter, but obs.polrep!='stokes'")
+        im = im.switch_polrep('stokes',pol)
+    elif pol in ['RR','LL']:
+        if obs.polrep!='circ':
+            raise Exception("selfcal pol is RR or LL, but obs.polrep!='circ'")
+        im = im.switch_polrep('circ',pol)
+
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
     if len(sites) == 0:
         print("No stations specified in self cal: defaulting to calibrating all stations!")
         sites = obs.tarr['site']
 
-    # First, sample the model visibilities
+    # First, sample the model visibilities of the specified polarization
     print("Computing the Model Visibilities with " + ttype + " Fourier Transform...")
     obs_clean = im.observe_same_nonoise(obs, ttype=ttype, fft_pad_factor=fft_pad_factor)
-    V = obs_clean.data['vis']
-#    if ttype == 'nfft':
-#        (data, sigma, nfft_A) = iu.chisqdata_vis_nfft(obs, im, fft_pad_factor=fft_pad_factor)
-#        nfft_info = nfft_A[0]
-#        plan = nfft_info.plan
-#        pulsefac = nfft_info.pulsefac
-#        plan.f_hat = (im.imvec).copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
-#        plan.trafo()
-#        V = plan.f.copy()*pulsefac
-#    elif ttype=='fast':
-#        (data, sigma, fft_A) = iu.chisqdata_vis_fft(obs, im, fft_pad_factor=fft_pad_factor)
-#        im_info, sampler_info_list, gridder_info_list = fft_A
-#        vis_arr = iu.fft_imvec(im.imvec, im_info)
-#        V = iu.sampler(vis_arr, sampler_info_list, sample_type='vis')
-#    else:
-#        (data, sigma, A, im.imvec>0) = iu.chisqdata_vis(obs, im)
-#        V = np.dot(A, im.imvec)
+    V = obs_clean.data[vis_poldict[pol]]
 
     # Partition the list of model visibilities into scans
     from itertools import islice
@@ -124,18 +125,17 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
     # loop over scans and calibrate
     tstart = time.time()
     if processes > 0: # run on multiple cores with multiprocessing
-
-        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, method,
+        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, obs.polrep, pol, method,
                                                               show_solution, pad_amp, gain_tol, caltable, debias, msgtype
                                                              ] for i in range(len(scans))]))
 
     else: # run on a single core
-
         for i in range(len(scans)):
             prog_msg(i, len(scans),msgtype=msgtype,nscan_last=i-1)
-            scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites,
+            scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites, polrep=obs.polrep, pol=pol,
                                  method=method, show_solution=show_solution, debias=debias,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
+
 
     tstop = time.time()
     print("\nself_cal time: %f s" % (tstop - tstart))
@@ -153,14 +153,13 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
                 except KeyError: caldict[site] = dat
 
         caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-                                           source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
+                                           source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
     else: # return a calibrated observation
-        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
-                                        np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
+        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.concatenate(scans_cal), obs.tarr, 
+                                        polrep=obs.polrep, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
-                                        timetype=obs.timetype)
-
+                                        timetype=obs.timetype, scantable=obs.scans)
         out = obs_cal
 
     # close multiprocessing jobs
@@ -169,16 +168,18 @@ def self_cal(obs, im, sites=[], method="both",  pad_amp=0., gain_tol=.2,
 
     return out
 
-def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=False, 
+def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', method="both", show_solution=False, 
                   pad_amp=0., gain_tol=.2, debias=True,caltable=False):
     """Self-calibrate a scan to an image.
 
        Args:
-           scan (np.recarray): data array of type DTPOL containing the scan visibility data
+           scan (np.recarray): data array of type DTPOL_STOKES or DTPOL_CIRC containing the scan visibility data
            im (Image): the image to be calibrated  to
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
            V_scan (list) : precomputed scan visibilities
 
+           polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
+           pol (str): which image polarization to self-calibrate visibilities to 
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
@@ -219,15 +220,21 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         except KeyError:
             g2_keys.append(-1)
 
-    # scan visibilities and sigmas with extra padding
+    # no sites to calibrate on this scan!
+    if np.all(g1_keys == -1) and np.all(g2_keys == -1):
+        return scan
+
+    # get scan visibilities of the specified polarization
+    vis = scan[vis_poldict[pol]]
+    sigma = scan[sig_poldict[pol]]
+
     if method=='amp':
         if debias:
-            vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+            vis = amp_debias(np.abs(vis), np.abs(sigma))
         else:
-            vis = np.abs(amp)
-    else:
-        vis = scan['vis']
-    sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
+            vis = np.abs(vis)
+
+    sigma_inv = 1.0/np.sqrt(sigma**2+ (pad_amp*np.abs(vis))**2)
 
 
     # initial guess for gains
@@ -238,21 +245,15 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
         g = gpar.astype(np.float64).view(dtype=np.complex128) # all the forward site gains (complex)
 
         if method=="phase":
-            g = g/np.abs(g) # TODO: use exp(i*np.arg())?
+            g = g/np.abs(g) 
         if method=="amp":
             g = np.abs(np.real(g))
-            #g = np.abs(g)
 
         # append the default values to g for missing gains
         g = np.append(g, 1.)
         g1 = g[g1_keys]
         g2 = g[g2_keys]
 
-        #TODO debias!
-#        if method=='amp':
-#            verr = np.abs(scan['vis']) - g1*g2.conj() * np.abs(V_scan)
-#        else:
-#            verr = scan['vis'] - g1*g2.conj() * V_scan
         if method=='amp':
             verr = np.abs(vis) - g1*g2.conj() * np.abs(V_scan)
         else:
@@ -260,13 +261,14 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
         # goodness-of-fit for gains 
         chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
+
         # prior on the gains
         chisq_g = np.sum((np.log(np.abs(g))**2 / gain_tol**2))
 
         return chisq + chisq_g
 
     # use gradient descent to find the gains
-    optdict = {'maxiter': 5000} # minimizer params
+    optdict = {'maxiter': MAXIT} # minimizer params
     res = opt.minimize(errfunc, gpar_guess, method='Powell', options=optdict)
 
     # save the solution
@@ -282,7 +284,8 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
 
     g_fit = np.append(g_fit, 1.)
 
-    if caltable: # derive a calibration table
+    # Derive a calibration table or apply the solution to the scan
+    if caltable: 
         allsites = list(set(scan['t1']).union(set(scan['t2'])))
 
         caldict = {}
@@ -291,22 +294,65 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], method="both", show_solution=Fa
                 site_key = tkey[site]
             else:
                 site_key = -1
-            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)
+
+            # If we selfcal on a stokes image, set R&L gains equal.
+            if pol in ['I','Q','U','V']:
+                rscale = g_fit[site_key]**-1
+                lscale = g_fit[site_key]**-1
+
+            # TODO is this right??
+            # But if we selfcal  on RR or LL, only set the appropriate gain
+            elif pol=='RR':
+                rscale = g_fit[site_key]**-1
+                lscale = 1
+            elif pol=='LL':
+                lscale = g_fit[site_key]**-1
+                rscale = 1
+
+            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
 
         out = caldict
 
-    else: # apply the solution to the scan
+    else: # TODO: currently applying the derived solution to ALL polarizations regardless of how it was derived -- inconsistent with above caltable way? 
         g1_fit = g_fit[g1_keys]
-        g2_fit = g_fit[g2_keys]
-        gij_inv = (g1_fit * g2_fit.conj())**(-1)
-        scan['vis']  = gij_inv * scan['vis']
-        scan['qvis'] = gij_inv * scan['qvis']
-        scan['uvis'] = gij_inv * scan['uvis']
-        scan['vvis'] = gij_inv * scan['vvis']
-        scan['sigma']  = np.abs(gij_inv) * scan['sigma']
-        scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
-        scan['usigma'] = np.abs(gij_inv) * scan['usigma']
-        scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
+        g2_fit = g_fit[g2_keys]   
+    
+        if polrep=='stokes': 
+
+            gij_inv = (g1_fit * g2_fit.conj())**(-1)
+            
+            # scale visibilities
+            for vistype in ['vis','qvis','uvis','vvis']:
+                scan[vistype]  *= gij_inv
+            # scale sigmas
+            for sigtype in ['sigma','qsigma','usigma','vsigma']:
+                scan[sigtype]  *= np.abs(gij_inv)
+        
+        # TODO is this right??
+        elif polrep=='circ': 
+
+            if pol=='RR':
+                scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
+                scan['llvis'] *= 1
+                scan['rlvis'] *= g1_fit**(-1)
+                scan['lrvis'] *= g2_fit.conj()**(-1)
+
+                scan['rrsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+                scan['llsigma'] *= 1
+                scan['rlsigma'] *= np.abs(g1_fit**(-1))
+                scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
+
+            elif pol=='LL':
+                scan['rrvis'] *= 1
+                scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
+                scan['rlvis'] *= g2_fit.conj()**(-1)
+                scan['lrvis'] *= g1_fit**(-1)
+
+                scan['rrsigma'] *= 1
+                scan['llsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+                scan['rlsigma'] *= np.abs(g2_fit.conj()**(-1))
+                scan['lrsigma'] *= np.abs(g1_fit**(-1))
+
         out = scan
 
     return out
@@ -318,14 +364,15 @@ def init(x):
 def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
-def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, method, show_solution, pad_amp, gain_tol, caltable,debias,msgtype):
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, show_solution, pad_amp, gain_tol, caltable,debias,msgtype):
     if n > 1:
         global counter
         counter.increment()
         prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
-    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, method=method, show_solution=show_solution, 
+    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, pol=pol, method=method, show_solution=show_solution, 
                          pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable, debias=debias)
+
 
 
 

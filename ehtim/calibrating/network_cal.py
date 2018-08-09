@@ -39,11 +39,12 @@ from ehtim.calibrating.cal_helpers import *
 
 
 ZBLCUTOFF = 1.e7;
-
+MAXIT=1000
 ###################################################################################################################################
 #Network-Calibration
 ###################################################################################################################################
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad_amp=0.,gain_tol=.2, 
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pol='I',
+                pad_amp=0.,gain_tol=.2, 
                 caltable=False, processes=-1,show_solution=False, debias=True, msgtype='bar'):
 
     """Network-calibrate a dataset with zero baseline constraints.
@@ -55,6 +56,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
 
            zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           pol (str): which visibility to compute gains for
+
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
 
@@ -68,6 +71,17 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
            (Obsdata): the calibrated observation, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
     """
+
+    if pol not in ['I','Q','U','V','RR','LL']:
+        raise Exception("Can only self-calibrate to I, Q, U, V, RR, or LL images!")
+    if pol in ['I','Q','U','V']:
+        if obs.polrep!='stokes':
+            raise Exception("selfcal pol is a stokes parameter, but obs.polrep!='stokes'")
+        im = im.switch_polrep('stokes',pol)
+    elif pol in ['RR','LL']:
+        if obs.polrep!='circ':
+            raise Exception("selfcal pol is RR or LL, but obs.polrep!='circ'")
+        im = im.switch_polrep('circ',pol)
 
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
@@ -104,14 +118,15 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
     if processes > 0: # with multiprocessing
         scans_cal = pool.map(get_network_scan_cal,
                                              [[i, len(scans), scans[i],
-                                               zbl, sites, cluster_data, method, pad_amp, gain_tol,
+                                               zbl, sites, cluster_data, obs.polrep, pol, 
+                                               method, pad_amp, gain_tol,
                                                caltable, show_solution,debias,msgtype]
                                               for i in range(len(scans))
                                              ])
     else: # without multiprocessing
         for i in range(len(scans)):
             prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i-1)
-            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data,
+            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, polrep=obs.polrep, pol=pol,
                                             method=method, show_solution=show_solution, caltable=caltable,
                                             pad_amp=pad_amp, gain_tol=gain_tol,debias=debias)
 
@@ -141,7 +156,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
         obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
                                         np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
                                         ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
-                                        timetype=obs.timetype, scantable=obs.scans)
+                                        timetype=obs.timetype, scantable=obs.scans, polrep=obs.polrep)
         out = obs_cal
 
     # close multiprocessing jobs
@@ -150,7 +165,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pad
 
     return out
 
-def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF, method="both", 
+def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I',
+                     zbl_uvidst_max=ZBLCUTOFF, method="both", 
                      show_solution=False, pad_amp=0., gain_tol=.2, caltable=False, debias=True):
     """Network-calibrate a scan with zero baseline constraints.
 
@@ -160,6 +176,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
            clustered_sites (tuple): information  on clustered sites, returned by make_cluster_data function
 
+           polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
+           pol (str): which image polarization to self-calibrate visibilities to 
            zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
@@ -216,21 +234,21 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
             bl_index = clusterbls.index(set((clusternum1, clusternum2)))
             scan_keys.append(bl_index)
 
-
     # no sites to calibrate on this scan!
     if np.all(g1_keys == -1):
         return scan
 
-    # scan visibilities and sigmas with extra padding
+    # get scan visibilities of the specified polarization
+    vis = scan[vis_poldict[pol]]
+    sigma = scan[sig_poldict[pol]]
+
     if method=='amp':
         if debias:
-            vis = amp_debias(np.abs(scan['vis']), np.abs(scan['sigma']))
+            vis = amp_debias(np.abs(vis), np.abs(sigma))
         else:
             vis = np.abs(vis)
-    else:
-        vis = scan['vis']
 
-    sigma_inv = 1.0/np.sqrt(scan['sigma']**2+ (pad_amp*np.abs(scan['vis']))**2)
+    sigma_inv = 1.0/np.sqrt(sigma**2+ (pad_amp*np.abs(vis))**2)
 
     # initial guesses for parameters
     n_gains = len(sites)
@@ -248,6 +266,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
 
         # all the forward site gains (complex)
         g = gvpar[0:2*n_gains].astype(np.float64).view(dtype=np.complex128)
+
         # all the intercluster visibilities (complex)
         v = gvpar[2*n_gains:].astype(np.float64).view(dtype=np.complex128)
 
@@ -256,7 +275,6 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
             g = g/np.abs(g) # TODO: use exp(i*np.arg())?
         if method=="amp":
              g = np.abs(np.real(g))
-            #g = np.abs(g)
 
         # append the default values to g for missing points
         # and to v for the zero baseline points
@@ -284,7 +302,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
         return chisq + chisq_g + chisq_v
 
     # run the minimizer to get a solution
-    optdict = {'maxiter' : 500} # minimizer params
+    optdict = {'maxiter' : MAXIT} # minimizer params
     res = opt.minimize(errfunc, gvpar_guess, method='CG', options=optdict)
 
     # get solution
@@ -304,9 +322,10 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
     g_fit = np.append(g_fit, 1.)
     v_fit = np.append(v_fit, zbl)
 
-   
-    if caltable:  # derive caltable
-        allsites = list(set(scan['t1']).union(set(scan['t2']))) if g_fit[-2] != 1.0 else []
+
+    # Derive a calibration table or apply the solution to the scan
+    if caltable: 
+        allsites = list(set(scan['t1']).union(set(scan['t2'])))
 
         caldict = {}
         for site in allsites:
@@ -314,21 +333,66 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, zbl_uvidst_max=ZBLCUTOFF
                 site_key = tkey[site]
             else:
                 site_key = -1
-            caldict[site] = np.array((scan['time'][0], g_fit[site_key]**-1, g_fit[site_key]**-1), dtype=DTCAL)
+
+            # If we selfcal on a stokes image, set R&L gains equal.
+            if pol in ['I','Q','U','V']:
+                rscale = g_fit[site_key]**-1
+                lscale = g_fit[site_key]**-1
+
+            # TODO is this right??
+            # But if we selfcal  on RR or LL, only set the appropriate gain
+            elif pol=='RR':
+                rscale = g_fit[site_key]**-1
+                lscale = 1
+            elif pol=='LL':
+                lscale = g_fit[site_key]**-1
+                rscale = 1
+
+            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
+
         out = caldict
 
-    else: # apply calibration solution
+    else: # TODO: currently applying the derived solution to ALL polarizations regardless of how it was derived -- inconsistent with above caltable way? 
         g1_fit = g_fit[g1_keys]
-        g2_fit = g_fit[g2_keys]
-        gij_inv = (g1_fit * g2_fit.conj())**(-1)
-        scan['vis']  = gij_inv * scan['vis']
-        scan['qvis'] = gij_inv * scan['qvis']
-        scan['uvis'] = gij_inv * scan['uvis']
-        scan['vvis'] = gij_inv * scan['vvis']
-        scan['sigma']  = np.abs(gij_inv) * scan['sigma']
-        scan['qsigma'] = np.abs(gij_inv) * scan['qsigma']
-        scan['usigma'] = np.abs(gij_inv) * scan['usigma']
-        scan['vsigma'] = np.abs(gij_inv) * scan['vsigma']
+        g2_fit = g_fit[g2_keys]   
+    
+        if polrep=='stokes': 
+
+            gij_inv = (g1_fit * g2_fit.conj())**(-1)
+            
+            # scale visibilities
+            for vistype in ['vis','qvis','uvis','vvis']:
+                scan[vistype]  *= gij_inv
+            # scale sigmas
+            for sigtype in ['sigma','qsigma','usigma','vsigma']:
+                scan[sigtype]  *= np.abs(gij_inv)
+        
+        # TODO is this right??
+        elif polrep=='circ': 
+
+
+            if pol=='RR':
+                scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
+                scan['llvis'] *= 1
+                scan['rlvis'] *= g1_fit**(-1)
+                scan['lrvis'] *= g2_fit.conj()**(-1)
+
+                scan['rrsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+                scan['llsigma'] *= 1
+                scan['rlsigma'] *= np.abs(g1_fit**(-1))
+                scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
+
+            elif pol=='LL':
+                scan['rrvis'] *= 1
+                scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
+                scan['rlvis'] *= g2_fit.conj()**(-1)
+                scan['lrvis'] *= g1_fit**(-1)
+
+                scan['rrsigma'] *= 1
+                scan['llsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+                scan['rlsigma'] *= np.abs(g2_fit.conj()**(-1))
+                scan['lrsigma'] *= np.abs(g1_fit**(-1))
+
         out = scan
 
     return out
@@ -340,14 +404,14 @@ def init(x):
 def get_network_scan_cal(args):
     return get_network_scan_cal2(*args)
 
-def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, method, pad_amp,gain_tol,caltable, show_solution,debias,msgtype):
+def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, polrep, pol,
+                          method, pad_amp,gain_tol,caltable, show_solution,debias,msgtype):
     if n > 1:
         global counter
         counter.increment()
         prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
-    return network_cal_scan(scan, zbl, sites, cluster_data, zbl_uvidst_max=ZBLCUTOFF, 
+    return network_cal_scan(scan, zbl, sites, cluster_data, polrep=polrep, pol=pol, zbl_uvidst_max=ZBLCUTOFF, 
                             method=method,caltable=caltable, show_solution=show_solution, 
                             pad_amp=pad_amp, gain_tol=gain_tol,debias=debias)
-
 
