@@ -171,11 +171,11 @@ def save_im_fits(im, fname, mjd=False, time=False):
 # Movie IO
 ##################################################################################################
 
-def save_mov_fits(mov, fname):
+def save_mov_fits(mov, fname, mjd=False):
     """Save movie data to series of fits files.
 
        Args:
-            fname (str): basename of output text file
+            fname (str): basename of output fits file
             mjd (int): MJD of saved movie
 
        Returns:
@@ -186,6 +186,7 @@ def save_mov_fits(mov, fname):
     for i in range(mov.nframes):
         time_frame = mov.start_hr + i*mov.framedur/3600.
         fname_frame = fname + "%05d" % i
+        print ('saving file '+fname_frame)
         frame_im = mov.get_frame(i)
         save_im_fits(frame_im, fname_frame, mjd=mjd, time=time_frame)
 
@@ -206,6 +207,7 @@ def save_mov_txt(mov, fname, mjd=False):
     for i in range(mov.nframes):
         time_frame = mov.start_hr + i*mov.framedur/3600.
         fname_frame = fname + "%05d" % i
+        print ('saving file '+fname_frame)
         frame_im = mov.get_frame(i)
         save_im_txt(frame_im, fname_frame, mjd=mjd, time=time_frame)
 
