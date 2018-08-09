@@ -43,6 +43,11 @@ from ehtim.observing.obs_helpers import *
 
 from IPython import display
 
+
+vis_poldict={'I':'vis','Q':'qvis','U':'uvis','V':'vvis','RR':'rrvis','LL':'llvis','RL':'rlvis','LR':'lrvis'}
+amp_poldict={'I':'amp','Q':'qamp','U':'uamp','V':'vamp','RR':'rramp','LL':'llamp','RL':'rlamp','LR':'lramp'}
+sig_poldict={'I':'sigma','Q':'qsigma','U':'usigma','V':'vsigma','RR':'rrsigma','LL':'llsigma','RL':'rlsigma','LR':'lrsigma'}
+
 ##################################################################################################
 # Constants & Definitions
 ##################################################################################################
@@ -77,7 +82,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
                    **kwargs):
 
 
-    """Run a general interferometric imager.
+    """Run a general interferometric imager. Only works directly on the image's primary polarization. 
 
        Args:
            Obsdata (Obsdata): The Obsdata object with VLBI data
@@ -153,6 +158,13 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         raise Exception("Invalid regularizer: valid regularizers are: " + ' '.join(REGULARIZERS))
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
         raise Exception("Initial image does not match dimensions of the prior image!")
+    if (InitIm.polrep != Prior.polrep):
+        raise Exception("Initial image pol. representation does not match pol. representation of the prior image!")
+    if (logim and Prior.pol_prim in ['Q','U','V']):
+            raise Exception("Cannot image Stokes Q,U,or V with log image transformation! Set logim=False in imager_func")
+
+    pol = Prior.pol_prim
+    print("Generating %s image..." % pol)
 
     # Catch scale and dimension problems
     imsize = np.max([Prior.xdim, Prior.ydim]) * Prior.psize
@@ -187,9 +199,9 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         raise Exception("clipfloor too large: all prior pixels have been clipped!")
 
     # Get data and fourier matrices for the data terms
-    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, **kwargs)
-    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, **kwargs)
-    (data3, sigma3, A3) = chisqdata(Obsdata, Prior, embed_mask, d3, **kwargs)
+    (data1, sigma1, A1) = chisqdata(Obsdata, Prior, embed_mask, d1, pol=pol, **kwargs)
+    (data2, sigma2, A2) = chisqdata(Obsdata, Prior, embed_mask, d2, pol=pol, **kwargs)
+    (data3, sigma3, A3) = chisqdata(Obsdata, Prior, embed_mask, d3, pol=pol, **kwargs)
 
     # Define the chi^2 and chi^2 gradient
     def chisq1(imvec):
@@ -327,15 +339,30 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     if logim: out = np.exp(res.x)
     if np.any(np.invert(embed_mask)): out = embed(out, embed_mask)
 
-    outim = image.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize,
-                     Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source,
-                     mjd=Prior.mjd, pulse=Prior.pulse)
+#    outim = image.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize,
+#                     Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source,
+#                     mjd=Prior.mjd, pulse=Prior.pulse)
 
-    if len(Prior.qvec):
-        print("Preserving image complex polarization fractions!")
-        qvec = Prior.qvec * out / Prior.imvec
-        uvec = Prior.uvec * out / Prior.imvec
-        outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
+#    if len(Prior.qvec):
+#        print("Preserving image complex polarization fractions!")
+#        qvec = Prior.qvec * out / Prior.imvec
+#        uvec = Prior.uvec * out / Prior.imvec
+#        outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
+
+    outim = image.Image(out.reshape(Prior.ydim, Prior.xdim),
+                        Prior.psize, Prior.ra, Prior.dec,
+                        rf=Prior.rf, source=Prior.source,
+                        polrep=Prior.polrep, pol_prim=pol, 
+                        mjd=Prior.mjd, time=Prior.time, pulse=Prior.pulse)
+
+
+    # copy over other polarizations
+    for pol2 in list(outim._imdict.keys()):
+        if pol2==outim.pol_prim: continue
+        polvec = self.prior_next._imdict[pol2]
+        if len(polvec):
+            polarr=polvec.reshape(outim.ydim, outim.xdim)
+            outim.add_pol_image(polarr, pol2)
 
     # Print stats
     print("time: %f s" % (tstop - tstart))
@@ -604,7 +631,7 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
 
     return s
 
-def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
+def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
 
     """Return the data, sigma, and matrices for the appropriate dtype
     """
@@ -616,45 +643,45 @@ def chisqdata(Obsdata, Prior, mask, dtype, **kwargs):
 
     if ttype=='direct':
         if dtype == 'vis':
-            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, **kwargs)
+            (data, sigma, A) = chisqdata_vis(Obsdata, Prior, mask, pol=pol, **kwargs)
         elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, **kwargs)
+            (data, sigma, A) = chisqdata_amp(Obsdata, Prior, mask, pol=pol,**kwargs)
         elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, **kwargs)
+            (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, pol=pol,**kwargs)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask, **kwargs)
+            (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask, pol=pol,**kwargs)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, **kwargs)
+            (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, pol=pol,**kwargs)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, **kwargs)
+            (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, pol=pol,**kwargs)
 
     elif ttype=='fast':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_vis_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_amp_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, pol=pol, **kwargs)
 
     elif ttype=='nfft':
         if dtype=='vis':
-            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_vis_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'amp' or dtype == 'logamp':
-            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_amp_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'bs':
-            (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'cphase':
-            (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'camp':
-            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'logcamp':
-            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs)
+            (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, pol=pol, **kwargs)
 
 
     return (data, sigma, A)
@@ -2075,16 +2102,20 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
 ##################################################################################################
 # Chi^2 Data functions
 ##################################################################################################
-def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut):
+def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol):
     """apply systematic noise and snrcut to VISIBILITIES or AMPLITUDES
        data_arr should have fields 't1','t2','u','v','vis','amp','sigma'
 
        returns: (uv, vis, amp, sigma)
     """
 
-    sigma = data_arr['sigma']
-    vis = data_arr['vis']
-    amp = data_arr['amp']
+    vtype=vis_poldict[pol]
+    atype=amp_poldict[pol]
+    etype=sig_poldict[pol]
+
+    sigma = data_arr[etype]
+    vis = data_arr[vtype]
+    amp = data_arr[atype]
     t1 = data_arr['t1']
     t2 = data_arr['t2']
 
@@ -2118,7 +2149,7 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut):
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))[mask]
     return (uv, vis, amp, sigma)
 
-def chisqdata_vis(Obsdata, Prior, mask, **kwargs):
+def chisqdata_vis(Obsdata, Prior, mask, pol='I', **kwargs):
     """Return the data, sigmas, and fourier matrix for visibilities
     """
 
@@ -2129,15 +2160,18 @@ def chisqdata_vis(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
-    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    vtype=vis_poldict[pol]
+    atype=amp_poldict[pol]
+    etype=sig_poldict[pol]
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (vis, sigma, A)
 
-def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
+def chisqdata_amp(Obsdata, Prior, mask, pol='I',**kwargs):
     """Return the data, sigmas, and fourier matrix for visibility amplitudes
     """
 
@@ -2148,9 +2182,12 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
-    if (Obsdata.amp is None) or (len(Obsdata.amp)==0):
-        data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
-    else:
+    vtype=vis_poldict[pol]
+    atype=amp_poldict[pol]
+    etype=sig_poldict[pol]
+    if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
@@ -2160,7 +2197,7 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
         data_arr = Obsdata_amponly.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     
     # apply systematic noise and SNR cut
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2171,7 +2208,7 @@ def chisqdata_amp(Obsdata, Prior, mask, **kwargs):
 
     return (amp, sigma, A)
 
-def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
+def chisqdata_bs(Obsdata, Prior, mask, pol='I',**kwargs):
     """return the data, sigmas, and fourier matrices for bispectra
     """
 
@@ -2186,9 +2223,10 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
-    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
-        biarr = Obsdata.bispectra(mode="all", count=count)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0) or pol!='I':
+        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
@@ -2220,7 +2258,7 @@ def chisqdata_bs(Obsdata, Prior, mask, **kwargs):
 
     return (bi, sigma, A3)
 
-def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
+def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
     """Return the data, sigmas, and fourier matrices for closure phases
     """
 
@@ -2234,9 +2272,10 @@ def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data
-    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
-        clphasearr = Obsdata.c_phases(mode="all", count=count)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count)
+    else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
@@ -2266,7 +2305,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, **kwargs):
          )
     return (clphase, sigma, A3)
 
-def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
+def chisqdata_camp(Obsdata, Prior, mask, pol='I',**kwargs):
     """Return the data, sigmas, and fourier matrices for closure amplitudes
     """
     # unpack keyword args
@@ -2279,9 +2318,10 @@ def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
-    if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
+    vtype=vis_poldict[pol]
+    if (Obsdata.camp is None) or (len(Obsdata.camp)==0) or pol!='I':
         clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
-    else:
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
@@ -2311,7 +2351,7 @@ def chisqdata_camp(Obsdata, Prior, mask, **kwargs):
 
     return (clamp, sigma, A4)
 
-def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
+def chisqdata_logcamp(Obsdata, Prior, mask,pol='I', **kwargs):
     """Return the data, sigmas, and fourier matrices for log closure amplitudes
     """
     # unpack keyword args
@@ -2324,9 +2364,10 @@ def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
     weighting = kwargs.get('weighting','natural')
 
     # unpack data & mask low snr points
-    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='logcamp', debias=debias)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0)  or pol!='I':
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
@@ -2360,7 +2401,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask, **kwargs):
 ##################################################################################################
 # FFT Chi^2 Data functions
 ##################################################################################################
-def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
+def chisqdata_vis_fft(Obsdata, Prior,pol='I', **kwargs):
     """Return the data, sigmas, uv points, and FFT info for visibilities
     """
 
@@ -2375,8 +2416,11 @@ def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    vtype=vis_poldict[pol]
+    atype=amp_poldict[pol]
+    etype=sig_poldict[pol]
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2393,7 +2437,7 @@ def chisqdata_vis_fft(Obsdata, Prior, **kwargs):
 
     return (vis, sigma, A)
 
-def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
+def chisqdata_amp_fft(Obsdata, Prior,pol='I', **kwargs):
 
     """Return the data, sigmas, uv points, and FFT info for visibility amplitudes
     """
@@ -2409,9 +2453,12 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    if (Obsdata.amp is None) or (len(Obsdata.amp)==0):
-        data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
-    else:
+    vtype=vis_poldict[pol]
+    atype=amp_poldict[pol]
+    etype=sig_poldict[pol]
+    if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
@@ -2421,7 +2468,7 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
         data_arr = Obsdata_amponly.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     
     # apply systematic noise and snr cut
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2438,7 +2485,7 @@ def chisqdata_amp_fft(Obsdata, Prior, **kwargs):
 
     return (amp, sigma, A)
 
-def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
+def chisqdata_bs_fft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the data, sigmas, uv points, and FFT info for bispectra
     """
@@ -2457,16 +2504,18 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
-        biarr = Obsdata.bispectra(mode="all", count=count)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0) or pol!='I':
+        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
-        # reduce to a minimal set
-        if count!='max':       
+        # reduce to a minimal set 
+        if count!='max':   
             biarr = reduce_tri_minimal(Obsdata, biarr)
+
 
     snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
@@ -2495,7 +2544,7 @@ def chisqdata_bs_fft(Obsdata, Prior, **kwargs):
 
     return (bi, sigma, A)
 
-def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
+def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the data, sigmas, uv points, and FFT info for closure phases
     """
@@ -2513,9 +2562,10 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data
-    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
-        clphasearr = Obsdata.c_phases(mode="all", count=count)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count)
+    else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
@@ -2523,6 +2573,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
         # reduce to a minimal set
         if count!='max':       
             clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
+
 
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
@@ -2550,7 +2601,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, **kwargs):
 
     return (clphase, sigma, A)
 
-def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
+def chisqdata_camp_fft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the data, sigmas, uv points, and FFT info for closure amplitudes
     """
@@ -2569,9 +2620,10 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data & mask low snr points
-    if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
+    vtype=vis_poldict[pol]
+    if (Obsdata.camp is None) or (len(Obsdata.camp)==0) or pol!='I':
         clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
-    else:
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
@@ -2579,6 +2631,7 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
         # reduce to a minimal set
         if count!='max':       
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
+
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
@@ -2605,7 +2658,7 @@ def chisqdata_camp_fft(Obsdata, Prior, **kwargs):
 
     return (clamp, sigma, A)
 
-def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
+def chisqdata_logcamp_fft(Obsdata, Prior,pol='I', **kwargs):
 
     """Return the data, sigmas, uv points, and FFT info for log closure amplitudes
     """
@@ -2623,12 +2676,13 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
     # unpack data & mask low snr points
-    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='logcamp', debias=debias)
-    else:
-        print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
-        if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
-            raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
+    vtype=vis_poldict[pol]
+    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0)  or pol!='I':
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias)
+    else: # TODO -- pre-computed  with not stokes I? 
+        print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
+        if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
+            raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
         # reduce to a minimal set
         if count!='max':       
@@ -2662,7 +2716,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior, **kwargs):
 ##################################################################################################
 # NFFT Chi^2 Data functions
 ##################################################################################################
-def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
+def chisqdata_vis_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the visibilities, sigmas, uv points, and nfft info
     """
@@ -2678,8 +2732,12 @@ def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    vtype=vis_poldict[pol]
+    atype=amp_poldict[pol]
+    etype=sig_poldict[pol]
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2691,7 +2749,7 @@ def chisqdata_vis_nfft(Obsdata, Prior, **kwargs):
 
     return (vis, sigma, A)
 
-def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
+def chisqdata_amp_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the amplitudes, sigmas, uv points, and nfft info
     """
@@ -2707,9 +2765,12 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    if (Obsdata.amp is None) or (len(Obsdata.amp)==0):
-        data_arr = Obsdata.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
-    else:
+    vtype=vis_poldict[pol]
+    atype=amp_poldict[pol]
+    etype=sig_poldict[pol]
+    if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
@@ -2719,7 +2780,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
         data_arr = Obsdata_amponly.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
     
     # apply systematic noise and snr cut
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2731,7 +2792,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, **kwargs):
 
     return (amp, sigma, A)
 
-def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
+def chisqdata_bs_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the bispectra, sigmas, uv points, and nfft info
     """
@@ -2750,15 +2811,16 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0):
-        biarr = Obsdata.bispectra(mode="all", count=count)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0) or pol!='I':
+        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed bispectrum table is not a numpy rec array!")
         biarr = Obsdata.bispec
-        # reduce to a minimal set
-        if count!='max':       
+        # reduce to a minimal set 
+        if count!='max':   
             biarr = reduce_tri_minimal(Obsdata, biarr)
 
     snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
@@ -2783,7 +2845,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, **kwargs):
 
     return (bi, sigma, A)
 
-def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
+def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the closure phases, sigmas, uv points, and nfft info
     """
@@ -2802,9 +2864,10 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data
-    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0):
-        clphasearr = Obsdata.c_phases(mode="all", count=count)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count)
+    else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure phase table is not a numpy rec array!")
@@ -2814,7 +2877,6 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
             clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
 
     snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
-
     uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))[snrmask]
@@ -2836,7 +2898,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, **kwargs):
 
     return (clphase, sigma, A)
 
-def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
+def chisqdata_camp_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the closure phases, sigmas, uv points, and nfft info
     """
@@ -2855,9 +2917,10 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data & mask low snr points
-    if (Obsdata.camp is None) or (len(Obsdata.camp)==0):
+    vtype=vis_poldict[pol]
+    if (Obsdata.camp is None) or (len(Obsdata.camp)==0) or pol!='I':
         clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
-    else:
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed closure amplitude table is not a numpy rec array!")
@@ -2867,7 +2930,6 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
@@ -2888,7 +2950,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, **kwargs):
 
     return (clamp, sigma, A)
 
-def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
+def chisqdata_logcamp_nfft(Obsdata, Prior,pol='I', **kwargs):
 
     """Return the closure phases, sigmas, uv points, and nfft info
     """
@@ -2907,19 +2969,19 @@ def chisqdata_logcamp_nfft(Obsdata, Prior, **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
     # unpack data & mask low snr points
-    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0):
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='logcamp', debias=debias)
-    else:
+    vtype=vis_poldict[pol]
+    if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0)  or pol!='I':
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias)
+    else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed log closure amplitude table is not a numpy rec array!")
         clamparr = Obsdata.logcamp
         # reduce to a minimal set
-        if count!='max':    
+        if count!='max':       
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
     snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-
     uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
     uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
@@ -3000,46 +3062,6 @@ def embed(im, mask, clipfloor=0., randomfloor=False):
             out[(mask-1).nonzero()] = clipfloor * np.abs(np.random.normal(size=len((mask-1).nonzero())))
         else:
             out[(mask-1).nonzero()] = clipfloor
-
-    return out
-
-def threshold(image, frac_i=1.e-5, frac_pol=1.e-3):
-    """Apply a hard threshold to the image.
-    """
-
-    imvec = np.copy(image.imvec)
-
-    thresh = frac_i*np.abs(np.max(imvec))
-    lowval = thresh
-    flux = np.sum(imvec)
-
-    for j in range(len(imvec)):
-        if imvec[j] < thresh:
-            imvec[j]=lowval
-
-    imvec = flux*imvec/np.sum(imvec)
-    out = image.Image(imvec.reshape(image.ydim,image.xdim), image.psize,
-                   image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
-    return out
-
-def blur_circ(image, fwhm_i, fwhm_pol=0):
-    """Apply a circular gaussian filter to the image.
-       fwhm_i and fwhm_pol are in radians
-    """
-
-    # Blur Stokes I
-    sigma = fwhm_i/(2. * np.sqrt(2. * np.log(2.)))
-    sigmap = sigma/image.psize
-    im = filt.gaussian_filter(image.imvec.reshape(image.ydim, image.xdim), (sigmap, sigmap))
-    out = image.Image(im, image.psize, image.ra, image.dec, rf=image.rf, source=image.source, mjd=image.mjd)
-
-    # Blur Stokes Q and U
-    if len(image.qvec) and fwhm_pol:
-        sigma = fwhm_pol/(2. * np.sqrt(2. * np.log(2.)))
-        sigmap = sigma/image.psize
-        imq = filt.gaussian_filter(image.qvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
-        imu = filt.gaussian_filter(image.uvec.reshape(image.ydim,image.xdim), (sigmap, sigmap))
-        out.add_qu(imq, imu)
 
     return out
 

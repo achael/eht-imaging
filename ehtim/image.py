@@ -2156,7 +2156,7 @@ class Image(object):
                     print('clipping values less than 0 in display')
                     imarr[imarr<0.0] = 0.0
                 imarr = (imarr + np.max(imarr)/dynamic_range)**(gamma)
-                unit = '(' + unit + ')^gamma'
+                unit = '(' + unit + ')^' + str(gamma)
 
             if cbar_lims:
                 imarr[imarr>cbar_lims[1]] = cbar_lims[1]

@@ -22,20 +22,8 @@ from ehtim.observing.pulses import *
 
 import sys
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 
-FONTSIZE=12
 mpl.rc('font',**{'family':'serif','size':12})
-plt.rc('font', family='serif')
-plt.rc('text', usetex=True)
-plt.rc('font', size=FONTSIZE)      
-plt.rc('axes', titlesize=FONTSIZE)
-plt.rc('axes', labelsize=FONTSIZE) 
-plt.rc('xtick', labelsize=FONTSIZE)
-plt.rc('ytick', labelsize=FONTSIZE) 
-plt.rc('legend', fontsize=FONTSIZE)    
-plt.rc('figure', titlesize=FONTSIZE) 
-
 
 EP = 1.0e-10
 C = 299792458.0

@@ -278,7 +278,7 @@ class Obsdata(object):
                 if not (set((dat['t1'], dat['t2']))) in blpairs:
 
                      # Reverse the baseline in the right order for uvfits:
-                     if(self.tkey[dat['t1']] < self.tkey[dat['t2']]):
+                     if(self.tkey[dat['t1']] > self.tkey[dat['t2']]):
                         (dat['t1'], dat['t2']) = (dat['t2'], dat['t1'])
                         (dat['tau1'], dat['tau2']) = (dat['tau2'], dat['tau1'])
                         dat['u'] = -dat['u']
