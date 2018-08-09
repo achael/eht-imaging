@@ -32,12 +32,14 @@ from ehtim.plotting.comparisons import *
 from ehtim.calibrating.self_cal import self_cal as selfcal
 from ehtim.calibrating.self_cal import self_cal as netcal
 
+from ehtim.pipeline import Pipeline
+
 from ehtim.const_def import *
 
 print("Welcome to eht-imaging v 1.1.0")
 
 def logo():
-    for line in BHIMAGE:    
+    for line in BHIMAGE:
         print(line)
 
 def eht():

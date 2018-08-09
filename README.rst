@@ -3,7 +3,7 @@ ehtim (eht-imaging)
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or need help for your application.
 
-The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Array``, ``Obsdata``. ``Movie`` and ``Vex`` provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. ``imager`` is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.
+The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Array``, ``Obsdata``, ``Movie``  ``Caltable``  and ``Vex`` classes, which provide tools for loading images and data, producing simulated data from realistic u-v tracks, and calibrating, inspecting, and plotting data. ``Imager``  is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.
 
 Note that this is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.
 

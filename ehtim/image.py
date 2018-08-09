@@ -2547,7 +2547,45 @@ def make_empty(npix, fov, ra, dec, rf=RF_DEFAULT,source=SOURCE_DEFAULT,
                   rf=rf, source=source, mjd=mjd, time=time, pulse=pulse)
     return outim
 
+
+def load_image(image, display=False, aipscc=False):
+
+    """Read in an image from a text, .fits, or ehtim.image.Image object
+
+       Args:
+            image (str/Image): path to input file
+            display (boolean): determine whether to display the image default
+            aipscc (boolean): if True, then AIPS CC table will be loaded instead
+                              of the original brightness distribution.
+       Returns:
+            (Image):    loaded image object
+            (boolean):  False if the image cannot be read
+    """
+
+    if type(image) == type("str"):
+      if image.endswith('.fits'):  
+        im = ehtim.io.load.load_im_fits(image, aipscc=aipscc)
+      elif image.endswith('.txt'):   
+        im = ehtim.io.load.load_im_txt(image)
+      else:
+        print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got <.{0}>. Returning False.".format(image.split('.')[-1]))
+        return False
+
+
+    elif isinstance(image, ehtim.image.Image): 
+      im = image
+
+    else: 
+      print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got {0}. Returning False.".format(type(image)))
+      return False
+
+    if display: 
+      im.display()
+
+    return im
+
 def load_txt(fname, polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT, zero_pol=True):
+
 
     """Read in an image from a text file.
 
@@ -2583,3 +2621,4 @@ def load_fits(fname, aipscc=False, pulse=PULSE_DEFAULT,
 
     return ehtim.io.load.load_im_fits(fname, aipscc=aipscc,pulse=pulse,
                                       polrep=polrep, pol_prim=pol_prim,  zero_pol=zero_pol)
+

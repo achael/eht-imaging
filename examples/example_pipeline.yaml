@@ -1,0 +1,10 @@
+pipeline:
+- load:
+- average:
+    minlen: 500
+    sec:    300
+- flag:
+    uv_min: 0.1e9
+- flag:
+    site: SR
+- reorder:

@@ -2130,11 +2130,15 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol):
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
 
-    sigma = data_arr[etype]
-    vis = data_arr[vtype]
-    amp = data_arr[atype]
     t1 = data_arr['t1']
     t2 = data_arr['t2']
+
+    sigma = data_arr[etype]
+    amp = data_arr[atype]
+    try:
+        vis = data_arr[vtype]
+    except ValueError:
+        vis = amp.astype('c16')
 
     snrmask = np.abs(amp/sigma) >= snrcut
 
@@ -2208,11 +2212,10 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I',**kwargs):
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
-        #ANDREW TODO: this is a bit clunky
-        Obsdata_amponly = Obsdata.copy()
-        Obsdata_amponly.data = Obsdata_amponly.amp
-        data_arr = Obsdata_amponly.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
+        data_arr = Obsdata.amp
+
     
+
     # apply systematic noise and SNR cut
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
@@ -2479,11 +2482,8 @@ def chisqdata_amp_fft(Obsdata, Prior,pol='I', **kwargs):
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
-        #ANDREW TODO: this is a bit clunky
-        Obsdata_amponly = Obsdata.copy()
-        Obsdata_amponly.data = Obsdata_amponly.amp
-        data_arr = Obsdata_amponly.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
-    
+        data_arr = Obsdata.amp
+
     # apply systematic noise and snr cut
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
@@ -2791,10 +2791,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I',**kwargs):
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
-        #ANDREW TODO: this is a bit clunky
-        Obsdata_amponly = Obsdata.copy()
-        Obsdata_amponly.data = Obsdata_amponly.amp
-        data_arr = Obsdata_amponly.unpack(['t1','t2','u','v','vis','amp','sigma'], debias=debias)
+        data_arr = Obsdata.amp
     
     # apply systematic noise and snr cut
     (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)

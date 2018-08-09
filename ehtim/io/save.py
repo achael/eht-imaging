@@ -597,7 +597,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
                     #print start_vis, stop_vis
                     break
 
-                print ("%.12f %.12f %.12f" % (fractimes[jj], scan_start, scan_stop)) 
+                #print ("%.12f %.12f %.12f" % (fractimes[jj], scan_start, scan_stop)) 
                 jd = round(fractimes[jj], ROUND_SCAN_INT)*comp_fac # ANDREW TODO precision??   
 
                 if (np.floor(jd) >= np.floor(scan_start*comp_fac)) and (np.ceil(jd) <= np.ceil(comp_fac*scan_stop)):

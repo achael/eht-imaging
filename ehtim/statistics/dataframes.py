@@ -63,6 +63,41 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
+
+def make_amp(obs,debias=True,polarization='unknown',band='unknown',round_s=0.1):
+
+    """converts visibilities from obs.data to amplitudes inDataFrame format
+
+    Args:
+        obs: ObsData object
+        debias (str): whether to debias the amplitudes
+        round_s: accuracy of datetime object in seconds
+
+    Returns:
+        df: observation visibility data in DataFrame format
+    """
+    sour=obs.source
+    df = pd.DataFrame(data=obs.data)
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obs.mjd + df['fmjd']
+    telescopes = list(zip(df['t1'],df['t2']))
+    telescopes = [(x[0],x[1]) for x in telescopes]
+    df['baseline'] = [x[0]+'-'+x[1] for x in telescopes]
+    df['amp'] = list(map(np.abs,df['vis']))
+    if debias==True:
+        amp2 = np.maximum(np.asarray(df['amp'])**2-np.asarray(df['sigma'])**2,np.asarray(df['sigma'])**2)
+        df['amp'] = np.sqrt(amp2)
+    df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df['vis']))
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polarization
+    df['band'] = band
+    df['snr'] = df['amp']/df['sigma']
+    df['source'] = sour
+    df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
+    return df
+
 def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3)):
     """coherently averages visibilities
     Args:
@@ -144,11 +179,110 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         else:
             #drop values that couldn't be matched to any scan
             vis_avg.drop(list(vis_avg[vis_avg.scan<0].index.values),inplace=True)
-            
+        if err_type=='measured':
+            vis_avg.drop(labels=['udummy','vdummy','qdummy','dummy'],axis='columns',inplace=True)      
         if return_type=='rec':
             return df_to_rec(vis_avg,'vis')
         elif return_type=='df':
             return vis_avg
+
+def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type='vis',err_type='predicted',num_samples=int(1e3)):
+    """incoherently averages visibilities
+    Args:
+        obs: ObsData object
+        dt (float): integration time in seconds
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+        rec_type (str): 'vis' for DTPOL and 'amp' for DTAMP
+        err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
+        num_samples: 'bootstrap' resample set size for measured error
+        scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
+    Returns:
+        vis_avg: coherently averaged visibilities
+    """
+    if (dt<=0)&(scan_avg==False):
+        print('Either averaging time must be positive, or scan_avg option should be selected!')
+        return obs.data
+    else:
+        vis = make_df(obs)
+        if scan_avg==False:
+            #TODO
+            #we don't have to work on datetime products at all
+            #change it to only use 'time' in mjd
+            t0 = datetime.datetime(1960,1,1) 
+            vis['round_time'] = list(map(lambda x: np.floor((x- t0).total_seconds()/float(dt)),vis.datetime))  
+            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
+        else:
+            bins, labs = get_bins_labels(obs.scans)
+            vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
+            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
+        #column just for counting the elements
+        vis['number'] = 1
+        aggregated = {'datetime': np.min, 'time': np.min,
+        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
+
+        if err_type not in ['measured', 'predicted']:
+            print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
+            err_type='predicted'
+
+        #AVERAGING------------------------------- 
+        vis['dummy'] = list(zip(np.abs(vis['vis']),vis['sigma']))
+        vis['udummy'] = list(zip(np.abs(vis['uvis']),vis['usigma']))
+        vis['vdummy'] = list(zip(np.abs(vis['vvis']),vis['vsigma']))
+        vis['qdummy'] = list(zip(np.abs(vis['qvis']),vis['qsigma']))
+
+        if err_type=='predicted':
+            aggregated['dummy'] = lambda x: mean_incoh_avg(x,debias=debias)
+            aggregated['udummy'] = lambda x: mean_incoh_avg(x,debias=debias)
+            aggregated['vdummy'] = lambda x: mean_incoh_avg(x,debias=debias)
+            aggregated['qdummy'] = lambda x: mean_incoh_avg(x,debias=debias)
+
+        elif err_type=='measured':
+            aggregated['dummy'] = lambda x: bootstrap(np.abs(np.asarray([y[0] for y in x])), np.mean, num_samples=num_samples,wrapping_variable=False)
+            aggregated['udummy'] = lambda x: bootstrap(np.abs(np.asarray([y[0] for y in x])), np.mean, num_samples=num_samples,wrapping_variable=False)
+            aggregated['vdummy'] = lambda x: bootstrap(np.abs(np.asarray([y[0] for y in x])), np.mean, num_samples=num_samples,wrapping_variable=False)
+            aggregated['qdummy'] = lambda x: bootstrap(np.abs(np.asarray([y[0] for y in x])), np.mean, num_samples=num_samples,wrapping_variable=False)
+
+        #ACTUAL AVERAGING
+        vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()
+
+        if err_type=='predicted':
+            vis_avg['vis'] = [x[0] for x in list(vis_avg['dummy'])]
+            vis_avg['uvis'] = [x[0] for x in list(vis_avg['udummy'])]
+            vis_avg['qvis'] = [x[0] for x in list(vis_avg['qdummy'])]
+            vis_avg['vvis'] = [x[0] for x in list(vis_avg['vdummy'])]
+            vis_avg['sigma'] = [x[1] for x in list(vis_avg['dummy'])]
+            vis_avg['usigma'] = [x[1] for x in list(vis_avg['udummy'])]
+            vis_avg['qsigma'] = [x[1] for x in list(vis_avg['qdummy'])]
+            vis_avg['vsigma'] = [x[1] for x in list(vis_avg['vdummy'])]
+        
+        elif err_type=='measured':
+            vis_avg['vis'] = [x[0] for x in list(vis_avg['dummy'])]
+            vis_avg['uvis'] = [x[0] for x in list(vis_avg['udummy'])]
+            vis_avg['qvis'] = [x[0] for x in list(vis_avg['qdummy'])]
+            vis_avg['vvis'] = [x[0] for x in list(vis_avg['vdummy'])]
+            vis_avg['sigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['dummy'])]
+            vis_avg['usigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['udummy'])]
+            vis_avg['qsigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['qdummy'])]
+            vis_avg['vsigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['vdummy'])]
+
+        vis_avg['amp'] = list(map(np.abs,vis_avg['vis']))
+        vis_avg['phase'] = 0
+        vis_avg['snr'] = vis_avg['amp']/vis_avg['sigma']
+        if scan_avg==False:
+            #round datetime and time to the begining of the bucket and add half of a bucket time
+            half_bucket = dt/2.
+            vis_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x) + half_bucket), vis_avg['round_time']))
+            vis_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., vis_avg['datetime']))
+        else:
+            #drop values that couldn't be matched to any scan
+            vis_avg.drop(list(vis_avg[vis_avg.scan<0].index.values),inplace=True)
+            
+        vis_avg.drop(labels=['udummy','vdummy','qdummy','dummy'],axis='columns',inplace=True)    
+        if return_type=='rec':
+            return df_to_rec(vis_avg,rec_type)
+        elif return_type=='df':
+            return vis_avg
+
 
 def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
 
@@ -394,9 +528,13 @@ def df_to_rec(df,product_type):
     elif product_type=='vis':
          out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
          return np.array(out,dtype=DTPOL_STOKES)
+    elif product_type=='amp':
+         out=  df[['time','tint','t1','t2','u','v','vis','amp','sigma']].to_records(index=False)
+         return np.array(out,dtype=DTAMP)
     elif product_type=='bispec':
          out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
          return np.array(out,dtype=DTBIS)
+
 
 def round_time(t,round_s=0.1):
 
@@ -418,8 +556,6 @@ def round_time(t,round_s=0.1):
     microseconds = int(1e6*(foo_s - days*3600*24 - seconds))
     round_t = t0+datetime.timedelta(days,seconds,microseconds)
     return round_t
-
-
 
 def get_bins_labels(intervals,dt=0.00001):
     '''gets bins and labels necessary to perform averaging by scan
