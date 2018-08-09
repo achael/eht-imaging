@@ -1073,7 +1073,6 @@ class Obsdata(object):
                     amp_vis3, sig_vis3 = mean_incoh_amp_from_vis(bldata[self.poldict['vis3']],bldata[self.poldict['sigma3']],debias=debias,err_type=err_type)
                     amp_vis4, sig_vis4 = mean_incoh_amp_from_vis(bldata[self.poldict['vis4']],bldata[self.poldict['sigma4']],debias=debias,err_type=err_type)
 
-
                     datatable.append(np.array
                                 ((
                                 np.mean(obs_timeregion.data['time']),
