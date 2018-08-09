@@ -105,7 +105,7 @@ class Imager(object):
             self.flux_next = flux
 
         #polarization
-        self.pol_next=kwargs.get('pol',True)
+        self.pol_next=kwargs.get('pol',self.init_next.pol_prim)
 
         #weighting/debiasing/snr cut/systematic noise
         self.debias_next=kwargs.get('debias',True)
@@ -157,6 +157,7 @@ class Imager(object):
         """
         if pol is None: pol = self.pol_next
         else: self.pol_next = pol
+
 
         print("==============================")
         print("Imager run %i " % (int(self.nruns)+1))
@@ -224,7 +225,7 @@ class Imager(object):
         # copy over other polarizations
         for pol2 in list(outim._imdict.keys()):
             if pol2==outim.pol_prim: continue
-            polvec = self.prior_next._imdict[pol2]
+            polvec = self.init_next._imdict[pol2]
             if len(polvec):
                 polarr=polvec.reshape(outim.ydim, outim.xdim)
                 outim.add_pol_image(polarr, pol2)
@@ -307,13 +308,17 @@ class Imager(object):
             raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'!")
 
         if (self.prior_next.polrep == 'stokes' and not(self.pol_next in ['I','Q','U','V'])):
-            raise Exception("Initial image polrep is 'circ': pol_next must be in 'I','Q','U','V'!")
+            raise Exception("Initial image polrep is 'stokes': pol_next must be in 'I','Q','U','V'!")
 
         if (self.transform_next=='log' and self.pol_next in ['Q','U','V']):
                 raise Exception("Cannot image Stokes Q,U,or V with log image transformation!")
 
         if self._ttype not in ['fast','direct','nfft']:
             raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
+
+        if(self.pol_next in ['Q','U','V'] and 
+          ('gs' in self.reg_term_next.keys() or 'simple' in self.reg_term_next.keys())):
+            raise Exception("simple and gs MEM methods do not work with potentially negative Stokes Q,U,or V images!")
 
         # determine if we need to recompute the saved imager parameters on the next imager run
         if self.nruns == 0:
@@ -573,7 +578,7 @@ class Imager(object):
                 print("Recomputing imager data products . . .")
             self._data_tuples = {}
             for dname in sorted(self.dat_term_next.keys()):
-                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=pself.pol_next,
+                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=self.pol_next,
                                 debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
                                 systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                 ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
@@ -736,7 +741,7 @@ class Imager(object):
                     outstr += "%s : %0.1f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
 
                 if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
-                plot_i(imvec, self.prior_next, self._nit, chi2_term_dict, **kwargs)
+                plot_i(imvec, self.prior_next, self._nit, chi2_term_dict, pol=self.pol_next, **kwargs)
 
                 if self._nit == 0: print()
                 print(outstr)

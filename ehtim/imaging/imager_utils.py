@@ -44,7 +44,6 @@ from ehtim.observing.obs_helpers import *
 from IPython import display
 
 
-
 ##################################################################################################
 # Constants & Definitions
 ##################################################################################################
@@ -292,7 +291,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
             s_2 = reg2(im_step)
             s_3 = reg3(im_step)
             if np.any(np.invert(embed_mask)): im_step = embed(im_step, embed_mask)
-            plot_i(im_step, Prior, nit, {d1:chi2_1, d2:chi2_2, d3:chi2_3})
+            plot_i(im_step, Prior, nit, {d1:chi2_1, d2:chi2_2, d3:chi2_3}, pol=pol)
             print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_3: %0.2f s_1: %0.2f s_2: %0.2f s_3: %0.2f" % (nit, chi2_1, chi2_2, chi2_3, s_1, s_2, s_3))
         nit += 1
 
@@ -356,7 +355,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     # copy over other polarizations
     for pol2 in list(outim._imdict.keys()):
         if pol2==outim.pol_prim: continue
-        polvec = self.prior_next._imdict[pol2]
+        polvec = InitIm._imdict[pol2]
         if len(polvec):
             polarr=polvec.reshape(outim.ydim, outim.xdim)
             outim.add_pol_image(polarr, pol2)
@@ -1930,10 +1929,12 @@ def scompact(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_size=No
     """
 
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = flux* beam_size**2
+    if norm_reg: norm = flux * (beam_size**2)
     else: norm = 1
 
+
     im = imvec.reshape(ny, nx)
+    #im = im/flux
 
     xx, yy = np.meshgrid(range(nx), range(ny))
     xx = xx - (nx-1)/2.0
@@ -1953,10 +1954,12 @@ def scompactgrad(imvec, nx, ny, psize, flux, norm_reg=NORM_REGULARIZER, beam_siz
     """
 
     if beam_size is None: beam_size = psize
-    if norm_reg: norm = flux* beam_size**2
+    if norm_reg: norm = flux * beam_size**2
     else: norm = 1
 
+
     im = imvec.reshape(ny, nx)
+    #im = im/flux
 
     xx, yy = np.meshgrid(range(nx), range(ny))
     xx = xx - (nx-1)/2.0
@@ -3026,6 +3029,7 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     imarr = im.reshape(Prior.ydim,Prior.xdim)
     cmap = kwargs.get('cmap','afmhot')
     interpolation = kwargs.get('interpolation', 'gaussian')
+    pol = kwargs.get('pol', '')
 
     plt.ion()
     plt.pause(1.e-6)
@@ -3055,7 +3059,7 @@ def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     plt.yticks(yticks[0], yticks[1])
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
-    plotstr = "step: %i  " % nit
+    plotstr = str(pol) + " : step: %i  " % nit
     for key in chi2_dict.keys():
         plotstr += "$\chi^2_{%s}$: %0.2f  " % (key, chi2_dict[key])
     plt.title(plotstr, fontsize=18)

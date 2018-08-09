@@ -191,7 +191,7 @@ def prog_msg(nscan, totscans, msgtype='bar',nscan_last=0):
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
 
-    if msgtype=='bar2':
+    elif msgtype=='bar2':
         bar_width = 30
         progress = int(bar_width * complete_percent/float(100))
         barparams = (nscan, totscans, ("/"*progress) + (" " * (bar_width-progress)),complete_percent)

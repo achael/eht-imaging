@@ -179,7 +179,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, polrep='sto
 ##################################################################################################
 
 def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', 
-               ttype="nfft", fft_pad_factor=2, zero_empty_pol=False):
+               ttype="nfft", fft_pad_factor=2, zero_empty_pol=True):
 
     """Observe a image on given baselines with no noise.
 
@@ -258,27 +258,27 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
             pol = pollist[i]
             imvec = im._imdict[pol]
             if imvec is None or len(imvec)==0:
-                if zero_pol_vec:
+                if zero_empty_pol:
                     obsdata.append(np.zeros(len(uv)))
                 else:
                     obsdata.append(None)                
+            else:
+                # FFT for visibilities
+                imarr = imvec.reshape(im.ydim, im.xdim)
+                imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+                vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
 
-            # FFT for visibilities
-            imarr = imvec.reshape(im.ydim, im.xdim)
-            imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
-            vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
+                # Sample the visibilities
+                # default is cubic spline interpolation
+                visre = nd.map_coordinates(np.real(vis_im), uv2)
+                visim = nd.map_coordinates(np.imag(vis_im), uv2)
+                vis = visre + 1j*visim
 
-            # Sample the visibilities
-            # default is cubic spline interpolation
-            visre = nd.map_coordinates(np.real(vis_im), uv2)
-            visim = nd.map_coordinates(np.imag(vis_im), uv2)
-            vis = visre + 1j*visim
+                # Extra phase and pulse factor
+                vis = vis * phase * pulsefac
 
-            # Extra phase and pulse factor
-            vis = vis * phase * pulsefac
-
-            # Return visibilities
-            obsdata.append(vis)
+                # Return visibilities
+                obsdata.append(vis)
 
 
     # Get visibilities from the NFFT 
@@ -316,16 +316,16 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
             pol = pollist[i]
             imvec = im._imdict[pol]
             if imvec is None or len(imvec)==0:
-                if zero_pol_vec:
+                if zero_empty_pol:
                     obsdata.append(np.zeros(len(uv)))
                 else:
                     obsdata.append(None)                
+            else:
+                plan.f_hat = imvec.copy().reshape((im.ydim,im.xdim)).T
+                plan.trafo()
+                vis = plan.f.copy()*phase*pulsefac
 
-            plan.f_hat = imvec.copy().reshape((im.ydim,im.xdim)).T
-            plan.trafo()
-            vis = plan.f.copy()*phase*pulsefac
-
-            obsdata.append(vis)
+                obsdata.append(vis)
 
     # Get visibilities from DTFT
     else:
@@ -337,13 +337,13 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
             pol = pollist[i]
             imvec = im._imdict[pol]
             if imvec is None or len(imvec)==0:
-                if zero_pol_vec:
+                if zero_empty_pol:
                     obsdata.append(np.zeros(len(uv)))
                 else:
                     obsdata.append(None)                
-
-            vis = np.dot(mat, imvec)
-            obsdata.append(vis)
+            else:
+                vis = np.dot(mat, imvec)
+                obsdata.append(vis)
 
     # Scatter the visibilities with the SgrA* kernel
     # TODO: fix sgra_kernel_uv so you can take this out of a  loop!
