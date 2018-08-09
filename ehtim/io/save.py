@@ -37,7 +37,18 @@ from ehtim.observing.obs_helpers import *
 ##################################################################################################
 def save_im_txt(im, fname, mjd=False, time=False):
     """Save image data to text file.
+
+       Args:
+            fname (str): path to output text file
+            mjd (int): MJD of saved image
+            time (float): UTC time of saved image
+
+       Returns:
     """
+
+    # Transform to Stokes parameters:
+    if im.polrep!='stokes' or im.pol_prim!='I':
+        im = im.switch_polrep(polrep_out='stokes', pol_prim_out=None)
 
     # Coordinate values
     pdimas = im.psize/RADPERAS
@@ -92,8 +103,19 @@ def save_im_txt(im, fname, mjd=False, time=False):
     return
 
 def save_im_fits(im, fname, mjd=False, time=False):
-    """Save image data to FITS file.
+    """Save image data to a fits file.
+
+       Args:
+            fname (str): path to output fits file
+            mjd (int): MJD of saved image
+            time (float): UTC time of saved image
+
+       Returns:
     """
+
+    # Transform to Stokes parameters:
+    if (im.polrep!='stokes') or (im.pol_prim!='I'):
+        im = im.switch_polrep(polrep_out='stokes', pol_prim_out=None)
 
     # Create header and fill in some values
     header = fits.Header()
@@ -149,69 +171,49 @@ def save_im_fits(im, fname, mjd=False, time=False):
 # Movie IO
 ##################################################################################################
 
-def save_mov_fits(mov, fname):
-    """Save movie data to fits files.
+def save_mov_fits(mov, fname, mjd=False):
+    """Save movie data to series of fits files.
+
+       Args:
+            fname (str): basename of output fits file
+            mjd (int): MJD of saved movie
+
+       Returns:
     """
 
-    for i in range(len(mov.frames)):
+    if mjd==False: mjd=mov.mjd
+
+    for i in range(mov.nframes):
         time_frame = mov.start_hr + i*mov.framedur/3600.
         fname_frame = fname + "%05d" % i
+        print ('saving file '+fname_frame)
         frame_im = mov.get_frame(i)
-        save_im_fits(frame_im, fname_frame, mjd=mov.mjd, time=time_frame)
+        save_im_fits(frame_im, fname_frame, mjd=mjd, time=time_frame)
 
     return
 
-def save_mov_txt(mov, fname):
-    """Save movie data to text files.
+def save_mov_txt(mov, fname, mjd=False):
+    """Save movie data to series of text files.
+
+       Args:
+            fname (str): basename of output text file
+            mjd (int): MJD of saved movie
+
+       Returns:
     """
 
-    for i in range(len(mov.frames)):
+    if mjd==False: mjd=mov.mjd
+
+    for i in range(mov.nframes):
         time_frame = mov.start_hr + i*mov.framedur/3600.
         fname_frame = fname + "%05d" % i
+        print ('saving file '+fname_frame)
         frame_im = mov.get_frame(i)
-        save_im_txt(frame_im, fname_frame, mjd=mov.mjd, time=time_frame)
+        save_im_txt(frame_im, fname_frame, mjd=mjd, time=time_frame)
 
     return
 
-#def save_mov_txt(mov, fname):
-#    """Save movie data to text files.
-#    """
 
-#    # Coordinate values
-#    pdimas = mov.psize/RADPERAS
-#    xs = np.array([[j for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
-#    xs = pdimas * (xs[::-1] - mov.xdim/2.0)
-#    ys = np.array([[i for j in range(mov.xdim)] for i in range(mov.ydim)]).reshape(mov.xdim*mov.ydim,1)
-#    ys = pdimas * (ys[::-1] - mov.xdim/2.0)
-
-#    for i in range(len(mov.frames)):
-#        fname_frame = fname + "%05d" % i
-#        # Data
-#        if len(mov.qframes):
-#            outdata = np.hstack((xs, ys, (mov.frames[i]).reshape(mov.xdim*mov.ydim, 1),
-#                                         (mov.qframes[i]).reshape(mov.xdim*mov.ydim, 1),
-#                                         (mov.uframes[i]).reshape(mov.xdim*mov.ydim, 1)))
-#            hf = "x (as)     y (as)       I (Jy/pixel)  Q (Jy/pixel)  U (Jy/pixel)"
-
-#            fmts = "%10.10f %10.10f %10.10f %10.10f %10.10f"
-#        else:
-#            outdata = np.hstack((xs, ys, (mov.frames[i]).reshape(mov.xdim*mov.ydim, 1)))
-#            hf = "x (as)     y (as)       I (Jy/pixel)"
-#            fmts = "%10.10f %10.10f %10.10f"
-
-#        # Header
-#        head = ("SRC: %s \n" % mov.source +
-#                    "RA: " + rastring(mov.ra) + "\n" + "DEC: " + decstring(mov.dec) + "\n" +
-#                    "MJD: %i \n" % (float(mov.mjd) + mov.start_hr/24.0 + i*mov.framedur/86400.0) +
-#                    "RF: %.4f GHz \n" % (mov.rf/1e9) +
-#                    "FOVX: %i pix %f as \n" % (mov.xdim, pdimas * mov.xdim) +
-#                    "FOVY: %i pix %f as \n" % (mov.ydim, pdimas * mov.ydim) +
-#                    "------------------------------------\n" + hf)
-
-#        # Save
-#        np.savetxt(fname_frame, outdata, header=head, fmt=fmts)
-
-#    return
 ##################################################################################################
 # Array IO
 ##################################################################################################
@@ -649,6 +651,9 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
     #TODO: Add polarization to oifits??
     print('Warning: save_oifits does NOT save polarimetric visibility data!')
+
+    if (obs.polrep!='stokes'):
+        raise Exception("save_obs_oifits only works with polrep 'stokes'!")
 
     # Normalizing by the total flux passed in - note this is changing the data inside the obs structure
     obs.data['vis'] /= flux
