@@ -28,9 +28,6 @@ import sys
 
 from ehtim.const_def import *
 
-############################################
-#STAT
-
 def circular_mean(theta, unit='deg'):
     '''circular mean for averaging angular quantities
     Args:
@@ -159,8 +156,8 @@ def mean_incoh_amp_from_vis(vis,sigma,debias=True,err_type='predicted',num_sampl
         print('Inconsistent length of amp and sigma')
         return None, None
     else:
-        amp_clean=amp[(amp==amp)&(sigma==sigma)&(sigma>0)&(amp>0)]
-        sigma_clean=sigma[(amp==amp)&(sigma==sigma)&(sigma>0)&(amp>0)]
+        amp_clean=amp[(amp==amp)&(sigma==sigma)&(sigma>=0)&(amp>=0)]
+        sigma_clean=sigma[(amp==amp)&(sigma==sigma)&(sigma>=0)&(amp>=0)]
         Nc=len(amp_clean)
         if Nc<1:
             return None, None
@@ -174,7 +171,13 @@ def mean_incoh_amp_from_vis(vis,sigma,debias=True,err_type='predicted',num_sampl
             amp0 = np.sqrt(amp0sq)
             #getting errors
             if err_type=='predicted':
+                #sigma0 = np.sqrt(np.sum(sigma_clean**2)/Nc**2)
+                #Esigma = np.median(sigma_clean)
+                #snr0 = amp0/Esigma
+                #snrA = 1./(np.sqrt(1. + 2./np.sqrt(Nc)*(1./snr0)*np.sqrt(1.+1./snr0**2)) - 1.)
+                #sigma0=amp0/snrA
                 sigma0 = np.sqrt(np.sum(sigma_clean**2)/Nc**2)
+
             elif err_type=='measured':
                 ampfoo, ci = bootstrap(amp_clean, np.mean, num_samples=num_samples,wrapping_variable=False,alpha='1sig')
                 sigma0 = 0.5*(ci[1]-ci[0])
@@ -182,15 +185,16 @@ def mean_incoh_amp_from_vis(vis,sigma,debias=True,err_type='predicted',num_sampl
 
 def bootstrap(data, statistic, num_samples=int(1e3), alpha='1sig',wrapping_variable=False):
     """bootstrap estimate of 100.0*(1-alpha) confidence interval for a given statistic
-    Args:
-        data: vector of data to estimate bootstrap statistic on
-        statistic: function representing the statistic to be evaluated
-        num_samples: number of bootstrap (re)samples
-        alpha: parameter of the confidence interval, '1s' gets an analog of 1 sigma confidence for a normal variable
-        wrapping_variable: True for circular variables, attempts to avoid problem related to estimating variablity of wrapping variable
-    Returns:
-        bootstrap_value: bootstrap-estimated value of the statistic
-        bootstrap_CI: bootstrap-estimated confidence interval
+        Args:
+            data: vector of data to estimate bootstrap statistic on
+            statistic: function representing the statistic to be evaluated
+            num_samples: number of bootstrap (re)samples
+            alpha: parameter of the confidence interval, '1s' gets an analog of 1 sigma confidence for a normal variable
+            wrapping_variable: True for circular variables, attempts to avoid problem related to estimating variablity of wrapping variable
+
+        Returns:
+            bootstrap_value: bootstrap-estimated value of the statistic
+            bootstrap_CI: bootstrap-estimated confidence interval
     """
     if alpha=='1sig':
         alpha=0.3173
@@ -214,3 +218,56 @@ def bootstrap(data, statistic, num_samples=int(1e3), alpha='1sig',wrapping_varia
     bootstrap_value = np.median(stat)+m
     bootstrap_CI = [stat[int((alpha/2.0)*num_samples)]+m, stat[int((1-alpha/2.0)*num_samples)]+m]
     return bootstrap_value, bootstrap_CI
+
+def mean_incoh_avg(x,debias=True):
+    amp = np.abs(np.asarray([y[0] for y in x]))
+    sig = np.asarray([y[1] for y in x])
+    ampN = amp[(amp==amp)&(amp>=0)&(sig==sig)&(sig>=0)]
+    sigN = sig[(amp==amp)&(amp>=0)&(sig==sig)&(sig>=0)]
+    amp = ampN
+    sig = sigN
+    Nc = len(sig)
+    if Nc==0:
+        amp0 = -1
+        sig0 = -1
+    elif Nc==1:
+        amp0 = amp[0]
+        sig0 = sig[0]
+    else:
+        if debias==True:
+            amp0 = deb_amp(amp,sig)
+        else: 
+            amp0= np.sqrt(np.maximum(np.mean(amp**2),0.))
+        sig0 = inc_sig(amp,sig)
+        #sig0 = coh_sig(amp,sig)
+    return amp0,sig0
+
+def deb_amp(amp,sig):
+    #eq. 9.86 from Thompson et al.
+    amp = np.abs(np.asarray(amp))
+    sig = np.asarray(sig)
+    Nc = len(amp)
+    amp0sq = ( np.mean(amp**2 - (2. - 1./Nc)*sig**2) )
+    amp0sq = np.maximum(amp0sq,0.)
+    amp0 = np.sqrt(amp0sq)
+    return amp0
+
+def inc_sig(amp,sig):
+    amp = np.abs(np.asarray(amp))
+    sig = np.asarray(sig)
+    Nc = len(amp)
+    amp0 = deb_amp(amp,sig)
+    Esigma = np.median(sig)
+    snr0 = amp0/Esigma
+    snrA = 1./(np.sqrt(1. + 2./np.sqrt(Nc)*(1./snr0)*np.sqrt(1.+1./snr0**2)) - 1.)
+    if snrA>0:
+        sigma0=amp0/snrA
+    else: sigma0=coh_sig(amp,sig)
+    return sigma0
+
+def coh_sig(amp,sig):
+    amp = np.abs(np.asarray(amp))
+    sig = np.asarray(sig)
+    Nc = len(amp)
+    sigma0 = np.sqrt(np.sum(sig**2)/Nc**2)
+    return sigma0
