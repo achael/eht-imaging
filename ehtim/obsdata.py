@@ -940,7 +940,7 @@ class Obsdata(object):
 
         return out
 
-    def add_amp(self, avg_time=0,scan_avg=False, debias=True, err_type='predicted',return_type='rec'):
+    def add_amp(self, avg_time=0,scan_avg=False, debias=True, err_type='predicted',return_type='rec',round_s=0.1):
         """Adds attribute self.amp: amplitude table with incoherently averaged amplitudes
 
            Args:
@@ -950,16 +950,17 @@ class Obsdata(object):
                debias (bool): if True then apply debiasing
                err_type (str): 'predicted' or 'measured'
         """
-
-        if avg_time>0:
-            amp = incoh_avg_vis(self,dt=avg_time,debias=debias,scan_avg=scan_avg,return_type=return_type,rec_type='amp',err_type=err_type)
-        else:
-            amp = make_df(self.data, debias=debias)
+        #get spacing between datapoints in seconds
+        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        if avg_time <= tint0:
+            adf = make_amp(self,debias=debias,round_s=round_s)
             if return_type=='rec':
-                amp = df_to_rec(amp,'amp')
-            
-        print("Updated self.amp: avg_time %f s\n"%avg_time)
-        self.amp=amp
+                adf = df_to_rec(adf,'amp')
+            print("Updated self.amp: no averaging")
+        else:
+            adf = incoh_avg_vis(self,dt=avg_time,debias=debias,scan_avg=scan_avg,return_type=return_type,rec_type='amp',err_type=err_type)
+            self.amp=adf
+            print("Updated self.amp: avg_time %f s\n"%avg_time)
 
         return
 
@@ -979,12 +980,14 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+        #get spacing between datapoints in seconds
+        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
 
         cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
-        if avg_time>0:
+        if avg_time>tint0:
             cdf = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples)
-
         else:
+            print("Updated self.bispec: no averaging")
             if return_type=='rec':
                 cdf = df_to_rec(cdf,'bispec')
         
@@ -1009,12 +1012,16 @@ class Obsdata(object):
 
         """
 
+        #get spacing between datapoints in seconds
+        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+
         cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count)
-        if avg_time>0:
+        if avg_time>tint0:
             cdf = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
         else:
             if return_type=='rec':
                 cdf = df_to_rec(cdf,'cphase')
+            print("Updated self.cphase: no averaging")
         self.cphase = cdf
         print("updated self.cphase: avg_time %f s\n"%avg_time)
 
@@ -1038,14 +1045,20 @@ class Obsdata(object):
                round_s (float): accuracy of datetime object in seconds
 
         """
+        #get spacing between datapoints in seconds
+        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
 
-        if avg_time>0:
+        if avg_time>tint0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else:
             foo = self
         cdf = make_camp_df(foo,ctype=ctype,debias=False,count=count,
                            round_s=round_s)
-
+    
+        if ctype=='logcamp':
+            print("updated self.lcamp: no averaging")
+        elif ctype=='camp':
+            print("updated self.camp: no averaging")
         if return_type=='rec':
             cdf = df_to_rec(cdf,'camp')
 
