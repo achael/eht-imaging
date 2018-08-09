@@ -93,6 +93,9 @@ POLDICT_STOKES = {'vis1': 'vis', 'vis2': 'qvis', 'vis3': 'uvis', 'vis4': 'vvis',
                   'sigma1': 'sigma', 'sigma2': 'qsigma', 'sigma3': 'usigma', 'sigma4': 'vsigma'} 
 POLDICT_CIRC = {'vis1': 'rrvis', 'vis2': 'llvis', 'vis3': 'rlvis', 'vis4': 'lrvis', 
                   'sigma1': 'rrsigma', 'sigma2': 'llsigma', 'sigma3': 'rlsigma', 'sigma4': 'lrsigma'} 
+vis_poldict={'I':'vis','Q':'qvis','U':'uvis','V':'vvis','RR':'rrvis','LL':'llvis','RL':'rlvis','LR':'lrvis'}
+amp_poldict={'I':'amp','Q':'qamp','U':'uamp','V':'vamp','RR':'rramp','LL':'llamp','RL':'rlamp','LR':'lramp'}
+sig_poldict={'I':'sigma','Q':'qsigma','U':'usigma','V':'vsigma','RR':'rrsigma','LL':'llsigma','RL':'rlsigma','LR':'lrsigma'}
 
 # Observation fields for plotting and retrieving data
 FIELDS = ['time','time_utc','time_gmst',

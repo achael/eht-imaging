@@ -145,6 +145,8 @@ class Image(object):
             else:
                 raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
             self._imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
+        else:
+            raise Excpetion("polrep must be 'circ' or 'stokes'!")
 
         # Save the image dimension data
         self.pol_prim =  pol_prim
