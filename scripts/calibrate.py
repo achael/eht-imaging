@@ -28,9 +28,9 @@ def pick(obs, req_sites):
 stepname='init'
 
 def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=True):
-    """Apply network_cal() multiple times
     """
-
+    Apply network_cal() multiple times
+    """
     sites  = set(sites) # make sure that sites is a set
     common = {'sites':sites,
               'zbl_uvdist_max':10000000.0,

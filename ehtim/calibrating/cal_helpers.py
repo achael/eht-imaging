@@ -87,38 +87,38 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
 
     return cluster_data
 
-#def norm_zbl(obs, flux=1.):
-#    """Normalize scans to the zero baseline flux
-#    """
-#    # V = model visibility, V' = measured visibility, G_i = site gain
-#    # G_i * conj(G_j) * V_ij = V'_ij
+def norm_zbl(obs, flux=1.):
+    """Normalize scans to the zero baseline flux
+    """
+    # V = model visibility, V' = measured visibility, G_i = site gain
+    # G_i * conj(G_j) * V_ij = V'_ij
 
-#    scans = obs.tlist()
-#    n = len(scans)
-#    data_norm = []
-#    i = 0
-#    for scan in scans:
-#        i += 1
-#        uvdist = np.sqrt(scan['u']**2 + scan['v']**2)
-#        scan_zbl = np.abs(scan['vis'][np.argmin(uvdist)])
+    scans = obs.tlist()
+    n = len(scans)
+    data_norm = []
+    i = 0
+    for scan in scans:
+        i += 1
+        uvdist = np.sqrt(scan['u']**2 + scan['v']**2)
+        scan_zbl = np.abs(scan['vis'][np.argmin(uvdist)])
 
-#        scan['vis'] = scan['vis']/scan_zbl
-#        scan['sigma'] = scan['sigma']/scan_zbl
-#        scan['qvis'] = scan['qvis']/scan_zbl
-#        scan['qsigma'] = scan['qsigma']/scan_zbl
-#        scan['uvis'] = scan['uvis']/scan_zbl
-#        scan['usigma'] = scan['usigma']/scan_zbl
-#        scan['vvis'] = scan['vvis']/scan_zbl
-#        scan['vsigma'] = scan['vsigma']/scan_zbl
+        scan['vis'] = scan['vis']/scan_zbl
+        scan['sigma'] = scan['sigma']/scan_zbl
+        scan['qvis'] = scan['qvis']/scan_zbl
+        scan['qsigma'] = scan['qsigma']/scan_zbl
+        scan['uvis'] = scan['uvis']/scan_zbl
+        scan['usigma'] = scan['usigma']/scan_zbl
+        scan['vvis'] = scan['vvis']/scan_zbl
+        scan['vsigma'] = scan['vsigma']/scan_zbl
 
-#        if len(data_norm):
-#            data_norm = np.hstack((data_norm, scan))
-#        else:
-#            data_norm = scan
+        if len(data_norm):
+            data_norm = np.hstack((data_norm, scan))
+        else:
+            data_norm = scan
 
-#    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_norm, obs.tarr,
-#                                    source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
-#                                    ampcal=obs.ampcal, phasecal=obs.phasecal, 
-#                                    dcal=obs.dcal, frcal=obs.frcal, scantable=obs.scans)
-#    return obs_cal
+    obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, data_norm, obs.tarr,
+                                    source=obs.source, mjd=obs.mjd, timetype=obs.timetype,
+                                    ampcal=obs.ampcal, phasecal=obs.phasecal, 
+                                    dcal=obs.dcal, frcal=obs.frcal, scantable=obs.scans)
+    return obs_cal
 

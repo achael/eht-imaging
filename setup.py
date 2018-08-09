@@ -7,7 +7,7 @@ def read(fname):
 if __name__ == "__main__":
    setup(
         name="ehtim",
-        version = "1.1.0",
+        version = "1.0.0",
 
         author = "Andrew Chael",
         author_email = "achael@cfa.harvard.edu",
@@ -18,5 +18,5 @@ if __name__ == "__main__":
         url = "https://github.com/achael/eht-imaging",
         packages = ["ehtim","ehtim.calibrating","ehtim.plotting","ehtim.imaging","ehtim.observing","ehtim.io","ehtim.scattering","ehtim.statistics"],
         long_description=read('README.rst'),
-        install_requires=["datetime","astropy", "ephem", "future", "matplotlib", "numpy", "scipy","pandas","requests","scikit-image"]#,"pynfft"],
+        install_requires=["astropy", "ephem", "future", "matplotlib", "numpy", "scipy","pandas","requests","scikit-image"]#,"pynfft"],
         )

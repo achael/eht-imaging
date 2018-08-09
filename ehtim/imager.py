@@ -49,12 +49,6 @@ FFT_INTERP_DEFAULT = 3
 
 REG_DEFAULT = {'simple':1}
 DAT_DEFAULT = {'vis':100}
-
-#TODO -- pol_next tracks polarization of next image to make
-#     -- checks on the polrep of the prior & init --> exception to switch if necessary
-#     -- warnings not to use log transform if imaging V, Q, U, warnings that  RL & LR  have to wait for pol
-#     -- get data terms corresponding to  right pols 
-
 ###########################################################################################################################################
 #Imager object
 ###########################################################################################################################################
@@ -75,7 +69,6 @@ class Imager(object):
         self._reg_term_list = []
         self._dat_term_list = []
         self._clipfloor_list = []
-        self._pol_list = []
         self._maxit_list = []
         self._stop_list = []
         self._flux_list = []
@@ -103,9 +96,6 @@ class Imager(object):
             self.flux_next = self.prior_next.total_flux()
         else:
             self.flux_next = flux
-
-        #polarization
-        self.pol_next=kwargs.get('pol',self.init_next.pol_prim)
 
         #weighting/debiasing/snr cut/systematic noise
         self.debias_next=kwargs.get('debias',True)
@@ -150,106 +140,8 @@ class Imager(object):
         #set embedding matrices and prepare imager
         self.check_params()
         self.check_limits()
-        self.init_imager()
+        self.init_imager_I()
 
-    def make_image(self, pol=None, grads=True, **kwargs):
-        """Make an image using current imager settings.
-        """
-        if pol is None: pol = self.pol_next
-        else: self.pol_next = pol
-
-
-        print("==============================")
-        print("Imager run %i " % (int(self.nruns)+1))
-        # Checks and initialize
-        self.check_params()
-        self.check_limits()
-        self.init_imager()
-
-        # Generate and the initial image
-        if self.transform_next == 'log': 
-            xinit = np.log(self._ninit_I)
-
-        else: xinit = self._ninit_I
-        self._nit = 0
-
-        # Print initial stats
-        self._show_updates=kwargs.get('show_updates',True)
-        self._update_interval=kwargs.get('update_interval',1)
-
-        # Plot initial image
-        self.plotcur(xinit, **kwargs)
-
-        # Minimize
-        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next, 'gtol':self.stop_next,
-                   'maxcor':NHIST, 'maxls':MAXLS}
-        tstart = time.time()
-        if grads:
-            res = opt.minimize(self.objfunc, xinit, method='L-BFGS-B', jac=self.objgrad,
-                               options=optdict, callback=self.plotcur)
-        else:
-            res = opt.minimize(self.objfunc, xinit, method='L-BFGS-B',
-                               options=optdict, callback=self.plotcur)
-        tstop = time.time()
-
-        # Format output
-        print ("DONE")
-        out = res.x[:]
-        self.tmpout = res.x
-        #return
-
-        if self.transform_next == 'log': out = np.exp(out)
-
-        # Print final stats
-        outstr = ""
-        chi2_term_dict = self.make_chisq_dict(out)
-        for dname in sorted(self.dat_term_next.keys()):
-            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
-
-        print("time: %f s" % (tstop - tstart))
-        print("J: %f" % res.fun)
-        print(outstr)
-        print(res.message.decode())
-        print("==============================")
-
-        # return image
-        if np.any(np.invert(self._embed_mask)): out = embed(out, self._embed_mask)
-
-        outim = image.Image(out.reshape(self.prior_next.ydim, self.prior_next.xdim),
-                            self.prior_next.psize, self.prior_next.ra, self.prior_next.dec,
-                            rf=self.prior_next.rf, source=self.prior_next.source,
-                            polrep=self.prior_next.polrep, pol_prim=pol, 
-                            mjd=self.prior_next.mjd, time=self.prior_next.time, pulse=self.prior_next.pulse)
-
-
-        # copy over other polarizations
-        for pol2 in list(outim._imdict.keys()):
-            if pol2==outim.pol_prim: continue
-            polvec = self.init_next._imdict[pol2]
-            if len(polvec):
-                polarr=polvec.reshape(outim.ydim, outim.xdim)
-                outim.add_pol_image(polarr, pol2)
-
-        # Preserving image complex polarization fractions
-#        if len(self.prior_next.qvec):
-#            qvec = self.prior_next.qvec * out / self.prior_next.imvec
-#            uvec = self.prior_next.uvec * out / self.prior_next.imvec
-#            outim.add_qu(qvec.reshape(self.prior_next.ydim, self.prior_next.xdim),
-#                         uvec.reshape(self.prior_next.ydim, self.prior_next.xdim))
-
-
-        # Append to history
-        logstr = str(self.nruns) + ": make_image(pol=%s)"%pol #TODO - what should the log string be?
-        self._append_image_history(outim, logstr)
-        self.nruns += 1
-
-        # Return Image object
-        return outim
-
-    def make_image_I(self, grads=True, **kwargs):
-        """Make Stokes I image using current imager settings.
-        """
-        return self.make_image(pol='I', grads=grads, **kwargs)
 
     def set_embed(self):
         """Set embedding matrix.
@@ -301,32 +193,11 @@ class Imager(object):
             (self.prior_next.ydim != self.prior_next.ydim)):
             raise Exception("Initial image does not match dimensions of the prior image!")
 
-        if (self.prior_next.polrep != self.init_next.polrep):
-            raise Exception("Initial image pol. representation does not match pol. representation of the prior image!")
-
-        if (self.prior_next.polrep == 'circ' and not(self.pol_next in ['RR','LL'])):
-            raise Exception("Initial image polrep is 'circ': pol_next must be 'RR' or 'LL'!")
-
-        if (self.prior_next.polrep == 'stokes' and not(self.pol_next in ['I','Q','U','V'])):
-            raise Exception("Initial image polrep is 'stokes': pol_next must be in 'I','Q','U','V'!")
-
-        if (self.transform_next=='log' and self.pol_next in ['Q','U','V']):
-                raise Exception("Cannot image Stokes Q,U,or V with log image transformation!")
-
         if self._ttype not in ['fast','direct','nfft']:
             raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
 
-        if(self.pol_next in ['Q','U','V'] and 
-          ('gs' in self.reg_term_next.keys() or 'simple' in self.reg_term_next.keys())):
-            raise Exception("simple and gs MEM methods do not work with potentially negative Stokes Q,U,or V images!")
-
         # determine if we need to recompute the saved imager parameters on the next imager run
         if self.nruns == 0:
-            return
-
-        if self.pol_next != self.pol_last():
-            print("changed polarization!")
-            self._change_imgr_params = True
             return
 
         if self.obs_next != self.obs_last():
@@ -396,7 +267,7 @@ class Imager(object):
         maxamp = np.max(np.abs(self.obs_next.unpack('amp')['amp']))
 
         if uvmax < maxbl:
-            print("Warning! Pixel size is than smallest spatial wavelength!")
+            print("Warning! Pixel Spacing is larger than smallest spatial wavelength!")
         if uvmin > minbl:
             print("Warning! Field of View is smaller than largest nonzero spatial wavelength!")
         if self.flux_next > 1.2*maxamp:
@@ -485,14 +356,6 @@ class Imager(object):
             return
         return self._clipfloor_list[-1]
 
-    def pol_last(self):
-        """Return last polarization imaged.
-        """
-        if self.nruns == 0:
-            print("No imager runs yet!")
-            return
-        return self._pol_list[-1]
-
     def maxit_last(self):
         """Return last max_iterations value.
         """
@@ -557,7 +420,7 @@ class Imager(object):
             return
         return self._transform_list[-1]
 
-    def init_imager(self):
+    def init_imager_I(self):
         """Set up Stokes I imager.
         """
 
@@ -578,7 +441,7 @@ class Imager(object):
                 print("Recomputing imager data products . . .")
             self._data_tuples = {}
             for dname in sorted(self.dat_term_next.keys()):
-                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=self.pol_next,
+                tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname,
                                 debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
                                 systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                 ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
@@ -689,65 +552,6 @@ class Imager(object):
 
         return datterm + regterm
 
-
-    def objgrad(self, imvec):
-        """Current objective function gradient.
-        """
-        if self.transform_next == 'log':
-            imvec = np.exp(imvec)
-
-        datterm = 0.
-        chi2_term_dict = self.make_chisqgrad_dict(imvec)
-        for dname in sorted(self.dat_term_next.keys()):
-            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
-
-        regterm = 0
-        reg_term_dict = self.make_reggrad_dict(imvec)
-        for regname in sorted(self.reg_term_next.keys()):
-            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
-
-        grad = datterm + regterm
-
-        # chain rule term for change of variables
-        if self.transform_next == 'log':
-            grad *= imvec
-
-        return grad
-
-    def plotcur(self, imvec, **kwargs):
-        if self._show_updates:
-            if self._nit % self._update_interval == 0:
-                if self.transform_next == 'log':
-                    imvec = np.exp(imvec)
-                chi2_term_dict = self.make_chisq_dict(imvec)
-                reg_term_dict = self.make_reg_dict(imvec)
-
-                chi2_keys = sorted(chi2_term_dict.keys())
-                chi2_1 = chi2_term_dict[chi2_keys[0]]
-                chi2_2 = 0.
-                if len(chi2_term_dict) > 1:
-                    chi2_2 = chi2_term_dict[chi2_keys[1]]
-
-                outstr = "------------------------------------------------------------------"
-                outstr += "\n%4d | " % self._nit
-                for dname in sorted(self.dat_term_next.keys()):
-                    outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
-
-                outstr += "\n        "
-                for dname in sorted(self.dat_term_next.keys()):
-                    outstr += "%s : %0.1f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
-                outstr += "\n        "
-                for regname in sorted(self.reg_term_next.keys()):
-                    outstr += "%s : %0.1f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
-
-                if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
-                plot_i(imvec, self.prior_next, self._nit, chi2_term_dict, pol=self.pol_next, **kwargs)
-
-                if self._nit == 0: print()
-                print(outstr)
-        self._nit += 1
-
-
     def objfunc_scattering(self, minvec):
         """Current stochastic optics objective function.
         """
@@ -784,6 +588,30 @@ class Imager(object):
         regterm_scattering = self.alpha_phi_next * (chisq_epsilon - 1.0)
 
         return datterm + regterm + regterm_scattering
+
+    def objgrad(self, imvec):
+        """Current objective function gradient.
+        """
+        if self.transform_next == 'log':
+            imvec = np.exp(imvec)
+
+        datterm = 0.
+        chi2_term_dict = self.make_chisqgrad_dict(imvec)
+        for dname in sorted(self.dat_term_next.keys()):
+            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+
+        regterm = 0
+        reg_term_dict = self.make_reggrad_dict(imvec)
+        for regname in sorted(self.reg_term_next.keys()):
+            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+
+        grad = datterm + regterm
+
+        # chain rule term for change of variables
+        if self.transform_next == 'log':
+            grad *= imvec
+
+        return grad
 
     def objgrad_scattering(self, minvec):
         """Current stochastic optics objective function gradient
@@ -895,6 +723,39 @@ class Imager(object):
 
         return np.concatenate(((regterm + chisq_grad_im),(chisq_grad_epsilon + chisq_epsilon_grad)))
 
+    def plotcur(self, imvec, **kwargs):
+        if self._show_updates:
+            if self._nit % self._update_interval == 0:
+                if self.transform_next == 'log':
+                    imvec = np.exp(imvec)
+                chi2_term_dict = self.make_chisq_dict(imvec)
+                reg_term_dict = self.make_reg_dict(imvec)
+
+                chi2_keys = sorted(chi2_term_dict.keys())
+                chi2_1 = chi2_term_dict[chi2_keys[0]]
+                chi2_2 = 0.
+                if len(chi2_term_dict) > 1:
+                    chi2_2 = chi2_term_dict[chi2_keys[1]]
+
+                outstr = "------------------------------------------------------------------"
+                outstr += "\n%4d | " % self._nit
+                for dname in sorted(self.dat_term_next.keys()):
+                    outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
+
+                outstr += "\n        "
+                for dname in sorted(self.dat_term_next.keys()):
+                    outstr += "%s : %0.1f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
+                outstr += "\n        "
+                for regname in sorted(self.reg_term_next.keys()):
+                    outstr += "%s : %0.1f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
+
+                if np.any(np.invert(self._embed_mask)): imvec = embed(imvec, self._embed_mask)
+                plot_i(imvec, self.prior_next, self._nit, chi2_term_dict, **kwargs)
+
+                if self._nit == 0: print()
+                print(outstr)
+        self._nit += 1
+
     def plotcur_scattering(self, minvec):
         if self._show_updates:
             if self._nit % self._update_interval == 0:
@@ -940,6 +801,85 @@ class Imager(object):
 
         self._nit += 1
 
+    def make_image_I(self, grads=True, **kwargs):
+        """Make Stokes I image using current imager settings.
+        """
+        print("==============================")
+        print("Imager run %i " % (int(self.nruns)+1))
+        # Checks and initialize
+        self.check_params()
+        self.check_limits()
+        self.init_imager_I()
+
+        # Generate and the initial image
+        if self.transform_next == 'log': xinit = np.log(self._ninit_I)
+        else: xinit = self._ninit_I
+        self._nit = 0
+
+        # Print initial stats
+
+        self._show_updates=kwargs.get('show_updates',True)
+        self._update_interval=kwargs.get('update_interval',1)
+
+        self.plotcur(xinit, **kwargs)
+
+        # Minimize
+        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next,# 'gtol':self.stop_next,
+                   'maxcor':NHIST, 'maxls':MAXLS}
+        tstart = time.time()
+        if grads:
+            res = opt.minimize(self.objfunc, xinit, method='L-BFGS-B', jac=self.objgrad,
+                               options=optdict, callback=self.plotcur)
+        else:
+            res = opt.minimize(self.objfunc, xinit, method='L-BFGS-B',
+                               options=optdict, callback=self.plotcur)
+        tstop = time.time()
+
+        # Format output
+        print ("DONE")
+        out = res.x[:]
+        self.tmpout = res
+        #return
+
+
+        if self.transform_next == 'log': out = np.exp(out)
+
+        # Print final stats
+        outstr = ""
+        chi2_term_dict = self.make_chisq_dict(out)
+        for dname in sorted(self.dat_term_next.keys()):
+            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
+
+        print("time: %f s" % (tstop - tstart))
+        print("J: %f" % res.fun)
+        print(outstr)
+        print(res.message.decode())
+        print("==============================")
+
+        # return image
+        if np.any(np.invert(self._embed_mask)): out = embed(out, self._embed_mask)
+
+        outim = image.Image(out.reshape(self.prior_next.ydim, self.prior_next.xdim),
+                            self.prior_next.psize, self.prior_next.ra, self.prior_next.dec,
+                            rf=self.prior_next.rf, source=self.prior_next.source,
+                            mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
+
+        # Preserving image complex polarization fractions
+        if len(self.prior_next.qvec):
+            qvec = self.prior_next.qvec * out / self.prior_next.imvec
+            uvec = self.prior_next.uvec * out / self.prior_next.imvec
+            outim.add_qu(qvec.reshape(self.prior_next.ydim, self.prior_next.xdim),
+                         uvec.reshape(self.prior_next.ydim, self.prior_next.xdim))
+
+
+        # Append to history
+        logstr = str(self.nruns) + ": make_image_I()" #TODO - what should the log string be?
+        self._append_image_history(outim, logstr)
+        self.nruns += 1
+
+        # Return Image object
+        return outim
+
     def make_image_I_stochastic_optics(self, grads=True, **kwargs):
         """Reconstructs an image of total flux density using the stochastic optics scattering mitigation technique.
            Uses the scattering model of the imager. If none has been specified, it will default to a standard model for Sgr A*.
@@ -957,7 +897,7 @@ class Imager(object):
         # Checks and initialize
         self.check_params()
         self.check_limits()
-        self.init_imager()
+        self.init_imager_I()
         self.init_imager_scattering()
 
         # Generate the initial image+screen vector. By default, the screen is re-initialized to zero each time.
@@ -1040,7 +980,6 @@ class Imager(object):
         self._systematic_cphase_noise_list.append(self.systematic_cphase_noise_next)
         self._snrcut_list.append(self.snrcut_next)
         self._flux_list.append(self.flux_next)
-        self._pol_list.append(self.pol_next)
         self._clipfloor_list.append(self.clipfloor_next)
         self._maxit_list.append(self.maxit_next)
         self._stop_list.append(self.stop_next)

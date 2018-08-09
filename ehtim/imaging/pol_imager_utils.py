@@ -58,15 +58,6 @@ FFT_INTERP_DEFAULT = 3
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
-def qimage(iimage, mimage, chiimage):
-    """Return the Q image from m and chi"""
-    return iimage * mimage * np.cos(2*chiimage)
-    
-def uimage(iimage, mimage, chiimage):
-    """Return the U image from m and chi"""
-    return iimage * mimage * np.sin(2*chiimage) 
-
-
 ##################################################################################################
 # Polarimetric Imager
 ##################################################################################################

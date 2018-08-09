@@ -45,17 +45,16 @@ print("Nominal Resolution: " ,res)
 #obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 
 # Generate an image prior
-npix = 128
+npix = 256
 fov = 1*im.fovx()
 zbl = im.total_flux() # total flux
 prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
 emptyprior = eh.image.make_square(obs, npix, fov)
 flatprior = emptyprior.add_flat(zbl)
 gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
-gaussprior = gaussprior.add_const_pol(.1, np.pi/3, 0, 1)
-gausspriorc = gaussprior.switch_polrep('circ')
 
 # Average the closure quantities and add them to the obsdata object
+
 avg_time = 600
 obs.add_bispec(avg_time=avg_time)
 obs.add_amp(avg_time=avg_time)
@@ -65,40 +64,25 @@ obs.add_logcamp(avg_time=avg_time)
 
 # Image directly with these averaged data
 flux = zbl
-imgr  = eh.imager.Imager(obs, gaussprior, gaussprior, flux,
-                          data_term={'bs':100}, show_updates=False,
-                          reg_term={'simple':1,'flux':100,'cm':50},
-                          maxit=500, ttype='nfft')
-imgr.make_image()
+out  = eh.imager_func(obs, gaussprior, gaussprior, flux,
+                      d1='bs', s1='simple',
+                      alpha_s1=1, alpha_d1=100,
+                      alpha_flux=100, alpha_cm=50,
+                      maxit=500, ttype='nfft')
 
 # Blur the image with a circular beam and image again to help convergance
-out = imgr.out_last()
-imgr.init_next = out.blur_circ(res)
-imgr.prior_next = imgr.init_next
-imgr.dat_term_next = {'amp':50, 'cphase':100}
-imgr.reg_term_next = {'tv':1, 'flux':100,'cm':50}
-imgr.make_image()
+out = out.blur_circ(res)
+out = eh.imager_func(obs, out, out, flux,
+                d1='amp', d2='cphase', s1='tv',
+                alpha_s1=1, alpha_d1=50,alpha_d2=100,
+                alpha_flux=100, alpha_cm=50,
+                maxit=500,ttype='nfft')
 
-# one final round of blurring and re-imaging with smaller data weights
-out = imgr.out_last()
-imgr.init_next = out.blur_circ(res/2)
-imgr.prior_next = imgr.init_next
-imgr.dat_term_next = {'amp':10, 'cphase':20}
-imgr.reg_term_next = {'tv':1, 'flux':100,'cm':50}
-imgr.maxi_next  = 1000
-imgr.make_image()
+out = out.blur_circ(res/2.0)
+out = eh.imager_func(obs, out, out, flux,
+                d1='amp', d2='cphase', s1='tv',
+                alpha_s1=1, alpha_d1=10,alpha_d2=20,
+                alpha_flux=100, alpha_cm=50,
+                maxit=1000,ttype='nfft')
 
-#Image polarization w/ independent Stokes parameters -- in progress
-#out = imgr.out_last()
-#imgr.transform_next=None
-#imgr.prior_next = imgr.init_next
-#imgr.dat_term_next = {'amp':10, 'cphase':20}
-#imgr.reg_term_next = {'tv':1,'l1':2, 'flux':100,'cm':50}
-#imgr.maxi_next  = 1000
-#imgr.make_image(pol='Q')
-#imgr.init_next = imgr.out_last()
-#imgr.prior_next = imgr.init_next
-#imgr.make_image(pol='U')
-
-out = imgr.out_last()
 out.display()

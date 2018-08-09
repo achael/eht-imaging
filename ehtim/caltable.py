@@ -253,12 +253,10 @@ class Caltable(object):
            Args:
                maxdiff (float): "scan" separation length (seconds)
                padtype (str): padding type, 'endval' or 'median'
-           
            Returns:
                (Caltable):  a padded caltable object
         """
-
-
+        
         outdict = {}
         scopes = list(self.data.keys())
         for scope in scopes:
@@ -268,7 +266,7 @@ class Caltable(object):
             # TODO we could use a scan table for this as well!
             gathered_data=[]
             scandata = [caldata[0]]
-            for i in range(1, len(caldata)):
+            for i in range(1,len(caldata)):
                 if (caldata[i]['time']-caldata[i-1]['time'])*3600 > maxdiff:
                     scandata = np.array(scandata, dtype=DTCAL)
                     gathered_data.append(scandata)
@@ -400,58 +398,32 @@ class Caltable(object):
             rlscale = rscale1 * lscale2.conj()
             lrscale = lscale1 * rscale2.conj()
 
-            if obs.polrep=='stokes':
-                rrvis = (bl_obs['vis']  +    bl_obs['vvis']) * rrscale
-                llvis = (bl_obs['vis']  -    bl_obs['vvis']) * llscale
-                rlvis = (bl_obs['qvis'] + 1j*bl_obs['uvis']) * rlscale
-                lrvis = (bl_obs['qvis'] - 1j*bl_obs['uvis']) * lrscale
+            rrvis = (bl_obs['vis']  +    bl_obs['vvis']) * rrscale
+            llvis = (bl_obs['vis']  -    bl_obs['vvis']) * llscale
+            rlvis = (bl_obs['qvis'] + 1j*bl_obs['uvis']) * rlscale
+            lrvis = (bl_obs['qvis'] - 1j*bl_obs['uvis']) * lrscale
 
-                bl_obs['vis']  = 0.5  * (rrvis + llvis)
-                bl_obs['qvis'] = 0.5  * (rlvis + lrvis)
-                bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
-                bl_obs['vvis'] = 0.5  * (rrvis - llvis)
+            bl_obs['vis']  = 0.5  * (rrvis + llvis)
+            bl_obs['qvis'] = 0.5  * (rlvis + lrvis)
+            bl_obs['uvis'] = 0.5j * (lrvis - rlvis)
+            bl_obs['vvis'] = 0.5  * (rrvis - llvis)
 
-                rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
-                llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
-                rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
-                lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
+            rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
+            llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
+            rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
+            lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
 
-                bl_obs['sigma']  = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
-                bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
-                bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 )
-                bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+            bl_obs['sigma']  = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
+            bl_obs['qsigma'] = 0.5 * np.sqrt( rlsigma**2 + lrsigma**2 )
+            bl_obs['usigma'] = 0.5 * np.sqrt( lrsigma**2 + rlsigma**2 )
+            bl_obs['vsigma'] = 0.5 * np.sqrt( rrsigma**2 + llsigma**2 )
 
-                if len(datatable):
-                    datatable = np.hstack((datatable,bl_obs))
-                else:
-                    datatable = bl_obs
-            elif obs.polrep=='circ':
+            if len(datatable):
+                datatable = np.hstack((datatable,bl_obs))
+            else:
+                datatable = bl_obs
 
-                bl_obs['rrvis'] = (bl_obs['rrvis']) * rrscale
-                bl_obs['llvis'] = (bl_obs['llvis']) * llscale
-                bl_obs['lrvis'] = (bl_obs['rlvis']) * rlscale
-                bl_obs['rlvis'] = (bl_obs['lrvis']) * lrscale
-
-                rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
-                llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
-                rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
-                lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
-
-                bl_obs['rrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['llsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['rlsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['lrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-
-                if len(datatable):
-                    datatable = np.hstack((datatable,bl_obs))
-                else:
-                    datatable = bl_obs
-
-        calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr,
-                                       polrep=obs.polrep, scantable=obs.scans, source=obs.source, mjd=obs.mjd,
-                                       ampcal=obs.ampcal, phasecal=obs.phasecal, opacitycal=obs.opacitycal, 
-                                       dcal=obs.dcal, frcal=obs.frcal,timetype=obs.timetype,)
-
+        calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr, source=obs.source, mjd=obs.mjd)
 
         return calobs
 
