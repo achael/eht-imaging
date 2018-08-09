@@ -63,6 +63,41 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
+
+def make_amp(obs,debias=True,polarization='unknown',band='unknown',round_s=0.1):
+
+    """converts visibilities from obs.data to amplitudes inDataFrame format
+
+    Args:
+        obs: ObsData object
+        debias (str): whether to debias the amplitudes
+        round_s: accuracy of datetime object in seconds
+
+    Returns:
+        df: observation visibility data in DataFrame format
+    """
+    sour=obs.source
+    df = pd.DataFrame(data=obs.data)
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obs.mjd + df['fmjd']
+    telescopes = list(zip(df['t1'],df['t2']))
+    telescopes = [(x[0],x[1]) for x in telescopes]
+    df['baseline'] = [x[0]+'-'+x[1] for x in telescopes]
+    df['amp'] = list(map(np.abs,df['vis']))
+    if debias==True:
+        amp2 = np.maximum(np.asarray(df['amp'])**2-np.asarray(df['sigma'])**2,np.asarray(df['sigma'])**2)
+        df['amp'] = np.sqrt(amp2)
+    df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df['vis']))
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polarization
+    df['band'] = band
+    df['snr'] = df['amp']/df['sigma']
+    df['source'] = sour
+    df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
+    return df
+
 def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3)):
     """coherently averages visibilities
     Args:
