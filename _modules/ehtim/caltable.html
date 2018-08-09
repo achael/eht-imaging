@@ -333,7 +333,7 @@
 
         <span class="c1"># sites</span>
         <span class="k">if</span> <span class="n">sites</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;all&#39;</span> <span class="ow">or</span> <span class="s1">&#39;All&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">sites</span><span class="o">==</span><span class="p">[]:</span>
-            <span class="n">sites</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="n">sites</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">sites</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
             <span class="n">sites</span> <span class="o">=</span> <span class="p">[</span><span class="n">sites</span><span class="p">]</span>
@@ -414,6 +414,7 @@
 
     <span class="c1">#TODO default extrapolation?</span>
 <div class="viewcode-block" id="Caltable.pad_scans"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.pad_scans">[docs]</a>    <span class="k">def</span> <span class="nf">pad_scans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">maxdiff</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">padtype</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">):</span>
+        
         <span class="sd">&quot;&quot;&quot;Pad data points around scans.</span>
 
 <span class="sd">           Args:</span>
@@ -422,8 +423,10 @@
 <span class="sd">           Returns:</span>
 <span class="sd">               (Caltable):  a padded caltable object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        
         <span class="n">outdict</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">scopes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">scope</span> <span class="ow">in</span> <span class="n">scopes</span><span class="p">:</span>
             <span class="n">caldata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
             <span class="c1"># Gather data into &quot;scans&quot;</span>
@@ -437,6 +440,10 @@
                     <span class="n">scandata</span> <span class="o">=</span> <span class="p">[</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">scandata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">caldata</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    
+            <span class="c1"># This adds the last scan        </span>
+            <span class="n">scandata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">scandata</span><span class="p">)</span>
+            <span class="n">gathered_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scandata</span><span class="p">)</span>
 
             <span class="c1"># Compute padding values and pad scans</span>
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gathered_data</span><span class="p">)):</span>
@@ -622,11 +629,10 @@
             <span class="n">tarr2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tarr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">tkey2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">tkey</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="n">data2</span> <span class="o">=</span> <span class="n">caltable</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data2</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-
-                <span class="c1"># if site in both tables</span>
-                <span class="k">if</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">data1</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">sites2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data2</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">sites1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data1</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">sites2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">sites1</span><span class="p">:</span> <span class="c1"># if site in both tables</span>
                     <span class="c1">#merge the data by interpolating</span>
                     <span class="n">time1</span> <span class="o">=</span> <span class="n">data1</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
                     <span class="n">time2</span> <span class="o">=</span> <span class="n">data2</span><span class="p">[</span><span class="n">site</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>

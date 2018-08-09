@@ -168,7 +168,7 @@
 <span></span><span class="c1"># vex.py</span>
 <span class="c1"># a interferometric array vex schedule class</span>
 <span class="c1">#</span>
-<span class="c1">#    Copyright (C) 2018 Andrew Chael</span>
+<span class="c1">#    Copyright (C) 2018 Hotaka Shiokawa</span>
 <span class="c1">#</span>
 <span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
 <span class="c1">#    it under the terms of the GNU General Public License as published by</span>
@@ -192,7 +192,8 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">re</span>
 
-<span class="kn">import</span> <span class="nn">jdcal</span>
+<span class="c1">#import jdcal</span>
+<span class="kn">from</span> <span class="nn">astropy.time</span> <span class="k">import</span> <span class="n">Time</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">ehtim.array</span>
 <span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
@@ -463,10 +464,15 @@
 <div class="viewcode-block" id="vexdate_to_MJD_hr"><a class="viewcode-back" href="../../vex.html#ehtim.vex.vexdate_to_MJD_hr">[docs]</a><span class="k">def</span> <span class="nf">vexdate_to_MJD_hr</span><span class="p">(</span><span class="n">vexdate</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Find the integer MJD and UT hour from vex format date. </span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">time</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;[-+]?\d+[\.]?\d*&quot;</span><span class="p">,</span><span class="n">vexdate</span><span class="p">)</span>
     <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="n">date</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">mjd</span> <span class="o">=</span> <span class="n">jdcal</span><span class="o">.</span><span class="n">gcal2jd</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">date</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">yeardatetime</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%04i</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;:&#39;</span><span class="o">+</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%03i</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">date</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;:00:00:00.000&quot;</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span><span class="n">yeardatetime</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;yday&#39;</span><span class="p">)</span>
+    <span class="n">mjd</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">mjd</span>
+    <span class="c1">#mjd = jdcal.gcal2jd(year,1,1)[1]+date-1</span>
+    <span class="c1">#print (mjd,mjd2,mjd-mjd2)</span>
     <span class="n">hour</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="o">/</span><span class="mf">60.</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">/</span><span class="mf">60.</span><span class="o">/</span><span class="mf">60.</span>
     <span class="k">return</span> <span class="n">mjd</span><span class="p">,</span><span class="n">hour</span></div>
 </pre></div>

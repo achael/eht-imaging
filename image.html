@@ -372,7 +372,7 @@
 <dl class="method">
 <dt id="ehtim.image.Image.add_qu">
 <code class="descname">add_qu</code><span class="sig-paren">(</span><em>qimage</em>, <em>uimage</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_qu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_qu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add Stokes Q and U image.</p>
+<dd><p>Add Stokes Q and U images.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -457,7 +457,7 @@
 <dl class="method">
 <dt id="ehtim.image.Image.align_images">
 <code class="descname">align_images</code><span class="sig-paren">(</span><em>im_array, shift=True, final_fov=False, scale='lin', gamma=0.5, dynamic_range=[1000.0]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.align_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.align_images" title="Permalink to this definition">¶</a></dt>
-<dd><p>Align the images in im_array to the image in self</p>
+<dd><p>Align all the images in im_array to the image in self</p>
 <p>Args:</p>
 <p>Returns:</p>
 </dd></dl>
@@ -861,7 +861,7 @@
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe">
-<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em>, <em>dterm_offset=0.1</em>, <em>fix_theta_GMST=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>fix_theta_GMST=False</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em>, <em>dterm_offset=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate baselines from an array object and observe the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -880,6 +880,7 @@
 <li><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; station maximum elevation in degrees</li>
 <li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in the FFT</li>
+<li><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, stops earth rotation to sample fixed u,v points through time</li>
 <li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
 <li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
 <li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
@@ -895,7 +896,6 @@
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
 <li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
 <li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
-<li><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, stops earth rotation to sample fixed u,v points through time</li>
 </ul>
 </td>
 </tr>
@@ -958,8 +958,8 @@
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled
-ttype (str): if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
 <li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
 </ul>
@@ -985,6 +985,11 @@ ttype (str): if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visi
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>vex</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex" title="ehtim.vex.Vex"><em>Vex</em></a>) &#8211; an vex object containing sites and scan information</li>
+<li><strong>source</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; the source to observe</li>
+<li><strong>t_int</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; if not zero, overrides the vex scans to produce visibilities for each t_int seconds</li>
+<li><strong>tight_tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; if True, advance right after each integration, otherwise advance after 2x the scan length</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
 <li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
 <li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
 <li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
@@ -998,9 +1003,8 @@ ttype (str): if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visi
 <li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
 <li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
-<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
 <li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
-<li><strong>t_int</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; if not zero, overrides the vex scans to produce visibilities for each t_int seconds</li>
+<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
 </ul>
 </td>
 </tr>
@@ -1162,7 +1166,7 @@ ttype (str): if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visi
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>shiftidx</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; pixel offsets for image shift</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>shiftidx</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; pixel offsets [x_offset, y_offset] for image shift</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">shifted images</td>
 </tr>
@@ -1251,6 +1255,33 @@ of the original brightness distribution.</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">loaded image object</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.image.load_image">
+<code class="descclassname">ehtim.image.</code><code class="descname">load_image</code><span class="sig-paren">(</span><em>image</em>, <em>display=False</em>, <em>aipscc=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#load_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.load_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in an image from a text, .fits, or ehtim.image.Image object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>image</strong> (<em>str/Image</em>) &#8211; path to input file</li>
+<li><strong>display</strong> (<em>boolean</em>) &#8211; determine whether to display the image default</li>
+<li><strong>aipscc</strong> (<em>boolean</em>) &#8211; if True, then AIPS CC table will be loaded instead
+of the original brightness distribution.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">loaded image object
+(boolean):  False if the image cannot be read</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>

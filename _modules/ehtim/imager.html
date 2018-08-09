@@ -607,7 +607,7 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Recomputing imager data products . . .&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
                 <span class="n">tup</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
                                 <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span><span class="p">,</span>
                                 <span class="n">systematic_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span><span class="p">,</span> <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">,</span>
@@ -1005,9 +1005,8 @@
         <span class="c1"># Format output</span>
         <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[:]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tmpout</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tmpout</span> <span class="o">=</span> <span class="n">res</span>
         <span class="c1">#return</span>
-
 
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
