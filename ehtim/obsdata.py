@@ -1718,6 +1718,66 @@ class Obsdata(object):
 
         return obs
 
+    def filter_subscan_dropouts(self,perc=0,return_type='rec'):
+        '''Fancy filtration that drops some data to ensure that we only average parts with same timestamp.
+            Potentially this could reduce risk of non-closing errors.
+
+            Args:
+                perc (float, reasonably in [0,1]) drop baseline from scan if it has less than this fraction of median 
+                baseline observation time during the scan
+                return_type (str): data frame ('df') or recarray ('rec')
+        '''
+        if type(self.scans)!=np.ndarray:
+            print('List of scans in ndarray format required! Add it with add_scans')
+        else:    
+            #make df and add scan_id to data
+            df = make_df(self)
+            tot_points=np.shape(df)[0]
+            bins, labs = get_bins_labels(self.scans)
+            df['scan_id'] = list(pd.cut(df.time, bins,labels=labs))
+            
+            #first flag baselines that are working for short part of scan
+            df['count_samples'] = 1
+            hm1 = df.groupby(['scan_id','baseline','polarization']).agg({'count_samples':np.sum}).reset_index()
+            hm1['count_baselines_before'] = 1
+            hm2 = hm1.groupby(['scan_id','polarization']).agg({'count_samples': lambda x: perc*np.median(x),'count_baselines_before':np.sum}).reset_index()
+
+            #dictionary with minimum acceptable number of samples per scan
+            dict_elem_in_scan = dict(zip(hm2.scan_id,hm2.count_samples))
+            
+            #list of acceptable scans and baselines
+            hm1=hm1[list(map(lambda x: x[1] >= dict_elem_in_scan[x[0]],list(zip(hm1.scan_id,hm1.count_samples))))]
+            list_good_scans_baselines=list(zip(hm1.scan_id,hm1.baseline))
+            
+            #filter out data
+            df_filtered=df[list(map(lambda x: x in list_good_scans_baselines,list(zip(df.scan_id,df.baseline))))]
+
+            #how many baselines present during scan?
+            df_filtered['count_samples'] = 1
+            hm3 = df_filtered.groupby(['scan_id','baseline','polarization']).agg({'count_samples':np.sum}).reset_index()
+            hm3['count_baselines_after'] = 1
+            hm4 = hm3.groupby(['scan_id','polarization']).agg({'count_baselines_after': np.sum}).reset_index()
+            dict_how_many_baselines = dict(zip(hm4.scan_id,hm4.count_baselines_after))
+
+            #how many baselines present during each time?
+            df_filtered['count_baselines_per_time'] = 1
+            hm5=df_filtered.groupby(['datetime','scan_id','polarization']).agg({'count_baselines_per_time': np.sum}).reset_index()
+            dict_datetime_num_baselines = dict(zip(hm5.datetime,hm5.count_baselines_per_time))
+
+            #only keep times when all baselines available
+            df_filtered2 = df_filtered[list(map(lambda x: dict_datetime_num_baselines[x[1]] == dict_how_many_baselines[x[0]],list(zip(df_filtered.scan_id,df_filtered.datetime))))]
+
+            remaining_points=np.shape(df_filtered2)[0]
+            print('Flagged out {} of {} datapoints'.format(tot_points - remaining_points,tot_points))
+            if return_type=='rec':
+                out_vis = df_to_rec(df_filtered2,'vis')
+
+            out = Obsdata(self.ra, self.dec, self.rf, self.bw, out_vis, self.tarr, source=self.source, mjd=self.mjd,
+                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+                       timetype=self.timetype, scantable=self.scans)
+            return out
+
+
 
     def flag_anomalous(self, field='snr', max_diff_seconds=100, robust_nsigma_cut=5, output='kept'):
 
