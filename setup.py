@@ -18,5 +18,5 @@ if __name__ == "__main__":
         url = "https://github.com/achael/eht-imaging",
         packages = ["ehtim","ehtim.calibrating","ehtim.plotting","ehtim.imaging","ehtim.observing","ehtim.io","ehtim.scattering","ehtim.statistics"],
         long_description=read('README.rst'),
-        install_requires=["datetime","astropy", "ephem", "future", "matplotlib", "numpy", "scipy","pandas","requests","scikit-image"]#,"pynfft"],
+        install_requires=["datetime","astropy", "ephem", "future", "matplotlib", "numpy", "scipy","pandas","requests","scikit-image","h5py"]#,"pynfft"],
         )

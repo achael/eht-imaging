@@ -46,7 +46,8 @@ warnings.filterwarnings("ignore", message="divide by zero encountered in double_
 # Other Functions
 ##################################################################################################
 
-def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC', elevmin=ELEV_LOW,  elevmax=ELEV_HIGH, fix_theta_GMST = False):
+def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype='UTC',
+                           elevmin=ELEV_LOW,  elevmax=ELEV_HIGH, fix_theta_GMST=False):
     """Compute u,v coordinates for an array at a given time for a source at a given ra,dec,rf
     """
 

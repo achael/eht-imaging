@@ -2260,10 +2260,10 @@ def chisqdata_bs(Obsdata, Prior, mask, pol='I',**kwargs):
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
     bi = biarr['bispec'][snrmask]
+    sigma = biarr['sigmab'][snrmask]
 
     #add systematic noise
     #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
-    sigma = biarr['sigmab'][snrmask]
 
     # data weighting
     if weighting=='uniform':
@@ -2312,7 +2312,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
     sigma = clphasearr['sigmacp'][snrmask]
 
     #add systematic cphase noise (in DEGREES)
-    sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)[snrmask]
+    sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)
 
     # data weighting
     if weighting=='uniform':
@@ -2541,9 +2541,9 @@ def chisqdata_bs_fft(Obsdata, Prior, pol='I',**kwargs):
     bi = biarr['bispec'][snrmask]
     sigma = biarr['sigmab'][snrmask]
 
-
     #add systematic noise
     #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+    
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2600,7 +2600,8 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
     sigma = clphasearr['sigmacp'][snrmask]
 
     #add systematic cphase noise (in DEGREES)
-    sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)[snrmask]
+    sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2657,6 +2658,7 @@ def chisqdata_camp_fft(Obsdata, Prior, pol='I',**kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2712,6 +2714,7 @@ def chisqdata_logcamp_fft(Obsdata, Prior,pol='I', **kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2845,7 +2848,8 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I',**kwargs):
     sigma = biarr['sigmab'][snrmask]
 
     #add systematic noise
-    #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+    #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2898,7 +2902,8 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
     sigma = clphasearr['sigmacp'][snrmask]
 
     #add systematic cphase noise (in DEGREES)
-    sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)[snrmask]
+    sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2950,6 +2955,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I',**kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -3002,6 +3008,7 @@ def chisqdata_logcamp_nfft(Obsdata, Prior,pol='I', **kwargs):
     uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
     clamp = clamparr['camp'][snrmask]
     sigma = clamparr['sigmaca'][snrmask]
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))

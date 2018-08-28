@@ -41,7 +41,7 @@ plt.rc('figure', titlesize=FONTSIZE)
 #im = eh.image.load_fits('./out.fits')
 #obs = eh.obsdata.load_uvfits('./obs.uvfits')
 #sys = 0.1
-def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=aipscc,
+def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False,
          commentstr="", outdir='.',ebar=True,cfun='afmhot',sysnoise=0,syscnoise=0,fontsize=FONTSIZE,
          gainplots=True,cphaseplots=True,campplots=True):
 
@@ -727,7 +727,7 @@ if __name__=='__main__':
 
     parser.add_argument('--c', '-c',type=str,default=" ", help="comments for top of sheet")
     parser.add_argument('--o','-o', type=str,help="path/to/output",default='.')
-    parser.add_argument('--aipscc', '-c',type=bool,default=False, help="load clean components from fits")
+    parser.add_argument('--aipscc', type=bool,default=False, help="load clean components from fits")
     parser.add_argument('--systematic_noise', type=float, default=0, help="systematic noise to add on amplitudes")
     parser.add_argument('--systematic_cphase_noise', type=float, default=0,help="systematic noise to add on cphase")
     parser.add_argument('--fontsize', type=int, default=FONTSIZE,help="font size")
@@ -741,14 +741,7 @@ if __name__=='__main__':
     opt = parser.parse_args()
     print("Generating Image Summary PDF")
     print("===========================================")
-    im = eh.image.load_fits(opt.inputim, aipscc=aipscc)
-    obs = eh.obsdata.load_uvfits(opt.inputobs)
-    obs_uncal = eh.obsdata.load_uvfits(opt.inputobs_uncal)
 
-    basename = os.path.splitext(os.path.basename(opt.inputim))[0]
-    outdir = str(opt.o)
-    if outdir[-1] == '/': outname = outdir + basename + '.pdf'
-    else: outname = outdir +'/' + basename + '.pdf'
 
     if opt.aipscc: aipscc=True
     else: aipscc=False
@@ -762,6 +755,15 @@ if __name__=='__main__':
     else: cphaseplots=True
     if opt.no_camp: campplots=False
     else: campplots=True
+
+    im = eh.image.load_fits(opt.inputim, aipscc=aipscc)
+    obs = eh.obsdata.load_uvfits(opt.inputobs)
+    obs_uncal = eh.obsdata.load_uvfits(opt.inputobs_uncal)
+
+    basename = os.path.splitext(os.path.basename(opt.inputim))[0]
+    outdir = str(opt.o)
+    if outdir[-1] == '/': outname = outdir + basename + '.pdf'
+    else: outname = outdir +'/' + basename + '.pdf'
 
     main(im, obs, obs_uncal, basename, outname,  commentstr=opt.c, outdir=outdir,ebar=ebar,cfun=opt.cfun,
          sysnoise=opt.systematic_noise,syscnoise=opt.systematic_cphase_noise,fontsize=opt.fontsize,

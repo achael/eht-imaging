@@ -87,7 +87,7 @@ out = eh.imager_func(obs, out, out, flux,
 out = out.blur_circ(res/2.0)
 out = eh.imager_func(obs, out, out, flux,
                 d1='bs', s1='tv',
-                alpha_s1=1, alpha_d1=10,cd
+                alpha_s1=1, alpha_d1=10,
                 alpha_flux=100, alpha_cm=50,
                 maxit=100,ttype='nfft')
 
