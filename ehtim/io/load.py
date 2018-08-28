@@ -20,7 +20,7 @@ from __future__ import division
 from __future__ import print_function
 from builtins import str
 from builtins import range
-
+import h5py
 import numpy as np
 import string
 import astropy.io.fits as fits
@@ -308,7 +308,7 @@ def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1,
        psize, framedur_sec, ra and dec
     """
 
-    import h5py
+
     file    = h5py.File(file_name, 'r')
     name    = list(file.keys())[0]
     d       = file[str(name)]
