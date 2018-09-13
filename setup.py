@@ -28,14 +28,14 @@ if __name__ == "__main__":
           install_requires=["astropy",
                             "ephem",
                             "future",
-                            "html",
+                          # "html",     # optional; only needed if use dynamical imaging
                             "matplotlib",
                             "networkx",
                             "numpy",
-                            "pandas",
-                            "pyfits",
-                            "pynfft",
-                            "requests",
+                          # "pandas",   # optional; only needed if use statistics
+                          # "pyfits",   # optional; use astropy.io.fits
+                          # "pynfft",   # optional; only needed if use clean
+                          # "requests", # optional; only needed if use dynamical imaging
                             "scipy",
                             "skimage"]
     )
