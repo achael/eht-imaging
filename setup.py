@@ -28,7 +28,7 @@ if __name__ == "__main__":
           install_requires=["astropy",
                             "ephem",
                             "future",
-                          # "h5py",     # optional; only needed if loading Lia's hdf5 data
+                            "h5py",
                           # "html",     # optional; only needed if use dynamical imaging
                             "matplotlib",
                             "networkx",
