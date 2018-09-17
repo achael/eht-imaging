@@ -28,14 +28,15 @@ if __name__ == "__main__":
           install_requires=["astropy",
                             "ephem",
                             "future",
+                          # "h5py",     # optional; only needed if loading Lia's hdf5 data
                           # "html",     # optional; only needed if use dynamical imaging
                             "matplotlib",
                             "networkx",
                             "numpy",
-                          # "pandas",   # optional; only needed if use statistics
+                          # "pandas",   # optional; only needed if using statistics
                           # "pyfits",   # optional; use astropy.io.fits
-                          # "pynfft",   # optional; only needed if use clean
-                          # "requests", # optional; only needed if use dynamical imaging
+                          # "pynfft",   # optional; only needed if using clean
+                          # "requests", # optional; only needed if using dynamical imaging
                             "scipy",
                             "skimage"]
     )
