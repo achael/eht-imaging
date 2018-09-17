@@ -271,9 +271,12 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
     normalizer = 1.0;
     if 'BUNIT' in list(header.keys()):
         if header['BUNIT'].lower() == 'JY/BEAM'.lower():
-            print("converting Jy/Beam --> Jy/pixel")
-            beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
-            normalizer = (header['CDELT2'])**2/beamarea
+            try:
+                print("converting Jy/Beam --> Jy/pixel")
+                beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
+                normalizer = (header['CDELT2'])**2/beamarea
+            except:
+                print("Could not find beam parameters!")
     if aipscc:
         print("the computed normalizer will not be applied since loading the AIPS CC table")
     else:
