@@ -255,7 +255,7 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
         # reset the image and input flux infromation
         data[:,:]=0.
         Noutcomp = 0
-        for i in xrange(len(flux)):
+        for i in range(len(flux)):
             try:
                 data[iy[i],ix[i]] += flux[i]
             except:
