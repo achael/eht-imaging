@@ -255,7 +255,7 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
         # reset the image and input flux infromation
         data[:,:]=0.
         Noutcomp = 0
-        for i in xrange(len(flux)):
+        for i in range(len(flux)):
             try:
                 data[iy[i],ix[i]] += flux[i]
             except:
@@ -271,12 +271,24 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
     normalizer = 1.0;
     if 'BUNIT' in list(header.keys()):
         if header['BUNIT'].lower() == 'JY/BEAM'.lower():
-            try:
-                print("converting Jy/Beam --> Jy/pixel")
-                beamarea = (2.0*np.pi*header['BMAJ']*header['BMIN']/(8.0*np.log(2)))
-                normalizer = (header['CDELT2'])**2/beamarea
-            except:
-                print("Could not find beam parameters!")
+
+            print("converting Jy/Beam --> Jy/pixel")
+            if 'BMAJ' in list(header.keys()):
+                bmaj = header['BMAJ']
+                bmin = header['BMIN']
+            elif 'HISTORY' in list(header.keys()): # Alternate option, to read AIPS fits images
+                print("No beam info in header; reading from AIPS HISTORY instead...")
+                for line in header['HISTORY']:
+                    if 'BMAJ' in line:
+                        bmaj = float(line.split()[3]) 
+                        bmin = float(line.split()[5]) 
+            else:
+                print("No beam info found! Assuming nominal values for conversion.")
+                bmaj = bmin = 1.0                
+
+            beamarea = (2.0*np.pi*bmaj*bmin/(8.0*np.log(2)))
+            normalizer = (header['CDELT2'])**2/beamarea
+
     if aipscc:
         print("the computed normalizer will not be applied since loading the AIPS CC table")
     else:
