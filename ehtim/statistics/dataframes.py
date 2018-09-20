@@ -33,7 +33,7 @@ import datetime as datetime
 from astropy.time import Time
 from ehtim.statistics.stats import *
 
-def make_df(obs,polarization='unknown',band='unknown',round_s=0.1,singlepol='RR'):
+def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
 
     """converts visibilities from obs.data to DataFrame format
 
@@ -55,6 +55,16 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1,singlepol='RR'
         vis1='vis'; sig1='sigma'
     elif obs.polrep=='circ':
         vis1='rrvis'; sig1='rrsigma'
+        df['vis']=df[vis1]
+        df['sigma']=df[sig1]
+        df['rramp']=np.abs(df['rrvis'])
+        df['llamp']=np.abs(df['llvis'])
+        df['rlamp']=np.abs(df['rlvis'])
+        df['lramp']=np.abs(df['lrvis'])
+        df['rrsnr']=df['rramp']/df['rrsigma']
+        df['llsnr']=df['llamp']/df['llsigma']
+        df['rlsnr']=df['rlamp']/df['rlsigma']
+        df['lrsnr']=df['lramp']/df['lrsigma']
     df['amp'] = list(map(np.abs,df[vis1]))
     df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df[vis1]))
     df['snr'] = df['amp']/df[sig1]
@@ -180,10 +190,9 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             vis_avg[sig3] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['udummy'])]
             vis_avg[sig4] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['vdummy'])]
 
-        if obs.polrep=='stokes':
-            vis_avg['amp'] = list(map(np.abs,vis_avg[vis1]))
-            vis_avg['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),vis_avg[vis1]))
-            vis_avg['snr'] = vis_avg['amp']/vis_avg['sigma']
+        vis_avg['amp'] = list(map(np.abs,vis_avg[vis1]))
+        vis_avg['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),vis_avg[vis1]))
+        vis_avg['snr'] = vis_avg['amp']/vis_avg[sig1]
 
         if scan_avg==False:
             #round datetime and time to the begining of the bucket and add half of a bucket time
