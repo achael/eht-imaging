@@ -38,5 +38,5 @@ if __name__ == "__main__":
                           # "pynfft",   # optional; only needed if using clean
                           # "requests", # optional; only needed if using dynamical imaging
                             "scipy",
-                            "skimage"]
+                            "scikit-image"]
     )
