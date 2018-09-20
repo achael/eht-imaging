@@ -52,9 +52,12 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1,singlepol='RR'
     telescopes = [(x[0],x[1]) for x in telescopes]
     df['baseline'] = [x[0]+'-'+x[1] for x in telescopes]
     if obs.polrep=='stokes':
-        df['amp'] = list(map(np.abs,df['vis']))
-        df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df['vis']))
-        df['snr'] = df['amp']/df['sigma']
+        vis1='vis'; sig1='sigma'
+    elif obs.polrep=='circ':
+        vis1='rrvis'; sig1='rrsigma'
+    df['amp'] = list(map(np.abs,df[vis1]))
+    df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df[vis1]))
+    df['snr'] = df['amp']/df[sig1]
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
     df['jd'] = Time(df['mjd'], format='mjd').jd
