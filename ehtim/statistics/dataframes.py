@@ -33,7 +33,7 @@ import datetime as datetime
 from astropy.time import Time
 from ehtim.statistics.stats import *
 
-def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
+def make_df(obs,polarization='unknown',band='unknown',round_s=0.1,singlepol='RR'):
 
     """converts visibilities from obs.data to DataFrame format
 
@@ -51,14 +51,15 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
     telescopes = list(zip(df['t1'],df['t2']))
     telescopes = [(x[0],x[1]) for x in telescopes]
     df['baseline'] = [x[0]+'-'+x[1] for x in telescopes]
-    df['amp'] = list(map(np.abs,df['vis']))
-    df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df['vis']))
+    if obs.polrep=='stokes':
+        df['amp'] = list(map(np.abs,df['vis']))
+        df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df['vis']))
+        df['snr'] = df['amp']/df['sigma']
     df['datetime'] = Time(df['mjd'], format='mjd').datetime
     df['datetime'] =list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
     df['jd'] = Time(df['mjd'], format='mjd').jd
     df['polarization'] = polarization
     df['band'] = band
-    df['snr'] = df['amp']/df['sigma']
     df['source'] = sour
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
@@ -134,43 +135,53 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
             err_type='predicted'
 
+        if obs.polrep=='stokes':
+            vis1='vis'; vis2='qvis'; vis3='uvis'; vis4='vvis'
+            sig1='sigma'; sig2='qsigma'; sig3='usigma'; sig4='vsigma'
+        elif obs.polrep=='circ':
+            vis1='rrvis'; vis2='llvis'; vis3='rlvis'; vis4='lrvis'
+            sig1='rrsigma'; sig2='llsigma'; sig3='rlsigma'; sig4='lrsigma'
+
         #AVERAGING-------------------------------    
         if err_type=='measured':
-            vis['dummy'] = vis['vis']
-            vis['udummy'] = vis['uvis']
-            vis['vdummy'] = vis['vvis']
-            vis['qdummy'] = vis['qvis']
-            aggregated['vis'] = np.mean
-            aggregated['uvis'] = np.mean
-            aggregated['qvis'] = np.mean
-            aggregated['vvis'] = np.mean
+            vis['dummy'] = vis[vis1]
+            vis['qdummy'] = vis[vis2]
+            vis['udummy'] = vis[vis3]
+            vis['vdummy'] = vis[vis4]
+
+            aggregated[vis1] = np.mean
+            aggregated[vis2] = np.mean
+            aggregated[vis3] = np.mean
+            aggregated[vis4] = np.mean
             aggregated['dummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
             aggregated['udummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
             aggregated['vdummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
             aggregated['qdummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
    
         elif err_type=='predicted':
-            aggregated['vis'] = np.mean
-            aggregated['uvis'] = np.mean
-            aggregated['qvis'] = np.mean
-            aggregated['vvis'] = np.mean
-            aggregated['sigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
-            aggregated['usigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
-            aggregated['qsigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
-            aggregated['vsigma'] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+                aggregated[vis1] = np.mean
+                aggregated[vis2] = np.mean
+                aggregated[vis3] = np.mean
+                aggregated[vis4] = np.mean
+                aggregated[sig1] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+                aggregated[sig2] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+                aggregated[sig3] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+                aggregated[sig4] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
 
         #ACTUAL AVERAGING
         vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()
         
         if err_type=='measured':
-            vis_avg['sigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['dummy'])]
-            vis_avg['usigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['udummy'])]
-            vis_avg['qsigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['qdummy'])]
-            vis_avg['vsigma'] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['vdummy'])]
+            vis_avg[sig1] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['dummy'])]
+            vis_avg[sig2] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['qdummy'])]
+            vis_avg[sig3] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['udummy'])]
+            vis_avg[sig4] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['vdummy'])]
 
-        vis_avg['amp'] = list(map(np.abs,vis_avg['vis']))
-        vis_avg['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),vis_avg['vis']))
-        vis_avg['snr'] = vis_avg['amp']/vis_avg['sigma']
+        if obs.polrep=='stokes':
+            vis_avg['amp'] = list(map(np.abs,vis_avg[vis1]))
+            vis_avg['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),vis_avg[vis1]))
+            vis_avg['snr'] = vis_avg['amp']/vis_avg['sigma']
+
         if scan_avg==False:
             #round datetime and time to the begining of the bucket and add half of a bucket time
             half_bucket = dt/2.
@@ -182,7 +193,10 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         if err_type=='measured':
             vis_avg.drop(labels=['udummy','vdummy','qdummy','dummy'],axis='columns',inplace=True)      
         if return_type=='rec':
-            return df_to_rec(vis_avg,'vis')
+            if obs.polrep=='stokes':
+                return df_to_rec(vis_avg,'vis')
+            elif obs.polrep=='circ':
+                return df_to_rec(vis_avg,'vis_circ')
         elif return_type=='df':
             return vis_avg
 
@@ -528,6 +542,9 @@ def df_to_rec(df,product_type):
     elif product_type=='vis':
          out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
          return np.array(out,dtype=DTPOL_STOKES)
+    elif product_type=='vis_circ':
+         out=  df[['time','tint','t1','t2','tau1','tau2','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma']].to_records(index=False)
+         return np.array(out,dtype=DTPOL_CIRC)
     elif product_type=='amp':
          out=  df[['time','tint','t1','t2','u','v','vis','amp','sigma']].to_records(index=False)
          return np.array(out,dtype=DTAMP)
