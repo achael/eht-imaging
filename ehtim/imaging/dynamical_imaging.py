@@ -122,7 +122,7 @@ def align_left(im,min_frac=0.1,opposite_frac_thresh=0.05):
 ##################################################################################################
 
 
-def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale='linear', dynamic_range=1000.0, pad_factor=1, verbose=False, xlim = None, ylim = None, titles = []):
+def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale='linear', dynamic_range=1000.0, pad_factor=1, verbose=False, xlim = None, ylim = None, titles = [], size=8.0):
     # Example: di.export_multipanel_movie([im_List,im_List_2],scale='log',xlim=[1000,-1000],ylim=[-3000,500],dynamic_range=[1000,5000], titles = ['43 GHz (BU)','15 GHz (MOJAVE)'])
     import matplotlib
     matplotlib.use('agg')
@@ -178,7 +178,7 @@ def export_multipanel_movie(im_List_Set, out='movie.mp4', fps=10, dpi=120, scale
         if len(titles) > 0:
             ax.set_title(titles[j])
 
-    fig.set_size_inches([8,8.0/len(im_List_Set)])
+    fig.set_size_inches([size,size/len(im_List_Set)])
     plt.tight_layout()
 
     def update_img(n):
@@ -205,6 +205,8 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
     matplotlib.use('agg')
     import matplotlib.pyplot as plt
     import matplotlib.animation as animation
+
+    mjd_range = im_List[-1].mjd - im_List[0].mjd    
 
     fig = plt.figure()
 
@@ -255,7 +257,13 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
         if verbose:
             print ("processing frame {0} of {1}".format(n, len(im_List)*pad_factor))
         plt_im.set_data(im_data(n))
-        fig.suptitle('MJD: ' + str(im_List[int((n-n%pad_factor)//pad_factor)].mjd))
+        if mjd_range != 0:
+            fig.suptitle('MJD: ' + str(im_List[int((n-n%pad_factor)//pad_factor)].mjd))
+        else:
+            time = im_List[int((n-n%pad_factor)//pad_factor)].time
+            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+            fig.suptitle(time_str)
+
         return plt_im
 
     ani = animation.FuncAnimation(fig,update_img,len(im_List)*pad_factor,interval=1e3/fps)
