@@ -1005,3 +1005,49 @@ def avg_prog_msg(nscan, totscans, tint, msgtype='bar',nscan_last=0):
         printstr = "\rCalibrating Scan %0"+ndigit+"i/%i in %0.2f s ints: %i%% done . . ."
         sys.stdout.write(printstr % barparams)
         sys.stdout.flush()
+
+def calculate_sysnoise(obsd,systematic_noise):
+    """Returns list of systematic noise levels to apply to data by chisq
+    if systematic_noise has 'time_dependent' key, add time dependent
+    """
+    #obsd = (obs.unpack(['t1','t2','time']))
+    NumElem = np.shape(obsd)[0]
+    if type(systematic_noise) is dict:
+        t1 = [x[0] for x in obsd]
+        t2 = [x[1] for x in obsd]
+        tim = [x[2] for x in obsd]
+        sys_level_1 = np.zeros(NumElem)
+        sys_level_2 = np.zeros(NumElem)
+        sys_level = np.zeros(NumElem)    
+           
+        #SYS ERROR BY STATION
+        for i in range(len(t1)):
+            if t1[i] in systematic_noise.keys():
+                t1sys = systematic_noise[t1[i]]
+            else: t1sys = 0.
+            if t2[i] in systematic_noise.keys():
+                t2sys = systematic_noise[t2[i]]
+            else: t2sys = 0.
+            if t1sys<0: sys_level_1[i] = -1
+            else: sys_level_1[i] = t1sys
+            if t2sys<0: sys_level_2[i] = -1
+            else: sys_level_2[i] = t2sys 
+                
+        #TIME DEPENDENT COMPONENT OF SYS ERRORS
+        if 'time_dependent' in systematic_noise.keys():
+            for ind,row in enumerate(obsd):
+                for key in systematic_noise['time_dependent'].keys():
+                    if (key[0]==t1[ind])&(key[1]<=tim[ind])&(key[2]>=tim[ind]):
+                        sys_level_1[ind] = systematic_noise['time_dependent'][key]
+                    if (key[0]==t2[ind])&(key[1]<=tim[ind])&(key[2]>=tim[ind]):
+                        sys_level_2[ind] = systematic_noise['time_dependent'][key]             
+        
+        #COMBINE BOTH STATIONS FOR BASELINE
+        for i in range(len(t1)):
+                if sys_level_1[i]<0 or sys_level_2[i]<0:
+                    sys_level[i] = -1
+                else:
+                    sys_level[i] = np.sqrt(sys_level_1[i]**2 + sys_level_2[i]**2) 
+        systematic_noise['sys_level'] = sys_level
+        return systematic_noise
+
