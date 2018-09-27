@@ -65,6 +65,7 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
         df['llsnr']=df['llamp']/df['llsigma']
         df['rlsnr']=df['rlamp']/df['rlsigma']
         df['lrsnr']=df['lramp']/df['lrsigma']
+        #df = df.dropna(subset=['rrvis', 'llvis','rrsigma','llsigma'])
     df['amp'] = list(map(np.abs,df[vis1]))
     df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df[vis1]))
     df['snr'] = df['amp']/df[sig1]
