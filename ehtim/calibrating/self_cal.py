@@ -83,7 +83,7 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
         if obs.polrep!='stokes':
             raise Exception("selfcal pol is a stokes parameter, but obs.polrep!='stokes'")
         im = im.switch_polrep('stokes',pol)
-    elif pol in ['RR','LL']:
+    elif pol in ['RR','LL','RRLL']:
         if obs.polrep!='circ':
             raise Exception("selfcal pol is RR or LL, but obs.polrep!='circ'")
         im = im.switch_polrep('circ',pol)
@@ -259,8 +259,11 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         else:
             verr = vis - g1*g2.conj() * V_scan
 
+        nan_mask = [not np.isnan(v) for v in verr]
+        verr = verr[nan_mask]   
+
         # goodness-of-fit for gains 
-        chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
+        chisq = np.sum((verr.real * sigma_inv[nan_mask])**2) + np.sum((verr.imag * sigma_inv[nan_mask])**2)
 
         # prior on the gains
         chisq_g = np.sum((np.log(np.abs(g))**2 / gain_tol**2))
@@ -295,63 +298,74 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
             else:
                 site_key = -1
 
-            # If we selfcal on a stokes image, set R&L gains equal.
-            if pol in ['I','Q','U','V']:
-                rscale = g_fit[site_key]**-1
-                lscale = g_fit[site_key]**-1
+            # We will *always* set the R and L gain corrections to be equal in network calibration, to avoid breaking polarization consistency relationships
+            rscale = g_fit[site_key]**-1
+            lscale = g_fit[site_key]**-1
 
-            # TODO is this right??
-            # But if we selfcal  on RR or LL, only set the appropriate gain
-            elif pol=='RR':
-                rscale = g_fit[site_key]**-1
-                lscale = 1
-            elif pol=='LL':
-                lscale = g_fit[site_key]**-1
-                rscale = 1
+#            # If we selfcal on a stokes image, set R&L gains equal.
+#            if pol in ['I','Q','U','V']:
+#                rscale = g_fit[site_key]**-1
+#                lscale = g_fit[site_key]**-1
+
+#            # TODO is this right??
+#            # But if we selfcal  on RR or LL, only set the appropriate gain
+#            elif pol=='RR':
+#                rscale = g_fit[site_key]**-1
+#                lscale = 1
+#            elif pol=='LL':
+#                lscale = g_fit[site_key]**-1
+#                rscale = 1
 
             caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
 
         out = caldict
 
-    else: # TODO: currently applying the derived solution to ALL polarizations regardless of how it was derived -- inconsistent with above caltable way? 
+    else: 
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]   
-    
-        if polrep=='stokes': 
 
-            gij_inv = (g1_fit * g2_fit.conj())**(-1)
-            
+        gij_inv = (g1_fit * g2_fit.conj())**(-1)    
+
+        if polrep=='stokes': 
             # scale visibilities
             for vistype in ['vis','qvis','uvis','vvis']:
                 scan[vistype]  *= gij_inv
             # scale sigmas
             for sigtype in ['sigma','qsigma','usigma','vsigma']:
                 scan[sigtype]  *= np.abs(gij_inv)
-        
-        # TODO is this right??
         elif polrep=='circ': 
+            # scale visibilities
+            for vistype in ['rrvis','llvis','rlvis','lrvis']:
+                scan[vistype]  *= gij_inv
+            # scale sigmas
+            for sigtype in ['rrsigma','llsigma','rlsigma','lrsigma']:
+                scan[sigtype]  *= np.abs(gij_inv)  
 
-            if pol=='RR':
-                scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
-                scan['llvis'] *= 1
-                scan['rlvis'] *= g1_fit**(-1)
-                scan['lrvis'] *= g2_fit.conj()**(-1)
+        
+#        # TODO is this right??
+#        elif polrep=='circ': 
 
-                scan['rrsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
-                scan['llsigma'] *= 1
-                scan['rlsigma'] *= np.abs(g1_fit**(-1))
-                scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
+#            if pol=='RR':
+#                scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
+#                scan['llvis'] *= 1
+#                scan['rlvis'] *= g1_fit**(-1)
+#                scan['lrvis'] *= g2_fit.conj()**(-1)
 
-            elif pol=='LL':
-                scan['rrvis'] *= 1
-                scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
-                scan['rlvis'] *= g2_fit.conj()**(-1)
-                scan['lrvis'] *= g1_fit**(-1)
+#                scan['rrsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+#                scan['llsigma'] *= 1
+#                scan['rlsigma'] *= np.abs(g1_fit**(-1))
+#                scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
 
-                scan['rrsigma'] *= 1
-                scan['llsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
-                scan['rlsigma'] *= np.abs(g2_fit.conj()**(-1))
-                scan['lrsigma'] *= np.abs(g1_fit**(-1))
+#            elif pol=='LL':
+#                scan['rrvis'] *= 1
+#                scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
+#                scan['rlvis'] *= g2_fit.conj()**(-1)
+#                scan['lrvis'] *= g1_fit**(-1)
+
+#                scan['rrsigma'] *= 1
+#                scan['llsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+#                scan['rlsigma'] *= np.abs(g2_fit.conj()**(-1))
+#                scan['lrsigma'] *= np.abs(g1_fit**(-1))
 
         out = scan
 
