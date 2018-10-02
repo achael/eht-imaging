@@ -456,7 +456,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, **kwargs):
            (matplotlib.axes.Axes): Axes object with data plot
 
     """
-    axis = plot_bl_compare(obslist, [], field1, field2, **kwargs)
+    axis = plot_bl_compare(obslist, [], site1, site2, field, **kwargs)
     return axis
 
 
@@ -493,7 +493,7 @@ def plot_bl_obs_im_compare(obslist, imlist, site1, site2, field, **kwargs):
            (matplotlib.axes.Axes): Axes object with data plot
 
     """
-    axis = plot_bl_compare(obslist, imlist, field1, field2, **kwargs)
+    axis = plot_bl_compare(obslist, imlist, site1, site2, field, **kwargs)
     return axis
 
 def plot_cphase_obs_compare(obslist,  site1, site2, site3, **kwargs):
@@ -808,7 +808,8 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
         for i in range(len(obslist)):
             obslist_plot.append(obslist[i])
             obstrue = imlist[0].observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-            obstrue.data['sigma'] *= 0
+            for sigma_type in obstrue.data.dtype.names[-4:]:
+                obstrue.data[sigma_type] *= 0
             obslist_true.append(obstrue)
             markers.append('o')
             clist_plot.append(clist[i])
@@ -823,7 +824,8 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
         markers =  ['o']
         for i in range(len(imlist)):
             obstrue = imlist[i].observe_same(obslist[0], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-            obstrue.data['sigma'] *= 0
+            for sigma_type in obstrue.data.dtype.names[-4:]:
+                obstrue.data[sigma_type] *= 0
             obslist_plot.append(obstrue)
             markers.append('s')
 
@@ -835,7 +837,8 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
         obslist_plot.append(obslist[0])
 
         obstrue = imlist[0].observe_same(obslist[0], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-        obstrue.data['sigma'] *= 0
+        for sigma_type in obstrue.data.dtype.names[-4:]:
+            obstrue.data[sigma_type] *= 0
         obslist_plot.append(obstrue)
 
         markers =  ['o','s']
@@ -848,7 +851,8 @@ def prep_plot_lists(obslist, imlist, clist=SCOLORS, legendlabels=None, sgrscat=F
         clist_plot = []
         for i in range(len(obslist)):
             obstrue = imlist[i].observe_same(obslist[i], sgrscat=sgrscat, add_th_noise=False, ttype=ttype)
-            obstrue.data['sigma'] *= 0
+            for sigma_type in obstrue.data.dtype.names[-4:]:
+                obstrue.data[sigma_type] *= 0
             obslist_plot.append(obstrue)
             clist_plot.append(clist[i])
             legendlabels_plot.append(legendlabels[i]+'_im')
