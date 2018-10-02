@@ -47,7 +47,7 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
     for i in range(n):
         # network calibrate the amplitudes
         datadir = '{}-{}-amp'.format(stepname, i)
-        caltab = eh.network_cal(pick(obs,sites), amp0, method='amp', **common)
+        caltab = eh.network_cal(pick(obs,sites), amp0, method='amp', pol='RRLL', **common)
         caltab = caltab.pad_scans()
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
         caltab.save_txt(obs, datadir=datadir)
@@ -62,7 +62,7 @@ def multical(obs, sites, master_caltab, n=3, amp0=8.0, gain_tol=0.1, only_amp=Tr
 
         # network calibrate the phases
         datadir = '{}-{}-phase'.format(stepname, i)
-        caltab = eh.network_cal(pick(obs,sites), amp0, method='phase', **common)
+        caltab = eh.network_cal(pick(obs,sites), amp0, method='phase', pol='RRLL', **common)
         caltab = caltab.pad_scans()
         obs = caltab.applycal(obs, interp='nearest', extrapolate=True)
         caltab.save_txt(obs, datadir=datadir)
@@ -89,12 +89,12 @@ parser.add_argument('-o', '--output',        default=None,                help="
 parser.add_argument('-P', '--prune',         default=1,    type=int,      help="pruning factor")
 parser.add_argument('-z', '--ampzbl',        default=7.0,  type=float,    help="amplitude at zero-baseline")
 parser.add_argument('-t', '--tavg',          default=10.0, type=float,    help="averaging time")
-parser.add_argument('-p', '--pol',           default="R",                 help="polarization")
+#parser.add_argument('-p', '--pol',           default="R",                 help="polarization")
 parser.add_argument('-r', '--rescale-noise', default=False, dest='rescl', help="rescale noise", action='store_true')
 args = parser.parse_args()
 
 if args.output is None:
-    args.output = os.path.basename(args.input[:-14])+args.pol+args.pol+'+netcal.uvfits'
+    args.output = os.path.basename(args.input[:-14])+'+netcal.uvfits'
 print("Parameters:")
 print("    input: ", args.input)
 print("    caltab directory:", args.caldir)
@@ -102,11 +102,11 @@ print("    output:", args.output)
 print("    prune: ", args.prune)
 print("    ampzbl:", args.ampzbl)
 print("    tavg:  ", args.tavg)
-print("    pol:   ", args.pol)
+#print("    pol:   ", args.pol)
 print("    rescl: ", args.rescl)
 
 # Load uvfits file
-obs = eh.obsdata.load_uvfits(args.input, force_singlepol=args.pol)
+obs = eh.obsdata.load_uvfits(args.input, polrep='circ')
 print("Flagging the SMA Reference Antenna...")
 obs = obs.flag_sites(["SR"])
 print("Flagging points with anomalous snr...")
@@ -124,7 +124,7 @@ if args.rescl:
 if args.caldir != None:
     print("Loading the a priori calibration table...")
     caltab  = eh.caltable.load_caltable(obs, args.caldir)
-    obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True, force_singlepol=args.pol)
+    obs_cal = caltab.applycal(obs, interp='nearest', extrapolate=True)
 else:
     obs_cal = obs.copy()
 
@@ -134,7 +134,7 @@ if args.tavg > 0.0:
     # Flag for anomalous snr in the averaged data
     #obs_cal_avg = obs_cal_avg.flag_anomalous('snr', robust_nsigma_cut=3.0)
     # Save the averaged data
-    obs_cal_avg.save_uvfits(os.path.basename(args.input[:-14])+args.pol+args.pol+'+avg.uvfits')
+    obs_cal_avg.save_uvfits(os.path.basename(args.input[:-14])+'+avg.uvfits')
 else:
     obs_cal_avg = obs.copy()
 
@@ -146,20 +146,20 @@ if args.prune > 1:
 master_caltab = None
 
 # First get the ALMA and APEX calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step1'
+stepname = args.input[:-15] + '/step1'
 sites = {'AA','AP'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step2'
+stepname = args.input[:-15] + '/step2'
 sites = {'SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
-stepname = args.input[:-15] + '.'+args.pol+args.pol+'/step3'
+stepname = args.input[:-15] + '/step3'
 sites = {'AA','AP','SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.1)
 
 # Save output
 obs_cal_avg.save_uvfits(args.output)
-master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '.'+args.pol+args.pol+'/master_caltab')
+master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '/master_caltab')
