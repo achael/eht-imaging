@@ -432,11 +432,6 @@ class Caltable(object):
                 bl_obs['lrvis'] = (bl_obs['rlvis']) * rlscale
                 bl_obs['rlvis'] = (bl_obs['lrvis']) * lrscale
 
-                rrsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(rrscale)
-                llsigma = np.sqrt(bl_obs['sigma']**2 + bl_obs['vsigma']**2) * np.abs(llscale)
-                rlsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(rlscale)
-                lrsigma = np.sqrt(bl_obs['qsigma']**2 + bl_obs['usigma']**2) * np.abs(lrscale)
-
                 bl_obs['rrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
                 bl_obs['llsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
                 bl_obs['rlsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
