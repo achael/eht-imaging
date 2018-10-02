@@ -72,16 +72,17 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pol
            (Caltable): the derived calibration table, if caltable==True
     """
 
-    if pol not in ['I','Q','U','V','RR','LL']:
-        raise Exception("Can only self-calibrate to I, Q, U, V, RR, or LL images!")
+    # Here, RRLL means to use both RR and LL (both as proxies for Stokes I) to derive a network calibration solution
+    if pol not in ['I','Q','U','V','RR','LL','RRLL']:
+        raise Exception("Can only self-calibrate to I, Q, U, V, RR, LL, or RRLL images!")
     if pol in ['I','Q','U','V']:
         if obs.polrep!='stokes':
             raise Exception("selfcal pol is a stokes parameter, but obs.polrep!='stokes'")
-        im = im.switch_polrep('stokes',pol)
-    elif pol in ['RR','LL']:
+        #obs = obs.switch_polrep('stokes',pol)
+    elif pol in ['RR','LL','RRLL']:
         if obs.polrep!='circ':
-            raise Exception("selfcal pol is RR or LL, but obs.polrep!='circ'")
-        im = im.switch_polrep('circ',pol)
+            raise Exception("selfcal pol is RR or LL or RRLL, but obs.polrep!='circ'")
+        #obs = obs.switch_polrep('circ',pol)
 
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
@@ -203,8 +204,12 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
     clusterdict = clustered_sites[1]
     clusterbls = clustered_sites[2]
 
-    # create a dictionary to keep track of gains
+    # create a dictionary to keep track of gains; sites that aren't network calibrated (no co-located partners) get a value of -1 so that they won't be network calibrated
     tkey = {b:a for a,b in enumerate(sites)}
+    for cluster in allclusters:
+        if len(cluster)==1:
+            tkey[cluster[0]] = -1
+
     clusterkey = clusterdict
 
     # make two lists of gain keys that relates scan bl gains to solved site ones
@@ -239,8 +244,12 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         return scan
 
     # get scan visibilities of the specified polarization
-    vis = scan[vis_poldict[pol]]
-    sigma = scan[sig_poldict[pol]]
+    if pol != 'RRLL':
+        vis = scan[vis_poldict[pol]]
+        sigma = scan[sig_poldict[pol]]
+    else:
+        vis = np.concatenate([scan[vis_poldict['RR']],scan[vis_poldict['LL']]])
+        sigma = np.concatenate([scan[sig_poldict['RR']],scan[sig_poldict['LL']]])    
 
     if method=='amp':
         if debias:
@@ -287,12 +296,21 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         g1 = g[g1_keys]
         g2 = g[g2_keys]
 
+        if pol == 'RRLL':
+            v_scan = np.concatenate([v_scan,v_scan])
+            g1 = np.concatenate([g1,g1])
+            g2 = np.concatenate([g2,g2])
+
         if method=='amp':
             verr = np.abs(vis) - g1*g2.conj() * np.abs(v_scan)
         else:
             verr = vis - g1*g2.conj() * v_scan
 
-        chisq = np.sum((verr.real * sigma_inv)**2) + np.sum((verr.imag * sigma_inv)**2)
+        nan_mask = [not np.isnan(v) for v in verr]
+        verr = verr[nan_mask]   
+        #sigma_inv = sigma_inv[nan_mask]
+
+        chisq = np.sum((verr.real * sigma_inv[nan_mask])**2) + np.sum((verr.imag * sigma_inv[nan_mask])**2)
 
         # prior on the gains
         g_fracerr = gain_tol 
@@ -334,64 +352,69 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             else:
                 site_key = -1
 
-            # If we selfcal on a stokes image, set R&L gains equal.
-            if pol in ['I','Q','U','V']:
-                rscale = g_fit[site_key]**-1
-                lscale = g_fit[site_key]**-1
+            # We will *always* set the R and L gain corrections to be equal in network calibration, to avoid breaking polarization consistency relationships
+            rscale = g_fit[site_key]**-1
+            lscale = g_fit[site_key]**-1
 
-            # TODO is this right??
-            # But if we selfcal  on RR or LL, only set the appropriate gain
-            elif pol=='RR':
-                rscale = g_fit[site_key]**-1
-                lscale = 1
-            elif pol=='LL':
-                lscale = g_fit[site_key]**-1
-                rscale = 1
+#            # If we selfcal on a stokes image, set R&L gains equal.
+#            if pol in ['I','Q','U','V']:
+#                rscale = g_fit[site_key]**-1
+#                lscale = g_fit[site_key]**-1
+
+#            # TODO is this right??
+#            # But if we selfcal  on RR or LL, only set the appropriate gain
+#            elif pol=='RR':
+#                rscale = g_fit[site_key]**-1
+#                lscale = 1
+#            elif pol=='LL':
+#                lscale = g_fit[site_key]**-1
+#                rscale = 1
 
             caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
 
         out = caldict
 
-    else: # TODO: currently applying the derived solution to ALL polarizations regardless of how it was derived -- inconsistent with above caltable way? 
+    else: 
         g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]   
     
-        if polrep=='stokes': 
+        gij_inv = (g1_fit * g2_fit.conj())**(-1)
 
-            gij_inv = (g1_fit * g2_fit.conj())**(-1)
-            
+        if polrep=='stokes': 
             # scale visibilities
             for vistype in ['vis','qvis','uvis','vvis']:
                 scan[vistype]  *= gij_inv
             # scale sigmas
             for sigtype in ['sigma','qsigma','usigma','vsigma']:
-                scan[sigtype]  *= np.abs(gij_inv)
-        
-        # TODO is this right??
+                scan[sigtype]  *= np.abs(gij_inv)        
         elif polrep=='circ': 
+            # scale visibilities
+            for vistype in ['rrvis','llvis','rlvis','lrvis']:
+                scan[vistype]  *= gij_inv
+            # scale sigmas
+            for sigtype in ['rrsigma','llsigma','rlsigma','lrsigma']:
+                scan[sigtype]  *= np.abs(gij_inv)  
+#            if pol=='RR':
+#                scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
+#                scan['llvis'] *= 1
+#                scan['rlvis'] *= g1_fit**(-1)
+#                scan['lrvis'] *= g2_fit.conj()**(-1)
 
+#                scan['rrsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+#                scan['llsigma'] *= 1
+#                scan['rlsigma'] *= np.abs(g1_fit**(-1))
+#                scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
 
-            if pol=='RR':
-                scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
-                scan['llvis'] *= 1
-                scan['rlvis'] *= g1_fit**(-1)
-                scan['lrvis'] *= g2_fit.conj()**(-1)
+#            elif pol=='LL':
+#                scan['rrvis'] *= 1
+#                scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
+#                scan['rlvis'] *= g2_fit.conj()**(-1)
+#                scan['lrvis'] *= g1_fit**(-1)
 
-                scan['rrsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
-                scan['llsigma'] *= 1
-                scan['rlsigma'] *= np.abs(g1_fit**(-1))
-                scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
-
-            elif pol=='LL':
-                scan['rrvis'] *= 1
-                scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
-                scan['rlvis'] *= g2_fit.conj()**(-1)
-                scan['lrvis'] *= g1_fit**(-1)
-
-                scan['rrsigma'] *= 1
-                scan['llsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
-                scan['rlsigma'] *= np.abs(g2_fit.conj()**(-1))
-                scan['lrsigma'] *= np.abs(g1_fit**(-1))
+#                scan['rrsigma'] *= 1
+#                scan['llsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
+#                scan['rlsigma'] *= np.abs(g2_fit.conj()**(-1))
+#                scan['lrsigma'] *= np.abs(g1_fit**(-1))
 
         out = scan
 
