@@ -110,7 +110,8 @@ obs = eh.obsdata.load_uvfits(args.input, polrep='circ')
 print("Flagging the SMA Reference Antenna...")
 obs = obs.flag_sites(["SR"])
 print("Flagging points with anomalous snr...")
-obs = obs.flag_anomalous('snr', robust_nsigma_cut=3.0)
+obs = obs.flag_anomalous('llsnr', robust_nsigma_cut=3.0)
+obs = obs.flag_anomalous('rrsnr', robust_nsigma_cut=3.0)
 
 # Rescale noise if needed
 if args.rescl:
