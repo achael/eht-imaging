@@ -58,6 +58,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - The Currrent Ability to Test Theories of Gravity with Black Hole Shadows, `Mizuno et al. 2018 <https://arxiv.org/abs/1804.05812>`_
 
+- The Scattering and Intrinsic Structure of Sagittarius A* at Radio Wavelengths, `Johnson et al. 2018<https://arxiv.org/abs/1808.08966>`_
 
 Acknowledgements
 ----------------
