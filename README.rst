@@ -36,7 +36,7 @@ Here are some ways to learn to use the code:
 
 Some publications that use ehtim
 ------------
-If you use ehtim in your publication, please cite both  `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_  and  `Chael et al. 2018 <https://arxiv.org/abs/1803.07088>`_
+If you use ehtim in your publication, please cite both  `Chael et al. 2016 <http://adsabs.harvard.edu/abs/2016ApJ...829...11C>`_  and  `Chael et al. 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
 
 Let us know if you use ehtim in your publication and we'll list it here!
 
