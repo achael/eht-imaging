@@ -1775,12 +1775,13 @@ class Obsdata(object):
         else:
             return obs_kept
 
-    def flag_high_sigma(self, sigma_cut=.005, output='kept'):
+    def flag_high_sigma(self, sigma_cut=.005, sigma_type='sigma', output='kept'):
 
         """Flag high sigma (thermal noise on Stoke I) data points
 
            Args:
                sigma_cut (float): remove points with sigma higher than  this
+               sigma_type (str): sigma type (sigma, rrsigma, llsigma, etc.)
                output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
 
            Returns:
@@ -1788,7 +1789,7 @@ class Obsdata(object):
         """
 
         datatable = self.data.copy()
-        mask = self.unpack('sigma')['sigma'] < sigma_cut
+        mask = self.unpack(sigma_type)[sigma_type] < sigma_cut
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
@@ -1911,9 +1912,10 @@ class Obsdata(object):
         for t1 in set(self.data['t1']):
             for t2 in set(self.data['t2']):
                 vals = self.unpack_bl(t1,t2,field)
+                vals = np.nan_to_num(vals) # nans will all be dropped; this can be problematic for polarimetric values
                 for j in range(len(vals)):
                     near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
-                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]
+                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]                    
 
                     # Here, we use median absolute deviation from the median as a robust proxy for standard deviation
                     dfields = np.median(np.abs(fields-np.median(fields)))
