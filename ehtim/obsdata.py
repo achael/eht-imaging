@@ -1912,7 +1912,8 @@ class Obsdata(object):
         for t1 in set(self.data['t1']):
             for t2 in set(self.data['t2']):
                 vals = self.unpack_bl(t1,t2,field)
-                vals = np.nan_to_num(vals) # nans will all be dropped; this can be problematic for polarimetric values
+                if len(vals) > 0:
+                    vals[field] = np.nan_to_num(vals[field]) # nans will all be dropped, which can be problematic for polarimetric values
                 for j in range(len(vals)):
                     near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
                     fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]                    
