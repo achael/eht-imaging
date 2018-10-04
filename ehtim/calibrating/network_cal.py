@@ -74,14 +74,14 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", pol
 
     # Here, RRLL means to use both RR and LL (both as proxies for Stokes I) to derive a network calibration solution
     if pol not in ['I','Q','U','V','RR','LL','RRLL']:
-        raise Exception("Can only self-calibrate to I, Q, U, V, RR, LL, or RRLL images!")
+        raise Exception("Can only network-calibrate to I, Q, U, V, RR, LL, or RRLL!")
     if pol in ['I','Q','U','V']:
         if obs.polrep!='stokes':
-            raise Exception("selfcal pol is a stokes parameter, but obs.polrep!='stokes'")
+            raise Exception("netcal pol is a stokes parameter, but obs.polrep!='stokes'")
         #obs = obs.switch_polrep('stokes',pol)
     elif pol in ['RR','LL','RRLL']:
         if obs.polrep!='circ':
-            raise Exception("selfcal pol is RR or LL or RRLL, but obs.polrep!='circ'")
+            raise Exception("netcal pol is RR or LL or RRLL, but obs.polrep!='circ'")
         #obs = obs.switch_polrep('circ',pol)
 
     # V = model visibility, V' = measured visibility, G_i = site gain
