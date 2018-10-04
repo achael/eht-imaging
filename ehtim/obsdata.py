@@ -200,12 +200,16 @@ class Obsdata(object):
 
         return newobs
 
-    def switch_polrep(self, polrep_out='stokes'):
+    def switch_polrep(self, polrep_out='stokes', allow_singlepol=True, singlepol_hand='R'):
 
         """Return a new observation with the polarization representation changed
            Args:
                polrep_out (str):  the polrep of the output data
-
+               allow_singlepol (bool): If True, treat single-polarization data as 
+                                       Stokes I when converting from 'circ' polrep to 'stokes'
+               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand 
+                                     is assumed when converting 'stokes' to 'circ'
+                                     and only Stokes I is present
            Returns:
                (Obsdata): new Obsdata object with potentially different polrep
         """
@@ -216,6 +220,9 @@ class Obsdata(object):
             return self.copy()
         elif polrep_out=='stokes': #circ -> stokes
             data = np.empty(len(self.data), dtype=DTPOL_STOKES)
+            rrmask = np.isnan(self.data['rrvis'])
+            llmask = np.isnan(self.data['llvis'])            
+
             for f in DTPOL_STOKES:
                 f = f[0]
                 if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
@@ -232,9 +239,18 @@ class Obsdata(object):
                     data[f] = 0.5*np.sqrt(self.data['rrsigma']**2 + self.data['llsigma']**2)
                 elif f in ['qsigma','usigma']:
                     data[f] = 0.5*np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
+            if allow_singlepol:
+                # In cases where only one polarization is present, use it as an estimator for Stokes I
+                data['vis'][rrmask]   = self.data['llvis'][rrmask]
+                data['sigma'][rrmask] = self.data['llsigma'][rrmask]
+
+                data['vis'][llmask]   = self.data['rrvis'][llmask]
+                data['sigma'][llmask] = self.data['rrsigma'][llmask]
 
         elif polrep_out=='circ': #stokes -> circ
             data = np.empty(len(self.data), dtype=DTPOL_CIRC)
+            Vmask = np.isnan(self.data['vvis'])
+
             for f in DTPOL_CIRC:
                 f = f[0]
                 if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
@@ -251,6 +267,15 @@ class Obsdata(object):
                     data[f] = np.sqrt(self.data['sigma']**2 + self.data['vsigma']**2)
                 elif f in ['rlsigma','lrsigma']:
                     data[f] = np.sqrt(self.data['qsigma']**2 + self.data['usigma']**2)
+
+            if allow_singlepol:
+                # In cases where only Stokes I is present, copy it to a specified parallel-hand
+                prefix = singlepol_hand.lower() + singlepol_hand.lower() # rr or ll
+                if prefix not in ['rr','ll']:
+                    raise Exception('singlepol_hand must be R or L')
+
+                data[prefix + 'vis'][Vmask]   = self.data['vis'][Vmask]
+                data[prefix + 'sigma'][Vmask] = self.data['sigma'][Vmask]
 
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, data, self.tarr,
                          source=self.source, mjd=self.mjd, polrep=polrep_out,
