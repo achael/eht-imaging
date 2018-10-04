@@ -147,17 +147,17 @@ if args.prune > 1:
 master_caltab = None
 
 # First get the ALMA and APEX calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '/step1'
+stepname = args.input[:-14] + '/step1'
 sites = {'AA','AP'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Next get the SMA and JCMT calibration right -- allow modest gain_tol
-stepname = args.input[:-15] + '/step2'
+stepname = args.input[:-14] + '/step2'
 sites = {'SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.3)
 
 # Recalibrate all redundant stations
-stepname = args.input[:-15] + '/step3'
+stepname = args.input[:-14] + '/step3'
 sites = {'AA','AP','SM','JC'}
 [obs_cal_avg, master_caltab] = multical(obs_cal_avg, sites, master_caltab, n=2, amp0=args.ampzbl, gain_tol=0.1)
 
