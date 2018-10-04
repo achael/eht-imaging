@@ -2940,6 +2940,14 @@ class Obsdata(object):
             sigx = allsigx[i]
             color = colors[i]
 
+            # Flag out nans (to avoid problems determining plotting limits)
+            nan_mask = np.isnan(data[field1]) + np.isnan(data[field2])
+            data = data[~nan_mask]
+            if not sigy is None: sigy = sigy[~nan_mask]
+            if not sigx is None: sigx = sigx[~nan_mask]
+            if len(data) == 0:
+                continue
+
             bl = bllist[i]
 
             xmins.append(np.min(data[field1]))
@@ -3056,6 +3064,11 @@ class Obsdata(object):
             raise Exception("valid fields are " + string.join(FIELDS))
 
         plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
+
+        # Flag out nans (to avoid problems determining plotting limits)
+        nan_mask = np.isnan(plotdata[field][:,0])
+        plotdata = plotdata[~nan_mask]
+
         if not rangex:
             rangex = [self.tstart,self.tstop]
             if np.any(np.isnan(np.array(rangex))):
@@ -3077,6 +3090,7 @@ class Obsdata(object):
 
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
+            errdata = errdata[~nan_mask]
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0],
                        fmt=marker, markersize=markersize, color=color, linestyle='none', label=label)
         else:
@@ -3161,6 +3175,9 @@ class Obsdata(object):
 
         cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
+
+        nan_mask = np.isnan(plotdata[field][:,1])
+        plotdata = plotdata[~nan_mask]
 
         if len(plotdata) == 0:
             print("%s %s %s : No closure phases on this triangle!" % (site1,site2,site3))
@@ -3279,6 +3296,9 @@ class Obsdata(object):
 
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
+
+        nan_mask = np.isnan(plotdata[field][:,1])
+        plotdata = plotdata[~nan_mask]
 
         if len(plotdata) == 0:
             print("No closure amplitudes on this quadrangle!")
