@@ -162,7 +162,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             vis['qdummy'] = vis[vis2]
             vis['udummy'] = vis[vis3]
             vis['vdummy'] = vis[vis4]
-            meanF = lambda x: np.mean(np.asarray(x))
+            meanF = lambda x: np.nanmean(np.asarray(x))
             meanerrF = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
             aggregated[vis1] = meanF
             aggregated[vis2] = meanF
@@ -174,8 +174,14 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             aggregated['qdummy'] = meanerrF
        
         elif err_type=='predicted':
-            meanF = lambda x: np.mean(np.asarray(x))
-            meanerrF = lambda x: np.sqrt(np.sum(x**2)/len(x)**2) if all(np.asarray(x)==np.asarray(x)) else np.nan + 1j*np.nan
+            meanF = lambda x: np.nanmean(np.asarray(x))
+            #meanerrF = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+            def meanerrF(x):
+                x = np.asarray(x)
+                x = x[x==x]
+                try: ret = np.sqrt(np.sum(x**2)/len(x)**2)
+                except: ret = np.nan +1j*np.nan
+                return ret
             aggregated[vis1] = meanF
             aggregated[vis2] = meanF
             aggregated[vis3] = meanF
