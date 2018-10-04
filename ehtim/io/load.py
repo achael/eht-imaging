@@ -582,6 +582,14 @@ def load_obs_txt(filename, polrep='stokes'):
         else: raise Exception("Telescope header doesn't have the right number of fields!")
         line = file.readline().split()
     tarr = np.array(tarr, dtype=DTARR)
+
+    # read the polrep
+    line = file.readline().split()    
+    if line[12]=='RRamp':
+        polrep_orig='circ'
+    elif line[12]=='Iamp':
+        polrep_orig='stokes'
+    else: raise Exception("cannot determine original polrep from observation text file!")
     file.close()
 
     # Load the data, convert to list format, return object
@@ -599,22 +607,22 @@ def load_obs_txt(filename, polrep='stokes'):
             tau2 = float(row[7])
             u = float(row[8])
             v = float(row[9])
-            vis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
+            vis1 = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
             if datatable.shape[1] == 19:
-                qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
-                uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
-                vvis = float(row[16]) * np.exp(1j * float(row[17]) * DEGREE)
-                sigma = qsigma = usigma = vsigma = float(row[18])
+                vis2 = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
+                vis3 = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+                vis4 = float(row[16]) * np.exp(1j * float(row[17]) * DEGREE)
+                sigma1 = sigma2 = sigma3 = sigma4 = float(row[18])
             elif datatable.shape[1] == 17:
-                qvis = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
-                uvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
-                vvis = 0+0j
-                sigma = qsigma = usigma = vsigma = float(row[16])
+                vis2 = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
+                vis3 = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+                vis4 = 0+0j
+                sigma1 = sigma2 = sigma3 = sigma4 = float(row[16])
             elif datatable.shape[1] == 15:
-                qvis = 0+0j
-                uvis = 0+0j
-                vvis = 0+0j
-                sigma = qsigma = usigma = vsigma = float(row[12])
+                vis2 = 0+0j
+                vis3 = 0+0j
+                vis4 = 0+0j
+                sigma1 = sigma2 = sigma3 = sigma4 = float(row[12])
             else:
                 raise Exception('Text file does not have the right number of fields!')
 
@@ -624,43 +632,33 @@ def load_obs_txt(filename, polrep='stokes'):
             tau2 = float(row[5])
             u = float(row[6])
             v = float(row[7])
-            vis = float(row[8]) * np.exp(1j * float(row[9]) * DEGREE)
-            qvis = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-            uvis = float(row[12]) * np.exp(1j * float(row[14]) * DEGREE)
-            vvis = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
-            sigma = float(row[16])
-            qsigma = float(row[17])
-            usigma = float(row[18])
-            vsigma = float(row[19])
+            vis1 = float(row[8]) * np.exp(1j * float(row[9]) * DEGREE)
+            vis2 = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
+            vis3 = float(row[12]) * np.exp(1j * float(row[14]) * DEGREE)
+            vis4 = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
+            sigma1 = float(row[16])
+            sigma2 = float(row[17])
+            sigma3 = float(row[18])
+            sigma4 = float(row[19])
 
         else:
             raise Exception('Text file does not have the right number of fields!')
 
-
-        if polrep=='stokes':
+        print(polrep_orig)
+        if polrep_orig=='stokes':
             datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
-                                        u, v, vis, qvis, uvis, vvis,
-                                        sigma, qsigma, usigma, vsigma), dtype=DTPOL_STOKES))
-        elif polrep=='circ':
-            rrvis = vis  +  vvis
-            llvis = vis - vvis
-            rlvis = qvis + 1j*uvis
-            lrvis = qvis - 1j*uvis
-
-            rrsigma = np.sqrt(sigma**2 + vsigma**2)
-            llsigma = np.sqrt(sigma**2 + vsigma**2)
-            rlsigma = np.sqrt(qsigma**2 + usigma**2)
-            lrsigma = np.sqrt(qsigma**2 + usigma**2)
-
-            datatable2.append(np.array((time, tint, t1, t2, tau1, tau2, u, v, 
-                                        rrvis, llvis, rlvis, lrvis,
-                                        rrsigma, llsigma, rlsigma, lrsigma), dtype=DTPOL_CIRC))
-
+                                        u, v, vis1, vis2, vis3, vis4,
+                                        sigma1, sigma2, sigma3, sigma4), dtype=DTPOL_STOKES))
+        elif polrep_orig=='circ':
+            datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
+                                        u, v, vis1, vis2, vis3, vis4,
+                                        sigma1, sigma2, sigma3, sigma4), dtype=DTPOL_CIRC))
 
     # Return the data object
     datatable2 = np.array(datatable2)
-    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, polrep=polrep, source=src, mjd=mjd,
+    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, polrep=polrep_orig, source=src, mjd=mjd,
                                  ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
+    out = out.switch_polrep(polrep_out=polrep)
     return out
 
 

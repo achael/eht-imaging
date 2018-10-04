@@ -247,9 +247,17 @@ def save_obs_txt(obs, fname):
     """
 
     # Get the necessary data and the header
-    outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
-                           'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
-                           'sigma', 'qsigma', 'usigma', 'vsigma'])
+    if obs.polrep=='stokes':
+        outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
+                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
+                               'sigma', 'qsigma', 'usigma', 'vsigma'])
+    elif obs.polrep=='circ':
+        outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
+                               'u', 'v', 'rramp', 'rrphase', 'llamp', 'llphase', 'rlamp', 'rlphase', 'lramp', 'lrphase',
+                               'rrsigma', 'llsigma', 'rlsigma', 'lrsigma'])
+
+    else: raise Exception("obs.polrep not 'stokes' or 'circ'!")
+
     head = ("SRC: %s \n" % obs.source +
                 "RA: " + rastring(obs.ra) + "\n" + "DEC: " + decstring(obs.dec) + "\n" +
                 "MJD: %i \n" % obs.mjd +
@@ -276,13 +284,23 @@ def save_obs_txt(obs, fname):
                                                                   (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
                                                                  ))
 
-    head += (
-            "----------------------------------------------------------------------"+
-            "------------------------------------------------------------------\n" +
-            "time (hr) tint    T1     T2    Tau1   Tau2   U (lambda)       V (lambda)         "+
-            "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   Vamp (Jy)    Vphase(d)   "+
-            "Isigma (Jy)   Qsigma (Jy)   Usigma (Jy)   Vsigma (Jy)"
-            )
+    if obs.polrep=='stokes':
+        head += (
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "time (hr) tint    T1     T2    Tau1   Tau2   U (lambda)       V (lambda)         "+
+                "Iamp (Jy)    Iphase(d)  Qamp (Jy)    Qphase(d)   Uamp (Jy)    Uphase(d)   Vamp (Jy)    Vphase(d)   "+
+                "Isigma (Jy)   Qsigma (Jy)   Usigma (Jy)   Vsigma (Jy)"
+                )
+    elif obs.polrep=='circ':
+        head += (
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "time (hr) tint    T1     T2    Tau1   Tau2   U (lambda)       V (lambda)         "+
+                "RRamp (Jy)   RRphase(d) LLamp (Jy)   LLphase(d)  RLamp (Jy)   RLphase(d)  LRamp (Jy)   LRphase(d)  "+
+                "RRsigma (Jy)  LLsigma (Jy)  RLsigma (Jy)  LRsigma (Jy)"
+                )
+
 
     # Format and save the data
     fmts = ("%011.8f %4.2f %6s %6s  %4.2f   %4.2f  %16.4f %16.4f    "+
