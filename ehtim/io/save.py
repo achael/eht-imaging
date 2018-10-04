@@ -382,7 +382,9 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     header['history'] = "AIPS SORT ORDER='TB'"
 
     # Get data
-    obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
+    #obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
+    obsdata = obs.unpack(['time','tint','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma','t1','t2','tau1','tau2'])
+
     ndat = len(obsdata['time'])
 
     # times and tints
@@ -408,18 +410,28 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     v = obsdata['v']
 
     # rr, ll, lr, rl, weights
-    rr = obsdata['vis'] + obsdata['vvis']
-    ll = obsdata['vis'] - obsdata['vvis']
-    rl = obsdata['qvis'] + 1j*obsdata['uvis']
-    lr = obsdata['qvis'] - 1j*obsdata['uvis']
+    #rr = obsdata['vis'] + obsdata['vvis']
+    #ll = obsdata['vis'] - obsdata['vvis']
+    #rl = obsdata['qvis'] + 1j*obsdata['uvis']
+    #lr = obsdata['qvis'] - 1j*obsdata['uvis']
+    #weightrr = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
+    #weightll = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
+    #weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
+    #weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
 
-    weightrr = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
-    weightll = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
-    weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
-    weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
+    rr = obsdata['rrvis'] 
+    ll = obsdata['llvis'] 
+    rl = obsdata['rlvis']
+    lr = obsdata['lrvis'] 
+    weightrr = 1.0/(obsdata['rrsigma']**2)
+    weightll = 1.0/(obsdata['llsigma']**2)
+    weightrl = 1.0/(obsdata['rlsigma']**2)
+    weightlr = 1.0/(obsdata['lrsigma']**2)
+
 
     # If necessary, enforce single polarization
     if force_singlepol == 'L':
+        if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
         print("force_singlepol='L': treating Stokes 'I' as LL and ignoring Q,U,V!!")
         ll = obsdata['vis']
         rr = rr * 0.0
@@ -429,6 +441,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
         weightrl = weightrl * 0.0
         weightlr = weightlr * 0.0
     elif force_singlepol == 'R':
+        if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
         print("force_singlepol='R': treating Stokes 'I' as RR and ignoring Q,U,V!!")
         rr = obsdata['vis']
         ll = rr * 0.0
@@ -454,7 +467,6 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     outdat[:,0,0,0,0,3,2] = weightlr
 
     # Save data
-
     pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',
             'INTTIM', 'TAU1', 'TAU2']
     x = fits.GroupData(outdat, parnames=pars,
@@ -483,7 +495,6 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     colfin = fits.Column(name='SEFD', format='1D', array=sefd)
 
     #TODO these antenna fields+header are questionable - look into them
-
     col4 = fits.Column(name='MNTSTA', format='1J', array=np.zeros(nsta))
     col5 = fits.Column(name='STAXOF', format='1E', unit='METERS', array=np.zeros(nsta))
     col6 = fits.Column(name='POLTYA', format='1A', array=np.array(['R' for i in range(nsta)], dtype='|S1'))
@@ -511,8 +522,6 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     #rdate_out = '2000-01-01T00:00:00.0'
     #rdate_gstiao_out = 114.38389781355
     #rdate_offset_out = 0.e0
-
-
     rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
     rdate_out = rdate_tt_new.iso
     rdate_jd_out = rdate_tt_new.jd
@@ -530,7 +539,6 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     head['FREQ']= obs.rf
     head['POLARX'] = 0.e0
     head['POLARY'] = 0.e0
-
 
     head['ARRNAM'] = 'VLBA'  # TODO must be recognized by aips/casa
     head['XYZHAND'] = 'RIGHT'
