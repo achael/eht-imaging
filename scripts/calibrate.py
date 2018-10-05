@@ -163,4 +163,4 @@ sites = {'AA','AP','SM','JC'}
 
 # Save output
 obs_cal_avg.save_uvfits(args.output)
-master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-15]) + '/master_caltab')
+master_caltab.save_txt(obs, datadir=os.path.basename(args.input[:-14]) + '/master_caltab')
