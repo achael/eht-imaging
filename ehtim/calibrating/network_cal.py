@@ -194,15 +194,19 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
            (Caltable): the derived calibration table, if caltable==True
     """
 
+    allsites = list(set(np.hstack((scan['t1'], scan['t2']))))
 
-    if len(sites) < 2:
-        print("less than 2 stations specified in network cal: defaulting to calibrating all !")
-        sites = list(set(np.hstack((scan['t1'], scan['t2']))))
+    if len(sites) == 0:
+        print("No stations specified in network cal: defaulting to calibrating all !")
+        sites = allsites
+
+    # only include sites that are present
+    sites = [s for s in sites if s in allsites]
 
     # clustered site information
     allclusters = clustered_sites[0]
     clusterdict = clustered_sites[1]
-    clusterbls = clustered_sites[2]
+    clusterbls  = clustered_sites[2]
 
     # create a dictionary to keep track of gains; sites that aren't network calibrated (no co-located partners) get a value of -1 so that they won't be network calibrated
     tkey = {b:a for a,b in enumerate(sites)}
@@ -211,6 +215,11 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             tkey[cluster[0]] = -1
 
     clusterkey = clusterdict
+
+    # restrict solved cluster visibilities to ones present in the scan (this is much faster than allowing many unconstrained variables
+    clusterbls_scan = [set([clusterkey[row['t1']], clusterkey[row['t2']]]) for row in scan if len(set([clusterkey[row['t1']], clusterkey[row['t2']]]))==2]
+    # now delete duplicates
+    clusterbls = [cluster for cluster in clusterbls if cluster in clusterbls_scan]
 
     # make two lists of gain keys that relates scan bl gains to solved site ones
     # -1 means that this station does not have a gain that is being solved for
@@ -240,8 +249,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             scan_keys.append(bl_index)
 
     # no sites to calibrate on this scan!
-    if np.all(g1_keys == -1):
-        return scan
+    #if np.all(g1_keys == -1): 
+        #return scan #Doesn't work with the caldict options
 
     # get scan visibilities of the specified polarization
     if pol != 'RRLL':
@@ -262,10 +271,13 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
     # initial guesses for parameters
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
+    if show_solution: print('%d Gains; %d Clusters' % (n_gains, n_clusterbls))
+
     gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
     vpar_guess = np.ones(n_clusterbls, dtype=np.complex128)
     for i in range(len(scan_keys)):
         if scan_keys[i] < 0: continue
+        if np.isnan(vis[i]): continue
         vpar_guess[scan_keys[i]] = vis[i]
     vpar_guess = vpar_guess.view(dtype=np.float64)
     gvpar_guess = np.hstack((gpar_guess, vpar_guess))
@@ -291,7 +303,6 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         v = np.append(v, zbl)
 
         # scan visibilities are either an intercluster visibility or the fixed zbl
-
         v_scan = v[scan_keys]
         g1 = g[g1_keys]
         g2 = g[g2_keys]
@@ -306,9 +317,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         else:
             verr = vis - g1*g2.conj() * v_scan
 
-        nan_mask = [not np.isnan(v) for v in verr]
+        nan_mask = np.array([not np.isnan(v) for v in verr])*np.array([not np.isnan(v) for v in sigma_inv])
         verr = verr[nan_mask]   
-        #sigma_inv = sigma_inv[nan_mask]
 
         chisq = np.sum((verr.real * sigma_inv[nan_mask])**2) + np.sum((verr.imag * sigma_inv[nan_mask])**2)
 
@@ -318,23 +328,27 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         chisq_v = np.sum((np.abs(v)/zbl)**4)
 
         return chisq + chisq_g + chisq_v
+    
+    if np.max(g1_keys) > -1 or np.max(g2_keys) > -1: 
+        # run the minimizer to get a solution (but only run if there's at least one gain to fit)
+        optdict = {'maxiter' : MAXIT} # minimizer params
+        res = opt.minimize(errfunc, gvpar_guess, method='CG', options=optdict)
 
-    # run the minimizer to get a solution
-    optdict = {'maxiter' : MAXIT} # minimizer params
-    res = opt.minimize(errfunc, gvpar_guess, method='CG', options=optdict)
+        # get solution
+        g_fit = res.x[0:2*n_gains].view(np.complex128)
+        v_fit = res.x[2*n_gains:].view(np.complex128)
 
-    # get solution
-    g_fit = res.x[0:2*n_gains].view(np.complex128)
-    v_fit = res.x[2*n_gains:].view(np.complex128)
+        if method=="phase":
+            g_fit = g_fit / np.abs(g_fit)
+        if method=="amp":
+            g_fit = np.abs(np.real(g_fit))
 
-    if method=="phase":
-        g_fit = g_fit / np.abs(g_fit)
-    if method=="amp":
-        g_fit = np.abs(np.real(g_fit))
-
-    if show_solution == True:
-        print (np.abs(g_fit))
-        print (np.abs(v_fit))
+        if show_solution == True:
+            print (np.abs(g_fit))
+            print (np.abs(v_fit))
+    else:
+        g_fit = []
+        v_fit = []
 
 
     g_fit = np.append(g_fit, 1.)
