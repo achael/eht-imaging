@@ -3201,7 +3201,7 @@ class Obsdata(object):
         cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
-        nan_mask = np.isnan(plotdata[field][:,1])
+        nan_mask = np.isnan(plotdata[:,1])
         plotdata = plotdata[~nan_mask]
 
         if len(plotdata) == 0:
@@ -3322,7 +3322,7 @@ class Obsdata(object):
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
 
-        nan_mask = np.isnan(plotdata[field][:,1])
+        nan_mask = np.isnan(plotdata[:,1])
         plotdata = plotdata[~nan_mask]
 
         if len(plotdata) == 0:
