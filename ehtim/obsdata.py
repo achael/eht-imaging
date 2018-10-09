@@ -1559,7 +1559,7 @@ class Obsdata(object):
 
         return out
 
-    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max'):
+    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max', vtype='vis'):
 
         """Estimate a constant rescaling factor for thermal noise across all baselines, times, and polarizations.
            Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise.
@@ -1571,9 +1571,9 @@ class Obsdata(object):
                min_num (int): The minimum number of closure phase differences for a triangle to be included in the set of estimators.
                print_std (bool): Whether or not to print the normalized standard deviation for each closure triangle.
                count (str): If 'min', use minimal set of phases, if 'max' use all closure phases up to reordering
-
+               vtype (str): Visibility type (e.g., 'vis', 'llvis', 'rrvis', etc.)
            Returns:
-               (float): The rescaling factor
+               (float): The rescaling factor. This can be applied to the data using the obsdata member function rescale_noise().
         """
 
         if max_diff_sec == 0.0:
@@ -1581,15 +1581,17 @@ class Obsdata(object):
             print("estimated max_diff_sec: ", max_diff_sec)
 
         # Now check the noise statistics on all closure phase triangles
-        c_phases = self.c_phases(vtype='vis', mode='time', count=count, ang_unit='')
+        c_phases = self.c_phases(vtype=vtype, mode='time', count=count, ang_unit='')
+
+        # First, just determine the set of closure phase triangles
         all_triangles = []
         for scan in c_phases:
             for cphase in scan:
                 all_triangles.append((cphase[1],cphase[2],cphase[3]))
-
         std_list = []
         print("Estimating noise rescaling factor from %d triangles...\n" % len(set(all_triangles)))
 
+        # Now determine the differences of adjacent samples on each triangle, relative to the expected thermal noise
         i_count = 0
         for tri in set(all_triangles):
             i_count = i_count + 1
@@ -1599,7 +1601,7 @@ class Obsdata(object):
             all_tri = np.array([[]])
             for scan in c_phases:
                 for cphase in scan:
-                    if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2]:
+                    if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2] and not np.isnan(cphase[-2]) and not np.isnan(cphase[-2]):
                         all_tri = np.append(all_tri, ((cphase[0], cphase[-2], cphase[-1])))
             all_tri = all_tri.reshape(int(len(all_tri)/3),3)
 
@@ -1614,9 +1616,16 @@ class Obsdata(object):
             if len(s_list) > min_num:
                 std_list.append(np.std(s_list))
                 if print_std == True:
-                    print(tri, np.std(s_list))
+                    print(tri, '%6.4f [%d differences]' % (np.std(s_list),len(s_list)))
+            else:
+                if print_std == True and len(all_tri)>0:
+                    print(tri, '%d cphases found [%d differences < min_num = %d]' % (len(all_tri),len(s_list),min_num))
 
-        median = np.median(std_list)
+        if len(std_list) == 0:
+            print("No suitable closure phase differences identified! Try using a larger max_diff_sec.")
+            median = 1.0
+        else:
+            median = np.median(std_list)
 
         return median
 
