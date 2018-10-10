@@ -27,6 +27,7 @@ from builtins import range
 
 import string
 import time
+import copy
 import numpy as np
 import scipy.optimize as opt
 import scipy.ndimage as nd
@@ -180,21 +181,17 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     # initial pol image
     if pol_prim ==  "amp_phase":
         if len(InitIm.qvec) and (np.any(InitIm.qvec!=0) or np.any(InitIm.uvec!=0)): #TODO right? or should it be if any=0
-            init1 = (np.abs(InitIm.qvec + 1j*InitIm.uvec) / InitIm.imvec)#[embed_mask]
-            init2 = (np.arctan2(InitIm.uvec, InitIm.qvec) / 2.0)#[embed_mask]
+            init1 = (np.abs(InitIm.qvec + 1j*InitIm.uvec) / InitIm.imvec)[embed_mask]
+            init2 = (np.arctan2(InitIm.uvec, InitIm.qvec) / 2.0)[embed_mask]
         else:
             raise Exception("not ready for random!")
             # !AC TODO get the actual zero baseline pol. frac from the data!??
             print("No polarimetric image in the initial image!")
-            #init1 = 0.2 * (np.ones(len(iimage)))# + 1e-10 * np.random.rand(len(iimage)))
-            #init2 = np.zeros(len(iimage)) + 1e-2 #* np.random.rand(len(iimage))
             init1 = 0.2 * (np.ones(len(iimage)) + 1e-2 * np.random.rand(len(iimage)))
             init2 = np.zeros(len(iimage)) + 1e-2 * np.random.rand(len(iimage))
-            #init1 = (0.2 * (np.ones(len(iimage)) + 1e-1 * np.random.rand(nimage)))[embed_mask]
-            #init2 = (.5*np.random.rand(nimage))[embed_mask]
 
         # Change of variables    
-        inittuple = (iimage, init1, init2)
+        inittuple = np.array((iimage, init1, init2))
         xtuple =  mcv_r(inittuple)
 
     # Get data and fourier matrices for the data terms
@@ -237,7 +234,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
         if pol_prim == "amp_phase":
             imtuple = mcv(cvtuple)
         else:
-            imtuple = cvtuple
+            raise  Exception()
 
         datterm = alpha_d1 * (chisq1(imtuple) - 1) + alpha_d2 * (chisq2(imtuple) - 1)
         regterm = alpha_s1 * reg1(imtuple) + alpha_s2 * reg2(imtuple)
@@ -252,7 +249,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
         if pol_prim == "amp_phase":
             imtuple = mcv(cvtuple)
         else:
-            imtuple = cvtuple
+            raise Exception()
 
         datterm = alpha_d1 * chisq1grad(imtuple) + alpha_d2 * chisq2grad(imtuple)
         regterm = alpha_s1 * reg1grad(imtuple) + alpha_s2 * reg2grad(imtuple)
@@ -273,21 +270,21 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     nit = 0
     def plotcur(im_step):
         global nit
-        print(nit)
         cvtuple = unpack_poltuple(im_step, xtuple, nimage, pol_solve)
-
+        #print( np.max(np.abs((cvtuple[2]-xtuple[2])/xtuple[2])))
         if pol_prim == "amp_phase":
             imtuple = mcv(cvtuple)  #change of variables
         else:
-            imtuple = cvtuple
+            raise Exception()
 
         if show_updates:
+            #print( np.max(np.abs((imtuple[2]-xx_static)/xx_static)))
             chi2_1 = chisq1(imtuple)
             chi2_2 = chisq2(imtuple)
             s_1 = reg1(imtuple)
             s_2 = reg2(imtuple)
-            #if np.any(np.invert(embed_mask)): 
-            #    imtuple = embed(imtuple, embed_mask)
+            if np.any(np.invert(embed_mask)): 
+                imtuple = embed(imtuple, embed_mask)
             #plot_m(imtuple, Prior, nit, chi2_1, chi2_2)
             print("i: %d chi2_1: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1, chi2_2,s_1,s_2))
         nit += 1
@@ -304,7 +301,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     print()
 
     # Plot Initial
-    xinit = pack_poltuple(xtuple, pol_solve)
+    xinit = pack_poltuple(xtuple.copy(), pol_solve)
     plotcur(xinit)
 
     # Minimize
@@ -316,7 +313,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     else:
         res = opt.minimize(objfunc, xinit, method='L-BFGS-B',
                            options=optdict, callback=plotcur)
-    print(res.message)
+
 
 
     tstop = time.time()
@@ -324,12 +321,14 @@ def pol_imager_func(Obsdata, InitIm, Prior,
     # Format output
     outcv = unpack_poltuple(res.x, xtuple, nimage, pol_solve)
     if pol_prim == "amp_phase":
-        out = mcv(outcv)  #change of variables
+        outcut = mcv(outcv)  #change of variables
     else:
-        out = outcv
+        outcut = outcv
 
-    #if np.any(np.invert(embed_mask)): 
-    #    out = embed(out, embed_mask) #embed
+    if np.any(np.invert(embed_mask)): 
+        out = embed(out, embed_mask) #embed
+    else:
+        out =  outcut
 
     iimage = out[0]
     qimage = make_q_image(out, pol_prim)
@@ -342,8 +341,8 @@ def pol_imager_func(Obsdata, InitIm, Prior,
 
     # Print stats
     print("time: %f s" % (tstop - tstart))
-    #print("J: %f" % res.fun)
-    #print("Final Chi^2_1: %f Chi^2_2: %f" % (chisq1(out[embed_mask]), chisq2(out[embed_mask])))
+    print("J: %f" % res.fun)
+    print("Final Chi^2_1: %f Chi^2_2: %f" % (chisq1(outcut), chisq2(outcut)))
     print(res.message)
 
     # Return Image object
@@ -372,7 +371,9 @@ def unpack_poltuple(polvec, inittuple, nimage, pol_solve = (0,1,1)):
         """unpack polvec into image tuple, 
            replaces quantities not iterated with  initial values
         """
-        (init0, init1, init2) = inittuple
+        init0 = inittuple[0]
+        init1 = inittuple[1]
+        init2 = inittuple[2]
 
         imct = 0
         if pol_solve[0] == 0:
@@ -387,12 +388,12 @@ def unpack_poltuple(polvec, inittuple, nimage, pol_solve = (0,1,1)):
             im1 = polvec[imct*nimage:(imct+1)*nimage]
             imct += 1
 
-        if pol_solve[0] == 0:
+        if pol_solve[2] == 0:
             im2 = init2
         else:
             im2 = polvec[imct*nimage:(imct+1)*nimage]
             imct += 1
-        return (im0, im1, im2)
+        return np.array((im0, im1, im2))
 
 def make_p_image(imtuple, pol_prim="amp_phase"):
     """construct a polarimetric image P = Q + iU
@@ -427,42 +428,42 @@ def make_chi_image(imtuple, pol_prim="amp_phase"):
     """
 
     if pol_prim=="amp_phase":
-        mimage = imtuple[2]
+        chiimage = imtuple[2]
     elif pol_prim=="qu":
-        mimage = 0.5*np.angle((imtuple[1] + 1j*imtuple[2])/imtuple[0])
+        chiimage = 0.5*np.angle((imtuple[1] + 1j*imtuple[2])/imtuple[0])
     elif pol_prim=="qu_frac":
-        mimage = 0.5*np.angle(imtuple[1] + 1j*imtuple[2])
+        chiimage = 0.5*np.angle(imtuple[1] + 1j*imtuple[2])
     else:
         raise Exception("polarimetric representation %s not recognized in make_chi_image!"%pol_prim)
-    return mimage
+    return chiimage
 
 def make_q_image(imtuple, pol_prim="amp_phase"):
     """construct an image of stokes Q
     """
 
     if pol_prim=="amp_phase":
-        mimage = imtuple[0] * imtuple[1] * np.cos(2*imtuple[2])
+        qimage = imtuple[0] * imtuple[1] * np.cos(2*imtuple[2])
     elif pol_prim=="qu":
-        mimage = imtuple[1]
+        qimage = imtuple[1]
     elif pol_prim=="qu_frac":
-        mimage = imtuple[1]*imtuple[0]
+        qimage = imtuple[1]*imtuple[0]
     else:
         raise Exception("polarimetric representation %s not recognized in make_m_image!"%pol_prim)
-    return mimage
+    return qimage
 
 def make_u_image(imtuple, pol_prim="amp_phase"):
     """construct an image of stokes U
     """
 
     if pol_prim=="amp_phase":
-        mimage = imtuple[0] * imtuple[1] * np.sin(2*imtuple[2])
+        uimage = imtuple[0] * imtuple[1] * np.sin(2*imtuple[2])
     elif pol_prim=="qu":
-        mimage = imtuple[2]
+        uimage = imtuple[2]
     elif pol_prim=="qu_frac":
-        mimage =imtuple[2]*imtuple[0]
+        uimage =imtuple[2]*imtuple[0]
     else:
         raise Exception("polarimetric representation %s not recognized in make_chi_image!"%pol_prim)
-    return mimage
+    return uimage
 
 # these change of variables only apply to polarimetric ratios
 # !AC In these pol. changes of variables, might be useful to 
@@ -477,7 +478,7 @@ def mcv(imtuple):
 
     mtrans = 0.5 + np.arctan(mimage/B)/np.pi
 
-    out = (iimage, mtrans, chiimage)
+    out = np.array((iimage, mtrans, chiimage))
     return out
 
 def mcv_r(imtuple):
@@ -489,7 +490,7 @@ def mcv_r(imtuple):
 
     mtrans = B*np.tan(np.pi*(mimage - 0.5))
 
-    out = (iimage, mtrans, chiimage)
+    out = np.array((iimage, mtrans, chiimage))
     return out
 
 def mchain(imtuple):
@@ -503,11 +504,8 @@ def mchain(imtuple):
     chichain = np.ones(len(chiimage))
     ichain = np.ones(len(iimage))
 
-    out = (ichain, mchain, chichain)
+    out = np.array((ichain, mchain, chichain))
     return np.array(out)
-
-    mchain = 1 / (B*np.pi*(1 + (polimage_cv[0:len(polimage_cv)/2]/B)**2))
-
 
 ##################################################################################################
 # Wrapper Functions
@@ -542,7 +540,8 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_prim="
 
     return chisq
 
-def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_prim="amp_phase",pol_solve=(0,1,1)):
+def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
+                 mask=[], pol_prim="amp_phase",pol_solve=(0,1,1)):
     
     """return the chi^2 gradient for the appropriate dtype
     """
@@ -569,7 +568,7 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_pr
     elif ttype== 'nfft':
         raise Exception("FFT not yet implemented in polchisq!")
 
-    return np.array(chisqgrad)
+    return chisqgrad
 
 
 def polregularizer(imtuple, mask, xdim, ydim, psize, stype, pol_prim="amp_phase"):
@@ -601,7 +600,7 @@ def polregularizergrad(imtuple, mask, xdim, ydim, psize, stype, pol_prim="amp_ph
     else:
         reggrad = np.zeros((3,len(imtuple[0])))
 
-    return np.array(reggrad)
+    return reggrad
 
 
 def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
@@ -674,12 +673,12 @@ def chisqgrad_p(imtuple, Amatrix, p, sigmap, pol_prim="amp_phase",pol_solve=(0,1
         else:
             gradchi = zeros
 
-        gradout = (gradi, gradm, gradchi)
+        gradout = np.array((gradi, gradm, gradchi))
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
-    return np.array(gradout)
+    return gradout
 
 def chisq_m(imtuple, Amatrix, m, sigmam, pol_prim="amp_phase"):
     """Polarimetric ratio chi-squared
@@ -697,9 +696,9 @@ def chisqgrad_m(imtuple, Amatrix, m, sigmam, pol_prim="amp_phase",pol_solve=(0,1
     """The gradient of the polarimetric ratio chisq
     """
     iimage = imtuple[0]
-    isamples = np.dot(Amatrix, iimage)
-
     pimage = make_p_image(imtuple, pol_prim)
+
+    isamples = np.dot(Amatrix, iimage)
     psamples = np.dot(Amatrix, pimage)
     zeros  =  np.zeros(len(iimage))
 
@@ -716,21 +715,23 @@ def chisqgrad_m(imtuple, Amatrix, m, sigmam, pol_prim="amp_phase",pol_solve=(0,1
                       np.real(np.dot(Amatrix.conj().T, msamples.conj() * mdiff)) / len(m))
         else:
             gradi = zeros
+
         if pol_solve[1]!=0:
             gradm = -np.real(iimage*np.exp(-2j*chiimage) * np.dot(Amatrix.conj().T, mdiff)) / len(m)
         else:
             gradm = zeros
+
         if pol_solve[2]!=0:
             gradchi = -2 * np.imag(pimage.conj() * np.dot(Amatrix.conj().T, mdiff)) / len(m)
         else:
             gradchi = zeros
 
-        gradout = (gradi, gradm, gradchi)
+        gradout = np.array((gradi, gradm, gradchi))
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
-    return np.array(gradout)
+    return gradout
 
 def chisq_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase"):
     """Polarimetric bispectrum chi-squared
@@ -772,12 +773,12 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_sol
         else:
             gradchi = zeros
 
-        out = (gradi, gradm, gradchi)
+        gradout = np.array((gradi, gradm, gradchi))
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
 
-    return np.array(out)
+    return gradout
 
     
 ##################################################################################################

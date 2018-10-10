@@ -619,6 +619,8 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
 
     return s
 
+
+
 def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
 
     """Return the data, sigma, and matrices for the appropriate dtype
