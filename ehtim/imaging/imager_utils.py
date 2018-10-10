@@ -50,7 +50,8 @@ from IPython import display
 
 NORM_REGULARIZER = False #ANDREW TODO change this default in the future
 
-NHIST = 50 # number of steps to store for hessian approx
+MAXLS = 100 # maximum number of line searches in L-BFGS-B
+NHIST = 100 # number of steps to store for hessian approx
 MAXIT = 100 # maximum number of iterations
 STOP = 1.e-8 # convergence criterion
 
@@ -157,7 +158,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     if (InitIm.polrep != Prior.polrep):
         raise Exception("Initial image pol. representation does not match pol. representation of the prior image!")
     if (logim and Prior.pol_prim in ['Q','U','V']):
-            raise Exception("Cannot image Stokes Q,U,or V with log image transformation! Set logim=False in imager_func")
+        raise Exception("Cannot image Stokes Q,U,or V with log image transformation! Set logim=False in imager_func")
 
     pol = Prior.pol_prim
     print("Generating %s image..." % pol)
@@ -312,6 +313,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
         print("Total Data 2: ", (len(data2)))
     if d3 in DATATERMS:
         print("Total Data 3: ", (len(data3)))
+
     print("Total Pixel #: ",(len(Prior.imvec)))
     print("Clipped Pixel #: ",(len(ninit)))
     print()
@@ -319,7 +321,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
     # Minimize
     #stop2 = stop/(np.finfo(float).eps)
-    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST,'gtol':stop} # minimizer dict params
+    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST,'gtol':stop,'maxls':MAXLS} # minimizer dict params
     tstart = time.time()
     if grads:
         res = opt.minimize(objfunc, xinit, method='L-BFGS-B', jac=objgrad,
@@ -334,16 +336,6 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     out = res.x
     if logim: out = np.exp(res.x)
     if np.any(np.invert(embed_mask)): out = embed(out, embed_mask)
-
-#    outim = image.Image(out.reshape(Prior.ydim, Prior.xdim), Prior.psize,
-#                     Prior.ra, Prior.dec, rf=Prior.rf, source=Prior.source,
-#                     mjd=Prior.mjd, pulse=Prior.pulse)
-
-#    if len(Prior.qvec):
-#        print("Preserving image complex polarization fractions!")
-#        qvec = Prior.qvec * out / Prior.imvec
-#        uvec = Prior.uvec * out / Prior.imvec
-#        outim.add_qu(qvec.reshape(Prior.ydim, Prior.xdim), uvec.reshape(Prior.ydim, Prior.xdim))
 
     outim = image.Image(out.reshape(Prior.ydim, Prior.xdim),
                         Prior.psize, Prior.ra, Prior.dec,

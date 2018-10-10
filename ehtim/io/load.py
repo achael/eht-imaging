@@ -934,7 +934,6 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
     rlmask_2d = (rlweight > 0.)
     lrmask_2d = (lrweight > 0.)
 
-
     # if there is any unmasked data in the frequency column, use it
     rrmask = np.any(np.any(rrmask_2d, axis=2), axis=1)
     llmask = np.any(np.any(llmask_2d, axis=2), axis=1)
@@ -959,7 +958,6 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
         scantable = []
         nxtable = hdulist['AIPS NX']
         for scan in nxtable.data:
-
             reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').jd
             #scantime = (scan['TIME'] + reftime  - mjd)
             scan_start = scan['TIME'] #in days since reference date
@@ -969,7 +967,6 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
             #scantable.append(np.array((scantime, scanint, startvis, endvis), dtype=DTSCANS))
             scantable.append([scan_start - 0.5*scan_dur,
                               scan_start + 0.5*scan_dur])
-
         scantable = np.array(scantable*24)
 
     except:

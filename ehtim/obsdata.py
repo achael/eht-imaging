@@ -3056,6 +3056,7 @@ class Obsdata(object):
             raise Exception("valid fields are " + string.join(FIELDS))
 
         plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
+
         if not rangex:
             rangex = [self.tstart,self.tstop]
             if np.any(np.isnan(np.array(rangex))):

@@ -60,7 +60,7 @@ print("Nominal Resolution: " ,res)
 #obs.save_uvfits('obs.uvp') # exports a UVFITS file modeled on template.UVP
 
 # Generate an image prior
-npix = 256
+npix = 32
 fov = 1*im.fovx()
 zbl = im.total_flux() # total flux
 prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
