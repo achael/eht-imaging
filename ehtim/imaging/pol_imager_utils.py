@@ -18,7 +18,7 @@
 
 
 #TODO
-# make this work!
+# FIX NFFTS for  m and for p -- offsets? imag?
 
 from __future__ import division
 from __future__ import print_function
@@ -44,7 +44,6 @@ from . import linearize_energy as le
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
-
 from IPython import display
 
 ##################################################################################################
@@ -60,11 +59,6 @@ STOP = 1.e-100 # convergence criterion
 
 DATATERMS = ['pvis','m','pbs']
 REGULARIZERS = ['msimple', 'hw', 'ptv']
-
-GRIDDER_P_RAD_DEFAULT = 2
-GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
-FFT_PAD_DEFAULT = 2
-FFT_INTERP_DEFAULT = 3
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -88,7 +82,7 @@ def pol_imager_func(Obsdata, InitIm, Prior,
                     alpha_s1=1, alpha_s2=1,
                     **kwargs):
 
-    """Run a general interferometric imager.
+    """Run a polarimetric imager.
 
        Args:
            Obsdata (Obsdata): The Obsdata object with polarimetric VLBI data
@@ -145,8 +139,8 @@ def pol_imager_func(Obsdata, InitIm, Prior,
         raise Exception("Invalid regularizer: valid regularizers are: " + ' '.join(REGULARIZERS))
     if (Prior.psize != InitIm.psize) or (Prior.xdim != InitIm.xdim) or (Prior.ydim != InitIm.ydim):
         raise Exception("Initial image does not match dimensions of the prior image!")
-    if (ttype!="direct"):
-        raise Exception("FFTs and NFFTs not yet implemented in polarimetric imaging!")
+    if (ttype not in ["direct","nfft"]):
+        raise Exception("FFT no yet implemented in polarimetric imaging -- use NFFT!")
     if (pol_prim!="amp_phase"):
         raise Exception("Only amp_phase pol_prim currently supported!")
     if (len(pol_solve)!=3):
@@ -529,13 +523,20 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_prim="
             chisq = chisq_m(imtuple, A, data, sigma, pol_prim)
 
         elif dtype == 'pbs':
-            chisq = chisq_pbis(imtuple, A, data, sigma, pol_prim)
+            chisq = chisq_pbs(imtuple, A, data, sigma, pol_prim)
     
     elif ttype== 'fast':
         raise Exception("FFT not yet implemented in polchisq!")
 
     elif ttype== 'nfft':
-        raise Exception("FFT not yet implemented in polchisq!")
+        if dtype == 'pvis':
+            chisq = chisq_p_nfft(imtuple, A, data, sigma, pol_prim)
+
+        elif dtype == 'm':
+            chisq = chisq_m_nfft(imtuple, A, data, sigma, pol_prim)
+
+        elif dtype == 'pbs':
+            chisq = chisq_pbs_nfft(imtuple, A, data, sigma, pol_prim)
 
 
     return chisq
@@ -566,7 +567,14 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
         raise Exception("FFT not yet implemented in polchisqgrad!")
 
     elif ttype== 'nfft':
-        raise Exception("FFT not yet implemented in polchisq!")
+        if dtype == 'pvis':
+            chisqgrad = chisqgrad_p_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
+
+        elif dtype == 'm':
+            chisqgrad = chisqgrad_m_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
+
+        elif dtype == 'pbs':
+            chisqgrad = chisqgrad_pbs_nffts(imtuple, A, data, sigma, pol_prim,pol_solve)
 
     return chisqgrad
 
@@ -623,8 +631,15 @@ def polchisqdata(Obsdata, Prior, mask, dtype, **kwargs):
 
     elif ttype=='fast':
         raise Exception("FFT not yet implemented in polchisqdata!")
+
     elif ttype=='nfft':
-        raise Exception("NFFT not yet implemented in polchisqdata!")      
+        if dtype == 'pvis':
+            (data, sigma, A) = chisqdata_pvis_nfft(Obsdata, Prior, mask, **kwargs)
+        elif dtype == 'm':
+            (data, sigma, A) = chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs)
+        elif dtype == 'pbs':
+            (data, sigma, A) = chisqdata_pbs_nfft(Obsdata, Prior, mask, **kwargs)
+
         
     return (data, sigma, A)
 
@@ -688,9 +703,6 @@ def chisq_m(imtuple, Amatrix, m, sigmam, pol_prim="amp_phase"):
     pimage = make_p_image(imtuple, pol_prim)
     msamples = np.dot(Amatrix, pimage) / np.dot(Amatrix, iimage)
     return np.sum(np.abs((m - msamples))**2/(sigmam**2)) / (2*len(m))   
-
-    #chisq = np.sum(np.abs((m - msamples))**2/(sigmam**2)) / (2*len(m))   
-    #return chisq
 
 def chisqgrad_m(imtuple, Amatrix, m, sigmam, pol_prim="amp_phase",pol_solve=(0,1,1)):
     """The gradient of the polarimetric ratio chisq
@@ -780,7 +792,287 @@ def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_sol
 
     return gradout
 
+##################################################################################################
+# NFFT Chi-squared and Gradient Functions
+##################################################################################################
+def chisq_p_nfft(imtuple, A, p, sigmap, pol_prim="amp_phase"):
+    """Polarimetric ratio chi-squared
+    """
+
+    #get nfft object
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    pimage = make_p_image(imtuple, pol_prim)
+    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    psamples = plan.f.copy()*pulsefac
+
+    #compute chi^2
+    chisq =  np.sum(np.abs((p - psamples))**2/(sigmap**2)) / (2*len(p))   
+
+    return chisq
+
+def chisqgrad_p_nfft(imtuple, A, p, sigmap, pol_prim="amp_phase",pol_solve=(0,1,1)):
+    """Polarimetric ratio chi-squared gradient
+    """
     
+    #get nfft object
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    iimage = imtuple[0]
+    pimage = make_p_image(imtuple, pol_prim)
+    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    psamples = plan.f.copy()*pulsefac
+
+
+    pdiff_vec = (-1.0/len(p)) * (p - psamples) / (sigmap**2) * pulsefac.conj()
+    plan.f = pdiff_vec
+    plan.adjoint()
+    ppart = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
+
+    zeros =  np.zeros(len(iimage))
+        
+    if pol_prim=="amp_phase":
+
+        mimage = imtuple[1]
+        chiimage = imtuple[2]
+        
+        if pol_solve[0]!=0:
+
+            gradi = np.real(mimage * np.exp(-2j*chiimage) * ppart)
+        else:
+            gradi = zeros
+
+        if pol_solve[1]!=0:
+            gradm = np.real(iimage*np.exp(-2j*chiimage) *ppart) 
+        else:
+            gradm = zeros
+
+        if pol_solve[2]!=0:
+            gradchi = 2 * np.imag(pimage.conj() * ppart)
+        else:
+            gradchi = zeros
+
+        gradout = np.array((gradi, gradm, gradchi))
+
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
+
+    return gradout
+
+
+def chisq_m_nfft(imtuple, A, m, sigmam, pol_prim="amp_phase"):
+    """Polarimetric ratio chi-squared
+    """
+    #get nfft object
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    iimage = imtuple[0]
+    plan.f_hat = iimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    isamples = plan.f.copy()*pulsefac
+
+    pimage = make_p_image(imtuple, pol_prim)
+    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    psamples = plan.f.copy()*pulsefac
+
+    #compute chi^2
+    msamples = psamples/isamples
+    chisq = np.sum(np.abs((m - msamples))**2/(sigmam**2)) / (2*len(m))   
+    return chisq
+
+def chisqgrad_m_nfft(imtuple, A, m, sigmam, pol_prim="amp_phase",pol_solve=(0,1,1)):
+    """The gradient of the polarimetric ratio chisq
+    """
+    iimage = imtuple[0]
+    pimage = make_p_image(imtuple, pol_prim)
+
+    
+    #get nfft object
+    nfft_info = A[0]
+    plan = nfft_info.plan
+    pulsefac = nfft_info.pulsefac
+
+    #compute uniform --> nonuniform transform
+    iimage = imtuple[0]
+    plan.f_hat = iimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    isamples = plan.f.copy()*pulsefac
+
+    pimage = make_p_image(imtuple, pol_prim)
+    plan.f_hat = pimage.copy().reshape((nfft_info.ydim,nfft_info.xdim)).T
+    plan.trafo()
+    psamples = plan.f.copy()*pulsefac
+
+    zeros =  np.zeros(len(iimage))
+
+    if pol_prim=="amp_phase":
+
+        mimage = imtuple[1]
+        chiimage = imtuple[2]
+        
+        msamples = psamples/isamples
+        mdiff_vec = (-1./len(m))*(m - msamples) / (isamples.conj() * sigmam**2) * pulsefac.conj()
+        plan.f = mdiff_vec
+        plan.adjoint()
+        mpart = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
+
+        if pol_solve[0]!=0: #TODO -- not right??
+            plan.f = mdiff_vec * msamples.conj() 
+            plan.adjoint()
+            mpart2 = (plan.f_hat.copy().T).reshape(nfft_info.xdim*nfft_info.ydim)
+
+            gradi = (np.real(mimage * np.exp(-2j*chiimage) * mpart) - np.real(mpart2))
+
+        else:
+            gradi = zeros
+
+        if pol_solve[1]!=0:
+            gradm = np.real(iimage*np.exp(-2j*chiimage) * mpart) 
+        else:
+            gradm = zeros
+
+        if pol_solve[2]!=0:
+            gradchi = 2 * np.imag(pimage.conj() * mpart)
+        else:
+            gradchi = zeros
+
+        gradout = np.array((gradi, gradm, gradchi))
+
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
+
+    return gradout
+
+
+def chisq_pbs_nfft(imtuple, A, bis_p, sigma, pol_prim="amp_phase"):
+    """Polarimetric bispectrum chi-squared
+    """
+    
+    #get nfft objects
+    nfft_info1 = A[0]
+    plan1 = nfft_info1.plan
+    pulsefac1 = nfft_info1.pulsefac
+
+    nfft_info2 = A[1]
+    plan2 = nfft_info2.plan
+    pulsefac2 = nfft_info2.pulsefac
+
+    nfft_info3 = A[2]
+    plan3 = nfft_info3.plan
+    pulsefac3 = nfft_info3.pulsefac
+
+    #compute uniform --> nonuniform transforms
+    pimage = make_p_image(imtuple, pol_prim)
+
+    plan1.f_hat = pimage.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+    plan1.trafo()
+    samples1 = plan1.f.copy()*pulsefac1
+
+    plan2.f_hat = pimage.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+    plan2.trafo()
+    samples2 = plan2.f.copy()*pulsefac2
+
+    plan3.f_hat = pimage.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+    plan3.trafo()
+    samples3 = plan3.f.copy()*pulsefac3
+
+    #compute chi^2
+    bisamples_p = samples1*samples2*samples3
+    chisq =  np.sum(np.abs((bis_p - bisamples_p)/sigma)**2) / (2.*len(bis_p))
+
+    return chisq
+
+def chisqgrad_pbs(imtuple, Amatrices, bis_p, sigma, pol_prim="amp_phase",pol_solve=(0,1,1)):
+    """The gradient of the polarimetric bispectrum chisq 
+    """
+
+    #get nfft objects
+    nfft_info1 = A[0]
+    plan1 = nfft_info1.plan
+    pulsefac1 = nfft_info1.pulsefac
+
+    nfft_info2 = A[1]
+    plan2 = nfft_info2.plan
+    pulsefac2 = nfft_info2.pulsefac
+
+    nfft_info3 = A[2]
+    plan3 = nfft_info3.plan
+    pulsefac3 = nfft_info3.pulsefac
+
+    #compute uniform --> nonuniform transforms
+    pimage = make_p_image(imtuple, pol_prim)
+
+    plan1.f_hat = pimage.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+    plan1.trafo()
+    v1 = plan1.f.copy()*pulsefac1
+
+    plan2.f_hat = pimage.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+    plan2.trafo()
+    v2 = plan2.f.copy()*pulsefac2
+
+    plan3.f_hat = pimage.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+    plan3.trafo()
+    v3 = plan3.f.copy()*pulsefac3
+
+    # gradient vec  for  adjoint fft
+    bisamples_p = v1*v2*v3
+    wdiff = (-1./len(bis_p)) * ((bis_p - bisamples_p).conj()) / (sigma**2)   
+    pt1 = wdiff * (v2 * v3).conj() * pulsefac1.conj()
+    pt2 = wdiff * (v1 * v3).conj() * pulsefac2.conj()
+    pt3 = wdiff * (v1 * v2).conj() * pulsefac3.conj()
+   
+    plan1.f = pt1
+    plan1.adjoint()
+    out1 = (plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim)
+
+    plan2.f = pt2
+    plan2.adjoint()
+    out2 = (plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim)
+
+    plan3.f = pt3
+    plan3.adjoint()
+    out3 = (plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim)
+
+    ptsum = out1 + out2 + out3
+
+    if pol_prim=="amp_phase":
+        iimage = imtuple[0]
+        mimage = imtuple[1]
+        chiimage = imtuple[2]
+        
+        if pol_solve[0]!=0:
+            gradi = np.real(ptsum * mimage * np.exp(2j*chiimage)) 
+        else:
+            gradi = zeros
+        if pol_solve[1]!=0:
+            gradm = np.real(ptsum * iimage * np.exp(2j*chiimage)) 
+        else:
+            gradm = zeros
+        if pol_solve[2]!=0:
+            gradchi = -2 * np.imag(ptsum * pimage) 
+        else:
+            gradchi = zeros
+
+        gradout = np.array((gradi, gradm, gradchi))
+
+    else:
+        raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
+
+    return gradout
+
+
 ##################################################################################################
 # Polarimetric Entropy and Gradient Functions
 ##################################################################################################
@@ -944,7 +1236,7 @@ def chisqdata_pvis(Obsdata, Prior, mask):
     """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
     """
 
-    data_arr = Obsdata.unpack(['u','v','pvis','psigma'])
+    data_arr = Obsdata.unpack(['u','v','pvis','psigma'], conj=True)
     uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
     vis = data_arr['pvis']
     sigma = data_arr['psigma']
@@ -952,23 +1244,68 @@ def chisqdata_pvis(Obsdata, Prior, mask):
 
     return (vis, sigma, A)
 
-def chisqdata_m(Obsdata, Prior, mask):
-    """Return the amplitudes, sigmas, and fourier matrix for and observation, prior, mask
+def chisqdata_pvis_nfft(Obsdata, Prior, mask, **kwargs):
+    """Return the visibilities, sigmas, and fourier matrix for an observation, prior, mask
     """
 
-    ampdata = Obsdata.unpack(['u','v','m','msigma'])
-    uv = np.hstack((ampdata['u'].reshape(-1,1), ampdata['v'].reshape(-1,1)))
-    m = ampdata['m']
-    sigmam = ampdata['msigma']
+    # unpack keyword args
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
+    data_arr = Obsdata.unpack(['u','v','pvis','psigma'], conj=True)
+    uv = np.hstack((data_arr['u'].reshape(-1,1), data_arr['v'].reshape(-1,1)))
+    vis = data_arr['pvis']
+    sigma = data_arr['psigma']
+
+    # get NFFT info
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A = [A1]
+
+    return (vis, sigma, A)
+
+
+def chisqdata_m(Obsdata, Prior, mask):
+    """Return the pol  ratios, sigmas, and fourier matrix for and observation, prior, mask
+    """
+
+    mdata = Obsdata.unpack(['u','v','m','msigma'], conj=True)
+    uv = np.hstack((mdata['u'].reshape(-1,1), mdata['v'].reshape(-1,1)))
+    m = mdata['m']
+    sigmam = mdata['msigma']
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     return (m, sigmam, A)
+
+def chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs):
+    """Return the pol ratios, sigmas, and fourier matrix for an observation, prior, mask
+    """
+
+    # unpack keyword args
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
+    mdata = Obsdata.unpack(['u','v','m','msigma'], conj=True)
+    uv = np.hstack((mdata['u'].reshape(-1,1), mdata['v'].reshape(-1,1)))
+    m = mdata['m']
+    sigmam = mdata['msigma']
+    A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
+
+    # get NFFT info
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv)
+    A = [A1]
+
+    return (m, sigmam, A)
+
 
 def chisqdata_pbs(Obsdata, Prior, mask):
     """return the bispectra, sigmas, and fourier matrices for and observation, prior, mask
     """
 
-    biarr = Obsdata.bispectra(mode="all", vtype='rlvis', count="min")
+    biarr = Obsdata.bispectra(mode="all", vtype='rlvis', count="min") #TODO CONJ??
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
@@ -981,6 +1318,32 @@ def chisqdata_pbs(Obsdata, Prior, mask):
          )
 
     return (bi, sigma, A3)
+
+def chisqdata_pbs_nfft(Obsdata, Prior, mask):
+    """return the bispectra, sigmas, and fourier matrices for and observation, prior, mask
+    """
+
+    # unpack keyword args
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
+    biarr = Obsdata.bispectra(mode="all", vtype='rlvis', count="min")
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
+    bi = biarr['bispec']
+    sigma = biarr['sigmab']
+
+    # get NFFT info
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
+    A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
+    A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
+    A = [A1,A2,A3]
+
+    return (bi, sigma, A)
+
 
 ##################################################################################################
 # Plotting

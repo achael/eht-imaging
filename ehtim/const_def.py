@@ -53,6 +53,13 @@ FWHM_MAJ = 1.309 * 1000 # in uas
 FWHM_MIN = 0.64 * 1000
 POS_ANG = 78 # in degree, E of N
 
+# FFT & NFFT options
+NFFT_KERSIZE_DEFAULT = 20
+GRIDDER_P_RAD_DEFAULT = 2
+GRIDDER_CONV_FUNC_DEFAULT = 'gaussian'
+FFT_PAD_DEFAULT = 2
+FFT_INTERP_DEFAULT = 3
+
 # Observation recarray datatypes
 DTARR = [('site', 'U32'), ('x','f8'), ('y','f8'), ('z','f8'),
          ('sefdr','f8'),('sefdl','f8'),('dr','c16'),('dl','c16'),

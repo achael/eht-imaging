@@ -25,6 +25,10 @@ try:
     import ephem
 except ImportError:
     print("Warning: ephem not installed: cannot simulate space VLBI")
+try:
+    from pynfft.nfft import NFFT
+except ImportError:
+    print("Warning: No NFFT installed! Cannot use nfft functions")
 
 import astropy.time as at
 import astropy.coordinates as coords
@@ -1081,3 +1085,262 @@ def uimage(iimage, mimage, chiimage):
     """Return the U image from m and chi"""
     return iimage * mimage * np.sin(2*chiimage) 
 
+
+##################################################################################################
+# FFT & NFFT helper functions
+##################################################################################################
+class NFFTInfo(object):
+    def __init__(self, xdim, ydim, psize, pulse, npad, p_rad, uv):
+        self.xdim = int(xdim)
+        self.ydim = int(ydim)
+        self.psize = psize
+        self.pulse = pulse
+
+        self.npad = int(npad)
+        self.p_rad = int(p_rad)
+        self.uv = uv
+        self.uvdim = len(uv)
+
+        # set nfft plan
+        uv_scaled = uv*psize
+        nfft_plan = NFFT([xdim, ydim], self.uvdim, m=p_rad, n=[npad,npad])
+        nfft_plan.x = uv_scaled
+        nfft_plan.precompute()
+        self.plan = nfft_plan
+
+        # compute phase and pulsefac
+        phases = np.exp(-1j*np.pi*(uv_scaled[:,0]+uv_scaled[:,1]))
+        pulses = np.array([pulse(2*np.pi*uv_scaled[i,0], 2*np.pi*uv_scaled[i,1], 1., dom="F")
+                           for i in range(self.uvdim)])
+        self.pulsefac = (pulses*phases)
+
+class SamplerInfo(object):
+    def __init__(self, order, uv, pulsefac):
+        self.order = int(order)
+        self.uv = uv
+        self.pulsefac = pulsefac
+
+class GridderInfo(object):
+    def __init__(self, npad, func, p_rad, coords, weights):
+        self.npad = int(npad)
+        self.conv_func = func
+        self.p_rad = int(p_rad)
+        self.coords = coords
+        self.weights = weights
+
+class ImInfo(object):
+    def __init__(self, xdim, ydim, npad, psize, pulse):
+        self.xdim = int(xdim)
+        self.ydim = int(ydim)
+        self.npad = int(npad)
+        self.psize = psize
+        self.pulse = pulse
+
+        padvalx1 = padvalx2 = int(np.floor((npad - xdim)/2.0))
+        if xdim % 2:
+            padvalx2 += 1
+        padvaly1 = padvaly2 = int(np.floor((npad - ydim)/2.0))
+        if ydim % 2:
+            padvaly2 += 1
+
+        self.padvalx1 = padvalx1
+        self.padvalx2 = padvalx2
+        self.padvaly1 = padvaly1
+        self.padvaly2 = padvaly2
+
+def conv_func_pill(x,y):
+    if abs(x) < 0.5 and abs(y) < 0.5:
+        out = 1.
+    else:
+        out = 0.
+    return out
+
+def conv_func_gauss(x,y):
+    return np.exp(-(x**2 + y**2))
+
+def conv_func_cubicspline(x,y):
+    if abs(x) <= 1:
+        fx = 1.5*abs(x)**3 - 2.5*abs(x)**2 + 1
+    elif abs(x) < 2:
+        fx = -0.5*abs(x)**3 + 2.5*abs(x)**2 -4*abs(x) + 2
+    else:
+        fx = 0
+
+    if abs(y) <= 1:
+        fy = 1.5*abs(y)**3 - 2.5*abs(y)**2 + 1
+    elif abs(y) < 2:
+        fy = -0.5*abs(y)**3 + 2.5*abs(y)**2 - 4*abs(y) + 2
+    else:
+        fy = 0
+
+    return fx*fy
+
+##There's a bug in scipy spheroidal function of order 0! - gives nans for eta<1
+#def conv_func_spheroidal(x,y,p,m):
+#    etax = 2.*x/float(p)
+#    etay = 2.*x/float(p)
+#    psix =  abs(1-etax**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etax)[0]
+#    psiy = abs(1-etay**2)**m * scipy.special.pro_rad1(m,0,0.5*np.pi*p,etay)[0]
+#    return psix*psiy
+
+def fft_imvec(imvec, im_info):
+    """
+    Returns fft of imvec on  grid
+    im_info = (xdim, ydim, npad, psize, pulse)
+    order is the order of the spline interpolation
+    """
+
+    xdim = im_info.xdim
+    ydim = im_info.ydim
+    padvalx1 = im_info.padvalx1
+    padvalx2 = im_info.padvalx2
+    padvaly1 = im_info.padvaly1
+    padvaly2 = im_info.padvaly2
+
+    imarr = imvec.reshape(ydim, xdim)
+    imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+    npad = imarr.shape[0]
+    if imarr.shape[0]!=imarr.shape[1]:
+        raise Exception("FFT padding did not return a square image!")
+
+    # FFT for visibilities
+    vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
+
+    return vis_im
+
+def sampler(griddata, sampler_info_list, sample_type="vis"):
+    """
+    Samples griddata (e.g. the FFT of an image) at uv points
+    the griddata should already be rotated so u,v = 0,0 in the center
+    sampler_info_list is an appropriately ordered list of 4 sampler_info objects
+    order is the order of the spline interpolation
+    """
+    if sample_type not in ["vis","bs","camp"]:
+        raise Exception("sampler sample_type should be either 'vis','bs',or 'camp'!")
+    if griddata.shape[0] != griddata.shape[1]:
+        raise Exception("griddata should be a square array!")
+
+    dataset = []
+    for sampler_info in sampler_info_list:
+
+        vu2 = sampler_info.uv
+        pulsefac = sampler_info.pulsefac
+
+        datare = nd.map_coordinates(np.real(griddata), vu2, order=sampler_info.order)
+        dataim = nd.map_coordinates(np.imag(griddata), vu2, order=sampler_info.order)
+
+        data = datare + 1j*dataim
+        data = data * pulsefac
+
+        dataset.append(data)
+
+    if sample_type=="vis":
+        out = dataset[0]
+    if sample_type=="bs":
+        out = dataset[0]*dataset[1]*dataset[2]
+    if sample_type=="camp":
+        out = np.abs((dataset[0]*dataset[1])/(dataset[2]*dataset[3]))
+    return out
+
+def gridder(data_list, gridder_info_list):
+    """
+    Grid the data sampled at uv points on a square array
+    gridder_info_list is an list of gridder_info objects
+    """
+
+    if len(data_list) != len(gridder_info_list):
+        raise Exception("length of data_list in gridder() " +
+                         "is not equal to length of gridder_info_list!")
+
+    npad = gridder_info_list[0].npad
+    datagrid = np.zeros((npad, npad)).astype('c16')
+
+    for k in range(len(gridder_info_list)):
+        gridder_info = gridder_info_list[k]
+        data = data_list[k]
+
+        if gridder_info.npad != npad:
+            raise Exception("npad values not consistent in gridder_info_list!")
+
+        p_rad = gridder_info.p_rad
+        coords = gridder_info.coords
+        weights = gridder_info.weights
+
+        p_rad = int(p_rad)
+        for i in range(2*p_rad+1):
+            dy = i - p_rad
+            for j in range(2*p_rad+1):
+                dx = j - p_rad
+                weight = weights[i][j]
+                np.add.at(datagrid, tuple(map(tuple, (coords + [dy, dx]).transpose())), data*weight)
+
+    return datagrid
+
+def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAULT, p_rad=GRIDDER_P_RAD_DEFAULT, order=FFT_INTERP_DEFAULT):
+    """
+    Prep norms and weights for gridding data sampled at uv points on a square array
+    im_info tuple contains (xdim, ydim, npad, psize, pulse) of the grid
+    conv_func is the convolution function: current options are "pillbox", "gaussian"
+    p_rad is the pixel radius inside wich the conv_func is nonzero
+    """
+
+    if not (conv_func in ['pillbox','gaussian','cubic']):
+        raise Exception("conv_func must be either 'pillbox', 'gaussian', or, 'cubic'")
+
+    xdim = im_info.xdim
+    ydim = im_info.ydim
+    npad = im_info.npad
+    psize = im_info.psize
+    pulse = im_info.pulse
+
+    #compute grid u,v coordinates
+    vu2 = np.hstack((uv[:,1].reshape(-1,1), uv[:,0].reshape(-1,1)))
+    du  = 1.0/(npad*psize)
+    vu2 = (vu2/du + 0.5*npad)
+
+    coords = np.round(vu2).astype(int)
+    dcoords = vu2 - np.round(vu2).astype(int)
+    vu2  = vu2.T
+
+    # TODO: phase rotations should be done separately for x and y if the image isn't square
+    # e.g.,
+    phase = np.exp(-1j*np.pi*psize*((1+im_info.xdim%2)*uv[:,0] + (1+im_info.ydim%2)*uv[:,1]))
+
+    pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
+    pulsefac = pulsefac * phase
+
+    #compute gridder norm
+    weights = []
+    norm = np.zeros_like(len(coords))
+    for i in range(2*p_rad+1):
+        weights.append([])
+        dy = i - p_rad
+        for j in range(2*p_rad+1):
+            dx = j - p_rad
+            if conv_func == 'gaussian':
+                norm = norm + conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1])
+            elif conv_func == 'pillbox':
+                norm = norm + conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])
+            elif conv_func == 'cubic':
+                norm = norm + conv_func_cubicspline(dy - dcoords[:,0], dx - dcoords[:,1])
+
+            weights[i].append(None)
+
+    #compute weights for gridding
+    for i in range(2*p_rad+1):
+        dy = i - p_rad
+        for j in range(2*p_rad+1):
+            dx = j - p_rad
+            if conv_func == 'gaussian':
+                weight = conv_func_gauss(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            elif conv_func == 'pillbox':
+                weight = conv_func_pill(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+            elif conv_func == 'cubic':
+                weight = conv_func_cubicspline(dy - dcoords[:,0], dx - dcoords[:,1])/norm
+
+            weights[i][j] = weight
+
+    #output the coordinates, norms, and weights
+    sampler_info = SamplerInfo(order, vu2, pulsefac)
+    gridder_info = GridderInfo(npad, conv_func, p_rad, coords, weights)
+    return (sampler_info, gridder_info)
