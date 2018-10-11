@@ -2060,7 +2060,7 @@ class Image(object):
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
-               cbar_unit (tuple): specifies the unit of the colorbar: eg ('Jy','pixel'),('m-Jy','$\mu$as$^2$')
+               cbar_unit (tuple): specifies the unit of the colorbar: eg ('Jy','pixel'),('m-Jy','$\mu$as$^2$'),('Tb') (i.e., brightness temperature)
                beamparams (list): [fwhm_maj, fwhm_min, theta], set to plot beam contour
 
                export_pdf (str): path to exported PDF with plot
@@ -2098,10 +2098,16 @@ class Image(object):
         elif cbar_unit[0] in ['muJy','$\mu$-Jy','$\mu$Jy']:
             fluxunit = '$\mu$Jy'
             factor *= 1.e6
+        elif cbar_unit[0] == 'Tb':
+            factor = 3.254e13/(self.rf**2 * self.psize**2)
+            fluxunit = 'Brightness Temperature (K)'
+            areaunit = ''
         elif cbar_unit[0] != 'Jy':
             raise ValueError('cbar_unit ' + cbar_unit[0] + ' is not a possible option')
 
-        if cbar_unit[1] == 'pixel':
+        if len(cbar_unit) == 1 or cbar_unit[0] == 'Tb':
+            factor *= 1.
+        elif cbar_unit[1] == 'pixel':
             factor *= 1.
         elif cbar_unit[1] in ['$arcseconds$^2$','as$^2$','as2']:
             areaunit='as$^2$'
@@ -2143,7 +2149,9 @@ class Image(object):
 
             imvec = imvec * factor
             imarr = imvec.reshape(self.ydim, self.xdim)
-            unit = fluxunit + ' / ' + areaunit
+            unit = fluxunit 
+            if areaunit != '':
+                unit += ' / ' + areaunit
 
             if scale=='log':
                 if (imarr < 0.0).any():
