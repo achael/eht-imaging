@@ -916,14 +916,15 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     if not ampcal:
         # Amplitude gain
         if type(gain_offset) == dict:
-            goff1 = gain_offset[sites[i,0]]
-            goff2 = gain_offset[sites[i,1]]
+            goff1 = [gain_offset[sites[i,0]] for i in range(len(time))]
+            goff2 = [gain_offset[sites[i,1]] for i in range(len(time))]
         else:
-            goff1=goff2=gain_offset
+            goff1 = [gain_offset for i in range(len(time))]
+            goff2 = [gain_offset for i in range(len(time))]
 
-        gain1 = np.abs(np.array([(1.0 + goff1 * hashrandn(sites[i,0], 'gain', seed))*(1.0 + gainp * hashrandn(sites[i,0], 'gain', time[i], seed))
+        gain1 = np.abs(np.array([(1.0 + goff1[i] * hashrandn(sites[i,0], 'gain', seed))*(1.0 + gainp * hashrandn(sites[i,0], 'gain', time[i], seed))
                                  for i in range(len(time))]))
-        gain2 = np.abs(np.array([(1.0 + goff2 * hashrandn(sites[i,1], 'gain', seed))*(1.0 + gainp * hashrandn(sites[i,1], 'gain', time[i], seed))
+        gain2 = np.abs(np.array([(1.0 + goff2[i] * hashrandn(sites[i,1], 'gain', seed))*(1.0 + gainp * hashrandn(sites[i,1], 'gain', time[i], seed))
                                  for i in range(len(time))]))
         gain_true = np.sqrt(gain1 * gain2)
     else:
