@@ -2089,10 +2089,10 @@ class Image(object):
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
                       has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit)
         else:
-            image.imvec = 0*image.imvec  
+            image.imvec = 0.0*image.imvec  
             image.display(cfun='afmhot',scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=False, cbar_lims=(0,1000), cbar_unit=cbar_unit) 
+                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit) 
 
         ax = plt.gcf()
 
