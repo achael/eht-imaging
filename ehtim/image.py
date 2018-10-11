@@ -2060,7 +2060,7 @@ class Image(object):
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
-               cbar_unit (tuple): specifies the unit of the colorbar: eg ('Jy','pixel'),('m-Jy','$\mu$as$^2$'),('Tb') (i.e., brightness temperature)
+               cbar_unit (tuple): specifies the unit of the colorbar: eg ('Jy','pixel'),('m-Jy','$\mu$as$^2$'),['Tb'] (i.e., brightness temperature)
                beamparams (list): [fwhm_maj, fwhm_min, theta], set to plot beam contour
 
                export_pdf (str): path to exported PDF with plot
