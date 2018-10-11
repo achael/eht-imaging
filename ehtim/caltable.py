@@ -433,9 +433,9 @@ class Caltable(object):
                 bl_obs['rlvis'] = (bl_obs['lrvis']) * lrscale
 
                 bl_obs['rrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['llsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['rlsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
-                bl_obs['lrsigma'] = bl_obs['rrsigma'] * np.abs(rrscale)
+                bl_obs['llsigma'] = bl_obs['llsigma'] * np.abs(llscale)
+                bl_obs['rlsigma'] = bl_obs['rlsigma'] * np.abs(rlscale)
+                bl_obs['lrsigma'] = bl_obs['lrsigma'] * np.abs(lrscale)
 
                 if len(datatable):
                     datatable = np.hstack((datatable,bl_obs))

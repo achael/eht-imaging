@@ -755,13 +755,14 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 
 
 #TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes', channel=all, IF=all):
+def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=True, force_singlepol=None, channel=all, IF=all):
     """Load observation data from a uvfits file.
        Args:
            fname (str): path to input text file
-           flipbl (bool): flip baseline phases if True.
            polrep (str): load data as either 'stokes' or 'circ'
-           force_singlepol (str): 'R' or 'L' to load only 1 polarization
+           flipbl (bool): flip baseline phases if True.
+           allow_singlepol (bool): If True and polrep='stokes', treat single-polarization data as Stokes I
+           force_singlepol (str): 'R' or 'L' to load only 1 polarization and treat as Stokes I
            channel (list): list of channels to average in the import. channel=all averages all channels
            IF (list): list of IFs to  average in  the import. IF=all averages all IFS
        Returns:
@@ -844,6 +845,9 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
     if num_corr == 1 and force_singlepol != None:
         print("Cannot force single polarization when file is not full polarization.")
         force_singlepol = None
+    # If the user selects force_singlepol, then we must allow_singlepol for stokes conversion
+    if not force_singlepol is None and polrep == 'stokes':
+        allow_singlepol = True
 
     # Mask to screen bad data
     # Reducing to single frequency
@@ -1107,66 +1111,81 @@ def load_obs_uvfits(filename, flipbl=False, force_singlepol=None, polrep='stokes
         u = -u
         v = -v
 
-    if polrep=='stokes':
-        # Stokes I
-        ivis = 0.5 * (rr + ll)
-        ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
-        ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
+#    if polrep=='stokes':
+#        # Stokes I
+#        ivis = 0.5 * (rr + ll)
+#        ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
+#        ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
 
-        isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
-        isigma[~llmask_dsize] = rrsig[~llmask_dsize]
-        isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
+#        isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
+#        isigma[~llmask_dsize] = rrsig[~llmask_dsize]
+#        isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
 
-        # TODO what should the polarization  sigmas be if no data?
-        # Stokes V
-        vvis = 0.5 * (rr - ll)
-        vvis[~vmask_dsize] = 0.
+#        # TODO what should the polarization  sigmas be if no data?
+#        # Stokes V
+#        vvis = 0.5 * (rr - ll)
+#        vvis[~vmask_dsize] = 0.
 
-        vsigma = copy.deepcopy(isigma)
-        vsigma[~vmask_dsize] = isigma[~vmask_dsize]
+#        vsigma = copy.deepcopy(isigma)
+#        vsigma[~vmask_dsize] = isigma[~vmask_dsize]
 
-        # Stokes Q,U
-        qvis = 0.5 * (rl + lr)
-        uvis = 0.5j * (lr - rl)
-        qvis[~qumask_dsize] = 0.
-        uvis[~qumask_dsize] = 0.
+#        # Stokes Q,U
+#        qvis = 0.5 * (rl + lr)
+#        uvis = 0.5j * (lr - rl)
+#        qvis[~qumask_dsize] = 0.
+#        uvis[~qumask_dsize] = 0.
 
-        qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
-        usigma = qsigma
-        qsigma[~qumask_dsize] = isigma[~qumask_dsize]
-        usigma[~qumask_dsize] = isigma[~qumask_dsize]
+#        qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
+#        usigma = qsigma
+#        qsigma[~qumask_dsize] = isigma[~qumask_dsize]
+#        usigma[~qumask_dsize] = isigma[~qumask_dsize]
 
-        # Make a datatable
-        datatable = []
-        for i in range(len(times)):
-            datatable.append(np.array
-                             ((
-                               times[i], tints[i],
-                               t1[i], t2[i], tau1[i], tau2[i],
-                               u[i], v[i],
-                               ivis[i], qvis[i], uvis[i], vvis[i],
-                               isigma[i], qsigma[i], usigma[i], vsigma[i]
-                               ), dtype=DTPOL_STOKES
-                              ))
+#        # Make a datatable
+#        datatable = []
+#        for i in range(len(times)):
+#            datatable.append(np.array
+#                             ((
+#                               times[i], tints[i],
+#                               t1[i], t2[i], tau1[i], tau2[i],
+#                               u[i], v[i],
+#                               ivis[i], qvis[i], uvis[i], vvis[i],
+#                               isigma[i], qsigma[i], usigma[i], vsigma[i]
+#                               ), dtype=DTPOL_STOKES
+#                              ))
 
-    elif polrep=='circ':
-        # TODO POL do we need any additional masking here??
-        datatable = []
-        for i in range(len(times)):
-            datatable.append(np.array
-                             ((
-                               times[i], tints[i],
-                               t1[i], t2[i], tau1[i], tau2[i],
-                               u[i], v[i],
-                               rr[i], ll[i], rl[i], lr[i],
-                               rrsig[i], llsig[i], rlsig[i], lrsig[i]
-                               ), dtype=DTPOL_CIRC
-                             ))
+#    elif polrep=='circ':
+#        # TODO POL do we need any additional masking here??
+#        datatable = []
+#        for i in range(len(times)):
+#            datatable.append(np.array
+#                             ((
+#                               times[i], tints[i],
+#                               t1[i], t2[i], tau1[i], tau2[i],
+#                               u[i], v[i],
+#                               rr[i], ll[i], rl[i], lr[i],
+#                               rrsig[i], llsig[i], rlsig[i], lrsig[i]
+#                               ), dtype=DTPOL_CIRC
+#                             ))
+
+    datatable = []
+    for i in range(len(times)):
+        datatable.append(np.array
+                         ((
+                           times[i], tints[i],
+                           t1[i], t2[i], tau1[i], tau2[i],
+                           u[i], v[i],
+                           rr[i], ll[i], rl[i], lr[i],
+                           rrsig[i], llsig[i], rlsig[i], lrsig[i]
+                           ), dtype=DTPOL_CIRC
+                         ))
 
     datatable = np.array(datatable)
+    obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep='circ', 
+                                source=src, mjd=mjd, scantable=scantable)
+    obs = obs.switch_polrep(polrep, allow_singlepol=allow_singlepol)
 
     #TODO get calibration flags from uvfits?
-    return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep, source=src, mjd=mjd, scantable=scantable)
+    return obs
 
 
 def load_obs_oifits(filename, flux=1.0):

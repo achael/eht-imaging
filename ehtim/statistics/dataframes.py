@@ -65,6 +65,7 @@ def make_df(obs,polarization='unknown',band='unknown',round_s=0.1):
         df['llsnr']=df['llamp']/df['llsigma']
         df['rlsnr']=df['rlamp']/df['rlsigma']
         df['lrsnr']=df['lramp']/df['lrsigma']
+        #df = df.dropna(subset=['rrvis', 'llvis','rrsigma','llsigma'])
     df['amp'] = list(map(np.abs,df[vis1]))
     df['phase'] = list(map(lambda x: (180./np.pi)*np.angle(x),df[vis1]))
     df['snr'] = df['amp']/df[sig1]
@@ -161,25 +162,34 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             vis['qdummy'] = vis[vis2]
             vis['udummy'] = vis[vis3]
             vis['vdummy'] = vis[vis4]
-
-            aggregated[vis1] = np.mean
-            aggregated[vis2] = np.mean
-            aggregated[vis3] = np.mean
-            aggregated[vis4] = np.mean
-            aggregated['dummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
-            aggregated['udummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
-            aggregated['vdummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
-            aggregated['qdummy'] = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
-   
+            meanF = lambda x: np.nanmean(np.asarray(x))
+            meanerrF = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+            aggregated[vis1] = meanF
+            aggregated[vis2] = meanF
+            aggregated[vis3] = meanF
+            aggregated[vis4] = meanF
+            aggregated['dummy'] = meanerrF
+            aggregated['udummy'] = meanerrF
+            aggregated['vdummy'] = meanerrF
+            aggregated['qdummy'] = meanerrF
+       
         elif err_type=='predicted':
-                aggregated[vis1] = np.mean
-                aggregated[vis2] = np.mean
-                aggregated[vis3] = np.mean
-                aggregated[vis4] = np.mean
-                aggregated[sig1] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
-                aggregated[sig2] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
-                aggregated[sig3] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
-                aggregated[sig4] = lambda x: np.sqrt(np.sum(x**2)/len(x)**2)
+            meanF = lambda x: np.nanmean(np.asarray(x))
+            #meanerrF = lambda x: bootstrap(np.abs(x), np.mean, num_samples=num_samples,wrapping_variable=False)
+            def meanerrF(x):
+                x = np.asarray(x)
+                x = x[x==x]
+                try: ret = np.sqrt(np.sum(x**2)/len(x)**2)
+                except: ret = np.nan +1j*np.nan
+                return ret
+            aggregated[vis1] = meanF
+            aggregated[vis2] = meanF
+            aggregated[vis3] = meanF
+            aggregated[vis4] = meanF
+            aggregated[sig1] = meanerrF
+            aggregated[sig2] = meanerrF
+            aggregated[sig3] = meanerrF
+            aggregated[sig4] = meanerrF
 
         #ACTUAL AVERAGING
         vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()

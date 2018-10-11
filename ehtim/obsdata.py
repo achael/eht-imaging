@@ -200,12 +200,16 @@ class Obsdata(object):
 
         return newobs
 
-    def switch_polrep(self, polrep_out='stokes'):
+    def switch_polrep(self, polrep_out='stokes', allow_singlepol=True, singlepol_hand='R'):
 
         """Return a new observation with the polarization representation changed
            Args:
                polrep_out (str):  the polrep of the output data
-
+               allow_singlepol (bool): If True, treat single-polarization data as 
+                                       Stokes I when converting from 'circ' polrep to 'stokes'
+               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand 
+                                     is assumed when converting 'stokes' to 'circ'
+                                     and only Stokes I is present
            Returns:
                (Obsdata): new Obsdata object with potentially different polrep
         """
@@ -216,6 +220,9 @@ class Obsdata(object):
             return self.copy()
         elif polrep_out=='stokes': #circ -> stokes
             data = np.empty(len(self.data), dtype=DTPOL_STOKES)
+            rrmask = np.isnan(self.data['rrvis'])
+            llmask = np.isnan(self.data['llvis'])            
+
             for f in DTPOL_STOKES:
                 f = f[0]
                 if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
@@ -232,9 +239,18 @@ class Obsdata(object):
                     data[f] = 0.5*np.sqrt(self.data['rrsigma']**2 + self.data['llsigma']**2)
                 elif f in ['qsigma','usigma']:
                     data[f] = 0.5*np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
+            if allow_singlepol:
+                # In cases where only one polarization is present, use it as an estimator for Stokes I
+                data['vis'][rrmask]   = self.data['llvis'][rrmask]
+                data['sigma'][rrmask] = self.data['llsigma'][rrmask]
+
+                data['vis'][llmask]   = self.data['rrvis'][llmask]
+                data['sigma'][llmask] = self.data['rrsigma'][llmask]
 
         elif polrep_out=='circ': #stokes -> circ
             data = np.empty(len(self.data), dtype=DTPOL_CIRC)
+            Vmask = np.isnan(self.data['vvis'])
+
             for f in DTPOL_CIRC:
                 f = f[0]
                 if f in ['time','tint','t1', 't2', 'tau1', 'tau2','u','v']:
@@ -251,6 +267,15 @@ class Obsdata(object):
                     data[f] = np.sqrt(self.data['sigma']**2 + self.data['vsigma']**2)
                 elif f in ['rlsigma','lrsigma']:
                     data[f] = np.sqrt(self.data['qsigma']**2 + self.data['usigma']**2)
+
+            if allow_singlepol:
+                # In cases where only Stokes I is present, copy it to a specified parallel-hand
+                prefix = singlepol_hand.lower() + singlepol_hand.lower() # rr or ll
+                if prefix not in ['rr','ll']:
+                    raise Exception('singlepol_hand must be R or L')
+
+                data[prefix + 'vis'][Vmask]   = self.data['vis'][Vmask]
+                data[prefix + 'sigma'][Vmask] = self.data['sigma'][Vmask]
 
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, data, self.tarr,
                          source=self.source, mjd=self.mjd, polrep=polrep_out,
@@ -1534,7 +1559,7 @@ class Obsdata(object):
 
         return out
 
-    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max'):
+    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max', vtype='vis'):
 
         """Estimate a constant rescaling factor for thermal noise across all baselines, times, and polarizations.
            Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise.
@@ -1546,9 +1571,9 @@ class Obsdata(object):
                min_num (int): The minimum number of closure phase differences for a triangle to be included in the set of estimators.
                print_std (bool): Whether or not to print the normalized standard deviation for each closure triangle.
                count (str): If 'min', use minimal set of phases, if 'max' use all closure phases up to reordering
-
+               vtype (str): Visibility type (e.g., 'vis', 'llvis', 'rrvis', etc.)
            Returns:
-               (float): The rescaling factor
+               (float): The rescaling factor. This can be applied to the data using the obsdata member function rescale_noise().
         """
 
         if max_diff_sec == 0.0:
@@ -1556,15 +1581,17 @@ class Obsdata(object):
             print("estimated max_diff_sec: ", max_diff_sec)
 
         # Now check the noise statistics on all closure phase triangles
-        c_phases = self.c_phases(vtype='vis', mode='time', count=count, ang_unit='')
+        c_phases = self.c_phases(vtype=vtype, mode='time', count=count, ang_unit='')
+
+        # First, just determine the set of closure phase triangles
         all_triangles = []
         for scan in c_phases:
             for cphase in scan:
                 all_triangles.append((cphase[1],cphase[2],cphase[3]))
-
         std_list = []
         print("Estimating noise rescaling factor from %d triangles...\n" % len(set(all_triangles)))
 
+        # Now determine the differences of adjacent samples on each triangle, relative to the expected thermal noise
         i_count = 0
         for tri in set(all_triangles):
             i_count = i_count + 1
@@ -1574,7 +1601,7 @@ class Obsdata(object):
             all_tri = np.array([[]])
             for scan in c_phases:
                 for cphase in scan:
-                    if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2]:
+                    if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2] and not np.isnan(cphase[-2]) and not np.isnan(cphase[-2]):
                         all_tri = np.append(all_tri, ((cphase[0], cphase[-2], cphase[-1])))
             all_tri = all_tri.reshape(int(len(all_tri)/3),3)
 
@@ -1589,9 +1616,16 @@ class Obsdata(object):
             if len(s_list) > min_num:
                 std_list.append(np.std(s_list))
                 if print_std == True:
-                    print(tri, np.std(s_list))
+                    print(tri, '%6.4f [%d differences]' % (np.std(s_list),len(s_list)))
+            else:
+                if print_std == True and len(all_tri)>0:
+                    print(tri, '%d cphases found [%d differences < min_num = %d]' % (len(all_tri),len(s_list),min_num))
 
-        median = np.median(std_list)
+        if len(std_list) == 0:
+            print("No suitable closure phase differences identified! Try using a larger max_diff_sec.")
+            median = 1.0
+        else:
+            median = np.median(std_list)
 
         return median
 
@@ -2940,6 +2974,14 @@ class Obsdata(object):
             sigx = allsigx[i]
             color = colors[i]
 
+            # Flag out nans (to avoid problems determining plotting limits)
+            nan_mask = np.isnan(data[field1]) + np.isnan(data[field2])
+            data = data[~nan_mask]
+            if not sigy is None: sigy = sigy[~nan_mask]
+            if not sigx is None: sigx = sigx[~nan_mask]
+            if len(data) == 0:
+                continue
+
             bl = bllist[i]
 
             xmins.append(np.min(data[field1]))
@@ -3057,6 +3099,10 @@ class Obsdata(object):
 
         plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
 
+        # Flag out nans (to avoid problems determining plotting limits)
+        nan_mask = np.isnan(plotdata[field][:,0])
+        plotdata = plotdata[~nan_mask]
+
         if not rangex:
             rangex = [self.tstart,self.tstop]
             if np.any(np.isnan(np.array(rangex))):
@@ -3078,6 +3124,7 @@ class Obsdata(object):
 
         if ebar and sigtype(field)!=False:
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
+            errdata = errdata[~nan_mask]
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0],
                        fmt=marker, markersize=markersize, color=color, linestyle='none', label=label)
         else:
@@ -3162,6 +3209,9 @@ class Obsdata(object):
 
         cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
+
+        nan_mask = np.isnan(plotdata[:,1])
+        plotdata = plotdata[~nan_mask]
 
         if len(plotdata) == 0:
             print("%s %s %s : No closure phases on this triangle!" % (site1,site2,site3))
@@ -3280,6 +3330,9 @@ class Obsdata(object):
 
         plotdata = np.array([[obs['time'],obs['camp'],obs['sigmaca']] for obs in cpdata])
         plotdata = np.array(plotdata)
+
+        nan_mask = np.isnan(plotdata[:,1])
+        plotdata = plotdata[~nan_mask]
 
         if len(plotdata) == 0:
             print("No closure amplitudes on this quadrangle!")

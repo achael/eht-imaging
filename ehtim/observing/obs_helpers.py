@@ -466,11 +466,11 @@ def amp_debias(amp, sigma, force_nonzero=False):
     deb2 = np.abs(amp)**2 - np.abs(sigma)**2
 
     # puts amplitude at 0 if snr < 1
-    deb2 *= (np.abs(amp) > np.abs(sigma))
+    deb2 *= (np.nan_to_num(np.abs(amp)) > np.nan_to_num(np.abs(sigma)))
 
     # raises amplitude to sigma to force nonzero
     if force_nonzero:
-        deb2 += (np.abs(amp) < np.abs(sigma)) * np.abs(sigma)**2
+        deb2 += (np.nan_to_num(np.abs(amp)) < np.nan_to_num(np.abs(sigma))) * np.abs(sigma)**2
     out = np.sqrt(deb2)
 
     return out
