@@ -2034,6 +2034,88 @@ class Image(object):
 
         return x
 
+    def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, 
+                      cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
+                      plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
+                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
+                      export_pdf="", show=True, show_im=True):
+
+        """Display the image.
+
+           Args:
+               contour_levels (arr): the fractional contour levels relative to the max flux plotted
+               contour_cfun (pyplot colormap function): the function used to get the RGB colors plotted for each level
+               legend (bool): True to show a legend that says what each contour line corresponds to
+               cfun (str): matplotlib.pyplot color function
+               scale (str): image scaling in ['log','gamma','lin']
+               interp (str): image interpolation 'gauss' or 'lin'
+
+               gamma (float): index for gamma scaling
+               dynamic_range (float): dynamic range for log and gamma scaling
+
+               plotp (bool): True to plot linear polarimetic image
+               nvec (int): number of polarimetric vectors to plot
+               pcut (float): minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel
+               label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
+               has_title (bool): True if you want a title on the plot
+               has_cbar (bool): True if you want a colorbar on the plot
+               cbar_lims (tuple): specify the lower and upper limit of the colorbar
+               cbar_unit (tuple of strings): specifies the unit of each pixel for the colorbar: 'Jy', 'm-Jy', '$\mu$Jy'
+
+               export_pdf (str): path to exported PDF with plot
+               show (bool): Display the plot if true
+               show_im (bool): Display the image with the contour plot if True, otherwise it will be black
+
+           Returns:
+               (matplotlib.figure.Figure): figure object with image
+
+        """
+
+
+        image = self.copy()
+
+        #or some generalized version for image sizes
+        y = np.linspace(0, image.ydim, image.ydim) 
+        x = np.linspace(0, image.xdim, image.xdim) 
+        
+
+        #make the image grid
+        z = image.imvec.reshape((image.ydim ,image.xdim ))
+        maxz = max(image.imvec)
+        ax = plt.gca()
+        
+        if show_im:
+            image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit)
+        else:
+            image.imvec = 0*image.imvec  
+            image.display(cfun='afmhot',scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      has_cbar=False, cbar_lims=(0,1000), cbar_unit=cbar_unit) 
+
+        ax = plt.gcf()
+
+        count = 0.
+        for level in contour_levels:
+            rgbval = contour_cfun(count/len(contour_levels))
+            rgbstring = '#%02x%02x%02x' % (rgbval[0]*256, rgbval[1]*256, rgbval[2]*256)
+            cs = plt.contour(x,y,z, levels=[level*maxz],colors=rgbstring, cmap=None ) 
+            count += 1
+            cs.collections[0].set_label(str(int(level*100)) + '%')
+        if legend:
+            plt.legend()
+                        
+        if show:
+            plt.ion()
+            plt.show(block=False)
+            
+        if export_pdf != "":
+            ax.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+        
+        return ax
+
+
     def display(self, pol=None, cfun='afmhot', interp='gaussian', 
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.1, 
