@@ -11,8 +11,8 @@ from   ehtim.calibrating import self_cal as sc
 #from  ehtim.plotting import self_cal as sc
 
 # Load the image and the array
-im = eh.image.load_txt('./models/avery_sgra_eofn.txt')
-eht = eh.array.load_txt('./arrays/EHT2017.txt')
+im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
+eht = eh.array.load_txt('../arrays/EHT2017.txt')
 
 # Observe the image
 tint_sec = 5
