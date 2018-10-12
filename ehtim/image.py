@@ -2034,11 +2034,11 @@ class Image(object):
 
         return x
 
-    def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, 
+    def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, show_im=True,
                       cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, show_im=True):
+                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical"):
 
         """Display the image.
 
@@ -2087,12 +2087,12 @@ class Image(object):
         if show_im:
             image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation)
         else:
             image.imvec = 0.0*image.imvec  
             image.display(cfun='afmhot',scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit) 
+                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit, beamparams=beamparams) 
 
         ax = plt.gcf()
 
@@ -2121,7 +2121,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, 
                       label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, beamparams=False, cbar_orientation="vertical"):
+                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical"):
 
         """Display the image.
 
