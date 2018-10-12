@@ -69,9 +69,9 @@ imgr.init_next = out.blur_circ(0,.5*res)
 imgr.prior_next = imgr.init_next
 imgr.transform_next = 'mcv'
 imgr.dat_term_next = {'m':5}
-imgr.reg_term_next = {'hw':1}
+imgr.reg_term_next = {'hw':1,'ptv':1.e2}
 imgr.make_image_P()
 
 out = imgr.out_last()
-
-
+out.display(plotp=True)
+im.display(plotp=True)

@@ -1174,7 +1174,7 @@ def stv_pol_grad(imtuple, nx, ny, pol_prim="amp_phase",pol_solve=(0,1,1)):
             m1 = 2*np.abs(im*im) - np.abs(im*im_l1)*np.cos(2*(np.angle(im_l1) - np.angle(im))) - np.abs(im*im_l2)*np.cos(2*(np.angle(im_l2) - np.angle(im)))
             m2 = np.abs(im*im) - np.abs(im*im_r1)*np.cos(2*(np.angle(im) - np.angle(im_r1)))
             m3 = np.abs(im*im) - np.abs(im*im_r2)*np.cos(2*(np.angle(im) - np.angle(im_r2)))
-            igrad = -((1./iimage)*(m1/d1 + m2/d2 + m3/d3)).flatten()
+            igrad = -(1./iimage)*(m1/d1 + m2/d2 + m3/d3).flatten()
         else:
             igrad = zeros
 
@@ -1183,7 +1183,7 @@ def stv_pol_grad(imtuple, nx, ny, pol_prim="amp_phase",pol_solve=(0,1,1)):
             m1 = 2*np.abs(im) - np.abs(im_l1)*np.cos(2*(np.angle(im_l1) - np.angle(im))) - np.abs(im_l2)*np.cos(2*(np.angle(im_l2) - np.angle(im)))
             m2 = np.abs(im) - np.abs(im_r1)*np.cos(2*(np.angle(im) - np.angle(im_r1)))
             m3 = np.abs(im) - np.abs(im_r2)*np.cos(2*(np.angle(im) - np.angle(im_r2)))
-            mgrad = -(iimage*(m1/d1 + m2/d2 + m3/d3)).flatten()
+            mgrad = -iimage*(m1/d1 + m2/d2 + m3/d3).flatten()
         else: 
             mgrad=zeros
 
@@ -1196,7 +1196,7 @@ def stv_pol_grad(imtuple, nx, ny, pol_prim="amp_phase",pol_solve=(0,1,1)):
         else:
             chigrad = zeros
 
-        out = (igrad, mgrad, chigrad)
+        out = np.array((igrad, mgrad, chigrad))
 
     else:
         raise Exception("polarimetric representation %s not added to pol gradient yet!" % pol_prim)
