@@ -598,7 +598,7 @@ class Imager(object):
         datterm = 0.
         chi2_term_dict = self.make_chisqgrad_dict(imvec)
         for dname in sorted(self.dat_term_next.keys()):
-            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname])
 
         regterm = 0
         reg_term_dict = self.make_reggrad_dict(imvec)
