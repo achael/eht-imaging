@@ -48,7 +48,7 @@ print("Nominal Resolution: " ,res)
 npix = 128
 fov = 1*im.fovx()
 zbl = im.total_flux() # total flux
-prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
+prior_fwhm = 80*eh.RADPERUAS # Gaussian size in microarcssec
 emptyprior = eh.image.make_square(obs, npix, fov)
 flatprior = emptyprior.add_flat(zbl)
 gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))

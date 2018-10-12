@@ -178,7 +178,6 @@ def pol_imager_func(Obsdata, InitIm, Prior,
             init1 = (np.abs(InitIm.qvec + 1j*InitIm.uvec) / InitIm.imvec)[embed_mask]
             init2 = (np.arctan2(InitIm.uvec, InitIm.qvec) / 2.0)[embed_mask]
         else:
-            raise Exception("not ready for random!")
             # !AC TODO get the actual zero baseline pol. frac from the data!??
             print("No polarimetric image in the initial image!")
             init1 = 0.2 * (np.ones(len(iimage)) + 1e-2 * np.random.rand(len(iimage)))
@@ -278,8 +277,8 @@ def pol_imager_func(Obsdata, InitIm, Prior,
             s_1 = reg1(imtuple)
             s_2 = reg2(imtuple)
             if np.any(np.invert(embed_mask)): 
-                imtuple = embed(imtuple, embed_mask)
-            #plot_m(imtuple, Prior, nit, chi2_1, chi2_2)
+                imtuple = embed_pol(imtuple, embed_mask)
+            plot_m(imtuple, Prior, nit, {d1:chi2_1, d2:chi2_2})
             print("i: %d chi2_1: %0.2f chi2_2: %0.2f s_1: %0.2f s_2: %0.2f" % (nit, chi2_1, chi2_2,s_1,s_2))
         nit += 1
 
@@ -320,9 +319,9 @@ def pol_imager_func(Obsdata, InitIm, Prior,
         outcut = outcv
 
     if np.any(np.invert(embed_mask)): 
-        out = embed(out, embed_mask) #embed
+        out = embed_pol(out, embed_mask) #embed
     else:
-        out =  outcut
+        out = outcut
 
     iimage = out[0]
     qimage = make_q_image(out, pol_prim)
@@ -586,7 +585,7 @@ def polregularizer(imtuple, mask, xdim, ydim, psize, stype, pol_prim="amp_phase"
         reg = -shw(imtuple, pol_prim)
     elif stype == "ptv":
         if np.any(np.invert(mask)):
-            imtuple = embed(imtuple, mask, randomfloor=True)
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
         reg = -stv_pol(imtuple, xdim, ydim, pol_prim)
     else:
         reg = 0
@@ -601,7 +600,7 @@ def polregularizergrad(imtuple, mask, xdim, ydim, psize, stype, pol_prim="amp_ph
         reggrad = -shwgrad(imtuple, pol_prim,pol_solve)
     elif stype == "ptv":
         if np.any(np.invert(mask)):
-            imtuple = embed(imtuple, mask, randomfloor=True)
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
         reggrad = -stv_pol_grad(imtuple, xdim, ydim, pol_prim,pol_solve)
         if np.any(np.invert(mask)):
             reggrad = (reggrad[0][mask],reggrad[1][mask],reggrad[2][mask])
@@ -1208,7 +1207,7 @@ def stv_pol_grad(imtuple, nx, ny, pol_prim="amp_phase",pol_solve=(0,1,1)):
 ##################################################################################################
 # Embedding and Chi^2 Data functions
 ##################################################################################################
-def embed(imtuple, mask, clipfloor=0., randomfloor=False):
+def embed_pol(imtuple, mask, clipfloor=0., randomfloor=False):
     """Embeds a polarimetric image tuple into the size of boolean embed mask
     """
     out0=np.zeros(len(mask))
@@ -1350,16 +1349,43 @@ def chisqdata_pbs_nfft(Obsdata, Prior, mask):
 ##################################################################################################
 
 #TODO this only works for pol_prim == "amp_cphase"
-def plot_m(imtuple, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
+def plot_m(imtuple, Prior, nit, chi2_dict, **kwargs):
+
+    cmap = kwargs.get('cmap','afmhot')
+    interpolation = kwargs.get('interpolation', 'gaussian')
+    pcut = kwargs.get('pcut', 0.05)
+    nvec = kwargs.get('nvec', 15)
+    scale = kwargs.get('scale',None)
+    dynamic_range = kwargs.get('dynamic_range',1.e5)
+    gamma = kwargs.get('dynamic_range',.5)
     
+    plt.ion()
+    plt.pause(1.e-6)    
+    plt.clf()
+
     # unpack
     im = imtuple[0]
     mim = imtuple[1]
     chiim = imtuple[2]
+    imarr = im.reshape(Prior.ydim,Prior.xdim)
+
+    if scale=='log':
+        if (imarr < 0.0).any():
+            print('clipping values less than 0')
+            imarr[imarr<0.0] = 0.0
+        imarr = np.log(imarr + np.max(imarr)/dynamic_range)
+        #unit = 'log(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')'
+
+    if scale=='gamma':
+        if (imarr < 0.0).any():
+            print('clipping values less than 0')
+            imarr[imarr<0.0] = 0.0
+        imarr = (imarr + np.max(imarr)/dynamic_range)**(gamma)
+        #unit = '(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')^gamma'
 
     # Mask for low flux points
     thin = int(round(Prior.xdim/nvec))
-    mask = im.reshape(Prior.ydim, Prior.xdim) > pcut * np.max(im)
+    mask = imarr > pcut * np.max(im)
     mask2 = mask[::thin, ::thin]
     
     # Get vectors and ratio from current image
@@ -1371,17 +1397,10 @@ def plot_m(imtuple, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
     b = np.cos(np.angle(q+1j*u)/2).reshape(Prior.ydim, Prior.xdim)[::thin, ::thin][mask2]
     m = (np.abs(q + 1j*u)/im).reshape(Prior.ydim, Prior.xdim)
     m[~mask] = 0
-    
-    # Create figure and title
-    plt.ion()
-    plt.pause(0.00001)    
-    plt.clf()
-
-    plt.suptitle("step: %i  $\chi_{1}^2$: %f   $\chi_{2}^2$: %f" % (nit, chi2, chi2m), fontsize=20)
         
     # Stokes I plot
     plt.subplot(121)
-    plt.imshow(im.reshape(Prior.ydim, Prior.xdim), cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
+    plt.imshow(imarr, cmap=plt.get_cmap('afmhot'), interpolation='gaussian')
     plt.quiver(x, y, a, b,
                headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                width=.01*Prior.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
@@ -1412,9 +1431,11 @@ def plot_m(imtuple, Prior, nit, chi2, chi2m, pcut=0.05, nvec=15, ipynb=False):
     plt.xlabel('Relative RA ($\mu$as)')
     plt.ylabel('Relative Dec ($\mu$as)')
     plt.title('m (above %i %% max flux)' % int(pcut*100))
-    
-    # Display
-    #plt.draw()
-    if ipynb:
-        display.clear_output()
-        display.display(plt.gcf())   
+
+    # Create title
+    plotstr = "step: %i  " % nit
+    for key in chi2_dict.keys():
+        plotstr += "$\chi^2_{%s}$: %0.2f  " % (key, chi2_dict[key])
+    plt.suptitle(plotstr, fontsize=18)
+
+

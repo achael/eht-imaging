@@ -3017,21 +3017,23 @@ def chisqdata_logcamp_nfft(Obsdata, Prior,pol='I', **kwargs):
 def plot_i(im, Prior, nit, chi2_dict, **kwargs):
     """Plot the total intensity image at each iteration
     """
-    imarr = im.reshape(Prior.ydim,Prior.xdim)
+
     cmap = kwargs.get('cmap','afmhot')
     interpolation = kwargs.get('interpolation', 'gaussian')
     pol = kwargs.get('pol', '')
+    scale = kwargs.get('scale',None)
+    dynamic_range = kwargs.get('dynamic_range',1.e5)
+    gamma = kwargs.get('dynamic_range',.5)
 
     plt.ion()
     plt.pause(1.e-6)
     plt.clf()
 
-    scale = kwargs.get('scale',None)
-    dynamic_range = kwargs.get('dynamic_range',1.e5)
-    gamma = kwargs.get('dynamic_range',.5)
+    imarr = im.reshape(Prior.ydim,Prior.xdim)
+
     if scale=='log':
         if (imarr < 0.0).any():
-            #print('clipping values less than 0')
+            print('clipping values less than 0')
             imarr[imarr<0.0] = 0.0
         imarr = np.log(imarr + np.max(imarr)/dynamic_range)
         #unit = 'log(' + cbar_unit[0] + ' per ' + cbar_unit[1] + ')'
