@@ -2121,7 +2121,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, 
                       label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, beamparams=False):
+                      export_pdf="", show=True, beamparams=False, cbar_orientation="vertical"):
 
         """Display the image.
 
@@ -2272,7 +2272,7 @@ class Image(object):
                 plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1) 
 
             if has_cbar:
-                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
+                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
 
@@ -2411,7 +2411,7 @@ class Image(object):
                 plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
 
             if has_cbar:
-                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
+                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
             if has_title: 
