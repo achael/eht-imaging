@@ -586,21 +586,27 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
         # D Terms
         dR = dL = 0.0
+        
         if not dcal:
             dR = tarr[i]['dr']
             dL = tarr[i]['dl']
 
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
+        fr_angle_D = np.zeros(len(times)) # This is for when field rotation is corrected but not leakage
         if not frcal:
             # Total Angle (Radian)
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
+        else:
+            if not dcal:
+                # If the field rotation angle has been removed but leakage hasn't, we still need to rotate the leakage terms appropriately (by *twice* the field rotation angle)
+                fr_angle_D = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
 
         # Assemble the Jones Matrices and save to dictionary
         pref = 1.0/(gainL*gainR*(1.0 - dL*dR))
         j_matrices_inv = {times[j]: pref[j]*np.array([
-                                     [np.exp(1j*fr_angle[j])*gainL[j], -np.exp(1j*fr_angle[j])*dR*gainR[j]],
-                                     [-np.exp(-1j*fr_angle[j])*dL*gainL[j], np.exp(-1j*fr_angle[j])*gainR[j]]
+                                     [ np.exp( 1j*fr_angle[j])*gainL[j],   -np.exp( 1j*(fr_angle[j] + 2*fr_angle_D[j]))*dR*gainR[j]],
+                                     [-np.exp(-1j*(fr_angle[j] + 2*fr_angle_D[j]))*dL*gainL[j], np.exp(-1j*fr_angle[j])*gainR[j]]
                                      ]) for j in range(len(times))
                          }
 
@@ -648,13 +654,13 @@ def add_jones_and_noise(obs, add_th_noise=True,
     obsdata = copy.copy(obs_circ.data)
 
     times = obsdata['time']
-    t1 = obsdata['t1']
-    t2 = obsdata['t2']
+    t1    = obsdata['t1']
+    t2    = obsdata['t2']
     tints = obsdata['tint']
-    rr = obsdata['rrvis']
-    ll = obsdata['llvis']
-    rl = obsdata['rlvis']
-    lr = obsdata['lrvis']
+    rr    = obsdata['rrvis']
+    ll    = obsdata['llvis']
+    rl    = obsdata['rlvis']
+    lr    = obsdata['lrvis']
 
     # Recompute the noise std. deviations from the SEFDs
     if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <=0):
@@ -720,7 +726,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
     # Return observation data
     return obsdata_back
 
-def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
+def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=True):
     """Apply inverse jones matrices to an observation
 
        Args:
@@ -733,7 +739,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
            (np.array): an observation data array
     """
 
-    print("Applying a priori calibration with estimated Jones matrices . . . ")
+    if verbose: print("Applying a priori calibration with estimated Jones matrices . . . ")
     # Build Inverse Jones Matrices
     jm_dict = make_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
@@ -756,8 +762,8 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
     # Recompute the noise std. deviations from the SEFDs
     if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <=0):
-        print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
-        print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
+        if verbose: print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
+        if verbose: print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
         sig_rr = obsdata['rrsigma']
         sig_ll = obsdata['llsigma']
         sig_rl = obsdata['rlsigma']
@@ -772,13 +778,13 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal:
-        print("   Applying opacity corrections: opacitycal-->True")
+        if verbose: print("   Applying opacity corrections: opacitycal-->True")
         opacitycal=True
     if not dcal:
-        print("   Applying D Term corrections: dcal-->True")
+        if verbose: print("   Applying D Term corrections: dcal-->True")
         dcal=True
     if not frcal:
-        print("   Applying Field Rotation corrections: frcal-->True")
+        if verbose: print("   Applying Field Rotation corrections: frcal-->True")
         frcal=True
     #print "------------------------------------------------------------------------------------------------------------------------"
 
