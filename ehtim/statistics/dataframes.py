@@ -175,7 +175,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             #round datetime and time to the begining of the bucket and add half of a bucket time
             half_bucket = dt/2.
             vis_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x) + half_bucket), vis_avg['round_time']))
-            vis_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., vis_avg['datetime']))
+            vis_avg['time']  = list(map(lambda x: (Time(x).mjd-obs.mjd)*24., vis_avg['datetime']))
         else:
             #drop values that couldn't be matched to any scan
             vis_avg.drop(list(vis_avg[vis_avg.scan<0].index.values),inplace=True)
@@ -272,7 +272,7 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
             #round datetime and time to the begining of the bucket and add half of a bucket time
             half_bucket = dt/2.
             vis_avg['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x) + half_bucket), vis_avg['round_time']))
-            vis_avg['time']  = list(map(lambda x: (Time(x).mjd-np.floor(Time(x).mjd))*24., vis_avg['datetime']))
+            vis_avg['time']  = list(map(lambda x: (Time(x).mjd-obs.mjd)*24., vis_avg['datetime']))
         else:
             #drop values that couldn't be matched to any scan
             vis_avg.drop(list(vis_avg[vis_avg.scan<0].index.values),inplace=True)
