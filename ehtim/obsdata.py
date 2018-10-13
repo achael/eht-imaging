@@ -812,7 +812,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', mask=[],
+    def chisq(self, im, dtype='vis', pol='I', mask=[],
               debias=True, systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False,
               ttype='nfft',fft_pad_factor=2):
 
@@ -820,7 +820,8 @@ class Obsdata(object):
 
            Args:
                 im (Image): image to test chi^2
-                dtype (str): data type of chi^2
+                dtype (str): data type of chi^2 (e.g., 'vis', 'amp', 'bs', 'cphase')
+                pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec to screen out pixels in chi^2 computation
 
                 debias (bool): if True then apply debiasing to amplitudes/closure amplitudes
@@ -837,11 +838,15 @@ class Obsdata(object):
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype,
+        if pol not in im._imdict.keys():
+            raise Exception(pol + ' is not in the current image. Consider changing the polarization basis of the image.')
+
+        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype,
                                         fft_pad_factor=fft_pad_factor, maxset=maxset,
                                         systematic_cphase_noise=systematic_cphase_noise,
                                         systematic_noise=systematic_noise)
-        chisq = iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+
+        chisq = iu.chisq(im._imdict[pol], A, data, sigma, dtype, ttype=ttype, mask=mask)
 
         return chisq
 
