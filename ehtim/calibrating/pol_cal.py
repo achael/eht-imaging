@@ -30,7 +30,7 @@ MAXIT=50
 #Polarimetric Calibration
 ###################################################################################################################################
 
-def leakage_cal(obs, im, sites=[], leakage_tol=.1, 
+def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis',
              ttype='direct', fft_pad_factor=2, show_solution=True):
 
     """Polarimetric calibration (detects and removes polarimetric leakage, based on consistency with a given image)
@@ -41,7 +41,8 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1,
            sites (list): list of sites to include in the polarimetric calibration. empty list calibrates all sites
 
            leakage_tol (float): leakage values that exceed this value will be disfavored by the prior
-
+           pol_fit (list): list of visibilities to use; e.g., ['RL','LR'] or ['RR','LL','RL','LR']
+           dtype (str): Type of data to fit ('vis' for complex visibilities; 'amp' for just the amplitudes)
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
@@ -54,6 +55,9 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1,
 
     # Do everything in a circular basis
     im_circ = im.switch_polrep('circ')        
+
+    if dtype not in ['vis','amp']:
+        raise Exception('dtype must be vis or amp')
 
     # Create the obsdata object for searching 
     obs_test = obs.copy()
@@ -76,17 +80,18 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1,
     sites = [s for s in sites if s in allsites]
     site_index = [list(obs.tarr['site']).index(s) for s in sites]
 
-    (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype='vis', pol='RR', ttype=ttype, fft_pad_factor=fft_pad_factor)
-    (dataLL, sigmaLL, ALL) = iu.chisqdata(obs, im_circ, mask=mask, dtype='vis', pol='LL', ttype=ttype, fft_pad_factor=fft_pad_factor)
-    (dataRL, sigmaRL, ARL) = iu.chisqdata(obs, im_circ, mask=mask, dtype='vis', pol='RL', ttype=ttype, fft_pad_factor=fft_pad_factor)
-    (dataLR, sigmaLR, ALR) = iu.chisqdata(obs, im_circ, mask=mask, dtype='vis', pol='LR', ttype=ttype, fft_pad_factor=fft_pad_factor)
+    (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RR', ttype=ttype, fft_pad_factor=fft_pad_factor)
+    (dataLL, sigmaLL, ALL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LL', ttype=ttype, fft_pad_factor=fft_pad_factor)
+    (dataRL, sigmaRL, ARL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RL', ttype=ttype, fft_pad_factor=fft_pad_factor)
+    (dataLR, sigmaLR, ALR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LR', ttype=ttype, fft_pad_factor=fft_pad_factor)
 
     def chisq_total(data, im):
-        chisq_RR = iu.chisq(im.rrvec, ARR, data['rrvis'], data['rrsigma'], dtype='vis', ttype=ttype, mask=mask)
-        chisq_LL = iu.chisq(im.llvec, ALL, data['llvis'], data['llsigma'], dtype='vis', ttype=ttype, mask=mask)
-        chisq_RL = iu.chisq(im.rlvec, ARL, data['rlvis'], data['rlsigma'], dtype='vis', ttype=ttype, mask=mask)
-        chisq_LR = iu.chisq(im.lrvec, ALR, data['lrvis'], data['lrsigma'], dtype='vis', ttype=ttype, mask=mask)
-        return (chisq_RR + chisq_LL + chisq_RL + chisq_LR)/4.0
+        chisq_RR = chisq_LL = chisq_RL = chisq_LR = 0.0
+        if 'RR' in pol_fit: chisq_RR = iu.chisq(im.rrvec, ARR, obs_test.unpack_dat(data,['rr' + dtype])['rr' + dtype], data['rrsigma'], dtype=dtype, ttype=ttype, mask=mask)
+        if 'LL' in pol_fit: chisq_LL = iu.chisq(im.llvec, ALL, obs_test.unpack_dat(data,['ll' + dtype])['ll' + dtype], data['llsigma'], dtype=dtype, ttype=ttype, mask=mask)
+        if 'RL' in pol_fit: chisq_RL = iu.chisq(im.rlvec, ARL, obs_test.unpack_dat(data,['rl' + dtype])['rl' + dtype], data['rlsigma'], dtype=dtype, ttype=ttype, mask=mask)
+        if 'LR' in pol_fit: chisq_LR = iu.chisq(im.lrvec, ALR, obs_test.unpack_dat(data,['lr' + dtype])['lr' + dtype], data['lrsigma'], dtype=dtype, ttype=ttype, mask=mask)
+        return (chisq_RR + chisq_LL + chisq_RL + chisq_LR)/len(pol_fit)
 
     print("Finding leakage for sites:",sites)
 
