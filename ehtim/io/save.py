@@ -469,6 +469,16 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
         weightrl = weightrl * 0.0
         weightlr = weightlr * 0.0
 
+    # Replace nans by zeros (including zero weights)
+    rr = np.nan_to_num(rr)
+    ll = np.nan_to_num(ll)
+    rl = np.nan_to_num(rl)
+    lr = np.nan_to_num(lr)
+    weightrr = np.nan_to_num(weightrr)
+    weightll = np.nan_to_num(weightll)
+    weightrl = np.nan_to_num(weightrl)
+    weightlr = np.nan_to_num(weightlr)
+
     # Data array
     outdat = np.zeros((ndat, 1, 1, 1, 1, 4, 3))
     outdat[:,0,0,0,0,0,0] = np.real(rr)
@@ -609,7 +619,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     comp_fac = 3600*24*100 # compare to 100th of a second
     scan_arr = obs.scans
     print ('Building NX table')
-    if (scan_arr is None):
+    if (scan_arr is None or len(scan_arr) == 0):
         print ("No NX table in saved uvfits")
     else:
         try: 
