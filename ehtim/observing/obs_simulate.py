@@ -492,6 +492,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
         fr_angle = np.zeros(len(times))
         if not frcal:
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
+        # MDJ: This case handling is not correct. See make_jones_inverse. Leakage rotates relative to source polarization even if the field rotation angles are corrected.
 
         # Assemble the Jones Matrices and save to dictionary
         # TODO: indexed by utc or sideral time?
