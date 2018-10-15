@@ -215,7 +215,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             tkey[cluster[0]] = -1
 
     clusterkey = clusterdict
-
+    
     # restrict solved cluster visibilities to ones present in the scan (this is much faster than allowing many unconstrained variables
     clusterbls_scan = [set([clusterkey[row['t1']], clusterkey[row['t2']]]) for row in scan if len(set([clusterkey[row['t1']], clusterkey[row['t2']]]))==2]
     # now delete duplicates
@@ -242,6 +242,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
         clusternum1 = clusterkey[row['t1']]
         clusternum2 = clusterkey[row['t2']]
+
         if clusternum1 == clusternum2: # sites are in the same cluster
             scan_keys.append(-1)
         else: #sites are not in the same cluster
@@ -267,7 +268,6 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             vis = np.abs(vis)
 
     sigma_inv = 1.0/np.sqrt(sigma**2+ (pad_amp*np.abs(vis))**2)
-
     # initial guesses for parameters
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
@@ -306,7 +306,6 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         v_scan = v[scan_keys]
         g1 = g[g1_keys]
         g2 = g[g2_keys]
-
         if pol == 'RRLL':
             v_scan = np.concatenate([v_scan,v_scan])
             g1 = np.concatenate([g1,g1])
@@ -317,7 +316,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         else:
             verr = vis - g1*g2.conj() * v_scan
 
-        nan_mask = np.array([not np.isnan(v) for v in verr])*np.array([not np.isnan(v) for v in sigma_inv])
+        nan_mask = np.array([not np.isnan(viter) for viter in verr])*np.array([not np.isnan(viter) for viter in sigma_inv])
         verr = verr[nan_mask]   
 
         chisq = np.sum((verr.real * sigma_inv[nan_mask])**2) + np.sum((verr.imag * sigma_inv[nan_mask])**2)
@@ -326,13 +325,12 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         g_fracerr = gain_tol 
         chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
         chisq_v = np.sum((np.abs(v)/zbl)**4)
-
         return chisq + chisq_g + chisq_v
     
     if np.max(g1_keys) > -1 or np.max(g2_keys) > -1: 
         # run the minimizer to get a solution (but only run if there's at least one gain to fit)
         optdict = {'maxiter' : MAXIT} # minimizer params
-        res = opt.minimize(errfunc, gvpar_guess, method='CG', options=optdict)
+        res = opt.minimize(errfunc, gvpar_guess, method='Nelder-Mead', options=optdict)
 
         # get solution
         g_fit = res.x[0:2*n_gains].view(np.complex128)
