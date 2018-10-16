@@ -512,8 +512,8 @@ class Image(object):
         if len(imvec):
             xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
             ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
-            x0 = np.abs(np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*imvec))/np.abs(np.sum(imvec))
-            y0 = np.abs(np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*imvec))/np.abs(np.sum(imvec))
+            x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*imvec)/np.sum(imvec)
+            y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*imvec)/np.sum(imvec)
             centroid = np.array([x0, y0])
         else: 
             raise Exception("No %s image found!"  % pol)
