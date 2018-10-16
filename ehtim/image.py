@@ -497,7 +497,7 @@ class Image(object):
         """Compute the location of the image centroid (corresponding to the polarization pol)
 
            Args:
-                pol (str): The polarzation for which to find the image centroid
+                pol (str): The polarization for which to find the image centroid
 
            Returns:
                (np.array): centroid positions (x0,y0) in radians
@@ -512,8 +512,8 @@ class Image(object):
         if len(imvec):
             xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
             ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
-            x0 = np.abs(np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*imvec))/np.abs(np.sum(imvec))
-            y0 = np.abs(np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*imvec))/np.abs(np.sum(imvec))
+            x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*imvec)/np.abs(np.sum(imvec))
+            y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*imvec)/np.abs(np.sum(imvec))
             centroid = np.array([x0, y0])
         else: 
             raise Exception("No %s image found!"  % pol)
@@ -1435,6 +1435,7 @@ class Image(object):
     def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+                           stabilize_scan_phase=False, stabilize_scan_amp=False, 
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
@@ -1454,6 +1455,8 @@ class Image(object):
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
@@ -1476,6 +1479,8 @@ class Image(object):
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, dcal=dcal, frcal=frcal,
+                                                 stabilize_scan_phase=stabilize_scan_phase,
+                                                 stabilize_scan_amp=stabilize_scan_amp,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dtermp=dtermp,dterm_offset=dterm_offset)
 
@@ -1516,6 +1521,7 @@ class Image(object):
                       ttype='nfft', fft_pad_factor=2,
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+                      stabilize_scan_phase=False, stabilize_scan_amp=False, 
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
@@ -1548,6 +1554,8 @@ class Image(object):
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
@@ -1577,6 +1585,8 @@ class Image(object):
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, 
                                      sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
+                                     stabilize_scan_phase=stabilize_scan_phase,
+                                     stabilize_scan_amp=stabilize_scan_amp,
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
                                      dtermp=dtermp, dterm_offset=dterm_offset,
@@ -1588,6 +1598,7 @@ class Image(object):
                           polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                          stabilize_scan_phase=False, stabilize_scan_amp=False, 
                           jones=False, inv_jones=False,
                           tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                           dterm_offset=DTERMPDEF, dtermp=DTERMPDEF):
@@ -1612,6 +1623,8 @@ class Image(object):
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
@@ -1661,6 +1674,8 @@ class Image(object):
                                        polrep_obs=polrep_obs,
                                        ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                        opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
+                                       stabilize_scan_phase=stabilize_scan_phase,
+                                       stabilize_scan_amp=stabilize_scan_amp,
                                        taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,dterm_offset=dterm_offset,
                                        jones=jones, inv_jones=inv_jones)
 

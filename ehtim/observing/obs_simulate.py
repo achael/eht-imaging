@@ -360,7 +360,8 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
 # Noise + miscalibration funcitons
 ##################################################################################################
 
-def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
+               stabilize_scan_phase=False, stabilize_scan_amp=False, 
                taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
                seed=False):
@@ -374,6 +375,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
            phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
+           stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+           stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
@@ -416,6 +419,26 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 if site not in sites_in:
                     taudict[site] = np.append(taudict[site], 0.0)
 
+    # Now define a list that accounts for periods where the phase or amplitude errors 
+    # are stable (e.g., over scans if stabilize_scan_phase==True)
+    times_stable_phase = times.copy()
+    times_stable_amp = times.copy()
+    times_stable = times.copy()
+    if stabilize_scan_phase==True or stabilize_scan_amp==True:
+        scans = obs.scans
+        if len(scans) == 0:
+            obs_scans = obs.copy()
+            obs_scans.add_scans()
+            scans = obs_scans.scans
+        for j in range(len(times_stable)):
+            for scan in scans:
+                if scan[0] <= times_stable[j] and scan[1] >= times_stable[j]:
+                    times_stable[j] = scan[0]
+                    break
+
+    if stabilize_scan_phase==True: times_stable_phase = times_stable.copy()
+    if stabilize_scan_amp==True: times_stable_amp = times_stable.copy()
+
     # Compute Sidereal Times
     if obs.timetype=='GMST':
         times_sid=times
@@ -451,10 +474,10 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
             gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainR',str(goff),seed))*
                                              (1.0 + gainp*hashrandn(site,'gainR',time,str(gainp),seed))
-                                     for time in times])))
+                                     for time in times_stable_amp])))
             gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainL',str(goff),seed))*
                                              (1.0 + gainp*hashrandn(site,'gainL',time,str(gainp),seed))
-                                     for time in times])))
+                                     for time in times_stable_amp])))
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
@@ -466,7 +489,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
         # Atmospheric Phase
         if not phasecal:
-            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, seed) for time in times])
+            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, seed) for time in times_stable_phase])
             gainR = gainR * np.exp(1j*phase)
             gainL = gainL * np.exp(1j*phase)
 
@@ -617,6 +640,7 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
 def add_jones_and_noise(obs, add_th_noise=True,
                         opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+                        stabilize_scan_phase=False, stabilize_scan_amp=False, 
                         taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
                         seed=False):
 
@@ -630,6 +654,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
            phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
+           stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+           stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
@@ -647,6 +673,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
     # Build Jones Matrices
     jm_dict = make_jones(obs,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,
+                         stabilize_scan_phase=stabilize_scan_phase,stabilize_scan_amp=stabilize_scan_amp,
                          gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dterm_offset=dterm_offset,
                          seed=seed)
 
