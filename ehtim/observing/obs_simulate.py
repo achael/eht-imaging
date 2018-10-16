@@ -426,7 +426,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
     times_stable = times.copy()
     if stabilize_scan_phase==True or stabilize_scan_amp==True:
         scans = obs.scans
-        if len(scans) == 0:
+        if scans == None or len(scans) == 0: 
             obs_scans = obs.copy()
             obs_scans.add_scans()
             scans = obs_scans.scans
