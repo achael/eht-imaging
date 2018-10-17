@@ -1430,20 +1430,6 @@ class Image(object):
                                              ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
         
-        if obs.polrep=='stokes':  
-            obs_no_noise.data['sigma']  = (1./obs.unpack('snr')['snr']) * obs_no_noise.unpack('amp')['amp']
-            if not(data[1] is None):
-                obs_no_noise.data['qsigma'] = (1./obs.unpack('qsnr')['qsnr']) * obs_no_noise.unpack('amp')['amp']
-                obs_no_noise.data['usigma'] = (1./obs.unpack('usnr')['usnr']) * obs_no_noise.unpack('amp')['amp']
-                obs_no_noise.data['vsigma'] = (1./obs.unpack('vsnr')['vsnr']) * obs_no_noise.unpack('amp')['amp']
-        elif obs.polrep=='circ':                               
-            obs_no_noise.data['rrsigma'] = (1./obs.unpack('rrsnr')['rrsnr']) * obs_no_noise.unpack('rramp')['rramp']
-            if not(data[1] is None):
-                obs_no_noise.data['llsigma'] = (1./obs.unpack('llsnr')['llsnr']) * obs_no_noise.unpack('llamp')['llamp']
-            if not(data[2] is None):
-                obs_no_noise.data['rlsigma'] = (1./obs.unpack('rlsnr')['rlsnr']) * obs_no_noise.unpack('rlamp')['rlamp']
-                obs_no_noise.data['lrsigma'] = (1./obs.unpack('lrsnr')['lrsnr']) * obs_no_noise.unpack('lramp')['lramp']
-
         return obs_no_noise
 
     def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
