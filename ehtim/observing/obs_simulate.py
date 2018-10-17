@@ -380,8 +380,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-           dtermp (float): the fractional std. dev. of the random error on the D-terms
-           dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+           dtermp (float): the fractional std. dev. of the random multiplicative error on the D-terms
+           dterm_offset (float): the base std. dev. of random additive error at all sites, or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
 
        Returns:
@@ -472,11 +472,12 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             else:
                 goff = gain_offset
 
+            # Note: R/L gain ratio should be independent of time for each site
             gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainR',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gainR',time,str(gainp),seed))
+                                             (1.0 + gainp*hashrandn(site,'gain',time,str(gainp),seed))
                                      for time in times_stable_amp])))
             gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainL',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gainL',time,str(gainp),seed))
+                                             (1.0 + gainp*hashrandn(site,'gain',time,str(gainp),seed))
                                      for time in times_stable_amp])))
 
         # Opacity attenuation of amplitude gain
@@ -507,21 +508,23 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             dR += doff * (hashrandn(site, 'dRre', seed) + 1j * hashrandn(site, 'dRim', seed))
             dL += doff * (hashrandn(site, 'dLre', seed) + 1j * hashrandn(site, 'dLim', seed))
 
-            dR *= (1 + dtermp * (hashrandn(site, 'dRre_resid', seed) + 1j * hashrandn(site, 'dRim_resid', seed)))
-            dL *= (1 + dtermp * (hashrandn(site, 'dLre_resid', seed) + 1j * hashrandn(site, 'dLim_resid', seed)))
+            dR *= (1. + dtermp * (hashrandn(site, 'dRre_resid', seed) + 1j * hashrandn(site, 'dRim_resid', seed)))
+            dL *= (1. + dtermp * (hashrandn(site, 'dLre_resid', seed) + 1j * hashrandn(site, 'dLim_resid', seed)))
 
-        #print ('dterms:', np.abs(dR),np.abs(dL))
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
+        fr_angle_D = np.zeros(len(times))
         if not frcal:
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
-        # MDJ: This case handling is not correct. See make_jones_inverse. Leakage rotates relative to source polarization even if the field rotation angles are corrected.
+        elif frcal and not dcal:
+            # If field rotation has been corrected, but leakage has not been corrected, the leakage needs to rotate doubly
+            fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
 
         # Assemble the Jones Matrices and save to dictionary
         # TODO: indexed by utc or sideral time?
         j_matrices = {times[j]: np.array([
-                                [np.exp(-1j*fr_angle[j])*gainR[j], np.exp(1j*fr_angle[j])*dR*gainR[j]],
-                                [np.exp(-1j*fr_angle[j])*dL*gainL[j], np.exp(1j*fr_angle[j])*gainL[j]]
+                                [np.exp(-1j*fr_angle[j])*gainR[j], np.exp(1j*(fr_angle[j]+fr_angle_D[j]))*dR*gainR[j]],
+                                [np.exp(-1j*(fr_angle[j]+fr_angle_D[j]))*dL*gainL[j], np.exp(1j*fr_angle[j])*gainL[j]]
                                 ])
                                 for j in range(len(times))
                      }
@@ -624,13 +627,13 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
         else:
             if not dcal:
                 # If the field rotation angle has been removed but leakage hasn't, we still need to rotate the leakage terms appropriately (by *twice* the field rotation angle)
-                fr_angle_D = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
+                fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
 
         # Assemble the Jones Matrices and save to dictionary
         pref = 1.0/(gainL*gainR*(1.0 - dL*dR))
         j_matrices_inv = {times[j]: pref[j]*np.array([
-                                     [ np.exp( 1j*fr_angle[j])*gainL[j],   -np.exp( 1j*(fr_angle[j] + 2*fr_angle_D[j]))*dR*gainR[j]],
-                                     [-np.exp(-1j*(fr_angle[j] + 2*fr_angle_D[j]))*dL*gainL[j], np.exp(-1j*fr_angle[j])*gainR[j]]
+                                     [ np.exp( 1j*fr_angle[j])*gainL[j],   -np.exp( 1j*(fr_angle[j] + fr_angle_D[j]))*dR*gainR[j]],
+                                     [-np.exp(-1j*(fr_angle[j] + fr_angle_D[j]))*dL*gainL[j], np.exp(-1j*fr_angle[j])*gainR[j]]
                                      ]) for j in range(len(times))
                          }
 
@@ -659,8 +662,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-           dtermp (float): the fractional std. dev. of the random error on the D-terms
-           dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+           dtermp (float): the fractional std. dev. of the random multiplicative error on the D-terms
+           dterm_offset (float): the base std. dev. of random additive error at all sites, or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
 
 
@@ -718,7 +721,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
         print("Adding thermal noise to data . . . ")
     #print "------------------------------------------------------------------------------------------------------------------------"
 
-    # Corrupt each IQUV visibilty set with the jones matrices and add noise
+    # Corrupt each IQUV visibility set with the jones matrices and add noise
     for i in range(len(times)):
         # Form the visibility correlation matrix
         corr_matrix = np.array([[rr[i], rl[i]], [lr[i], ll[i]]])
@@ -759,7 +762,6 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 
        Args:
            obs (Obsdata): the original observation
-           add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
 
@@ -831,7 +833,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
         sig_rl_matrix = np.array([[0.0, sig_rl[i]], [0.0, 0.0]])
         sig_lr_matrix = np.array([[0.0, 0.0], [sig_lr[i], 0.0]])
 
-        # Apply the Jones Matrices to the visibility correlation matrix and sigma matrices
+        # Apply the inverse Jones Matrices to the visibility correlation matrix and sigma matrices
         corr_matrix_new = np.dot(inv_j1, np.dot(corr_matrix, np.conjugate(inv_j2.T)))
 
         sig_rr_matrix_new = np.dot(inv_j1, np.dot(sig_rr_matrix, np.conjugate(inv_j2.T)))
