@@ -1439,7 +1439,7 @@ class Image(object):
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
-                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF):
+                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, seed=False):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -1467,13 +1467,17 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-
+               seed (int): seeds the random component of the noise terms. do not set to 0!
+                
            Returns:
                (Obsdata): an observation object
         """
 
+        if seed!=False:
+            np.random.seed(seed=seed)
+            
         obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
-
+        
         # Jones Matrix Corruption & Calibration
         if jones:
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
@@ -1482,7 +1486,7 @@ class Image(object):
                                                  stabilize_scan_phase=stabilize_scan_phase,
                                                  stabilize_scan_amp=stabilize_scan_amp,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                                 dtermp=dtermp,dterm_offset=dterm_offset)
+                                                 dtermp=dtermp,dterm_offset=dterm_offset, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1505,7 +1509,7 @@ class Image(object):
         else:
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
-                                       gainp=gainp, taup=taup, gain_offset=gain_offset)
+                                       gainp=gainp, taup=taup, gain_offset=gain_offset, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1525,7 +1529,7 @@ class Image(object):
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
-                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF):
+                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, seed=False):
 
         """Generate baselines from an array object and observe the image.
 
@@ -1565,7 +1569,8 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-
+               seed (int): seeds the random component of noise added. do not set to 0!
+               
            Returns:
                (Obsdata): an observation object
         """
@@ -1590,7 +1595,7 @@ class Image(object):
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
                                      dtermp=dtermp, dterm_offset=dterm_offset,
-                                     jones=jones, inv_jones=inv_jones)
+                                     jones=jones, inv_jones=inv_jones, seed=seed)
 
         return obs
 
