@@ -474,10 +474,10 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
             # Note: R/L gain ratio should be independent of time for each site
             gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainR',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gain',time,str(gainp),seed))
+                                             (1.0 + gainp*hashrandn(site,'gain',str(time),str(gainp),seed))
                                      for time in times_stable_amp])))
             gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainL',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gain',time,str(gainp),seed))
+                                             (1.0 + gainp*hashrandn(site,'gain',str(time),str(gainp),seed))
                                      for time in times_stable_amp])))
 
         # Opacity attenuation of amplitude gain
