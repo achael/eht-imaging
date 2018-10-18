@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import itertools as it
 import sys
+import copy
 
 import ehtim.image
 import ehtim.io.save
@@ -187,16 +188,18 @@ class Obsdata(object):
                (Obsdata): a copy of the Obsdata object.
         """
 
-        newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, polrep=self.polrep,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                         timetype=self.timetype, scantable=self.scans)
+        newobs = copy.deepcopy(self)
+        
+        #newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, polrep=self.polrep,
+        #                 ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+        #                 timetype=self.timetype, scantable=self.scans)
 
-        # copy over any precomputed tables
-        newobs.amp = self.amp
-        newobs.bispec = self.bispec
-        newobs.cphase = self.cphase
-        newobs.camp = self.camp
-        newobs.logcamp = self.logcamp
+        ## copy over any precomputed tables
+        #newobs.amp = self.amp
+        #newobs.bispec = self.bispec
+        #newobs.cphase = self.cphase
+        #newobs.camp = self.camp
+        #newobs.logcamp = self.logcamp
 
         return newobs
 
