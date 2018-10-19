@@ -388,16 +388,17 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
            (dict): a nested dictionary of matrices indexed by the site, then by the time
     """
 
-    tlist = obs.tlist()
-    tarr = obs.tarr
-    ra = obs.ra
-    dec = obs.dec
+    obs_tmp = obs.copy()
+    tlist = obs_tmp.tlist()
+    tarr = obs_tmp.tarr
+    ra = obs_tmp.ra
+    dec = obs_tmp.dec
     sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
     tproc = str(ttime.time())
 
     # Create a dictionary of taus and a list of unique times
-    nsites = len(obs.tarr['site'])
-    taudict = {site : np.array([]) for site in obs.tarr['site']}
+    nsites = len(obs_tmp.tarr['site'])
+    taudict = {site : np.array([]) for site in obs_tmp.tarr['site']}
     times = np.array([])
     for scan in tlist:
         time = scan['time'][0]
@@ -415,7 +416,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 taudict[bl['t2']] = np.append(taudict[bl['t2']], bl['tau2'])
                 sites_in = np.append(sites_in, bl['t2'])
         if len(sites_in) < nsites:
-            for site in obs.tarr['site']:
+            for site in obs_tmp.tarr['site']:
                 if site not in sites_in:
                     taudict[site] = np.append(taudict[site], 0.0)
 
@@ -425,7 +426,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
     times_stable_amp = times.copy()
     times_stable = times.copy()
     if stabilize_scan_phase==True or stabilize_scan_amp==True:
-        scans = obs.scans
+        scans = obs_tmp.scans
         if scans == None or len(scans) == 0: 
             obs_scans = obs.copy()
             obs_scans.add_scans()
@@ -471,13 +472,17 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 goff = gain_offset[site]
             else:
                 goff = gain_offset
+            if type(gainp) == dict:
+                gain_mult = gainp[site]
+            else:
+                gain_mult = gainp
 
             # Note: R/L gain ratio should be independent of time for each site
             gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainR',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gain',str(time),str(gainp),seed))
+                                             (1.0 + gain_mult*hashrandn(site,'gain',str(time),str(gain_mult),seed))
                                      for time in times_stable_amp])))
             gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainL',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gain',str(time),str(gainp),seed))
+                                             (1.0 + gain_mult*hashrandn(site,'gain',str(time),str(gain_mult),seed))
                                      for time in times_stable_amp])))
 
         # Opacity attenuation of amplitude gain
@@ -957,10 +962,16 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         else:
             goff1 = [gain_offset for i in range(len(time))]
             goff2 = [gain_offset for i in range(len(time))]
+        if type(gainp) == dict:
+            gain_mult_1 = [gainp[sites[i,0]] for i in range(len(time))]
+            gain_mult_2 = [gainp[sites[i,1]] for i in range(len(time))]
+        else:
+            gain_mult_1 = [gainp for i in range(len(time))]
+            gain_mult_2 = [gainp for i in range(len(time))]
 
-        gain1 = np.abs(np.array([(1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gainp * hashrandn(sites[i,0], 'gain', time[i], seed))
+        gain1 = np.abs(np.array([(1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gain_mult_1 * hashrandn(sites[i,0], 'gain', time[i], seed))
                                  for i in range(len(time))]))
-        gain2 = np.abs(np.array([(1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gainp * hashrandn(sites[i,1], 'gain', time[i], seed))
+        gain2 = np.abs(np.array([(1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gain_mult_2 * hashrandn(sites[i,1], 'gain', time[i], seed))
                                  for i in range(len(time))]))
         gain_true = np.sqrt(gain1 * gain2)
     else:
