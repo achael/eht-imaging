@@ -44,7 +44,7 @@ MAXIT=5000
 #Network-Calibration
 ###################################################################################################################################
 def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", minimizer_method='BFGS', pol='I',
-                pad_amp=0.,gain_tol=.2, 
+                pad_amp=0.,gain_tol=.2, solution_interval=0.0, scan_solutions=False, 
                 caltable=False, processes=-1,show_solution=False, debias=True, msgtype='bar'):
 
     """Network-calibrate a dataset with zero baseline constraints.
@@ -60,6 +60,9 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
+           solution_interval (float): solution interval in seconds; one gain is derived for each interval.
+                                      If 0.0, a solution is determined for each unique time in the observation.
+           scan_solutions (bool): If True, determine one gain per site per scan (supersedes solution_interval)
 
            debias (bool): If True, debias the amplitudes
            caltable (bool): if True, returns a Caltable instead of an Obsdata 
@@ -94,7 +97,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
     cluster_data = make_cluster_data(obs, zbl_uvdist_max)
 
     # get scans
-    scans     = obs.tlist()
+    scans     = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
     scans_cal = copy.copy(scans)
 
     # Make the pool for parallel processing
@@ -387,6 +390,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 #                lscale = g_fit[site_key]**-1
 #                rscale = 1
 
+            # Note: we may want to give two entries for the start/stop times when a non-zero solution interval is used
             caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
 
         out = caldict
