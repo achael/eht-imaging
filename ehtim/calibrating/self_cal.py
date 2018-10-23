@@ -102,16 +102,12 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
     obs_clean = im.observe_same_nonoise(obs, ttype=ttype, fft_pad_factor=fft_pad_factor)
     V = obs_clean.data[vis_poldict[pol]]
 
-    # Partition the list of model visibilities into scans
-    #from itertools import islice
-    #it = iter(V)
-    #scan_lengths = [len(o) for o in obs.tlist()]
-    #V_scans      = [list(islice(it, 0, i)) for i in scan_lengths]
-    V_scans      = [o['llvis'] for o in obs.tlist(scan_gather=True)]
-
-    # get scans
+    # Partition the list of observed visibilities into scans
     scans     = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
     scans_cal = copy.copy(scans)
+
+    # Partition the list of model visibilities into scans
+    V_scans      = [o[vis_poldict[pol]] for o in obs_clean.tlist(t_gather=solution_interval, scan_gather=scan_solutions)]
 
     # Make the pool for parallel processing
     if processes > 0:
@@ -202,6 +198,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         sites = list(set(scan['t1']).union(set(scan['t2'])))
 
     if len(V_scan) < 1:
+        # This is not correct. Need to update to use polarization dictionary
         uv = np.hstack((scan['u'].reshape(-1,1), scan['v'].reshape(-1,1)))
         A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V_scan = np.dot(A, im.imvec)
