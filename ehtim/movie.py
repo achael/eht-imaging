@@ -765,6 +765,7 @@ class Movie(object):
     def observe_same(self, obs_in, ttype='direct', fft_pad_factor=2,  repeat=False,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
+                           stabilize_scan_phase=False, stabilize_scan_amp=False, 
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gainp=GAINPDEF, gain_offset=GAINPDEF, 
@@ -784,6 +785,8 @@ class Movie(object):
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
@@ -810,6 +813,8 @@ class Movie(object):
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, dcal=dcal, frcal=frcal,
+                                                 stabilize_scan_phase=stabilize_scan_phase,
+                                                 stabilize_scan_amp=stabilize_scan_amp,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dtermp=dtermp,dterm_offset=dterm_offset)
 
@@ -849,6 +854,7 @@ class Movie(object):
                       ttype='nfft', fft_pad_factor=2, 
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                      stabilize_scan_phase=False, stabilize_scan_amp=False, 
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
@@ -882,6 +888,8 @@ class Movie(object):
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
@@ -912,6 +920,7 @@ class Movie(object):
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat, 
                                      sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
+                                     stabilize_scan_phase=stabilize_scan_phase, stabilize_scan_amp=stabilize_scan_amp, 
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
                                      dtermp=dtermp, dterm_offset=dterm_offset,
@@ -924,6 +933,7 @@ class Movie(object):
                           polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                          stabilize_scan_phase=False, stabilize_scan_amp=False, 
                           jones=False, inv_jones=False,
                           tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, 
                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, fix_theta_GMST=False):
@@ -948,6 +958,8 @@ class Movie(object):
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
@@ -1016,6 +1028,7 @@ class Movie(object):
         obsout = movie.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=False,
                                     sgrscat=sgrscat, add_th_noise=add_th_noise, 
                                     opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, frcal=frcal, dcal=dcal,
+                                    stabilize_scan_phase=stabilize_scan_phase, stabilize_scan_amp=stabilize_scan_amp, 
                                     jones=jones, inv_jones=inv_jones, 
                                     tau=tau, taup=taup,
                                     gainp=gainp, gain_offset=gain_offset, 

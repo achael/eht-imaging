@@ -46,7 +46,7 @@ MAXIT=10000 # maximum number of iterations in self-cal minimizer
 #Self-Calibration
 ###################################################################################################################################
 def self_cal(obs, im, sites=[], method="both", pol='I',
-             pad_amp=0., gain_tol=.2, 
+             pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False, 
              ttype='direct', fft_pad_factor=2, caltable=False, debias=True,
              processes=-1,show_solution=False,msgtype='bar'):
     """Self-calibrate a dataset to an image.
@@ -54,13 +54,16 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
        Args:
            obs (Obsdata): The observation to be calibrated
            im (Image): the image to be calibrated  to
-           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
+           sites (list): list of sites to include in the self calibration. empty list calibrates all sites
 
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
            pol (str): which image polarization to self-calibrate visibilities to 
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
+           solution_interval (float): solution interval in seconds; one gain is derived for each interval.
+                                      If 0.0, a solution is determined for each unique time in the observation.
+           scan_solutions (bool): If True, determine one gain per site per scan (supersedes solution_interval)
 
            caltable (bool): if True, returns a Caltable instead of an Obsdata 
            processes (int): number of cores to use in multiprocessing
@@ -99,15 +102,12 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
     obs_clean = im.observe_same_nonoise(obs, ttype=ttype, fft_pad_factor=fft_pad_factor)
     V = obs_clean.data[vis_poldict[pol]]
 
-    # Partition the list of model visibilities into scans
-    from itertools import islice
-    it = iter(V)
-    scan_lengths = [len(o) for o in obs.tlist()]
-    V_scans      = [list(islice(it, 0, i)) for i in scan_lengths]
-
-    # get scans
-    scans     = obs.tlist()
+    # Partition the list of observed visibilities into scans
+    scans     = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
     scans_cal = copy.copy(scans)
+
+    # Partition the list of model visibilities into scans
+    V_scans      = [o[vis_poldict[pol]] for o in obs_clean.tlist(t_gather=solution_interval, scan_gather=scan_solutions)]
 
     # Make the pool for parallel processing
     if processes > 0:
@@ -175,7 +175,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
        Args:
            scan (np.recarray): data array of type DTPOL_STOKES or DTPOL_CIRC containing the scan visibility data
            im (Image): the image to be calibrated  to
-           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
+           sites (list): list of sites to include in the self calibration. empty list calibrates all sites
            V_scan (list) : precomputed scan visibilities
 
            polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
@@ -194,10 +194,11 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
     """
 
     if len(sites) < 2:
-        print("less than 2 stations specified in network cal: defaulting to calibrating all !")
+        print("less than 2 stations specified in self cal: defaulting to calibrating all !")
         sites = list(set(scan['t1']).union(set(scan['t2'])))
 
     if len(V_scan) < 1:
+        # This is not correct. Need to update to use polarization dictionary
         uv = np.hstack((scan['u'].reshape(-1,1), scan['v'].reshape(-1,1)))
         A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V_scan = np.dot(A, im.imvec)
@@ -298,7 +299,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
             else:
                 site_key = -1
 
-            # We will *always* set the R and L gain corrections to be equal in network calibration, to avoid breaking polarization consistency relationships
+            # We will *always* set the R and L gain corrections to be equal in self calibration, to avoid breaking polarization consistency relationships
             rscale = g_fit[site_key]**-1
             lscale = g_fit[site_key]**-1
 
@@ -316,6 +317,7 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
 #                lscale = g_fit[site_key]**-1
 #                rscale = 1
 
+            # Note: we may want to give two entries for the start/stop times when a non-zero solution interval is used
             caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
 
         out = caldict

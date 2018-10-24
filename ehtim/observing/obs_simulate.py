@@ -360,7 +360,8 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
 # Noise + miscalibration funcitons
 ##################################################################################################
 
-def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
+               stabilize_scan_phase=False, stabilize_scan_amp=False, 
                taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
                seed=False):
@@ -374,27 +375,30 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
            phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
+           stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+           stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-           dtermp (float): the fractional std. dev. of the random error on the D-terms
-           dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+           dtermp (float): the fractional std. dev. of the random multiplicative error on the D-terms
+           dterm_offset (float): the base std. dev. of random additive error at all sites, or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
 
        Returns:
            (dict): a nested dictionary of matrices indexed by the site, then by the time
     """
 
-    tlist = obs.tlist()
-    tarr = obs.tarr
-    ra = obs.ra
-    dec = obs.dec
+    obs_tmp = obs.copy()
+    tlist = obs_tmp.tlist()
+    tarr = obs_tmp.tarr
+    ra = obs_tmp.ra
+    dec = obs_tmp.dec
     sourcevec = np.array([np.cos(dec*DEGREE), 0, np.sin(dec*DEGREE)])
     tproc = str(ttime.time())
 
     # Create a dictionary of taus and a list of unique times
-    nsites = len(obs.tarr['site'])
-    taudict = {site : np.array([]) for site in obs.tarr['site']}
+    nsites = len(obs_tmp.tarr['site'])
+    taudict = {site : np.array([]) for site in obs_tmp.tarr['site']}
     times = np.array([])
     for scan in tlist:
         time = scan['time'][0]
@@ -412,9 +416,29 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 taudict[bl['t2']] = np.append(taudict[bl['t2']], bl['tau2'])
                 sites_in = np.append(sites_in, bl['t2'])
         if len(sites_in) < nsites:
-            for site in obs.tarr['site']:
+            for site in obs_tmp.tarr['site']:
                 if site not in sites_in:
                     taudict[site] = np.append(taudict[site], 0.0)
+
+    # Now define a list that accounts for periods where the phase or amplitude errors 
+    # are stable (e.g., over scans if stabilize_scan_phase==True)
+    times_stable_phase = times.copy()
+    times_stable_amp = times.copy()
+    times_stable = times.copy()
+    if stabilize_scan_phase==True or stabilize_scan_amp==True:
+        scans = obs_tmp.scans
+        if scans == None or len(scans) == 0: 
+            obs_scans = obs.copy()
+            obs_scans.add_scans()
+            scans = obs_scans.scans
+        for j in range(len(times_stable)):
+            for scan in scans:
+                if scan[0] <= times_stable[j] and scan[1] >= times_stable[j]:
+                    times_stable[j] = scan[0]
+                    break
+
+    if stabilize_scan_phase==True: times_stable_phase = times_stable.copy()
+    if stabilize_scan_amp==True: times_stable_amp = times_stable.copy()
 
     # Compute Sidereal Times
     if obs.timetype=='GMST':
@@ -448,13 +472,18 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 goff = gain_offset[site]
             else:
                 goff = gain_offset
+            if type(gainp) == dict:
+                gain_mult = gainp[site]
+            else:
+                gain_mult = gainp
 
+            # Note: R/L gain ratio should be independent of time for each site
             gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainR',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gainR',time,str(gainp),seed))
-                                     for time in times])))
+                                             (1.0 + gain_mult*hashrandn(site,'gain',str(time),str(gain_mult),seed))
+                                     for time in times_stable_amp])))
             gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainL',str(goff),seed))*
-                                             (1.0 + gainp*hashrandn(site,'gainL',time,str(gainp),seed))
-                                     for time in times])))
+                                             (1.0 + gain_mult*hashrandn(site,'gain',str(time),str(gain_mult),seed))
+                                     for time in times_stable_amp])))
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
@@ -466,7 +495,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
         # Atmospheric Phase
         if not phasecal:
-            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, seed) for time in times])
+            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, seed) for time in times_stable_phase])
             gainR = gainR * np.exp(1j*phase)
             gainL = gainL * np.exp(1j*phase)
 
@@ -484,20 +513,23 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             dR += doff * (hashrandn(site, 'dRre', seed) + 1j * hashrandn(site, 'dRim', seed))
             dL += doff * (hashrandn(site, 'dLre', seed) + 1j * hashrandn(site, 'dLim', seed))
 
-            dR *= (1 + dtermp * (hashrandn(site, 'dRre_resid', seed) + 1j * hashrandn(site, 'dRim_resid', seed)))
-            dL *= (1 + dtermp * (hashrandn(site, 'dLre_resid', seed) + 1j * hashrandn(site, 'dLim_resid', seed)))
+            dR *= (1. + dtermp * (hashrandn(site, 'dRre_resid', seed) + 1j * hashrandn(site, 'dRim_resid', seed)))
+            dL *= (1. + dtermp * (hashrandn(site, 'dLre_resid', seed) + 1j * hashrandn(site, 'dLim_resid', seed)))
 
-        #print ('dterms:', np.abs(dR),np.abs(dL))
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
+        fr_angle_D = np.zeros(len(times))
         if not frcal:
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
+        elif frcal and not dcal:
+            # If field rotation has been corrected, but leakage has not been corrected, the leakage needs to rotate doubly
+            fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
 
         # Assemble the Jones Matrices and save to dictionary
         # TODO: indexed by utc or sideral time?
         j_matrices = {times[j]: np.array([
-                                [np.exp(-1j*fr_angle[j])*gainR[j], np.exp(1j*fr_angle[j])*dR*gainR[j]],
-                                [np.exp(-1j*fr_angle[j])*dL*gainL[j], np.exp(1j*fr_angle[j])*gainL[j]]
+                                [np.exp(-1j*fr_angle[j])*gainR[j], np.exp(1j*(fr_angle[j]+fr_angle_D[j]))*dR*gainR[j]],
+                                [np.exp(-1j*(fr_angle[j]+fr_angle_D[j]))*dL*gainL[j], np.exp(1j*fr_angle[j])*gainL[j]]
                                 ])
                                 for j in range(len(times))
                      }
@@ -586,21 +618,27 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
         # D Terms
         dR = dL = 0.0
+        
         if not dcal:
             dR = tarr[i]['dr']
             dL = tarr[i]['dl']
 
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
+        fr_angle_D = np.zeros(len(times)) # This is for when field rotation is corrected but not leakage
         if not frcal:
             # Total Angle (Radian)
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
+        else:
+            if not dcal:
+                # If the field rotation angle has been removed but leakage hasn't, we still need to rotate the leakage terms appropriately (by *twice* the field rotation angle)
+                fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
 
         # Assemble the Jones Matrices and save to dictionary
         pref = 1.0/(gainL*gainR*(1.0 - dL*dR))
         j_matrices_inv = {times[j]: pref[j]*np.array([
-                                     [np.exp(1j*fr_angle[j])*gainL[j], -np.exp(1j*fr_angle[j])*dR*gainR[j]],
-                                     [-np.exp(-1j*fr_angle[j])*dL*gainL[j], np.exp(-1j*fr_angle[j])*gainR[j]]
+                                     [ np.exp( 1j*fr_angle[j])*gainL[j],   -np.exp( 1j*(fr_angle[j] + fr_angle_D[j]))*dR*gainR[j]],
+                                     [-np.exp(-1j*(fr_angle[j] + fr_angle_D[j]))*dL*gainL[j], np.exp(-1j*fr_angle[j])*gainR[j]]
                                      ]) for j in range(len(times))
                          }
 
@@ -610,6 +648,7 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
 def add_jones_and_noise(obs, add_th_noise=True,
                         opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+                        stabilize_scan_phase=False, stabilize_scan_amp=False, 
                         taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
                         seed=False):
 
@@ -623,11 +662,13 @@ def add_jones_and_noise(obs, add_th_noise=True,
            phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
+           stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+           stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-           dtermp (float): the fractional std. dev. of the random error on the D-terms
-           dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+           dtermp (float): the fractional std. dev. of the random multiplicative error on the D-terms
+           dterm_offset (float): the base std. dev. of random additive error at all sites, or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
 
 
@@ -640,6 +681,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
     # Build Jones Matrices
     jm_dict = make_jones(obs,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,
+                         stabilize_scan_phase=stabilize_scan_phase,stabilize_scan_amp=stabilize_scan_amp,
                          gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dterm_offset=dterm_offset,
                          seed=seed)
 
@@ -648,13 +690,13 @@ def add_jones_and_noise(obs, add_th_noise=True,
     obsdata = copy.copy(obs_circ.data)
 
     times = obsdata['time']
-    t1 = obsdata['t1']
-    t2 = obsdata['t2']
+    t1    = obsdata['t1']
+    t2    = obsdata['t2']
     tints = obsdata['tint']
-    rr = obsdata['rrvis']
-    ll = obsdata['llvis']
-    rl = obsdata['rlvis']
-    lr = obsdata['lrvis']
+    rr    = obsdata['rrvis']
+    ll    = obsdata['llvis']
+    rl    = obsdata['rlvis']
+    lr    = obsdata['lrvis']
 
     # Recompute the noise std. deviations from the SEFDs
     if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <=0):
@@ -684,7 +726,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
         print("Adding thermal noise to data . . . ")
     #print "------------------------------------------------------------------------------------------------------------------------"
 
-    # Corrupt each IQUV visibilty set with the jones matrices and add noise
+    # Corrupt each IQUV visibility set with the jones matrices and add noise
     for i in range(len(times)):
         # Form the visibility correlation matrix
         corr_matrix = np.array([[rr[i], rl[i]], [lr[i], ll[i]]])
@@ -720,12 +762,11 @@ def add_jones_and_noise(obs, add_th_noise=True,
     # Return observation data
     return obsdata_back
 
-def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
+def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=True):
     """Apply inverse jones matrices to an observation
 
        Args:
            obs (Obsdata): the original observation
-           add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
            dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
            frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
 
@@ -733,7 +774,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
            (np.array): an observation data array
     """
 
-    print("Applying a priori calibration with estimated Jones matrices . . . ")
+    if verbose: print("Applying a priori calibration with estimated Jones matrices . . . ")
     # Build Inverse Jones Matrices
     jm_dict = make_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
@@ -756,8 +797,8 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
     # Recompute the noise std. deviations from the SEFDs
     if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <=0):
-        print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
-        print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
+        if verbose: print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
+        if verbose: print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!, resorting to data point sigmas which may add too much systematic noise!")
         sig_rr = obsdata['rrsigma']
         sig_ll = obsdata['llsigma']
         sig_rl = obsdata['rlsigma']
@@ -772,13 +813,13 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal:
-        print("   Applying opacity corrections: opacitycal-->True")
+        if verbose: print("   Applying opacity corrections: opacitycal-->True")
         opacitycal=True
     if not dcal:
-        print("   Applying D Term corrections: dcal-->True")
+        if verbose: print("   Applying D Term corrections: dcal-->True")
         dcal=True
     if not frcal:
-        print("   Applying Field Rotation corrections: frcal-->True")
+        if verbose: print("   Applying Field Rotation corrections: frcal-->True")
         frcal=True
     #print "------------------------------------------------------------------------------------------------------------------------"
 
@@ -797,7 +838,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
         sig_rl_matrix = np.array([[0.0, sig_rl[i]], [0.0, 0.0]])
         sig_lr_matrix = np.array([[0.0, 0.0], [sig_lr[i], 0.0]])
 
-        # Apply the Jones Matrices to the visibility correlation matrix and sigma matrices
+        # Apply the inverse Jones Matrices to the visibility correlation matrix and sigma matrices
         corr_matrix_new = np.dot(inv_j1, np.dot(corr_matrix, np.conjugate(inv_j2.T)))
 
         sig_rr_matrix_new = np.dot(inv_j1, np.dot(sig_rr_matrix, np.conjugate(inv_j2.T)))
@@ -921,10 +962,16 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         else:
             goff1 = [gain_offset for i in range(len(time))]
             goff2 = [gain_offset for i in range(len(time))]
+        if type(gainp) == dict:
+            gain_mult_1 = [gainp[sites[i,0]] for i in range(len(time))]
+            gain_mult_2 = [gainp[sites[i,1]] for i in range(len(time))]
+        else:
+            gain_mult_1 = [gainp for i in range(len(time))]
+            gain_mult_2 = [gainp for i in range(len(time))]
 
-        gain1 = np.abs(np.array([(1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gainp * hashrandn(sites[i,0], 'gain', time[i], seed))
+        gain1 = np.abs(np.array([(1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gain_mult_1 * hashrandn(sites[i,0], 'gain', time[i], seed))
                                  for i in range(len(time))]))
-        gain2 = np.abs(np.array([(1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gainp * hashrandn(sites[i,1], 'gain', time[i], seed))
+        gain2 = np.abs(np.array([(1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gain_mult_2 * hashrandn(sites[i,1], 'gain', time[i], seed))
                                  for i in range(len(time))]))
         gain_true = np.sqrt(gain1 * gain2)
     else:

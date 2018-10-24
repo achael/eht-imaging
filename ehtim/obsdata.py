@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import itertools as it
 import sys
+import copy
 
 import ehtim.image
 import ehtim.io.save
@@ -187,16 +188,18 @@ class Obsdata(object):
                (Obsdata): a copy of the Obsdata object.
         """
 
-        newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, polrep=self.polrep,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                         timetype=self.timetype, scantable=self.scans)
+        newobs = copy.deepcopy(self)
+        
+        #newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, polrep=self.polrep,
+        #                 ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
+        #                 timetype=self.timetype, scantable=self.scans)
 
-        # copy over any precomputed tables
-        newobs.amp = self.amp
-        newobs.bispec = self.bispec
-        newobs.cphase = self.cphase
-        newobs.camp = self.camp
-        newobs.logcamp = self.logcamp
+        ## copy over any precomputed tables
+        #newobs.amp = self.amp
+        #newobs.bispec = self.bispec
+        #newobs.cphase = self.cphase
+        #newobs.camp = self.camp
+        #newobs.logcamp = self.logcamp
 
         return newobs
 
@@ -425,12 +428,14 @@ class Obsdata(object):
 
         return data
 
-    def tlist(self, conj=False):
+    def tlist(self, conj=False, t_gather=0.0, scan_gather=False):
 
         """Group the data in a list of equal time observation datatables.
 
            Args:
                 conj (bool): True if tlist_out includes conjugate baselines.
+                t_gather (float): Grouping timescale (in seconds). 0.0 indicates no grouping.
+                scan_gather (bool): If true, gather data into scans
 
            Returns:
                 (list): a list of data tables containing time-partitioned data
@@ -443,8 +448,23 @@ class Obsdata(object):
 
         # partition the data by time
         datalist = []
-        for key, group in it.groupby(data, lambda x: x['time']):
-            datalist.append(np.array([obs for obs in group]))
+
+        if t_gather <= 0.0 and not scan_gather:
+            # Only group measurements at the same time
+            for key, group in it.groupby(data, lambda x: x['time']):
+                datalist.append(np.array([obs for obs in group]))
+        elif t_gather > 0.0 and not scan_gather:
+            # Group measurements in time
+            for key, group in it.groupby(data, lambda x: int(x['time']/(t_gather/3600.0))):
+                datalist.append(np.array([obs for obs in group]))
+        else:
+            # Group measurements by scan
+            if np.any(self.scans == None) or len(self.scans) == 0: 
+                print("No scan table in observation. Adding scan table before gathering...")
+                self.add_scans()
+
+            for key, group in it.groupby(data, lambda x: np.searchsorted(self.scans[:,0],x['time'])):
+                datalist.append(np.array([obs for obs in group]))
 
         return np.array(datalist)
 
@@ -812,7 +832,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', mask=[],
+    def chisq(self, im, dtype='vis', pol='I', mask=[],
               debias=True, systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False,
               ttype='nfft',fft_pad_factor=2):
 
@@ -820,7 +840,8 @@ class Obsdata(object):
 
            Args:
                 im (Image): image to test chi^2
-                dtype (str): data type of chi^2
+                dtype (str): data type of chi^2 (e.g., 'vis', 'amp', 'bs', 'cphase')
+                pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec to screen out pixels in chi^2 computation
 
                 debias (bool): if True then apply debiasing to amplitudes/closure amplitudes
@@ -837,11 +858,15 @@ class Obsdata(object):
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, ttype=ttype,
+        if pol not in im._imdict.keys():
+            raise Exception(pol + ' is not in the current image. Consider changing the polarization basis of the image.')
+
+        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype,
                                         fft_pad_factor=fft_pad_factor, maxset=maxset,
                                         systematic_cphase_noise=systematic_cphase_noise,
                                         systematic_noise=systematic_noise)
-        chisq = iu.chisq(im.imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+
+        chisq = iu.chisq(im._imdict[pol], A, data, sigma, dtype, ttype=ttype, mask=mask)
 
         return chisq
 

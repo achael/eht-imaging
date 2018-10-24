@@ -659,7 +659,7 @@ class Image(object):
         """Compute the location of the image centroid (corresponding to the polarization pol)
 
            Args:
-                pol (str): The polarzation for which to find the image centroid
+                pol (str): The polarization for which to find the image centroid
 
            Returns:
                (np.array): centroid positions (x0,y0) in radians
@@ -674,8 +674,8 @@ class Image(object):
         if len(imvec):
             xlist = np.arange(0,-self.xdim,-1)*pdim + (pdim*self.xdim)/2.0 - pdim/2.0
             ylist = np.arange(0,-self.ydim,-1)*pdim + (pdim*self.ydim)/2.0 - pdim/2.0
-            x0 = np.abs(np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*imvec))/np.abs(np.sum(imvec))
-            y0 = np.abs(np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*imvec))/np.abs(np.sum(imvec))
+            x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*imvec)/np.sum(imvec)
+            y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*imvec)/np.sum(imvec)
             centroid = np.array([x0, y0])
         else: 
             raise Exception("No %s image found!"  % pol)
@@ -1593,16 +1593,17 @@ class Image(object):
                                              source=self.source, mjd=self.mjd, polrep=obs.polrep,
                                              ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
-
+        
         return obs_no_noise
 
     def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+                           stabilize_scan_phase=False, stabilize_scan_amp=False, 
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
-                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF):
+                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, seed=False):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -1618,6 +1619,8 @@ class Image(object):
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
@@ -1628,20 +1631,26 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-
+               seed (int): seeds the random component of the noise terms. do not set to 0!
+                
            Returns:
                (Obsdata): an observation object
         """
 
+        if seed!=False:
+            np.random.seed(seed=seed)
+            
         obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
-
+        
         # Jones Matrix Corruption & Calibration
         if jones:
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, dcal=dcal, frcal=frcal,
+                                                 stabilize_scan_phase=stabilize_scan_phase,
+                                                 stabilize_scan_amp=stabilize_scan_amp,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                                 dtermp=dtermp,dterm_offset=dterm_offset)
+                                                 dtermp=dtermp,dterm_offset=dterm_offset, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1664,7 +1673,7 @@ class Image(object):
         else:
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
-                                       gainp=gainp, taup=taup, gain_offset=gain_offset)
+                                       gainp=gainp, taup=taup, gain_offset=gain_offset, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1680,10 +1689,11 @@ class Image(object):
                       ttype='nfft', fft_pad_factor=2,
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+                      stabilize_scan_phase=False, stabilize_scan_amp=False, 
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
-                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF):
+                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, seed=False):
 
         """Generate baselines from an array object and observe the image.
 
@@ -1712,6 +1722,8 @@ class Image(object):
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
@@ -1721,7 +1733,8 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-
+               seed (int): seeds the random component of noise added. do not set to 0!
+               
            Returns:
                (Obsdata): an observation object
         """
@@ -1741,10 +1754,12 @@ class Image(object):
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, 
                                      sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
+                                     stabilize_scan_phase=stabilize_scan_phase,
+                                     stabilize_scan_amp=stabilize_scan_amp,
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
                                      dtermp=dtermp, dterm_offset=dterm_offset,
-                                     jones=jones, inv_jones=inv_jones)
+                                     jones=jones, inv_jones=inv_jones, seed=seed)
 
         return obs
 
@@ -1752,6 +1767,7 @@ class Image(object):
                           polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
+                          stabilize_scan_phase=False, stabilize_scan_amp=False, 
                           jones=False, inv_jones=False,
                           tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                           dterm_offset=DTERMPDEF, dtermp=DTERMPDEF):
@@ -1776,6 +1792,8 @@ class Image(object):
                phasecal (bool): if False, time-dependent station-based random phases are added to data points
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
@@ -1825,6 +1843,8 @@ class Image(object):
                                        polrep_obs=polrep_obs,
                                        ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
                                        opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
+                                       stabilize_scan_phase=stabilize_scan_phase,
+                                       stabilize_scan_amp=stabilize_scan_amp,
                                        taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,dterm_offset=dterm_offset,
                                        jones=jones, inv_jones=inv_jones)
 
@@ -2198,11 +2218,11 @@ class Image(object):
 
         return x
 
-    def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, 
+    def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, show_im=True,
                       cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, show_im=True):
+                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical"):
 
         """Display the image.
 
@@ -2251,12 +2271,12 @@ class Image(object):
         if show_im:
             image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation)
         else:
             image.imvec = 0.0*image.imvec  
             image.display(cfun='afmhot',scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit) 
+                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit, beamparams=beamparams) 
 
         ax = plt.gcf()
 
@@ -2285,7 +2305,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, 
                       label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, beamparams=False, cbar_orientation="vertical"):
+                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical"):
 
         """Display the image.
 
@@ -2322,7 +2342,7 @@ class Image(object):
         else:
             interp = 'linear'
 
-        if not(beamparams is None or beamparams==False):
+        if not(beamparams is None or (beamparams==False).any()):
             if beamparams[0]>self.fovx() or beamparams[1]>self.fovx():
                 raise Exception("beam FWHM must be smaller than fov!")
 
@@ -2425,7 +2445,7 @@ class Image(object):
             else:
                 im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
 
-            if not(beamparams is None or beamparams==False):
+            if not(beamparams is None or (beamparams==False).any()):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2], 
                               -.35*self.fovx(), -.35*self.fovy()]
                 beamimage = self.copy()
