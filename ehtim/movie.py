@@ -85,10 +85,38 @@ class Movie(object):
         """
 
         if len(movie[0].shape) != 2:
-            raise Exception("image must be a 2D numpy array")
+            raise Exception("frames must each be a 2D numpy array")
+
+        #the list of frames
+        frames = [image.flatten() for image in movie]
+        self.nframes = len(self.frames)
+        if polrep=='stokes':
+            if pol_prim is None: pol_prim = 'I'
+            if pol_prim=='I':
+                self._movdict = {'I':frames,'Q':[],'U':[],'V':[]}
+            elif pol_prim=='V':
+                self._movdict = {'I':[],'Q':[],'U':[],'V':frames}
+            elif pol_prim=='Q':
+                self._movdict = {'I':[],'Q':frames,'U':[],'V':[]}
+            elif pol_prim=='U':
+                self._movdict = {'I':[],'Q':[],'U':frames,'V':[]}
+            else:
+                raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
+
+        elif polrep=='circ':
+            if pol_prim is None: 
+                print("polrep is 'circ' and no pol_prim specified! Setting pol_prim='RR'")
+                pol_prim = 'RR'
+            if pol_prim=='RR':
+                self._movdict = {'RR':frames,'LL':[],'RL':[],'LR':[]}
+            elif pol_prim=='LL':
+                self._movdict = {'RR':[],'LL':frames,'RL':[],'LR':[]}
+            else:
+                raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
+
+        self.pol_prim =  pol_prim
 
         self.framedur = float(framedur)
-        self.pol_prim =  pol_prim
         self.polrep = polrep
         self.pulse = pulse
         self.psize = float(psize)
@@ -107,51 +135,165 @@ class Movie(object):
             self.start_hr = start_hr
 
 
-        #the list of frames
-        self.frames = [image.flatten() for image in movie]
-        self.nframes = len(self.frames)
-        if polrep=='stokes':
-            if pol_prim is None: pol_prim = 'I'
-            if pol_prim=='I':
-                self.iframes = self.frames
-                self.qframes = []
-                self.uframes = []
-                self.vframes = []
-            elif pol_prim=='V':
-                self.iframes = []
-                self.qframes = []
-                self.uframes = []
-                self.vframes = self.frames
-            elif pol_prim=='Q':
-                self.iframes = []
-                self.qframes = self.frames
-                self.uframes = []
-                self.vframes = []
-            elif pol_prim=='U':
-                self.iframes = []
-                self.qframes = []
-                self.uframes = self.frames
-                self.vframes = []
-            else:
-                raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
-            self._movdict = {'I':self.iframes,'Q':self.qframes,'U':self.uframes,'V':self.vframes}
-        elif polrep=='circ':
-            if pol_prim is None: 
-                print("polrep is 'circ' and no pol_prim specified! Setting pol_prim='RR'")
-                pol_prim = 'RR'
-            if pol_prim=='RR':
-                self.rrframes = self.frames
-                self.llframes = []
-                self.rlframes = []
-                self.lrframes = []
-            elif pol_prim=='LL':
-                self.rrframes = []
-                self.llframes = self.frames
-                self.rlframes = []
-                self.lrframes = []
-            else:
-                raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
-            self._movdict = {'RR':self.rrframes,'LL':self.llframes,'RL':self.rlframes,'LR':self.lrframes}
+    @property
+    def frames(self):
+        """Return the frames of the primary polarization"""
+        frames = self._movdict[self.pol_prim]
+        return frames
+
+    @frames.setter
+    def frames(self, frames):
+        """Set the frames"""
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("imvec size is not consistent with xdim*ydim!")
+        #TODO -- more checks on consistency with the existing pol data???
+
+        self._movdict[self.pol_prim] =  frames        
+
+    @property
+    def iframes(self):
+
+        if self.polrep!='stokes':
+            raise Exception("iframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        frames = self._movdict['I']
+        return frames
+
+    @iframes.setter
+    def iframes(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['I'] =  frames     
+
+    @property
+    def qframes(self):
+
+        if self.polrep!='stokes':
+            raise Exception("qframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        frames = self._movdict['Q']
+        return frames
+
+    @qframes.setter
+    def qframes(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['Q'] =  frames     
+
+    @property
+    def uframes(self):
+
+        if self.polrep!='stokes':
+            raise Exception("uframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        frames = self._movdict['U']
+        return frames
+
+    @uframes.setter
+    def uframes(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['U'] =  frames     
+   
+    @property
+    def vframes(self):
+
+        if self.polrep!='stokes':
+            raise Exception("vframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        frames = self._movdict['V']
+        return frames
+
+    @vframes.setter
+    def vframes(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['V'] =  frames     
+
+    @property
+    def rrframes(self):
+
+        if self.polrep!='circ':
+            raise Exception("rrframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        frames = self._movdict['RR']
+        return frames
+
+    @rrframes.setter
+    def rrframes(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['RR'] =  frames     
+
+    @property
+    def llframes(self):
+
+        if self.polrep!='circ':
+            raise Exception("llframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        frames = self._movdict['LL']
+        return frames
+
+    @llframes.setter
+    def llframes(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['LL'] =  frames     
+
+    @property
+    def rlvec(self):
+
+        if self.polrep!='circ':
+            raise Exception("rlframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        frames = self._movdict['RL']
+        return frames
+
+    @rlvec.setter
+    def rlvec(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['RL'] =  frames     
+
+    @property
+    def lrvec(self):
+
+        if self.polrep!='circ':
+            raise Exception("lrframes is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        frames = self._movdict['LR']
+        return frames
+
+    @lrvec.setter
+    def lrvec(self, frames):
+
+        if len(frames[0]) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._movdict['LR'] =  frames     
 
     def copy(self):
 

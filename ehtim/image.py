@@ -101,49 +101,31 @@ class Image(object):
             raise Exception("only 'stokes' and 'circ' are supported polreps!")
 
         # Save the image vector
-        self.imvec = image.flatten()
+        imvec = image.flatten()
+
         if polrep=='stokes':
             if pol_prim is None: pol_prim = 'I'
             if pol_prim=='I':
-                self.ivec = self.imvec
-                self.qvec = []
-                self.uvec = []
-                self.vvec = []
+                self._imdict = {'I':imvec,'Q':[],'U':[],'V':[]}
             elif pol_prim=='V':
-                self.ivec = []
-                self.qvec = []
-                self.uvec = []
-                self.vvec = self.imvec
+                self._imdict = {'I':[],'Q':[],'U':[],'V':imvec}
             elif pol_prim=='Q':
-                self.ivec = []
-                self.qvec = self.imvec
-                self.uvec = []
-                self.vvec = []
+                self._imdict = {'I':[],'Q':imvec,'U':[],'V':[]}
             elif pol_prim=='U':
-                self.ivec = []
-                self.qvec = []
-                self.uvec = self.imvec
-                self.vvec = []
+                self._imdict = {'I':[],'Q':[],'U':imvec,'V':[]}
             else:
                 raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
-            self._imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
+
         elif polrep=='circ':
             if pol_prim is None: 
                 print("polrep is 'circ' and no pol_prim specified! Setting pol_prim='RR'")
                 pol_prim = 'RR'
             if pol_prim=='RR':
-                self.rrvec = self.imvec
-                self.llvec = []
-                self.rlvec = []
-                self.lrvec = []
+                self._imdict = {'RR':imvec,'LL':[],'RL':[],'LR':[]}
             elif pol_prim=='LL':
-                self.rrvec = []
-                self.llvec = self.imvec
-                self.rlvec = []
-                self.lrvec = []
+                self._imdict = {'RR':[],'LL':imvec,'RL':[],'LR':[]}
             else:
                 raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
-            self._imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
         else:
             raise Excpetion("polrep must be 'circ' or 'stokes'!")
 
@@ -168,6 +150,173 @@ class Image(object):
         else:
             self.time = time
 
+    @property
+    def imvec(self):
+        """Return the imvec of the primary polarization"""
+        imvec = self._imdict[self.pol_prim]
+        return imvec
+
+    @imvec.setter
+    def imvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("imvec size is not consistent with xdim*ydim!")
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict[self.pol_prim] =  vec        
+
+    @property
+    def ivec(self):
+        """Return the imvec of Stokes I"""
+        if self.polrep!='stokes':
+            raise Exception("ivec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        ivec = self._imdict['I']
+        return ivec
+
+    @ivec.setter
+    def ivec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['I'] =  vec        
+
+    @property
+    def qvec(self):
+        """Return the imvec of Stokes Q"""
+        if self.polrep!='stokes':
+            raise Exception("qvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        qvec = self._imdict['Q']
+        return qvec
+
+    @qvec.setter
+    def qvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['Q'] =  vec        
+
+    @property
+    def uvec(self):
+        """Return the imvec of Stokes U"""
+        if self.polrep!='stokes':
+            raise Exception("uvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        uvec = self._imdict['U']
+        return uvec
+
+    @uvec.setter
+    def uvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['U'] =  vec   
+   
+    @property
+    def vvec(self):
+        """Return the imvec of Stokes V"""
+        if self.polrep!='stokes':
+            raise Exception("vvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+
+        vvec = self._imdict['V']
+        return vvec
+
+    @vvec.setter
+    def vvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['V'] =  vec      
+
+    @property
+    def rrvec(self):
+        """Return the imvec of RR"""
+        if self.polrep!='circ':
+            raise Exception("rrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        rrvec = self._imdict['RR']
+        return rrvec
+
+    @rrvec.setter
+    def rrvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['RR'] =  vec      
+
+    @property
+    def llvec(self):
+        """Return the imvec of LL"""
+        if self.polrep!='circ':
+            raise Exception("rrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        llvec = self._imdict['LL']
+        return llvec
+
+    @llvec.setter
+    def llvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['LL'] =  vec      
+
+    @property
+    def rlvec(self):
+        """Return the imvec of RL"""
+        if self.polrep!='circ':
+            raise Exception("rlvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        rlvec = self._imdict['RL']
+        return rlvec
+
+    @rlvec.setter
+    def rlvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['RL'] =  vec   
+
+    @property
+    def lrvec(self):
+        """Return the imvec of LR"""
+        if self.polrep!='circ':
+            raise Exception("lrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+
+        lrvec = self._imdict['LR']
+        return lrvec
+
+    @lrvec.setter
+    def lrvec(self, vec):
+        """Set the imvec"""
+
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+
+        #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        self._imdict['LR'] =  vec      
+   
     def copy(self):
 
         """Return a copy of the Image object.
@@ -184,13 +333,27 @@ class Image(object):
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over all polarization images
-        for pol in list(self._imdict.keys()):
-            if pol==self.pol_prim: continue
-            polvec = self._imdict[pol]
-            if len(polvec):
-                newim.add_pol_image(polvec.reshape(self.ydim,self.xdim), pol)
+        newim.copy_pol_images(self)
 
         return newim
+
+    def copy_pol_images(self, old_image):
+
+        """Copy polarization images from old_image over to self.
+
+           Args:
+               old_image (Image): image object to copy from
+
+        """
+
+        for pol in list(self._imdict.keys()):
+
+            if (pol==self.pol_prim): 
+                continue
+
+            polvec = old_image._imdict[pol]
+            if len(polvec):
+                self.add_pol_image(polvec.reshape(self.ydim,self.xdim), pol)
 
     def add_pol_image(self, image, pol):
 
@@ -204,7 +367,7 @@ class Image(object):
         if pol==self.pol_prim:
             raise Exception("new pol in add_pol_image is the same as pol_prim!")
         if image.shape != (self.ydim, self.xdim):
-            raise Exception("add_pol_movie image shapes incompatible with primary image!")
+            raise Exception("add_pol_image image shapes incompatible with primary image!")
         if not (pol in list(self._imdict.keys())): 
             raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._imdict.keys())))
 
@@ -213,13 +376,12 @@ class Image(object):
             elif pol=='Q': self.qvec = image.flatten()
             elif pol=='U': self.uvec = image.flatten()
             elif pol=='V': self.vvec = image.flatten()
-            self._imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
+
         elif self.polrep=='circ':
             if pol=='RR': self.rrvec = image.flatten()
             elif pol=='LL': self.llvec = image.flatten()
             elif pol=='RL': self.rlvec = image.flatten()
             elif pol=='LR': self.lrvec = image.flatten()
-            self._imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
 
         return
 
@@ -553,7 +715,7 @@ class Image(object):
             polvec = self._imdict[pol]
             if len(polvec):
                 polarr=polvec.reshape(self.ydim, self.xdim)
-                polarr=np.pad(polarr,((pady,pady),(padx,padx)),'constant')
+                polarr=np.pad(polarr,((pady,pady),(padx,padx)), 'constant')
                 outim.add_pol_image(polarr, pol)
 
         return outim
@@ -741,7 +903,7 @@ class Image(object):
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
-        # Rotate all polarizations and copy over
+        # Shift all polarizations and copy over
         for pol in list(self._imdict.keys()):
             if pol==self.pol_prim: continue
             polvec = self._imdict[pol]
@@ -852,6 +1014,7 @@ class Image(object):
             if len(polvec):
                 polarr = polvec.reshape(self.ydim, self.xdim)
                 if fwhm_pol:
+                    print ("Blurring polarization")
                     sigma = fwhm_pol / (2. * np.sqrt(2. * np.log(2.)))
                     sigmap = sigma / self.psize
                     polarr = blur(polarr, sigmap)
@@ -1155,6 +1318,7 @@ class Image(object):
         gaussarr = gaussarr[0:self.ydim, 0:self.xdim]
         gaussarr *= flux/np.sum(gaussarr)
 
+        # TODO: if we want to add a gaussian to V, we might also want to make sure we add it to I
         # Add to the main image and create the new image object
         imarr = self.imvec.reshape(self.ydim, self.xdim).copy()
         if pol==self.pol_prim:
@@ -1166,7 +1330,7 @@ class Image(object):
 
         # Copy over the rest of the polarizations
         for pol2 in list(self._imdict.keys()):
-            if pol2==self.pol_prim: continue
+            if pol2 == self.pol_prim: continue
             polvec = self._imdict[pol2]
             if len(polvec):
                 polarr = polvec.reshape(self.ydim, self.xdim).copy()

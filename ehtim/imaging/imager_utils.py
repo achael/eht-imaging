@@ -338,12 +338,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
 
 
     # copy over other polarizations
-    for pol2 in list(outim._imdict.keys()):
-        if pol2==outim.pol_prim: continue
-        polvec = InitIm._imdict[pol2]
-        if len(polvec):
-            polarr=polvec.reshape(outim.ydim, outim.xdim)
-            outim.add_pol_image(polarr, pol2)
+    outim.copy_pol_images(InitIm)
 
     # Print stats
     print("time: %f s" % (tstop - tstart))

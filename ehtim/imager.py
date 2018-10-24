@@ -252,10 +252,11 @@ class Imager(object):
 
         # copy over other polarizations
         for pol2 in list(outim._imdict.keys()):
-            # is it the base image? 
+
+            # Is it the base image? 
             if pol2==outim.pol_prim: continue
 
-            # did we solve for polarimeric image or are we copying over old pols?
+            # Did we solve for polarimeric image or are we copying over old pols?
             if self.pol_next=='P' and pol2=='Q':
                 polvec=qimage_out
             elif self.pol_next=='P' and pol2=='U':
