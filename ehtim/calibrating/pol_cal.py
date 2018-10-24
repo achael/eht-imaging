@@ -24,13 +24,14 @@ import numpy as np
 import ehtim.imaging.imager_utils as iu
 import ehtim.observing.obs_simulate as simobs
 import scipy.optimize as opt
+import time
 
 MAXIT=50
 ###################################################################################################################################
 #Polarimetric Calibration
 ###################################################################################################################################
 
-def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis',
+def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', minimizer_method='L-BFGS-B',
              ttype='direct', fft_pad_factor=2, show_solution=True):
 
     """Polarimetric calibration (detects and removes polarimetric leakage, based on consistency with a given image)
@@ -43,6 +44,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
            leakage_tol (float): leakage values that exceed this value will be disfavored by the prior
            pol_fit (list): list of visibilities to use; e.g., ['RL','LR'] or ['RR','LL','RL','LR']
            dtype (str): Type of data to fit ('vis' for complex visibilities; 'amp' for just the amplitudes)
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
@@ -51,6 +53,8 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
        Returns:
            (Obsdata): the calibrated observation, with computed leakage values added to the obs.tarr
     """
+    tstart = time.time()
+
     mask=[]
 
     # Do everything in a circular basis
@@ -108,7 +112,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
         chisq = chisq_total(data, im_circ)
 
         # prior on the D terms
-        chisq_D = np.sum((D/leakage_tol)**2)
+        chisq_D = np.sum(np.abs(D/leakage_tol)**2)
 
         return chisq + chisq_D
 
@@ -116,7 +120,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
     optdict = {'maxiter' : MAXIT} # minimizer params
     Dpar_guess = np.zeros(len(sites)*2, dtype=np.complex128).view(dtype=np.float64)
     print("Minimizing...")
-    res = opt.minimize(errfunc, Dpar_guess, method='CG', options=optdict)
+    res = opt.minimize(errfunc, Dpar_guess, method=minimizer_method, options=optdict)
     
     # get solution
     D_fit = res.x.astype(np.float64).view(dtype=np.complex128) # all the D-terms (complex)
@@ -135,5 +139,8 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
             print(sites[isite])
             print('   D_R: {:.4f}'.format(D_fit[2*isite]))
             print('   D_L: {:.4f}\n'.format(D_fit[2*isite+1]))
+
+    tstop = time.time()
+    print("\nleakage_cal time: %f s" % (tstop - tstart))
 
     return obs_test
