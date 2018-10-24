@@ -170,7 +170,7 @@
 <dl class="function">
 <dt id="ehtim.imaging.imager_utils.imager_func">
 <code class="descclassname">ehtim.imaging.imager_utils.</code><code class="descname">imager_func</code><span class="sig-paren">(</span><em>Obsdata</em>, <em>InitIm</em>, <em>Prior</em>, <em>flux</em>, <em>d1='vis'</em>, <em>d2=False</em>, <em>d3=False</em>, <em>alpha_d1=100</em>, <em>alpha_d2=100</em>, <em>alpha_d3=100</em>, <em>s1='simple'</em>, <em>s2=False</em>, <em>s3=False</em>, <em>alpha_s1=1</em>, <em>alpha_s2=1</em>, <em>alpha_s3=1</em>, <em>alpha_flux=500</em>, <em>alpha_cm=500</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imaging/imager_utils.html#imager_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imaging.imager_utils.imager_func" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a general interferometric imager.</p>
+<dd><p>Run a general interferometric imager. Only works directly on the image&#8217;s primary polarization.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -265,8 +265,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="ehtim.imager.Imager.init_imager_I">
-<code class="descname">init_imager_I</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_imager_I"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.init_imager_I" title="Permalink to this definition">¶</a></dt>
+<dt id="ehtim.imager.Imager.init_imager">
+<code class="descname">init_imager</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.init_imager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.init_imager" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set up Stokes I imager.</p>
 </dd></dl>
 
@@ -284,14 +284,20 @@
 
 <dl class="method">
 <dt id="ehtim.imager.Imager.make_chisq_dict">
-<code class="descname">make_chisq_dict</code><span class="sig-paren">(</span><em>imvec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisq_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisq_dict" title="Permalink to this definition">¶</a></dt>
+<code class="descname">make_chisq_dict</code><span class="sig-paren">(</span><em>imcur</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisq_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisq_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>make dictionary of current chi^2 term values</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.imager.Imager.make_chisqgrad_dict">
-<code class="descname">make_chisqgrad_dict</code><span class="sig-paren">(</span><em>imvec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisqgrad_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisqgrad_dict" title="Permalink to this definition">¶</a></dt>
+<code class="descname">make_chisqgrad_dict</code><span class="sig-paren">(</span><em>imcur</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_chisqgrad_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_chisqgrad_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>make dictionary of current chi^2 term gradient values</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.imager.Imager.make_image">
+<code class="descname">make_image</code><span class="sig-paren">(</span><em>pol=None</em>, <em>grads=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make an image using current imager settings.</p>
 </dd></dl>
 
 <dl class="method">
@@ -327,14 +333,20 @@ Returns the estimated unscattered image.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.imager.Imager.make_image_P">
+<code class="descname">make_image_P</code><span class="sig-paren">(</span><em>grads=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_image_P"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_image_P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make Stokes P polarimetric image using current imager settings.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.imager.Imager.make_reg_dict">
-<code class="descname">make_reg_dict</code><span class="sig-paren">(</span><em>imvec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reg_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reg_dict" title="Permalink to this definition">¶</a></dt>
+<code class="descname">make_reg_dict</code><span class="sig-paren">(</span><em>imcur</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reg_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reg_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>make dictionary of current regularizer values</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.imager.Imager.make_reggrad_dict">
-<code class="descname">make_reggrad_dict</code><span class="sig-paren">(</span><em>imvec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reggrad_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reggrad_dict" title="Permalink to this definition">¶</a></dt>
+<code class="descname">make_reggrad_dict</code><span class="sig-paren">(</span><em>imcur</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.make_reggrad_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.make_reggrad_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>make dictionary of current regularizer gradient values</p>
 </dd></dl>
 
@@ -390,6 +402,12 @@ Returns the estimated unscattered image.</p>
 <dt id="ehtim.imager.Imager.out_scattered_last">
 <code class="descname">out_scattered_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.out_scattered_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.out_scattered_last" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return last result with scattering.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.imager.Imager.pol_last">
+<code class="descname">pol_last</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/imager.html#Imager.pol_last"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.imager.Imager.pol_last" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return last polarization imaged.</p>
 </dd></dl>
 
 <dl class="method">

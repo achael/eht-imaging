@@ -196,6 +196,7 @@
 <span class="kn">import</span> <span class="nn">ehtim.scattering</span> <span class="k">as</span> <span class="nn">so</span>
 
 <span class="kn">from</span> <span class="nn">ehtim.imaging.imager_utils</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ehtim.imaging.pol_imager_utils</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
 
@@ -209,6 +210,9 @@
 <span class="n">DATATERMS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">]</span>
 <span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span><span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;flux&#39;</span><span class="p">,</span><span class="s1">&#39;cm&#39;</span><span class="p">,</span><span class="s1">&#39;compact&#39;</span><span class="p">,</span><span class="s1">&#39;compact2&#39;</span><span class="p">,</span><span class="s1">&#39;rgauss&#39;</span><span class="p">]</span>
 
+<span class="n">DATATERMS_POL</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span><span class="s1">&#39;m&#39;</span><span class="p">,</span><span class="s1">&#39;pbs&#39;</span><span class="p">]</span>
+<span class="n">REGULARIZERS_POL</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;msimple&#39;</span><span class="p">,</span> <span class="s1">&#39;hw&#39;</span><span class="p">,</span> <span class="s1">&#39;ptv&#39;</span><span class="p">]</span>
+
 <span class="n">GRIDDER_P_RAD_DEFAULT</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">GRIDDER_CONV_FUNC_DEFAULT</span> <span class="o">=</span> <span class="s1">&#39;gaussian&#39;</span>
 <span class="n">FFT_PAD_DEFAULT</span> <span class="o">=</span> <span class="mi">2</span>
@@ -216,6 +220,15 @@
 
 <span class="n">REG_DEFAULT</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;simple&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
 <span class="n">DAT_DEFAULT</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;vis&#39;</span><span class="p">:</span><span class="mi">100</span><span class="p">}</span>
+
+<span class="n">POL_PRIM</span> <span class="o">=</span> <span class="s2">&quot;amp_phase&quot;</span> <span class="c1"># this means we solve for polarization in the m, chi basis</span>
+<span class="n">POL_SOLVE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># this means that pol imaging solves for m &amp; chi (not I), for now</span>
+
+<span class="c1">#TODO -- pol_next tracks polarization of next image to make</span>
+<span class="c1">#     -- checks on the polrep of the prior &amp; init --&gt; exception to switch if necessary</span>
+<span class="c1">#     -- warnings not to use log transform if imaging V, Q, U, warnings that  RL &amp; LR  have to wait for pol</span>
+<span class="c1">#     -- get data terms corresponding to  right pols </span>
+
 <span class="c1">###########################################################################################################################################</span>
 <span class="c1">#Imager object</span>
 <span class="c1">###########################################################################################################################################</span>
@@ -236,6 +249,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_reg_term_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dat_term_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_clipfloor_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pol_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_maxit_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stop_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_flux_list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -263,6 +277,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">total_flux</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">=</span> <span class="n">flux</span>
+
+        <span class="c1">#polarization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pol&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">)</span>
 
         <span class="c1">#weighting/debiasing/snr cut/systematic noise</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;debias&#39;</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
@@ -307,8 +324,134 @@
         <span class="c1">#set embedding matrices and prepare imager</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_imager_I</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_imager</span><span class="p">()</span>
 
+<div class="viewcode-block" id="Imager.make_image"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image">[docs]</a>    <span class="k">def</span> <span class="nf">make_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make an image using current imager settings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="n">pol_prim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">=</span> <span class="n">pol</span>
+            <span class="n">pol_prim</span> <span class="o">=</span> <span class="n">pol</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;==============================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Imager run </span><span class="si">%i</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># for polarimetric imaging, switch polrep to Stokes</span>
+        <span class="c1"># TODO: make polarimetric imaging more general</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Imaging P: switching to Stokes!&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
+            <span class="n">pol_prim</span> <span class="o">=</span> <span class="s1">&#39;I&#39;</span>
+
+        <span class="c1"># Checks and initialize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_imager</span><span class="p">()</span>
+
+        <span class="c1"># Print initial stats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_show_updates</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;show_updates&#39;</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_interval</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;update_interval&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Plot initial image</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotcur</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Minimize</span>
+        <span class="n">optdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;maxiter&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit_next</span><span class="p">,</span> <span class="s1">&#39;ftol&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_next</span><span class="p">,</span> <span class="s1">&#39;gtol&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_next</span><span class="p">,</span>
+                   <span class="s1">&#39;maxcor&#39;</span><span class="p">:</span><span class="n">NHIST</span><span class="p">,</span> <span class="s1">&#39;maxls&#39;</span><span class="p">:</span><span class="n">MAXLS</span><span class="p">}</span>
+        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">grads</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">objgrad</span><span class="p">,</span>
+                               <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotcur</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span>
+                               <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotcur</span><span class="p">)</span>
+        <span class="n">tstop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Format output</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tmpout</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">unpack_poltuple</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">POL_SOLVE</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;mcv&#39;</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">mcv</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">iimage_out</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">qimage_out</span> <span class="o">=</span> <span class="n">make_q_image</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">POL_PRIM</span><span class="p">)</span>
+            <span class="n">uimage_out</span> <span class="o">=</span> <span class="n">make_u_image</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">POL_PRIM</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span> 
+            <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">iimage_out</span> <span class="o">=</span> <span class="n">out</span>
+
+        <span class="c1"># Print final stats</span>
+        <span class="n">outstr</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;chi2_</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time: </span><span class="si">%f</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tstop</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;J: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">outstr</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;==============================&quot;</span><span class="p">)</span>
+
+        <span class="c1"># embed image</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)):</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">embed_pol</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
+
+        <span class="c1"># return image</span>
+        <span class="n">outim</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">iimage_out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> 
+                            <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span>
+                            <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+                            <span class="n">polrep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim</span><span class="p">,</span> 
+                            <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+                            <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
+
+
+        <span class="c1"># copy over other polarizations</span>
+        <span class="k">for</span> <span class="n">pol2</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">outim</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+
+            <span class="c1"># Is it the base image? </span>
+            <span class="k">if</span> <span class="n">pol2</span><span class="o">==</span><span class="n">outim</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">:</span> <span class="k">continue</span>
+
+            <span class="c1"># Did we solve for polarimeric image or are we copying over old pols?</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span> <span class="ow">and</span> <span class="n">pol2</span><span class="o">==</span><span class="s1">&#39;Q&#39;</span><span class="p">:</span>
+                <span class="n">polvec</span><span class="o">=</span><span class="n">qimage_out</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span> <span class="ow">and</span> <span class="n">pol2</span><span class="o">==</span><span class="s1">&#39;U&#39;</span><span class="p">:</span>
+                <span class="n">polvec</span><span class="o">=</span><span class="n">uimage_out</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">polvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">pol2</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">polvec</span><span class="p">):</span>
+                <span class="n">polarr</span><span class="o">=</span><span class="n">polvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">outim</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">outim</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+                <span class="n">outim</span><span class="o">.</span><span class="n">add_pol_image</span><span class="p">(</span><span class="n">polarr</span><span class="p">,</span> <span class="n">pol2</span><span class="p">)</span>
+
+        <span class="c1"># Append to history</span>
+        <span class="n">logstr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: make_image(pol=</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="o">%</span><span class="n">pol</span> <span class="c1">#TODO - what should the log string be?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_append_image_history</span><span class="p">(</span><span class="n">outim</span><span class="p">,</span> <span class="n">logstr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Return Image object</span>
+        <span class="k">return</span> <span class="n">outim</span></div>
+
+<div class="viewcode-block" id="Imager.make_image_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make Stokes I image using current imager settings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Imager.make_image_P"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_P">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_P</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make Stokes P polarimetric image using current imager settings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_image</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="n">grads</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Imager.set_embed"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.set_embed">[docs]</a>    <span class="k">def</span> <span class="nf">set_embed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set embedding matrix.</span>
@@ -325,46 +468,91 @@
 
         <span class="k">return</span></div>
 
-
 <div class="viewcode-block" id="Imager.check_params"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.check_params">[docs]</a>    <span class="k">def</span> <span class="nf">check_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Check parameter consistency.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">dt_here</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">dt_type</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">):</span> <span class="n">dt_here</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">term</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">term</span><span class="o">==</span><span class="kc">False</span><span class="p">):</span> <span class="n">dt_type</span> <span class="o">=</span> <span class="kc">False</span>
-
-        <span class="n">st_here</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">st_type</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">):</span> <span class="n">st_here</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">term</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">term</span> <span class="o">==</span> <span class="kc">False</span><span class="p">):</span> <span class="n">st_type</span> <span class="o">=</span> <span class="kc">False</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">dt_here</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one data term!&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">st_here</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one regularizer term!&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">dt_type</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid data term: valid data terms are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATATERMS</span><span class="p">))</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">st_type</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid regularizer: valid regularizers are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REGULARIZERS</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">psize</span><span class="p">)</span> <span class="ow">or</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="ow">or</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image does not match dimensions of the prior image!&quot;</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">polrep</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">polrep</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image pol. representation does not match pol. representation of the prior image!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;circ&#39;</span> <span class="ow">and</span> <span class="ow">not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;P&#39;</span><span class="p">,</span><span class="s1">&#39;RR&#39;</span><span class="p">,</span><span class="s1">&#39;LL&#39;</span><span class="p">])):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image polrep is &#39;circ&#39;: pol_next must be &#39;RR&#39; or &#39;LL&#39; or &#39;P&#39;!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">polrep</span> <span class="o">==</span> <span class="s1">&#39;stokes&#39;</span> <span class="ow">and</span> <span class="ow">not</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">,</span><span class="s1">&#39;Q&#39;</span><span class="p">,</span><span class="s1">&#39;U&#39;</span><span class="p">,</span><span class="s1">&#39;V&#39;</span><span class="p">,</span><span class="s1">&#39;P&#39;</span><span class="p">])):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Initial image polrep is &#39;stokes&#39;: pol_next must be in &#39;I&#39;,&#39;Q&#39;,&#39;U&#39;,&#39;V&#39;,&#39;P&#39;!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="o">==</span><span class="s1">&#39;log&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">,</span><span class="s1">&#39;U&#39;</span><span class="p">,</span><span class="s1">&#39;V&#39;</span><span class="p">,</span><span class="s1">&#39;P&#39;</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Cannot image Stokes Q, U, V, P with log image transformation!&quot;</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fast&#39;</span><span class="p">,</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span><span class="s1">&#39;nfft&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Possible ttype values are &#39;fast&#39;, &#39;direct&#39;,&#39;nfft&#39;!&quot;</span><span class="p">)</span>
 
+        <span class="k">if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">,</span><span class="s1">&#39;U&#39;</span><span class="p">,</span><span class="s1">&#39;V&#39;</span><span class="p">]</span> <span class="ow">and</span> 
+          <span class="p">(</span><span class="s1">&#39;gs&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">or</span> <span class="s1">&#39;simple&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;&#39;simple&#39; and &#39;gs&#39; MEM methods do not work with potentially negative Stokes Q, U, or V images!&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Catch errors for polarimetric imaging setup</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="o">!=</span><span class="s1">&#39;mcv&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;P imaging only works with &#39;mcv&#39; transform!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;direct&quot;</span><span class="p">,</span><span class="s2">&quot;nfft&quot;</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;FFT no yet implemented in polarimetric imaging -- use NFFT!&quot;</span><span class="p">)</span>
+
+            <span class="n">dt_here</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">dt_type</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">):</span> <span class="n">dt_here</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">term</span> <span class="ow">in</span> <span class="n">DATATERMS_POL</span><span class="p">)</span> <span class="ow">or</span> <span class="n">term</span><span class="o">==</span><span class="kc">False</span><span class="p">):</span> <span class="n">dt_type</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="n">st_here</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">st_type</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">):</span> <span class="n">st_here</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">term</span> <span class="ow">in</span> <span class="n">REGULARIZERS_POL</span><span class="p">)</span> <span class="ow">or</span> <span class="n">term</span> <span class="o">==</span> <span class="kc">False</span><span class="p">):</span> <span class="n">st_type</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dt_here</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one data term!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">st_here</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one regularizer term!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dt_type</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid data term for P imaging: valid data terms are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATATERMS_POL</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">st_type</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid regularizer for P imaging: valid regularizers are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REGULARIZERS_POL</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dt_here</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">dt_type</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">):</span> <span class="n">dt_here</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">term</span> <span class="ow">in</span> <span class="n">DATATERMS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">term</span><span class="o">==</span><span class="kc">False</span><span class="p">):</span> <span class="n">dt_type</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="n">st_here</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">st_type</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">term</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">):</span> <span class="n">st_here</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="n">term</span> <span class="ow">in</span> <span class="n">REGULARIZERS</span><span class="p">)</span> <span class="ow">or</span> <span class="n">term</span> <span class="o">==</span> <span class="kc">False</span><span class="p">):</span> <span class="n">st_type</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dt_here</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one data term!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">st_here</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Must have at least one regularizer term!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dt_type</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid data term: valid data terms are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DATATERMS</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">st_type</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid regularizer: valid regularizers are: &quot;</span> <span class="o">+</span> <span class="n">string</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">REGULARIZERS</span><span class="p">))</span>
+
         <span class="c1"># determine if we need to recompute the saved imager parameters on the next imager run</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_last</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;changed polarization!&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_last</span><span class="p">():</span>
@@ -431,16 +619,19 @@
         <span class="n">uvdists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;uvdist&#39;</span><span class="p">)[</span><span class="s1">&#39;uvdist&#39;</span><span class="p">]</span>
         <span class="n">maxbl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">uvdists</span><span class="p">)</span>
         <span class="n">minbl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">uvdists</span><span class="p">[</span><span class="n">uvdists</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">])</span>
-        <span class="n">maxamp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;amp&#39;</span><span class="p">)[</span><span class="s1">&#39;amp&#39;</span><span class="p">]))</span>
+
 
         <span class="k">if</span> <span class="n">uvmax</span> <span class="o">&lt;</span> <span class="n">maxbl</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Pixel Spacing is larger than smallest spatial wavelength!&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Pixel size is than smallest spatial wavelength!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">uvmin</span> <span class="o">&gt;</span> <span class="n">minbl</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Field of View is smaller than largest nonzero spatial wavelength!&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">&gt;</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &gt; 120</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">8</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &lt; 80</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span></div>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">,</span><span class="s1">&#39;RR&#39;</span><span class="p">,</span><span class="s1">&#39;LL&#39;</span><span class="p">]:</span>
+            <span class="n">maxamp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;amp&#39;</span><span class="p">)[</span><span class="s1">&#39;amp&#39;</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">&gt;</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &gt; 120</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">&lt;</span> <span class="o">.</span><span class="mi">8</span><span class="o">*</span><span class="n">maxamp</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning! Specified flux is &lt; 80</span><span class="si">% o</span><span class="s2">f maximum visibility amplitude!&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Imager.reg_terms_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.reg_terms_last">[docs]</a>    <span class="k">def</span> <span class="nf">reg_terms_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return last used regularizer terms.</span>
@@ -523,6 +714,14 @@
             <span class="k">return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clipfloor_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
+<div class="viewcode-block" id="Imager.pol_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.pol_last">[docs]</a>    <span class="k">def</span> <span class="nf">pol_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return last polarization imaged.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No imager runs yet!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pol_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
 <div class="viewcode-block" id="Imager.maxit_last"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.maxit_last">[docs]</a>    <span class="k">def</span> <span class="nf">maxit_last</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return last max_iterations value.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -587,18 +786,51 @@
             <span class="k">return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="Imager.init_imager_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_imager_I">[docs]</a>    <span class="k">def</span> <span class="nf">init_imager_I</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.init_imager"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_imager">[docs]</a>    <span class="k">def</span> <span class="nf">init_imager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set up Stokes I imager.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="c1"># embedding, prior &amp; initial image vectors</span>
+        <span class="c1"># set embedding</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_embed</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_init</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_nprior_I</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]))[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_ninit_I</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]))[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_nprior_I</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_ninit_I</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+
+        <span class="c1"># set prior &amp; initial image vectors</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span> <span class="c1"># polarimetric imaging</span>
+            <span class="c1"># initial I, kept constant</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_iinit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iinit</span><span class="p">)</span>
+
+            <span class="c1"># initialize m &amp; phi</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">qvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">uvec</span><span class="o">!=</span><span class="mi">0</span><span class="p">)):</span>
+                <span class="n">init1</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+                <span class="n">init2</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">uvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">qvec</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># !AC TODO get the actual zero baseline pol. frac from the data!??</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No polarimetric image in init_next -- initializing with 10% pol and random orientation!&quot;</span><span class="p">)</span>
+                <span class="n">init1</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">))</span>
+                <span class="n">init2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_inittuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_iinit</span><span class="p">,</span> <span class="n">init1</span><span class="p">,</span> <span class="n">init2</span><span class="p">))</span>
+
+            <span class="c1"># change of variables</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;mcv&#39;</span><span class="p">:</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span> <span class="o">=</span>  <span class="n">mcv_r</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inittuple</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> 
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Polarimetric imaging only works with transform_next=&#39;mcv&#39;&quot;</span><span class="p">)</span>
+
+            <span class="c1"># pack into single vector</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="n">pack_poltuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="n">POL_SOLVE</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># single stokes or RR/LL imaging</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_init</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_nprior</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]))[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_ninit</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]))[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_nprior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_ninit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_next</span><span class="o">.</span><span class="n">imvec</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">]</span>
+
+            <span class="c1"># change of variables</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ninit</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ninit</span>
 
         <span class="c1"># data term tuples</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span><span class="p">:</span>
@@ -608,11 +840,18 @@
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Recomputing imager data products . . .&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                <span class="n">tup</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
-                                <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span><span class="p">,</span>
-                                <span class="n">systematic_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span><span class="p">,</span> <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">,</span>
-                                <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_interp_order</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_pad_factor</span><span class="p">,</span>
-                                <span class="n">conv_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_conv_func</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_gridder_prad</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                    <span class="n">tup</span> <span class="o">=</span> <span class="n">polchisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="p">,</span>
+                                        <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span><span class="p">,</span>
+                                        <span class="n">systematic_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span><span class="p">,</span> <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">,</span>
+                                        <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_interp_order</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_pad_factor</span><span class="p">,</span>
+                                        <span class="n">conv_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_conv_func</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_gridder_prad</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tup</span> <span class="o">=</span> <span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="p">,</span>
+                                    <span class="n">debias</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">debias_next</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">,</span> <span class="n">weighting</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weighting_next</span><span class="p">,</span>
+                                    <span class="n">systematic_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_noise_next</span><span class="p">,</span> <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">,</span>
+                                    <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_interp_order</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_pad_factor</span><span class="p">,</span>
+                                    <span class="n">conv_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_conv_func</span><span class="p">,</span> <span class="n">p_rad</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_fft_gridder_prad</span><span class="p">)</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">tup</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_change_imgr_params</span> <span class="o">=</span> <span class="kc">False</span>
@@ -622,6 +861,8 @@
 <div class="viewcode-block" id="Imager.init_imager_scattering"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.init_imager_scattering">[docs]</a>    <span class="k">def</span> <span class="nf">init_imager_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set up scattering imager.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span> <span class="o">=</span> <span class="n">so</span><span class="o">.</span><span class="n">ScatteringModel</span><span class="p">()</span>
 
@@ -638,10 +879,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_ea_ker_gradient_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">ea_ker_gradient</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># The power spectrum (note: rotation is not currently implemented; the gradients would need to be modified slightly)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">sqrtQ_Matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span><span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sqrtQ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scattering_model</span><span class="o">.</span><span class="n">sqrtQ_Matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span><span class="n">t_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">))</span>
 
+        <span class="c1"># Generate the initial image+screen vector. By default, the screen is re-initialized to zero each time.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon_list_next</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon_list_next</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Imager.make_chisq_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_chisq_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_chisq_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.make_chisq_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_chisq_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_chisq_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imcur</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;make dictionary of current chi^2 term values</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">chi2_dict</span> <span class="o">=</span> <span class="p">{}</span>
@@ -650,12 +896,18 @@
             <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
 
-            <span class="n">chi2</span> <span class="o">=</span> <span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">chi2</span> <span class="o">=</span> <span class="n">polchisq</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> 
+                                <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span> 
+                                <span class="n">pol_prim</span><span class="o">=</span><span class="n">POL_PRIM</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chi2</span> <span class="o">=</span> <span class="n">chisq</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> 
+                             <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
             <span class="n">chi2_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">chi2</span>
 
         <span class="k">return</span> <span class="n">chi2_dict</span></div>
 
-<div class="viewcode-block" id="Imager.make_chisqgrad_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_chisqgrad_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_chisqgrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.make_chisqgrad_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_chisqgrad_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_chisqgrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imcur</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;make dictionary of current chi^2 term gradient values</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">chi2grad_dict</span> <span class="o">=</span> <span class="p">{}</span>
@@ -664,39 +916,59 @@
             <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_tuples</span><span class="p">[</span><span class="n">dname</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
 
-            <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">polchisqgrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span> 
+                                        <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
+                                        <span class="n">pol_prim</span><span class="o">=</span><span class="n">POL_PRIM</span><span class="p">,</span> <span class="n">pol_solve</span><span class="o">=</span><span class="n">POL_SOLVE</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chi2grad</span> <span class="o">=</span> <span class="n">chisqgrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dname</span><span class="p">,</span>
+                                     <span class="n">ttype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
+
             <span class="n">chi2grad_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">=</span> <span class="n">chi2grad</span>
 
         <span class="k">return</span> <span class="n">chi2grad_dict</span></div>
 
-<div class="viewcode-block" id="Imager.make_reg_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_reg_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_reg_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+<div class="viewcode-block" id="Imager.make_reg_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_reg_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_reg_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imcur</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;make dictionary of current regularizer values</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">reg_dict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-
-            <span class="n">reg</span> <span class="o">=</span> <span class="n">regularizer</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nprior_I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
-                              <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
-                              <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
-                              <span class="n">regname</span><span class="p">,</span>
-                              <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
-                              <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
-            <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
-
-        <span class="k">return</span> <span class="n">reg_dict</span></div>
-
-<div class="viewcode-block" id="Imager.make_reggrad_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_reggrad_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_reggrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;make dictionary of current regularizer gradient values</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">reggrad_dict</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-
-            <span class="n">reg</span> <span class="o">=</span> <span class="n">regularizergrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nprior_I</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">reg</span> <span class="o">=</span> <span class="n">polregularizer</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>  
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
+                                     <span class="n">pol_prim</span><span class="o">=</span><span class="n">POL_PRIM</span>
+                                     <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">reg</span> <span class="o">=</span> <span class="n">regularizer</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nprior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
                                   <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
                                   <span class="n">regname</span><span class="p">,</span>
                                   <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
                                   <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
+            <span class="n">reg_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
+
+        <span class="k">return</span> <span class="n">reg_dict</span></div>
+
+<div class="viewcode-block" id="Imager.make_reggrad_dict"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_reggrad_dict">[docs]</a>    <span class="k">def</span> <span class="nf">make_reggrad_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imcur</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;make dictionary of current regularizer gradient values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">reggrad_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                <span class="n">reg</span> <span class="o">=</span> <span class="n">polregularizergrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>  
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="n">regname</span><span class="p">,</span>
+                                     <span class="n">pol_prim</span><span class="o">=</span><span class="n">POL_PRIM</span><span class="p">,</span> <span class="n">pol_solve</span><span class="o">=</span><span class="n">POL_SOLVE</span>
+                                     <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">reg</span> <span class="o">=</span> <span class="n">regularizergrad</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nprior</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">,</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span>
+                                      <span class="n">regname</span><span class="p">,</span>
+                                      <span class="n">norm_reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_reg</span><span class="p">,</span> <span class="n">beam_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_size</span><span class="p">,</span>
+                                      <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">regparams</span><span class="p">)</span>
             <span class="n">reggrad_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">=</span> <span class="n">reg</span>
 
         <span class="k">return</span> <span class="n">reggrad_dict</span></div>
@@ -704,20 +976,126 @@
 <div class="viewcode-block" id="Imager.objfunc"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objfunc">[docs]</a>    <span class="k">def</span> <span class="nf">objfunc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Current objective function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
-            <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="c1"># unpack polarimetric vector into an array</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">unpack_poltuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">POL_SOLVE</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">imvec</span>
 
+        <span class="c1"># image change of variables</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="o">==</span> <span class="s1">&#39;mcv&#39;</span><span class="p">:</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">mcv</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>            
+
+        <span class="c1"># data terms</span>
         <span class="n">datterm</span> <span class="o">=</span> <span class="mf">0.</span>
-        <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="n">datterm</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.</span><span class="p">)</span>
 
+        <span class="c1"># regularizer terms</span>
         <span class="n">regterm</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reg_dict</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reg_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
             <span class="n">regterm</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">*</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span></div>
+
+
+<div class="viewcode-block" id="Imager.objgrad"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objgrad">[docs]</a>    <span class="k">def</span> <span class="nf">objgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Current objective function gradient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># unpack polarimetric vector into an array</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">unpack_poltuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">POL_SOLVE</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">imvec</span>
+
+        <span class="c1"># image change of variabbles</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span><span class="o">==</span> <span class="s1">&#39;mcv&#39;</span><span class="p">:</span>
+            <span class="n">cvcur</span> <span class="o">=</span> <span class="n">imcur</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">imcur</span> <span class="o">=</span> <span class="n">mcv</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>            
+
+        <span class="n">datterm</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisqgrad_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">datterm</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
+
+        <span class="n">regterm</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reggrad_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">regterm</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">*</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
+
+        <span class="n">grad</span> <span class="o">=</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span>
+
+        <span class="c1"># chain rule term for change of variables</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+            <span class="n">grad</span> <span class="o">*=</span> <span class="n">imcur</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;mcv&#39;</span><span class="p">:</span>
+            <span class="n">grad</span> <span class="o">*=</span> <span class="n">mchain</span><span class="p">(</span><span class="n">cvcur</span><span class="p">)</span>
+
+        <span class="c1"># repack gradient for polarimetric imaging</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="n">pack_poltuple</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="n">POL_SOLVE</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">grad</span></div>
+
+    <span class="k">def</span> <span class="nf">plotcur</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_show_updates</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_interval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                    <span class="n">imcur</span> <span class="o">=</span> <span class="n">unpack_poltuple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xtuple</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nimage</span><span class="p">,</span> <span class="n">POL_SOLVE</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">imcur</span> <span class="o">=</span> <span class="n">imvec</span>
+
+                <span class="c1">#change of variables</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
+                    <span class="n">imcur</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s2">&quot;mcv&quot;</span><span class="p">:</span>
+                    <span class="n">imcur</span> <span class="o">=</span> <span class="n">mcv</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span> 
+
+                <span class="c1"># get chi^2 and regularizer</span>
+                <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
+                <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reg_dict</span><span class="p">(</span><span class="n">imcur</span><span class="p">)</span>
+
+                <span class="n">chi2_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">chi2_term_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="n">chi2_1</span> <span class="o">=</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">chi2_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+                <span class="n">chi2_2</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chi2_term_dict</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">chi2_2</span> <span class="o">=</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">chi2_keys</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+                <span class="c1"># format print string</span>
+                <span class="n">outstr</span> <span class="o">=</span> <span class="s2">&quot;------------------------------------------------------------------&quot;</span>
+                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="si">%4d</span><span class="s2"> | &quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span>
+                <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;chi2_</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
+
+                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">        &quot;</span>
+                <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.1f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
+                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">        &quot;</span>
+                <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.1f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regname</span><span class="p">,</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">])</span>
+
+                <span class="c1"># embed and plot</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="o">==</span><span class="s1">&#39;P&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)):</span>
+                        <span class="n">imcur</span> <span class="o">=</span> <span class="n">embed_pol</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span> 
+                    <span class="n">plot_m</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)):</span> 
+                        <span class="n">imcur</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
+
+                    <span class="n">plot_i</span><span class="p">(</span><span class="n">imcur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="nb">print</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">outstr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">+=</span> <span class="mi">1</span>
+
 
 <div class="viewcode-block" id="Imager.objfunc_scattering"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objfunc_scattering">[docs]</a>    <span class="k">def</span> <span class="nf">objfunc_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minvec</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Current stochastic optics objective function.</span>
@@ -755,30 +1133,6 @@
         <span class="n">regterm_scattering</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha_phi_next</span> <span class="o">*</span> <span class="p">(</span><span class="n">chisq_epsilon</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span> <span class="o">+</span> <span class="n">regterm_scattering</span></div>
-
-<div class="viewcode-block" id="Imager.objgrad"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objgrad">[docs]</a>    <span class="k">def</span> <span class="nf">objgrad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Current objective function gradient.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
-            <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
-
-        <span class="n">datterm</span> <span class="o">=</span> <span class="mf">0.</span>
-        <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisqgrad_dict</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="n">datterm</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.</span><span class="p">)</span>
-
-        <span class="n">regterm</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reggrad_dict</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="n">regterm</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span> <span class="o">*</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span>
-
-        <span class="n">grad</span> <span class="o">=</span> <span class="n">datterm</span> <span class="o">+</span> <span class="n">regterm</span>
-
-        <span class="c1"># chain rule term for change of variables</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
-            <span class="n">grad</span> <span class="o">*=</span> <span class="n">imvec</span>
-
-        <span class="k">return</span> <span class="n">grad</span></div>
 
 <div class="viewcode-block" id="Imager.objgrad_scattering"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.objgrad_scattering">[docs]</a>    <span class="k">def</span> <span class="nf">objgrad_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minvec</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Current stochastic optics objective function gradient</span>
@@ -890,39 +1244,6 @@
 
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(((</span><span class="n">regterm</span> <span class="o">+</span> <span class="n">chisq_grad_im</span><span class="p">),(</span><span class="n">chisq_grad_epsilon</span> <span class="o">+</span> <span class="n">chisq_epsilon_grad</span><span class="p">)))</span></div>
 
-    <span class="k">def</span> <span class="nf">plotcur</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imvec</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_show_updates</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_interval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
-                    <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
-                <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
-                <span class="n">reg_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_reg_dict</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
-
-                <span class="n">chi2_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">chi2_term_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-                <span class="n">chi2_1</span> <span class="o">=</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">chi2_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-                <span class="n">chi2_2</span> <span class="o">=</span> <span class="mf">0.</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chi2_term_dict</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">chi2_2</span> <span class="o">=</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">chi2_keys</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
-
-                <span class="n">outstr</span> <span class="o">=</span> <span class="s2">&quot;------------------------------------------------------------------&quot;</span>
-                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="si">%4d</span><span class="s2"> | &quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span>
-                <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                    <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;chi2_</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
-
-                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">        &quot;</span>
-                <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                    <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.1f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
-                <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">        &quot;</span>
-                <span class="k">for</span> <span class="n">regname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-                    <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.1f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">regname</span><span class="p">,</span> <span class="n">reg_term_dict</span><span class="p">[</span><span class="n">regname</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">reg_term_next</span><span class="p">[</span><span class="n">regname</span><span class="p">])</span>
-
-                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)):</span> <span class="n">imvec</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
-                <span class="n">plot_i</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="nb">print</span><span class="p">()</span>
-                <span class="nb">print</span><span class="p">(</span><span class="n">outstr</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">+=</span> <span class="mi">1</span>
-
     <span class="k">def</span> <span class="nf">plotcur_scattering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minvec</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_show_updates</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_interval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -968,85 +1289,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">+=</span> <span class="mi">1</span>
 
-<div class="viewcode-block" id="Imager.make_image_I"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make Stokes I image using current imager settings.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;==============================&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Imager run </span><span class="si">%i</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
-        <span class="c1"># Checks and initialize</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_imager_I</span><span class="p">()</span>
-
-        <span class="c1"># Generate and the initial image</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span> <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ninit_I</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span> <span class="n">xinit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ninit_I</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="c1"># Print initial stats</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_show_updates</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;show_updates&#39;</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_interval</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;update_interval&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">plotcur</span><span class="p">(</span><span class="n">xinit</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-        <span class="c1"># Minimize</span>
-        <span class="n">optdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;maxiter&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit_next</span><span class="p">,</span> <span class="s1">&#39;ftol&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_next</span><span class="p">,</span><span class="c1"># &#39;gtol&#39;:self.stop_next,</span>
-                   <span class="s1">&#39;maxcor&#39;</span><span class="p">:</span><span class="n">NHIST</span><span class="p">,</span> <span class="s1">&#39;maxls&#39;</span><span class="p">:</span><span class="n">MAXLS</span><span class="p">}</span>
-        <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">grads</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc</span><span class="p">,</span> <span class="n">xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">objgrad</span><span class="p">,</span>
-                               <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotcur</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc</span><span class="p">,</span> <span class="n">xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span>
-                               <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotcur</span><span class="p">)</span>
-        <span class="n">tstop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-
-        <span class="c1"># Format output</span>
-        <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;DONE&quot;</span><span class="p">)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">[:]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tmpout</span> <span class="o">=</span> <span class="n">res</span>
-        <span class="c1">#return</span>
-
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
-
-        <span class="c1"># Print final stats</span>
-        <span class="n">outstr</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="n">chi2_term_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_chisq_dict</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">dname</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dat_term_next</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="n">outstr</span> <span class="o">+=</span> <span class="s2">&quot;chi2_</span><span class="si">%s</span><span class="s2"> : </span><span class="si">%0.2f</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">chi2_term_dict</span><span class="p">[</span><span class="n">dname</span><span class="p">])</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;time: </span><span class="si">%f</span><span class="s2"> s&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tstop</span> <span class="o">-</span> <span class="n">tstart</span><span class="p">))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;J: </span><span class="si">%f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">outstr</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;==============================&quot;</span><span class="p">)</span>
-
-        <span class="c1"># return image</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)):</span> <span class="n">out</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_embed_mask</span><span class="p">)</span>
-
-        <span class="n">outim</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span>
-                            <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
-                            <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
-
-        <span class="c1"># Preserving image complex polarization fractions</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">qvec</span><span class="p">):</span>
-            <span class="n">qvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">qvec</span> <span class="o">*</span> <span class="n">out</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span>
-            <span class="n">uvec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">uvec</span> <span class="o">*</span> <span class="n">out</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">imvec</span>
-            <span class="n">outim</span><span class="o">.</span><span class="n">add_qu</span><span class="p">(</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">),</span>
-                         <span class="n">uvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_next</span><span class="o">.</span><span class="n">xdim</span><span class="p">))</span>
-
-
-        <span class="c1"># Append to history</span>
-        <span class="n">logstr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nruns</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;: make_image_I()&quot;</span> <span class="c1">#TODO - what should the log string be?</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_append_image_history</span><span class="p">(</span><span class="n">outim</span><span class="p">,</span> <span class="n">logstr</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nruns</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="c1"># Return Image object</span>
-        <span class="k">return</span> <span class="n">outim</span></div>
-
 <div class="viewcode-block" id="Imager.make_image_I_stochastic_optics"><a class="viewcode-back" href="../../imager.html#ehtim.imager.Imager.make_image_I_stochastic_optics">[docs]</a>    <span class="k">def</span> <span class="nf">make_image_I_stochastic_optics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grads</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Reconstructs an image of total flux density using the stochastic optics scattering mitigation technique.</span>
 <span class="sd">           Uses the scattering model of the imager. If none has been specified, it will default to a standard model for Sgr A*.</span>
@@ -1064,36 +1306,23 @@
         <span class="c1"># Checks and initialize</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_params</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_imager_I</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_imager</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">init_imager_scattering</span><span class="p">()</span>
-
-        <span class="c1"># Generate the initial image+screen vector. By default, the screen is re-initialized to zero each time.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_next</span> <span class="o">==</span> <span class="s1">&#39;log&#39;</span><span class="p">:</span>
-            <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ninit_I</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">xinit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ninit_I</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon_list_next</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">xinit</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">xinit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">xinit</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">epsilon_list_next</span><span class="p">))</span>
-
-
         <span class="bp">self</span><span class="o">.</span><span class="n">_nit</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="c1"># Print stats</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_show_updates</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;show_updates&#39;</span><span class="p">,</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_interval</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;update_interval&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">plotcur_scattering</span><span class="p">(</span><span class="n">xinit</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotcur_scattering</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">)</span>
 
         <span class="c1"># Minimize</span>
         <span class="n">optdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;maxiter&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit_next</span><span class="p">,</span> <span class="s1">&#39;ftol&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_next</span><span class="p">,</span> <span class="s1">&#39;maxcor&#39;</span><span class="p">:</span><span class="n">NHIST</span><span class="p">}</span>
         <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">grads</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc_scattering</span><span class="p">,</span> <span class="n">xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">objgrad_scattering</span><span class="p">,</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc_scattering</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">objgrad_scattering</span><span class="p">,</span>
                                <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotcur_scattering</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc_scattering</span><span class="p">,</span> <span class="n">xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">objfunc_scattering</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xinit</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;L-BFGS-B&#39;</span><span class="p">,</span>
                                <span class="n">options</span><span class="o">=</span><span class="n">optdict</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">plotcur_scattering</span><span class="p">)</span>
         <span class="n">tstop</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
@@ -1147,6 +1376,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_systematic_cphase_noise_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">systematic_cphase_noise_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_snrcut_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">snrcut_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_flux_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_next</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pol_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_clipfloor_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clipfloor_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_maxit_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maxit_next</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stop_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_next</span><span class="p">)</span>
@@ -1156,9 +1386,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_alpha_phi_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_phi_next</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_out_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">outim</span><span class="p">)</span>
-        <span class="k">return</span>
-
-    <span class="k">def</span> <span class="nf">make_image_P</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span>
 
     <span class="k">def</span> <span class="nf">make_image_scat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

@@ -169,7 +169,7 @@
 <span id="id1"></span><h1>Obsdata<a class="headerlink" href="#obsdata" title="Permalink to this headline">¶</a></h1>
 <span class="target" id="module-ehtim.obsdata"></span><dl class="class">
 <dt id="ehtim.obsdata.Obsdata">
-<em class="property">class </em><code class="descclassname">ehtim.obsdata.</code><code class="descname">Obsdata</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatable</em>, <em>tarr</em>, <em>scantable=None</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>opacitycal=True</em>, <em>dcal=True</em>, <em>frcal=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ehtim.obsdata.</code><code class="descname">Obsdata</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatable</em>, <em>tarr</em>, <em>scantable=None</em>, <em>polrep='stokes'</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>opacitycal=True</em>, <em>dcal=True</em>, <em>frcal=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata" title="Permalink to this definition">¶</a></dt>
 <dd><p>A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</p>
 <dl class="attribute">
 <dt id="ehtim.obsdata.Obsdata.source">
@@ -220,6 +220,42 @@
 </dd></dl>
 
 <dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.timetype">
+<code class="descname">timetype</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.timetype" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> &#8211; How to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.polrep">
+<code class="descname">polrep</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.polrep" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> &#8211; polarization representation, either &#8216;stokes&#8217; or &#8216;circ&#8217;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.tarr">
+<code class="descname">tarr</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tarr" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.recarray</em> &#8211; The array of telescope data with datatype DTARR</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.tkey">
+<code class="descname">tkey</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tkey" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> &#8211; A dictionary of rows in the tarr for each site name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.data">
+<code class="descname">data</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.recarray</em> &#8211; the basic data with datatype DTPOL_STOKES or DTPOL_CIRC</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.scantable">
+<code class="descname">scantable</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.scantable" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.recarray</em> &#8211; The array of scan information</p>
+</dd></dl>
+
+<dl class="attribute">
 <dt id="ehtim.obsdata.Obsdata.ampcal">
 <code class="descname">ampcal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.ampcal" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>bool</em> &#8211; True if amplitudes calibrated</p>
@@ -250,33 +286,9 @@
 </dd></dl>
 
 <dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.timetype">
-<code class="descname">timetype</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.timetype" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; How to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.tarr">
-<code class="descname">tarr</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tarr" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; The array of telescope data with datatype DTARR</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.tkey">
-<code class="descname">tkey</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tkey" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; A dictionary of rows in the tarr for each site name</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.data">
-<code class="descname">data</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.data" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; the basic data with datatype DTPOL</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.scantable">
-<code class="descname">scantable</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.scantable" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; The array of scan information</p>
+<dt id="ehtim.obsdata.Obsdata.amp">
+<code class="descname">amp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.amp" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) visibility amplitudes</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -295,6 +307,12 @@
 <dt id="ehtim.obsdata.Obsdata.camp">
 <code class="descname">camp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.camp" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) closure amplitudes</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.obsdata.Obsdata.logcamp">
+<code class="descname">logcamp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.logcamp" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) log closure amplitudes</p>
 </dd></dl>
 
 <dl class="method">
@@ -322,7 +340,7 @@
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.add_amp">
-<code class="descname">add_amp</code><span class="sig-paren">(</span><em>avg_time=0</em>, <em>scan_avg=False</em>, <em>debias=True</em>, <em>err_type='predicted'</em>, <em>return_type='rec'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_amp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_amp" title="Permalink to this definition">¶</a></dt>
+<code class="descname">add_amp</code><span class="sig-paren">(</span><em>avg_time=0</em>, <em>scan_avg=False</em>, <em>debias=True</em>, <em>err_type='predicted'</em>, <em>return_type='rec'</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_amp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_amp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adds attribute self.amp: amplitude table with incoherently averaged amplitudes</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -581,7 +599,7 @@ Uses old (slow) method.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if tlist_out includes conjugate baselines.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables (type DTPOL) containing baseline-partitioned data</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables containing baseline-partitioned data</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</td>
 </tr>
@@ -677,7 +695,7 @@ Uses old (slow) method.</p>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.chisq">
-<code class="descname">chisq</code><span class="sig-paren">(</span><em>im</em>, <em>dtype='vis'</em>, <em>mask=[]</em>, <em>debias=True</em>, <em>systematic_noise=0.0</em>, <em>systematic_cphase_noise=0.0</em>, <em>maxset=False</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.chisq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.chisq" title="Permalink to this definition">¶</a></dt>
+<code class="descname">chisq</code><span class="sig-paren">(</span><em>im</em>, <em>dtype='vis'</em>, <em>pol='I'</em>, <em>mask=[]</em>, <em>debias=True</em>, <em>systematic_noise=0.0</em>, <em>systematic_cphase_noise=0.0</em>, <em>maxset=False</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.chisq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.chisq" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give the reduced chi^2 of the observation for the specified image and datatype.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -685,7 +703,8 @@ Uses old (slow) method.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; image to test chi^2</li>
-<li><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; data type of chi^2</li>
+<li><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; data type of chi^2 (e.g., &#8216;vis&#8217;, &#8216;amp&#8217;, &#8216;bs&#8217;, &#8216;cphase&#8217;)</li>
+<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; polarization type (&#8216;I&#8217;, &#8216;Q&#8217;, &#8216;U&#8217;, &#8216;V&#8217;, &#8216;LL&#8217;, &#8216;RR&#8217;, &#8216;LR&#8217;, or &#8216;RL&#8217;</li>
 <li><strong>mask</strong> (<em>arr</em>) &#8211; mask of same dimension as im.imvec to screen out pixels in chi^2 computation</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True then apply debiasing to amplitudes/closure amplitudes</li>
 <li><strong>systematic_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; a fractional systematic noise tolerance to add to thermal sigmas</li>
@@ -787,7 +806,7 @@ Uses old (slow) method.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a copy of the Obsdata.data table (type DTPOL) including all conjugate baselines.</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a copy of the Obsdata.data table including all conjugate baselines.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(numpy.recarray)</td>
 </tr>
@@ -864,7 +883,7 @@ Uses old (slow) method.</p>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.estimate_noise_rescale_factor">
-<code class="descname">estimate_noise_rescale_factor</code><span class="sig-paren">(</span><em>max_diff_sec=0.0</em>, <em>min_num=10</em>, <em>print_std=False</em>, <em>count='max'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.estimate_noise_rescale_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.estimate_noise_rescale_factor" title="Permalink to this definition">¶</a></dt>
+<code class="descname">estimate_noise_rescale_factor</code><span class="sig-paren">(</span><em>max_diff_sec=0.0</em>, <em>min_num=10</em>, <em>print_std=False</em>, <em>count='max'</em>, <em>vtype='vis'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.estimate_noise_rescale_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.estimate_noise_rescale_factor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimate a constant rescaling factor for thermal noise across all baselines, times, and polarizations.
 Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise.
 This is useful for AIPS data, which has a single constant factor missing that relates &#8216;weights&#8217; to thermal noise.</p>
@@ -878,10 +897,11 @@ If 0, auto-estimates this value to twice the median scan length.</li>
 <li><strong>min_num</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The minimum number of closure phase differences for a triangle to be included in the set of estimators.</li>
 <li><strong>print_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Whether or not to print the normalized standard deviation for each closure triangle.</li>
 <li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, use minimal set of phases, if &#8216;max&#8217; use all closure phases up to reordering</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Visibility type (e.g., &#8216;vis&#8217;, &#8216;llvis&#8217;, &#8216;rrvis&#8217;, etc.)</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The rescaling factor</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The rescaling factor. This can be applied to the data using the obsdata member function rescale_noise().</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a>)</p>
@@ -1037,7 +1057,7 @@ If 0, auto-estimates this value to twice the median scan length.</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.flag_high_sigma">
-<code class="descname">flag_high_sigma</code><span class="sig-paren">(</span><em>sigma_cut=0.005</em>, <em>output='kept'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.flag_high_sigma"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.flag_high_sigma" title="Permalink to this definition">¶</a></dt>
+<code class="descname">flag_high_sigma</code><span class="sig-paren">(</span><em>sigma_cut=0.005</em>, <em>sigma_type='sigma'</em>, <em>output='kept'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.flag_high_sigma"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.flag_high_sigma" title="Permalink to this definition">¶</a></dt>
 <dd><p>Flag high sigma (thermal noise on Stoke I) data points</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1045,6 +1065,7 @@ If 0, auto-estimates this value to twice the median scan length.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>sigma_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; remove points with sigma higher than  this</li>
+<li><strong>sigma_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; sigma type (sigma, rrsigma, llsigma, etc.)</li>
 <li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; return: &#8216;kept&#8217; (data after flagging), &#8216;flagged&#8217; (data that were flagged), or &#8216;both&#8217; (a dictionary)</li>
 </ul>
 </td>
@@ -1509,6 +1530,31 @@ This is useful for AIPS data, which has a single constant factor missing that re
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.obsdata.Obsdata.switch_polrep">
+<code class="descname">switch_polrep</code><span class="sig-paren">(</span><em>polrep_out='stokes'</em>, <em>allow_singlepol=True</em>, <em>singlepol_hand='R'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.switch_polrep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.switch_polrep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new observation with the polarization representation changed
+:param polrep_out: the polrep of the output data
+:type polrep_out: str
+:param allow_singlepol: If True, treat single-polarization data as</p>
+<blockquote>
+<div>Stokes I when converting from &#8216;circ&#8217; polrep to &#8216;stokes&#8217;</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>singlepol_hand</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;R&#8217; or &#8216;L&#8217;; determines which parallel-hand
+is assumed when converting &#8216;stokes&#8217; to &#8216;circ&#8217;
+and only Stokes I is present</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">new Obsdata object with potentially different polrep</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.obsdata.Obsdata.taper">
 <code class="descname">taper</code><span class="sig-paren">(</span><em>fwhm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.taper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.taper" title="Permalink to this definition">¶</a></dt>
 <dd><p>Taper the observation with a circular Gaussian kernel</p>
@@ -1528,17 +1574,24 @@ This is useful for AIPS data, which has a single constant factor missing that re
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.tlist">
-<code class="descname">tlist</code><span class="sig-paren">(</span><em>conj=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.tlist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.tlist" title="Permalink to this definition">¶</a></dt>
+<code class="descname">tlist</code><span class="sig-paren">(</span><em>conj=False</em>, <em>t_gather=0.0</em>, <em>scan_gather=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.tlist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.tlist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Group the data in a list of equal time observation datatables.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if tlist_out includes conjugate baselines.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if tlist_out includes conjugate baselines.</li>
+<li><strong>t_gather</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Grouping timescale (in seconds). 0.0 indicates no grouping.</li>
+<li><strong>scan_gather</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If true, gather data into scans</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables (type DTPOL) containing time-partitioned data</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of data tables containing time-partitioned data</p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -1609,7 +1662,7 @@ This is useful for AIPS data, which has a single constant factor missing that re
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>data</strong> (<em>numpy.recarray</em>) &#8211; data recarray of format DTPOL</li>
+<li><strong>data</strong> (<em>numpy.recarray</em>) &#8211; data recarray of format DTPOL_STOKES or DTPOL_CIRC</li>
 <li><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of unpacked quantities from availalbe quantities in FIELDS</li>
 <li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
@@ -1688,17 +1741,19 @@ This is useful for AIPS data, which has a single constant factor missing that re
 
 <dl class="function">
 <dt id="ehtim.obsdata.load_txt">
-<code class="descclassname">ehtim.obsdata.</code><code class="descname">load_txt</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_txt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read an observation from a text file.</p>
+<code class="descclassname">ehtim.obsdata.</code><code class="descname">load_txt</code><span class="sig-paren">(</span><em>fname</em>, <em>polrep='stokes'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_txt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read an observation from a text file.
+:param fname: path to input text file
+:type fname: str
+:param polrep: load data as either &#8216;stokes&#8217; or &#8216;circ&#8217;
+:type polrep: str</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input text file</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1706,26 +1761,27 @@ This is useful for AIPS data, which has a single constant factor missing that re
 
 <dl class="function">
 <dt id="ehtim.obsdata.load_uvfits">
-<code class="descclassname">ehtim.obsdata.</code><code class="descname">load_uvfits</code><span class="sig-paren">(</span><em>fname</em>, <em>flipbl=False</em>, <em>force_singlepol=None</em>, <em>channel=&lt;built-in function all&gt;</em>, <em>IF=&lt;built-in function all&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_uvfits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load observation data from a uvfits file.</p>
+<code class="descclassname">ehtim.obsdata.</code><code class="descname">load_uvfits</code><span class="sig-paren">(</span><em>fname</em>, <em>flipbl=False</em>, <em>force_singlepol=None</em>, <em>channel=&lt;built-in function all&gt;</em>, <em>IF=&lt;built-in function all&gt;</em>, <em>polrep='stokes'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_uvfits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load observation data from a uvfits file.
+:param fname: path to input text file
+:type fname: str
+:param flipbl: flip baseline phases if True.
+:type flipbl: bool
+:param polrep: load data as either &#8216;stokes&#8217; or &#8216;circ&#8217;
+:type polrep: str
+:param force_singlepol: &#8216;R&#8217; or &#8216;L&#8217; to load only 1 polarization
+:type force_singlepol: str
+:param channel: list of channels to average in the import. channel=all averages all channels
+:type channel: list
+:param IF: list of IFs to  average in  the import. IF=all averages all IFS
+:type IF: list</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input text file</li>
-<li><strong>flipbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; flip baseline phases if True.</li>
-<li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;R&#8217; or &#8216;L&#8217; to load only 1 polarization</li>
-<li><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of channels to average in the import. channel=all averages all channels</li>
-<li><strong>IF</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of IFs to  average in  the import. IF=all averages all IFS</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Obsdata object loaded from file</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
-</td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
 </tr>
 </tbody>
 </table>
