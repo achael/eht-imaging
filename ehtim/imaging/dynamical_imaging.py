@@ -213,14 +213,15 @@ def export_movie(im_List, out='movie.mp4', fps=10, dpi=120, scale='linear', cbar
     extent = im_List[0].psize/RADPERUAS*im_List[0].xdim*np.array((1,-1,-1,1)) / 2.
     maxi = np.max(np.concatenate([im.imvec for im in im_List]))
 
-    if cbar_unit == 'mJy':
-        imvec = imvec * 1.e3
-        qvec = qvec * 1.e3
-        uvec = uvec * 1.e3
-    elif cbar_unit == '$\mu$Jy':
-        imvec = imvec * 1.e6
-        qvec = qvec * 1.e6
-        uvec = uvec * 1.e6
+# TODO: fix this
+#    if cbar_unit == 'mJy':
+#        imvec = imvec * 1.e3
+#        qvec = qvec * 1.e3
+#        uvec = uvec * 1.e3
+#    elif cbar_unit == '$\mu$Jy':
+#        imvec = imvec * 1.e6
+#        qvec = qvec * 1.e6
+#        uvec = uvec * 1.e6
 
     unit = cbar_unit + '/pixel'
 

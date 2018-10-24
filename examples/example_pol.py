@@ -19,9 +19,9 @@ tint_sec = 5
 tadv_sec = 600
 tstart_hr = 0
 tstop_hr = 24
-bw_hz = 4e9
+bw_hz = 400e9
 obs = im.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
-                 sgrscat=False, ampcal=True, phasecal=False)
+                 sgrscat=False, ampcal=True, phasecal=True)
 # Resolution
 beamparams = obs.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
 res = obs.res() # nominal array resolution, 1/longest baseline

@@ -152,14 +152,11 @@ class Image(object):
 
     @property
     def imvec(self):
-        """Return the imvec of the primary polarization"""
         imvec = self._imdict[self.pol_prim]
         return imvec
 
     @imvec.setter
     def imvec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("imvec size is not consistent with xdim*ydim!")
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
@@ -167,7 +164,6 @@ class Image(object):
 
     @property
     def ivec(self):
-        """Return the imvec of Stokes I"""
         if self.polrep!='stokes':
             raise Exception("ivec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
 
@@ -176,8 +172,6 @@ class Image(object):
 
     @ivec.setter
     def ivec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
 
@@ -186,7 +180,6 @@ class Image(object):
 
     @property
     def qvec(self):
-        """Return the imvec of Stokes Q"""
         if self.polrep!='stokes':
             raise Exception("qvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
 
@@ -195,8 +188,6 @@ class Image(object):
 
     @qvec.setter
     def qvec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
 
@@ -205,7 +196,6 @@ class Image(object):
 
     @property
     def uvec(self):
-        """Return the imvec of Stokes U"""
         if self.polrep!='stokes':
             raise Exception("uvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
 
@@ -214,8 +204,6 @@ class Image(object):
 
     @uvec.setter
     def uvec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
 
@@ -224,7 +212,6 @@ class Image(object):
    
     @property
     def vvec(self):
-        """Return the imvec of Stokes V"""
         if self.polrep!='stokes':
             raise Exception("vvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
 
@@ -233,8 +220,6 @@ class Image(object):
 
     @vvec.setter
     def vvec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
 
@@ -243,7 +228,6 @@ class Image(object):
 
     @property
     def rrvec(self):
-        """Return the imvec of RR"""
         if self.polrep!='circ':
             raise Exception("rrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
 
@@ -252,8 +236,6 @@ class Image(object):
 
     @rrvec.setter
     def rrvec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
 
@@ -262,7 +244,6 @@ class Image(object):
 
     @property
     def llvec(self):
-        """Return the imvec of LL"""
         if self.polrep!='circ':
             raise Exception("rrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
 
@@ -271,8 +252,6 @@ class Image(object):
 
     @llvec.setter
     def llvec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
 
@@ -281,7 +260,6 @@ class Image(object):
 
     @property
     def rlvec(self):
-        """Return the imvec of RL"""
         if self.polrep!='circ':
             raise Exception("rlvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
 
@@ -290,8 +268,6 @@ class Image(object):
 
     @rlvec.setter
     def rlvec(self, vec):
-        """Set the imvec"""
-
         if len(vec) != self.xdim*self.ydim:
             raise Exception("vec size is not consistent with xdim*ydim!")
 

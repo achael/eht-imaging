@@ -634,7 +634,7 @@ def load_obs_txt(filename, polrep='stokes'):
             v = float(row[7])
             vis1 = float(row[8]) * np.exp(1j * float(row[9]) * DEGREE)
             vis2 = float(row[10]) * np.exp(1j * float(row[11]) * DEGREE)
-            vis3 = float(row[12]) * np.exp(1j * float(row[14]) * DEGREE)
+            vis3 = float(row[12]) * np.exp(1j * float(row[13]) * DEGREE)
             vis4 = float(row[14]) * np.exp(1j * float(row[15]) * DEGREE)
             sigma1 = float(row[16])
             sigma2 = float(row[17])
@@ -644,7 +644,6 @@ def load_obs_txt(filename, polrep='stokes'):
         else:
             raise Exception('Text file does not have the right number of fields!')
 
-        print(polrep_orig)
         if polrep_orig=='stokes':
             datatable2.append(np.array((time, tint, t1, t2, tau1, tau2,
                                         u, v, vis1, vis2, vis3, vis4,

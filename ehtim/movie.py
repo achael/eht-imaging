@@ -137,14 +137,11 @@ class Movie(object):
 
     @property
     def frames(self):
-        """Return the frames of the primary polarization"""
         frames = self._movdict[self.pol_prim]
         return frames
 
     @frames.setter
     def frames(self, frames):
-        """Set the frames"""
-
         if len(frames[0]) != self.xdim*self.ydim:
             raise Exception("imvec size is not consistent with xdim*ydim!")
         #TODO -- more checks on consistency with the existing pol data???

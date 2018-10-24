@@ -102,6 +102,7 @@ def save_im_txt(im, fname, mjd=False, time=False):
     np.savetxt(fname, outdata, header=head, fmt=fmts)
     return
 
+#TODO save image in circular basis? 
 def save_im_fits(im, fname, mjd=False, time=False):
     """Save image data to a fits file.
 
