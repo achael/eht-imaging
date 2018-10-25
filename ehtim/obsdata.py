@@ -1174,7 +1174,11 @@ class Obsdata(object):
                err_type (str): 'predicted' or 'measured'
         """
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0.0
+        
         if avg_time <= tint0:
             adf = make_amp(self,debias=debias,round_s=round_s)
             if return_type=='rec':
@@ -1204,8 +1208,11 @@ class Obsdata(object):
 
         """
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
-
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+        
         cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>tint0:
             cdf = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples)
@@ -1236,8 +1243,11 @@ class Obsdata(object):
         """
 
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
-
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+        
         cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>tint0:
             cdf = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
@@ -1269,8 +1279,11 @@ class Obsdata(object):
 
         """
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
-
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+        
         if avg_time>tint0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else:
@@ -2162,14 +2175,14 @@ class Obsdata(object):
         # error function
         if fittype=='amp':
             def errfunc(p):
-            	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
-            	err = np.sum((np.abs(vis)-np.abs(vismodel))**2/sig**2)
-            	return err
+                vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
+                err = np.sum((np.abs(vis)-np.abs(vismodel))**2/sig**2)
+                return err
         else:
             def errfunc(p):
-            	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
-            	err = np.sum(np.abs(vis-vismodel)**2/sig**2)
-            	return err
+                vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
+                err = np.sum(np.abs(vis-vismodel)**2/sig**2)
+                return err
 
         optdict = {'maxiter':5000} # minimizer params
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
