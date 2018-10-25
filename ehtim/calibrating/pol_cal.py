@@ -143,4 +143,4 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
     tstop = time.time()
     print("\nleakage_cal time: %f s" % (tstop - tstart))
 
-    return obs_test
+    return obs_test.switch_polrep(obs.polrep)
