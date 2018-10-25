@@ -32,7 +32,7 @@ MAXIT=50
 ###################################################################################################################################
 
 def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', minimizer_method='L-BFGS-B',
-             ttype='direct', fft_pad_factor=2, show_solution=True):
+             ttype='direct', fft_pad_factor=2, show_solution=True, obs_apply=False):
 
     """Polarimetric calibration (detects and removes polarimetric leakage, based on consistency with a given image)
 
@@ -143,4 +143,15 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
     tstop = time.time()
     print("\nleakage_cal time: %f s" % (tstop - tstart))
 
-    return obs_test.switch_polrep(obs.polrep)
+    if not obs_apply==False:
+        obs_test = obs_apply.copy()
+        # Apply the solution
+        for isite in range(len(sites)):
+            obs_test.tarr['dr'][site_index[isite]] = D_fit[2*isite]
+            obs_test.tarr['dl'][site_index[isite]] = D_fit[2*isite+1]
+        obs_test.data = simobs.apply_jones_inverse(obs_test,dcal=False,verbose=False)
+        obs_test.dcal = True
+    else:
+        obs_test = obs_test.switch_polrep(obs.polrep)
+
+    return obs_test
