@@ -1110,8 +1110,8 @@ class NFFTInfo(object):
 
         # compute phase and pulsefac
         phases = np.exp(-1j*np.pi*(uv_scaled[:,0]+uv_scaled[:,1]))
-        pulses = np.array([pulse(2*np.pi*uv_scaled[i,0], 2*np.pi*uv_scaled[i,1], 1., dom="F")
-                           for i in range(self.uvdim)])
+        pulses = np.fromiter((pulse(2*np.pi*uv_scaled[i,0], 2*np.pi*uv_scaled[i,1], 1., dom="F")
+                              for i in range(self.uvdim)),'c16')
         self.pulsefac = (pulses*phases)
 
 class SamplerInfo(object):
@@ -1306,7 +1306,7 @@ def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAU
     # e.g.,
     phase = np.exp(-1j*np.pi*psize*((1+im_info.xdim%2)*uv[:,0] + (1+im_info.ydim%2)*uv[:,1]))
 
-    pulsefac = np.array([pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv])
+    pulsefac = np.fromiter((pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], psize, dom="F") for uvpt in uv),'c16')
     pulsefac = pulsefac * phase
 
     #compute gridder norm

@@ -252,7 +252,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
         phase = np.exp(-1j*np.pi*im.psize*((1+im.xdim%2)*uv[:,0] + (1+im.ydim%2)*uv[:,1]))
 
         # Pulse function
-        pulsefac = np.array([im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv])
+        pulsefac = np.fromiter((im.pulse(2*np.pi*uvpt[0], 2*np.pi*uvpt[1], im.psize, dom="F") for uvpt in uv),'c16')
 
         for i in range(4):
             pol = pollist[i]
@@ -309,7 +309,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
 
         # Extra phase and pulsefac
         phase = np.exp(-1j*np.pi*(uvlist[:,0] + uvlist[:,1]))
-        pulsefac = np.array([im.pulse(2*np.pi*uvlist[i,0], 2*np.pi*uvlist[i,1], 1., dom="F") for i in range(uvdim)])
+        pulsefac = np.fromiter((im.pulse(2*np.pi*uvlist[i,0], 2*np.pi*uvlist[i,1], 1., dom="F") for i in range(uvdim)),'c16')
 
         # Compute the uniform --> nonuniform transform for different polarizations
         for i in range(4):
@@ -349,7 +349,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
     # TODO: fix sgra_kernel_uv so you can take this out of a  loop!
     if sgrscat:
         print('Scattering Visibilities with Sgr A* kernel!')
-        ker =  np.array([sgra_kernel_uv(im.rf, uv[i,0], uv[i,1]) for i in range(len(vis))])
+        ker =  np.fromiter((sgra_kernel_uv(im.rf, uv[i,0], uv[i,1]) for i in range(len(vis))),'c16')
         for data in obsdata:
             if data is None: continue
             data *= ker
@@ -478,16 +478,23 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 gain_mult = gainp
 
             # Note: R/L gain ratio should be independent of time for each site
-            gainR = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainR',str(goff),seed))*
+            gainR = np.sqrt(np.abs(np.fromiter((
+                                             (1.0 +  goff*hashrandn(site,'gainR',str(goff),seed))*
                                              (1.0 + gain_mult*hashrandn(site,'gain',str(time),str(gain_mult),seed))
-                                     for time in times_stable_amp])))
-            gainL = np.sqrt(np.abs(np.array([(1.0 +  goff*hashrandn(site,'gainL',str(goff),seed))*
+                                             for time in times_stable_amp
+                                             ),float)))
+            gainL = np.sqrt(np.abs(np.fromiter((
+                                             (1.0 +  goff*hashrandn(site,'gainL',str(goff),seed))*
                                              (1.0 + gain_mult*hashrandn(site,'gain',str(time),str(gain_mult),seed))
-                                     for time in times_stable_amp])))
+                                             for time in times_stable_amp
+                                             ),float)))
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
-            taus = np.abs(np.array([taudict[site][j] * (1.0 + taup * hashrandn(site, 'tau', times[j], seed)) for j in range(len(times))]))
+            taus = np.abs(np.fromiter((
+                                       taudict[site][j] * (1.0 + taup * hashrandn(site, 'tau', times[j], seed)) 
+                                       for j in range(len(times))
+                                      ),float))
             atten = np.exp(-taus/(EP + 2.0*np.sin(el_angles)))
 
             gainR = gainR * atten
@@ -495,7 +502,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
         # Atmospheric Phase
         if not phasecal:
-            phase = np.array([2 * np.pi * hashrand(site, 'phase', time, seed) for time in times_stable_phase])
+            phase = np.fromiter((2 * np.pi * hashrand(site, 'phase', time, seed) for time in times_stable_phase),float)
             gainR = gainR * np.exp(1j*phase)
             gainL = gainL * np.exp(1j*phase)
 
@@ -706,10 +713,10 @@ def add_jones_and_noise(obs, add_th_noise=True,
         sig_rl = obsdata['rlsigma']
         sig_lr = obsdata['lrsigma']
     else:
-        sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
-        sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
-        sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
-        sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
+        sig_rr = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))),float)
+        sig_ll = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))),float)
+        sig_rl = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))),float)
+        sig_lr = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))),float)
 
     #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal:
@@ -805,10 +812,10 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
         sig_lr = obsdata['lrsigma']
     else:
         # TODO why are there sqrt(2)s here and not below?
-        sig_rr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))])
-        sig_ll = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))])
-        sig_rl = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))])
-        sig_lr = np.array([blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))])
+        sig_rr = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(rr))),float)
+        sig_ll = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(ll))),float)
+        sig_rl = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))),float)
+        sig_lr = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))),float)
 
 
     #print "------------------------------------------------------------------------------------------------------------------------"
@@ -928,14 +935,14 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         sigma_perf3 = obsdata[obs.poldict['sigma3']]
         sigma_perf4 = obsdata[obs.poldict['sigma4']]
     else:
-        sig_rr = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
-                               for i in range(len(tint))])
-        sig_ll = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
-                               for i in range(len(tint))])
-        sig_rl = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
-                               for i in range(len(tint))])
-        sig_lr = np.array([blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
-                               for i in range(len(tint))])
+        sig_rr = np.fromiter((blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
+                               for i in range(len(tint))),float)
+        sig_ll = np.fromiter((blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
+                               for i in range(len(tint))),float)
+        sig_rl = np.fromiter((blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdr'], obs.tarr[obs.tkey[sites[i][1]]]['sefdl'], tint[i], bw)
+                               for i in range(len(tint))),float)
+        sig_lr = np.fromiter((blnoise(obs.tarr[obs.tkey[sites[i][0]]]['sefdl'], obs.tarr[obs.tkey[sites[i][1]]]['sefdr'], tint[i], bw)
+                               for i in range(len(tint))),float)
         if obs.polrep=='stokes':
             sig_iv = 0.5*np.sqrt(sig_rr**2 + sig_ll**2)
             sig_qu = 0.5*np.sqrt(sig_rl**2 + sig_lr**2)
@@ -957,22 +964,27 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     if not ampcal:
         # Amplitude gain
         if type(gain_offset) == dict:
-            goff1 = [gain_offset[sites[i,0]] for i in range(len(time))]
-            goff2 = [gain_offset[sites[i,1]] for i in range(len(time))]
+            goff1 = np.fromiter((gain_offset[sites[i,0]] for i in range(len(time))), float)
+            goff2 = np.fromiter((gain_offset[sites[i,1]] for i in range(len(time))), float)
         else:
-            goff1 = [gain_offset for i in range(len(time))]
-            goff2 = [gain_offset for i in range(len(time))]
-        if type(gainp) == dict:
-            gain_mult_1 = [gainp[sites[i,0]] for i in range(len(time))]
-            gain_mult_2 = [gainp[sites[i,1]] for i in range(len(time))]
-        else:
-            gain_mult_1 = [gainp for i in range(len(time))]
-            gain_mult_2 = [gainp for i in range(len(time))]
+            goff1 = np.fromiter((gain_offset for i in range(len(time))), float)
+            goff2 = np.fromiter((gain_offset for i in range(len(time))), float)
 
-        gain1 = np.abs(np.array([(1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gain_mult_1 * hashrandn(sites[i,0], 'gain', time[i], seed))
-                                 for i in range(len(time))]))
-        gain2 = np.abs(np.array([(1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gain_mult_2 * hashrandn(sites[i,1], 'gain', time[i], seed))
-                                 for i in range(len(time))]))
+        if type(gainp) is dict:
+            gain_mult_1 = np.fromiter((gainp[sites[i,0]] for i in range(len(time))), float)
+            gain_mult_2 = np.fromiter((gainp[sites[i,1]] for i in range(len(time))), float)
+        else:
+            gain_mult_1 = np.fromiter((gainp for i in range(len(time))), float)
+            gain_mult_2 = np.fromiter((gainp for i in range(len(time))), float)
+
+        gain1 = np.abs(np.fromiter(
+                      ((1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gain_mult_1[i] * hashrandn(sites[i,0], 'gain', time[i], seed))
+                       for i in range(len(time))
+                      ), float))
+        gain2 = np.abs(np.fromiter(
+                      ((1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gain_mult_2[i] * hashrandn(sites[i,1], 'gain', time[i], seed))
+                        for i in range(len(time))
+                      ), float))
         gain_true = np.sqrt(gain1 * gain2)
     else:
         gain_true = 1
@@ -983,8 +995,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         tau_est = np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
 
         # Opacity Errors
-        tau1 = np.abs(np.array([taus[i,0]* (1.0 + taup * hashrandn(sites[i,0], 'tau', time[i], seed)) for i in range(len(time))]))
-        tau2 = np.abs(np.array([taus[i,1]* (1.0 + taup * hashrandn(sites[i,1], 'tau', time[i], seed)) for i in range(len(time))]))
+        tau1 = np.abs(np.fromiter((taus[i,0]* (1.0 + taup * hashrandn(sites[i,0], 'tau', time[i], seed)) for i in range(len(time))),float))
+        tau2 = np.abs(np.fromiter((taus[i,1]* (1.0 + taup * hashrandn(sites[i,1], 'tau', time[i], seed)) for i in range(len(time))),float))
 
         # Correct noise RMS for opacity
         tau_true = np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
@@ -1016,8 +1028,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
 
     # Add random atmospheric phases
     if not phasecal:
-        phase1 = np.array([2 * np.pi * hashrand(sites[i,0], 'phase', time[i], seed) for i in range(len(time))])
-        phase2 = np.array([2 * np.pi * hashrand(sites[i,1], 'phase', time[i], seed) for i in range(len(time))])
+        phase1 = np.fromiter((2 * np.pi * hashrand(sites[i,0], 'phase', time[i], seed) for i in range(len(time))),float)
+        phase2 = np.fromiter((2 * np.pi * hashrand(sites[i,1], 'phase', time[i], seed) for i in range(len(time))),float)
 
         vis1 *= np.exp(1j * (phase2-phase1))
         vis2 *= np.exp(1j * (phase2-phase1))
