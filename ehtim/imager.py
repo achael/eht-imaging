@@ -1013,7 +1013,7 @@ class Imager(object):
         datterm = 0.
         chi2_term_dict = self.make_chisqgrad_dict(scatt_im)
         for dname in sorted(self.dat_term_next.keys()):
-            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname])
         dchisq_dIa = datterm.reshape((N,N))
         # Now the chain rule factor to get the chi^2 gradient wrt the unscattered image
         gx = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()
