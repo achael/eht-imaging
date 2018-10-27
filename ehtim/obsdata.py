@@ -916,9 +916,13 @@ class Obsdata(object):
                 (Obsdata): Obsdata object containing averaged data
         """
 
-        if (scan_avg==True)&(getattr(self.scans, "shape", None) is None):
+        if (scan_avg==True)&(getattr(self.scans, "shape", None) is None or len(self.scans) == 0):
             print('No scan data, ignoring scan_avg!')
             scan_avg=False
+
+        if inttime <= 0.0 and scan_avg == False:
+            print('No averaging done!')
+            return self.copy()
 
         vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
 
@@ -1597,7 +1601,7 @@ class Obsdata(object):
 
         return out
 
-    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max', vtype='vis'):
+    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, median_snr_cut=0, print_std=False, count='max', vtype='vis'):
 
         """Estimate a constant rescaling factor for thermal noise across all baselines, times, and polarizations.
            Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise.
@@ -1642,6 +1646,12 @@ class Obsdata(object):
                     if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2] and not np.isnan(cphase[-2]) and not np.isnan(cphase[-2]):
                         all_tri = np.append(all_tri, ((cphase[0], cphase[-2], cphase[-1])))
             all_tri = all_tri.reshape(int(len(all_tri)/3),3)
+
+            # See whether the triangle has sufficient SNR
+            if np.median(np.abs(all_tri[:,1]/all_tri[:,2])) < median_snr_cut:
+                if print_std:
+                    print(tri, 'median snr too low (%6.4f)' % np.median(np.abs(all_tri[:,1]/all_tri[:,2])))
+                continue
 
             # Now go through and find studentized differences of adjacent points
             s_list = np.array([])
