@@ -222,16 +222,25 @@ def save_mov_txt(mov, fname, mjd=False):
 def save_array_txt(arr, fname):
     """Save the array data in a text file.
     """
+    import ehtim.array as array
+
+    if type(arr) == np.ndarray:
+        tarr = arr
+    else:
+        try: 
+            tarr = arr.tarr
+        except:
+            print("Array format not recognized!")
 
     out = ("#Site      X(m)             Y(m)             Z(m)           "+
                 "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  "+
                 "DR_RE    DR_IM    DL_RE    DL_IM   \n")
-    for scope in range(len(arr.tarr)):
-        dat = (arr.tarr[scope]['site'],
-               arr.tarr[scope]['x'], arr.tarr[scope]['y'], arr.tarr[scope]['z'],
-               arr.tarr[scope]['sefdr'], arr.tarr[scope]['sefdl'],
-               arr.tarr[scope]['fr_par'], arr.tarr[scope]['fr_elev'], arr.tarr[scope]['fr_off'],
-               arr.tarr[scope]['dr'].real, arr.tarr[scope]['dr'].imag, arr.tarr[scope]['dl'].real, arr.tarr[scope]['dl'].imag
+    for scope in range(len(tarr)):
+        dat = (tarr[scope]['site'],
+               tarr[scope]['x'], tarr[scope]['y'], tarr[scope]['z'],
+               tarr[scope]['sefdr'], tarr[scope]['sefdl'],
+               tarr[scope]['fr_par'], tarr[scope]['fr_elev'], tarr[scope]['fr_off'],
+               tarr[scope]['dr'].real, tarr[scope]['dr'].imag, tarr[scope]['dl'].real, tarr[scope]['dl'].imag
               )
         out += "%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % dat
     f = open(fname,'w')
