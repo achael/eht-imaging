@@ -23,10 +23,14 @@ from __future__ import print_function
 import numpy as np
 import ehtim.imaging.imager_utils as iu
 import ehtim.observing.obs_simulate as simobs
+from ehtim.const_def import *
+
 import scipy.optimize as opt
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import time
 
-MAXIT=50
+MAXIT=1000
 ###################################################################################################################################
 #Polarimetric Calibration
 ###################################################################################################################################
@@ -155,3 +159,84 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
         obs_test = obs_test.switch_polrep(obs.polrep)
 
     return obs_test
+
+def plot_leakage(obs, axis=False, rangex=False, rangey=False, markers=['o','s'], markersize=6, 
+                export_pdf="", axislabels=True, legend=True, sort_tarr=True, show=True):
+
+    """Plot polarimetric leakage terms in an observation
+
+       Args:
+           obs (Obsdata): observation (or Array) containing the tarr
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           markers (str): pair of matplotlib plot markers (for RCP and LCP)
+           markersize (int): size of plot markers
+           label (str): plot legend label
+
+           export_pdf (str): path to pdf file to save figure
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+    """
+
+    tarr = obs.tarr.copy()
+    if sort_tarr:
+        tarr.sort(axis=0)
+
+    clist = SCOLORS
+
+    # make plot(s)
+    if axis:
+        fig=axis.figure
+        x = axis
+    else:
+        fig=plt.figure()
+        x = fig.add_subplot(1,1,1)
+
+    plt.axhline(0, color='black')
+    plt.axvline(0, color='black')
+
+    xymax = np.max([np.abs(tarr['dr']),np.abs(tarr['dl'])])*100.0
+
+    plot_points = []
+    for i in range(len(tarr)):
+        color = clist[i]
+        label = tarr['site'][i]
+        plt.hold(True)
+        dre, = x.plot(np.real(tarr['dr'][i])*100.0, np.imag(tarr['dr'][i])*100.0, markers[0], markersize=markersize, color=color,
+               label=label)
+        dim, = x.plot(np.real(tarr['dl'][i])*100.0, np.imag(tarr['dl'][i])*100.0, markers[1], markersize=markersize, color=color,
+               label=label)
+        plot_points.append([dre,dim])
+
+    # Data ranges
+    if not rangex:
+        rangex = [-xymax*1.1-0.01,xymax*1.1+0.01]
+
+    if not rangey:
+        rangey = [-xymax*1.1-0.01,xymax*1.1+0.01]
+
+#    if not rangex and not rangey:
+#        plt.axes().set_aspect('equal', 'datalim')
+
+    x.set_xlim(rangex)
+    x.set_ylim(rangey)
+
+    # label and save
+    if axislabels:
+        x.set_xlabel('Re[$D$] (%)')
+        x.set_ylabel('Im[$D$] (%)')
+    if legend:
+        legend1 = plt.legend([l[0] for l in plot_points], tarr['site'], ncol=1, loc=1)
+        plt.legend(plot_points[0], ['$D_R$ (%)','$D_L$ (%)'], loc=4)
+        plt.gca().add_artist(legend1)
+    if export_pdf != "": # and not axis:
+        fig.savefig(export_pdf, bbox_inches='tight')
+    if show:
+        plt.show(block=False)
+
+    return x
