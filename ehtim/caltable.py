@@ -263,6 +263,8 @@ class Caltable(object):
         scopes = list(self.data.keys())
         for scope in scopes:
             caldata = self.data[scope].copy()
+            if np.any(caldata is None) or len(caldata) == 0:
+                continue
 
             # Gather data into "scans"
             # TODO we could use a scan table for this as well!
