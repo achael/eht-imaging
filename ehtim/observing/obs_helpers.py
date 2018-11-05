@@ -41,6 +41,8 @@ import os
 
 import ehtim.const_def
 from ehtim.const_def import *
+import scipy.ndimage as nd
+
 
 
 import warnings
