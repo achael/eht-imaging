@@ -151,7 +151,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
                 except KeyError: continue
 
                 try: caldict[site] = np.append(caldict[site], row[site])
-                except KeyError: caldict[site] = dat
+                except KeyError: caldict[site] = [dat]
 
         caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
