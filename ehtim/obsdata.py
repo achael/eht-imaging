@@ -3540,7 +3540,7 @@ def load_txt(fname, polrep='stokes'):
 
     return ehtim.io.load.load_obs_txt(fname, polrep=polrep)
 
-def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, polrep='stokes'):
+def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, polrep='stokes', remove_nan=False):
 
     """Load observation data from a uvfits file.
        Args:
@@ -3554,7 +3554,7 @@ def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, 
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep, remove_nan=remove_nan)
 
 def load_oifits(fname, flux=1.0):
 
