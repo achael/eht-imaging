@@ -1458,8 +1458,11 @@ class Image(object):
                 (Image): output image
         """
 
-        if not (0 < mag < 1):
-            raise Exception("fractional polarization magnitude must be beween 0 and 1!")
+        if not (0 <= mag < 1):
+            raise Exception("fractional polarization magnitude must be between 0 and 1!")
+
+        if not (0 <= cmag < 1):
+            raise Exception("circular polarization magnitude must be between 0 and 1!")
 
         im = self
 
@@ -1489,6 +1492,76 @@ class Image(object):
 
         return outim
 
+    def add_random_pol(self, mag, corr, cmag=0., ccorr=0., seed=0):
+
+        """Return an image with the same total intensity but random linear and circular polarization images with specified correlation lengths
+
+           Args:
+               mag   (float): linear polarization fraction
+               corr  (float): EVPA correlation length (radians)
+               cmag  (float): circular polarization fraction
+               ccorr (float): CP correlation length (radians)
+               seed    (int): Seed for random number generation
+
+           Returns:
+                (Image): output image
+        """
+        import ehtim.scattering.stochastic_optics as so
+
+        if not (0 <= mag < 1):
+            raise Exception("fractional polarization magnitude must be between 0 and 1!")
+
+        if not (0 <= cmag < 1):
+            raise Exception("circular polarization magnitude must be between 0 and 1!")
+
+        im = self
+
+        if self.polrep=='stokes':
+            im_stokes = self
+        elif self.polrep=='circ':
+            im_stokes = self.switch_polrep(polrep_out='stokes')
+        ivec = im_stokes.ivec.copy()
+
+        # create the new stokes image object
+        iarr = ivec.reshape(im.ydim,im.xdim).copy()
+        outim = Image(iarr, self.psize, self.ra, self.dec, 
+                      polrep='stokes', pol_prim='I', time=self.time,
+                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        # Make a random phase screen using the scattering tools
+        # Use this screen to define the EVPA
+        dist = 1.0 * 3.086e21
+        rdiff = np.abs(corr) * dist / 1e3
+        theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
+        sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)        
+        ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed)
+        ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
+        qvec = ivec * mag * np.sin(ps)
+        uvec = ivec * mag * np.cos(ps)
+
+        # Make a random phase screen using the scattering tools
+        # Use this screen to define the CP magnitude
+        if cmag != 0.0 and ccorr > 0.0:
+            dist = 1.0 * 3.086e21
+            rdiff = np.abs(ccorr) * dist / 1e3
+            theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
+            sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)        
+            ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed*2)
+            ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
+            vvec = ivec * cmag * np.sin(ps)
+        else:
+            vvec = ivec * cmag
+
+        # Copy over the rest of the polarizations
+        imdict = {'I':ivec,'Q':qvec,'U':uvec,'V':vvec}
+        for pol in list(imdict.keys()):
+            if pol=='I': continue
+            polvec = imdict[pol]
+            if len(polvec):
+                polarr = polvec.reshape(self.ydim, self.xdim).copy()
+                outim.add_pol_image(polarr, pol)
+
+        return outim
 
     def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', fft_pad_factor=2):
 

@@ -19,7 +19,7 @@ def linearizedSol_bs(Obsdata, currImage, Prior, alpha=100, beta=100, reg="patch"
 
 	# normalize the prior
 	# TODO: SHOULD THIS BE DONE??
-    zbl = np.max(np.abs(Obsdata.unpack(['vis'])['vis']))
+    zbl = np.nanmax(np.abs(Obsdata.unpack(['vis'])['vis']))
     nprior = zbl * Prior.imvec / np.sum(Prior.imvec)
 
     if reg == "patch":
@@ -27,11 +27,20 @@ def linearizedSol_bs(Obsdata, currImage, Prior, alpha=100, beta=100, reg="patch"
 
 	# Get bispectra data
     biarr = Obsdata.bispectra(mode="all", count="max")
+    
+    bispec = biarr['bispec']
+    sigs = biarr['sigmab']   
+    
+    nans = np.isnan(sigs)
+    bispec = bispec[nans==False]
+    sigs = sigs[nans==False]
+    biarr = biarr[nans==False]
+    
+    
     uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
     uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
     uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
-    bispec = biarr['bispec']
-    sigs = biarr['sigmab']
+    
 
     # Compute the fourier matrices
     A3 = (ftmatrix(currImage.psize, currImage.xdim, currImage.ydim, uv1, pulse=currImage.pulse),
@@ -40,14 +49,15 @@ def linearizedSol_bs(Obsdata, currImage, Prior, alpha=100, beta=100, reg="patch"
          )
 
     Alin, blin = computeLinTerms_bi(currImage.imvec, A3, bispec, sigs, currImage.xdim*currImage.ydim, alpha=alpha, reg=reg)
-    out = np.linalg.solve(Alin + beta*linRegTerm, blin + beta*constRegTerm);
 
+    out = np.linalg.solve(Alin + beta*linRegTerm, blin + beta*constRegTerm);
+    
     return image.Image(out.reshape((currImage.ydim, currImage.xdim)), currImage.psize, currImage.ra, currImage.dec, rf=currImage.rf, source=currImage.source, mjd=currImage.mjd, pulse=currImage.pulse)
 
 
 def computeLinTerms_bi(x0, A3, bispec, sigs, nPixels, alpha=100, reg="patch"):
 
-
+    
     sigmaR = sigmaI = 1.0/(sigs**2)
 
     rA = np.real(A3);

@@ -754,7 +754,7 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 
 
 #TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=True, force_singlepol=None, channel=all, IF=all):
+def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=True, force_singlepol=None, channel=all, IF=all, remove_nan=False):
     """Load observation data from a uvfits file.
        Args:
            fname (str): path to input text file
@@ -1181,6 +1181,19 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     datatable = np.array(datatable)
     obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep='circ', 
                                 source=src, mjd=mjd, scantable=scantable)
+
+    
+    if remove_nan:
+        for j in range(len(obs.data)):
+            if np.isnan(obs.data[j]['rrsigma']):
+                obs.data[j]['rrsigma'] = obs.data[j]['llsigma']
+            if np.isnan(obs.data[j]['llsigma']):
+                obs.data[j]['llsigma'] = obs.data[j]['rrsigma']
+            if np.isnan(obs.data[j]['rlsigma']):
+                obs.data[j]['rlsigma'] = obs.data[j]['rrsigma']
+            if np.isnan(obs.data[j]['lrsigma']):
+                obs.data[j]['lrsigma'] = obs.data[j]['rrsigma']
+                
     obs = obs.switch_polrep(polrep, allow_singlepol=allow_singlepol)
 
     #TODO get calibration flags from uvfits?

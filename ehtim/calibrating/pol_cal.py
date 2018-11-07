@@ -23,15 +23,20 @@ from __future__ import print_function
 import numpy as np
 import ehtim.imaging.imager_utils as iu
 import ehtim.observing.obs_simulate as simobs
-import scipy.optimize as opt
+from ehtim.const_def import *
 
-MAXIT=50
+import scipy.optimize as opt
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import time
+
+MAXIT=1000
 ###################################################################################################################################
 #Polarimetric Calibration
 ###################################################################################################################################
 
-def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis',
-             ttype='direct', fft_pad_factor=2, show_solution=True):
+def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', minimizer_method='L-BFGS-B',
+             ttype='direct', fft_pad_factor=2, show_solution=True, obs_apply=False):
 
     """Polarimetric calibration (detects and removes polarimetric leakage, based on consistency with a given image)
 
@@ -43,6 +48,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
            leakage_tol (float): leakage values that exceed this value will be disfavored by the prior
            pol_fit (list): list of visibilities to use; e.g., ['RL','LR'] or ['RR','LL','RL','LR']
            dtype (str): Type of data to fit ('vis' for complex visibilities; 'amp' for just the amplitudes)
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
@@ -51,6 +57,8 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
        Returns:
            (Obsdata): the calibrated observation, with computed leakage values added to the obs.tarr
     """
+    tstart = time.time()
+
     mask=[]
 
     # Do everything in a circular basis
@@ -108,7 +116,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
         chisq = chisq_total(data, im_circ)
 
         # prior on the D terms
-        chisq_D = np.sum((D/leakage_tol)**2)
+        chisq_D = np.sum(np.abs(D/leakage_tol)**2)
 
         return chisq + chisq_D
 
@@ -116,7 +124,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
     optdict = {'maxiter' : MAXIT} # minimizer params
     Dpar_guess = np.zeros(len(sites)*2, dtype=np.complex128).view(dtype=np.float64)
     print("Minimizing...")
-    res = opt.minimize(errfunc, Dpar_guess, method='CG', options=optdict)
+    res = opt.minimize(errfunc, Dpar_guess, method=minimizer_method, options=optdict)
     
     # get solution
     D_fit = res.x.astype(np.float64).view(dtype=np.complex128) # all the D-terms (complex)
@@ -136,4 +144,99 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
             print('   D_R: {:.4f}'.format(D_fit[2*isite]))
             print('   D_L: {:.4f}\n'.format(D_fit[2*isite+1]))
 
+    tstop = time.time()
+    print("\nleakage_cal time: %f s" % (tstop - tstart))
+
+    if not obs_apply==False:
+        obs_test = obs_apply.copy()
+        # Apply the solution
+        for isite in range(len(sites)):
+            obs_test.tarr['dr'][site_index[isite]] = D_fit[2*isite]
+            obs_test.tarr['dl'][site_index[isite]] = D_fit[2*isite+1]
+        obs_test.data = simobs.apply_jones_inverse(obs_test,dcal=False,verbose=False)
+        obs_test.dcal = True
+    else:
+        obs_test = obs_test.switch_polrep(obs.polrep)
+
     return obs_test
+
+def plot_leakage(obs, axis=False, rangex=False, rangey=False, markers=['o','s'], markersize=6, 
+                export_pdf="", axislabels=True, legend=True, sort_tarr=True, show=True):
+
+    """Plot polarimetric leakage terms in an observation
+
+       Args:
+           obs (Obsdata): observation (or Array) containing the tarr
+           axis (matplotlib.axes.Axes): add plot to this axis
+           rangex (list): [xmin, xmax] x-axis limits
+           rangey (list): [ymin, ymax] y-axis limits
+           markers (str): pair of matplotlib plot markers (for RCP and LCP)
+           markersize (int): size of plot markers
+           label (str): plot legend label
+
+           export_pdf (str): path to pdf file to save figure
+           axislabels (bool): Show axis labels if True
+           legend (bool): Show legend if True
+           show (bool): Display the plot if true
+
+       Returns:
+           (matplotlib.axes.Axes): Axes object with data plot
+    """
+
+    tarr = obs.tarr.copy()
+    if sort_tarr:
+        tarr.sort(axis=0)
+
+    clist = SCOLORS
+
+    # make plot(s)
+    if axis:
+        fig=axis.figure
+        x = axis
+    else:
+        fig=plt.figure()
+        x = fig.add_subplot(1,1,1)
+
+    plt.axhline(0, color='black')
+    plt.axvline(0, color='black')
+
+    xymax = np.max([np.abs(tarr['dr']),np.abs(tarr['dl'])])*100.0
+
+    plot_points = []
+    for i in range(len(tarr)):
+        color = clist[i]
+        label = tarr['site'][i]
+        plt.hold(True)
+        dre, = x.plot(np.real(tarr['dr'][i])*100.0, np.imag(tarr['dr'][i])*100.0, markers[0], markersize=markersize, color=color,
+               label=label)
+        dim, = x.plot(np.real(tarr['dl'][i])*100.0, np.imag(tarr['dl'][i])*100.0, markers[1], markersize=markersize, color=color,
+               label=label)
+        plot_points.append([dre,dim])
+
+    # Data ranges
+    if not rangex:
+        rangex = [-xymax*1.1-0.01,xymax*1.1+0.01]
+
+    if not rangey:
+        rangey = [-xymax*1.1-0.01,xymax*1.1+0.01]
+
+#    if not rangex and not rangey:
+#        plt.axes().set_aspect('equal', 'datalim')
+
+    x.set_xlim(rangex)
+    x.set_ylim(rangey)
+
+    # label and save
+    if axislabels:
+        x.set_xlabel('Re[$D$] (%)')
+        x.set_ylabel('Im[$D$] (%)')
+    if legend:
+        legend1 = plt.legend([l[0] for l in plot_points], tarr['site'], ncol=1, loc=1)
+        plt.legend(plot_points[0], ['$D_R$ (%)','$D_L$ (%)'], loc=4)
+        plt.gca().add_artist(legend1)
+    if export_pdf != "": # and not axis:
+        fig.savefig(export_pdf, bbox_inches='tight')
+    if show:
+        plt.show(block=False)
+
+    return x

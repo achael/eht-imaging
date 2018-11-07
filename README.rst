@@ -34,8 +34,11 @@ Here are some ways to learn to use the code:
 - Start with the script examples/example.py, which contains a series of sample commands to load an image and array, generate data, and produce an image with various imaging algorithms.
 - `Slides <https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0>`_ from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the vlbi imaging `website <http://vlbiimaging.csail.mit.edu>`_, loading into the library, and producing an image. Note that this presentation used a previous version of the code -- some function names and prefixes may need to be updated.
 
+
 Some publications that use ehtim
 ------------
+If you use ehtim in your publication, please cite both  `Chael et al. 2016 <http://adsabs.harvard.edu/abs/2016ApJ...829...11C>`_  and  `Chael et al. 2018 <http://adsabs.harvard.edu/abs/2018ApJ...857...23C>`_
+
 Let us know if you use ehtim in your publication and we'll list it here!
 
 - High-Resolution Linear Polarimetric Imaging for the Event Horizon Telescope, `Chael et al. 2016 <https://arxiv.org/abs/1605.06156>`_ 
@@ -56,6 +59,7 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - The Currrent Ability to Test Theories of Gravity with Black Hole Shadows, `Mizuno et al. 2018 <https://arxiv.org/abs/1804.05812>`_
 
+- The Scattering and Intrinsic Structure of Sagittarius A* at Radio Wavelengths, `Johnson et al. 2018 <https://arxiv.org/abs/18008.08966>`_
 
 Acknowledgements
 ----------------

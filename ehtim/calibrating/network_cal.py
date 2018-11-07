@@ -56,6 +56,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
 
            zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            pol (str): which visibility to compute gains for
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
@@ -150,7 +151,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
                 except KeyError: continue
 
                 try: caldict[site] = np.append(caldict[site], row[site])
-                except KeyError: caldict[site] = dat
+                except KeyError: caldict[site] = [dat]
 
         caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
                                            source = obs.source, mjd=obs.mjd, timetype=obs.timetype)

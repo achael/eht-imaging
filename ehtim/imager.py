@@ -41,7 +41,7 @@ STOP = 1e-6 # convergence criterion
 EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'patch', 'simple', 'flux','cm','compact','compact2','rgauss']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss']
 
 DATATERMS_POL = ['pvis','m','pbs']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv']
@@ -131,7 +131,7 @@ class Imager(object):
         self.norm_init=kwargs.get('norm_init',True)
         self.norm_reg=kwargs.get('norm_reg',False)
         self.beam_size=self.obs_next.res()
-        self.regparams = {k:kwargs.get(k, 1.0) for k in ('major', 'minor', 'PA')}
+        self.regparams = {k:kwargs.get(k, 1.0) for k in ('major', 'minor', 'PA', 'alpha_A')}
 
         # FFT parameters
         self._ttype = kwargs.get('ttype','fast')
@@ -353,9 +353,9 @@ class Imager(object):
             if not st_here:
                 raise Exception("Must have at least one regularizer term!")
             if not dt_type:
-                raise Exception("Invalid data term for P imaging: valid data terms are: " + string.join(DATATERMS_POL))
+                raise Exception("Invalid data term for P imaging: valid data terms are: " + ','.join(DATATERMS_POL))
             if not st_type:
-                raise Exception("Invalid regularizer for P imaging: valid regularizers are: " + string.join(REGULARIZERS_POL))
+                raise Exception("Invalid regularizer for P imaging: valid regularizers are: " + ','.join(REGULARIZERS_POL))
 
         else:
             dt_here = False
@@ -375,9 +375,9 @@ class Imager(object):
             if not st_here:
                 raise Exception("Must have at least one regularizer term!")
             if not dt_type:
-                raise Exception("Invalid data term: valid data terms are: " + string.join(DATATERMS))
+                raise Exception("Invalid data term: valid data terms are: " + ','.join(DATATERMS))
             if not st_type:
-                raise Exception("Invalid regularizer: valid regularizers are: " + string.join(REGULARIZERS))
+                raise Exception("Invalid regularizer: valid regularizers are: " + ','.join(REGULARIZERS))
 
         # determine if we need to recompute the saved imager parameters on the next imager run
         if self.nruns == 0:
@@ -1013,7 +1013,7 @@ class Imager(object):
         datterm = 0.
         chi2_term_dict = self.make_chisqgrad_dict(scatt_im)
         for dname in sorted(self.dat_term_next.keys()):
-            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+            datterm += self.dat_term_next[dname] * (chi2_term_dict[dname])
         dchisq_dIa = datterm.reshape((N,N))
         # Now the chain rule factor to get the chi^2 gradient wrt the unscattered image
         gx = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dchisq_dIa))).flatten()

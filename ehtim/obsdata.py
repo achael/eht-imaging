@@ -914,9 +914,13 @@ class Obsdata(object):
                 (Obsdata): Obsdata object containing averaged data
         """
 
-        if (scan_avg==True)&(getattr(self.scans, "shape", None) is None):
+        if (scan_avg==True)&(getattr(self.scans, "shape", None) is None or len(self.scans) == 0):
             print('No scan data, ignoring scan_avg!')
             scan_avg=False
+
+        if inttime <= 0.0 and scan_avg == False:
+            print('No averaging done!')
+            return self.copy()
 
         vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
 
@@ -1172,7 +1176,11 @@ class Obsdata(object):
                err_type (str): 'predicted' or 'measured'
         """
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0.0
+        
         if avg_time <= tint0:
             adf = make_amp(self,debias=debias,round_s=round_s)
             if return_type=='rec':
@@ -1202,8 +1210,11 @@ class Obsdata(object):
 
         """
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
-
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+        
         cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>tint0:
             cdf = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples)
@@ -1234,8 +1245,11 @@ class Obsdata(object):
         """
 
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
-
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+        
         cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>tint0:
             cdf = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
@@ -1267,8 +1281,11 @@ class Obsdata(object):
 
         """
         #get spacing between datapoints in seconds
-        tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
-
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+        
         if avg_time>tint0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else:
@@ -1582,7 +1599,7 @@ class Obsdata(object):
 
         return out
 
-    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, print_std=False, count='max', vtype='vis'):
+    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, median_snr_cut=0, print_std=False, count='max', vtype='vis'):
 
         """Estimate a constant rescaling factor for thermal noise across all baselines, times, and polarizations.
            Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise.
@@ -1627,6 +1644,12 @@ class Obsdata(object):
                     if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2] and not np.isnan(cphase[-2]) and not np.isnan(cphase[-2]):
                         all_tri = np.append(all_tri, ((cphase[0], cphase[-2], cphase[-1])))
             all_tri = all_tri.reshape(int(len(all_tri)/3),3)
+
+            # See whether the triangle has sufficient SNR
+            if np.median(np.abs(all_tri[:,1]/all_tri[:,2])) < median_snr_cut:
+                if print_std:
+                    print(tri, 'median snr too low (%6.4f)' % np.median(np.abs(all_tri[:,1]/all_tri[:,2])))
+                continue
 
             # Now go through and find studentized differences of adjacent points
             s_list = np.array([])
@@ -2160,14 +2183,14 @@ class Obsdata(object):
         # error function
         if fittype=='amp':
             def errfunc(p):
-            	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
-            	err = np.sum((np.abs(vis)-np.abs(vismodel))**2/sig**2)
-            	return err
+                vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
+                err = np.sum((np.abs(vis)-np.abs(vismodel))**2/sig**2)
+                return err
         else:
             def errfunc(p):
-            	vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
-            	err = np.sum(np.abs(vis-vismodel)**2/sig**2)
-            	return err
+                vismodel = gauss_uv(u,v, flux, p, x=0., y=0.)
+                err = np.sum(np.abs(vis-vismodel)**2/sig**2)
+                return err
 
         optdict = {'maxiter':5000} # minimizer params
         res = opt.minimize(errfunc, paramguess, method='Powell',options=optdict)
@@ -3515,7 +3538,7 @@ def load_txt(fname, polrep='stokes'):
 
     return ehtim.io.load.load_obs_txt(fname, polrep=polrep)
 
-def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, polrep='stokes'):
+def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, polrep='stokes', remove_nan=False):
 
     """Load observation data from a uvfits file.
        Args:
@@ -3529,7 +3552,7 @@ def load_uvfits(fname, flipbl=False, force_singlepol=None, channel=all, IF=all, 
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep, remove_nan=remove_nan)
 
 def load_oifits(fname, flux=1.0):
 
