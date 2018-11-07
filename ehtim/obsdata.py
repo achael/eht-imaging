@@ -206,13 +206,11 @@ class Obsdata(object):
     def switch_polrep(self, polrep_out='stokes', allow_singlepol=True, singlepol_hand='R'):
 
         """Return a new observation with the polarization representation changed
+
            Args:
                polrep_out (str):  the polrep of the output data
-               allow_singlepol (bool): If True, treat single-polarization data as 
-                                       Stokes I when converting from 'circ' polrep to 'stokes'
-               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand 
-                                     is assumed when converting 'stokes' to 'circ'
-                                     and only Stokes I is present
+               allow_singlepol (bool): If True, treat single-polarization data as Stokes I when converting from 'circ' polrep to 'stokes'
+               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand is assumed when converting 'stokes' to 'circ' when only Stokes I is present
            Returns:
                (Obsdata): new Obsdata object with potentially different polrep
         """
