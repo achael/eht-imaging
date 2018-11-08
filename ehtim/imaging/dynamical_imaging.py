@@ -99,6 +99,13 @@ def center_core(im, blur_size_uas=100):
     center = np.array((int((im.ydim-1)/2),int((im.xdim-1)/2)))
     print ("Rotating By",center - core_pos)
     im_rotate.imvec = np.roll(im.imvec.reshape((im.ydim,im.xdim)), center - core_pos, (0,1)).flatten()
+    if len(im.qvec):
+        im_rotate.qvec = np.roll(im.qvec.reshape((im.ydim,im.xdim)), center - core_pos, (0,1)).flatten()
+    if len(im.uvec):
+        im_rotate.uvec = np.roll(im.uvec.reshape((im.ydim,im.xdim)), center - core_pos, (0,1)).flatten()
+    if len(im.vvec):
+        im_rotate.vvec = np.roll(im.vvec.reshape((im.ydim,im.xdim)), center - core_pos, (0,1)).flatten()
+    
     return im_rotate
 
 def align_left(im,min_frac=0.1,opposite_frac_thresh=0.05):
@@ -114,6 +121,13 @@ def align_left(im,min_frac=0.1,opposite_frac_thresh=0.05):
             break
 
     im_rotate.imvec = np.roll(im.imvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+    if len(im.qvec):
+        im_rotate.qvec = np.roll(im.qvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+    if len(im.uvec):
+        im_rotate.uvec = np.roll(im.uvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+    if len(im.vvec):
+        im_rotate.vvec = np.roll(im.vvec.reshape((im.ydim,im.xdim)), center[0] - j, (1)).flatten()
+
     return im_rotate
 
 
@@ -301,10 +315,17 @@ def average_im_list(im_List):
     """
     avg_im = im_List[0].copy()
     avg_im.imvec = np.mean([im.imvec for im in im_List],axis=0)
+    if len(im_List[0].qvec):
+        avg_im.qvec = np.mean([im.qvec for im in im_List],axis=0)
+    if len(im_List[0].uvec):
+        avg_im.uvec = np.mean([im.uvec for im in im_List],axis=0)
+    if len(im_List[0].vvec):
+        avg_im.vvec = np.mean([im.vvec for im in im_List],axis=0)
+
     return avg_im
 
 def blur_im_list(im_List, fwhm_x, fwhm_t):
-    """Apply a gaussian filter to a list of images, with fwhm_x in radians and fwhm_t in frames.
+    """Apply a gaussian filter to a list of images, with fwhm_x in radians and fwhm_t in frames. Currently only for Stokes I.
 
        Args:
            fwhm_x (float): circular beam size for spatial blurring in radians
