@@ -257,14 +257,15 @@ class Caltable(object):
            Returns:
                (Caltable):  a padded caltable object
         """
-
+        import copy
 
         outdict = {}
         scopes = list(self.data.keys())
         for scope in scopes:
-            caldata = self.data[scope].copy()
-            if np.any(caldata is None) or len(caldata) == 0:
+            if np.any(self.data[scope] is None) or len(self.data[scope]) == 0:
                 continue
+
+            caldata = copy.deepcopy(self.data[scope]) 
 
             # Gather data into "scans"
             # TODO we could use a scan table for this as well!
