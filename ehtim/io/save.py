@@ -325,6 +325,8 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
        To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
     """
 
+    obs = obs.switch_polrep('circ')
+
     # Open template UVFITS
     dir_path = os.path.dirname(os.path.realpath(__file__))
     #hdulist = fits.open(dir_path+'/template.UVP')
