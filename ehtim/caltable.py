@@ -427,6 +427,7 @@ class Caltable(object):
                     datatable = np.hstack((datatable,bl_obs))
                 else:
                     datatable = bl_obs
+
             elif obs.polrep=='circ':
 
                 bl_obs['rrvis'] = (bl_obs['rrvis']) * rrscale

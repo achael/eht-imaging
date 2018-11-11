@@ -2963,7 +2963,7 @@ class Obsdata(object):
             bldata = self.bllist(conj=conj)
             for bl in bldata:
                 t1 = bl['t1'][0]
-                t2 = bl['t2'][0]
+                t2 = bl['t2'][1]
                 bllist.append((t1,t2))
                 colors.append(cdict[(t1,t2)])
 
@@ -3019,6 +3019,7 @@ class Obsdata(object):
             sigy = allsigy[i]
             sigx = allsigx[i]
             color = colors[i]
+            bl = bllist[i]
 
             # Flag out nans (to avoid problems determining plotting limits)
             nan_mask = np.isnan(data[field1]) + np.isnan(data[field2])
@@ -3028,8 +3029,6 @@ class Obsdata(object):
             if len(data) == 0:
                 continue
 
-            bl = bllist[i]
-
             xmins.append(np.min(data[field1]))
             xmaxes.append(np.max(data[field1]))
             ymins.append(np.min(data[field2]))
@@ -3037,18 +3036,19 @@ class Obsdata(object):
 
             # Plot the data
             tolerance = len(data[field2])
-
+            
             if label is None:
-                label="%s-%s"%((str(bl[0]),str(bl[1])))
+                labelstr="%s-%s"%((str(bl[0]),str(bl[1])))
+
             else:
-                label=str(label)
+                labelstr=str(labelstr)
 
             if ebar and (np.any(sigy) or np.any(sigx)):
-                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label=label,
+                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label=labelstr,
                            fmt=marker, markersize=markersize, color=color,picker=tolerance)
             else:
                 x.plot(data[field1], data[field2], marker, markersize=markersize, color=color,
-                       label=label, picker=tolerance)
+                       label=labelstr, picker=tolerance)
 
         # Data ranges
         if not rangex:
