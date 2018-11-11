@@ -1571,6 +1571,34 @@ class Obsdata(object):
 
         return out
 
+    def add_fractional_noise(self, frac_noise, debias=False):
+        """Add a constant fraction of each visibility amplitude at quadrature to the corresponding thermal noise, 
+           effectively imposing a maximal signal-to-noise ratio. Note that this operation is not currently tracked 
+           in the data so should be applied with extreme caution. 
+
+           Args:
+               frac_noise (float): The fraction of noise to add. For example, frac_noise=0.05 would
+                                   impose a maximum signal-to-noise of 20.
+               debias (bool):      Whether or not to add frac_noise of debiased amplitudes.
+
+           Returns:
+               (Obsdata): An Obsdata object with the inflated noise values.
+        """
+
+        # Extract visibility amplitudes
+        # Switch to Stokes for graceful handling of circular basis products missing RR or LL
+        amp = self.switch_polrep('stokes').unpack('amp',debias=debias)['amp']      
+
+        out = self.copy()
+        for sigma in ['sigma1','sigma2','sigma3','sigma4']:
+            try:
+                field = self.poldict[sigma]
+                out.data[field] = (self.data[field]**2 + np.abs(frac_noise*amp)**2)**0.5
+            except KeyError:
+                continue    
+
+        return out
+
     def rescale_noise(self, noise_rescale_factor=1.0):
 
         """Rescale the thermal noise on all Stokes parameters by a constant factor.
