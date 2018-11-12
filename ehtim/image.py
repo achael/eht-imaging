@@ -1652,7 +1652,7 @@ class Image(object):
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
-                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, seed=False):
+                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, caltable_path=None, seed=False):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -1680,8 +1680,10 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+               
+               caltable_path (string): The path and prefix that a caltable is saved with if adding noise through a Jones matrix
                seed (int): seeds the random component of the noise terms. do not set to 0!
-                
+               
            Returns:
                (Obsdata): an observation object
         """
@@ -1699,7 +1701,8 @@ class Image(object):
                                                  stabilize_scan_phase=stabilize_scan_phase,
                                                  stabilize_scan_amp=stabilize_scan_amp,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                                 dtermp=dtermp,dterm_offset=dterm_offset, seed=seed)
+                                                 dtermp=dtermp,dterm_offset=dterm_offset, 
+                                                 caltable_path=caltable_path, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1720,6 +1723,10 @@ class Image(object):
         # No Jones Matrices, Add noise the old way
         # NOTE There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
         else:
+        
+            if caltable_path: 
+                print('WARNING: the caltable is currently only saved if you apply noise with a Jones Matrix')
+                
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset, seed=seed)

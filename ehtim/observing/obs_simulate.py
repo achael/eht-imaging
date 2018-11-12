@@ -363,7 +363,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
 def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
                stabilize_scan_phase=False, stabilize_scan_amp=False, 
                taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
-               dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
+               dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, caltable_path=None,
                seed=False):
 
     """Computes Jones Matrices for a list of times (non repeating), with gain and dterm errors.
@@ -453,6 +453,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
     # Generate Jones Matrices at each time for each telescope
     out = {}
+    datatables = {}
     for i in range(len(tarr)):
         site = tarr[i]['site']
         coords = np.array([tarr[i]['x'],tarr[i]['y'],tarr[i]['z']])
@@ -506,6 +507,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             phase = np.fromiter((2 * np.pi * hashrand(site, 'phase', time, seed) for time in times_stable_phase),float)
             gainR = gainR * np.exp(1j*phase)
             gainL = gainL * np.exp(1j*phase)
+            
 
         # D Term errors
         dR = dL = 0.0
@@ -543,6 +545,17 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                      }
 
         out[site] = j_matrices
+
+        if caltable_path: 
+            datatable = []
+            for j in range(len(times)): 
+                datatable.append(np.array((times[j], gainR[j], gainL[j]), dtype=DTCAL))
+            datatables[site] = np.array(datatable)
+                                
+        
+    if caltable_path and len(datatables)>0:
+        caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
+        caltable.save_txt(obs, datadir=caltable_path+'_simdata_caltable')
 
     return out
 
@@ -658,7 +671,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
                         opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
                         stabilize_scan_phase=False, stabilize_scan_amp=False, 
                         taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
-                        seed=False):
+                        caltable_path=None, seed=False):
 
     """Corrupt visibilities in obs with jones matrices and add thermal noise
 
@@ -691,7 +704,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,
                          stabilize_scan_phase=stabilize_scan_phase,stabilize_scan_amp=stabilize_scan_amp,
                          gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dterm_offset=dterm_offset,
-                         seed=seed)
+                         caltable_path=caltable_path, seed=seed)
 
     # Change pol rep:
     obs_circ = obs.switch_polrep('circ')
