@@ -654,7 +654,6 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
         # D Terms
         dR = dL = 0.0
-        
         if not dcal:
             dR = tarr[i]['dr']
             dL = tarr[i]['dl']
@@ -665,12 +664,12 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
         if not frcal:
             # Total Angle (Radian)
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
-        else:
-            if not dcal:
-                # If the field rotation angle has been removed but leakage hasn't, we still need to rotate the leakage terms appropriately (by *twice* the field rotation angle)
-                fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
 
-        # Assemble the Jones Matrices and save to dictionary
+        elif frcal and not dcal:
+            # If the field rotation angle has been removed but leakage hasn't, we still need to rotate the leakage terms appropriately (by *twice* the field rotation angle)
+            fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
+
+        # Assemble the inverse Jones Matrices and save to dictionary
         pref = 1.0/(gainL*gainR*(1.0 - dL*dR))
         j_matrices_inv = {times[j]: pref[j]*np.array([
                                      [ np.exp( 1j*fr_angle[j])*gainL[j],   -np.exp( 1j*(fr_angle[j] + fr_angle_D[j]))*dR*gainR[j]],
