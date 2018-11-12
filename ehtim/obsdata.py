@@ -3069,7 +3069,7 @@ class Obsdata(object):
                 labelstr="%s-%s"%((str(bl[0]),str(bl[1])))
 
             else:
-                labelstr=str(labelstr)
+                labelstr=str(label)
 
             if ebar and (np.any(sigy) or np.any(sigx)):
                 x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label=labelstr,
