@@ -534,10 +534,15 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
        Returns:
            (Caltable): a caltable object
     """
+    tarr = obs.tarr
+    array_filename = datadir + '/array.txt'
+    if os.path.exists(array_filename):
+        tarr = ehtim.io.load.load_array_txt(array_filename).tarr
+    
     datatables = {}
-    for s in range(0, len(obs.tarr)):
+    for s in range(0, len(tarr)):
 
-        site = obs.tarr[s]['site']
+        site = tarr[s]['site']
         filename = datadir + obs.source + '_' + site + '.txt'
         try:
             data = np.loadtxt(filename, dtype=bytes).astype(str)
@@ -573,7 +578,7 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
 
         datatables[site] = np.array(datatable)
     if len(datatables)>0:
-        caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
+        caltable = Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, tarr, source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
     else:
         print ("COULD NOT FIND CALTABLE IN DIRECTORY %s" % datadir)
         caltable=False
@@ -591,6 +596,8 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
 
     if not os.path.exists(datadir):
         os.makedirs(datadir)
+        
+    ehtim.io.save.save_array_txt(obs.tarr, datadir + '/array.txt')
 
     datatables = caltable.data
     src = caltable.source

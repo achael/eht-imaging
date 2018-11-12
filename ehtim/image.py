@@ -1652,7 +1652,7 @@ class Image(object):
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
-                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, caltable_path=None, seed=False):
+                           dterm_offset=DTERMPDEF, caltable_path=None, seed=False):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -1678,7 +1678,6 @@ class Image(object):
                gainp (float): the fractional std. dev. of the random error on the gains
                gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
                
                caltable_path (string): The path and prefix that a caltable is saved with if adding noise through a Jones matrix
@@ -1701,7 +1700,7 @@ class Image(object):
                                                  stabilize_scan_phase=stabilize_scan_phase,
                                                  stabilize_scan_amp=stabilize_scan_amp,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                                 dtermp=dtermp,dterm_offset=dterm_offset, 
+                                                 dterm_offset=dterm_offset, 
                                                  caltable_path=caltable_path, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
@@ -1749,7 +1748,7 @@ class Image(object):
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
-                      dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, seed=False):
+                      dterm_offset=DTERMPDEF, seed=False):
 
         """Generate baselines from an array object and observe the image.
 
@@ -1787,7 +1786,6 @@ class Image(object):
                gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
                taup (float): the fractional std. dev. of the random error on the opacities
-               dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
                seed (int): seeds the random component of noise added. do not set to 0!
                
@@ -1814,7 +1812,7 @@ class Image(object):
                                      stabilize_scan_amp=stabilize_scan_amp,
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
-                                     dtermp=dtermp, dterm_offset=dterm_offset,
+                                     dterm_offset=dterm_offset,
                                      jones=jones, inv_jones=inv_jones, seed=seed)
 
         return obs
@@ -1826,7 +1824,7 @@ class Image(object):
                           stabilize_scan_phase=False, stabilize_scan_amp=False, 
                           jones=False, inv_jones=False,
                           tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
-                          dterm_offset=DTERMPDEF, dtermp=DTERMPDEF):
+                          dterm_offset=DTERMPDEF):
 
         """Generate baselines from a vex file and observes the image.
 
@@ -1858,7 +1856,6 @@ class Image(object):
                gainp (float): the fractional std. dev. of the random error on the gains
                taup (float): the fractional std. dev. of the random error on the opacities
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-               dtermp (float): the fractional std. dev. of the random error on the D-terms
 
            Returns:
                (Obsdata): an observation object
@@ -1901,7 +1898,7 @@ class Image(object):
                                        opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
                                        stabilize_scan_phase=stabilize_scan_phase,
                                        stabilize_scan_amp=stabilize_scan_amp,
-                                       taup=taup, gainp=gainp,gain_offset=gain_offset,dtermp=dtermp,dterm_offset=dterm_offset,
+                                       taup=taup, gainp=gainp,gain_offset=gain_offset,dterm_offset=dterm_offset,
                                        jones=jones, inv_jones=inv_jones)
 
 
