@@ -360,13 +360,10 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
 # Noise + miscalibration funcitons
 ##################################################################################################
 
-def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, 
+def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
                stabilize_scan_phase=False, stabilize_scan_amp=False, 
-               taup=GAINPDEF, 
-               gainp=GAINPDEF, gain_offset=GAINPDEF,
-               dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
-               caltable_path=None,
-               seed=False):
+               taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dterm_offset=DTERMPDEF,
+               caltable_path=None, seed=False):
 
     """Computes Jones Matrices for a list of times (non repeating), with gain and dterm errors.
 
@@ -382,7 +379,6 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-           dtermp (float): the fractional std. dev. of the random multiplicative error on the D-terms
            dterm_offset (float): the base std. dev. of random additive error at all sites, or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
 
@@ -488,14 +484,22 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
             # Note: R/L gain ratio is independent of time for each site
             # TODO: enforce gainR and gainL < 1
+            
+            if rlgaincal:
+                gainr_string = 'gain'
+                gainl_string = 'gain'
+            else:
+                gainr_string = 'gainR'
+                gainl_string = 'gainL'
+            
             gainR = np.sqrt(np.abs(np.fromiter((
-                                                (1.0 + goff * hashrandn(site,'gainR',str(goff),seed)) *
+                                                (1.0 + goff * hashrandn(site,gainr_string,str(goff),seed)) *
                                                 (1.0 + gain_mult * hashrandn(site,'gain',str(time),str(gain_mult),seed))
                                                 for time in times_stable_amp
                                                ),float)))
 
             gainL = np.sqrt(np.abs(np.fromiter((
-                                                (1.0 + goff * hashrandn(site,'gainL',str(goff),seed)) *
+                                                (1.0 + goff * hashrandn(site,gainl_string,str(goff),seed)) *
                                                 (1.0 + gain_mult * hashrandn(site,'gain',str(time),str(gain_mult),seed))
                                                 for time in times_stable_amp
                                                ),float)))
@@ -534,10 +538,6 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             dR += doff * (hashrandn(site, 'dRre', seed) + 1j * hashrandn(site, 'dRim', seed))
             dL += doff * (hashrandn(site, 'dLre', seed) + 1j * hashrandn(site, 'dLim', seed))
 
-            # No multiplicative factor in dterms!
-            #dR *= (1. + dtermp * (hashrandn(site, 'dRre_resid', seed) + 1j * hashrandn(site, 'dRim_resid', seed)))
-            #dL *= (1. + dtermp * (hashrandn(site, 'dLre_resid', seed) + 1j * hashrandn(site, 'dLim_resid', seed)))
-
         # Feed Rotation Angles
         fr_angle = np.zeros(len(times))
         fr_angle_D = np.zeros(len(times))
@@ -562,6 +562,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
         out[site] = j_matrices
 
         if caltable_path: 
+            obs_tmp.tarr[i]['dr'] = dR 
+            obs_tmp.tarr[i]['dl'] = dL   
             datatable = []
             for j in range(len(times)): 
                 datatable.append(np.array((times[j], gainR[j], gainL[j]), dtype=DTCAL))
@@ -569,8 +571,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                                 
     # Save a calibration table with the synthetic gains and dterms added
     if caltable_path and len(datatables)>0:
-        caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
-        caltable.save_txt(obs, datadir=caltable_path+'_simdata_caltable')
+        caltable = ehtim.caltable.Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw, datatables, obs_tmp.tarr, source=obs_tmp.source, mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
+        caltable.save_txt(obs_tmp, datadir=caltable_path+'_simdata_caltable')
 
     return out
 
@@ -682,13 +684,10 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
     return out
 
 def add_jones_and_noise(obs, add_th_noise=True,
-                        opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True,
+                        opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
                         stabilize_scan_phase=False, stabilize_scan_amp=False, 
-                        taup=GAINPDEF,
-                        gainp=GAINPDEF, gain_offset=GAINPDEF, 
-                        dtermp=DTERMPDEF, dterm_offset=DTERMPDEF,
-                        caltable_path=None, 
-                        seed=False):
+                        taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dterm_offset=DTERMPDEF,
+                        caltable_path=None, seed=False):
 
 
     """Corrupt visibilities in obs with jones matrices and add thermal noise
@@ -706,7 +705,6 @@ def add_jones_and_noise(obs, add_th_noise=True,
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-           dtermp (float): the fractional std. dev. of the random multiplicative error on the D-terms
            dterm_offset (float): the base std. dev. of random additive error at all sites, or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
 
@@ -719,9 +717,9 @@ def add_jones_and_noise(obs, add_th_noise=True,
     print("Applying Jones Matrices to data . . . ")
     # Build Jones Matrices
     jm_dict = make_jones(obs,
-                         ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,
+                         ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,rlgaincal=rlgaincal,
                          stabilize_scan_phase=stabilize_scan_phase,stabilize_scan_amp=stabilize_scan_amp,
-                         gainp=gainp, taup=taup, gain_offset=gain_offset, dtermp=dtermp, dterm_offset=dterm_offset,
+                         gainp=gainp, taup=taup, gain_offset=gain_offset, dterm_offset=dterm_offset,
                          caltable_path=caltable_path, seed=seed)
 
     # Change pol rep:
