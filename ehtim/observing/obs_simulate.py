@@ -415,6 +415,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             if (not len(sites_in)) or (not bl['t2'] in sites_in):
                 taudict[bl['t2']] = np.append(taudict[bl['t2']], bl['tau2'])
                 sites_in = np.append(sites_in, bl['t2'])
+
         if len(sites_in) < nsites:
             for site in obs_tmp.tarr['site']:
                 if site not in sites_in:
@@ -817,7 +818,6 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
         sig_rl = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdr'], obs.tarr[obs.tkey[t2[i]]]['sefdl'], tints[i], obs.bw) for i in range(len(rl))),float)
         sig_lr = np.fromiter((blnoise(obs.tarr[obs.tkey[t1[i]]]['sefdl'], obs.tarr[obs.tkey[t2[i]]]['sefdr'], tints[i], obs.bw) for i in range(len(lr))),float)
 
-
     #print "------------------------------------------------------------------------------------------------------------------------"
     if not opacitycal:
         if verbose: print("   Applying opacity corrections: opacitycal-->True")
@@ -880,6 +880,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 
 # The old noise generating function.
 def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True,
+              stabilize_scan_amp=False, stabilize_scan_phase=False, 
               taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
               seed=False):
 
@@ -891,6 +892,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
            opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
            ampcal (bool): if False, time-dependent gaussian errors are added to complex station gains
            phasecal (bool): if False, time-dependent station-based random phases are added to complex station gains
+           stabilize_scan_phase (bool): if True, random phase errors are constant over scans
+           stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
            taup (float): the fractional std. dev. of the random error on the opacities
            gainp (float): the fractional std. dev. of the random error on the gains
            gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site

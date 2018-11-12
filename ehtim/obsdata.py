@@ -1571,6 +1571,34 @@ class Obsdata(object):
 
         return out
 
+    def add_fractional_noise(self, frac_noise, debias=False):
+        """Add a constant fraction of each visibility amplitude at quadrature to the corresponding thermal noise, 
+           effectively imposing a maximal signal-to-noise ratio. Note that this operation is not currently tracked 
+           in the data so should be applied with extreme caution. 
+
+           Args:
+               frac_noise (float): The fraction of noise to add. For example, frac_noise=0.05 would
+                                   impose a maximum signal-to-noise of 20.
+               debias (bool):      Whether or not to add frac_noise of debiased amplitudes.
+
+           Returns:
+               (Obsdata): An Obsdata object with the inflated noise values.
+        """
+
+        # Extract visibility amplitudes
+        # Switch to Stokes for graceful handling of circular basis products missing RR or LL
+        amp = self.switch_polrep('stokes').unpack('amp',debias=debias)['amp']      
+
+        out = self.copy()
+        for sigma in ['sigma1','sigma2','sigma3','sigma4']:
+            try:
+                field = self.poldict[sigma]
+                out.data[field] = (self.data[field]**2 + np.abs(frac_noise*amp)**2)**0.5
+            except KeyError:
+                continue    
+
+        return out
+
     def rescale_noise(self, noise_rescale_factor=1.0):
 
         """Rescale the thermal noise on all Stokes parameters by a constant factor.
@@ -2963,7 +2991,7 @@ class Obsdata(object):
             bldata = self.bllist(conj=conj)
             for bl in bldata:
                 t1 = bl['t1'][0]
-                t2 = bl['t2'][0]
+                t2 = bl['t2'][1]
                 bllist.append((t1,t2))
                 colors.append(cdict[(t1,t2)])
 
@@ -3019,6 +3047,7 @@ class Obsdata(object):
             sigy = allsigy[i]
             sigx = allsigx[i]
             color = colors[i]
+            bl = bllist[i]
 
             # Flag out nans (to avoid problems determining plotting limits)
             nan_mask = np.isnan(data[field1]) + np.isnan(data[field2])
@@ -3028,8 +3057,6 @@ class Obsdata(object):
             if len(data) == 0:
                 continue
 
-            bl = bllist[i]
-
             xmins.append(np.min(data[field1]))
             xmaxes.append(np.max(data[field1]))
             ymins.append(np.min(data[field2]))
@@ -3037,18 +3064,19 @@ class Obsdata(object):
 
             # Plot the data
             tolerance = len(data[field2])
-
+            
             if label is None:
-                label="%s-%s"%((str(bl[0]),str(bl[1])))
+                labelstr="%s-%s"%((str(bl[0]),str(bl[1])))
+
             else:
-                label=str(label)
+                labelstr=str(labelstr)
 
             if ebar and (np.any(sigy) or np.any(sigx)):
-                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label=label,
+                x.errorbar(data[field1], data[field2], xerr=sigx, yerr=sigy, label=labelstr,
                            fmt=marker, markersize=markersize, color=color,picker=tolerance)
             else:
                 x.plot(data[field1], data[field2], marker, markersize=markersize, color=color,
-                       label=label, picker=tolerance)
+                       label=labelstr, picker=tolerance)
 
         # Data ranges
         if not rangex:

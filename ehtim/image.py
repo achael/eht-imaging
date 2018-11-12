@@ -2354,7 +2354,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, 
                       label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical"):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical"):
 
         """Display the image.
 
@@ -2472,8 +2472,8 @@ class Image(object):
                 if (imarr < 0.0).any():
                     print('clipping values less than 0 in display')
                     imarr[imarr<0.0] = 0.0
-                imarr = np.log(imarr + np.max(imarr) / dynamic_range)
-                unit = 'log(' + unit + ')'
+                imarr = np.log10(imarr + np.max(imarr) / dynamic_range)
+                unit = r'$\log_{10}$(' + unit + ')'
 
             if scale=='gamma':
                 if (imarr < 0.0).any():
@@ -2539,8 +2539,8 @@ class Image(object):
                 if (imarr2 < 0.0).any():
                     print('clipping values less than 0 in display')
                     imarr2[imarr2<0.0] = 0.0
-                imarr2 = np.log(imarr2 + np.max(imarr2) / dynamic_range)
-                unit = 'log(' + unit + ')'
+                imarr2 = np.log10(imarr2 + np.max(imarr2) / dynamic_range)
+                unit = r'$\log_{10}$(' + unit + ')'
 
             if scale=='gamma':
                 if (imarr2 < 0.0).any():
@@ -2686,7 +2686,7 @@ class Image(object):
             plt.show(block=False)
 
         if export_pdf != "":
-            f.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
+            f.savefig(export_pdf, bbox_inches='tight', pad_inches = pdf_pad_inches)
 
         return f
 
@@ -2742,9 +2742,9 @@ class Image(object):
         unit = 'Jy/pixel'
         if scale=='log':
             unit = 'log(Jy/pixel)'
-            im0_pad.imvec = np.log(im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[0])
+            im0_pad.imvec = np.log10(im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[0])
             for i in range(0, len(im_list)):
-                im_list_shift[i].imvec = np.log(im_list_shift[i].imvec + np.max(im_list_shift[i].imvec)/dynamic_range[i+1])
+                im_list_shift[i].imvec = np.log10(im_list_shift[i].imvec + np.max(im_list_shift[i].imvec)/dynamic_range[i+1])
 
         if scale=='gamma':
             unit = '(Jy/pixel)^gamma'
