@@ -534,7 +534,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             dR += doff * (hashrandn(site, 'dRre', seed) + 1j * hashrandn(site, 'dRim', seed))
             dL += doff * (hashrandn(site, 'dLre', seed) + 1j * hashrandn(site, 'dLim', seed))
 
-            # No multiplicative factor
+            # No multiplicative factor in dterms!
             #dR *= (1. + dtermp * (hashrandn(site, 'dRre_resid', seed) + 1j * hashrandn(site, 'dRim_resid', seed)))
             #dL *= (1. + dtermp * (hashrandn(site, 'dLre_resid', seed) + 1j * hashrandn(site, 'dLim_resid', seed)))
 
@@ -567,7 +567,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 datatable.append(np.array((times[j], gainR[j], gainL[j]), dtype=DTCAL))
             datatables[site] = np.array(datatable)
                                 
-        
+    # Save a calibration table with the synthetic gains and dterms added
     if caltable_path and len(datatables)>0:
         caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, datatables, obs.tarr, source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
         caltable.save_txt(obs, datadir=caltable_path+'_simdata_caltable')
