@@ -113,16 +113,8 @@ class Caltable(object):
         new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
-    def plot_dterms(self, sites, label=None, legend=True, clist=SCOLORS,rangex=False,
-                    rangey=False, markersize=2*MARKERSIZE, show=True, grid=True, 
-                    axislabels=True, export_pdf=""):
-
-        colors = iter(clist)
-        
-        if export_pdf != "":
-            fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, sharex=True, figsize=(16,8))
-        else: 
-            fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, sharex=True)
+    def plot_dterms(self, sites='all', label=None, legend=True, clist=SCOLORS,rangex=False,
+                    rangey=False, markersize=2*MARKERSIZE, show=True, grid=True, export_pdf=""):
 
         # sites
         if sites in ['all' or 'All'] or sites==[]:
@@ -132,52 +124,9 @@ class Caltable(object):
             sites = [sites]
         
         keys = [self.tkey[site] for site in sites]
-            
-        for key in keys:
-            
-            # get the label
-            site = str(self.tarr[key]['site'])
-            if label is None:
-                bllabel=str(site)
-            else:
-                bllabel = label + ' ' + str(site)
-            color = next(colors)
 
-            axes[0].plot(np.real(self.tarr[key]['dr']), np.imag(self.tarr[key]['dr']), color=color, marker='o', markersize=markersize, 
-                     label=bllabel, linestyle='none')
-            axes[0].set_title("Right D-terms")
-            axes[0].set_xlabel("Real")
-            axes[0].set_ylabel("Imaginary");
-                  
-            axes[1].plot(np.real(self.tarr[key]['dl']), np.imag(self.tarr[key]['dl']), color=color, marker='o', markersize=markersize, 
-                     label=bllabel, linestyle='none')
-            axes[1].set_title("Left D-terms")
-            axes[1].set_xlabel("Real")
-            axes[1].set_ylabel("Imaginary");
-        
-        axes[0].axhline(y=0, color='k')
-        axes[0].axvline(x=0, color='k')
-        axes[1].axhline(y=0, color='k')
-        axes[1].axvline(x=0, color='k')
-            
-        if grid: 
-            axes[0].grid()
-            axes[1].grid()
-            
-        if rangex: 
-            axes[0].set_xlim(rangex)
-            axes[1].set_xlim(rangex)
-            
-        if rangey: 
-            axes[0].set_ylim(rangey)
-            axes[1].set_ylim(rangey)
-        
-        if legend:
-            #axes[0].legend()
-            axes[1].legend(loc='center left', bbox_to_anchor=(1, 0.5))
-
-        if export_pdf != "":
-            fig.savefig(export_pdf, bbox_inches='tight')
+        axes = plot_tarr_dterms(self.tarr, keys=keys, label=label, legend=legend, clist=clist,rangex=rangex,
+                    rangey=rangey, markersize=markersize, show=show, grid=grid, export_pdf=export_pdf)
         
         return axes
 
@@ -734,3 +683,65 @@ def relaxed_interp1d(x, y, **kwargs):
         x = np.array([-0.5, 0.5]) + x[0]
         y = np.array([ 1.0, 1.0]) * y[0]
     return scipy.interpolate.interp1d(x, y, **kwargs)
+    
+
+def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,rangex=False,
+                rangey=False, markersize=2*MARKERSIZE, show=True, grid=True, export_pdf=""):
+
+    
+    keys = range(len(tarr))
+    
+    colors = iter(clist)
+    
+    if export_pdf != "":
+        fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, sharex=True, figsize=(16,8))
+    else: 
+        fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, sharex=True)
+
+    for key in keys:
+        
+        # get the label
+        site = str(tarr[key]['site'])
+        if label is None:
+            bllabel=str(site)
+        else:
+            bllabel = label + ' ' + str(site)
+        color = next(colors)
+
+        axes[0].plot(np.real(tarr[key]['dr']), np.imag(tarr[key]['dr']), color=color, marker='o', markersize=markersize, 
+                 label=bllabel, linestyle='none')
+        axes[0].set_title("Right D-terms")
+        axes[0].set_xlabel("Real")
+        axes[0].set_ylabel("Imaginary");
+              
+        axes[1].plot(np.real(tarr[key]['dl']), np.imag(tarr[key]['dl']), color=color, marker='o', markersize=markersize, 
+                 label=bllabel, linestyle='none')
+        axes[1].set_title("Left D-terms")
+        axes[1].set_xlabel("Real")
+        axes[1].set_ylabel("Imaginary");
+    
+    axes[0].axhline(y=0, color='k')
+    axes[0].axvline(x=0, color='k')
+    axes[1].axhline(y=0, color='k')
+    axes[1].axvline(x=0, color='k')
+        
+    if grid: 
+        axes[0].grid()
+        axes[1].grid()
+        
+    if rangex: 
+        axes[0].set_xlim(rangex)
+        axes[1].set_xlim(rangex)
+        
+    if rangey: 
+        axes[0].set_ylim(rangey)
+        axes[1].set_ylim(rangey)
+    
+    if legend:
+        #axes[0].legend()
+        axes[1].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    if export_pdf != "":
+        fig.savefig(export_pdf, bbox_inches='tight')
+    
+    return axes
