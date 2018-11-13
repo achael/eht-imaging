@@ -2034,10 +2034,9 @@ def sgauss(imvec, xdim, ydim, psize, major, minor, PA):
     sigyy = (np.sum((yy - y0)**2.*im)/np.sum(im))
     sigxy = (np.sum((xx - x0)*(yy- y0)*im)/np.sum(im))
       
-    #We calculate the regularizer 
-    rgauss = -( (sigxx - sigxx_prime)**2. + (sigyy - sigyy_prime)**2. + (sigxy - sigxy_prime)**2. )
+    #We calculate the regularizer #this line was CHANGED
+    rgauss = -( (sigxx - sigxx_prime)**2. + (sigyy - sigyy_prime)**2. + 2*(sigxy - sigxy_prime)**2. )
     rgauss = rgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
-
     return rgauss
 
 
@@ -2092,11 +2091,12 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
 
     dxy = ( ( (xx - x0)*(yy - y0) - (yy - y0)*dx0*im - (xx - x0)*dy0*im ) - sigxy ) / np.sum(im) 
 
-    #gradient of the regularizer 
-    drgauss = ( 2.*(sigxx - sigxx_prime)*dxx + 2.*(sigyy - sigyy_prime)*dyy + 2.*(sigxy - sigxy_prime)*dxy )
+    #gradient of the regularizer #this line was CHANGED
+    drgauss = ( 2.*(sigxx - sigxx_prime)*dxx + 2.*(sigyy - sigyy_prime)*dyy + 4.*(sigxy - sigxy_prime)*dxy )
     drgauss = drgauss/(major**2. * minor**2.) #normalization will need to be redone, right now requires alpha~1000 
 
     return -drgauss.reshape(-1)
+
 
 ##################################################################################################
 # Chi^2 Data functions

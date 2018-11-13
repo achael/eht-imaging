@@ -958,8 +958,16 @@ class Imager(object):
         # Calculate the entropy using the unscattered image
         regterm = 0
         reg_term_dict = self.make_reg_dict(imvec)
+        #make dict also for scattered image
+        reg_term_dict_scatt = self.make_reg_dict(scatt_im)
+
         for regname in sorted(self.reg_term_next.keys()):
-            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+            if regname == 'rgauss':
+                #get gradient of the scattered image vector
+                regterm += self.reg_term_next[regname] * reg_term_dict_scatt[regname]
+
+            else:
+                regterm += self.reg_term_next[regname] * reg_term_dict[regname]
 
         # Scattering screen regularization term
         chisq_epsilon = sum(EpsilonList*EpsilonList)/((N*N-1.0)/2.0)
@@ -1005,8 +1013,25 @@ class Imager(object):
         #Entropy gradient; wrt unscattered image so unchanged by scattering
         regterm = 0
         reg_term_dict = self.make_reggrad_dict(imvec)
+        #make dict also for scattered image
+        reg_term_dict_scatt = self.make_reggrad_dict(scatt_im)
+
         for regname in sorted(self.reg_term_next.keys()):
-            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+            #we need an exception if the regularizer is 'rgauss' 
+            if regname == 'rgauss':
+                #get gradient of the scattered image vector
+                gaussterm = self.reg_term_next[regname] * reg_term_dict_scatt[regname]
+                dgauss_dIa = gaussterm.reshape((N,N))
+
+                # Now the chain rule factor to get the gauss gradient wrt the unscattered image
+                gx = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dgauss_dIa))).flatten()
+                gy = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_y[::-1,::-1], phi_Gradient_y * (dgauss_dIa))).flatten()
+
+                # Now we add the gradient for the unscattered image 
+                regterm += so.Wrapped_Convolve(self._ea_ker[::-1,::-1], (dgauss_dIa)).flatten() + gx + gy
+
+            else:
+                regterm += self.reg_term_next[regname] * reg_term_dict[regname]
 
         # Chi^2 gradient wrt the unscattered image
         # First, the chi^2 gradient wrt to the scattered image
