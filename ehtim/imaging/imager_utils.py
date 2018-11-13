@@ -2266,6 +2266,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
 
     # unpack keyword args
     maxset = kwargs.get('maxset',False)
+    uv_min = kwargs.get('uv_min', False)
     if maxset: count='max'
     else: count='min'
 
@@ -2276,7 +2277,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
-        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count)
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min)
     else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
@@ -2549,6 +2550,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
     """
     # unpack keyword args
     maxset = kwargs.get('maxset',False)
+    uv_min = kwargs.get('uv_min', False)
     if maxset: count='max'
     else: count='min'
 
@@ -2563,7 +2565,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
-        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count)
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min)
     else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
@@ -2854,6 +2856,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     # unpack keyword args    
     maxset = kwargs.get('maxset',False)
+    uv_min = kwargs.get('uv_min', False)
     if maxset: count='max'
     else: count='min'
 
@@ -2866,7 +2869,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
-        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count)
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min)
     else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:

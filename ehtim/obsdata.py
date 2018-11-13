@@ -2226,7 +2226,7 @@ class Obsdata(object):
 
         return gparams
 
-    def bispectra(self, vtype='vis', mode='all', count='min',timetype=False):
+    def bispectra(self, vtype='vis', mode='all', count='min',timetype=False, uv_min=False):
 
         """Return a recarray of the equal time bispectra.
 
@@ -2235,6 +2235,7 @@ class Obsdata(object):
                mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
                count (str): If 'min', return minimal set of bispectra, if 'max' return all bispectra up to reordering
                timetype (str): 'GMST' or 'UTC'
+               uv_min (float): flag baselines shorter than this before forming closure quantities
 
            Returns:
                (numpy.recarry): A recarray of the bispectra values with datatype DTBIS
@@ -2251,8 +2252,13 @@ class Obsdata(object):
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
+        # Flag zero baselines
+        obsdata = self.copy()
+        if min_bl:
+            obsdata = obsdata.flag_uvdist(uv_min=uv_min)
+
         # Generate the time-sorted data with conjugate baselines
-        tlist = self.tlist(conj=True)
+        tlist = obsdata.tlist(conj=True)
         out = []
         bis = []
         tt = 1
@@ -2321,7 +2327,7 @@ class Obsdata(object):
 
         return out
 
-    def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg', timetype=False):
+    def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg', timetype=False, uv_min=False):
 
         """Return a recarray of the equal time closure phases.
 
@@ -2331,6 +2337,7 @@ class Obsdata(object):
                count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'UTC' or 'GMST'
+               uv_min (float): flag baselines shorter than this before forming closure quantities
 
            Returns:
                (numpy.recarry): A recarray of the closure phases with datatype DTPHASE
@@ -2351,7 +2358,7 @@ class Obsdata(object):
         else: angle = 1.0
 
         # Get the bispectra data
-        bispecs = self.bispectra(vtype=vtype, mode='time', count=count, timetype=timetype)
+        bispecs = self.bispectra(vtype=vtype, mode='time', count=count, timetype=timetype, uv_min=uv_min)
 
         # Reformat into a closure phase list/array
         out = []
