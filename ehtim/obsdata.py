@@ -2254,7 +2254,7 @@ class Obsdata(object):
 
         # Flag zero baselines
         obsdata = self.copy()
-        if min_bl:
+        if uv_min:
             obsdata = obsdata.flag_uvdist(uv_min=uv_min)
 
         # Generate the time-sorted data with conjugate baselines
