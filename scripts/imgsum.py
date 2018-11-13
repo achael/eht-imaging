@@ -738,7 +738,7 @@ if __name__=='__main__':
     print("===========================================")
 
     if opt.uv_min==0: uv_min=False
-    else: uv_min=uv_min
+    else: uv_min=opt.uv_min
     if opt.aipscc: aipscc=True
     else: aipscc=False
     if opt.no_debias: debias=False
