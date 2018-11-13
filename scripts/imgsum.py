@@ -41,7 +41,7 @@ plt.rc('figure', titlesize=FONTSIZE)
 #im = eh.image.load_fits('./out.fits')
 #obs = eh.obsdata.load_uvfits('./obs.uvfits')
 #sys = 0.1
-def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, uv_min=uv_min,
+def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, uv_min=False,
          commentstr="", outdir='.',ebar=True,cfun='afmhot',sysnoise=0,syscnoise=0,fontsize=FONTSIZE,
          gainplots=True,cphaseplots=True,campplots=True):
 
