@@ -109,13 +109,13 @@ def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv
         # compute chi^2
         chi2vis = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
         chi2amp = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
-        chi2cphase = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, maxset=maxset)
+        chi2cphase = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, maxset=maxset, cp_uv_min=cp_uv_min)
         chi2logcamp = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
         chi2camp = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
 
         chi2vis_uncal = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset)
         chi2amp_uncal = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset)
-        chi2cphase_uncal = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset)
+        chi2cphase_uncal = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,cp_uv_min=cp_uv_min)
         chi2logcamp_uncal = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset)
         chi2camp_uncal = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset)
 

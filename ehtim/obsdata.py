@@ -830,7 +830,7 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', pol='I', mask=[],
+    def chisq(self, im, dtype='vis', pol='I', mask=[], cp_uv_min=False,
               debias=True, systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False,
               ttype='nfft',fft_pad_factor=2):
 
@@ -849,7 +849,7 @@ class Obsdata(object):
 
                 ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                 fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-
+                cp_uv_min (float): flag baselines shorter than this before forming closure quantities
            Returns:
                 (float): image chi^2
         """
@@ -862,7 +862,7 @@ class Obsdata(object):
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype,
                                         fft_pad_factor=fft_pad_factor, maxset=maxset,
                                         systematic_cphase_noise=systematic_cphase_noise,
-                                        systematic_noise=systematic_noise)
+                                        systematic_noise=systematic_noise, cp_uv_min=cp_uv_min)
 
         chisq = iu.chisq(im._imdict[pol], A, data, sigma, dtype, ttype=ttype, mask=mask)
 
