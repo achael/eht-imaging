@@ -2266,7 +2266,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
 
     # unpack keyword args
     maxset = kwargs.get('maxset',False)
-    uv_min = kwargs.get('uv_min', False)
+    uv_min = kwargs.get('cp_uv_min', False)
     if maxset: count='max'
     else: count='min'
 
@@ -2550,7 +2550,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
     """
     # unpack keyword args
     maxset = kwargs.get('maxset',False)
-    uv_min = kwargs.get('uv_min', False)
+    uv_min = kwargs.get('cp_uv_min', False)
     if maxset: count='max'
     else: count='min'
 
@@ -2856,7 +2856,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     # unpack keyword args    
     maxset = kwargs.get('maxset',False)
-    uv_min = kwargs.get('uv_min', False)
+    uv_min = kwargs.get('cp_uv_min', False)
     if maxset: count='max'
     else: count='min'
 
