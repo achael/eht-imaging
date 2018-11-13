@@ -119,7 +119,10 @@ class Caltable(object):
 
         colors = iter(clist)
         
-        fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, sharex=True, figsize=(16,8))
+        if export_pdf != "":
+            fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, sharex=True, figsize=(16,8))
+        else: 
+            fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True, sharex=True)
 
         # sites
         if sites in ['all' or 'All'] or sites==[]:
