@@ -194,7 +194,7 @@ def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv
 
         # get closure triangle combinations
         # ANDREW -- hacky, fix this!
-        cp = obs.c_phases(mode="all", count="min", cp_uv_min=cp_uv_min)
+        cp = obs.c_phases(mode="all", count="min", uv_min=cp_uv_min)
         n_cphase = len(cp)
         alltris = [(str(cpp['t1']),str(cpp['t2']),str(cpp['t3'])) for cpp in cp]
         uniqueclosure_tri = []
@@ -203,8 +203,8 @@ def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv
               
         # generate data
         obs_model = im.observe_same(obs, add_th_noise=False, ttype='nfft')
-        cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', cp_uv_min=cp_uv_min)
-        cphases_model = obs_model.c_phases(mode='all', count='max', vtype='vis', cp_uv_min=cp_uv_min)
+        cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min)
+        cphases_model = obs_model.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min)
 
 
         #generate chi^2 -- NO SYSTEMATIC NOISES
