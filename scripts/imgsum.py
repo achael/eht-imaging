@@ -41,7 +41,7 @@ plt.rc('figure', titlesize=FONTSIZE)
 #im = eh.image.load_fits('./out.fits')
 #obs = eh.obsdata.load_uvfits('./obs.uvfits')
 #sys = 0.1
-def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, uv_min=False,
+def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv_min=False,
          commentstr="", outdir='.',ebar=True,cfun='afmhot',sysnoise=0,syscnoise=0,fontsize=FONTSIZE,
          gainplots=True,cphaseplots=True,campplots=True):
 
@@ -194,7 +194,7 @@ def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, uv_mi
 
         # get closure triangle combinations
         # ANDREW -- hacky, fix this!
-        cp = obs.c_phases(mode="all", count="min", uv_min=uv_min)
+        cp = obs.c_phases(mode="all", count="min", cp_uv_min=cp_uv_min)
         n_cphase = len(cp)
         alltris = [(str(cpp['t1']),str(cpp['t2']),str(cpp['t3'])) for cpp in cp]
         uniqueclosure_tri = []
@@ -203,8 +203,8 @@ def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, uv_mi
               
         # generate data
         obs_model = im.observe_same(obs, add_th_noise=False, ttype='nfft')
-        cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', uv_min=uv_min)
-        cphases_model = obs_model.c_phases(mode='all', count='max', vtype='vis', uv_min=uv_min)
+        cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', cp_uv_min=cp_uv_min)
+        cphases_model = obs_model.c_phases(mode='all', count='max', vtype='vis', cp_uv_min=cp_uv_min)
 
 
         #generate chi^2 -- NO SYSTEMATIC NOISES
@@ -721,7 +721,7 @@ if __name__=='__main__':
 
     parser.add_argument('--c', '-c',type=str,default=" ", help="comments for top of sheet")
     parser.add_argument('--o','-o', type=str,help="path/to/output",default='.')
-    parser.add_argument('--uv_min', type=float,default=0, help="uv_min for closure phases")
+    parser.add_argument('--cp_uv_min', type=float,default=0, help="uv_min for closure phases")
     parser.add_argument('--aipscc', type=bool,default=False, help="load clean components from fits")
     parser.add_argument('--systematic_noise', type=float, default=0, help="systematic noise to add on amplitudes")
     parser.add_argument('--systematic_cphase_noise', type=float, default=0,help="systematic noise to add on cphase")
@@ -737,8 +737,8 @@ if __name__=='__main__':
     print("Generating Image Summary PDF")
     print("===========================================")
 
-    if opt.uv_min==0: uv_min=False
-    else: uv_min=opt.uv_min
+    if opt.cp_uv_min==0: cp_uv_min=False
+    else: cp_uv_min=opt.cp_uv_min
     if opt.aipscc: aipscc=True
     else: aipscc=False
     if opt.no_debias: debias=False
@@ -763,5 +763,5 @@ if __name__=='__main__':
 
     main(im, obs, obs_uncal, basename, outname,  commentstr=opt.c, outdir=outdir,ebar=ebar,cfun=opt.cfun,
          sysnoise=opt.systematic_noise,syscnoise=opt.systematic_cphase_noise,fontsize=opt.fontsize,
-         gainplots=gainplots,cphaseplots=cphaseplots,campplots=campplots, debias=debias, aipscc=aipscc, uv_min=uv_min)
+         gainplots=gainplots,cphaseplots=cphaseplots,campplots=campplots, debias=debias, aipscc=aipscc, cp_uv_min=cp_uv_min)
 

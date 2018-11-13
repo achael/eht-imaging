@@ -141,7 +141,7 @@ class Imager(object):
         self._fft_interp_order = kwargs.get('fft_interp_order',FFT_INTERP_DEFAULT)
 
         # UV minimum for closure phases
-        self.uv_min = kwargs.get('uv_min',False)
+        self.cp_uv_min = kwargs.get('cp_uv_min',False)
 
         # Parameters related to scattering
         self.epsilon_list_next = []
@@ -681,13 +681,13 @@ class Imager(object):
                                         debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
                                         systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                         ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
-                                        conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, uv_min=self.uv_min)
+                                        conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, cp_uv_min=self.cp_uv_min)
                 else:
                     tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=self.pol_next,
                                     debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
                                     systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                     ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
-                                    conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, uv_min=self.uv_min)
+                                    conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, cp_uv_min=self.cp_uv_min)
 
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
