@@ -2584,7 +2584,7 @@ class Image(object):
 
             ax = plt.subplot2grid((2,5),(0,1))
             plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp, vmin=-maxval, vmax=maxval)
-            plt.contour(varr, colors='k',linewidth=.25)
+            #plt.contour(varr, colors='k',linewidth=.25)
             ax.set_xticks([])
             ax.set_yticks([])
             if has_title: plt.title('V')

@@ -200,9 +200,9 @@ class Caltable(object):
             elif timetype in ['GMST','gmst'] and self.timetype=='UTC':
                 times = utc_to_gmst(times, self.mjd)
             if pol=='R':
-                gains = self.data[site]['lscale']
-            elif pol=='L':
                 gains = self.data[site]['rscale']
+            elif pol=='L':
+                gains = self.data[site]['lscale']
 
             if gain_type=='amp':
                 gains = np.abs(gains)
@@ -542,6 +542,69 @@ class Caltable(object):
         return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
 
 
+    def scan_avg(self, obs, incoherent=True):
+    
+        sites = self.data.keys()
+        ntele = len(sites)
+
+        datatables = {}
+        
+        # iterate over each site
+        for s in range(0,ntele):        
+            site = sites[s]
+            
+            # make a list of times that is the same value for all points in the same scan
+            times = self.data[site]['time']
+            times_stable = times.copy()
+            obs.add_scans()
+            scans = obs.scans
+            for j in range(len(times_stable)):
+                for scan in scans:
+                    if scan[0] <= times_stable[j] and scan[1] >= times_stable[j]:
+                        times_stable[j] = scan[0]
+                        break
+        
+            datatable = []
+            for scan in scans:
+                gains_l = self.data[site]['lscale']
+                gains_r = self.data[site]['rscale']
+                
+                # if incoherent average then average the magnitude of gains
+                if incoherent:
+                    gains_l = np.abs(gains_l)
+                    gains_r = np.abs(gains_r)
+                
+                # average the gains 
+                gains_l_avg = np.mean(gains_l[np.array(times_stable==scan[0])])
+                gains_r_avg = np.mean(gains_r[np.array(times_stable==scan[0])])
+                
+                # add them to a new datatable
+                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg), dtype=DTCAL))
+                
+            datatables[site] = np.array(datatable)
+            
+        if len(datatables)>0:
+            caltable = Caltable(obs.ra, obs.dec, obs.rf,
+                            obs.bw, datatables, obs.tarr, source=obs.source,
+                            mjd=obs.mjd, timetype=obs.timetype)
+        else:
+            caltable=False
+
+        return caltable
+        
+    def invert_gains(self):
+        
+        sites = self.data.keys()
+        ntele = len(sites)
+
+        for s in range(0,ntele):
+            site = sites[s]
+            self.data[site]['rscale'] = 1/self.data[site]['rscale']
+            self.data[site]['lscale'] = 1/self.data[site]['lscale']
+
+        return self
+        
+
 def load_caltable(obs, datadir, sqrt_gains=False ):
     """Load apriori Caltable object from text files in the given directory
        Args:
@@ -745,3 +808,98 @@ def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,ran
         fig.savefig(export_pdf, bbox_inches='tight')
     
     return axes
+    
+def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='amp', ang_unit='deg',
+                    scan_avg=True, site_name_dict=None,
+                    yscale='log', legend=True, clist=SCOLORS,rangex=False,rangey=False, 
+                    markersize=2*MARKERSIZE, show=True, grid=False, axislabels=True, axis=False, 
+                    export_pdf=""):
+
+    colors = iter(clist)
+    
+    if ang_unit=='deg': angle=DEGREE
+    else: angle = 1.0
+    
+    # axis
+    if axis:
+        x = axis
+    else:
+        fig = plt.figure()
+        x = fig.add_subplot(1,1,1)
+    
+    if scan_avg: 
+        caltab1 = caltab1.scan_avg(obs, incoherent=True)
+        caltab2 = caltab2.scan_avg(obs, incoherent=True)
+    
+    # sites
+    if sites in ['all' or 'All'] or sites==[]:
+        sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys() ))
+
+    if not type(sites) is list:
+        sites = [sites]
+    
+    if site_name_dict == None:
+        print('hi')
+        site_name_dict = {}
+        for site in sites:
+            site_name_dict[site] = site
+
+    for site in sites:
+
+        if pol=='R':
+            gains1 = caltab1.data[site]['rscale']
+            gains2 = caltab2.data[site]['rscale']
+        elif pol=='L':
+            gains1 = caltab1.data[site]['lscale']
+            gains2 = caltab2.data[site]['lscale']
+
+        if gain_type=='amp':
+            gains1 = np.abs(gains1)
+            gains2 = np.abs(gains2)
+            ylabel = 'Amplitudes' #r'$|G|$'
+
+        if gain_type=='phase':
+            gains1 = np.angle(gains1)/angle
+            gains2 = np.angle(gains2)/angle
+            if ang_unit=='deg': ylabel = r'arg($|G|$) ($^\circ$)'
+            else: ylabel = 'Phases (radian)' #r'arg($|G|$) (radian)'
+
+        
+        # print a line
+        maxgain = np.nanmax([np.nanmax(gains1), np.nanmax(gains2)])
+        mingain = np.nanmin([np.nanmin(gains1), np.nanmin(gains2)])
+        plt.plot([mingain, maxgain], [mingain, maxgain], 'grey', linewidth=1) 
+
+        # mark the gains on the plot
+        plt.plot(gains1, gains2, marker='.', linestyle='None',color=next(colors), markersize=markersize, label=site_name_dict[site])
+        
+        
+        if rangex: 
+            x.set_xlim(rangex)
+        if rangey: 
+            x.set_ylim(rangey)
+
+        # labels
+        if axislabels:
+            x.set_xlabel('Ground Truth Gain ' + ylabel )
+            x.set_ylabel('Recovered Gain ' + ylabel)
+
+        if legend:
+            plt.legend()
+
+        if yscale=='log':
+            x.set_yscale('log')
+            x.set_xscale('log')
+        if grid:
+            x.grid()
+        if export_pdf != "" and not axis:
+            fig.savefig(export_pdf, bbox_inches='tight')
+        if show:
+            plt.show(block=False)    
+               
+
+    return
+        
+
+
+
