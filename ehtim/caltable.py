@@ -810,8 +810,8 @@ def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,ran
     return axes
     
 def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='amp', ang_unit='deg',
-                    scan_avg=True, site_name_dict=None,
-                    yscale='log', legend=True, clist=SCOLORS,rangex=False,rangey=False, 
+                    scan_avg=True, site_name_dict=None, fontsize= 13, legend_fontsize = 13,
+                    yscale='log', legend=True, clist=SCOLORS,rangex=False,rangey=False, scalefac=[0.9, 1.1],
                     markersize=2*MARKERSIZE, show=True, grid=False, axislabels=True, axis=False, 
                     export_pdf=""):
 
@@ -844,6 +844,9 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
         for site in sites:
             site_name_dict[site] = site
 
+    maxgain = 0.0
+    mingain = 10000
+    
     for site in sites:
 
         if pol=='R':
@@ -866,36 +869,46 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
 
         
         # print a line
-        maxgain = np.nanmax([np.nanmax(gains1), np.nanmax(gains2)])
-        mingain = np.nanmin([np.nanmin(gains1), np.nanmin(gains2)])
-        plt.plot([mingain, maxgain], [mingain, maxgain], 'grey', linewidth=1) 
-
+        maxgain = np.nanmax([maxgain, np.nanmax(gains1), np.nanmax(gains2)])
+        mingain = np.nanmin([mingain, np.nanmin(gains1), np.nanmin(gains2)])
+        
         # mark the gains on the plot
         plt.plot(gains1, gains2, marker='.', linestyle='None',color=next(colors), markersize=markersize, label=site_name_dict[site])
         
         
-        if rangex: 
-            x.set_xlim(rangex)
-        if rangey: 
-            x.set_ylim(rangey)
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    
+    plt.axes().set_aspect('equal')
+    
+    if rangex: 
+        x.set_xlim(rangex)
+    else:
+        x.set_xlim([mingain*scalefac[0], maxgain*scalefac[1]])
+    if rangey: 
+        x.set_ylim(rangey)
+    else:
+        x.set_ylim([mingain*scalefac[0], maxgain*scalefac[1]])
+    
+    plt.plot([mingain*scalefac[0], maxgain*scalefac[1]], [mingain*scalefac[0], maxgain*scalefac[1]], 'grey', linewidth=1) 
 
-        # labels
-        if axislabels:
-            x.set_xlabel('Ground Truth Gain ' + ylabel )
-            x.set_ylabel('Recovered Gain ' + ylabel)
+    # labels
+    if axislabels:
+        x.set_xlabel('Ground Truth Gain ' + ylabel, fontsize=fontsize)
+        x.set_ylabel('Recovered Gain ' + ylabel, fontsize=fontsize)
 
-        if legend:
-            plt.legend()
+    if legend:
+        plt.legend(frameon=False, fontsize=legend_fontsize)
 
-        if yscale=='log':
-            x.set_yscale('log')
-            x.set_xscale('log')
-        if grid:
-            x.grid()
-        if export_pdf != "" and not axis:
-            fig.savefig(export_pdf, bbox_inches='tight')
-        if show:
-            plt.show(block=False)    
+    if yscale=='log':
+        x.set_yscale('log')
+        x.set_xscale('log')
+    if grid:
+        x.grid()
+    if export_pdf != "" and not axis:
+        fig.savefig(export_pdf, bbox_inches='tight')
+    if show:
+        plt.show(block=False)    
                
 
     return
