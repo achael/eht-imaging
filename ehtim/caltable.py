@@ -264,6 +264,49 @@ class Caltable(object):
 
         return x
 
+
+    def enforce_positive(self, method='median', min_gain = 0.9, sites = [], verbose = True):
+        """Enforce that caltable gains are not low (e.g., that sites are not significantly more sensitive than estimated).
+           For site gains that are low, the entire gain curve is rescaled to enforce a specified minimum site gain.
+
+           Args:
+               caltab (Caltable): Input Caltable with station gains
+               method (str): 'median', 'mean', or 'min'; determines how a representative gain from each site is computed.
+               min_gain (float): Minimum acceptable gain. Site gains above this value will not be modified.
+               sites (list): List of sites with gains to check and adjust. For sites=[], all sites will be examined.
+               verbose (bool): If True, print corrections.
+
+           Returns:
+               (Caltable): Axes object with the plot
+        """
+
+        if len(sites) == 0:
+            sites = self.data.keys()
+
+        caltab_pos = self.copy()
+        for site in self.data.keys():
+            if not site in sites: continue
+            if len(self.data[site]['rscale']) == 0: continue
+
+            if method == 'min':
+                sitemin = np.min([np.abs(self.data[site]['rscale']),np.abs(self.data[site]['lscale'])])
+            elif method == 'mean':
+                sitemin = np.mean([np.abs(self.data[site]['rscale']),np.abs(self.data[site]['lscale'])])
+            elif method == 'median':
+                sitemin = np.median([np.abs(self.data[site]['rscale']),np.abs(self.data[site]['lscale'])])
+            else:
+                print('Method ' + method + ' not recognized!')
+                return caltab_pos
+
+            if sitemin < min_gain:
+                if verbose: print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Rescaling.')
+                caltab_pos.data[site]['rscale'] /= sitemin
+                caltab_pos.data[site]['lscale'] /= sitemin
+            else:
+                if verbose: print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Not adjusting.')
+
+        return caltab_pos
+
     #TODO default extrapolation?
     def pad_scans(self, maxdiff=60, padtype='median'):
         
