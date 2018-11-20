@@ -1571,6 +1571,39 @@ class Obsdata(object):
 
         return out
 
+    def add_leakage_noise(self, Dterm_amp=0.1, min_noise=0.01, debias=False):
+        """Add estimated systematic noise from leakage at quadrature to the corresponding thermal noise.
+           Added noise requires cross-hand visibilities. 
+           Note that this operation is not currently tracked in the data so should be applied with extreme caution. 
+
+           Args:
+               Dterm_amp (float): Estimated magnitude of leakage terms
+               min_noise (float): Minimum fractional systematic noise to add
+
+           Returns:
+               (Obsdata): An Obsdata object with the inflated noise values.
+        """
+
+        # Extract visibility amplitudes
+        # Switch to Stokes for graceful handling of circular basis products missing RR or LL
+        amp = self.switch_polrep('stokes').unpack('amp',debias=debias)['amp']      
+        rlamp = np.nan_to_num(self.switch_polrep('circ').unpack('rlamp',debias=debias)['rlamp'])
+        lramp = np.nan_to_num(self.switch_polrep('circ').unpack('lramp',debias=debias)['lramp'])
+
+        frac_noise = (Dterm_amp * rlamp/amp)**2 + (Dterm_amp * lramp/amp)**2
+        frac_noise = frac_noise*(frac_noise > min_noise) + min_noise * (frac_noise < min_noise)
+
+        out = self.copy()
+        for sigma in ['sigma1','sigma2','sigma3','sigma4']:
+            try:
+                field = self.poldict[sigma]
+                out.data[field] = (self.data[field]**2 + np.abs(frac_noise*amp)**2)**0.5
+            except KeyError:
+                continue    
+
+        return out
+
+
     def add_fractional_noise(self, frac_noise, debias=False):
         """Add a constant fraction of each visibility amplitude at quadrature to the corresponding thermal noise, 
            effectively imposing a maximal signal-to-noise ratio. Note that this operation is not currently tracked 
@@ -1738,6 +1771,39 @@ class Obsdata(object):
         else:
             return obs_kept
 
+    def flag_large_fractional_pol(self, max_fractional_pol=1.0, output='kept'):
+
+        """Flag visibilities for which the fractional polarization is above a specified threshold
+
+           Args:
+               max_fractional_pol (float): Maximum fractional polarization
+               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+
+           Returns:
+               (Obsdata): a observation object with flagged data points removed
+        """
+
+        m = np.nan_to_num(self.unpack(['mamp'])['mamp'])
+        mask = m < max_fractional_pol
+
+        datatable_kept    = self.data.copy()
+        datatable_flagged = self.data.copy()
+
+        datatable_kept    = datatable_kept[mask]
+        datatable_flagged = datatable_flagged[np.invert(mask)]
+        print('Flagged %d/%d visibilities' % (len(datatable_flagged), len(self.data)))
+
+        obs_kept = self.copy()
+        obs_flagged = self.copy()
+        obs_kept.data    = datatable_kept
+        obs_flagged.data = datatable_flagged
+
+        if output == 'flagged':
+            return obs_flagged
+        elif output == 'both':
+            return {'kept':obs_kept,'flagged':obs_flagged}
+        else:
+            return obs_kept
 
     def flag_uvdist(self, uv_min=0.0, uv_max=1e12, output='kept'):
 
