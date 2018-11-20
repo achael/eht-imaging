@@ -133,7 +133,7 @@ class Caltable(object):
 
     def plot_gains(self, sites, gain_type='amp', pol='R',label=None,
                    ang_unit='deg',timetype=False, yscale='log', legend=True,
-                   clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
+                   clist=SCOLORS,rangex=False,rangey=False, markersize=[MARKERSIZE],
                    show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
 
         """Plot gains on multiple sites vs time.
@@ -189,11 +189,15 @@ class Caltable(object):
 
         if not type(sites) is list:
             sites = [sites]
+            
+        if len(markersize)==1:
+            markersize = markersize * np.ones(len(sites))
 
 
         # plot gain on each site
         tmins = tmaxes = gmins = gmaxes = []
-        for site in sites:
+        for s in range(len(sites)):
+            site = sites[s]
             times = self.data[site]['time']
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
                 times = gmst_to_utc(times, self.mjd)
@@ -223,7 +227,7 @@ class Caltable(object):
                 bllabel=str(site)
             else:
                 bllabel = label + ' ' + str(site)
-            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, 
+            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize[s], 
                      label=bllabel, linestyle='none')
 
 
@@ -812,7 +816,7 @@ def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,ran
 def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='amp', ang_unit='deg',
                     scan_avg=True, site_name_dict=None, fontsize= 13, legend_fontsize = 13,
                     yscale='log', legend=True, clist=SCOLORS,rangex=False,rangey=False, scalefac=[0.9, 1.1],
-                    markersize=2*MARKERSIZE, show=True, grid=False, axislabels=True, axis=False, 
+                    markersize=[2*MARKERSIZE], show=True, grid=False, axislabels=True, remove_ticks=False, axis=False, 
                     export_pdf=""):
 
     colors = iter(clist)
@@ -843,12 +847,16 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
         site_name_dict = {}
         for site in sites:
             site_name_dict[site] = site
+            
+    if len(markersize)==1:
+        markersize = markersize * np.ones(len(sites))
 
     maxgain = 0.0
     mingain = 10000
     
-    for site in sites:
-
+    for s in range(len(sites)):
+    
+        site = sites[s]
         if pol=='R':
             gains1 = caltab1.data[site]['rscale']
             gains2 = caltab2.data[site]['rscale']
@@ -873,7 +881,7 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
         mingain = np.nanmin([mingain, np.nanmin(gains1), np.nanmin(gains2)])
         
         # mark the gains on the plot
-        plt.plot(gains1, gains2, marker='.', linestyle='None',color=next(colors), markersize=markersize, label=site_name_dict[site])
+        plt.plot(gains1, gains2, marker='.', linestyle='None',color=next(colors), markersize=markersize[s], label=site_name_dict[site])
         
         
     plt.xticks(fontsize=fontsize)
@@ -896,6 +904,13 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
     if axislabels:
         x.set_xlabel('Ground Truth Gain ' + ylabel, fontsize=fontsize)
         x.set_ylabel('Recovered Gain ' + ylabel, fontsize=fontsize)
+    else:
+        x.tick_params(axis="y",direction="in", pad=-30)
+        x.tick_params(axis="x",direction="in", pad=-18)
+    
+    if remove_ticks:
+        plt.setp(x.get_xticklabels(), visible=False)
+        plt.setp(x.get_yticklabels(), visible=False)
 
     if legend:
         plt.legend(frameon=False, fontsize=legend_fontsize)
@@ -911,7 +926,7 @@ def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='a
         plt.show(block=False)    
                
 
-    return
+    return x
         
 
 
