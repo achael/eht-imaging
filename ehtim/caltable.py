@@ -185,7 +185,7 @@ class Caltable(object):
 
         # sites
         if sites in ['all' or 'All'] or sites==[]:
-            sites = list(self.data.keys())
+            sites = sorted(list(self.data.keys()))
 
         if not type(sites) is list:
             sites = [sites]
@@ -792,11 +792,14 @@ def relaxed_interp1d(x, y, **kwargs):
     
 
 def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,rangex=False,
-                rangey=False, markersize=2*MARKERSIZE, show=True, grid=True, export_pdf=""):
+                rangey=False, markersize=2*MARKERSIZE, show=True, grid=True, export_pdf="", auto_order=True):
 
-    
-    keys = range(len(tarr))
-    
+    if auto_order:
+        # Ensure that the plot will put the stations in alphabetical order
+        keys = np.argsort(obs.tarr['site']) #range(len(tarr))
+    else:
+        keys = range(len(tarr))
+
     colors = iter(clist)
     
     if export_pdf != "":
