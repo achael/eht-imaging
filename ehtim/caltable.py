@@ -133,7 +133,7 @@ class Caltable(object):
 
     def plot_gains(self, sites, gain_type='amp', pol='R',label=None,
                    ang_unit='deg',timetype=False, yscale='log', legend=True,
-                   clist=SCOLORS,rangex=False,rangey=False, markersize=MARKERSIZE,
+                   clist=SCOLORS,rangex=False,rangey=False, markersize=[MARKERSIZE],
                    show=True, grid=False, axislabels=True, axis=False, export_pdf=""):
 
         """Plot gains on multiple sites vs time.
@@ -185,24 +185,28 @@ class Caltable(object):
 
         # sites
         if sites in ['all' or 'All'] or sites==[]:
-            sites = list(self.data.keys())
+            sites = sorted(list(self.data.keys()))
 
         if not type(sites) is list:
             sites = [sites]
+            
+        if len(markersize)==1:
+            markersize = markersize * np.ones(len(sites))
 
 
         # plot gain on each site
         tmins = tmaxes = gmins = gmaxes = []
-        for site in sites:
+        for s in range(len(sites)):
+            site = sites[s]
             times = self.data[site]['time']
             if timetype in ['UTC','utc'] and self.timetype=='GMST':
                 times = gmst_to_utc(times, self.mjd)
             elif timetype in ['GMST','gmst'] and self.timetype=='UTC':
                 times = utc_to_gmst(times, self.mjd)
             if pol=='R':
-                gains = self.data[site]['lscale']
-            elif pol=='L':
                 gains = self.data[site]['rscale']
+            elif pol=='L':
+                gains = self.data[site]['lscale']
 
             if gain_type=='amp':
                 gains = np.abs(gains)
@@ -223,7 +227,7 @@ class Caltable(object):
                 bllabel=str(site)
             else:
                 bllabel = label + ' ' + str(site)
-            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize, 
+            plt.plot(times, gains, color=next(colors), marker='o', markersize=markersize[s], 
                      label=bllabel, linestyle='none')
 
 
@@ -263,6 +267,49 @@ class Caltable(object):
             plt.show(block=False)
 
         return x
+
+
+    def enforce_positive(self, method='median', min_gain = 0.9, sites = [], verbose = True):
+        """Enforce that caltable gains are not low (e.g., that sites are not significantly more sensitive than estimated).
+           For site gains that are low, the entire gain curve is rescaled to enforce a specified minimum site gain.
+
+           Args:
+               caltab (Caltable): Input Caltable with station gains
+               method (str): 'median', 'mean', or 'min'; determines how a representative gain from each site is computed.
+               min_gain (float): Minimum acceptable gain. Site gains above this value will not be modified.
+               sites (list): List of sites with gains to check and adjust. For sites=[], all sites will be examined.
+               verbose (bool): If True, print corrections.
+
+           Returns:
+               (Caltable): Axes object with the plot
+        """
+
+        if len(sites) == 0:
+            sites = self.data.keys()
+
+        caltab_pos = self.copy()
+        for site in self.data.keys():
+            if not site in sites: continue
+            if len(self.data[site]['rscale']) == 0: continue
+
+            if method == 'min':
+                sitemin = np.min([np.abs(self.data[site]['rscale']),np.abs(self.data[site]['lscale'])])
+            elif method == 'mean':
+                sitemin = np.mean([np.abs(self.data[site]['rscale']),np.abs(self.data[site]['lscale'])])
+            elif method == 'median':
+                sitemin = np.median([np.abs(self.data[site]['rscale']),np.abs(self.data[site]['lscale'])])
+            else:
+                print('Method ' + method + ' not recognized!')
+                return caltab_pos
+
+            if sitemin < min_gain:
+                if verbose: print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Rescaling.')
+                caltab_pos.data[site]['rscale'] /= sitemin
+                caltab_pos.data[site]['lscale'] /= sitemin
+            else:
+                if verbose: print(method + ' gain for ' + site + ' is ' + str(sitemin) + '. Not adjusting.')
+
+        return caltab_pos
 
     #TODO default extrapolation?
     def pad_scans(self, maxdiff=60, padtype='median'):
@@ -542,6 +589,69 @@ class Caltable(object):
         return save_caltable(self, obs, datadir=datadir, sqrt_gains=sqrt_gains)
 
 
+    def scan_avg(self, obs, incoherent=True):
+    
+        sites = self.data.keys()
+        ntele = len(sites)
+
+        datatables = {}
+        
+        # iterate over each site
+        for s in range(0,ntele):        
+            site = sites[s]
+            
+            # make a list of times that is the same value for all points in the same scan
+            times = self.data[site]['time']
+            times_stable = times.copy()
+            obs.add_scans()
+            scans = obs.scans
+            for j in range(len(times_stable)):
+                for scan in scans:
+                    if scan[0] <= times_stable[j] and scan[1] >= times_stable[j]:
+                        times_stable[j] = scan[0]
+                        break
+        
+            datatable = []
+            for scan in scans:
+                gains_l = self.data[site]['lscale']
+                gains_r = self.data[site]['rscale']
+                
+                # if incoherent average then average the magnitude of gains
+                if incoherent:
+                    gains_l = np.abs(gains_l)
+                    gains_r = np.abs(gains_r)
+                
+                # average the gains 
+                gains_l_avg = np.mean(gains_l[np.array(times_stable==scan[0])])
+                gains_r_avg = np.mean(gains_r[np.array(times_stable==scan[0])])
+                
+                # add them to a new datatable
+                datatable.append(np.array((scan[0], gains_r_avg, gains_l_avg), dtype=DTCAL))
+                
+            datatables[site] = np.array(datatable)
+            
+        if len(datatables)>0:
+            caltable = Caltable(obs.ra, obs.dec, obs.rf,
+                            obs.bw, datatables, obs.tarr, source=obs.source,
+                            mjd=obs.mjd, timetype=obs.timetype)
+        else:
+            caltable=False
+
+        return caltable
+        
+    def invert_gains(self):
+        
+        sites = self.data.keys()
+        ntele = len(sites)
+
+        for s in range(0,ntele):
+            site = sites[s]
+            self.data[site]['rscale'] = 1/self.data[site]['rscale']
+            self.data[site]['lscale'] = 1/self.data[site]['lscale']
+
+        return self
+        
+
 def load_caltable(obs, datadir, sqrt_gains=False ):
     """Load apriori Caltable object from text files in the given directory
        Args:
@@ -686,11 +796,14 @@ def relaxed_interp1d(x, y, **kwargs):
     
 
 def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,rangex=False,
-                rangey=False, markersize=2*MARKERSIZE, show=True, grid=True, export_pdf=""):
+                rangey=False, markersize=2*MARKERSIZE, show=True, grid=True, export_pdf="", auto_order=True):
 
-    
-    keys = range(len(tarr))
-    
+    if auto_order:
+        # Ensure that the plot will put the stations in alphabetical order
+        keys = np.argsort(obs.tarr['site']) #range(len(tarr))
+    else:
+        keys = range(len(tarr))
+
     colors = iter(clist)
     
     if export_pdf != "":
@@ -745,3 +858,122 @@ def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,ran
         fig.savefig(export_pdf, bbox_inches='tight')
     
     return axes
+    
+def plot_compare_gains(caltab1, caltab2, obs, sites='all', pol='R', gain_type='amp', ang_unit='deg',
+                    scan_avg=True, site_name_dict=None, fontsize= 13, legend_fontsize = 13,
+                    yscale='log', legend=True, clist=SCOLORS,rangex=False,rangey=False, scalefac=[0.9, 1.1],
+                    markersize=[2*MARKERSIZE], show=True, grid=False, axislabels=True, remove_ticks=False, axis=False, 
+                    export_pdf=""):
+
+    colors = iter(clist)
+    
+    if ang_unit=='deg': angle=DEGREE
+    else: angle = 1.0
+    
+    # axis
+    if axis:
+        x = axis
+    else:
+        fig = plt.figure()
+        x = fig.add_subplot(1,1,1)
+    
+    if scan_avg: 
+        caltab1 = caltab1.scan_avg(obs, incoherent=True)
+        caltab2 = caltab2.scan_avg(obs, incoherent=True)
+    
+    # sites
+    if sites in ['all' or 'All'] or sites==[]:
+        sites = list(set(caltab1.data.keys()).intersection(caltab2.data.keys() ))
+
+    if not type(sites) is list:
+        sites = [sites]
+    
+    if site_name_dict == None:
+        print('hi')
+        site_name_dict = {}
+        for site in sites:
+            site_name_dict[site] = site
+            
+    if len(markersize)==1:
+        markersize = markersize * np.ones(len(sites))
+
+    maxgain = 0.0
+    mingain = 10000
+    
+    for s in range(len(sites)):
+    
+        site = sites[s]
+        if pol=='R':
+            gains1 = caltab1.data[site]['rscale']
+            gains2 = caltab2.data[site]['rscale']
+        elif pol=='L':
+            gains1 = caltab1.data[site]['lscale']
+            gains2 = caltab2.data[site]['lscale']
+
+        if gain_type=='amp':
+            gains1 = np.abs(gains1)
+            gains2 = np.abs(gains2)
+            ylabel = 'Amplitudes' #r'$|G|$'
+
+        if gain_type=='phase':
+            gains1 = np.angle(gains1)/angle
+            gains2 = np.angle(gains2)/angle
+            if ang_unit=='deg': ylabel = r'arg($|G|$) ($^\circ$)'
+            else: ylabel = 'Phases (radian)' #r'arg($|G|$) (radian)'
+
+        
+        # print a line
+        maxgain = np.nanmax([maxgain, np.nanmax(gains1), np.nanmax(gains2)])
+        mingain = np.nanmin([mingain, np.nanmin(gains1), np.nanmin(gains2)])
+        
+        # mark the gains on the plot
+        plt.plot(gains1, gains2, marker='.', linestyle='None',color=next(colors), markersize=markersize[s], label=site_name_dict[site])
+        
+        
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    
+    plt.axes().set_aspect('equal')
+    
+    if rangex: 
+        x.set_xlim(rangex)
+    else:
+        x.set_xlim([mingain*scalefac[0], maxgain*scalefac[1]])
+    if rangey: 
+        x.set_ylim(rangey)
+    else:
+        x.set_ylim([mingain*scalefac[0], maxgain*scalefac[1]])
+    
+    plt.plot([mingain*scalefac[0], maxgain*scalefac[1]], [mingain*scalefac[0], maxgain*scalefac[1]], 'grey', linewidth=1) 
+
+    # labels
+    if axislabels:
+        x.set_xlabel('Ground Truth Gain ' + ylabel, fontsize=fontsize)
+        x.set_ylabel('Recovered Gain ' + ylabel, fontsize=fontsize)
+    else:
+        x.tick_params(axis="y",direction="in", pad=-30)
+        x.tick_params(axis="x",direction="in", pad=-18)
+    
+    if remove_ticks:
+        plt.setp(x.get_xticklabels(), visible=False)
+        plt.setp(x.get_yticklabels(), visible=False)
+
+    if legend:
+        plt.legend(frameon=False, fontsize=legend_fontsize)
+
+    if yscale=='log':
+        x.set_yscale('log')
+        x.set_xscale('log')
+    if grid:
+        x.grid()
+    if export_pdf != "" and not axis:
+        fig.savefig(export_pdf, bbox_inches='tight')
+    if show:
+        plt.show(block=False)    
+               
+
+    return x
+        
+
+
+

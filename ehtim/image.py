@@ -2342,11 +2342,11 @@ class Image(object):
             cs.collections[0].set_label(str(int(level*100)) + '%')
         if legend:
             plt.legend()
-                        
+
         if show:
             plt.ion()
-            plt.show(block=False)
-            
+            plt.show(block=False)           
+
         if export_pdf != "":
             ax.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
         
@@ -2357,7 +2357,7 @@ class Image(object):
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.1, 
                       label_type='ticks', has_title=True,
-                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
+                      has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical"):
 
         """Display the image.
@@ -2402,6 +2402,10 @@ class Image(object):
         if self.polrep=='stokes' and pol is None: pol='I'
         elif self.polrep=='circ' and pol is None: pol='RR'
 
+        if only_cbar:
+            has_cbar = True
+            label_type = 'none'
+            has_title = False
         
         f = plt.figure()
         plt.clf()
@@ -2509,6 +2513,7 @@ class Image(object):
                 plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1) 
 
             if has_cbar:
+                if only_cbar: im.set_visible(False)
                 plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
@@ -2584,7 +2589,7 @@ class Image(object):
 
             ax = plt.subplot2grid((2,5),(0,1))
             plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp, vmin=-maxval, vmax=maxval)
-            plt.contour(varr, colors='k',linewidth=.25)
+            #plt.contour(varr, colors='k',linewidth=.25)
             ax.set_xticks([])
             ax.set_yticks([])
             if has_title: plt.title('V')

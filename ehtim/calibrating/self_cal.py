@@ -45,7 +45,7 @@ MAXIT=10000 # maximum number of iterations in self-cal minimizer
 ###################################################################################################################################
 #Self-Calibration
 ###################################################################################################################################
-def self_cal(obs, im, sites=[], method="both", pol='I',
+def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
              pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False, 
              ttype='direct', fft_pad_factor=2, caltable=False, debias=True,
              processes=-1,show_solution=False,msgtype='bar'):
@@ -57,10 +57,12 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
            sites (list): list of sites to include in the self calibration. empty list calibrates all sites
 
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            pol (str): which image polarization to self-calibrate visibilities to 
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
-           gain_tol (float): gains that exceed this value will be disfavored by the prior
+           gain_tol (float or list): gains that exceed this value will be disfavored by the prior
+                                     for asymmetric gain_tol for corrections below/above unity, pass a 2-element list
            solution_interval (float): solution interval in seconds; one gain is derived for each interval.
                                       If 0.0, a solution is determined for each unique time in the observation.
            scan_solutions (bool): If True, determine one gain per site per scan (supersedes solution_interval)
@@ -125,7 +127,7 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
     # loop over scans and calibrate
     tstart = time.time()
     if processes > 0: # run on multiple cores with multiprocessing
-        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, obs.polrep, pol, method,
+        scans_cal = np.array(pool.map(get_selfcal_scan_cal, [[i, len(scans), scans[i], im, V_scans[i], sites, obs.polrep, pol, method, minimizer_method, 
                                                               show_solution, pad_amp, gain_tol, caltable, debias, msgtype
                                                              ] for i in range(len(scans))]))
 
@@ -133,7 +135,7 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
         for i in range(len(scans)):
             prog_msg(i, len(scans),msgtype=msgtype,nscan_last=i-1)
             scans_cal[i] = self_cal_scan(scans[i], im, V_scan=V_scans[i], sites=sites, polrep=obs.polrep, pol=pol,
-                                 method=method, show_solution=show_solution, debias=debias,
+                                 method=method, minimizer_method=minimizer_method, show_solution=show_solution, debias=debias,
                                  pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable)
 
 
@@ -168,8 +170,8 @@ def self_cal(obs, im, sites=[], method="both", pol='I',
 
     return out
 
-def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', method="both", show_solution=False, 
-                  pad_amp=0., gain_tol=.2, debias=True,caltable=False):
+def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', method="both", minimizer_method='BFGS', show_solution=False, 
+                  pad_amp=0., gain_tol=.2, debias=True, caltable=False):
     """Self-calibrate a scan to an image.
 
        Args:
@@ -181,8 +183,10 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
            polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
            pol (str): which image polarization to self-calibrate visibilities to 
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
-           gain_tol (float): gains that exceed this value will be disfavored by the prior
+           gain_tol (float or list): gains that exceed this value will be disfavored by the prior
+                                     for asymmetric gain_tol for corrections below/above unity, pass a 2-element list
 
            debias (bool): If True, debias the amplitudes
            caltable (bool): if True, returns a Caltable instead of an Obsdata 
@@ -202,6 +206,9 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         uv = np.hstack((scan['u'].reshape(-1,1), scan['v'].reshape(-1,1)))
         A = ftmatrix(im.psize, im.xdim, im.ydim, uv, pulse=im.pulse)
         V_scan = np.dot(A, im.imvec)
+
+    if type(gain_tol) == float or type(gain_tol) == int:
+        gain_tol = [gain_tol, gain_tol]
 
     # create a dictionary to keep track of gains
     tkey = {b:a for a,b in enumerate(sites)}
@@ -267,13 +274,13 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
         chisq = np.sum((verr.real * sigma_inv[nan_mask])**2) + np.sum((verr.imag * sigma_inv[nan_mask])**2)
 
         # prior on the gains
-        chisq_g = np.sum((np.log(np.abs(g))**2 / gain_tol**2))
+        chisq_g = np.sum(np.log(np.abs(g))**2 / ((np.abs(g) > 1) * gain_tol[0] + (np.abs(g) <= 1) * gain_tol[1])**2)
 
         return chisq + chisq_g
 
     # use gradient descent to find the gains
     optdict = {'maxiter': MAXIT} # minimizer params
-    res = opt.minimize(errfunc, gpar_guess, method='Powell', options=optdict)
+    res = opt.minimize(errfunc, gpar_guess, method=minimizer_method, options=optdict)
 
     # save the solution
     g_fit = res.x.view(np.complex128)
@@ -380,13 +387,13 @@ def init(x):
 def get_selfcal_scan_cal(args):
     return get_selfcal_scan_cal2(*args)
 
-def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, show_solution, pad_amp, gain_tol, caltable,debias,msgtype):
+def get_selfcal_scan_cal2(i, n, scan, im, V_scan, sites, polrep, pol, method, minimizer_method, show_solution, pad_amp, gain_tol, caltable,debias,msgtype):
     if n > 1:
         global counter
         counter.increment()
         prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
 
-    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, pol=pol, method=method, show_solution=show_solution, 
+    return self_cal_scan(scan, im, V_scan=V_scan, sites=sites, polrep=polrep, pol=pol, method=method, minimizer_method=minimizer_method, show_solution=show_solution, 
                          pad_amp=pad_amp, gain_tol=gain_tol, caltable=caltable, debias=debias)
 
 
