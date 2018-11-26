@@ -134,6 +134,7 @@ class Imager(object):
         self.regparams = {k:kwargs.get(k, 1.0) for k in ('major', 'minor', 'PA', 'alpha_A')}
 
         self.chisq_transform = False
+        self.chisq_offset_gradient = 0.0
 
         # FFT parameters
         self._ttype = kwargs.get('ttype','fast')
@@ -870,7 +871,7 @@ class Imager(object):
             if self.chisq_transform:
                 datterm += self.dat_term_next[dname] * chi2_term_dict[dname] * (1 - 1./(chi2_value_dict[dname]**2))
             else:
-                datterm += self.dat_term_next[dname] * chi2_term_dict[dname]
+                datterm += (self.dat_term_next[dname] + self.chisq_offset_gradient) * chi2_term_dict[dname]
 
         regterm = 0
         reg_term_dict = self.make_reggrad_dict(imcur)
