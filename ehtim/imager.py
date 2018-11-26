@@ -219,13 +219,9 @@ class Imager(object):
             out = unpack_poltuple(out, self._xtuple, self._nimage, POL_SOLVE)
             if self.transform_next == 'mcv':
                 out = mcv(out)
-            iimage_out = out[0]
-            qimage_out = make_q_image(out, POL_PRIM)
-            uimage_out = make_u_image(out, POL_PRIM)
 
         elif self.transform_next == 'log': 
             out = np.exp(out)
-            iimage_out = out
 
         # Print final stats
         outstr = ""
@@ -240,11 +236,18 @@ class Imager(object):
         print("==============================")
 
         # embed image
-        if np.any(np.invert(self._embed_mask)): 
-            if self.pol_next=='P':
+        if self.pol_next=='P':
+            if np.any(np.invert(self._embed_mask)): 
                 out = embed_pol(out, self._embed_mask)
-            else:
+            iimage_out = out[0]
+            qimage_out = make_q_image(out, POL_PRIM)
+            uimage_out = make_u_image(out, POL_PRIM)
+
+        else:
+            if np.any(np.invert(self._embed_mask)): 
                 out = embed(out, self._embed_mask)
+            iimage_out = out
+
 
         # return image
         outim = image.Image(iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim),
