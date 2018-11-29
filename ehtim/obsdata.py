@@ -2255,6 +2255,37 @@ class Obsdata(object):
                             timetype=self.timetype, scantable=self.scans)
         return obsdeblur
 
+
+    def reweight(self, uv_radius, weightdist=1.0):
+
+        obs_new = self.copy()
+        npts = len(obs_new.data)
+        
+        import scipy.spatial as spatial
+        uvpoints = np.vstack((obs_new.data['u'], obs_new.data['v'])).transpose()
+        uvpoints_tree1 = spatial.cKDTree(uvpoints)
+        uvpoints_tree2 = spatial.cKDTree(-uvpoints)
+        
+        for i in range(npts):
+            matches1 = uvpoints_tree1.query_ball_point(uvpoints[i,:], uv_radius) 
+            matches2 = uvpoints_tree2.query_ball_point(uvpoints[i,:], uv_radius) 
+            nmatches = len(matches1) + len(matches2)
+        
+            for sigma in ['sigma', 'qsigma', 'usigma', 'vsigma']:
+                obs_new.data[sigma][i] = np.sqrt(nmatches)
+        
+        scale = np.mean( self.data['sigma'] ) / np.mean( obs_new.data['sigma'] )
+        for sigma in ['sigma', 'qsigma', 'usigma', 'vsigma']:
+            obs_new.data[sigma] *= scale*weightdist
+        
+        if weightdist < 1.0:
+            for i in range(npts):
+                for sigma in ['sigma', 'qsigma', 'usigma', 'vsigma']:
+                    obs_new.data[sigma][i] = (1-weightdist)*obs_new.data[sigma][i]
+                
+        return obs_new
+
+
     def fit_gauss(self, flux=1.0, fittype='amp', paramguess=(100*RADPERUAS, 100*RADPERUAS, 0.)):
 
         """Fit a gaussian to either Stokes I complex visibilities or Stokes I visibility amplitudes.

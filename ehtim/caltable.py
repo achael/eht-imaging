@@ -800,7 +800,7 @@ def plot_tarr_dterms(tarr, keys=None, label=None, legend=True, clist=SCOLORS,ran
 
     if auto_order:
         # Ensure that the plot will put the stations in alphabetical order
-        keys = np.argsort(obs.tarr['site']) #range(len(tarr))
+        keys = np.argsort(tarr['site']) #range(len(tarr))
     else:
         keys = range(len(tarr))
 
