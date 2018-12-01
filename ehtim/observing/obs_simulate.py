@@ -264,9 +264,13 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                     obsdata.append(None)
             else:
                 # FFT for visibilities
-                imarr = imvec.reshape(im.ydim, im.xdim)
-                imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
-                vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
+                if pol in im.cached_fft:
+                    vis_im = im.cached_fft[pol]
+                else:
+                    imarr = imvec.reshape(im.ydim, im.xdim)
+                    imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
+                    vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
+                    im.cached_fft[pol] = vis_im
 
                 # Sample the visibilities
                 # default is cubic spline interpolation

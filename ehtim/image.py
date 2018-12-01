@@ -147,7 +147,7 @@ class Image(object):
         self.mjd = int(mjd)
 
         # Cached FFT of the image
-        self.cached_fft = None
+        self.cached_fft = {}
 
         if time > 24:
             self.mjd += int((time - time % 24)/24)
