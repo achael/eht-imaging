@@ -215,10 +215,10 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
     if im.pa != 0.0:
         c = np.cos(im.pa)
         s = np.sin(im.pa)
-        u = np.copy(uv[:,0])
-        v = np.copy(uv[:,1])
-        uv[:,0] = c * u - s * v
-        uv[:,1] = s * u + c * v
+        u = uv[:,0]
+        v = uv[:,1]
+        uv = np.column_stack([c * u - s * v,
+                              s * u + c * v])
 
 #    umin = np.min(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
 #    umax = np.max(np.sqrt(uv[:,0]**2 + uv[:,1]**2))
