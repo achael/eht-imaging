@@ -213,8 +213,8 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
     if uv.shape[1] != 2:
         raise Exception("When given as a list of uv points, the obs should be a list of pairs of u-v coordinates!")
     if im.pa != 0.0:
-        c = np.cos(-im.pa)
-        s = np.sin(-im.pa)
+        c = np.cos(im.pa)
+        s = np.sin(im.pa)
         u = np.copy(uv[:,0])
         v = np.copy(uv[:,1])
         uv[:,0] = c * u - s * v
