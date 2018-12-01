@@ -215,8 +215,8 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
     if im.pa != 0.0:
         c = np.cos(-im.pa)
         s = np.sin(-im.pa)
-        u = uv[:,0]
-        v = uv[:,1]
+        u = np.copy(uv[:,0])
+        v = np.copy(uv[:,1])
         uv[:,0] = c * u - s * v
         uv[:,1] = s * u + c * v
 
