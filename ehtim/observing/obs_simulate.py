@@ -178,7 +178,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, polrep='sto
 # Observe w/o noise
 ##################################################################################################
 
-def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
+def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
                ttype="nfft", cache=False, fft_pad_factor=2, zero_empty_pol=True):
 
     """Observe a image on given baselines with no noise.
@@ -201,10 +201,10 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
     from ehtim.obsdata import Obsdata
 
     if polrep_obs=='stokes':
-        im = im.switch_polrep('stokes','I')
+        im = im_org.switch_polrep('stokes','I')
         pollist = ['I','Q','U','V'] #TODO what if we have to I image?
     elif polrep_obs=='circ':
-        im = im.switch_polrep('circ','RR')
+        im = im_org.switch_polrep('circ','RR')
         pollist = ['RR','LL','RL','LR'] #TODO what if we have to RR image?
     else:
         raise Exception("only 'stokes' and 'circ' are supported polreps!")
@@ -271,14 +271,14 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                     obsdata.append(None)
             else:
                 # FFT for visibilities
-                if pol in im.cached_fft:
-                    vis_im = im.cached_fft[pol]
+                if pol in im_org.cached_fft:
+                    vis_im = im_org.cached_fft[pol]
                 else:
                     imarr = imvec.reshape(im.ydim, im.xdim)
                     imarr = np.pad(imarr, ((padvalx1,padvalx2),(padvaly1,padvaly2)), 'constant', constant_values=0.0)
                     vis_im = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(imarr)))
                     if cache == 'auto':
-                        im.cached_fft[pol] = vis_im
+                        im_org.cached_fft[pol] = vis_im
 
                 # Sample the visibilities
                 # default is cubic spline interpolation
