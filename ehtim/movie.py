@@ -670,7 +670,7 @@ class Movie(object):
         return outim
 
 
-    def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft", fft_pad_factor=2, repeat=False):
+    def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft", cache=False, fft_pad_factor=2, repeat=False):
         """Observe the movie on the same baselines as an existing observation object without adding noise.
 
            Args:
@@ -727,7 +727,7 @@ class Movie(object):
             uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
             im = self.get_frame(n)
             data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
-                                        ttype=ttype, fft_pad_factor=fft_pad_factor, zero_empty_pol=True)
+                                        ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor, zero_empty_pol=True)
 
             # Put visibilities into the obsdata
             if obs.polrep=='stokes':

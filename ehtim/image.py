@@ -1568,7 +1568,7 @@ class Image(object):
 
         return outim
 
-    def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', fft_pad_factor=2):
+    def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', cache=False, fft_pad_factor=2):
 
         """Sample the image on the selected uv points without adding noise.
 
@@ -1588,10 +1588,10 @@ class Image(object):
             raise Exception("polrep_obs must be either 'stokes' or 'circ'")
 
         data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=polrep_obs,
-                                       ttype=ttype, fft_pad_factor=fft_pad_factor)
+                                       ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor)
         return data
 
-    def observe_same_nonoise(self, obs, sgrscat=False,  ttype="nfft", fft_pad_factor=2):
+    def observe_same_nonoise(self, obs, sgrscat=False,  ttype="nfft", cache=False, fft_pad_factor=2):
 
         """Observe the image on the same baselines as an existing observation object without adding noise.
 
@@ -1625,7 +1625,7 @@ class Image(object):
         # Extract uv datasample
         uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
         data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
-                                       ttype=ttype, fft_pad_factor=fft_pad_factor)
+                                       ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor)
 
         # put visibilities into the obsdata
         if obs.polrep=='stokes':
