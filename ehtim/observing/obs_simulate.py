@@ -145,7 +145,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, polrep='sto
                                                               ra, dec, rf, timetype=timetype,
                                                               elevmin=elevmin, elevmax=elevmax,
                                                               fix_theta_GMST=fix_theta_GMST)
-  
+
                 for k in range(len(timesout)):
                     outlist.append(np.array((
                               timesout[k],
@@ -178,7 +178,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, polrep='sto
 # Observe w/o noise
 ##################################################################################################
 
-def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes', 
+def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                ttype="nfft", fft_pad_factor=2, zero_empty_pol=True):
 
     """Observe a image on given baselines with no noise.
@@ -190,7 +190,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
            polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
            ttype (str): if "fast" or 'nfft', use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-           zero_empty_pol (bool): if True, returns zero vec if the polarization doesn't exist. Otherwise return None 
+           zero_empty_pol (bool): if True, returns zero vec if the polarization doesn't exist. Otherwise return None
 
        Returns:
            (Obsdata): an observation object
@@ -261,7 +261,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                 if zero_empty_pol:
                     obsdata.append(np.zeros(len(uv)))
                 else:
-                    obsdata.append(None)                
+                    obsdata.append(None)
             else:
                 # FFT for visibilities
                 imarr = imvec.reshape(im.ydim, im.xdim)
@@ -281,7 +281,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                 obsdata.append(vis)
 
 
-    # Get visibilities from the NFFT 
+    # Get visibilities from the NFFT
     elif ttype=="nfft":
 
         uvdim = len(uv)
@@ -319,7 +319,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                 if zero_empty_pol:
                     obsdata.append(np.zeros(len(uv)))
                 else:
-                    obsdata.append(None)                
+                    obsdata.append(None)
             else:
                 plan.f_hat = imvec.copy().reshape((im.ydim,im.xdim)).T
                 plan.trafo()
@@ -340,7 +340,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
                 if zero_empty_pol:
                     obsdata.append(np.zeros(len(uv)))
                 else:
-                    obsdata.append(None)                
+                    obsdata.append(None)
             else:
                 vis = np.dot(mat, imvec)
                 obsdata.append(vis)
@@ -361,7 +361,7 @@ def sample_vis(im, uv, sgrscat=False, polrep_obs='stokes',
 ##################################################################################################
 
 def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
-               stabilize_scan_phase=False, stabilize_scan_amp=False, 
+               stabilize_scan_phase=False, stabilize_scan_amp=False,
                taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dterm_offset=DTERMPDEF,
                caltable_path=None, seed=False):
 
@@ -420,14 +420,14 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
                 if site not in sites_in:
                     taudict[site] = np.append(taudict[site], 0.0)
 
-    # Now define a list that accounts for periods where the phase or amplitude errors 
+    # Now define a list that accounts for periods where the phase or amplitude errors
     # are stable (e.g., over scans if stabilize_scan_phase==True)
     times_stable_phase = times.copy()
     times_stable_amp = times.copy()
     times_stable = times.copy()
     if stabilize_scan_phase==True or stabilize_scan_amp==True:
         scans = obs_tmp.scans
-        if np.all(scans) == None or len(scans) == 0: 
+        if np.all(scans) == None or len(scans) == 0:
             obs_scans = obs.copy()
             obs_scans.add_scans()
             scans = obs_scans.scans
@@ -484,14 +484,14 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
             # Note: R/L gain ratio is independent of time for each site
             # TODO: enforce gainR and gainL < 1
-            
+
             if rlgaincal:
                 gainr_string = 'gain'
                 gainl_string = 'gain'
             else:
                 gainr_string = 'gainR'
                 gainl_string = 'gainL'
-            
+
             gainR = np.sqrt(np.abs(np.fromiter((
                                                 (1.0 + goff * hashrandn(site,gainr_string,str(goff),seed)) *
                                                 (1.0 + gain_mult * hashrandn(site,'gain',str(time),str(gain_mult),seed))
@@ -507,7 +507,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
         # Opacity attenuation of amplitude gain
         if not opacitycal:
             taus = np.abs(np.fromiter((
-                                       taudict[site][j] * (1.0 + taup * hashrandn(site, 'tau', times_stable_amp[j], seed)) 
+                                       taudict[site][j] * (1.0 + taup * hashrandn(site, 'tau', times_stable_amp[j], seed))
                                        for j in range(len(times))
                                       ), float))
             atten = np.exp(-taus/(EP + 2.0*np.sin(el_angles)))
@@ -520,7 +520,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             phase = np.fromiter((2 * np.pi * hashrand(site, 'phase', time, seed) for time in times_stable_phase),float)
             gainR = gainR * np.exp(1j*phase)
             gainL = gainL * np.exp(1j*phase)
-            
+
 
         # D Term errors
         dR = dL = 0.0
@@ -561,14 +561,14 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
 
         out[site] = j_matrices
 
-        if caltable_path: 
-            obs_tmp.tarr[i]['dr'] = dR 
-            obs_tmp.tarr[i]['dl'] = dL   
+        if caltable_path:
+            obs_tmp.tarr[i]['dr'] = dR
+            obs_tmp.tarr[i]['dl'] = dL
             datatable = []
-            for j in range(len(times)): 
+            for j in range(len(times)):
                 datatable.append(np.array((times[j], gainR[j], gainL[j]), dtype=DTCAL))
             datatables[site] = np.array(datatable)
-                                
+
     # Save a calibration table with the synthetic gains and dterms added
     if caltable_path and len(datatables)>0:
         caltable = ehtim.caltable.Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw, datatables, obs_tmp.tarr, source=obs_tmp.source, mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
@@ -685,7 +685,7 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
 def add_jones_and_noise(obs, add_th_noise=True,
                         opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
-                        stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                        stabilize_scan_phase=False, stabilize_scan_amp=False,
                         taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dterm_offset=DTERMPDEF,
                         caltable_path=None, seed=False):
 
@@ -911,7 +911,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 
 # The old noise generating function.
 def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True,
-              stabilize_scan_amp=False, stabilize_scan_phase=False, 
+              stabilize_scan_amp=False, stabilize_scan_phase=False,
               taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
               seed=False):
 
