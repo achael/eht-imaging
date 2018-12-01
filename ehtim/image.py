@@ -70,7 +70,7 @@ class Image(object):
 
     """
 
-    def __init__(self, image, psize, ra, dec,
+    def __init__(self, image, psize, ra, dec, pa=0.0,
                        polrep='stokes', pol_prim=None,
                        rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT,
                        mjd=MJD_DEFAULT, time=0.):
@@ -85,6 +85,7 @@ class Image(object):
                psize (float): The pixel dimension in radians
                ra (float): The source Right Ascension in fractional hours
                dec (float): The source declination in fractional degrees
+               pa (float): logical positional angle of the image
                rf (float): The image frequency in Hz
                pulse (function): The function convolved with the pixel values for continuous image.
                source (str): The source name
@@ -138,11 +139,15 @@ class Image(object):
         self.ydim = image.shape[0]
 
         # Save the image metadata
-        self.ra = float(ra)
+        self.ra  = float(ra)
         self.dec = float(dec)
-        self.rf = float(rf)
+        self.pa  = float(pa)
+        self.rf  = float(rf)
         self.source = str(source)
         self.mjd = int(mjd)
+
+        # Cached FFT of the image
+        self.cached_fft = None
 
         if time > 24:
             self.mjd += int((time - time % 24)/24)
@@ -2953,4 +2958,3 @@ def load_fits(fname, aipscc=False, pulse=PULSE_DEFAULT,
 
     return ehtim.io.load.load_im_fits(fname, aipscc=aipscc,pulse=pulse,
                                       polrep=polrep, pol_prim=pol_prim,  zero_pol=zero_pol)
-
