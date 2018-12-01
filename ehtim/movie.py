@@ -615,7 +615,7 @@ class Movie(object):
 
         # Make the primary image
         imarr = self.frames[n].reshape(self.ydim, self.xdim)
-        outim = ehtim.image.Image(imarr, self.psize, self.ra, self.dec,
+        outim = ehtim.image.Image(imarr, self.psize, self.ra, self.dec, self.pa,
                                     polrep=self.polrep, pol_prim=self.pol_prim, time=time,
                                     rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -654,7 +654,7 @@ class Movie(object):
         # Make the primary image
         avg_imvec = np.mean(np.array(self.frames),axis=0)
         avg_imarr = avg_imvec.reshape(self.ydim, self.xdim)
-        outim = ehtim.image.Image(avg_imarr, self.psize, self.ra, self.dec,
+        outim = ehtim.image.Image(avg_imarr, self.psize, self.ra, self.dec, self.pa,
                                   polrep=self.polrep, pol_prim=self.pol_prim, time=self.start_hr,
                                   rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 

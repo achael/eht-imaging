@@ -250,9 +250,8 @@ class Imager(object):
 
 
         # return image
-        outim = image.Image(iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim),
-                            self.prior_next.psize,
-                            self.prior_next.ra, self.prior_next.dec,
+        outim = image.Image(iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim), self.prior_next.psize,
+                            self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
                             rf=self.prior_next.rf, source=self.prior_next.source,
                             polrep=self.prior_next.polrep, pol_prim=pol_prim,
                             mjd=self.prior_next.mjd, time=self.prior_next.time,
@@ -959,9 +958,9 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
-                               self.prior_next.dec, rf=self.obs_next.rf,
-                               source=self.prior_next.source, mjd=self.prior_next.mjd)
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize,
+                               self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                               rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
 
         #the scattered image vector
         scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
@@ -1009,9 +1008,9 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
-                               self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source,
-                               mjd=self.prior_next.mjd)
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize,
+                               self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                               rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
         #the scattered image vector
         scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
                                                  ea_ker = self._ea_ker, sqrtQ=self._sqrtQ,
@@ -1131,9 +1130,9 @@ class Imager(object):
                 if self.transform_next == 'log':
                     imvec = np.exp(imvec)
 
-                IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
-                                       self.prior_next.dec, rf=self.obs_next.rf,
-                                       source=self.prior_next.source, mjd=self.prior_next.mjd)
+                IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize,
+                                       self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                                       rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
                 #the scattered image vector
                 scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
                                                          ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec
@@ -1210,10 +1209,9 @@ class Imager(object):
             raise Exception("Embedding is not currently implemented!")
             out = embed(out, self._embed_mask)
 
-        outim = image.Image(out.reshape(N, N),
-                            self.prior_next.psize, self.prior_next.ra, self.prior_next.dec,
-                            rf=self.prior_next.rf, source=self.prior_next.source,
-                            mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
+        outim = image.Image(out.reshape(N, N), self.prior_next.psize,
+                            self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                            rf=self.prior_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
         outep = res.x[N**2:]
         outscatt = self.scattering_model.Scatter(outim, Epsilon_Screen=so.MakeEpsilonScreenFromList(outep, N),
                                                  ea_ker = self._ea_ker, sqrtQ=self._sqrtQ,

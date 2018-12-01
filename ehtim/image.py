@@ -309,7 +309,7 @@ class Image(object):
         """
 
         # Make new  image with primary polarization
-        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec,
+        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -468,7 +468,7 @@ class Image(object):
             raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n"%(polrep_out,pol_prim_out) +
                             "output image is not defined")
 
-        newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec,
+        newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
                       polrep=polrep_out, pol_prim=pol_prim_out, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -686,7 +686,7 @@ class Image(object):
         imarr=np.pad(imarr,((pady,pady),(padx,padx)),'constant')
 
         # Make new image
-        outim = Image(imarr, self.psize, self.ra, self.dec,
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -752,7 +752,7 @@ class Image(object):
         imarr_new *= scaling
 
         # Make new image
-        outim = Image(imarr_new, psize_new, self.ra, self.dec,
+        outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -805,7 +805,7 @@ class Image(object):
         # Make new image
         imarr_new = interp_imvec(self.imvec)
 
-        outim = Image(imarr_new, psize_new, self.ra, self.dec,
+        outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -847,7 +847,7 @@ class Image(object):
 
         # Make new image
         imarr_rot = rot_imvec(self.imvec)
-        outim = Image(imarr_rot, self.psize, self.ra, self.dec,
+        outim = Image(imarr_rot, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -880,7 +880,7 @@ class Image(object):
 
         # Make new image
         imarr_shift = shift_imvec(self.imvec)
-        outim = Image(imarr_shift, self.psize, self.ra, self.dec,
+        outim = Image(imarr_shift, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -942,7 +942,7 @@ class Image(object):
         imarr = (self.imvec).reshape(self.ydim, self.xdim)
 
 
-        outim = Image(blur(imarr,gauss), self.psize, self.ra, self.dec,
+        outim = Image(blur(imarr,gauss), self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -984,7 +984,7 @@ class Image(object):
         # Blur the primary image
         imarr = self.imvec.reshape(self.ydim, self.xdim)
         imarr = blur(imarr,sigmap)
-        outim = Image(imarr, self.psize, self.ra, self.dec,
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1035,7 +1035,7 @@ class Image(object):
 
         # Find the gradient for the primary image
         gradarr = gradim(self.imvec)
-        outim = Image(gradarr, self.psize, self.ra, self.dec,
+        outim = Image(gradarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1086,7 +1086,7 @@ class Image(object):
 
         # make the primary image
         maskarr = maskvec.reshape(mask.ydim, mask.xdim)
-        mask = Image(maskarr, self.psize, self.ra, self.dec,
+        mask = Image(maskarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1121,7 +1121,7 @@ class Image(object):
         # Mask the primary image
         imvec = self.imvec
         imvec[~maskvec] = fill_val
-        outim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec,
+        outim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1190,7 +1190,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += flatarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec,
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1241,7 +1241,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += hatarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec,
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1305,7 +1305,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += gaussarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec,
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1365,7 +1365,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += crescarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec,
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1423,7 +1423,7 @@ class Image(object):
                           for i in xlist]
                           for j in ylist])
         ringarr = ringarr[0:self.ydim, 0:self.xdim]
-        tmp = Image(ringarr, self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        tmp = Image(ringarr, self.psize, self.ra, self.dec, self.pa, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         tmp = tmp.blur_circ(sigma)
         tmp.imvec *= flux/(tmp.total_flux())
         ringarr = tmp.imvec.reshape(self.ydim, self.xdim)
@@ -1433,7 +1433,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += ringarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec,
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1482,7 +1482,7 @@ class Image(object):
 
         # create the new stokes image object
         iarr = ivec.reshape(im.ydim,im.xdim).copy()
-        outim = Image(iarr, self.psize, self.ra, self.dec,
+        outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
                       polrep='stokes', pol_prim='I', time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1529,7 +1529,7 @@ class Image(object):
 
         # create the new stokes image object
         iarr = ivec.reshape(im.ydim,im.xdim).copy()
-        outim = Image(iarr, self.psize, self.ra, self.dec,
+        outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
                       polrep='stokes', pol_prim='I', time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
