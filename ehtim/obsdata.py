@@ -189,7 +189,7 @@ class Obsdata(object):
         """
 
         newobs = copy.deepcopy(self)
-        
+
         #newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, polrep=self.polrep,
         #                 ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
         #                 timetype=self.timetype, scantable=self.scans)
@@ -222,7 +222,7 @@ class Obsdata(object):
         elif polrep_out=='stokes': #circ -> stokes
             data = np.empty(len(self.data), dtype=DTPOL_STOKES)
             rrmask = np.isnan(self.data['rrvis'])
-            llmask = np.isnan(self.data['llvis'])            
+            llmask = np.isnan(self.data['llvis'])
 
             for f in DTPOL_STOKES:
                 f = f[0]
@@ -280,7 +280,7 @@ class Obsdata(object):
 
         newobs = Obsdata(self.ra, self.dec, self.rf, self.bw, data, self.tarr,
                          source=self.source, mjd=self.mjd, polrep=polrep_out,
-                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, 
+                         ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal,
                          dcal=self.dcal, frcal=self.frcal,
                          timetype=self.timetype, scantable=self.scans)
         return newobs
@@ -457,7 +457,7 @@ class Obsdata(object):
                 datalist.append(np.array([obs for obs in group]))
         else:
             # Group measurements by scan
-            if np.any(self.scans == None) or len(self.scans) == 0: 
+            if np.any(self.scans == None) or len(self.scans) == 0:
                 print("No scan table in observation. Adding scan table before gathering...")
                 self.add_scans()
 
@@ -1180,7 +1180,7 @@ class Obsdata(object):
             tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0.0
-        
+
         if avg_time <= tint0:
             adf = make_amp(self,debias=debias,round_s=round_s)
             if return_type=='rec':
@@ -1214,7 +1214,7 @@ class Obsdata(object):
             tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0
-        
+
         cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>tint0:
             cdf = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples)
@@ -1222,7 +1222,7 @@ class Obsdata(object):
             print("Updated self.bispec: no averaging")
             if return_type=='rec':
                 cdf = df_to_rec(cdf,'bispec')
-        
+
         self.bispec = cdf
         print("Updated self.bispec: avg_time %f s\n"%avg_time)
 
@@ -1249,7 +1249,7 @@ class Obsdata(object):
             tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0
-        
+
         cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count)
         if avg_time>tint0:
             cdf = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples)
@@ -1285,14 +1285,14 @@ class Obsdata(object):
             tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0
-        
+
         if avg_time>tint0:
             foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
         else:
             foo = self
         cdf = make_camp_df(foo,ctype=ctype,debias=False,count=count,
                            round_s=round_s)
-    
+
         if ctype=='logcamp':
             print("updated self.lcamp: no averaging")
         elif ctype=='camp':
@@ -1384,7 +1384,7 @@ class Obsdata(object):
                 if (times_uni[cou+1]-times_uni[cou] > dt):
                     scan_id+=1
             scans[-1]=scan_id
-            scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1])+1)])    
+            scanlist = np.asarray([ np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) for cou in range(int(scans[-1])+1)])
 
         elif info=='txt':
              scanlist = np.loadtxt(filepath)
@@ -1573,8 +1573,8 @@ class Obsdata(object):
 
     def add_leakage_noise(self, Dterm_amp=0.1, min_noise=0.01, debias=False):
         """Add estimated systematic noise from leakage at quadrature to the corresponding thermal noise.
-           Added noise requires cross-hand visibilities. 
-           Note that this operation is not currently tracked in the data so should be applied with extreme caution. 
+           Added noise requires cross-hand visibilities.
+           Note that this operation is not currently tracked in the data so should be applied with extreme caution.
 
            Args:
                Dterm_amp (float): Estimated magnitude of leakage terms
@@ -1586,7 +1586,7 @@ class Obsdata(object):
 
         # Extract visibility amplitudes
         # Switch to Stokes for graceful handling of circular basis products missing RR or LL
-        amp = self.switch_polrep('stokes').unpack('amp',debias=debias)['amp']      
+        amp = self.switch_polrep('stokes').unpack('amp',debias=debias)['amp']
         rlamp = np.nan_to_num(self.switch_polrep('circ').unpack('rlamp',debias=debias)['rlamp'])
         lramp = np.nan_to_num(self.switch_polrep('circ').unpack('lramp',debias=debias)['lramp'])
 
@@ -1599,15 +1599,15 @@ class Obsdata(object):
                 field = self.poldict[sigma]
                 out.data[field] = (self.data[field]**2 + np.abs(frac_noise*amp)**2)**0.5
             except KeyError:
-                continue    
+                continue
 
         return out
 
 
     def add_fractional_noise(self, frac_noise, debias=False):
-        """Add a constant fraction of each visibility amplitude at quadrature to the corresponding thermal noise, 
-           effectively imposing a maximal signal-to-noise ratio. Note that this operation is not currently tracked 
-           in the data so should be applied with extreme caution. 
+        """Add a constant fraction of each visibility amplitude at quadrature to the corresponding thermal noise,
+           effectively imposing a maximal signal-to-noise ratio. Note that this operation is not currently tracked
+           in the data so should be applied with extreme caution.
 
            Args:
                frac_noise (float): The fraction of noise to add. For example, frac_noise=0.05 would
@@ -1620,7 +1620,7 @@ class Obsdata(object):
 
         # Extract visibility amplitudes
         # Switch to Stokes for graceful handling of circular basis products missing RR or LL
-        amp = self.switch_polrep('stokes').unpack('amp',debias=debias)['amp']      
+        amp = self.switch_polrep('stokes').unpack('amp',debias=debias)['amp']
 
         out = self.copy()
         for sigma in ['sigma1','sigma2','sigma3','sigma4']:
@@ -1628,7 +1628,7 @@ class Obsdata(object):
                 field = self.poldict[sigma]
                 out.data[field] = (self.data[field]**2 + np.abs(frac_noise*amp)**2)**0.5
             except KeyError:
-                continue    
+                continue
 
         return out
 
@@ -2090,7 +2090,7 @@ class Obsdata(object):
                     vals[field] = np.nan_to_num(vals[field]) # nans will all be dropped, which can be problematic for polarimetric values
                 for j in range(len(vals)):
                     near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
-                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]                    
+                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]
 
                     # Here, we use median absolute deviation from the median as a robust proxy for standard deviation
                     dfields = np.median(np.abs(fields-np.median(fields)))
@@ -2260,29 +2260,29 @@ class Obsdata(object):
 
         obs_new = self.copy()
         npts = len(obs_new.data)
-        
+
         import scipy.spatial as spatial
         uvpoints = np.vstack((obs_new.data['u'], obs_new.data['v'])).transpose()
         uvpoints_tree1 = spatial.cKDTree(uvpoints)
         uvpoints_tree2 = spatial.cKDTree(-uvpoints)
-        
+
         for i in range(npts):
-            matches1 = uvpoints_tree1.query_ball_point(uvpoints[i,:], uv_radius) 
-            matches2 = uvpoints_tree2.query_ball_point(uvpoints[i,:], uv_radius) 
+            matches1 = uvpoints_tree1.query_ball_point(uvpoints[i,:], uv_radius)
+            matches2 = uvpoints_tree2.query_ball_point(uvpoints[i,:], uv_radius)
             nmatches = len(matches1) + len(matches2)
-        
+
             for sigma in ['sigma', 'qsigma', 'usigma', 'vsigma']:
                 obs_new.data[sigma][i] = np.sqrt(nmatches)
-        
+
         scale = np.mean( self.data['sigma'] ) / np.mean( obs_new.data['sigma'] )
         for sigma in ['sigma', 'qsigma', 'usigma', 'vsigma']:
             obs_new.data[sigma] *= scale*weightdist
-        
+
         if weightdist < 1.0:
             for i in range(npts):
                 for sigma in ['sigma', 'qsigma', 'usigma', 'vsigma']:
                     obs_new.data[sigma][i] = (1-weightdist)*obs_new.data[sigma][i]
-                
+
         return obs_new
 
 
@@ -2474,7 +2474,7 @@ class Obsdata(object):
 
         if mode == 'all':
             out = np.array(cps)
-            
+
         print("\n")
         return out
 
@@ -3168,7 +3168,7 @@ class Obsdata(object):
 
             # Plot the data
             tolerance = len(data[field2])
-            
+
             if label is None:
                 labelstr="%s-%s"%((str(bl[0]),str(bl[1])))
 
