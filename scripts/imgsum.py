@@ -759,6 +759,7 @@ if __name__=='__main__':
     basename = os.path.splitext(os.path.basename(opt.inputim))[0]
     outdir = str(opt.o)
     if outdir[-1] == '/': outname = outdir + basename + '.pdf'
+    elif outdir[-3:] == 'pdf': outname = outdir
     else: outname = outdir +'/' + basename + '.pdf'
 
     main(im, obs, obs_uncal, basename, outname,  commentstr=opt.c, outdir=outdir,ebar=ebar,cfun=opt.cfun,
