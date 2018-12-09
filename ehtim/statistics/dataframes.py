@@ -637,3 +637,66 @@ def get_bins_labels(intervals,dt=0.00001):
     labels[1::2] = [-cou for cou in range(1,len(intervals))]
     
     return binsT, labels
+
+def common_set(obs1, obs2, tolerance = 0,uniquely=False):
+    '''
+    Selects common subset of obs1, obs2 data
+    tolerance: time tolerance to accept common subsets
+    uniquely: whether matching single value to single value
+    '''
+    #make a dataframe with visibilities
+    #tolerance in seconds
+    df1 = eh.statistics.dataframes.make_df(obs1)
+    df2 = eh.statistics.dataframes.make_df(obs2)
+
+    #we need this to match baselines with possibly different station orders between the pipelines
+    df1['ta'] = list(map(lambda x: sorted(x)[0],zip(df1.t1,df1.t2)))
+    df1['tb'] = list(map(lambda x: sorted(x)[1],zip(df1.t1,df1.t2)))
+    df2['ta'] = list(map(lambda x: sorted(x)[0],zip(df2.t1,df2.t2)))
+    df2['tb'] = list(map(lambda x: sorted(x)[1],zip(df2.t1,df2.t2)))
+
+    if tolerance>0:
+        d_mjd = tolerance/24.0/60.0/60.0      
+        df1['roundtime']=np.round(df1.mjd/d_mjd)
+        df2['roundtime']=np.round(df2.mjd/d_mjd)
+    else:
+        df1['roundtime'] = df1['time']
+        df2['roundtime'] = df2['time']
+        
+    #matching data
+    df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundtime'],uniquely=uniquely)
+
+    #replace visibility data with common subset
+    obs1cut = obs1.copy()
+    obs2cut = obs2.copy()
+    obs1cut.data = eh.statistics.dataframes.df_to_rec(df1,'vis')
+    obs2cut.data = eh.statistics.dataframes.df_to_rec(df2,'vis')
+
+    return obs1cut,obs2cut
+
+
+def match_multiple_frames(frames, what_is_same, dt = 0,uniquely=True):
+
+    if dt > 0:
+        for frame in frames:
+            frame['round_time'] = list(map(lambda x: np.round((x- datetime.datetime(2017,4,4)).total_seconds()/dt),frame['datetime']))
+        what_is_same += ['round_time']
+    
+    frames_common = {}
+    for frame in frames:
+        frame['all_ind'] = list(zip(*[frame[x] for x in what_is_same]))   
+        if frames_common != {}:
+            frames_common = frames_common&set(frame['all_ind'])
+        else:
+            frames_common = set(frame['all_ind'])
+
+    frames_out = []
+    for frame in frames:
+        frame = frame[list(map(lambda x: x in frames_common, frame.all_ind))]
+        if uniquely:
+            frame.drop_duplicates(subset=['all_ind'], keep='first', inplace=True)
+
+        frame = frame.sort_values('all_ind').reset_index(drop=True)
+        frame.drop('all_ind', axis=1,inplace=True)
+        frames_out.append(frame.copy())
+    return frames_out
