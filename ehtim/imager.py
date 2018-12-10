@@ -60,7 +60,7 @@ POL_SOLVE = (0,1,1) # this means that pol imaging solves for m & chi (not I), fo
 #TODO -- pol_next tracks polarization of next image to make
 #     -- checks on the polrep of the prior & init --> exception to switch if necessary
 #     -- warnings not to use log transform if imaging V, Q, U, warnings that  RL & LR  have to wait for pol
-#     -- get data terms corresponding to  right pols 
+#     -- get data terms corresponding to  right pols
 
 ###########################################################################################################################################
 #Imager object
@@ -169,9 +169,9 @@ class Imager(object):
         """Make an image using current imager settings.
         """
 
-        if pol is None: 
+        if pol is None:
             pol_prim = self.pol_next
-        else: 
+        else:
             self.pol_next = pol
             pol_prim = pol
 
@@ -220,7 +220,7 @@ class Imager(object):
             if self.transform_next == 'mcv':
                 out = mcv(out)
 
-        elif self.transform_next == 'log': 
+        elif self.transform_next == 'log':
             out = np.exp(out)
 
         # Print final stats
@@ -237,24 +237,23 @@ class Imager(object):
 
         # embed image
         if self.pol_next=='P':
-            if np.any(np.invert(self._embed_mask)): 
+            if np.any(np.invert(self._embed_mask)):
                 out = embed_pol(out, self._embed_mask)
             iimage_out = out[0]
             qimage_out = make_q_image(out, POL_PRIM)
             uimage_out = make_u_image(out, POL_PRIM)
 
         else:
-            if np.any(np.invert(self._embed_mask)): 
+            if np.any(np.invert(self._embed_mask)):
                 out = embed(out, self._embed_mask)
             iimage_out = out
 
 
         # return image
-        outim = image.Image(iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim),
-                            self.prior_next.psize, 
-                            self.prior_next.ra, self.prior_next.dec,
+        outim = image.Image(iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim), self.prior_next.psize,
+                            self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
                             rf=self.prior_next.rf, source=self.prior_next.source,
-                            polrep=self.prior_next.polrep, pol_prim=pol_prim, 
+                            polrep=self.prior_next.polrep, pol_prim=pol_prim,
                             mjd=self.prior_next.mjd, time=self.prior_next.time,
                             pulse=self.prior_next.pulse)
 
@@ -262,7 +261,7 @@ class Imager(object):
         # copy over other polarizations
         for pol2 in list(outim._imdict.keys()):
 
-            # Is it the base image? 
+            # Is it the base image?
             if pol2==outim.pol_prim: continue
 
             # Did we solve for polarimeric image or are we copying over old pols?
@@ -334,7 +333,7 @@ class Imager(object):
         if self._ttype not in ['fast','direct','nfft']:
             raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
 
-        if(self.pol_next in ['Q','U','V'] and 
+        if(self.pol_next in ['Q','U','V'] and
           ('gs' in self.reg_term_next.keys() or 'simple' in self.reg_term_next.keys())):
             raise Exception("'simple' and 'gs' MEM methods do not work with potentially negative Stokes Q, U, or V images!")
 
@@ -653,9 +652,9 @@ class Imager(object):
             self._inittuple = np.array((self._iinit, init1, init2))
 
             # change of variables
-            if self.transform_next == 'mcv': 
+            if self.transform_next == 'mcv':
                 self._xtuple =  mcv_r(self._inittuple)
-            else: 
+            else:
                 raise Exception("Polarimetric imaging only works with transform_next='mcv'")
 
             # pack into single vector
@@ -670,7 +669,7 @@ class Imager(object):
                 self._ninit = self.init_next.imvec[self._embed_mask]
 
             # change of variables
-            if self.transform_next == 'log': 
+            if self.transform_next == 'log':
                 self._xinit = np.log(self._ninit)
             else: self._xinit = self._ninit
 
@@ -739,11 +738,11 @@ class Imager(object):
             A = self._data_tuples[dname][2]
 
             if self.pol_next=='P':
-                chi2 = polchisq(imcur, A, data, sigma, dname, 
-                                ttype=self._ttype, mask=self._embed_mask, 
+                chi2 = polchisq(imcur, A, data, sigma, dname,
+                                ttype=self._ttype, mask=self._embed_mask,
                                 pol_prim=POL_PRIM)
             else:
-                chi2 = chisq(imcur, A, data, sigma, dname, 
+                chi2 = chisq(imcur, A, data, sigma, dname,
                              ttype=self._ttype, mask=self._embed_mask)
             chi2_dict[dname] = chi2
 
@@ -759,7 +758,7 @@ class Imager(object):
             A = self._data_tuples[dname][2]
 
             if self.pol_next=='P':
-                chi2grad = polchisqgrad(imcur, A, data, sigma, dname, 
+                chi2grad = polchisqgrad(imcur, A, data, sigma, dname,
                                         ttype=self._ttype, mask=self._embed_mask,
                                         pol_prim=POL_PRIM, pol_solve=POL_SOLVE)
             else:
@@ -776,7 +775,7 @@ class Imager(object):
         reg_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
             if self.pol_next=='P':
-                reg = polregularizer(imcur, self._embed_mask,  
+                reg = polregularizer(imcur, self._embed_mask,
                                      self.prior_next.xdim, self.prior_next.ydim,
                                      self.prior_next.psize, regname,
                                      pol_prim=POL_PRIM
@@ -799,7 +798,7 @@ class Imager(object):
         for regname in sorted(self.reg_term_next.keys()):
 
             if self.pol_next=='P':
-                reg = polregularizergrad(imcur, self._embed_mask,  
+                reg = polregularizergrad(imcur, self._embed_mask,
                                      self.prior_next.xdim, self.prior_next.ydim,
                                      self.prior_next.psize, regname,
                                      pol_prim=POL_PRIM, pol_solve=POL_SOLVE
@@ -828,7 +827,7 @@ class Imager(object):
         if self.transform_next == 'log':
             imcur = np.exp(imcur)
         elif self.transform_next== 'mcv':
-            imcur = mcv(imcur)            
+            imcur = mcv(imcur)
 
         # data terms
         datterm = 0.
@@ -862,7 +861,7 @@ class Imager(object):
             imcur = np.exp(imcur)
         elif self.transform_next== 'mcv':
             cvcur = imcur.copy()
-            imcur = mcv(imcur)            
+            imcur = mcv(imcur)
 
         datterm = 0.
         chi2_term_dict = self.make_chisqgrad_dict(imcur)
@@ -907,7 +906,7 @@ class Imager(object):
                 if self.transform_next == 'log':
                     imcur = np.exp(imcur)
                 elif self.transform_next == "mcv":
-                    imcur = mcv(imcur) 
+                    imcur = mcv(imcur)
 
                 # get chi^2 and regularizer
                 chi2_term_dict = self.make_chisq_dict(imcur)
@@ -935,11 +934,11 @@ class Imager(object):
                 # embed and plot
                 if self.pol_next=='P':
                     if np.any(np.invert(self._embed_mask)):
-                        imcur = embed_pol(imcur, self._embed_mask) 
+                        imcur = embed_pol(imcur, self._embed_mask)
                     plot_m(imcur, self.prior_next, self._nit, chi2_term_dict, **kwargs)
 
                 else:
-                    if np.any(np.invert(self._embed_mask)): 
+                    if np.any(np.invert(self._embed_mask)):
                         imcur = embed(imcur, self._embed_mask)
 
                     plot_i(imcur, self.prior_next, self._nit, chi2_term_dict, pol=self.pol_next, **kwargs)
@@ -959,9 +958,9 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
-                               self.prior_next.dec, rf=self.obs_next.rf,
-                               source=self.prior_next.source, mjd=self.prior_next.mjd)
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize,
+                               self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                               rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
 
         #the scattered image vector
         scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
@@ -1009,9 +1008,9 @@ class Imager(object):
         if self.transform_next == 'log':
             imvec = np.exp(imvec)
 
-        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
-                               self.prior_next.dec, rf=self.obs_next.rf, source=self.prior_next.source,
-                               mjd=self.prior_next.mjd)
+        IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize,
+                               self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                               rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
         #the scattered image vector
         scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
                                                  ea_ker = self._ea_ker, sqrtQ=self._sqrtQ,
@@ -1036,7 +1035,7 @@ class Imager(object):
         reg_term_dict_scatt = self.make_reggrad_dict(scatt_im)
 
         for regname in sorted(self.reg_term_next.keys()):
-            #we need an exception if the regularizer is 'rgauss' 
+            #we need an exception if the regularizer is 'rgauss'
             if regname == 'rgauss':
                 #get gradient of the scattered image vector
                 gaussterm = self.reg_term_next[regname] * reg_term_dict_scatt[regname]
@@ -1046,7 +1045,7 @@ class Imager(object):
                 gx = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_x[::-1,::-1], phi_Gradient_x * (dgauss_dIa))).flatten()
                 gy = (rF**2.0 * so.Wrapped_Convolve(self._ea_ker_gradient_y[::-1,::-1], phi_Gradient_y * (dgauss_dIa))).flatten()
 
-                # Now we add the gradient for the unscattered image 
+                # Now we add the gradient for the unscattered image
                 regterm += so.Wrapped_Convolve(self._ea_ker[::-1,::-1], (dgauss_dIa)).flatten() + gx + gy
 
             else:
@@ -1131,9 +1130,9 @@ class Imager(object):
                 if self.transform_next == 'log':
                     imvec = np.exp(imvec)
 
-                IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize, self.prior_next.ra,
-                                       self.prior_next.dec, rf=self.obs_next.rf,
-                                       source=self.prior_next.source, mjd=self.prior_next.mjd)
+                IM = ehtim.image.Image(imvec.reshape(N,N), self.prior_next.psize,
+                                       self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                                       rf=self.obs_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd)
                 #the scattered image vector
                 scatt_im = self.scattering_model.Scatter(IM, Epsilon_Screen=so.MakeEpsilonScreenFromList(EpsilonList, N),
                                                          ea_ker = self._ea_ker, sqrtQ=self._sqrtQ, Linearized_Approximation=True).imvec
@@ -1210,10 +1209,9 @@ class Imager(object):
             raise Exception("Embedding is not currently implemented!")
             out = embed(out, self._embed_mask)
 
-        outim = image.Image(out.reshape(N, N),
-                            self.prior_next.psize, self.prior_next.ra, self.prior_next.dec,
-                            rf=self.prior_next.rf, source=self.prior_next.source,
-                            mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
+        outim = image.Image(out.reshape(N, N), self.prior_next.psize,
+                            self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
+                            rf=self.prior_next.rf, source=self.prior_next.source, mjd=self.prior_next.mjd, pulse=self.prior_next.pulse)
         outep = res.x[N**2:]
         outscatt = self.scattering_model.Scatter(outim, Epsilon_Screen=so.MakeEpsilonScreenFromList(outep, N),
                                                  ea_ker = self._ea_ker, sqrtQ=self._sqrtQ,

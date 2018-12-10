@@ -61,7 +61,7 @@ class Movie(object):
 
     def __init__(self, movie, framedur, psize, ra, dec, rf=RF_DEFAULT,
                        polrep='stokes', pol_prim=None,
-                       pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, 
+                       pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT,
                        mjd=MJD_DEFAULT, start_hr=0.0):
 
         """A polarimetric image (in units of Jy/pixel).
@@ -74,7 +74,7 @@ class Movie(object):
                dec (float): The source declination in fractional degrees
                rf (float): The image frequency in Hz
                polrep (str): polarization representation, either 'stokes' or 'circ'
-               pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+               pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
                pulse (function): The function convolved with the pixel values for continuous image.
                source (str): The source name
                mjd (int): The integer MJD of the image
@@ -104,7 +104,7 @@ class Movie(object):
                 raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
 
         elif polrep=='circ':
-            if pol_prim is None: 
+            if pol_prim is None:
                 print("polrep is 'circ' and no pol_prim specified! Setting pol_prim='RR'")
                 pol_prim = 'RR'
             if pol_prim=='RR':
@@ -146,7 +146,7 @@ class Movie(object):
             raise Exception("imvec size is not consistent with xdim*ydim!")
         #TODO -- more checks on consistency with the existing pol data???
 
-        self._movdict[self.pol_prim] =  frames        
+        self._movdict[self.pol_prim] =  frames
 
     @property
     def iframes(self):
@@ -164,7 +164,7 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['I'] =  frames     
+        self._movdict['I'] =  frames
 
     @property
     def qframes(self):
@@ -182,7 +182,7 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['Q'] =  frames     
+        self._movdict['Q'] =  frames
 
     @property
     def uframes(self):
@@ -200,8 +200,8 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['U'] =  frames     
-   
+        self._movdict['U'] =  frames
+
     @property
     def vframes(self):
 
@@ -218,7 +218,7 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['V'] =  frames     
+        self._movdict['V'] =  frames
 
     @property
     def rrframes(self):
@@ -236,7 +236,7 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['RR'] =  frames     
+        self._movdict['RR'] =  frames
 
     @property
     def llframes(self):
@@ -254,7 +254,7 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['LL'] =  frames     
+        self._movdict['LL'] =  frames
 
     @property
     def rlvec(self):
@@ -272,7 +272,7 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['RL'] =  frames     
+        self._movdict['RL'] =  frames
 
     @property
     def lrvec(self):
@@ -290,7 +290,7 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._movdict['LR'] =  frames     
+        self._movdict['LR'] =  frames
 
     def copy(self):
 
@@ -303,8 +303,8 @@ class Movie(object):
         """
 
         # Make new  movie with primary polarization
-        newmov = Movie([imvec.reshape(self.ydim,self.xdim) for imvec in self.frames], 
-                       self.framedur, self.psize, self.ra, self.dec, 
+        newmov = Movie([imvec.reshape(self.ydim,self.xdim) for imvec in self.frames],
+                       self.framedur, self.psize, self.ra, self.dec,
                        polrep=self.polrep, pol_prim=self.pol_prim, start_hr=self.start_hr,
                        rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -333,7 +333,7 @@ class Movie(object):
             raise Exception("new pol in add_pol_movie is the same as pol_prim!")
         if np.any(np.array([image.shape != (self.ydim, self.xdim) for image in movie])):
             raise Exception("add_pol_movie image shapes incompatible with primary image!")
-        if not (pol in list(self._movdict.keys())): 
+        if not (pol in list(self._movdict.keys())):
             raise Exception("for polrep==%s, pol in add_pol_movie must be in "%self.polrep + ",".join(list(self._movdict.keys())))
 
         if self.polrep=='stokes':
@@ -391,7 +391,7 @@ class Movie(object):
         """Return a new movie with the polarization representation changed
            Args:
                polrep_out (str):  the polrep of the output data
-               pol_prim_out (str): The default movie: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+               pol_prim_out (str): The default movie: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
 
            Returns:
                (Movie): new movie object with potentially different polrep
@@ -399,7 +399,7 @@ class Movie(object):
 
         if polrep_out not in ['stokes','circ']:
             raise Exception("polrep_out must be either 'stokes' or 'circ'")
-        if pol_prim_out is None: 
+        if pol_prim_out is None:
             if polrep_out=='stokes': pol_prim_out = 'I'
             elif polrep_out=='circ': pol_prim_out = 'RR'
 
@@ -408,7 +408,7 @@ class Movie(object):
             return self.copy()
 
         # Assemble a dictionary of new polarization vectors
-        if polrep_out=='stokes':                 
+        if polrep_out=='stokes':
             if self.polrep=='stokes':
                 movdict = {'I':self.iframes,'Q':self.qframes,'U':self.uframes,'V':self.vframes}
             else:
@@ -431,7 +431,7 @@ class Movie(object):
         elif polrep_out=='circ':
             if self.polrep=='circ':
                 movdict = {'RR':self.rrframes,'LL':self.llframes,'RL':self.rlframes,'LR':self.lrframes}
-            else:   
+            else:
                 if len(self.iframes)==0 or len(self.vframes)==0:
                     rrframes = []
                     llframes = []
@@ -454,8 +454,8 @@ class Movie(object):
             raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n"%(polrep_out,pol_prim_out) +
                             "output movie is not defined")
 
-        newmov = Movie(frames, 
-                       self.framedur, self.psize, self.ra, self.dec, 
+        newmov = Movie(frames,
+                       self.framedur, self.psize, self.ra, self.dec,
                        polrep=polrep_out, pol_prim=pol_prim_out, start_hr=self.start_hr,
                        rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -584,12 +584,12 @@ class Movie(object):
         """Return the (signed) total fractional circular polarized flux over time
 
            Args:
-                
+
            Returns:
                 (numpy.ndarray) : image fractional circular polarized flux per frame
         """
         if self.polrep=='stokes':
-            frac = [np.sum(self.vframes[i]) / np.abs(np.sum(self.iframes[i])) 
+            frac = [np.sum(self.vframes[i]) / np.abs(np.sum(self.iframes[i]))
                     for i in range(self.nframes)]
         elif self.polrep=='circ':
             frac = [np.sum(self.rrframes[i]-self.llframes[i]) / np.abs(np.sum(self.rrframes[i] + self.llframes[i]))
@@ -603,7 +603,7 @@ class Movie(object):
 
            Args:
                n (int): the frame number
-           
+
            Returns:
                (Image): the Image object of the nth frame
         """
@@ -615,7 +615,7 @@ class Movie(object):
 
         # Make the primary image
         imarr = self.frames[n].reshape(self.ydim, self.xdim)
-        outim = ehtim.image.Image(imarr, self.psize, self.ra, self.dec, 
+        outim = ehtim.image.Image(imarr, self.psize, self.ra, self.dec, self.pa,
                                     polrep=self.polrep, pol_prim=self.pol_prim, time=time,
                                     rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -635,7 +635,7 @@ class Movie(object):
         """Return a list of the movie frames
 
            Args:
-           
+
            Returns:
                (list): list of Image objects
         """
@@ -654,7 +654,7 @@ class Movie(object):
         # Make the primary image
         avg_imvec = np.mean(np.array(self.frames),axis=0)
         avg_imarr = avg_imvec.reshape(self.ydim, self.xdim)
-        outim = ehtim.image.Image(avg_imarr, self.psize, self.ra, self.dec, 
+        outim = ehtim.image.Image(avg_imarr, self.psize, self.ra, self.dec, self.pa,
                                   polrep=self.polrep, pol_prim=self.pol_prim, time=self.start_hr,
                                   rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -724,11 +724,11 @@ class Movie(object):
 
 
             # Get the frame visibilities
-            uv = recarr_to_ndarr(obsdata[['u','v']],'f8')        
-            im = self.get_frame(n) 
-            data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep, 
-                                        ttype=ttype, fft_pad_factor=fft_pad_factor, zero_empty_pol=True)
-            
+            uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
+            im = self.get_frame(n)
+            data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
+                                         ttype=ttype, fft_pad_factor=fft_pad_factor, zero_empty_pol=True)
+
             # Put visibilities into the obsdata
             if obs.polrep=='stokes':
                 obsdata['vis'] = data[0]
@@ -762,10 +762,10 @@ class Movie(object):
     def observe_same(self, obs_in, ttype='direct', fft_pad_factor=2,  repeat=False,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, frcal=True,dcal=True,
-                           stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                           stabilize_scan_phase=False, stabilize_scan_amp=False,
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
-                           gainp=GAINPDEF, gain_offset=GAINPDEF, 
+                           gainp=GAINPDEF, gain_offset=GAINPDEF,
                            dtermp=DTERMPDEF, dterm_offset=DTERMPDEF):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
@@ -774,7 +774,7 @@ class Movie(object):
                obs_in (Obsdata): the existing observation with  baselines where the image FT will be sampled
                ttype (str): if "fast" or "nfft", use FFT to produce visibilities. Else "direct" for DTFT
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-               
+
                repeat (bool): if True, repeat the movie to fill up the observation interval
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
@@ -785,7 +785,7 @@ class Movie(object):
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
-               
+
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
@@ -795,7 +795,7 @@ class Movie(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dtermp (float): the fractional std. dev. of the random error on the D-terms
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-          
+
             Returns:
                (Obsdata): an observation object
 
@@ -815,7 +815,7 @@ class Movie(object):
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dtermp=dtermp,dterm_offset=dterm_offset)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                          ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal,
                                          timetype=obs.timetype, scantable=obs.scans)
@@ -823,9 +823,9 @@ class Movie(object):
             if inv_jones:
                 obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
-                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                              source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
-                                             ampcal=ampcal, phasecal=phasecal, 
+                                             ampcal=ampcal, phasecal=phasecal,
                                              opacitycal=True, dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
                                              #these are always set to True after inverse jones call
@@ -837,7 +837,7 @@ class Movie(object):
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                          ampcal=ampcal, phasecal=phasecal, opacitycal=True, dcal=True, frcal=True,
                                          timetype=obs.timetype, scantable=obs.scans)
@@ -848,10 +848,10 @@ class Movie(object):
     def observe(self, array, tint, tadv, tstart, tstop, bw, repeat=False,
                       mjd=None, timetype='UTC', polrep_obs=None,
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
-                      ttype='nfft', fft_pad_factor=2, 
+                      ttype='nfft', fft_pad_factor=2,
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
-                      stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                      stabilize_scan_phase=False, stabilize_scan_amp=False,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
@@ -914,10 +914,10 @@ class Movie(object):
 
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat, 
+        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat,
                                      sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
-                                     stabilize_scan_phase=stabilize_scan_phase, stabilize_scan_amp=stabilize_scan_amp, 
+                                     stabilize_scan_phase=stabilize_scan_phase, stabilize_scan_amp=stabilize_scan_amp,
                                      gainp=gainp,gain_offset=gain_offset,
                                      tau=tau, taup=taup,
                                      dtermp=dtermp, dterm_offset=dterm_offset,
@@ -930,9 +930,9 @@ class Movie(object):
                           polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True,
-                          stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                          stabilize_scan_phase=False, stabilize_scan_amp=False,
                           jones=False, inv_jones=False,
-                          tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, 
+                          tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                           dtermp=DTERMPDEF, dterm_offset=DTERMPDEF, fix_theta_GMST=False):
 
         """Generate baselines from a vex file and observe the movie.
@@ -1023,12 +1023,12 @@ class Movie(object):
         obs = ehtim.obsdata.merge_obs(obs_List)
 
         obsout = movie.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=False,
-                                    sgrscat=sgrscat, add_th_noise=add_th_noise, 
+                                    sgrscat=sgrscat, add_th_noise=add_th_noise,
                                     opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal, frcal=frcal, dcal=dcal,
-                                    stabilize_scan_phase=stabilize_scan_phase, stabilize_scan_amp=stabilize_scan_amp, 
-                                    jones=jones, inv_jones=inv_jones, 
+                                    stabilize_scan_phase=stabilize_scan_phase, stabilize_scan_amp=stabilize_scan_amp,
+                                    jones=jones, inv_jones=inv_jones,
                                     tau=tau, taup=taup,
-                                    gainp=gainp, gain_offset=gain_offset, 
+                                    gainp=gainp, gain_offset=gain_offset,
                                     dtermp=dtermp, dterm_offset=dterm_offset)
 
         return obsout
@@ -1052,15 +1052,15 @@ class Movie(object):
 
            Args:
               fname (str): basename of output files
- 
+
            Returns:
         """
 
         ehtim.io.save.save_mov_fits(self, fname)
         return
 
-    def export_mp4(self, out='movie.mp4', fps=10, dpi=120, 
-                         interp='gaussian', scale='lin', dynamic_range=1000.0, cfun='afmhot', 
+    def export_mp4(self, out='movie.mp4', fps=10, dpi=120,
+                         interp='gaussian', scale='lin', dynamic_range=1000.0, cfun='afmhot',
                          nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1, verbose=False):
         """Save the Movie to an mp4 file
         """
@@ -1235,8 +1235,8 @@ def merge_im_list(imlist, framedur=-1):
         framedur = ((hour - hour0)/float(nframes))*3600.0
 
     # Make new  movie with primary polarization
-    newmov = Movie(framelist, 
-                   framedur, psize0, ra0, dec0, 
+    newmov = Movie(framelist,
+                   framedur, psize0, ra0, dec0,
                    polrep=polrep0, pol_prim=pol_prim0, start_hr=hour0,
                    rf=rf0, source=src0, mjd=mjd0, pulse=pulse)
 
@@ -1266,7 +1266,7 @@ def load_hdf5(file_name, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-
            source (str) : The source name
            pulse (function): The function convolved with the pixel values for continuous image
            polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
@@ -1286,7 +1286,7 @@ def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes
            framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
            polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
@@ -1306,7 +1306,7 @@ def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stoke
            framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
            polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:

@@ -125,16 +125,6 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
 
         # goodness-of-fit for the leakage-corrected data 
         chisq = chisq_total(data, im_circ, D)
-#        if not const_fpol:
-#            chisq = chisq_total(data, im_circ)
-#        else:
-#            fpol_model = D[-1]
-#            fpol_data_1  = 2.0 * data['rlvis']/(data['rrvis'] + data['llvis'])
-#            fpol_data_2  = 2.0 * np.conj(data['lrvis'])/(data['rrvis'] + data['llvis'])
-#            fpol_sigma_1 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['rlsigma']
-#            fpol_sigma_2 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['lrsigma']
-#            chisq = 0.5*np.mean(np.abs((fpol_model - fpol_data_1)/fpol_sigma_1)**2 
-#                              + np.abs((fpol_model - fpol_data_2)/fpol_sigma_2)**2)
 
         # prior on the D terms
         chisq_D = np.sum(np.abs(D/leakage_tol)**2)
@@ -231,7 +221,7 @@ def plot_leakage(obs, axis=False, rangex=False, rangey=False, markers=['o','s'],
 
     plot_points = []
     for i in range(len(tarr)):
-        color = clist[i]
+        color = clist[i%len(clist)]
         label = tarr['site'][i]
         plt.hold(True)
         dre, = x.plot(np.real(tarr['dr'][i])*100.0, np.imag(tarr['dr'][i])*100.0, markers[0], markersize=markersize, color=color,

@@ -197,8 +197,8 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
            (Caltable): the derived calibration table, if caltable==True
     """
 
-    if len(sites) < 2:
-        print("less than 2 stations specified in self cal: defaulting to calibrating all !")
+    if len(sites) == 0:
+        print("No stations specified in self cal: defaulting to calibrating all !")
         sites = list(set(scan['t1']).union(set(scan['t2'])))
 
     if len(V_scan) < 1:
