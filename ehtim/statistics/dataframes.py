@@ -644,7 +644,7 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
     tolerance: time tolerance to accept common subsets
     uniquely: whether matching single value to single value
     '''
-    if obs1.polrep==obs2.polrep:
+    if obs1.polrep!=obs2.polrep:
         raise ValueError('Observations must be in the same polrep!')
     #make a dataframe with visibilities
     #tolerance in seconds
