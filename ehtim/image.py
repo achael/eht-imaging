@@ -66,13 +66,13 @@ class Image(object):
 
            imvec (array): The vector of pixel I values in Jy/pixel (len xdim*ydim)
            polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular              
+           pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
 
     """
 
-    def __init__(self, image, psize, ra, dec, 
+    def __init__(self, image, psize, ra, dec, pa=0.0,
                        polrep='stokes', pol_prim=None,
-                       rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT, 
+                       rf=RF_DEFAULT, pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT,
                        mjd=MJD_DEFAULT, time=0.):
 
         """A polarimetric image (in units of Jy/pixel).
@@ -80,11 +80,12 @@ class Image(object):
            Args:
                image (numpy.array): The 2D intensity values in a Jy/pixel array
                polrep (str): polarization representation, either 'stokes' or 'circ'
-               pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+               pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
 
                psize (float): The pixel dimension in radians
                ra (float): The source Right Ascension in fractional hours
                dec (float): The source declination in fractional degrees
+               pa (float): logical positional angle of the image
                rf (float): The image frequency in Hz
                pulse (function): The function convolved with the pixel values for continuous image.
                source (str): The source name
@@ -117,7 +118,7 @@ class Image(object):
                 raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
 
         elif polrep=='circ':
-            if pol_prim is None: 
+            if pol_prim is None:
                 print("polrep is 'circ' and no pol_prim specified! Setting pol_prim='RR'")
                 pol_prim = 'RR'
             if pol_prim=='RR':
@@ -138,11 +139,15 @@ class Image(object):
         self.ydim = image.shape[0]
 
         # Save the image metadata
-        self.ra = float(ra)
+        self.ra  = float(ra)
         self.dec = float(dec)
-        self.rf = float(rf)
+        self.pa  = float(pa)
+        self.rf  = float(rf)
         self.source = str(source)
         self.mjd = int(mjd)
+
+        # Cached FFT of the image
+        self.cached_fft = {}
 
         if time > 24:
             self.mjd += int((time - time % 24)/24)
@@ -160,7 +165,7 @@ class Image(object):
         if len(vec) != self.xdim*self.ydim:
             raise Exception("imvec size is not consistent with xdim*ydim!")
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict[self.pol_prim] =  vec        
+        self._imdict[self.pol_prim] =  vec
 
     @property
     def ivec(self):
@@ -176,7 +181,7 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['I'] =  vec        
+        self._imdict['I'] =  vec
 
     @property
     def qvec(self):
@@ -192,7 +197,7 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['Q'] =  vec        
+        self._imdict['Q'] =  vec
 
     @property
     def uvec(self):
@@ -208,8 +213,8 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['U'] =  vec   
-   
+        self._imdict['U'] =  vec
+
     @property
     def vvec(self):
         if self.polrep!='stokes':
@@ -224,7 +229,7 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['V'] =  vec      
+        self._imdict['V'] =  vec
 
     @property
     def rrvec(self):
@@ -240,7 +245,7 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['RR'] =  vec      
+        self._imdict['RR'] =  vec
 
     @property
     def llvec(self):
@@ -256,7 +261,7 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['LL'] =  vec      
+        self._imdict['LL'] =  vec
 
     @property
     def rlvec(self):
@@ -272,7 +277,7 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['RL'] =  vec   
+        self._imdict['RL'] =  vec
 
     @property
     def lrvec(self):
@@ -291,8 +296,8 @@ class Image(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
-        self._imdict['LR'] =  vec      
-   
+        self._imdict['LR'] =  vec
+
     def copy(self):
 
         """Return a copy of the Image object.
@@ -304,7 +309,7 @@ class Image(object):
         """
 
         # Make new  image with primary polarization
-        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, 
+        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -324,7 +329,7 @@ class Image(object):
 
         for pol in list(self._imdict.keys()):
 
-            if (pol==self.pol_prim): 
+            if (pol==self.pol_prim):
                 continue
 
             polvec = old_image._imdict[pol]
@@ -333,7 +338,7 @@ class Image(object):
 
     def add_pol_image(self, image, pol):
 
-        """Add another image polarization. 
+        """Add another image polarization.
 
            Args:
                image (list): 2D image frame (possibly complex) in a Jy/pixel array
@@ -344,7 +349,7 @@ class Image(object):
             raise Exception("new pol in add_pol_image is the same as pol_prim!")
         if image.shape != (self.ydim, self.xdim):
             raise Exception("add_pol_image image shapes incompatible with primary image!")
-        if not (pol in list(self._imdict.keys())): 
+        if not (pol in list(self._imdict.keys())):
             raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._imdict.keys())))
 
         if self.polrep=='stokes':
@@ -400,7 +405,7 @@ class Image(object):
         """Return a new image with the polarization representation changed
            Args:
                polrep_out (str):  the polrep of the output data
-               pol_prim_out (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+               pol_prim_out (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
 
            Returns:
                (Image): new Image object with potentially different polrep
@@ -408,7 +413,7 @@ class Image(object):
 
         if polrep_out not in ['stokes','circ']:
             raise Exception("polrep_out must be either 'stokes' or 'circ'")
-        if pol_prim_out is None: 
+        if pol_prim_out is None:
             if polrep_out=='stokes': pol_prim_out = 'I'
             elif polrep_out=='circ': pol_prim_out = 'RR'
 
@@ -417,7 +422,7 @@ class Image(object):
             return self.copy()
 
         # Assemble a dictionary of new polarization vectors
-        if polrep_out=='stokes':                 
+        if polrep_out=='stokes':
             if self.polrep=='stokes':
                 imdict = {'I':self.ivec,'Q':self.qvec,'U':self.uvec,'V':self.vvec}
             else:
@@ -440,7 +445,7 @@ class Image(object):
         elif polrep_out=='circ':
             if self.polrep=='circ':
                 imdict = {'RR':self.rrvec,'LL':self.llvec,'RL':self.rlvec,'LR':self.lrvec}
-            else:   
+            else:
                 if len(self.ivec)==0 or len(self.vvec)==0:
                     rrvec = []
                     llvec = []
@@ -463,7 +468,7 @@ class Image(object):
             raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n"%(polrep_out,pol_prim_out) +
                             "output image is not defined")
 
-        newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, 
+        newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
                       polrep=polrep_out, pol_prim=pol_prim_out, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -520,7 +525,7 @@ class Image(object):
         """Return the 2D image array of a given pol parameter.
 
            Args:
-               pol (str): I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular 
+               pol (str): I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
 
            Returns:
                (numpy.array): 2D image array of dimension (ydim, xdim)
@@ -642,9 +647,9 @@ class Image(object):
         """
 
         if pol is None: pol=self.pol_prim
-        if not (pol in list(self._imdict.keys())): 
+        if not (pol in list(self._imdict.keys())):
             raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
-            
+
         pdim = self.psize
         imvec = self._imdict[pol]
         if len(imvec):
@@ -653,7 +658,7 @@ class Image(object):
             x0 = np.sum(np.outer(0.0*ylist+1.0, xlist).ravel()*imvec)/np.sum(imvec)
             y0 = np.sum(np.outer(ylist, 0.0*xlist+1.0).ravel()*imvec)/np.sum(imvec)
             centroid = np.array([x0, y0])
-        else: 
+        else:
             raise Exception("No %s image found!"  % pol)
 
         return centroid
@@ -681,7 +686,7 @@ class Image(object):
         imarr=np.pad(imarr,((pady,pady),(padx,padx)),'constant')
 
         # Make new image
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -723,9 +728,9 @@ class Image(object):
         ij = np.array([[[i*self.psize + (self.psize*self.xdim)/2.0 - self.psize/2.0, j*self.psize + (self.psize*self.ydim)/2.0 - self.psize/2.0]
                         for i in np.arange(0, -self.xdim, -1)]
                         for j in np.arange(0, -self.ydim, -1)]).reshape((self.xdim*self.ydim, 2))
-      
+
         def im_new_val(imvec,x_idx,y_idx):
-            x = x_idx*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0      
+            x = x_idx*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0
             y = y_idx*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0
             mask = (((x - ker_size*self.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*self.psize/2.0)) *
                     ((y - ker_size*self.psize/2.0) < ij[:,1]) * (ij[:,1] < (y + ker_size*self.psize/2.0))
@@ -747,7 +752,7 @@ class Image(object):
         imarr_new *= scaling
 
         # Make new image
-        outim = Image(imarr_new, psize_new, self.ra, self.dec, 
+        outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -800,7 +805,7 @@ class Image(object):
         # Make new image
         imarr_new = interp_imvec(self.imvec)
 
-        outim = Image(imarr_new, psize_new, self.ra, self.dec, 
+        outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -829,7 +834,7 @@ class Image(object):
         if interp=='linear': order=1
         elif interp=='cubic': order=3
         elif interp=='quintic': order=5
-        
+
         # Define an interpolation function
         def rot_imvec(imvec):
             if np.any(np.imag(imvec)!=0):
@@ -842,7 +847,7 @@ class Image(object):
 
         # Make new image
         imarr_rot = rot_imvec(self.imvec)
-        outim = Image(imarr_rot, self.psize, self.ra, self.dec, 
+        outim = Image(imarr_rot, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -875,7 +880,7 @@ class Image(object):
 
         # Make new image
         imarr_shift = shift_imvec(self.imvec)
-        outim = Image(imarr_shift, self.psize, self.ra, self.dec, 
+        outim = Image(imarr_shift, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -923,7 +928,7 @@ class Image(object):
             return gauss
 
         gauss = gaussim(frac)
-        if frac_pol: 
+        if frac_pol:
             gausspol = gaussim(frac_pol)
 
         # Define a convolution function
@@ -937,7 +942,7 @@ class Image(object):
         imarr = (self.imvec).reshape(self.ydim, self.xdim)
 
 
-        outim = Image(blur(imarr,gauss), self.psize, self.ra, self.dec, 
+        outim = Image(blur(imarr,gauss), self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -979,7 +984,7 @@ class Image(object):
         # Blur the primary image
         imarr = self.imvec.reshape(self.ydim, self.xdim)
         imarr = blur(imarr,sigmap)
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1030,7 +1035,7 @@ class Image(object):
 
         # Find the gradient for the primary image
         gradarr = gradim(self.imvec)
-        outim = Image(gradarr, self.psize, self.ra, self.dec, 
+        outim = Image(gradarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1081,7 +1086,7 @@ class Image(object):
 
         # make the primary image
         maskarr = maskvec.reshape(mask.ydim, mask.xdim)
-        mask = Image(maskarr, self.psize, self.ra, self.dec, 
+        mask = Image(maskarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1108,7 +1113,7 @@ class Image(object):
         if (self.psize != mask_im.psize) or (self.xdim != mask_im.xdim) or (self.ydim != mask_im.ydim):
             raise Exception("mask image does not match dimensions of the current image!")
 
-        # Get the mask vector        
+        # Get the mask vector
         maskvec = mask_im.imvec.astype(bool)
         maskvec[maskvec <= 0] = 0
         maskvec[maskvec > 0] = 1
@@ -1116,7 +1121,7 @@ class Image(object):
         # Mask the primary image
         imvec = self.imvec
         imvec[~maskvec] = fill_val
-        outim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, 
+        outim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1149,7 +1154,7 @@ class Image(object):
             cutoff=frac_i
             print("Warning!: using frac_i=%f as cutoff in threshold(). Rename 'frac_i' to 'cutoff' in future scripts!")
 
-        if fill_val is None or fill_val==False:        
+        if fill_val is None or fill_val==False:
             maxval = np.max(self.imvec)
             minval = np.min(self.imvec)
             #minval = np.max((np.min(self.imvec),0.))
@@ -1172,7 +1177,7 @@ class Image(object):
         """
 
         if pol is None: pol=self.pol_prim
-        if not (pol in list(self._imdict.keys())): 
+        if not (pol in list(self._imdict.keys())):
             raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
@@ -1185,7 +1190,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += flatarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1215,7 +1220,7 @@ class Image(object):
         """
 
         if pol is None: pol=self.pol_prim
-        if not (pol in list(self._imdict.keys())): 
+        if not (pol in list(self._imdict.keys())):
             raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
@@ -1230,13 +1235,13 @@ class Image(object):
 
         hatarr = hatarr[0:self.ydim, 0:self.xdim]
         hatarr *= flux / np.sum(hatarr)
-        
+
         # Add to the main image and create the new image object
         imarr = self.imvec.reshape(self.ydim, self.xdim).copy()
         if pol==self.pol_prim:
             imarr += hatarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1266,11 +1271,11 @@ class Image(object):
         """
 
         if pol is None: pol=self.pol_prim
-        if not (pol in list(self._imdict.keys())): 
+        if not (pol in list(self._imdict.keys())):
             raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
-        
+
         # Make a Gaussian image
         try:
             x=beamparams[3]
@@ -1300,7 +1305,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += gaussarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1335,7 +1340,7 @@ class Image(object):
         """
 
         if pol is None: pol=self.pol_prim
-        if not (pol in list(self._imdict.keys())): 
+        if not (pol in list(self._imdict.keys())):
             raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
@@ -1360,7 +1365,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += crescarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1394,7 +1399,7 @@ class Image(object):
         """
 
         if pol is None: pol=self.pol_prim
-        if not (pol in list(self._imdict.keys())): 
+        if not (pol in list(self._imdict.keys())):
             raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
@@ -1418,7 +1423,7 @@ class Image(object):
                           for i in xlist]
                           for j in ylist])
         ringarr = ringarr[0:self.ydim, 0:self.xdim]
-        tmp = Image(ringarr, self.psize, self.ra, self.dec, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        tmp = Image(ringarr, self.psize, self.ra, self.dec, self.pa, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         tmp = tmp.blur_circ(sigma)
         tmp.imvec *= flux/(tmp.total_flux())
         ringarr = tmp.imvec.reshape(self.ydim, self.xdim)
@@ -1428,7 +1433,7 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += ringarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, 
+        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
                       polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1477,7 +1482,7 @@ class Image(object):
 
         # create the new stokes image object
         iarr = ivec.reshape(im.ydim,im.xdim).copy()
-        outim = Image(iarr, self.psize, self.ra, self.dec, 
+        outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
                       polrep='stokes', pol_prim='I', time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1524,7 +1529,7 @@ class Image(object):
 
         # create the new stokes image object
         iarr = ivec.reshape(im.ydim,im.xdim).copy()
-        outim = Image(iarr, self.psize, self.ra, self.dec, 
+        outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
                       polrep='stokes', pol_prim='I', time=self.time,
                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
@@ -1533,7 +1538,7 @@ class Image(object):
         dist = 1.0 * 3.086e21
         rdiff = np.abs(corr) * dist / 1e3
         theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
-        sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)        
+        sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
         ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed)
         ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
         qvec = ivec * mag * np.sin(ps)
@@ -1545,7 +1550,7 @@ class Image(object):
             dist = 1.0 * 3.086e21
             rdiff = np.abs(ccorr) * dist / 1e3
             theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
-            sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)        
+            sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
             ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed*2)
             ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
             vvec = ivec * cmag * np.sin(ps)
@@ -1563,7 +1568,7 @@ class Image(object):
 
         return outim
 
-    def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', fft_pad_factor=2):
+    def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', cache=False, fft_pad_factor=2):
 
         """Sample the image on the selected uv points without adding noise.
 
@@ -1583,10 +1588,10 @@ class Image(object):
             raise Exception("polrep_obs must be either 'stokes' or 'circ'")
 
         data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=polrep_obs,
-                                       ttype=ttype, fft_pad_factor=fft_pad_factor)
+                                       ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor)
         return data
 
-    def observe_same_nonoise(self, obs, sgrscat=False,  ttype="nfft", fft_pad_factor=2):
+    def observe_same_nonoise(self, obs, sgrscat=False,  ttype="nfft", cache=False, fft_pad_factor=2):
 
         """Observe the image on the same baselines as an existing observation object without adding noise.
 
@@ -1619,8 +1624,8 @@ class Image(object):
 
         # Extract uv datasample
         uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
-        data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=obs.polrep, 
-                                       ttype=ttype, fft_pad_factor=fft_pad_factor)
+        data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
+                                       ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor)
 
         # put visibilities into the obsdata
         if obs.polrep=='stokes':
@@ -1642,13 +1647,13 @@ class Image(object):
                                              source=self.source, mjd=self.mjd, polrep=obs.polrep,
                                              ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
-        
+
         return obs_no_noise
 
     def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
-                           stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                           stabilize_scan_phase=False, stabilize_scan_amp=False,
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
@@ -1679,19 +1684,19 @@ class Image(object):
                gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
                taup (float): the fractional std. dev. of the random error on the opacities
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-               
+
                caltable_path (string): The path and prefix that a caltable is saved with if adding noise through a Jones matrix
                seed (int): seeds the random component of the noise terms. do not set to 0!
-               
+
            Returns:
                (Obsdata): an observation object
         """
 
         if seed!=False:
             np.random.seed(seed=seed)
-            
+
         obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
-        
+
         # Jones Matrix Corruption & Calibration
         if jones:
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
@@ -1700,10 +1705,10 @@ class Image(object):
                                                  stabilize_scan_phase=stabilize_scan_phase,
                                                  stabilize_scan_amp=stabilize_scan_amp,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
-                                                 dterm_offset=dterm_offset, 
+                                                 dterm_offset=dterm_offset,
                                                  caltable_path=caltable_path, seed=seed)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                          ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal,
                                          timetype=obs.timetype, scantable=obs.scans)
@@ -1711,9 +1716,9 @@ class Image(object):
             if inv_jones:
                 obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
-                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+                obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                              source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
-                                             ampcal=ampcal, phasecal=phasecal, 
+                                             ampcal=ampcal, phasecal=phasecal,
                                              opacitycal=True, dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
                                              #these are always set to True after inverse jones call
@@ -1722,15 +1727,15 @@ class Image(object):
         # No Jones Matrices, Add noise the old way
         # NOTE There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
         else:
-        
-            if caltable_path: 
+
+            if caltable_path:
                 print('WARNING: the caltable is currently only saved if you apply noise with a Jones Matrix')
-                
+
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset, seed=seed)
 
-            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr, 
+            obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                          ampcal=ampcal, phasecal=phasecal, opacitycal=True, dcal=True, frcal=True,
                                          timetype=obs.timetype, scantable=obs.scans)
@@ -1744,7 +1749,7 @@ class Image(object):
                       ttype='nfft', fft_pad_factor=2,
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
                       opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
-                      stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                      stabilize_scan_phase=False, stabilize_scan_amp=False,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
@@ -1788,7 +1793,7 @@ class Image(object):
                taup (float): the fractional std. dev. of the random error on the opacities
                dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
                seed (int): seeds the random component of noise added. do not set to 0!
-               
+
            Returns:
                (Obsdata): an observation object
         """
@@ -1805,7 +1810,7 @@ class Image(object):
                             tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, 
+        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor,
                                      sgrscat=sgrscat, add_th_noise=add_th_noise,
                                      opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal, rlgaincal=rlgaincal,
                                      stabilize_scan_phase=stabilize_scan_phase,
@@ -1821,7 +1826,7 @@ class Image(object):
                           polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
                           opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True, rlgaincal=True,
-                          stabilize_scan_phase=False, stabilize_scan_amp=False, 
+                          stabilize_scan_phase=False, stabilize_scan_amp=False,
                           jones=False, inv_jones=False,
                           tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
                           dterm_offset=DTERMPDEF):
@@ -2003,7 +2008,7 @@ class Image(object):
         for i in range(0, len(im_list)):
             (idx, _, im0_pad_orig, im_pad) = im0.find_shift(im_list[i], target_fov=2*max_fov, psize=psize,
                                                             scale=scale, gamma=gamma, dynamic_range=dynamic_range[i+1])
-            
+
             if i==0:
                 npix = int(im0_pad_orig.xdim/2)
                 im0_pad = im0_pad_orig.regrid_image(final_fov, npix)
@@ -2070,7 +2075,7 @@ class Image(object):
             im2_pad = im2_pad.blur_gauss(beamparams, blur_frac)
 
         # Rescale the image vectors into log or gamma scale
-        # TODO -- what about negative values? threshold?  
+        # TODO -- what about negative values? threshold?
         im1_pad_vec = im1_pad.imvec
         im2_pad_vec = im2_pad.imvec
         if scale=='log':
@@ -2145,7 +2150,7 @@ class Image(object):
                 #im_edges.imvec[mask] = 1
                 im_edges.imvec[~mask] = 0
                 edges = im_edges.imvec.reshape(self.ydim, self.xdim)
-        else: 
+        else:
             im_edges = im.copy()
             if not (thresh is None):
                 thresh_val = thresh*np.max(im_edges.imvec)
@@ -2312,24 +2317,24 @@ class Image(object):
         image = self.copy()
 
         #or some generalized version for image sizes
-        y = np.linspace(0, image.ydim, image.ydim) 
-        x = np.linspace(0, image.xdim, image.xdim) 
-        
+        y = np.linspace(0, image.ydim, image.ydim)
+        x = np.linspace(0, image.xdim, image.xdim)
+
 
         #make the image grid
         z = image.imvec.reshape((image.ydim ,image.xdim ))
         maxz = max(image.imvec)
         ax = plt.gca()
-        
+
         if show_im:
             image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
                       has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation)
         else:
-            image.imvec = 0.0*image.imvec  
+            image.imvec = 0.0*image.imvec
             image.display(cfun='afmhot',scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit, beamparams=beamparams) 
+                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit, beamparams=beamparams)
 
         ax = plt.gcf()
 
@@ -2337,7 +2342,7 @@ class Image(object):
         for level in contour_levels:
             rgbval = contour_cfun(count/len(contour_levels))
             rgbstring = '#%02x%02x%02x' % (rgbval[0]*256, rgbval[1]*256, rgbval[2]*256)
-            cs = plt.contour(x,y,z, levels=[level*maxz],colors=rgbstring, cmap=None ) 
+            cs = plt.contour(x,y,z, levels=[level*maxz],colors=rgbstring, cmap=None )
             count += 1
             cs.collections[0].set_label(str(int(level*100)) + '%')
         if legend:
@@ -2345,17 +2350,17 @@ class Image(object):
 
         if show:
             plt.ion()
-            plt.show(block=False)           
+            plt.show(block=False)
 
         if export_pdf != "":
             ax.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
-        
+
         return ax
 
 
-    def display(self, pol=None, cfun='afmhot', interp='gaussian', 
+    def display(self, pol=None, cfun='afmhot', interp='gaussian',
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
-                      plotp=False, nvec=20, pcut=0.1, 
+                      plotp=False, nvec=20, pcut=0.1,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical"):
@@ -2406,7 +2411,7 @@ class Image(object):
             has_cbar = True
             label_type = 'none'
             has_title = False
-        
+
         f = plt.figure()
         plt.clf()
 
@@ -2459,7 +2464,7 @@ class Image(object):
             try:
                 imvec = np.array(self._imdict[pol]).reshape(-1)
             except KeyError:
-                try: 
+                try:
                     if self.polrep=='stokes': im2 = self.switch_polrep('circ')
                     elif self.polrep=='circ': im2 = self.switch_polrep('stokes')
                     imvec = np.array(im2._imdict[pol]).reshape(-1)
@@ -2472,7 +2477,7 @@ class Image(object):
 
             imvec = imvec * factor
             imarr = imvec.reshape(self.ydim, self.xdim)
-            unit = fluxunit 
+            unit = fluxunit
             if areaunit != '':
                 unit += ' / ' + areaunit
 
@@ -2503,14 +2508,14 @@ class Image(object):
                 im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
 
             if not(beamparams is None or (beamparams==False).any()):
-                beamparams = [beamparams[0], beamparams[1], beamparams[2], 
+                beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35*self.fovx(), -.35*self.fovy()]
                 beamimage = self.copy()
                 beamimage.imvec *= 0
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
-                beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)   
-                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1) 
+                beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
+                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
 
             if has_cbar:
                 if only_cbar: im.set_visible(False)
@@ -2643,20 +2648,20 @@ class Image(object):
                    width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
 
             if not(beamparams is None or beamparams==False):
-                beamparams = [beamparams[0], beamparams[1], beamparams[2], 
+                beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35*self.fovx(), -.35*self.fovy()]
                 beamimage = self.copy()
                 beamimage.imvec *= 0
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
-                beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)   
+                beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
                 plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
 
             if has_cbar:
                 plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
-            if has_title: 
+            if has_title:
                 plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, 'I'), fontsize=12)
             f.subplots_adjust(hspace=-.5,wspace=0.1)
 
@@ -2704,7 +2709,7 @@ class Image(object):
                               shift=[0,0], final_fov=False,
                               scale='lin', gamma=0.5, dynamic_range=[1.e3]):
 
-        """Overlay primary polarization images of a list of images to compare structures.  
+        """Overlay primary polarization images of a list of images to compare structures.
 
            Args:
                im_list (list): list of images to align to the current image
@@ -2834,7 +2839,7 @@ def make_square(obs, npix, fov, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=N
            pulse (function): the function convolved with the pixel values for continuous image
 
            polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular              
+           pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
        Returns:
            (Image): an image object
     """
@@ -2846,8 +2851,8 @@ def make_square(obs, npix, fov, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=N
     return outim
 
 
-def make_empty(npix, fov, ra, dec, rf=RF_DEFAULT,source=SOURCE_DEFAULT, 
-               polrep='stokes', pol_prim=None,pulse=PULSE_DEFAULT, 
+def make_empty(npix, fov, ra, dec, rf=RF_DEFAULT,source=SOURCE_DEFAULT,
+               polrep='stokes', pol_prim=None,pulse=PULSE_DEFAULT,
                mjd=MJD_DEFAULT, time=0.):
 
     """Make an empty square image.
@@ -2861,7 +2866,7 @@ def make_empty(npix, fov, ra, dec, rf=RF_DEFAULT,source=SOURCE_DEFAULT,
 
            source (str): The source name
            polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            pulse (function): The function convolved with the pixel values for continuous image.
 
            mjd (int): The integer MJD of the image
@@ -2874,7 +2879,7 @@ def make_empty(npix, fov, ra, dec, rf=RF_DEFAULT,source=SOURCE_DEFAULT,
     pdim = fov/float(npix)
     npix = int(npix)
     imarr = np.zeros((npix,npix))
-    outim = Image(imarr, pdim, ra, dec, 
+    outim = Image(imarr, pdim, ra, dec,
                   polrep=polrep, pol_prim=pol_prim,
                   rf=rf, source=source, mjd=mjd, time=time, pulse=pulse)
     return outim
@@ -2895,23 +2900,23 @@ def load_image(image, display=False, aipscc=False):
     """
 
     if type(image) == type("str"):
-      if image.endswith('.fits'):  
+      if image.endswith('.fits'):
         im = ehtim.io.load.load_im_fits(image, aipscc=aipscc)
-      elif image.endswith('.txt'):   
+      elif image.endswith('.txt'):
         im = ehtim.io.load.load_im_txt(image)
       else:
         print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got <.{0}>. Returning False.".format(image.split('.')[-1]))
         return False
 
 
-    elif isinstance(image, ehtim.image.Image): 
+    elif isinstance(image, ehtim.image.Image):
       im = image
 
-    else: 
+    else:
       print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got {0}. Returning False.".format(type(image)))
       return False
 
-    if display: 
+    if display:
       im.display()
 
     return im
@@ -2925,7 +2930,7 @@ def load_txt(fname, polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT, zero_po
             fname (str): path to input text file
             pulse (function): The function convolved with the pixel values for continuous image.
             polrep (str): polarization representation, either 'stokes' or 'circ'
-            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
             zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
@@ -2934,17 +2939,17 @@ def load_txt(fname, polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT, zero_po
 
     return ehtim.io.load.load_im_txt(fname, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=True)
 
-def load_fits(fname, aipscc=False, pulse=PULSE_DEFAULT, 
+def load_fits(fname, aipscc=False, pulse=PULSE_DEFAULT,
               polrep='stokes', pol_prim=None,  zero_pol=False):
 
     """Read in an image from a FITS file.
 
        Args:
            fname (str): path to input fits file
-           aipscc (bool): if True, then AIPS CC table will be loaded 
+           aipscc (bool): if True, then AIPS CC table will be loaded
            pulse (function): The function convolved with the pixel values for continuous image.
-           polrep (str): polarization representation, either 'stokes' or 'circ'          
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
@@ -2953,4 +2958,3 @@ def load_fits(fname, aipscc=False, pulse=PULSE_DEFAULT,
 
     return ehtim.io.load.load_im_fits(fname, aipscc=aipscc,pulse=pulse,
                                       polrep=polrep, pol_prim=pol_prim,  zero_pol=zero_pol)
-
