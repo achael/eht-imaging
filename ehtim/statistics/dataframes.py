@@ -646,8 +646,8 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
     '''
     #make a dataframe with visibilities
     #tolerance in seconds
-    df1 = eh.statistics.dataframes.make_df(obs1)
-    df2 = eh.statistics.dataframes.make_df(obs2)
+    df1 = make_df(obs1)
+    df2 = make_df(obs2)
 
     #we need this to match baselines with possibly different station orders between the pipelines
     df1['ta'] = list(map(lambda x: sorted(x)[0],zip(df1.t1,df1.t2)))
@@ -669,8 +669,8 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
     #replace visibility data with common subset
     obs1cut = obs1.copy()
     obs2cut = obs2.copy()
-    obs1cut.data = eh.statistics.dataframes.df_to_rec(df1,'vis')
-    obs2cut.data = eh.statistics.dataframes.df_to_rec(df2,'vis')
+    obs1cut.data = df_to_rec(df1,'vis')
+    obs2cut.data = df_to_rec(df2,'vis')
 
     return obs1cut,obs2cut
 
