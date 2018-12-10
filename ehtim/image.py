@@ -2355,7 +2355,7 @@ class Image(object):
 
     def display(self, pol=None, cfun='afmhot', interp='gaussian', 
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
-                      plotp=False, nvec=20, pcut=0.1, 
+                      plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical"):
@@ -2480,7 +2480,10 @@ class Image(object):
                 if (imarr < 0.0).any():
                     print('clipping values less than 0 in display')
                     imarr[imarr<0.0] = 0.0
-                imarr = np.log10(imarr + np.max(imarr) / dynamic_range)
+                if log_offset:
+                    imarr = np.log10(imarr + log_offset / dynamic_range)
+                else:
+                    imarr = np.log10(imarr + np.max(imarr) / dynamic_range)
                 unit = r'$\log_{10}$(' + unit + ')'
 
             if scale=='gamma':
