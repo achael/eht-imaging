@@ -644,6 +644,8 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
     tolerance: time tolerance to accept common subsets
     uniquely: whether matching single value to single value
     '''
+    if obs1.polrep==obs2.polrep:
+        raise ValueError('Observations must be in the same polrep!')
     #make a dataframe with visibilities
     #tolerance in seconds
     df1 = make_df(obs1)
@@ -669,8 +671,12 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
     #replace visibility data with common subset
     obs1cut = obs1.copy()
     obs2cut = obs2.copy()
-    obs1cut.data = df_to_rec(df1,'vis')
-    obs2cut.data = df_to_rec(df2,'vis')
+    if obs1.polrep=='stokes':
+        obs1cut.data = df_to_rec(df1,'vis')
+        obs2cut.data = df_to_rec(df2,'vis')
+    elif obs1.polrep=='circ':
+        obs1cut.data = df_to_rec(df1,'vis_circ')
+        obs2cut.data = df_to_rec(df2,'vis_circ')
 
     return obs1cut,obs2cut
 
