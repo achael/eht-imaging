@@ -692,7 +692,7 @@ def match_multiple_frames(frames, what_is_same, dt = 0,uniquely=True):
 
     frames_out = []
     for frame in frames:
-        frame = frame[list(map(lambda x: x in frames_common, frame.all_ind))]
+        frame = frame[list(map(lambda x: x in frames_common, frame.all_ind))].copy()
         if uniquely:
             frame.drop_duplicates(subset=['all_ind'], keep='first', inplace=True)
 
