@@ -373,7 +373,7 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
 ##################################################################################################
 
 def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
-               stabilize_scan_phase=False, stabilize_scan_amp=False,
+               stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
                taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dterm_offset=DTERMPDEF,
                caltable_path=None, seed=False):
 
@@ -503,15 +503,23 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frca
             else:
                 gainr_string = 'gainR'
                 gainl_string = 'gainL'
+            
+            
+            gainR_constant = goff * hashrandn(site,gainr_string,str(goff),seed)
+            gainL_constant = goff * hashrandn(site,gainl_string,str(goff),seed)
+            if neggains:
+                gainR_constant = -np.abs(gainR_constant)
+                gainL_constant = -np.abs(gainL_constant)
+
 
             gainR = np.sqrt(np.abs(np.fromiter((
-                                                (1.0 + goff * hashrandn(site,gainr_string,str(goff),seed)) *
+                                                (1.0 + gainR_constant) *
                                                 (1.0 + gain_mult * hashrandn(site,'gain',str(time),str(gain_mult),seed))
                                                 for time in times_stable_amp
                                                ),float)))
 
             gainL = np.sqrt(np.abs(np.fromiter((
-                                                (1.0 + goff * hashrandn(site,gainl_string,str(goff),seed)) *
+                                                (1.0 + gainL_constant) *
                                                 (1.0 + gain_mult * hashrandn(site,'gain',str(time),str(gain_mult),seed))
                                                 for time in times_stable_amp
                                                ),float)))
@@ -697,7 +705,7 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
 
 def add_jones_and_noise(obs, add_th_noise=True,
                         opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
-                        stabilize_scan_phase=False, stabilize_scan_amp=False,
+                        stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
                         taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dterm_offset=DTERMPDEF,
                         caltable_path=None, seed=False):
 
@@ -730,7 +738,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
     # Build Jones Matrices
     jm_dict = make_jones(obs,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,dcal=dcal,frcal=frcal,rlgaincal=rlgaincal,
-                         stabilize_scan_phase=stabilize_scan_phase,stabilize_scan_amp=stabilize_scan_amp,
+                         stabilize_scan_phase=stabilize_scan_phase,stabilize_scan_amp=stabilize_scan_amp, neggains=neggains,
                          gainp=gainp, taup=taup, gain_offset=gain_offset, dterm_offset=dterm_offset,
                          caltable_path=caltable_path, seed=seed)
 

@@ -1653,7 +1653,7 @@ class Image(object):
     def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
                            opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
-                           stabilize_scan_phase=False, stabilize_scan_amp=False,
+                           stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
@@ -1675,6 +1675,7 @@ class Image(object):
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
+               neggains (bool): if True then force the applied gains to be negative meaning that you have overestimated your telescope's performance
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
@@ -1703,7 +1704,7 @@ class Image(object):
                                                  opacitycal=opacitycal, ampcal=ampcal,
                                                  phasecal=phasecal, dcal=dcal, frcal=frcal, rlgaincal=rlgaincal,
                                                  stabilize_scan_phase=stabilize_scan_phase,
-                                                 stabilize_scan_amp=stabilize_scan_amp,
+                                                 stabilize_scan_amp=stabilize_scan_amp, neggains=neggains,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dterm_offset=dterm_offset,
                                                  caltable_path=caltable_path, seed=seed)
