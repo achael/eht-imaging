@@ -99,14 +99,9 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            alpha_flux (float): The weighting for the total flux constraint
            alpha_cm (float): The weighting for the center of mass constraint
 
-           weighting (str): 'uniform' or 'natural' (default)
-           systematic_noise (float): Fractional systematic noise tolerance to add to sigmas
-           systematic_cphase_noise (float): Systematic noise tolerance  in degree to add to cphase sigmas
-           clipfloor (float): The Jy/pixel level above which prior image pixels are varied
-           beam_size (float): beam size in radians for normalizing the regularizers
-
-           stop (float): The convergence criterion
            maxit (int): Maximum number of minimizer iterations
+           stop (float): The convergence criterion
+           clipfloor (float): The Jy/pixel level above which prior image pixels are varied
 
            grads (bool): If True, analytic gradients are used
            logim (bool): If True, uses I = exp(I') change of variables
@@ -114,11 +109,21 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            norm_init (bool): If True, normalizes initial image to given total flux
            show_updates (bool): If True, displays the progress of the minimizer
 
+           weighting (str): 'natural' or 'uniform' 
+           debias (bool): if True then apply debiasing to amplitudes/closure amplitudes
+           systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
+           snrcut (float): a  snr cutoff for including data in the chi^2 sum
+           beam_size (float): beam size in radians for normalizing the regularizers
+
+           maxset (bool):  if True, use maximal set instead of minimal for closure quantities
+           systematic_cphase_noise (float): a value in degrees to add to the closure phase sigmas
+           cp_uv_min (float): flag baselines shorter than this before forming closure quantities
+
            ttype (str): The Fourier transform type; options are 'fast', 'direct', 'nfft'
            fft_pad_factor (float): The FFT will pre-pad the image by this factor x the original size
-           fft_interp (int): Interpolation order for sampling the FFT
-           grid_conv (str): The convolving function for gridding; options are 'gaussian', 'pill', and 'cubic'
-           grid_prad (int): The pixel radius for the convolving function in gridding for FFTs
+           order (int): Interpolation order for sampling the FFT
+           conv_func (str): The convolving function for gridding; options are 'gaussian', 'pill', and 'cubic'
+           p_rad (int): The pixel radius for the convolving function in gridding for FFTs
 
        Returns:
            Image: Image object with result
@@ -129,6 +134,7 @@ def imager_func(Obsdata, InitIm, Prior, flux,
     stop = kwargs.get('stop', STOP)
     clipfloor = kwargs.get('clipfloor', 0)
     ttype = kwargs.get('ttype','direct')
+
     grads = kwargs.get('grads',True)
     logim = kwargs.get('logim',True)
     norm_init = kwargs.get('norm_init',False)

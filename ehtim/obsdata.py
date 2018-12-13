@@ -830,9 +830,10 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', pol='I', mask=[], cp_uv_min=False,
-              debias=True, systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False,
-              ttype='nfft',fft_pad_factor=2):
+    def chisq(self, im, dtype='vis', pol='I', mask=[], **kwargs) 
+              #cp_uv_min=False,
+              #debias=True, systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False,
+              #ttype='nfft',fft_pad_factor=2):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
@@ -842,14 +843,21 @@ class Obsdata(object):
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec to screen out pixels in chi^2 computation
 
-                debias (bool): if True then apply debiasing to amplitudes/closure amplitudes
-                systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
-                systematic_noise_cphase (float): a value in degrees to add to the closure phase sigmas
-                maxset (bool): set to True to use a maximal set instead of minimal set
-
                 ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
                 fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
+                conv_func ('str'):  The convolving function for gridding; options are 'gaussian', 'pill', and 'cubic'
+                p_rad (int): The pixel radius for the convolving function in gridding for FFTs
+                order ('str'): Interpolation order for sampling the FFT        
+    
+                systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
+                snrcut (float): a  snr cutoff for including data in the chi^2 sum
+                debias (bool): if True then apply debiasing to amplitudes/closure amplitudes
+                weighting (str): 'natural' or 'uniform' 
+
+                systematic_cphase_noise (float): a value in degrees to add to the closure phase sigmas
                 cp_uv_min (float): flag baselines shorter than this before forming closure quantities
+                maxset (bool):  if True, use maximal set instead of minimal for closure quantities
+
            Returns:
                 (float): image chi^2
         """
@@ -859,11 +867,7 @@ class Obsdata(object):
         if pol not in im._imdict.keys():
             raise Exception(pol + ' is not in the current image. Consider changing the polarization basis of the image.')
 
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype,debias=debias,
-                                        fft_pad_factor=fft_pad_factor, maxset=maxset,
-                                        systematic_cphase_noise=systematic_cphase_noise,
-                                        systematic_noise=systematic_noise, cp_uv_min=cp_uv_min)
-
+        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, **kwargs)
         chisq = iu.chisq(im._imdict[pol], A, data, sigma, dtype, ttype=ttype, mask=mask)
 
         return chisq
