@@ -859,7 +859,7 @@ class Obsdata(object):
         if pol not in im._imdict.keys():
             raise Exception(pol + ' is not in the current image. Consider changing the polarization basis of the image.')
 
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype,
+        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype,debias=debias,
                                         fft_pad_factor=fft_pad_factor, maxset=maxset,
                                         systematic_cphase_noise=systematic_cphase_noise,
                                         systematic_noise=systematic_noise, cp_uv_min=cp_uv_min)
