@@ -158,11 +158,9 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
                                            source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
     else: # return a calibrated observation
-        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.concatenate(scans_cal), obs.tarr, 
-                                        polrep=obs.polrep, source=obs.source, mjd=obs.mjd,
-                                        ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
-                                        timetype=obs.timetype, scantable=obs.scans)
-        out = obs_cal
+        arglist, argdict = obs.obsdata_args()
+        arglist[4] = np.concatenate(scans_cal)
+        out = ehtim.obsdata.Obsdata(*arglist, **argdict)
 
     # close multiprocessing jobs
     if processes != -1:

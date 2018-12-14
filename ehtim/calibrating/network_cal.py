@@ -158,11 +158,9 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
         out = caltable
 
     else: # return the calibrated observation
-        obs_cal = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw,
-                                        np.concatenate(scans_cal), obs.tarr, source=obs.source, mjd=obs.mjd,
-                                        ampcal=obs.ampcal, phasecal=obs.phasecal, dcal=obs.dcal, frcal=obs.frcal,
-                                        timetype=obs.timetype, scantable=obs.scans, polrep=obs.polrep)
-        out = obs_cal
+        arglist, argdict = obs.obsdata_args()
+        arglist[4] = np.concatenate(scans_cal)
+        out = ehtim.obsdata.Obsdata(*arglist, **argdict)
 
     # close multiprocessing jobs
     if processes != -1:

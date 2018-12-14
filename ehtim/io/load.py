@@ -46,6 +46,7 @@ from ehtim.observing.obs_helpers import *
 
 import warnings
 warnings.filterwarnings("ignore", message="Mean of empty slice")
+warnings.filterwarnings("ignore", message="invalid value encountered in true_divide")
 
 ##################################################################################################
 # Vex IO
