@@ -1434,7 +1434,7 @@ class Obsdata(object):
         im = im/np.sum(im)
 
         src = self.source + "_DB"
-        outim = ehtim.image.Image(im, pdim, self.ra, self.dec, self.pa, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
+        outim = ehtim.image.Image(im, pdim, self.ra, self.dec, pdim, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
 
         return outim
 
@@ -1565,7 +1565,7 @@ class Obsdata(object):
         uim = uim[0:npix, 0:npix]
         vim = vim[0:npix, 0:npix]
 
-        out = ehtim.image.Image(im, pdim, self.ra, self.dec, self.pa, rf=self.rf, source=self.source, mjd=self.mjd, pulse=pulse)
+        out = ehtim.image.Image(im, pdim, self.ra, self.dec, pdim, rf=self.rf, source=self.source, mjd=self.mjd, pulse=pulse)
         out.add_qu(qim, uim)
         out.add_v(vim)
 
