@@ -2,7 +2,7 @@
 
 .. _imager:
 
-Stokes I Imager
+Imager
 ===============
 
 .. autofunction:: ehtim.imaging.imager_utils.imager_func
