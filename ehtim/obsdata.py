@@ -421,7 +421,6 @@ class Obsdata(object):
             elif f in ['u','v']:
                 data[f] = np.hstack((self.data[f], -self.data[f]))
 
-            #elif f in ['vis','qvis','uvis','vvis']:
             elif f in [self.poldict['vis1'],self.poldict['vis2'],
                        self.poldict['vis3'],self.poldict['vis4']]:
                 if self.polrep=='stokes':
