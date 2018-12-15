@@ -15,35 +15,29 @@ import math
 import os
 import datetime
 
-#debias=False
-
-#display parameters
-SCOLORS = eh.SCOLORS
-FONTSIZE = 22
-WSPACE=0.8
-HSPACE=0.3
-MARGINS=0.5
-PROCESSES=4
-MARKERSIZE=5
-
-plt.rc('font', family='serif')
-plt.rc('text', usetex=True)
-plt.rc('font', size=FONTSIZE)      
-plt.rc('axes', titlesize=FONTSIZE)
-plt.rc('axes', labelsize=FONTSIZE) 
-plt.rc('xtick', labelsize=FONTSIZE)
-plt.rc('ytick', labelsize=FONTSIZE) 
-plt.rc('legend', fontsize=FONTSIZE)    
-plt.rc('figure', titlesize=FONTSIZE) 
 
 ################################################################################
-################################################################################
-#im = eh.image.load_fits('./out.fits')
-#obs = eh.obsdata.load_uvfits('./obs.uvfits')
-#sys = 0.1
-def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv_min=False,
+def imgsum(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv_min=False,
          commentstr="", outdir='.',ebar=True,cfun='afmhot',sysnoise=0,syscnoise=0,fontsize=FONTSIZE,
          gainplots=True,cphaseplots=True,campplots=True):
+
+    SCOLORS = eh.SCOLORS
+    FONTSIZE = 22
+    WSPACE=0.8
+    HSPACE=0.3
+    MARGINS=0.5
+    PROCESSES=4
+    MARKERSIZE=5
+
+    plt.rc('font', family='serif')
+    plt.rc('text', usetex=True)
+    plt.rc('font', size=FONTSIZE)      
+    plt.rc('axes', titlesize=FONTSIZE)
+    plt.rc('axes', labelsize=FONTSIZE) 
+    plt.rc('xtick', labelsize=FONTSIZE)
+    plt.rc('ytick', labelsize=FONTSIZE) 
+    plt.rc('legend', fontsize=FONTSIZE)    
+    plt.rc('figure', titlesize=FONTSIZE) 
 
     with PdfPages(outname) as pdf:
         titlestr = 'Summary Sheet for %s on MJD %s' % (im.source, im.mjd)
@@ -529,20 +523,6 @@ def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv
                     switch = True
 
                 ax.set_xlabel('')
-    #            ax.set_xlim([0,1.e10])
-    #            ax.set_xticks([0,2.e9,4.e9,6.e9,8.e9,10.e9])
-    #            ax.set_xticklabels(["0","2","4","6","8","10"],fontsize=fontsize)
-    #            ax.set_xticks([1.e9,3.e9,5.e9,7.e9,9.e9], minor=True)
-    #            ax.set_xticklabels([], minor=True)
-
-    #            ax.set_ylabel('Amplitude (Jy)',fontsize=fontsize)
-    #            ax.set_ylim([0,1.2*flux])
-    #            yticks_maj = np.array([0,.2,.4,.6,.8,1])*flux
-    #            ax.set_yticks(yticks_maj)
-    #            ax.set_yticklabels(["%0.2f"%fl for fl in yticks_maj],fontsize=fontsize)
-    #            yticks_min = np.array([.1,.3,.5,.7,.9])*flux
-    #            ax.set_yticks(yticks_min,minor=True)
-    #            ax.set_yticklabels([], minor=True)
 
                 if i==3:
                     print('saving pdf page %i' % page)
@@ -593,20 +573,6 @@ def main(im, obs, obs_uncal, basename, outname, debias=True, aipscc=False, cp_uv
 
 
                 ax.set_xlabel('')
-    #            ax.set_xlim([0,1.e10])
-    #            ax.set_xticks([0,2.e9,4.e9,6.e9,8.e9,10.e9])
-    #            ax.set_xticklabels(["0","2","4","6","8","10"],fontsize=fontsize)
-    #            ax.set_xticks([1.e9,3.e9,5.e9,7.e9,9.e9], minor=True)
-    #            ax.set_xticklabels([], minor=True)
-
-    #            ax.set_ylabel('Amplitude (Jy)',fontsize=fontsize)
-    #            ax.set_ylim([0,1.2*flux])
-    #            yticks_maj = np.array([0,.2,.4,.6,.8,1])*flux
-    #            ax.set_yticks(yticks_maj)
-    #            ax.set_yticklabels(["%0.2f"%fl for fl in yticks_maj],fontsize=fontsize)
-    #            yticks_min = np.array([.1,.3,.5,.7,.9])*flux
-    #            ax.set_yticks(yticks_min,minor=True)
-    #            ax.set_yticklabels([], minor=True)
 
                 if i==3:
                     print('saving pdf page %i' % page)
@@ -762,7 +728,11 @@ if __name__=='__main__':
     elif outdir[-3:] == 'pdf': outname = outdir
     else: outname = outdir +'/' + basename + '.pdf'
 
-    main(im, obs, obs_uncal, basename, outname,  commentstr=opt.c, outdir=outdir,ebar=ebar,cfun=opt.cfun,
-         sysnoise=opt.systematic_noise,syscnoise=opt.systematic_cphase_noise,fontsize=opt.fontsize,
-         gainplots=gainplots,cphaseplots=cphaseplots,campplots=campplots, debias=debias, aipscc=aipscc, cp_uv_min=cp_uv_min)
+    args = [im, obs, obs_uncal, basename, outname]
+    kwargs = {'commentstr':opt.c, 'outdir':outdir,'ebar':ebar,'cfun':opt.cfun,
+              'sysnoise':opt.systematic_noise,'syscnoise':opt.systematic_cphase_noise,'fontsize':opt.fontsize,
+              'gainplots':gainplots,'cphaseplots':cphaseplots,'campplots':campplots, 'debias':debias, 'aipscc':aipscc, 
+              'cp_uv_min':cp_uv_min}
+
+    main(*args, **kwargs)
 

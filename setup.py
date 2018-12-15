@@ -17,6 +17,7 @@ if __name__ == "__main__":
           keywords = "imaging astronomy EHT polarimetry",
           url = "https://github.com/achael/eht-imaging",
           packages = ["ehtim",
+                      "scripts",
                       "ehtim.calibrating",
                       "ehtim.imaging",
                       "ehtim.io",
