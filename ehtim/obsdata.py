@@ -43,6 +43,7 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 from ehtim.statistics.dataframes import *
 from ehtim.statistics.stats import *
+import scipy.spatial as spatial
 
 import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
@@ -2103,7 +2104,6 @@ class Obsdata(object):
         obs_new = self.copy()
         npts = len(obs_new.data)
 
-        import scipy.spatial as spatial
         uvpoints = np.vstack((obs_new.data['u'], obs_new.data['v'])).transpose()
         uvpoints_tree1 = spatial.cKDTree(uvpoints)
         uvpoints_tree2 = spatial.cKDTree(-uvpoints)
@@ -2123,7 +2123,7 @@ class Obsdata(object):
         if weightdist < 1.0:
             for i in range(npts):
                 for sigma in ['sigma', 'qsigma', 'usigma', 'vsigma']:
-                    obs_new.data[sigma][i] = (1-weightdist)*obs_new.data[sigma][i]
+                    obs_new.data[sigma][i] += (1-weightdist)*self.data[sigma][i]
 
         return obs_new
 
