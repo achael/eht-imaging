@@ -8,5 +8,6 @@
 """
 from . import comp_plots
 from . import comparisons
+from . import summary_plots
 
 from ..const_def import *

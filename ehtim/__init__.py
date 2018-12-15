@@ -30,6 +30,7 @@ from ehtim.calibrating.network_cal import *
 from ehtim.calibrating.pol_cal import *
 from ehtim.plotting.comp_plots import *
 from ehtim.plotting.comparisons import *
+from ehtim.plotting.summary_plots import *
 
 from ehtim.calibrating.self_cal import self_cal as selfcal
 from ehtim.calibrating.network_cal import network_cal as netcal
