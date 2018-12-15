@@ -228,7 +228,7 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">movie</span><span class="p">,</span> <span class="n">framedur</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">RF_DEFAULT</span><span class="p">,</span>
                        <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                       <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span> 
+                       <span class="n">pulse</span><span class="o">=</span><span class="n">PULSE_DEFAULT</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">SOURCE_DEFAULT</span><span class="p">,</span>
                        <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;A polarimetric image (in units of Jy/pixel).</span>
@@ -241,7 +241,7 @@
 <span class="sd">               dec (float): The source declination in fractional degrees</span>
 <span class="sd">               rf (float): The image frequency in Hz</span>
 <span class="sd">               polrep (str): polarization representation, either &#39;stokes&#39; or &#39;circ&#39;</span>
-<span class="sd">               pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              </span>
+<span class="sd">               pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular</span>
 <span class="sd">               pulse (function): The function convolved with the pixel values for continuous image.</span>
 <span class="sd">               source (str): The source name</span>
 <span class="sd">               mjd (int): The integer MJD of the image</span>
@@ -271,7 +271,7 @@
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;for polrep==&#39;stokes&#39;, pol_prim must be &#39;I&#39;,&#39;Q&#39;,&#39;U&#39;, or &#39;V&#39;!&quot;</span><span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">pol_prim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="n">pol_prim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;polrep is &#39;circ&#39; and no pol_prim specified! Setting pol_prim=&#39;RR&#39;&quot;</span><span class="p">)</span>
                 <span class="n">pol_prim</span> <span class="o">=</span> <span class="s1">&#39;RR&#39;</span>
             <span class="k">if</span> <span class="n">pol_prim</span><span class="o">==</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span>
@@ -313,7 +313,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;imvec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
         <span class="c1">#TODO -- more checks on consistency with the existing pol data???</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">iframes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -331,7 +331,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">qframes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -349,7 +349,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">uframes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -367,8 +367,8 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
-   
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;U&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">vframes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -385,7 +385,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rrframes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -403,7 +403,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;RR&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">llframes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -421,7 +421,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;LL&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rlvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -439,7 +439,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;RL&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">lrvec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -457,7 +457,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;vec size is not consistent with xdim*ydim!&quot;</span><span class="p">)</span>
 
         <span class="c1">#TODO -- more checks on the consistency of the imvec with the existing pol data???</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>     
+        <span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="p">[</span><span class="s1">&#39;LR&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">frames</span>
 
 <div class="viewcode-block" id="Movie.copy"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -470,8 +470,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Make new  movie with primary polarization</span>
-        <span class="n">newmov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">([</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="k">for</span> <span class="n">imvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">],</span> 
-                       <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> 
+        <span class="n">newmov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">([</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="k">for</span> <span class="n">imvec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">],</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span>
                        <span class="n">polrep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span><span class="p">,</span>
                        <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -500,7 +500,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;new pol in add_pol_movie is the same as pol_prim!&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span> <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">movie</span><span class="p">])):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;add_pol_movie image shapes incompatible with primary image!&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pol</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span> 
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">pol</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;for polrep==</span><span class="si">%s</span><span class="s2">, pol in add_pol_movie must be in &quot;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_movdict</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -558,7 +558,7 @@
         <span class="sd">&quot;&quot;&quot;Return a new movie with the polarization representation changed</span>
 <span class="sd">           Args:</span>
 <span class="sd">               polrep_out (str):  the polrep of the output data</span>
-<span class="sd">               pol_prim_out (str): The default movie: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              </span>
+<span class="sd">               pol_prim_out (str): The default movie: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (Movie): new movie object with potentially different polrep</span>
@@ -566,7 +566,7 @@
 
         <span class="k">if</span> <span class="n">polrep_out</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span><span class="s1">&#39;circ&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;polrep_out must be either &#39;stokes&#39; or &#39;circ&#39;&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">pol_prim_out</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="n">pol_prim_out</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">polrep_out</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span> <span class="n">pol_prim_out</span> <span class="o">=</span> <span class="s1">&#39;I&#39;</span>
             <span class="k">elif</span> <span class="n">polrep_out</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span> <span class="n">pol_prim_out</span> <span class="o">=</span> <span class="s1">&#39;RR&#39;</span>
 
@@ -575,7 +575,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
         <span class="c1"># Assemble a dictionary of new polarization vectors</span>
-        <span class="k">if</span> <span class="n">polrep_out</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>                 
+        <span class="k">if</span> <span class="n">polrep_out</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
                 <span class="n">movdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;I&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">iframes</span><span class="p">,</span><span class="s1">&#39;Q&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">qframes</span><span class="p">,</span><span class="s1">&#39;U&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">uframes</span><span class="p">,</span><span class="s1">&#39;V&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">}</span>
             <span class="k">else</span><span class="p">:</span>
@@ -598,7 +598,7 @@
         <span class="k">elif</span> <span class="n">polrep_out</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
                 <span class="n">movdict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;RR&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">rrframes</span><span class="p">,</span><span class="s1">&#39;LL&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">llframes</span><span class="p">,</span><span class="s1">&#39;RL&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">rlframes</span><span class="p">,</span><span class="s1">&#39;LR&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">lrframes</span><span class="p">}</span>
-            <span class="k">else</span><span class="p">:</span>   
+            <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iframes</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
                     <span class="n">rrframes</span> <span class="o">=</span> <span class="p">[]</span>
                     <span class="n">llframes</span> <span class="o">=</span> <span class="p">[]</span>
@@ -621,8 +621,8 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;for switch_polrep to </span><span class="si">%s</span><span class="s2"> with pol_prim_out=</span><span class="si">%s</span><span class="s2">, </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">polrep_out</span><span class="p">,</span><span class="n">pol_prim_out</span><span class="p">)</span> <span class="o">+</span>
                             <span class="s2">&quot;output movie is not defined&quot;</span><span class="p">)</span>
 
-        <span class="n">newmov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> 
-                       <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> 
+        <span class="n">newmov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span>
                        <span class="n">polrep</span><span class="o">=</span><span class="n">polrep_out</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim_out</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span><span class="p">,</span>
                        <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -751,12 +751,12 @@
         <span class="sd">&quot;&quot;&quot;Return the (signed) total fractional circular polarized flux over time</span>
 
 <span class="sd">           Args:</span>
-<span class="sd">                </span>
+
 <span class="sd">           Returns:</span>
 <span class="sd">                (numpy.ndarray) : image fractional circular polarized flux per frame</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
-            <span class="n">frac</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iframes</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> 
+            <span class="n">frac</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vframes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iframes</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
                     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nframes</span><span class="p">)]</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">frac</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrframes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">llframes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rrframes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">llframes</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
@@ -770,7 +770,7 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">               n (int): the frame number</span>
-<span class="sd">           </span>
+
 <span class="sd">           Returns:</span>
 <span class="sd">               (Image): the Image object of the nth frame</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -782,7 +782,7 @@
 
         <span class="c1"># Make the primary image</span>
         <span class="n">imarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="n">outim</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> 
+        <span class="n">outim</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">,</span>
                                     <span class="n">polrep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
                                     <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -802,7 +802,7 @@
         <span class="sd">&quot;&quot;&quot;Return a list of the movie frames</span>
 
 <span class="sd">           Args:</span>
-<span class="sd">           </span>
+
 <span class="sd">           Returns:</span>
 <span class="sd">               (list): list of Image objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -821,7 +821,7 @@
         <span class="c1"># Make the primary image</span>
         <span class="n">avg_imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">avg_imarr</span> <span class="o">=</span> <span class="n">avg_imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
-        <span class="n">outim</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">avg_imarr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> 
+        <span class="n">outim</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">avg_imarr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psize</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">,</span>
                                   <span class="n">polrep</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span><span class="p">,</span>
                                   <span class="n">rf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -891,11 +891,11 @@
 
 
             <span class="c1"># Get the frame visibilities</span>
-            <span class="n">uv</span> <span class="o">=</span> <span class="n">recarr_to_ndarr</span><span class="p">(</span><span class="n">obsdata</span><span class="p">[[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">]],</span><span class="s1">&#39;f8&#39;</span><span class="p">)</span>        
-            <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_frame</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> 
-            <span class="n">data</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">sample_vis</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> 
-                                        <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span> <span class="n">zero_empty_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            
+            <span class="n">uv</span> <span class="o">=</span> <span class="n">recarr_to_ndarr</span><span class="p">(</span><span class="n">obsdata</span><span class="p">[[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span><span class="s1">&#39;v&#39;</span><span class="p">]],</span><span class="s1">&#39;f8&#39;</span><span class="p">)</span>
+            <span class="n">im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_frame</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">sample_vis</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">uv</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span>
+                                         <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span> <span class="n">zero_empty_pol</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
             <span class="c1"># Put visibilities into the obsdata</span>
             <span class="k">if</span> <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
                 <span class="n">obsdata</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -929,10 +929,10 @@
 <div class="viewcode-block" id="Movie.observe_same"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe_same">[docs]</a>    <span class="k">def</span> <span class="nf">observe_same</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_in</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;direct&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>  <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                            <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                            <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                           <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                           <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                            <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                            <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span>
-                           <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> 
+                           <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span>
                            <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">,</span> <span class="n">dterm_offset</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Observe the image on the same baselines as an existing observation object and add noise.</span>
@@ -941,7 +941,7 @@
 <span class="sd">               obs_in (Obsdata): the existing observation with  baselines where the image FT will be sampled</span>
 <span class="sd">               ttype (str): if &quot;fast&quot; or &quot;nfft&quot;, use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
 <span class="sd">               fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT</span>
-<span class="sd">               </span>
+
 <span class="sd">               repeat (bool): if True, repeat the movie to fill up the observation interval</span>
 <span class="sd">               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
 <span class="sd">               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point</span>
@@ -952,7 +952,7 @@
 <span class="sd">               stabilize_scan_phase (bool): if True, random phase errors are constant over scans</span>
 <span class="sd">               stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans</span>
 <span class="sd">               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</span>
-<span class="sd">               </span>
+
 <span class="sd">               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</span>
 <span class="sd">               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</span>
 
@@ -962,7 +962,7 @@
 <span class="sd">               taup (float): the fractional std. dev. of the random error on the opacities</span>
 <span class="sd">               dtermp (float): the fractional std. dev. of the random error on the D-terms</span>
 <span class="sd">               dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site</span>
-<span class="sd">          </span>
+
 <span class="sd">            Returns:</span>
 <span class="sd">               (Obsdata): an observation object</span>
 
@@ -982,7 +982,7 @@
                                                  <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span>
                                                  <span class="n">dtermp</span><span class="o">=</span><span class="n">dtermp</span><span class="p">,</span><span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">)</span>
 
-            <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> 
+            <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
                                          <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">obs_in</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span>
                                          <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span>
                                          <span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">,</span> <span class="n">scantable</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="p">)</span>
@@ -990,9 +990,9 @@
             <span class="k">if</span> <span class="n">inv_jones</span><span class="p">:</span>
                 <span class="n">obsdata</span> <span class="o">=</span> <span class="n">simobs</span><span class="o">.</span><span class="n">apply_jones_inverse</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">)</span>
 
-                <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> 
+                <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
                                              <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">obs_in</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span>
-                                             <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> 
+                                             <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span>
                                              <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                              <span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">,</span> <span class="n">scantable</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="p">)</span>
                                              <span class="c1">#these are always set to True after inverse jones call</span>
@@ -1004,7 +1004,7 @@
                                        <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span>
                                        <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">)</span>
 
-            <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> 
+            <span class="n">obs</span> <span class="o">=</span>  <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">obsdata</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
                                          <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">obs_in</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span>
                                          <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                          <span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">,</span> <span class="n">scantable</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="p">)</span>
@@ -1015,10 +1015,10 @@
 <div class="viewcode-block" id="Movie.observe"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.observe">[docs]</a>    <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="n">mjd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">elevmin</span><span class="o">=</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ELEV_HIGH</span><span class="p">,</span>
-                      <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> 
+                      <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                       <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                       <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                      <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                      <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span>
                       <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span>
@@ -1081,10 +1081,10 @@
 
 
         <span class="c1"># Observe on the same baselines as the empty observation and add noise</span>
-        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">,</span> 
+        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">repeat</span><span class="p">,</span>
                                      <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span>
                                      <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span><span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span><span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span><span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span><span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span>
-                                     <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="n">stabilize_scan_phase</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="n">stabilize_scan_amp</span><span class="p">,</span> 
+                                     <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="n">stabilize_scan_phase</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="n">stabilize_scan_amp</span><span class="p">,</span>
                                      <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span><span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span>
                                      <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
                                      <span class="n">dtermp</span><span class="o">=</span><span class="n">dtermp</span><span class="p">,</span> <span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">,</span>
@@ -1097,9 +1097,9 @@
                           <span class="n">polrep_obs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
                           <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                           <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                          <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                          <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                           <span class="n">jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                          <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> 
+                          <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gainp</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">GAINPDEF</span><span class="p">,</span>
                           <span class="n">dtermp</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">,</span> <span class="n">dterm_offset</span><span class="o">=</span><span class="n">DTERMPDEF</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Generate baselines from a vex file and observe the movie.</span>
@@ -1190,12 +1190,12 @@
         <span class="n">obs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">merge_obs</span><span class="p">(</span><span class="n">obs_List</span><span class="p">)</span>
 
         <span class="n">obsout</span> <span class="o">=</span> <span class="n">movie</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">fft_pad_factor</span><span class="o">=</span><span class="n">fft_pad_factor</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                                    <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span> 
+                                    <span class="n">sgrscat</span><span class="o">=</span><span class="n">sgrscat</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="n">add_th_noise</span><span class="p">,</span>
                                     <span class="n">opacitycal</span><span class="o">=</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">frcal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">dcal</span><span class="p">,</span>
-                                    <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="n">stabilize_scan_phase</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="n">stabilize_scan_amp</span><span class="p">,</span> 
-                                    <span class="n">jones</span><span class="o">=</span><span class="n">jones</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="n">inv_jones</span><span class="p">,</span> 
+                                    <span class="n">stabilize_scan_phase</span><span class="o">=</span><span class="n">stabilize_scan_phase</span><span class="p">,</span> <span class="n">stabilize_scan_amp</span><span class="o">=</span><span class="n">stabilize_scan_amp</span><span class="p">,</span>
+                                    <span class="n">jones</span><span class="o">=</span><span class="n">jones</span><span class="p">,</span> <span class="n">inv_jones</span><span class="o">=</span><span class="n">inv_jones</span><span class="p">,</span>
                                     <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">,</span> <span class="n">taup</span><span class="o">=</span><span class="n">taup</span><span class="p">,</span>
-                                    <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span> 
+                                    <span class="n">gainp</span><span class="o">=</span><span class="n">gainp</span><span class="p">,</span> <span class="n">gain_offset</span><span class="o">=</span><span class="n">gain_offset</span><span class="p">,</span>
                                     <span class="n">dtermp</span><span class="o">=</span><span class="n">dtermp</span><span class="p">,</span> <span class="n">dterm_offset</span><span class="o">=</span><span class="n">dterm_offset</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">obsout</span></div>
@@ -1219,15 +1219,15 @@
 
 <span class="sd">           Args:</span>
 <span class="sd">              fname (str): basename of output files</span>
-<span class="sd"> </span>
+
 <span class="sd">           Returns:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">ehtim</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">save</span><span class="o">.</span><span class="n">save_mov_fits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>
         <span class="k">return</span></div>
 
-<div class="viewcode-block" id="Movie.export_mp4"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.export_mp4">[docs]</a>    <span class="k">def</span> <span class="nf">export_mp4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s1">&#39;movie.mp4&#39;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> 
-                         <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span> 
+<div class="viewcode-block" id="Movie.export_mp4"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.export_mp4">[docs]</a>    <span class="k">def</span> <span class="nf">export_mp4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s1">&#39;movie.mp4&#39;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+                         <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span>
                          <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">frame_pad_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Save the Movie to an mp4 file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1402,8 +1402,8 @@
         <span class="n">framedur</span> <span class="o">=</span> <span class="p">((</span><span class="n">hour</span> <span class="o">-</span> <span class="n">hour0</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">nframes</span><span class="p">))</span><span class="o">*</span><span class="mf">3600.0</span>
 
     <span class="c1"># Make new  movie with primary polarization</span>
-    <span class="n">newmov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">(</span><span class="n">framelist</span><span class="p">,</span> 
-                   <span class="n">framedur</span><span class="p">,</span> <span class="n">psize0</span><span class="p">,</span> <span class="n">ra0</span><span class="p">,</span> <span class="n">dec0</span><span class="p">,</span> 
+    <span class="n">newmov</span> <span class="o">=</span> <span class="n">Movie</span><span class="p">(</span><span class="n">framelist</span><span class="p">,</span>
+                   <span class="n">framedur</span><span class="p">,</span> <span class="n">psize0</span><span class="p">,</span> <span class="n">ra0</span><span class="p">,</span> <span class="n">dec0</span><span class="p">,</span>
                    <span class="n">polrep</span><span class="o">=</span><span class="n">polrep0</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim0</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="n">hour0</span><span class="p">,</span>
                    <span class="n">rf</span><span class="o">=</span><span class="n">rf0</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">src0</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd0</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">)</span>
 
@@ -1433,7 +1433,7 @@
 <span class="sd">           source (str) : The source name</span>
 <span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
 <span class="sd">           polrep (str): polarization representation, either &#39;stokes&#39; or &#39;circ&#39;</span>
-<span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              </span>
+<span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular</span>
 <span class="sd">           zero_pol (bool): If True, loads any missing polarizations as zeros</span>
 
 <span class="sd">       Returns:</span>
@@ -1453,7 +1453,7 @@
 <span class="sd">           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)</span>
 <span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
 <span class="sd">           polrep (str): polarization representation, either &#39;stokes&#39; or &#39;circ&#39;</span>
-<span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              </span>
+<span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular</span>
 <span class="sd">           zero_pol (bool): If True, loads any missing polarizations as zeros</span>
 
 <span class="sd">       Returns:</span>
@@ -1473,7 +1473,7 @@
 <span class="sd">           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)</span>
 <span class="sd">           pulse (function): The function convolved with the pixel values for continuous image</span>
 <span class="sd">           polrep (str): polarization representation, either &#39;stokes&#39; or &#39;circ&#39;</span>
-<span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              </span>
+<span class="sd">           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular</span>
 <span class="sd">           zero_pol (bool): If True, loads any missing polarizations as zeros</span>
 
 <span class="sd">       Returns:</span>

@@ -169,7 +169,7 @@
 <span id="id1"></span><h1>Image<a class="headerlink" href="#image" title="Permalink to this headline">¶</a></h1>
 <span class="target" id="module-ehtim.image"></span><dl class="class">
 <dt id="ehtim.image.Image">
-<em class="property">class </em><code class="descclassname">ehtim.image.</code><code class="descname">Image</code><span class="sig-paren">(</span><em>image</em>, <em>psize</em>, <em>ra</em>, <em>dec</em>, <em>polrep='stokes'</em>, <em>pol_prim=None</em>, <em>rf=230000000000.0</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>time=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ehtim.image.</code><code class="descname">Image</code><span class="sig-paren">(</span><em>image</em>, <em>psize</em>, <em>ra</em>, <em>dec</em>, <em>pa=0.0</em>, <em>polrep='stokes'</em>, <em>pol_prim=None</em>, <em>rf=230000000000.0</em>, <em>pulse=&lt;function trianglePulse2D&gt;</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>time=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image" title="Permalink to this definition">¶</a></dt>
 <dd><p>A polarimetric image (in units of Jy/pixel).</p>
 <dl class="attribute">
 <dt id="ehtim.image.Image.pulse">
@@ -389,6 +389,33 @@
 </tbody>
 </table>
 <p>Returns:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.add_random_pol">
+<code class="descname">add_random_pol</code><span class="sig-paren">(</span><em>mag</em>, <em>corr</em>, <em>cmag=0.0</em>, <em>ccorr=0.0</em>, <em>seed=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_random_pol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_random_pol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an image with the same total intensity but random linear and circular polarization images with specified correlation lengths</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mag</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; linear polarization fraction</li>
+<li><strong>corr</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; EVPA correlation length (radians)</li>
+<li><strong>cmag</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; circular polarization fraction</li>
+<li><strong>ccorr</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; CP correlation length (radians)</li>
+<li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; Seed for random number generation</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">output image</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -701,7 +728,7 @@ Returns metrics only for the primary polarization imvec!</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.display">
-<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>has_cbar=True</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
+<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -975,7 +1002,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe">
-<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>polrep_obs=None</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>fix_theta_GMST=False</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dtermp=0.1</em>, <em>dterm_offset=0.1</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>polrep_obs=None</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>fix_theta_GMST=False</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dterm_offset=0.1</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate baselines from an array object and observe the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1011,7 +1038,6 @@ Works off the primary image</p>
 <li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
 <li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
-<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
 <li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
 <li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; seeds the random component of noise added. do not set to 0!</li>
 </ul>
@@ -1029,7 +1055,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe_same">
-<code class="descname">observe_same</code><span class="sig-paren">(</span><em>obs_in</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gain_offset=0.1</em>, <em>gainp=0.1</em>, <em>dtermp=0.1</em>, <em>dterm_offset=0.1</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe_same</code><span class="sig-paren">(</span><em>obs_in</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>neggains=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gain_offset=0.1</em>, <em>gainp=0.1</em>, <em>dterm_offset=0.1</em>, <em>caltable_path=None</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe the image on the same baselines as an existing observation object and add noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1047,6 +1073,7 @@ Works off the primary image</p>
 <li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</li>
 <li><strong>stabilize_scan_phase</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random phase errors are constant over scans</li>
 <li><strong>stabilize_scan_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random amplitude errors are constant over scans</li>
+<li><strong>neggains</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True then force the applied gains to be negative meaning that you have overestimated your telescope&#8217;s performance</li>
 <li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</li>
 <li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</li>
 <li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</li>
@@ -1054,8 +1081,8 @@ Works off the primary image</p>
 <li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
 <li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
-<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
 <li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
+<li><strong>caltable_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; The path and prefix that a caltable is saved with if adding noise through a Jones matrix</li>
 <li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; seeds the random component of the noise terms. do not set to 0!</li>
 </ul>
 </td>
@@ -1072,7 +1099,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe_same_nonoise">
-<code class="descname">observe_same_nonoise</code><span class="sig-paren">(</span><em>obs</em>, <em>sgrscat=False</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe_same_nonoise</code><span class="sig-paren">(</span><em>obs</em>, <em>sgrscat=False</em>, <em>ttype='nfft'</em>, <em>cache=False</em>, <em>fft_pad_factor=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe the image on the same baselines as an existing observation object without adding noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1098,7 +1125,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe_vex">
-<code class="descname">observe_vex</code><span class="sig-paren">(</span><em>vex</em>, <em>source</em>, <em>t_int=0.0</em>, <em>tight_tadv=False</em>, <em>polrep_obs=None</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dterm_offset=0.1</em>, <em>dtermp=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_vex" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe_vex</code><span class="sig-paren">(</span><em>vex</em>, <em>source</em>, <em>t_int=0.0</em>, <em>tight_tadv=False</em>, <em>polrep_obs=None</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dterm_offset=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_vex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate baselines from a vex file and observes the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1128,7 +1155,6 @@ Works off the primary image</p>
 <li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
 <li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
-<li><strong>dtermp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the D-terms</li>
 </ul>
 </td>
 </tr>
@@ -1286,7 +1312,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.sample_uv">
-<code class="descname">sample_uv</code><span class="sig-paren">(</span><em>uv</em>, <em>sgrscat=False</em>, <em>polrep_obs='stokes'</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.sample_uv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.sample_uv" title="Permalink to this definition">¶</a></dt>
+<code class="descname">sample_uv</code><span class="sig-paren">(</span><em>uv</em>, <em>sgrscat=False</em>, <em>polrep_obs='stokes'</em>, <em>ttype='nfft'</em>, <em>cache=False</em>, <em>fft_pad_factor=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.sample_uv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.sample_uv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sample the image on the selected uv points without adding noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
