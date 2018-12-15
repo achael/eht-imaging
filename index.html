@@ -96,7 +96,7 @@
 <li class="toctree-l1"><a class="reference internal" href="obsdata.html">Obsdata</a></li>
 <li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
-<li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="imager.html">Imager</a></li>
 <li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
@@ -166,12 +166,11 @@
             
   <div class="section" id="ehtim-eht-imaging">
 <h1>ehtim (eht-imaging)<a class="headerlink" href="#ehtim-eht-imaging" title="Permalink to this headline">¶</a></h1>
-<p>Python modules for simulating and manipulating VLBI data and producing images with regularized gradient descent methods.</p>
-<p>The code can be found <a class="reference external" href="https://github.com/achael/eht-imaging">GitHub</a></p>
-<p>The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the <code class="xref py py-class docutils literal"><span class="pre">Image</span></code>, <code class="xref py py-class docutils literal"><span class="pre">Array</span></code>, and <code class="xref py py-class docutils literal"><span class="pre">Obsdata</span></code>. <code class="xref py py-class docutils literal"><span class="pre">Movie</span></code> and <code class="xref py py-class docutils literal"><span class="pre">Vex</span></code> provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. <a class="reference internal" href="imager.html#module-imager" title="imager"><code class="xref py py-class docutils literal"><span class="pre">imager</span></code></a> is a generic Stokes I imager class that can produce images from data sets using various data terms and regularizers.</p>
+<p>Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please submit a pull request or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;cfa&#46;harvard&#46;edu">achael<span>&#64;</span>cfa<span>&#46;</span>harvard<span>&#46;</span>edu</a> if you have trouble or need help for your application.</p>
+<p>The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the <code class="xref py py-class docutils literal"><span class="pre">Image</span></code>, <code class="xref py py-class docutils literal"><span class="pre">Array</span></code>, and <code class="xref py py-class docutils literal"><span class="pre">Obsdata</span></code>, which provide tools for manipulating images, simulating interferometric data from images, and plotting and analyzing these data. <code class="xref py py-class docutils literal"><span class="pre">Movie</span></code> and <code class="xref py py-class docutils literal"><span class="pre">Vex</span></code> provide tools for producing time-variable simulated data and observing with real VLBI tracks from .vex files. <a class="reference internal" href="imager.html#module-imager" title="imager"><code class="xref py py-class docutils literal"><span class="pre">imager</span></code></a> is a generic imager class that can produce images from data sets in various polarizationsusing various data terms and regularizers.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">If you have a problem please submit a pull request on the git repository and/or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;cfa&#46;harvard&#46;edu">achael<span>&#64;</span>cfa<span>&#46;</span>harvard<span>&#46;</span>edu</a></p>
+<p class="last">This is a pre-release of ehtim. If you have a problem please submit a pull request on the git repository and/or email <a class="reference external" href="mailto:achael&#37;&#52;&#48;cfa&#46;harvard&#46;edu">achael<span>&#64;</span>cfa<span>&#46;</span>harvard<span>&#46;</span>edu</a></p>
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
@@ -179,12 +178,20 @@
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install .
 </pre></div>
 </div>
-<p>It should install the depended libraries <a class="reference external" href="http://www.astropy.org/">astropy</a>, <a class="reference external" href="http://pypi.python.org/pypi/pyephem/">ephem</a>, <a class="reference external" href="http://pypi.python.org/pypi/future">future</a>, <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>, <a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="http://www.scipy.org/">scipy</a>, <a class="reference external" href="http://www.pandas.pydata.org/">pandas</a> automatically.</p>
-<p>If you want to use fast fourier transforms, you will also need to install <a class="reference external" href="https://github.com/NFFT/nfft">NFFT</a> and the <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynnft wrapper</a> before installing ehtim. The simplest way is to use <a class="reference external" href="https://anaconda.org/conda-forge/pynfft/">conda</a> to to install both NFFT and the pynfft wrapper.</p>
+<p>It should install most of the required libraries automatically (<a class="reference external" href="http://www.astropy.org/">astropy</a>, <a class="reference external" href="http://pypi.python.org/pypi/pyephem/">ephem</a>, <a class="reference external" href="http://pypi.python.org/pypi/future">future</a>, <a class="reference external" href="http://www.h5py.org/">h5py</a> ,`html` &lt;<a class="reference external" href="https://www.decalage.info/python/html">https://www.decalage.info/python/html</a>&gt;`_, <cite>networkx</cite> &lt;<a class="reference external" href="https://networkx.github.io/">https://networkx.github.io/</a>&gt;`_, <a class="reference external" href="http://www.numpy.org/">numpy</a>, <a class="reference external" href="http://www.pandas.pydata.org/">pandas</a> , <a class="reference external" href="http://www.matplotlib.org/">matplotlib</a>,  <cite>requests</cite>: &lt;<a class="reference external" href="http://docs.python-requests.org/en/master/">http://docs.python-requests.org/en/master/</a>&gt;`_, <a class="reference external" href="http://www.scipy.org/">scipy</a>, <a class="reference external" href="https://scikit-image.org/">skimage</a>).</p>
+<p><strong>If you want to use fast fourier transforms, you will also need to separately install `NFFT &lt;https://github.com/NFFT/nfft&gt;`_ and its `pynnft wrapper &lt;https://github.com/ghisvail/pyNFFT/&gt;`_</strong>. The simplest way is to use <a class="reference external" href="https://anaconda.org/conda-forge/pynfft/">conda</a> to to install both:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -c conda-forge pynfft
 </pre></div>
 </div>
-<p>Alternatively, first install NFFT following the instructions on the <a class="reference external" href="https://github.com/NFFT/nfft">github readme</a>, making sure to use the &#8211;enable-openmp flag in compilation. Then install <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynnft</a>, with pip, following the readme instructions to link the installation to where you installed NFFT.</p>
+<p>Alternatively, first install NFFT manually following the instructions on the <a class="reference external" href="https://github.com/NFFT/nfft">readme</a>, making sure to use the <a href="#id1"><span class="problematic" id="id2">:bash:`&#8211;enable-openmp`</span></a> flag in compilation. Then install <a class="reference external" href="https://github.com/ghisvail/pyNFFT/">pynfft</a>, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall <a href="#id3"><span class="problematic" id="id4">:python:`ehtim`</span></a></p>
+</div>
+<div class="section" id="tutorials">
+<h2>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h2>
+<p>Tutorials are in progress, but here are some ways to learn the code</p>
+<ul class="simple">
+<li>The script in <a class="reference external" href="https://github.com/achael/eht-imaging/blob/master/examples/example.py">examples/example.py</a> has a series of sample commands to load an image and array, generate data, and produce an image with regularized maximum likelihood on closure quantities.</li>
+<li><a class="reference external" href="https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0">Slides</a> from the EHT 2016 conference data generation and imaging workshop contain a tutorial on generating data externally with the vlbi imaging <a class="reference external" href="http://vlbiimaging.csail.mit.edu">website</a>, loading into the library, and producing an image.</li>
+</ul>
 </div>
 <div class="section" id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
@@ -196,27 +203,22 @@
 <li class="toctree-l1"><a class="reference internal" href="obsdata.html">Obsdata</a></li>
 <li class="toctree-l1"><a class="reference internal" href="movie.html">Movie</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vex.html">Vex</a></li>
-<li class="toctree-l1"><a class="reference internal" href="imager.html">Stokes I Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="imager.html">Imager</a></li>
 <li class="toctree-l1"><a class="reference internal" href="calibration.html">Calibration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plotting.html">Plotting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="scattering.html">Scattering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
 </ul>
 </div>
-<p>The documentation is in progress, but here are some other ways to learn to use the code:</p>
-<ul class="simple">
-<li>The file examples/example.py has a series of sample commands to load an image and array, generate data, and produce an image.</li>
-<li><a class="reference external" href="https://www.dropbox.com/s/7533ucj8bt54yh7/Bouman_Chael.pdf?dl=0">Slides</a> from the EHT2016 data generation and imaging workshop contain a tutorial on generating data with the vlbi imaging <a class="reference external" href="http://vlbiimaging.csail.mit.edu">website</a>, loading into the library, and producing an image.</li>
-</ul>
 </div>
 <div class="section" id="acknowledgements">
 <h2>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
-<p>The oifits_new code used for reading/writing .oifits files is a slightly modified version of Paul Boley&#8217;s package at <a class="reference external" href="http://astro.ins.urfu.ru/pages/~pboley/oifits">http://astro.ins.urfu.ru/pages/~pboley/oifits</a>. The oifits read/write functionality is still being tested and may not work with all versions of python or astropy.io.fits.</p>
+<p>The <a href="#id5"><span class="problematic" id="id6">:python:`oifits_new`</span></a> code used for reading/writing .oifits files is a slightly modified version of Paul Boley&#8217;s package at <a class="reference external" href="http://astro.ins.urfu.ru/pages/~pboley/oifits">http://astro.ins.urfu.ru/pages/~pboley/oifits</a>. The oifits read/write functionality is still being tested and may not work with all versions of python.</p>
 <p>This documentation is styled after <a class="reference external" href="https://github.com/dfm">dfm&#8217;s projects</a> and the documentation for <a class="reference external" href="https://github.com/krosenfeld/scatterbrane">scatterbrane</a></p>
 </div>
 <div class="section" id="license">
 <h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
-<p>ehtim is licensed under GPLv3. See LICENSE.txt for more details.</p>
+<p><a href="#id7"><span class="problematic" id="id8">:python:`ehtim`</span></a> is licensed under GPLv3. See LICENSE.txt for more details.</p>
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
