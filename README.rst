@@ -15,7 +15,7 @@ Download the latest version from the `GitHub repository <https://github.com/acha
 
     pip install .
 
-It should install most of the required libraries automatically (`astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_ ,`html <http://www.decalage.info/python/html>`_, `networkx <https://networkx.github.io/>`_, `numpy <http://www.numpy.org/>`_, `pandas <http://www.pandas.pydata.org/>`_ , `matplotlib <http://www.matplotlib.org/>`_,  `requests <http://docs.python-requests.org/en/master/>`_, `scipy <http://www.scipy.org/>`_, `skimage <https://scikit-image.org/>`_).
+It should install most of the required libraries automatically (`astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_ , `html <http://www.decalage.info/python/html>`_ ,`networkx <https://networkx.github.io/>`_, `numpy <http://www.numpy.org/>`_, `pandas <http://www.pandas.pydata.org/>`_ , `matplotlib <http://www.matplotlib.org/>`_,  `requests <http://docs.python-requests.org/en/master/>`_, `scipy <http://www.scipy.org/>`_, `skimage <https://scikit-image.org/>`_).
 
 **If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pynnft wrapper <https://github.com/ghisvail/pyNFFT/>`_. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to to install both:
 
