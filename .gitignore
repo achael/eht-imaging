@@ -1,1 +1,28 @@
+<<<<<<< HEAD
 doctrees/
+=======
+*__pycache__*
+*.pyc
+*~
+
+vex_files/*
+/#*
+docs/_build/*
+docs/build/
+local/*
+*test*
+imagingChallenge*
+tmp/*
+*.uvfits
+*.fits
+ehtim.egg-info/*
+dist/*
+
+build/*
+data/3C279JUN16.UVP
+data/OJ287AUG10B.UVP
+
+# Unit tests should be included
+!ehtim/tests/
+!ehtim/tests/test_*.py
+>>>>>>> b2f884532e83f5a9d85478b36ca7ad5b2264cc1e
