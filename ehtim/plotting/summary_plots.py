@@ -17,6 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #TODO add systematic noise to individual closure quantities? 
+
 from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
@@ -29,7 +30,7 @@ import os
 import datetime
 
 from ehtim.plotting.comp_plots import plotall_obs_compare, plot_cphase_obs_compare, plot_camp_obs_compare
-from ehtim.calibrating.self_cal import self_cal
+from ehtim.calibrating.self_cal import self_cal as selfcal
 from ehtim.const_def import *
 
 FONTSIZE = 22
@@ -415,7 +416,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             ax2 = plt.subplot(gs[0:2,2:6])
             obs_tmp = obs_uncal.copy()
             for i in range(1): 
-                ct = self_cal(obs_tmp, im, 
+                ct = selfcal(obs_tmp, im, 
                               method='amp', ttype='nfft', 
                               caltable=True, gain_tol=.2,
                               processes=PROCESSES)
