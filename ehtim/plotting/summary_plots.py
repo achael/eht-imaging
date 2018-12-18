@@ -558,7 +558,6 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             amax = 1.1*np.max(np.abs(np.abs(obs_model.data['vis'])))
             obs_all = [obs, obs_model]
             for bl in uniquebl:
-                print('bl')
                 ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
                 ax = plot_bl_obs_compare(obs_all,bl[0],bl[1], 'amp', rangey=[0,amax], 
                                          markersize=MARKERSIZE,debias=debias,
