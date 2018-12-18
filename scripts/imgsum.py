@@ -29,6 +29,7 @@ if __name__=='__main__':
     parser.add_argument('--no_gains', default=False,action='store_true',help="remove gain plots")
     parser.add_argument('--no_cphase', default=False,action='store_true',help="remove closure phase plots")
     parser.add_argument('--no_camp', default=False,action='store_true',help="remove closure amp plots")
+    parser.add_argument('--no_amp', default=False,action='store_true',help="remove closure amp plots")
 
     opt = parser.parse_args()
     print("Generating Image Summary PDF")
@@ -48,6 +49,8 @@ if __name__=='__main__':
     else: cphaseplots=True
     if opt.no_camp: campplots=False
     else: campplots=True
+    if opt.no_amp: ampplots=False
+    else: ampplots=True
 
     im = eh.image.load_fits(opt.inputim, aipscc=aipscc)
     obs = eh.obsdata.load_uvfits(opt.inputobs)
@@ -62,7 +65,7 @@ if __name__=='__main__':
     args = [im, obs, obs_uncal, outname]
     kwargs = {'commentstr':opt.c, 'outdir':outdir,'ebar':ebar,'cfun':opt.cfun,
               'sysnoise':opt.systematic_noise,'syscnoise':opt.systematic_cphase_noise,'fontsize':opt.fontsize,
-              'gainplots':gainplots,'cphaseplots':cphaseplots,'campplots':campplots, 'debias':debias,  
+              'gainplots':gainplots,'cphaseplots':cphaseplots,'campplots':campplots, 'ampplots':ampplots, 'debias':debias,  
               'cp_uv_min':cp_uv_min}
 
     eh.plotting.summary_plots.imgsum(*args, **kwargs)
