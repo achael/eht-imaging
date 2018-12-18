@@ -29,7 +29,7 @@ import math
 import os
 import datetime
 
-from ehtim.plotting.comp_plots import plotall_obs_compare, plot_cphase_obs_compare, plot_camp_obs_compare
+from ehtim.plotting.comp_plots import plotall_obs_compare, plot_bl_obs_compare, plot_cphase_obs_compare, plot_camp_obs_compare
 from ehtim.calibrating.self_cal import self_cal as selfcal
 from ehtim.const_def import *
 
@@ -42,7 +42,7 @@ MARKERSIZE=5
 
 def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="", 
            fontsize=FONTSIZE, cfun='afmhot',
-           gainplots=True,cphaseplots=True,campplots=True,ebar=True,
+           gainplots=True,ampplots=True, cphaseplots=True,campplots=True,ebar=True,
            debias=True, cp_uv_min=False,
            sysnoise=0,syscnoise=0):
 
@@ -61,6 +61,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
            cfun (float): matplotlib color function
 
            gainplots (bool): include gain plots or not
+           ampplots (bool): include amplitude consistency plots or not
            cphaseplots (bool): include closure phase consistency plots or not
            campplots (bool): include closure amplitude consistency plots or not
            ebar (bool): include error bars or not
@@ -386,8 +387,9 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         obs_tmp = obs_model.copy()
         obs_tmp.data['sigma']*=0.
         ax = plotall_obs_compare([obs, obs_tmp], 
-                                   'uvdist','amp', axis=ax,legend=False, clist=['k',SCOLORS[1]], 
-                                    ttype='nfft',show=False, ebar=ebar,markersize=MARKERSIZE)
+                                 'uvdist','amp', axis=ax,legend=False, clist=['k',SCOLORS[1]], 
+                                  ttype='nfft',show=False, debias=debias, 
+                                  ebar=ebar,markersize=MARKERSIZE)
         #modify the labels
         #ax.xaxis.label.set_visible(False)
         #ax.yaxis.label.set_visible(False)
@@ -539,8 +541,58 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         plt.close()
 
 ################################################################################
-        #plot the closure phases
+        #plot the visibility amplitudes
         page =3 
+        if ampplots:
+            print("===========================================")
+            print("plotting amplitudes")
+            fig = plt.figure(3, figsize=(18, 28), dpi=200)
+            plt.suptitle("Amplitude Plots",y=.9,va='center',fontsize=int(1.2*fontsize))
+            gs = gridspec.GridSpec(6,4, wspace=WSPACE, hspace=HSPACE)
+            i = 0
+            j = 0
+            switch=False
+
+            #PIN!
+            obs_model.data['sigma'] *= 0
+            amax = 1.1*np.max(np.abs(np.abs(obs_model.data['vis'])))
+            obs_all = [obs, obs_model]
+            for bl in uniquebl:
+                print('bl')
+                ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
+                ax = plot_bl_obs_compare(obs_all,bl[0],bl[1], 'amp', rangey=[0,amax], 
+                                         markersize=MARKERSIZE,debias=debias,
+                                         axis=ax,legend=False, clist=['k',SCOLORS[1]],
+                                         ttype='nfft',show=False, ebar=ebar)
+                if ax is None: continue
+                if switch:
+                    i += 1
+                    j = 0
+                    switch = False
+                else:
+                    j = 1
+                    switch = True
+
+                ax.set_xlabel('')
+
+                if i==3:
+                    print('saving pdf page %i' % page)
+                    page += 1
+                    pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
+                    plt.close()
+                    fig = plt.figure(3, figsize=(18, 28), dpi=200)
+                    gs = gridspec.GridSpec(6,4, wspace=WSPACE, hspace=HSPACE)
+                    i = 0
+                    j = 0
+                    switch = False
+
+            print('saving pdf page %i' % page)
+            page += 1
+            pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
+            plt.close()
+
+################################################################################
+        #plot the closure phases
         if cphaseplots:
             print("===========================================")
             print("plotting closure phases")
