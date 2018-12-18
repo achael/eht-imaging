@@ -99,7 +99,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
         if const_fpol: 
             fpol_model = D[-1]
             fpol_data_1  = 2.0 * data['rlvis']/(data['rrvis'] + data['llvis'])
-            fpol_data_2  = 2.0 * np.conj(data['lrvis'])/(data['rrvis'] + data['llvis'])
+            fpol_data_2  = 2.0 * np.conj(data['lrvis']/(data['rrvis'] + data['llvis']))
             fpol_sigma_1 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['rlsigma']
             fpol_sigma_2 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['lrsigma']
             return 0.5*np.mean(np.abs((fpol_model - fpol_data_1)/fpol_sigma_1)**2 
@@ -177,7 +177,7 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
     else:
         return [obs_test, D_fit[-1]]
 
-def plot_leakage(obs, axis=False, rangex=False, rangey=False, markers=['o','s'], markersize=6, 
+def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False, markers=['o','s'], markersize=6, 
                 export_pdf="", axislabels=True, legend=True, sort_tarr=True, show=True):
 
     """Plot polarimetric leakage terms in an observation
@@ -203,6 +203,10 @@ def plot_leakage(obs, axis=False, rangex=False, rangey=False, markers=['o','s'],
     tarr = obs.tarr.copy()
     if sort_tarr:
         tarr.sort(axis=0)
+
+    if len(sites):
+        mask = [t in sites for t in tarr['site']]
+        tarr = tarr[mask]
 
     clist = SCOLORS
 
