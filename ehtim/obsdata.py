@@ -508,7 +508,7 @@ class Obsdata(object):
 
         return np.array(datalist)
 
-    def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False, snrcut=0):
+    def unpack_bl(self, site1, site2, fields, ang_unit='deg', debias=False, timetype=False):
 
         """Unpack the data over time on the selected baseline site1-site2.
 
@@ -519,7 +519,6 @@ class Obsdata(object):
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
                 timetype (str): 'GMST' or 'UTC'
-                snrcut (float):  Flag amplitudes or visibilities with snr below this value
 
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
@@ -544,7 +543,7 @@ class Obsdata(object):
             for obs in scan:
                 if (obs['t1'], obs['t2']) == (site1, site2):
                     obs = np.array([obs])
-                    out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias, timetype=timetype, snrcut=snrcut)
+                    out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias, timetype=timetype)
 
                     allout.append(out)
 
@@ -553,7 +552,7 @@ class Obsdata(object):
 
         return np.array(allout)
 
-    def unpack(self, fields, mode='all', ang_unit='deg',  debias=False, conj=False, timetype=False, snrcut=0):
+    def unpack(self, fields, mode='all', ang_unit='deg',  debias=False, conj=False, timetype=False):
 
         """Unpack the data for the whole observation .
 
@@ -564,7 +563,6 @@ class Obsdata(object):
                 debias (bool): True to debias visibility amplitudes
                 conj (bool): True to include conjugate baselines
                 timetype (str): 'GMST' or 'UTC'
-                snrcut (float):  Flag amplitudes or visibilities with snr below this valuev
 
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
@@ -582,26 +580,26 @@ class Obsdata(object):
                 data = self.data_conj()
             else:
                 data = self.data
-            allout=self.unpack_dat(data, fields, ang_unit=ang_unit, debias=debias,timetype=timetype,snrcut=snrcut)
+            allout=self.unpack_dat(data, fields, ang_unit=ang_unit, debias=debias,timetype=timetype)
 
         elif mode=='time':
             allout=[]
             tlist = self.tlist(conj=True)
             for scan in tlist:
-                out=self.unpack_dat(scan, fields, ang_unit=ang_unit, debias=debias,timetype=timetype,snrcut=snrcut)
+                out=self.unpack_dat(scan, fields, ang_unit=ang_unit, debias=debias,timetype=timetype)
                 allout.append(out)
 
         elif mode=='bl':
             allout = []
             bllist = self.bllist()
             for bl in bllist:
-                out = self.unpack_dat(bl, fields, ang_unit=ang_unit, debias=debias,timetype=timetype,snrcut=snrcut)
+                out = self.unpack_dat(bl, fields, ang_unit=ang_unit, debias=debias,timetype=timetype)
                 allout.append(out)
 
         return allout
 
 
-    def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False, timetype=False, snrcut=0):
+    def unpack_dat(self, data, fields, conj=False, ang_unit='deg', debias=False, timetype=False):
 
         """Unpack the data in a passed data recarray.
 
@@ -612,7 +610,6 @@ class Obsdata(object):
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
                 timetype (str): 'GMST' or 'UTC'
-                snrcut (float):  Flag amplitudes or visibilities with snr below this value
 
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
@@ -769,47 +766,26 @@ class Obsdata(object):
                     ty  = 'f8'
 
             # Get arg/amps/snr
-            if field in ["vis", "qvis", "uvis","vvis","pvis","m","rrvis","llvis","rlvis","lrvis"]:   
-                if snrcut>0: #TODO SNRCUT ON m? 
-                    snrmask = np.abs(out)/np.abs(sig) > snrcut
-                    out = out[snrmask]
-
-            elif field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]:
+            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]:
                 out = np.abs(out)
-                if snrcut>0: #TODO SNRCUT ON m? 
-                    snrmask = (np.abs(out)/np.abs(sig)) > snrcut
-                    out = out[snrmask]
-                    sig = sig[snrmask]
                 if debias:
                     out = amp_debias(out, sig)
-
                 ty = 'f8'
             elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma",
                            "rrsigma","llsigma","rlsigma","lrsigma"]:
-                if snrcut>0: #TODO SNRCUT ON m? 
-                    snrmask = (np.abs(out)/np.abs(sig)) > snrcut
-                    sig = sig[snrmask]
                 out = np.abs(sig)
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "vphase","pphase",
                            "mphase","rrphase","llphase","lrphase","rlphase"]:
-                if snrcut>0: #TODO SNRCUT ON mphase? 
-                    out = out[np.abs(out)/sig > snrcut]
                 out = np.angle(out)/angle
                 ty = 'f8'
             elif field in ["sigma_phase","qsigma_phase","usigma_phase",
                            "vsigma_phase","psigma_phase","msigma_phase",
                            "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]:
-                if snrcut>0: #TODO SNRCUT ON mphase? 
-                    snrmask = np.abs(out)/sig > snrcut
-                    out = out[snrmask]
-                    sig = sig[snrmask]
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'
             elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr","rrsnr","llsnr","rlsnr","lrsnr"]:
                 out = np.abs(out)/np.abs(sig)
-                if snrcut>0: #TODO SNRCUT ON mphase? 
-                    out = out[out > snrcut]
                 ty = 'f8'
 
             # Reshape and stack with other fields
@@ -2888,6 +2864,7 @@ class Obsdata(object):
                marker (str): matplotlib plot marker
                markersize (int): size of plot markers
                label (str): plot legend label
+               snrcut (float): flag closure amplitudes with snr lower than this               
 
                grid (bool): Plot gridlines if True
                ebar (bool): Plot error bars if True
@@ -2939,18 +2916,18 @@ class Obsdata(object):
                 colors.append(cdict[(t1,t2)])
 
                 # Unpack data
-                dat = self.unpack_dat(bl, [field1,field2], ang_unit=ang_unit, debias=debias, timetype=timetype,snrcut=snrcut)
+                dat = self.unpack_dat(bl, [field1,field2], ang_unit=ang_unit, debias=debias, timetype=timetype)
                 alldata.append(dat)
 
                 # X error bars
                 if sigtype(field1):
-                    allsigx.append(self.unpack_dat(bl,[sigtype(field1)], ang_unit=ang_unit,snrcut=snrcut)[sigtype(field1)])
+                    allsigx.append(self.unpack_dat(bl,[sigtype(field1)], ang_unit=ang_unit)[sigtype(field1)])
                 else:
                     allsigx.append(None)
 
                 # Y error bars
                 if sigtype(field2):
-                    allsigy.append(self.unpack_dat(bl,[sigtype(field2)], ang_unit=ang_unit,snrcut=snrcut)[sigtype(field2)])
+                    allsigy.append(self.unpack_dat(bl,[sigtype(field2)], ang_unit=ang_unit)[sigtype(field2)])
                 else:
                     allsigy.append(None)
 
@@ -2960,17 +2937,17 @@ class Obsdata(object):
             colors = [color]
 
             # unpack data
-            alldata = [self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias,snrcut=snrcut)]
+            alldata = [self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)]
 
             # X error bars
             if sigtype(field1):
-                allsigx = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit,snrcut=snrcut)[sigtype(field1)]]
+                allsigx = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field1)]]
             else:
                 allsigx = [None]
 
             # Y error bars
             if sigtype(field2):
-                allsigy = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit,snrcut=snrcut)[sigtype(field2)]]
+                allsigy = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field2)]]
             else:
                 allsigy = [None]
 
@@ -2993,10 +2970,25 @@ class Obsdata(object):
             bl = bllist[i]
 
             # Flag out nans (to avoid problems determining plotting limits)
-            nan_mask = np.isnan(data[field1]) + np.isnan(data[field2])
-            data = data[~nan_mask]
-            if not sigy is None: sigy = sigy[~nan_mask]
-            if not sigx is None: sigx = sigx[~nan_mask]
+            mask = ~(np.isnan(data[field1]) + np.isnan(data[field2]))
+
+            # Flag out due to snrcut
+            if snrcut>0.:
+                sigs = [sigx,sigy]
+                for jj, field in enumerate([field1, field2]):
+                    if field in FIELDS_AMPS:
+                        fmask = data[field] / sigs[jj] > snrcut
+                    elif field in FIELDS_PHASE:
+                        fmask = sigs[jj] < (180./np.pi/snrcut)
+                    elif field in FIELDS_SNRS:
+                        fmask = data[field] > snrcut                
+                    else:
+                        fmask = np.ones(mask.shape).astype(bool)
+                    mask *= fmask
+
+            data = data[mask]
+            if not sigy is None: sigy = sigy[mask]
+            if not sigx is None: sigx = sigx[mask]
             if len(data) == 0:
                 continue
 
@@ -3115,11 +3107,32 @@ class Obsdata(object):
         if field not in FIELDS:
             raise Exception("valid fields are " + string.join(FIELDS))
 
-        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype, snrcut=snrcut)
+        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
+        sigmatype = sigtype(field)
+        if sigtype(field):
+            errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
+        else:
+            errdata = None
 
         # Flag out nans (to avoid problems determining plotting limits)
-        nan_mask = np.isnan(plotdata[field][:,0])
-        plotdata = plotdata[~nan_mask]
+        mask = ~np.isnan(plotdata[field][:,0])
+
+        # Flag out due to snrcut
+        if snrcut>0.:
+            if field in FIELDS_AMPS:
+                fmask = plotdata[field] / errdata[sigmatype] > snrcut
+            elif field in FIELDS_PHASE:
+                fmask = errdata[sigmatype] < (180./np.pi/snrcut)
+            elif field in FIELDS_SNRS:
+                fmask = plotdata[field] > snrcut                
+            else:
+                fmask = np.ones(mask.shape).astype(bool)
+            fmask = fmask[:,0]
+            mask *= fmask
+
+        plotdata = plotdata[mask]
+        if not errdata is None: 
+            errdata = errdata[mask]
 
         if not rangex:
             rangex = [self.tstart,self.tstop]
@@ -3141,8 +3154,6 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and sigtype(field)!=False:
-            errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias, snrcut=snrcut)
-            errdata = errdata[~nan_mask]
             x.errorbar(plotdata['time'][:,0], plotdata[field][:,0],yerr=errdata[sigtype(field)][:,0],
                        fmt=marker, markersize=markersize, color=color, linestyle='none', label=label)
         else:
@@ -3173,7 +3184,7 @@ class Obsdata(object):
 
     def plot_cphase(self, site1, site2, site3,
                           vtype='vis', cphases=[], force_recompute=False, 
-                          ang_unit='deg', timetype=False,
+                          ang_unit='deg', timetype=False, snrcut=0.,
                           axis=False, rangex=False, rangey=False,
                           color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
                           grid=True, ebar=True, axislabels=True, legend=False, 
@@ -3189,6 +3200,7 @@ class Obsdata(object):
                vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
                cphases (list): optionally pass in the closure phases so they don't have to be recomputed
                force_recompute (bool): if True, recompute closure phases instead of using stored data
+               snrcut (float): flag closure amplitudes with snr lower than this               
 
                ang_unit (str): phase unit 'deg' or 'rad'
                timetype (str): 'GMST' or 'UTC'
@@ -3227,7 +3239,8 @@ class Obsdata(object):
         if (len(cphases)==0) and not (self.cphase is None) and not force_recompute:
             cphases=self.cphase
 
-        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, cphases=cphases, force_recompute=force_recompute)
+        cpdata = self.cphase_tri(site1, site2, site3, vtype=vtype, timetype=timetype, 
+                                 cphases=cphases, force_recompute=force_recompute, snrcut=snrcut)
         plotdata = np.array([[obs['time'],obs['cphase']*angle,obs['sigmacp']] for obs in cpdata])
 
         nan_mask = np.isnan(plotdata[:,1])
@@ -3287,7 +3300,7 @@ class Obsdata(object):
 
     def plot_camp(self, site1, site2, site3, site4,
                         vtype='vis', ctype='camp', camps=[], force_recompute=False,
-                        debias=False, timetype=False,
+                        debias=False, timetype=False, snrcut=0.,
                         axis=False, rangex=False, rangey=False,
                         color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
                         grid=True, ebar=True,axislabels=True, legend=False, 
@@ -3305,6 +3318,7 @@ class Obsdata(object):
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                camps (list): optionally pass in camps so they don't have to be recomputed
                force_recompute (bool): if True, recompute closure amplitudes instead of using stored data
+               snrcut (float): flag closure amplitudes with snr lower than this               
 
                debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
                timetype (str): 'GMST' or 'UTC'
@@ -3345,7 +3359,7 @@ class Obsdata(object):
 
         # Get closure amplitudes (maximal set)
         cpdata = self.camp_quad(site1, site2, site3, site4,
-                                vtype=vtype, ctype=ctype,
+                                vtype=vtype, ctype=ctype, snrcut=snrcut,
                                 debias=debias, timetype=timetype,
                                 camps=camps,force_recompute=force_recompute)
 
@@ -3502,14 +3516,6 @@ def merge_obs(obs_List):
     arglist[TARRPOS] = tarr_merge 
     argdict['scantable'] = scan_merge
     mergeobs = Obsdata(*arglist, **argdict)
-
-#    mergeobs = Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge,
-#                       np.unique(np.concatenate([obs.tarr for obs in obs_List])),
-#                       polrep=obs_List[0].polrep, scantable=scan_merge,
-#                       source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal,
-#                       phasecal=obs_List[0].phasecal, opacitycal=obs_List[0].opacitycal,
-#                       dcal=obs_List[0].dcal, frcal=obs_List[0].frcal,
-#                       timetype=obs_List[0].timetype)
 
     return mergeobs
 

@@ -269,7 +269,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             cphases_model_all = obs_model.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=0.)
             mask = [cphase in cphases_obs for cphase in cphases_obs_all]
             cphases_model = cphases_model_all[mask]
-            print('cphase snr cut',snrcut_dict['cphase'],len(cphases_obs), len(cphases_model))
+            print('cphase snr cut',snrcut_dict['cphase'],' : kept', len(cphases_obs),'/', len(cphases_obs_all))
         else:
             cphases_model = obs_model.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=0.)
 
@@ -346,7 +346,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             camps_model_all = obs_model.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=False, snrcut=0.)
             mask = [camp['camp'] in camps_obs['camp'] for camp in camps_obs_all]
             camps_model = camps_model_all[mask]
-            print('closure amp snrcut',snrcut_dict['logcamp'],len(camps_obs), len(camps_model))
+            print('closure amp snrcut',snrcut_dict['logcamp'],': kept', len(camps_obs),'/', len(camps_obs_all))
         else:
             camps_model = obs_model.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=False, snrcut=0.)
 
@@ -420,7 +420,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         obs_tmp.data['sigma']*=0.
         ax = plotall_obs_compare([obs, obs_tmp], 
                                  'uvdist','amp', axis=ax,legend=False, clist=['k',SCOLORS[1]], 
-                                  ttype='nfft',show=False, debias=debias, 
+                                  ttype='nfft',show=False, debias=debias, snrcut=snrcut_dict['amp'],
                                   ebar=ebar,markersize=MARKERSIZE)
         #modify the labels
         ax.set_title('Calibrated Visiblity Amplitudes')
@@ -522,16 +522,15 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         for ii in range(0, len(uniquebl)):
             bl = uniquebl[ii]
 
-            amps_bl = obs.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=debias,snrcut=snrcut_dict['amp'])
+            amps_bl = obs.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=debias)
             if len(amps_bl)>0:
 
-                if snrcut_dict['amp']>0: #PIN
-                    amps_bl_all = obs.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=debias,snrcut=snrcut_dict['amp'])
-                    mask = [amp in amps_bl for amp in amps_bl_all] #??
-                    amps_bl_model_all = obs_model.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=False,snrcut=0.)
-                    amps_bl_model = amps_bl_model_all[mask]
-                else:
-                    amps_bl_model = obs_model.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=False,snrcut=0.)
+                amps_bl_model = obs_model.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=False)
+
+                if snrcut_dict['amp'] > 0:
+                    amask = amps_bl['amp']/amps_bl['sigma'] > snrcut_dict['amp']
+                    amps_bl = amps_bl[amask]
+                    amps_bl_model = amps_bl_model[amask]
 
                 chisq_bl = np.sum(np.abs((amps_bl['amp'] - amps_bl_model['amp'])/amps_bl['sigma'])**2)
                 npts = len(amps_bl_model)
@@ -564,7 +563,6 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
         ax.text(0.5,.975,chisqtab,ha="center",va="top",transform=ax.transAxes,size=fontsize)
 
-        
         #save the first page of the plot
         print('saving pdf page 2')
         #plt.tight_layout()
@@ -591,7 +589,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             obs_all = [obs, obs_model]
             for bl in uniquebl:
                 ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
-                ax = plot_bl_obs_compare(obs_all,bl[0],bl[1], 'amp', rangey=[0,amax], 
+                ax = plot_bl_obs_compare(obs_all, bl[0], bl[1], 'amp', rangey=[0,amax], 
                                          markersize=MARKERSIZE,debias=debias, snrcut=snrcut_dict['amp'],
                                          axis=ax,legend=False, clist=['k',SCOLORS[1]],
                                          ttype='nfft',show=False, ebar=ebar)

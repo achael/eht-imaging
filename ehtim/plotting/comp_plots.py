@@ -37,7 +37,7 @@ COLORLIST = SCOLORS
 def plotall_compare(obslist, imlist, field1, field2,
                     conj=False, debias=True, sgrscat=False,
                     ang_unit='deg', timetype='UTC', ttype='nfft',
-                    axis=False, rangex=False, rangey=False,
+                    axis=False, rangex=False, rangey=False, snrcut=0., 
                     clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
                     export_pdf="", grid=False, ebar=True,
                     axislabels=True, legend=True, show=True):
@@ -84,7 +84,7 @@ def plotall_compare(obslist, imlist, field1, field2,
                            ang_unit=ang_unit, timetype=timetype,
                            axis=axis, rangex=rangex, rangey=rangey,
                            grid=grid,ebar=ebar,axislabels=axislabels,
-                           show=False, tag_bl=False, legend=False,
+                           show=False, tag_bl=False, legend=False, snrcut=snrcut,
                            label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                            marker=markers[i], markersize=markersize)
 
@@ -123,6 +123,7 @@ def plot_bl_compare(obslist, imlist, site1, site2, field,
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           snrcut (float): a  snr cutoff
 
            axis (matplotlib.axes.Axes): add plot to this axis
            rangex (list): [xmin, xmax] x-axis limits
@@ -168,7 +169,7 @@ def plot_bl_compare(obslist, imlist, site1, site2, field,
 def plot_cphase_compare(obslist, imlist, site1, site2, site3,
                         vtype='vis', cphases=[],force_recompute=False,
                         ang_unit='deg', timetype='UTC', ttype='nfft',
-                        axis=False, rangex=False, rangey=False,
+                        axis=False, rangex=False, rangey=False, snrcut=0.,
                         clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
                         export_pdf="", grid=False, ebar=True,
                         axislabels=True, legend=True, show=True):
@@ -190,6 +191,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           snrcut (float): a  snr cutoff
 
            axis (matplotlib.axes.Axes): add plot to this axis
            rangex (list): [xmin, xmax] x-axis limits
@@ -232,7 +234,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
                                ang_unit=ang_unit, timetype=timetype,
                                axis=axis, rangex=rangex, rangey=rangey,
                                grid=grid,ebar=ebar,axislabels=axislabels,
-                               show=False, legend=False,
+                               show=False, legend=False, snrcut=snrcut,
                                label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                                marker=markers[i], markersize=markersize)
 
@@ -254,7 +256,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
 def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
                       vtype='vis', ctype='camp', camps=[], force_recompute=False,
                       debias=True, sgrscat=False, timetype='UTC', ttype='nfft',
-                      axis=False, rangex=False, rangey=False,
+                      axis=False, rangex=False, rangey=False, snrcut=0.,
                       clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
                       export_pdf="", grid=False, ebar=True,
                       axislabels=True, legend=True, show=True):
@@ -279,6 +281,7 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
 
            timetype (str): 'GMST' or 'UTC'
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           snrcut (float): a  snr cutoff
 
            axis (matplotlib.axes.Axes): add plot to this axis
            rangex (list): [xmin, xmax] x-axis limits
@@ -327,7 +330,7 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
                                debias=debias, timetype=timetype,
                                axis=axis, rangex=rangex, rangey=rangey,
                                grid=grid,ebar=ebar,axislabels=axislabels,
-                               show=False, legend=False,
+                               show=False, legend=False,snrcut=0.,
                                label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                                marker=markers[i], markersize=markersize)
 
@@ -369,6 +372,7 @@ def plotall_obs_compare(obslist, field1, field2, **kwargs):
            rangex (list): [xmin, xmax] x-axis limits
            rangey (list): [ymin, ymax] y-axis limits
            legendlabels (str): should be a list of labels of the same length of obslist or imlist
+           snrcut (float): a  snr cutoff
 
            grid (bool): Plot gridlines if True
            ebar (bool): Plot error bars if True
@@ -406,6 +410,7 @@ def plotall_obs_im_compare(obslist, imlist, field1, field2, **kwargs):
            rangex (list): [xmin, xmax] x-axis limits
            rangey (list): [ymin, ymax] y-axis limits
            legendlabels (str): should be a list of labels of the same length of obslist
+           snrcut (float): a  snr cutoff
 
            grid (bool): Plot gridlines if True
            ebar (bool): Plot error bars if True
@@ -441,6 +446,7 @@ def plot_bl_obs_compare(obslist,  site1, site2, field, **kwargs):
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           snrcut (float): a  snr cutoff
 
            rangex (list): [xmin, xmax] x-axis (time) limits
            rangey (list): [ymin, ymax] y-axis limits
@@ -478,6 +484,7 @@ def plot_bl_obs_im_compare(obslist, imlist, site1, site2, field, **kwargs):
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
            sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
+           snrcut (float): a  snr cutoff
 
            rangex (list): [xmin, xmax] x-axis (time) limits
            rangey (list): [ymin, ymax] y-axis limits
@@ -514,6 +521,7 @@ def plot_cphase_obs_compare(obslist,  site1, site2, site3, **kwargs):
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           snrcut (float): a  snr cutoff
 
            axis (matplotlib.axes.Axes): add plot to this axis
            rangex (list): [xmin, xmax] x-axis limits
@@ -553,6 +561,7 @@ def plot_cphase_obs_im_compare(obslist, imlist, site1, site2, site3, **kwargs):
            ang_unit (str): phase unit 'deg' or 'rad'
            timetype (str): 'GMST' or 'UTC'
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           snrcut (float): a  snr cutoff
 
            axis (matplotlib.axes.Axes): add plot to this axis
            rangex (list): [xmin, xmax] x-axis limits
@@ -596,6 +605,7 @@ def plot_camp_obs_compare(obslist,  site1, site2, site3, site4, **kwargs):
 
            timetype (str): 'GMST' or 'UTC'
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           snrcut (float): a  snr cutoff
 
            axis (matplotlib.axes.Axes): add plot to this axis
            rangex (list): [xmin, xmax] x-axis limits
@@ -639,6 +649,7 @@ def plot_camp_obs_im_compare(obslist,  imlist, site1, site2, site3, site4, **kwa
 
            timetype (str): 'GMST' or 'UTC'
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+           snrcut (float): a  snr cutoff
 
            axis (matplotlib.axes.Axes): add plot to this axis
            rangex (list): [xmin, xmax] x-axis limits

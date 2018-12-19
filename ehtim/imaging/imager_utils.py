@@ -2107,7 +2107,7 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
 ##################################################################################################
 # Chi^2 Data functions
 ##################################################################################################
-def apply_systematic_noise(data_arr, systematic_noise, pol):
+def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol):
     """apply systematic noise to VISIBILITIES or AMPLITUDES
        data_arr should have fields 't1','t2','u','v','vis','amp','sigma'
 
@@ -2128,6 +2128,7 @@ def apply_systematic_noise(data_arr, systematic_noise, pol):
     except ValueError:
         vis = amp.astype('c16')
 
+    snrmask = np.abs(amp/sigma) >= snrcut
 
     if type(systematic_noise) is dict:
         sys_level = np.zeros(len(t1))
@@ -2149,6 +2150,7 @@ def apply_systematic_noise(data_arr, systematic_noise, pol):
         sys_level = np.sqrt(2)*systematic_noise*np.ones(len(t1))
 
     mask = sys_level>=0.
+    mask = snrmask * mask
 
     sigma = np.linalg.norm([sigma, sys_level*np.abs(amp)], axis=0)[mask]
     vis = vis[mask]
@@ -2170,8 +2172,8 @@ def chisqdata_vis(Obsdata, Prior, mask, pol='I', **kwargs):
     vtype=vis_poldict[pol]
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
-    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
-    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
@@ -2193,7 +2195,7 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I',**kwargs):
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
     if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
-        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias,snrcut=snrcut)
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
 
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
@@ -2203,7 +2205,8 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I',**kwargs):
 
    
     # apply systematic noise and SNR cut
-    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
+    # TODO -- after pre-computed??
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2423,8 +2426,8 @@ def chisqdata_vis_fft(Obsdata, Prior,pol='I', **kwargs):
     vtype=vis_poldict[pol]
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
-    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
-    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2461,7 +2464,7 @@ def chisqdata_amp_fft(Obsdata, Prior,pol='I', **kwargs):
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
     if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
-        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
@@ -2469,7 +2472,7 @@ def chisqdata_amp_fft(Obsdata, Prior,pol='I', **kwargs):
         data_arr = Obsdata.amp
 
     # apply systematic noise
-    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise,snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2735,8 +2738,8 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I',**kwargs):
     vtype=vis_poldict[pol]
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
-    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias,snrcut=snrcut)
-    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2769,7 +2772,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I',**kwargs):
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
     if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
-        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
@@ -2777,7 +2780,7 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I',**kwargs):
         data_arr = Obsdata.amp
     
     # apply systematic noise 
-    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
+    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
 
     # data weighting
     if weighting=='uniform':
