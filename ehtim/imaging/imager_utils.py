@@ -2107,8 +2107,8 @@ def sgauss_grad(imvec, xdim, ydim, psize, major, minor, PA):
 ##################################################################################################
 # Chi^2 Data functions
 ##################################################################################################
-def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol):
-    """apply systematic noise and snrcut to VISIBILITIES or AMPLITUDES
+def apply_systematic_noise(data_arr, systematic_noise, pol):
+    """apply systematic noise to VISIBILITIES or AMPLITUDES
        data_arr should have fields 't1','t2','u','v','vis','amp','sigma'
 
        returns: (uv, vis, amp, sigma)
@@ -2128,7 +2128,6 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol):
     except ValueError:
         vis = amp.astype('c16')
 
-    snrmask = np.abs(amp/sigma) >= snrcut
 
     if type(systematic_noise) is dict:
         sys_level = np.zeros(len(t1))
@@ -2149,8 +2148,7 @@ def apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol):
     else:
         sys_level = np.sqrt(2)*systematic_noise*np.ones(len(t1))
 
-    sysmask = sys_level>=0.
-    mask = snrmask * sysmask
+    mask = sys_level>=0.
 
     sigma = np.linalg.norm([sigma, sys_level*np.abs(amp)], axis=0)[mask]
     vis = vis[mask]
@@ -2172,8 +2170,8 @@ def chisqdata_vis(Obsdata, Prior, mask, pol='I', **kwargs):
     vtype=vis_poldict[pol]
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
-    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
+    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
 
     # make fourier matrix
     A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
@@ -2195,17 +2193,17 @@ def chisqdata_amp(Obsdata, Prior, mask, pol='I',**kwargs):
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
     if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
-        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias,snrcut=snrcut)
+
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
         data_arr = Obsdata.amp
 
-    
-
+   
     # apply systematic noise and SNR cut
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
+    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2233,7 +2231,8 @@ def chisqdata_bs(Obsdata, Prior, mask, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0) or pol!='I':
-        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count)
+        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count,snrcut=snrcut)
+
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
@@ -2243,15 +2242,14 @@ def chisqdata_bs(Obsdata, Prior, mask, pol='I',**kwargs):
         if count!='max':   
             biarr = reduce_tri_minimal(Obsdata, biarr)
 
-    snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
-    bi = biarr['bispec'][snrmask]
-    sigma = biarr['sigmab'][snrmask]
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
+    bi = biarr['bispec']
+    sigma = biarr['sigmab']
 
     #add systematic noise
-    #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+    #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)
 
     # data weighting
     if weighting=='uniform':
@@ -2283,7 +2281,7 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
-        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min)
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min, snrcut=snrcut)
     else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
@@ -2293,12 +2291,11 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
         if count!='max':       
             clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
 
-    snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
-    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))[snrmask]
-    clphase = clphasearr['cphase'][snrmask]
-    sigma = clphasearr['sigmacp'][snrmask]
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
+    clphase = clphasearr['cphase']
+    sigma = clphasearr['sigmacp']
 
     #add systematic cphase noise (in DEGREES)
     sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)
@@ -2329,7 +2326,7 @@ def chisqdata_camp(Obsdata, Prior, mask, pol='I',**kwargs):
     # unpack data & mask low snr points
     vtype=vis_poldict[pol]
     if (Obsdata.camp is None) or (len(Obsdata.camp)==0) or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
@@ -2339,13 +2336,12 @@ def chisqdata_camp(Obsdata, Prior, mask, pol='I',**kwargs):
         if count!='max':       
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
-    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
-    clamp = clamparr['camp'][snrmask]
-    sigma = clamparr['sigmaca'][snrmask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
 
     # data weighting
     if weighting=='uniform':
@@ -2375,7 +2371,7 @@ def chisqdata_logcamp(Obsdata, Prior, mask,pol='I', **kwargs):
     # unpack data & mask low snr points
     vtype=vis_poldict[pol]
     if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0)  or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
@@ -2385,13 +2381,12 @@ def chisqdata_logcamp(Obsdata, Prior, mask,pol='I', **kwargs):
         if count!='max':       
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
-    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
-    clamp = clamparr['camp'][snrmask]
-    sigma = clamparr['sigmaca'][snrmask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
 
     # data weighting
     if weighting=='uniform':
@@ -2428,8 +2423,8 @@ def chisqdata_vis_fft(Obsdata, Prior,pol='I', **kwargs):
     vtype=vis_poldict[pol]
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
-    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
+    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2466,15 +2461,15 @@ def chisqdata_amp_fft(Obsdata, Prior,pol='I', **kwargs):
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
     if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
-        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
         data_arr = Obsdata.amp
 
-    # apply systematic noise and snr cut
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
+    # apply systematic noise
+    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2512,7 +2507,7 @@ def chisqdata_bs_fft(Obsdata, Prior, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0) or pol!='I':
-        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count)
+        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
@@ -2522,16 +2517,14 @@ def chisqdata_bs_fft(Obsdata, Prior, pol='I',**kwargs):
         if count!='max':   
             biarr = reduce_tri_minimal(Obsdata, biarr)
 
-
-    snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
-    bi = biarr['bispec'][snrmask]
-    sigma = biarr['sigmab'][snrmask]
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
+    bi = biarr['bispec']
+    sigma = biarr['sigmab']
 
     #add systematic noise
-    #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)[snrmask]
+    #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)
     
     # data weighting
     if weighting=='uniform':
@@ -2571,7 +2564,7 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
-        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min)
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min, snrcut=snrcut)
     else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
@@ -2582,12 +2575,11 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
             clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
 
 
-    snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
-    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))[snrmask]
-    clphase = clphasearr['cphase'][snrmask]
-    sigma = clphasearr['sigmacp'][snrmask]
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
+    clphase = clphasearr['cphase']
+    sigma = clphasearr['sigmacp']
 
     #add systematic cphase noise (in DEGREES)
     sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)
@@ -2627,10 +2619,10 @@ def chisqdata_camp_fft(Obsdata, Prior, pol='I',**kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
-    # unpack data & mask low snr points
+    # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.camp is None) or (len(Obsdata.camp)==0) or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias,snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
@@ -2641,13 +2633,12 @@ def chisqdata_camp_fft(Obsdata, Prior, pol='I',**kwargs):
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
 
-    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
-    clamp = clamparr['camp'][snrmask]
-    sigma = clamparr['sigmaca'][snrmask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
 
     # data weighting
     if weighting=='uniform':
@@ -2684,10 +2675,10 @@ def chisqdata_logcamp_fft(Obsdata, Prior,pol='I', **kwargs):
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
     order = kwargs.get('order', FFT_INTERP_DEFAULT)
 
-    # unpack data & mask low snr points
+    # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0)  or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
@@ -2697,13 +2688,12 @@ def chisqdata_logcamp_fft(Obsdata, Prior,pol='I', **kwargs):
         if count!='max':       
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
-    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
-    clamp = clamparr['camp'][snrmask]
-    sigma = clamparr['sigmaca'][snrmask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
 
     # data weighting
     if weighting=='uniform':
@@ -2745,8 +2735,8 @@ def chisqdata_vis_nfft(Obsdata, Prior, pol='I',**kwargs):
     vtype=vis_poldict[pol]
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
-    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
+    data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias,snrcut=snrcut)
+    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
 
     # data weighting
     if weighting=='uniform':
@@ -2779,15 +2769,16 @@ def chisqdata_amp_nfft(Obsdata, Prior, pol='I',**kwargs):
     atype=amp_poldict[pol]
     etype=sig_poldict[pol]
     if (Obsdata.amp is None) or (len(Obsdata.amp)==0) or pol!='I':
-        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias)
+        data_arr = Obsdata.unpack(['t1','t2','u','v',vtype,atype,etype], debias=debias, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed amplitude table in amplitude chi^2!")
         if not type(Obsdata.amp) in [np.ndarray, np.recarray]:
             raise Exception("pre-computed amplitude table is not a numpy rec array!")
         data_arr = Obsdata.amp
     
-    # apply systematic noise and snr cut
-    (uv, vis, amp, sigma) = apply_systematic_noise_snrcut(data_arr, systematic_noise, snrcut, pol)
+    # apply systematic noise 
+    (uv, vis, amp, sigma) = apply_systematic_noise(data_arr, systematic_noise, pol)
+
     # data weighting
     if weighting=='uniform':
         sigma = np.median(sigma) * np.ones(len(sigma))
@@ -2820,7 +2811,7 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.bispec is None) or (len(Obsdata.bispec)==0) or pol!='I':
-        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count)
+        biarr = Obsdata.bispectra(mode="all", vtype=vtype, count=count, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed bispectrum table in cphase chi^2!")
         if not type(Obsdata.bispec) in [np.ndarray, np.recarray]:
@@ -2830,12 +2821,11 @@ def chisqdata_bs_nfft(Obsdata, Prior, pol='I',**kwargs):
         if count!='max':   
             biarr = reduce_tri_minimal(Obsdata, biarr)
 
-    snrmask = np.abs(biarr['bispec']/biarr['sigmab']) > snrcut
-    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))[snrmask]
-    bi = biarr['bispec'][snrmask]
-    sigma = biarr['sigmab'][snrmask]
+    uv1 = np.hstack((biarr['u1'].reshape(-1,1), biarr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((biarr['u2'].reshape(-1,1), biarr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((biarr['u3'].reshape(-1,1), biarr['v3'].reshape(-1,1)))
+    bi = biarr['bispec']
+    sigma = biarr['sigmab']
 
     #add systematic noise
     #sigma = np.linalg.norm([biarr['sigmab'], systematic_noise*np.abs(biarr['bispec'])], axis=0)
@@ -2875,7 +2865,7 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
     # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.cphase is None) or (len(Obsdata.cphase)==0) or pol!='I':
-        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min)
+        clphasearr = Obsdata.c_phases(mode="all", vtype=vtype, count=count, uv_min=uv_min, snrcut=snrcut)
     else: #TODO precomputed with not Stokes I
         print("Using pre-computed cphase table in cphase chi^2!")
         if not type(Obsdata.cphase) in [np.ndarray, np.recarray]:
@@ -2885,12 +2875,11 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
         if count!='max':       
             clphasearr = reduce_tri_minimal(Obsdata, clphasearr)
 
-    snrmask = np.abs(clphasearr['cphase']/clphasearr['sigmacp']) > snrcut
-    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))[snrmask]
-    clphase = clphasearr['cphase'][snrmask]
-    sigma = clphasearr['sigmacp'][snrmask]
+    uv1 = np.hstack((clphasearr['u1'].reshape(-1,1), clphasearr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clphasearr['u2'].reshape(-1,1), clphasearr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clphasearr['u3'].reshape(-1,1), clphasearr['v3'].reshape(-1,1)))
+    clphase = clphasearr['cphase']
+    sigma = clphasearr['sigmacp']
 
     #add systematic cphase noise (in DEGREES)
     sigma = np.linalg.norm([sigma, systematic_cphase_noise*np.ones(len(sigma))], axis=0)
@@ -2926,10 +2915,10 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I',**kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
-    # unpack data & mask low snr points
+    # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.camp is None) or (len(Obsdata.camp)==0) or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, ctype='camp', debias=debias, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed closure amplitude table in closure amplitude chi^2!")
         if not type(Obsdata.camp) in [np.ndarray, np.recarray]:
@@ -2939,13 +2928,12 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I',**kwargs):
         if count!='max':       
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='camp')
 
-    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
-    clamp = clamparr['camp'][snrmask]
-    sigma = clamparr['sigmaca'][snrmask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
 
     # data weighting
     if weighting=='uniform':
@@ -2979,10 +2967,10 @@ def chisqdata_logcamp_nfft(Obsdata, Prior,pol='I', **kwargs):
     fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
     p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
 
-    # unpack data & mask low snr points
+    # unpack data
     vtype=vis_poldict[pol]
     if (Obsdata.logcamp is None) or (len(Obsdata.logcamp)==0)  or pol!='I':
-        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias)
+        clamparr = Obsdata.c_amplitudes(mode='all', count=count, vtype=vtype, ctype='logcamp', debias=debias, snrcut=snrcut)
     else: # TODO -- pre-computed  with not stokes I? 
         print("Using pre-computed log closure amplitude table in log closure amplitude chi^2!")
         if not type(Obsdata.logcamp) in [np.ndarray, np.recarray]:
@@ -2992,13 +2980,12 @@ def chisqdata_logcamp_nfft(Obsdata, Prior,pol='I', **kwargs):
         if count!='max':       
             clamparr = reduce_quad_minimal(Obsdata, clamparr, ctype='logcamp')
 
-    snrmask = np.abs(clamparr['camp']/clamparr['sigmaca']) > snrcut
-    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))[snrmask]
-    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))[snrmask]
-    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))[snrmask]
-    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))[snrmask]
-    clamp = clamparr['camp'][snrmask]
-    sigma = clamparr['sigmaca'][snrmask]
+    uv1 = np.hstack((clamparr['u1'].reshape(-1,1), clamparr['v1'].reshape(-1,1)))
+    uv2 = np.hstack((clamparr['u2'].reshape(-1,1), clamparr['v2'].reshape(-1,1)))
+    uv3 = np.hstack((clamparr['u3'].reshape(-1,1), clamparr['v3'].reshape(-1,1)))
+    uv4 = np.hstack((clamparr['u4'].reshape(-1,1), clamparr['v4'].reshape(-1,1)))
+    clamp = clamparr['camp']
+    sigma = clamparr['sigmaca']
 
     # data weighting
     if weighting=='uniform':

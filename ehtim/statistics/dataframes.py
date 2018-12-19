@@ -232,6 +232,7 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
         err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
         num_samples: 'bootstrap' resample set size for measured error
         scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
+
     Returns:
         vis_avg: coherently averaged visibilities
     """
@@ -320,7 +321,7 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
             return vis_avg
 
 
-def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
+def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.):
 
     """generate DataFrame of closure phases
 
@@ -332,7 +333,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
         df: closure phase data in DataFrame format
     """
 
-    data=obs.c_phases(mode=mode,count=count)
+    data=obs.c_phases(mode=mode,count=count,snrcut=snrcut)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -346,7 +347,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
     df['source'] = sour
     return df
 
-def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
+def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.):
 
     """generate DataFrame of closure amplitudes
 
@@ -358,7 +359,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
         df: closure amplitude data in DataFrame format
     """
 
-    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype)
+    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype,snrcut=snrcut)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -373,7 +374,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['catype'] = ctype
     return df
 
-def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1):
+def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0.):
 
     """generate DataFrame of bispectra
 
@@ -385,7 +386,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min'
         df: bispectra data in DataFrame format
     """
 
-    data = obs.bispectra(mode=mode,count=count)
+    data = obs.bispectra(mode=mode,count=count,snrcut=snrcut)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -399,7 +400,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min'
     df['source'] = sour
     return df
 
-def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=1000):
+def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=1000,snrcut=0.):
 
     """averages DataFrame of cphases
 
@@ -441,6 +442,9 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         cdf2['cphase'] = [x[0] for x in list(cdf2['dummy'])]
         cdf2['sigmacp'] = [0.5*(x[1][1]-x[1][0]) for x in list(cdf2['dummy'])]
 
+    # snrcut
+    cdf2 = cdf2[cdf2['sigmacp'] < 180./np.pi/snrcut].copy()  # TODO CHECK
+
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
     
@@ -453,7 +457,7 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         return cdf2
 
 
-def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
+def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3), snrcut=0.):
 
     """averages DataFrame of bispectra
 
@@ -482,6 +486,9 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
     #ACTUAL AVERAGING
     cdf2 = cdf2.groupby(grouping).agg(aggregated).reset_index()
 
+    # snrcut
+    cdf2 = cdf2[np.abs(cdf2['bispec']/cdf2['sigmacp']) > snrcut].copy()  # TODO CHECK
+
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
     
@@ -495,7 +502,7 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
 
 
 def average_camp(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1e3)):
-
+    #TODO: SNRCUT?
     """averages DataFrame of closure amplitudes
 
     Args:

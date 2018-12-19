@@ -116,7 +116,16 @@ class Imager(object):
 
         #weighting/debiasing/snr cut/systematic noise
         self.debias_next=kwargs.get('debias',True)
-        self.snrcut_next=kwargs.get('snrcut',0.)
+        snrcut = kwargs.get('snrcut',0.)
+        self.snrcut_next = {key: 0. for key in DATATERMS}
+
+        if type(snrcut) is dict:
+            for key in snrcut.keys():
+                self.snrcut_next[key] = snrcut[key]
+        else:
+            for key in self.snrcut_next.keys():
+                self.snrcut_next[key] = snrcut
+        
         self.systematic_noise_next = kwargs.get('systematic_noise',0.)
         self.systematic_cphase_noise_next = kwargs.get('systematic_cphase_noise',0.)
         self.weighting_next = kwargs.get('weighting','natural')
@@ -683,13 +692,13 @@ class Imager(object):
             for dname in sorted(self.dat_term_next.keys()):
                 if self.pol_next=='P':
                     tup = polchisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=self.pol_next,
-                                        debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
+                                        debias=self.debias_next, snrcut=self.snrcut_next[dname], weighting=self.weighting_next,
                                         systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                         ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
                                         conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, cp_uv_min=self.cp_uv_min)
                 else:
                     tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=self.pol_next,
-                                    debias=self.debias_next, snrcut=self.snrcut_next, weighting=self.weighting_next,
+                                    debias=self.debias_next, snrcut=self.snrcut_next[dname], weighting=self.weighting_next,
                                     systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
                                     ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
                                     conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, cp_uv_min=self.cp_uv_min)

@@ -103,7 +103,7 @@ def plotall_compare(obslist, imlist, field1, field2,
 def plot_bl_compare(obslist, imlist, site1, site2, field,
                     debias=True, sgrscat=False,
                     ang_unit='deg', timetype='UTC', ttype='nfft',
-                    axis=False, rangex=False, rangey=False,
+                    axis=False, rangex=False, rangey=False, snrcut=0.,
                     clist=COLORLIST, legendlabels=None, markersize=MARKERSIZE,
                     export_pdf="", grid=False, ebar=True,
                     axislabels=True, legend=True, show=True):
@@ -150,7 +150,7 @@ def plot_bl_compare(obslist, imlist, site1, site2, field,
                            debias=debias, ang_unit=ang_unit, timetype=timetype,
                            axis=axis, rangex=rangex, rangey=rangey,
                            grid=grid,ebar=ebar,axislabels=axislabels,
-                           show=False, legend=False,
+                           show=False, legend=False, snrcut=snrcut,
                            label=legendlabels_plot[i], color=clist_plot[i%len(clist_plot)],
                            marker=markers[i], markersize=markersize)
     if legend:
