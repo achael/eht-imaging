@@ -321,7 +321,7 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
             return vis_avg
 
 
-def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.):
+def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.,uv_min=False):
 
     """generate DataFrame of closure phases
 
@@ -333,7 +333,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
         df: closure phase data in DataFrame format
     """
 
-    data=obs.c_phases(mode=mode,count=count,snrcut=snrcut)
+    data=obs.c_phases(mode=mode,count=count,snrcut=snrcut,uv_min=uv_min)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.

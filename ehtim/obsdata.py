@@ -1047,7 +1047,7 @@ class Obsdata(object):
         return
 
     def add_cphase(self,avg_time=0, return_type='rec',count='max', snrcut=0.,
-                        err_type='predicted', num_samples=1000, round_s=0.1):
+                        err_type='predicted', num_samples=1000, round_s=0.1, uv_min=False):
 
         """Adds attribute self.cphase: cphase table averaged for dt
 
@@ -1069,10 +1069,10 @@ class Obsdata(object):
             tint0 = 0
 
         if avg_time>tint0:
-            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, snrcut=0.)
+            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, snrcut=0., uv_min=uv_min)
             cdf = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples, snrcut=snrcut)
         else:
-            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, snrcut=snrcut)
+            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, snrcut=snrcut, uv_min=uv_min)
             if return_type=='rec':
                 cdf = df_to_rec(cdf,'cphase')
             print("Updated self.cphase: no averaging")
