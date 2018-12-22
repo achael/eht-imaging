@@ -771,3 +771,84 @@ def save_obs_oifits(obs, fname, flux=1.0):
     obs.data['sigma'] *= flux
 
     return
+    
+    
+
+    
+def save_dtype_txt(obs, fname, dtype='cphase'):
+    """Save the dtype data in a text file.
+    """
+
+    head = ("SRC: %s \n" % obs.source +
+                "RA: " + rastring(obs.ra) + "\n" + "DEC: " + decstring(obs.dec) + "\n" +
+                "MJD: %i \n" % obs.mjd +
+                "RF: %.4f GHz \n" % (obs.rf/1e9) +
+                "BW: %.4f GHz \n" % (obs.bw/1e9) +
+                "PHASECAL: %i \n" % obs.phasecal +
+                "AMPCAL: %i \n" % obs.ampcal +
+                "OPACITYCAL: %i \n" % obs.opacitycal +
+                "DCAL: %i \n" % obs.dcal +
+                "FRCAL: %i \n" % obs.frcal +
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "Site       X(m)             Y(m)             Z(m)           "+
+                "SEFDR      SEFDL     FR_PAR   FR_EL   FR_OFF  "+
+                "DR_RE    DR_IM    DL_RE    DL_IM   \n"
+            )
+
+    for i in range(len(obs.tarr)):
+        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % (obs.tarr[i]['site'],
+                                                                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
+                                                                  obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
+                                                                  obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
+                                                                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
+                                                                  (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
+                                                                 ))
+
+    if dtype=='cphase':
+        outdata = obs.cphase
+        head += (
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)         Cphase (d) Sigmacp")
+        fmts = ("%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
+        
+    elif dtype=='logcamp':
+        outdata = obs.logcamp
+        head += (
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Logcamp     Sigmalogca")
+        fmts = ("%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
+
+    elif dtype=='camp':
+        outdata = obs.logcamp
+        head += (
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "time (hr)     T1     T2      T3     T4     U1 (lambda)     V1 (lambda)      U2 (lambda)      V2 (lambda)         U3 (lambda)     V3 (lambda)       U4 (lambda)      V4 (lambda)           Camp     Sigmaca")
+        fmts = ("%011.8f %6s %6s  %6s %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
+
+    elif dtype=='bs':
+        outdata = obs.bispec
+        head += (
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)          Bispec   Sigmab")
+        fmts = ("%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
+
+#    elif dtype=='amp':
+#        outdata = obs.amp
+#        head += (
+#                "----------------------------------------------------------------------"+
+#                "------------------------------------------------------------------\n" +
+#                "time (hr)     tint T1     T2 U (lambda)     V (lambda)   Amp (Jy)     Ampsigma")
+#        fmts = ("%011.8f %4.2f %6s %6s  %16.4f %16.4f  %10.8f  %10.8f")
+
+    else: 
+        raise Exception(dtype + ' is not a possible data type!')
+
+    np.savetxt(fname, outdata, header=head, fmt=fmts)
+    return
+
+
