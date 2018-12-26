@@ -2176,8 +2176,8 @@ class Obsdata(object):
             timetype=self.timetype
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")
-        if not count in ('min', 'max'):
-            raise Exception("possible options for count are 'min' and 'max'")
+        if not count in ('max', 'min', 'min-cut0bl'):
+            raise Exception("possible options for count are 'max', 'min', or 'min-cut0bl'")
         if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
             raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
@@ -2187,6 +2187,9 @@ class Obsdata(object):
         obsdata = self.copy()
         if uv_min:
             obsdata = obsdata.flag_uvdist(uv_min=uv_min)
+            # get which sites were flagged
+            obsdata_flagged = self.copy()
+            obsdata_flagged = obsdata_flagged.flag_uvdist(uv_max=uv_min)
 
         # Generate the time-sorted data with conjugate baselines
         tlist = obsdata.tlist(conj=True)
@@ -2216,10 +2219,41 @@ class Obsdata(object):
             # Minimal Set
             if count == 'min':
                 tris = tri_minimal_set(sites, self.tarr, self.tkey)
-
+            
             # Maximal  Set
             elif count == 'max':
                 tris = list(it.combinations(sites,3))
+            
+            elif count == 'min-cut0bl':
+                tris = tri_minimal_set(sites, self.tarr, self.tkey)
+                
+                # if you cut the 0 baselines then add in triangles that now are not in the minimal set
+                if uv_min:
+                    # get the reference site
+                    sites_ordered = [x for x in self.tarr['site'] if x in sites]
+                    ref = sites_ordered[0]
+                    
+                    # check if the reference site was in a zero baseline
+                    zerobls = np.vstack([obsdata_flagged.data['t1'], obsdata_flagged.data['t2']])
+                    if np.sum(zerobls==ref):
+                    
+                        # determine which sites were cut out of the minimal set
+                        cutsites = np.unique(np.hstack([zerobls[1][zerobls[0] == ref], zerobls[0][zerobls[1] == ref]]))
+                        
+                        # we can only handle if there was 1 connecting site that was cut
+                        if len(cutsites)>1:
+                            raise Exception("Cannot have the root node be in a clique with more than 2 sites sharing 0 baselines'")
+
+                        # get the remaining sites
+                        cutsite = cutsites[0]
+                        sites_remaining = np.array(sites_ordered)[ np.array(sites_ordered) != ref]
+                        sites_remaining = sites_remaining[np.array(sites_remaining) != cutsite]
+                        # get the next site in the list, ideally sorted by snr
+                        second_ref = sites_remaining[0]
+                        
+                        # add in additional triangles
+                        for s2 in range(1,len(sites_remaining)):
+                            tris.append((cutsite, second_ref, sites_remaining[s2]))
 
             # Generate bispectra for each triangle
             for tri in tris:
@@ -2277,8 +2311,8 @@ class Obsdata(object):
             timetype=self.timetype
         if not mode in ('time', 'all'):
             raise Exception("possible options for mode are 'time' and 'all'")
-        if not count in ('max', 'min'):
-            raise Exception("possible options for count are 'max' and 'min'")
+        if not count in ('max', 'min', 'min-cut0bl'):
+            raise Exception("possible options for count are 'max', 'min', or 'min-cut0bl'")
         if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
             raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
