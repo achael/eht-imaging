@@ -1010,7 +1010,7 @@ class Obsdata(object):
         return
 
     def add_bispec(self, avg_time=0, return_type='rec', count='max', snrcut=0.,
-                         err_type='predicted', num_samples=1000, round_s=0.1):
+                         err_type='predicted', num_samples=1000, round_s=0.1, uv_min=False):
 
         """Adds attribute self.bispec: bispectra table with bispectra averaged for dt
 
@@ -1033,10 +1033,10 @@ class Obsdata(object):
 
 
         if avg_time>tint0:
-            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, snrcut=0.)
+            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, snrcut=0., uv_min=uv_min)
             cdf = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples, snrcut=snrcut)
         else:
-            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, snrcut=snrcut)
+            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, snrcut=snrcut, uv_min=uv_min)
             print("Updated self.bispec: no averaging")
             if return_type=='rec':
                 cdf = df_to_rec(cdf,'bispec')

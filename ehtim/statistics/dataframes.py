@@ -374,7 +374,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['catype'] = ctype
     return df
 
-def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0.):
+def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0., uv_min=False):
 
     """generate DataFrame of bispectra
 
@@ -386,7 +386,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min'
         df: bispectra data in DataFrame format
     """
 
-    data = obs.bispectra(mode=mode,count=count,snrcut=snrcut)
+    data = obs.bispectra(mode=mode,count=count,snrcut=snrcut,uv_min=uv_min)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
