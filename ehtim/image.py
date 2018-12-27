@@ -2401,7 +2401,7 @@ class Image(object):
         else:
             interp = 'linear'
 
-        if not(beamparams is None or (beamparams==False).any()):
+        if not(beamparams is None or (beamparams==False)):
             if beamparams[0]>self.fovx() or beamparams[1]>self.fovx():
                 raise Exception("beam FWHM must be smaller than fov!")
 
@@ -2511,7 +2511,7 @@ class Image(object):
             else:
                 im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
 
-            if not(beamparams is None or (beamparams==False).any()):
+            if not(beamparams is None or (beamparams==False)):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35*self.fovx(), -.35*self.fovy()]
                 beamimage = self.copy()
