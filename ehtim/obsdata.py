@@ -1395,6 +1395,24 @@ class Obsdata(object):
                 out.add_pol_image(im, pol)
 
         return out
+    
+    def rescale_zerobl(self, totflux, uv_min, debias=True):
+        
+        obs_zerobl = self.flag_uvdist(uv_max=uv_min)
+        obs_zerobl.add_amp(debias=debias)
+        orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
+        
+        # Rescale short baselines to excize contributions from extended flux (note: this does not do the proper thing for fractional polarization)
+        obs = self.copy()
+        for j in range(len(obs.data)):
+            if (obs.data['u'][j]**2 + obs.data['v'][j]**2)**0.5 < uv_min:
+                obs.data['vis'][j] *= totflux / orig_totflux
+                obs.data['qvis'][j] *= totflux / orig_totflux
+                obs.data['uvis'][j] *= totflux / orig_totflux
+                obs.data['vvis'][j] *= totflux / orig_totflux
+
+        return obs
+
 
     def add_leakage_noise(self, Dterm_amp=0.1, min_noise=0.01, debias=False):
 
