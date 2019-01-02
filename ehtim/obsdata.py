@@ -1396,7 +1396,7 @@ class Obsdata(object):
 
         return out
     
-    def rescale_zerobl(self, totflux, uv_min, debias=True):
+    def rescale_zbl(self, totflux, uv_min, debias=True):
         
         obs_zerobl = self.flag_uvdist(uv_max=uv_min)
         obs_zerobl.add_amp(debias=debias)
@@ -1412,6 +1412,10 @@ class Obsdata(object):
                 obs.data['qvis'][j] *= totflux / orig_totflux
                 obs.data['uvis'][j] *= totflux / orig_totflux
                 obs.data['vvis'][j] *= totflux / orig_totflux
+                obs.data['vsigma'][j] *= totflux / orig_totflux
+                obs.data['qsigma'][j] *= totflux / orig_totflux
+                obs.data['usigma'][j] *= totflux / orig_totflux
+                obs.data['vsigma'][j] *= totflux / orig_totflux
 
         return obs
 
