@@ -837,13 +837,13 @@ def save_dtype_txt(obs, fname, dtype='cphase'):
                 "time (hr)     T1     T2      T3        U1 (lambda)     V1 (lambda)     U2 (lambda)     V2 (lambda)         U3 (lambda)     V3 (lambda)          Bispec   Sigmab")
         fmts = ("%011.8f %6s %6s  %6s  %16.4f %16.4f  %16.4f  %16.4f  %16.4f  %16.4f  %10.4f  %10.8f")
 
-#    elif dtype=='amp':
-#        outdata = obs.amp
-#        head += (
-#                "----------------------------------------------------------------------"+
-#                "------------------------------------------------------------------\n" +
-#                "time (hr)     tint T1     T2 U (lambda)     V (lambda)   Amp (Jy)     Ampsigma")
-#        fmts = ("%011.8f %4.2f %6s %6s  %16.4f %16.4f  %10.8f  %10.8f")
+    elif dtype=='amp':
+        outdata = obs.amp
+        head += (
+                "----------------------------------------------------------------------"+
+                "------------------------------------------------------------------\n" +
+                "time (hr) tint     T1     T2       U (lambda)     V (lambda)       Amp (Jy)     Ampsigma")
+        fmts = ("%011.8f %4.2f %6s %6s  %16.4f %16.4f  %10.8f  %10.8f")
 
     else: 
         raise Exception(dtype + ' is not a possible data type!')

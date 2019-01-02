@@ -1416,8 +1416,22 @@ def load_dtype_txt(obs, filename, dtype='cphase'):
             sigmab = float(row[11])
             datatable2.append(np.array((time, t1, t2, t3, u1, v1, u2, v2, u3, v3, bispec, sigmab), dtype=DTBIS))                           
         obs.bispec = np.array(datatable2)
-        
-    else: 
+
+    elif dtype=='amp':
+        datatable2 = []
+        for row in datatable:
+            time = float(row[0])
+            tint = float(row[1])
+            t1 = row[2]
+            t2 = row[3]
+            u = float(row[4])
+            v = float(row[5])
+            amp = float(row[6])
+            sigmaamp = float(row[7])
+            datatable2.append(np.array((time, tint, t1, t2, u, v, amp, sigmaamp), dtype=DTAMP))
+        obs.amp = np.array(datatable2)
+    
+    else:
         raise Exception(dtype + ' is not a possible data type!')
 
     return

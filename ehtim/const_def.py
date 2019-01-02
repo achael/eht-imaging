@@ -79,9 +79,14 @@ DTPOL_CIRC = [('time','f8'),('tint','f8'),
                  ('rrvis','c16'),('llvis','c16'),('rlvis','c16'),('lrvis','c16'),
                  ('rrsigma','f8'),('llsigma','f8'),('rlsigma','f8'),('lrsigma','f8')]
 
+#DTAMP = [('time','f8'),('tint','f8'),
+#         ('t1','U32'),('t2','U32'),
+#         ('u','f8'),('v','f8'),('vis','c16'),
+#         ('amp','f8'),('sigma','f8')]
+
 DTAMP = [('time','f8'),('tint','f8'),
          ('t1','U32'),('t2','U32'),
-         ('u','f8'),('v','f8'),('vis','c16'),
+         ('u','f8'),('v','f8'),
          ('amp','f8'),('sigma','f8')]
 
 DTBIS = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),
