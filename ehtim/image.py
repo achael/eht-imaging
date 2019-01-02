@@ -1567,6 +1567,48 @@ class Image(object):
                 outim.add_pol_image(polarr, pol)
 
         return outim
+    
+    def add_zblterm(self, obs, uv_min, new_fov=False, gauss_sz=False, gauss_sz_factor=0.5, debias=True):
+        
+        """Add a Gaussian term to account for missing flux in the 0 baseline.
+            
+            Args:
+            obs : an Obsdata object that the min non-zero baseline and 0-bl flux are determined from
+            uv_min (float): The cuttoff in Glambada used to determine what is a 0-bl
+            new_fov (rad): The size of the padded image once the Gaussian is added (safest to keep False, then it will be set to 3 x the gaussian fwhm)
+            gauss_sz (rad): The size of the Gaussian added to add flux to the 0-bl. (safest to keep False and it is computed from the min non-zero baseline)
+            gauss_sz_factor (float): The fraction of the min non-zero baseline that is used to caluclate the Gaussian FWHM.
+            debias (bool): True if you use debiased amplitudes to caluclate the 0-bl flux in Jy
+            
+            Returns:
+            (Image): a padded image with a large Gaussian component
+        """
+        
+        if gauss_sz == False:
+            obs_flag = obs.flag_uvdist(uv_min = uv_min)
+            minuvdist = np.min( np.sqrt(obs_flag.data['u']**2 + obs_flag.data['v']**2) )
+            gauss_sz = (1/(gauss_sz_factor*minuvdist))
+        
+        if new_fov == False:
+            im_fov = np.max((self.xdim*self.psize, self.ydim*self.psize))
+            new_fov = np.max((3*gauss_sz, im_fov))
+        
+        if new_fov < 3*gauss_sz:
+            print('WARNING! The specified new fov may not be large enough for the gaussian size and may cause higher frequency effects')
+        
+        # calculate the amount of flux to include in the Gaussian
+        obs_zerobl = obs.flag_uvdist(uv_max=uv_min)
+        obs_zerobl.add_amp(debias=debias)
+        orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
+        addedflux = orig_totflux - np.sum(self.imvec)
+        
+        print('Adding a ' + str(addedflux) + ' Jy circular Gaussian of size ' + str(gauss_sz/RADPERUAS) + ' uas')
+        
+        im_new = self.copy()
+        im_new = im_new.pad(new_fov, new_fov)
+        im_new = im_new.add_gauss(addedflux, (gauss_sz, gauss_sz, 0, 0, 0))
+        return im_new
+
 
     def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', cache=False, fft_pad_factor=2):
 

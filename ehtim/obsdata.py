@@ -1401,7 +1401,9 @@ class Obsdata(object):
         obs_zerobl = self.flag_uvdist(uv_max=uv_min)
         obs_zerobl.add_amp(debias=debias)
         orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
-        
+
+        print('Rescaling zero baseline by ' + str(orig_totflux - totflux) + ' Jy to ' + str(totflux) + ' Jy')
+
         # Rescale short baselines to excize contributions from extended flux (note: this does not do the proper thing for fractional polarization)
         obs = self.copy()
         for j in range(len(obs.data)):
