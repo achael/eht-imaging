@@ -44,6 +44,7 @@ from ehtim.observing.obs_helpers import *
 from ehtim.statistics.dataframes import *
 from ehtim.statistics.stats import *
 import scipy.spatial as spatial
+import scipy.optimize as opt
 
 import warnings
 warnings.filterwarnings("ignore", message="Casting complex values to real discards the imaginary part")
@@ -1482,6 +1483,23 @@ class Obsdata(object):
                 continue
 
         return out
+    
+    def find_amt_fractional_noise(self, im, dtype='vis', target=1.0, debias=False, maxiter=200, ftol=1e-20, gtol=1e-20):
+
+        """Returns the amount of fractional sys error you need to add to an obs to make the image have a chisq close to the targeted value (1.0)
+        """
+            
+        obs = self.copy()
+        def objfunc(frac_noise):
+            obs_tmp = obs.add_fractional_noise(frac_noise, debias=debias)
+            chisq = obs_tmp.chisq(im, dtype=dtype)
+            return np.abs(target - chisq)
+        
+        optdict = {'maxiter':maxiter, 'ftol':ftol, 'gtol':gtol}
+        res = opt.minimize(objfunc, 0.0, method='L-BFGS-B',options=optdict)
+        
+        return res.x
+    
 
     def rescale_noise(self, noise_rescale_factor=1.0):
 
