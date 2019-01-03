@@ -2406,7 +2406,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical"):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0)):
 
         """Display the image.
 
@@ -2563,11 +2563,18 @@ class Image(object):
                 beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
                 plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
 
+
             if has_cbar:
                 if only_cbar: im.set_visible(False)
-                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                
+                cb = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+
+                cbar_lims = [np.min(imarr), np.max(imarr)]
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
+                
+                cb.formatter.set_powerlimits(scinot)
+                cb.update_ticks()
 
         else: #plot Stokes parameters!
             im_stokes = self.switch_polrep(polrep_out='stokes')
