@@ -1568,7 +1568,7 @@ class Image(object):
 
         return outim
     
-    def add_zblterm(self, obs, uv_min, new_fov=False, gauss_sz=False, gauss_sz_factor=0.5, debias=True):
+    def add_zblterm(self, obs, uv_min, new_fov=False, gauss_sz=False, gauss_sz_factor=0.75, debias=True):
         
         """Add a Gaussian term to account for missing flux in the 0 baseline.
             
@@ -1587,13 +1587,15 @@ class Image(object):
         if gauss_sz == False:
             obs_flag = obs.flag_uvdist(uv_min = uv_min)
             minuvdist = np.min( np.sqrt(obs_flag.data['u']**2 + obs_flag.data['v']**2) )
-            gauss_sz = (1/(gauss_sz_factor*minuvdist))
+            gauss_sz_sigma = (1/(gauss_sz_factor*minuvdist))
+            gauss_sz = gauss_sz_sigma * 2.355 # convert from stdev to fwhm
         
+        factor = 5.0
         if new_fov == False:
             im_fov = np.max((self.xdim*self.psize, self.ydim*self.psize))
-            new_fov = np.max((3*gauss_sz, im_fov))
+            new_fov = np.max((factor*(gauss_sz / 2.355), im_fov))
         
-        if new_fov < 3*gauss_sz:
+        if new_fov < factor*(gauss_sz / 2.355):
             print('WARNING! The specified new fov may not be large enough for the gaussian size and may cause higher frequency effects')
         
         # calculate the amount of flux to include in the Gaussian
@@ -1602,7 +1604,7 @@ class Image(object):
         orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
         addedflux = orig_totflux - np.sum(self.imvec)
         
-        print('Adding a ' + str(addedflux) + ' Jy circular Gaussian of size ' + str(gauss_sz/RADPERUAS) + ' uas')
+        print('Adding a ' + str(addedflux) + ' Jy circular Gaussian of FWHM size ' + str(gauss_sz/RADPERUAS) + ' uas')
         
         im_new = self.copy()
         im_new = im_new.pad(new_fov, new_fov)
@@ -2473,8 +2475,12 @@ class Image(object):
             factor = 3.254e13/(self.rf**2 * self.psize**2)
             fluxunit = 'Brightness Temperature (K)'
             areaunit = ''
-        elif cbar_unit[0] != 'Jy':
-            raise ValueError('cbar_unit ' + cbar_unit[0] + ' is not a possible option')
+        else:
+            factor = 1
+            fluxunit = cbar_unit[0]
+            areaunit = ''
+        #elif cbar_unit[0] != 'Jy':
+            #raise ValueError('cbar_unit ' + cbar_unit[0] + ' is not a possible option')
 
         if len(cbar_unit) == 1 or cbar_unit[0] == 'Tb':
             factor *= 1.
