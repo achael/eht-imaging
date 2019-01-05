@@ -2575,7 +2575,6 @@ class Image(object):
                 
                 cb = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
 
-                cbar_lims = [np.min(imarr), np.max(imarr)]
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
                 
