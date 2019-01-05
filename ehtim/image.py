@@ -2408,7 +2408,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0)):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1):
 
         """Display the image.
 
@@ -2567,7 +2567,7 @@ class Image(object):
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
                 beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
-                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
+                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=beam_lw)
 
 
             if has_cbar:
@@ -2713,7 +2713,7 @@ class Image(object):
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
                 beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
-                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
+                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=beam_lw)
 
             if has_cbar:
                 plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
@@ -2741,7 +2741,7 @@ class Image(object):
             fov_scale = int( math.ceil(fov_uas * roughfactor / 10.0 ) ) * 10 # round around 1/3 the fov to nearest 10
             start = self.xdim * roughfactor / 3.0 # select the start location
             end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
-            plt.plot([start, end], [self.ydim-start, self.ydim-start], color="white", lw=1) # plot line
+            plt.plot([start, end], [self.ydim-start, self.ydim-start], color="white", lw=scale_lw) # plot line
             plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=12)
             ax = plt.gca()
             ax.axes.get_xaxis().set_visible(False)
