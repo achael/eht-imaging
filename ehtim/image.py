@@ -2408,7 +2408,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1, cbar_fontsize=12):
 
         """Display the image.
 
@@ -2475,6 +2475,9 @@ class Image(object):
             factor = 3.254e13/(self.rf**2 * self.psize**2)
             fluxunit = 'Brightness Temperature (K)'
             areaunit = ''
+        elif cbar_unit[0] in ['Jy']:
+            fluxunit = 'Jy'
+            factor *= 1.
         else:
             factor = 1
             fluxunit = cbar_unit[0]
@@ -2574,7 +2577,8 @@ class Image(object):
                 if only_cbar: im.set_visible(False)
                 
                 cb = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
-
+                cb.ax.tick_params(labelsize=cbar_fontsize)
+                
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
                 
