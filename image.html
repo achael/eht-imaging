@@ -488,6 +488,21 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.image.Image.add_zblterm">
+<code class="descname">add_zblterm</code><span class="sig-paren">(</span><em>obs</em>, <em>uv_min</em>, <em>zblval=None</em>, <em>new_fov=False</em>, <em>gauss_sz=False</em>, <em>gauss_sz_factor=0.75</em>, <em>debias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_zblterm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_zblterm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a Gaussian term to account for missing flux in the 0 baseline.</p>
+<p>Args:
+obs : an Obsdata object that the min non-zero baseline and 0-bl flux are determined from
+uv_min (float): The cuttoff in Glambada used to determine what is a 0-bl
+new_fov (rad): The size of the padded image once the Gaussian is added (safest to keep False, then it will be set to 3 x the gaussian fwhm)
+gauss_sz (rad): The size of the Gaussian added to add flux to the 0-bl. (safest to keep False and it is computed from the min non-zero baseline)
+gauss_sz_factor (float): The fraction of the min non-zero baseline that is used to caluclate the Gaussian FWHM.
+debias (bool): True if you use debiased amplitudes to caluclate the 0-bl flux in Jy</p>
+<p>Returns:
+(Image): a padded image with a large Gaussian component</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.image.Image.align_images">
 <code class="descname">align_images</code><span class="sig-paren">(</span><em>im_list, shift=True, final_fov=False, scale='lin', gamma=0.5, dynamic_range=[1000.0]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.align_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.align_images" title="Permalink to this definition">¶</a></dt>
 <dd><p>Align all the images in im_list to the current image (self)
@@ -728,7 +743,7 @@ Returns metrics only for the primary polarization imvec!</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.display">
-<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
+<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em>, <em>scinot=(0</em>, <em>0)</em>, <em>scale_lw=1</em>, <em>beam_lw=1</em>, <em>cbar_fontsize=12</em>, <em>axis=None</em>, <em>scale_fontsize=12</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

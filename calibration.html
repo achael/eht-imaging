@@ -232,7 +232,7 @@
 
 <dl class="method">
 <dt id="ehtim.caltable.Caltable.applycal">
-<code class="descname">applycal</code><span class="sig-paren">(</span><em>obs</em>, <em>interp='linear'</em>, <em>extrapolate=None</em>, <em>force_singlepol=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.applycal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.applycal" title="Permalink to this definition">¶</a></dt>
+<code class="descname">applycal</code><span class="sig-paren">(</span><em>obs</em>, <em>interp='linear'</em>, <em>extrapolate=None</em>, <em>force_singlepol=False</em>, <em>copy_closure_tables=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/caltable.html#Caltable.applycal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.caltable.Caltable.applycal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Apply the calibration table to an observation.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -476,7 +476,7 @@ For site gains that are low, the entire gain curve is rescaled to enforce a spec
 
 <span class="target" id="module-ehtim.calibrating.self_cal"></span><dl class="function">
 <dt id="ehtim.calibrating.self_cal.self_cal">
-<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>im</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>pol='I'</em>, <em>minimizer_method='BFGS'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>solution_interval=0.0</em>, <em>scan_solutions=False</em>, <em>ttype='direct'</em>, <em>fft_pad_factor=2</em>, <em>caltable=False</em>, <em>debias=True</em>, <em>processes=-1</em>, <em>show_solution=False</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.calibrating.self_cal.</code><code class="descname">self_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>im</em>, <em>sites=[]</em>, <em>method='both'</em>, <em>pol='I'</em>, <em>minimizer_method='BFGS'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>solution_interval=0.0</em>, <em>scan_solutions=False</em>, <em>ttype='direct'</em>, <em>fft_pad_factor=2</em>, <em>caltable=False</em>, <em>debias=True</em>, <em>copy_closure_tables=True</em>, <em>processes=-1</em>, <em>show_solution=False</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/self_cal.html#self_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.self_cal.self_cal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Self-calibrate a dataset to an image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

@@ -204,7 +204,7 @@
 <div class="viewcode-block" id="plotall_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plotall_compare">[docs]</a><span class="k">def</span> <span class="nf">plotall_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span>
                     <span class="n">conj</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                    <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> 
                     <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                     <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -251,7 +251,7 @@
                            <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
                            <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span>
                            <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
-                           <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tag_bl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tag_bl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">,</span>
                            <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span>
                            <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
 
@@ -270,7 +270,7 @@
 <div class="viewcode-block" id="plot_bl_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_bl_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_bl_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span>
                     <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                    <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                     <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                     <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -290,6 +290,7 @@
 <span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
@@ -317,7 +318,7 @@
                            <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
                            <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span>
                            <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
-                           <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">,</span>
                            <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span>
                            <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">legend</span><span class="p">:</span>
@@ -335,7 +336,7 @@
 <div class="viewcode-block" id="plot_cphase_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_cphase_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_cphase_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span>
                         <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">cphases</span><span class="o">=</span><span class="p">[],</span><span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                        <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                         <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                         <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                         <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -357,6 +358,7 @@
 <span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
@@ -399,7 +401,7 @@
                                <span class="n">ang_unit</span><span class="o">=</span><span class="n">ang_unit</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
                                <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span>
                                <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
-                               <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                               <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut</span><span class="p">,</span>
                                <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span>
                                <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
 
@@ -421,7 +423,7 @@
 <div class="viewcode-block" id="plot_camp_compare"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.comp_plots.plot_camp_compare">[docs]</a><span class="k">def</span> <span class="nf">plot_camp_compare</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span> <span class="n">imlist</span><span class="p">,</span> <span class="n">site1</span><span class="p">,</span> <span class="n">site2</span><span class="p">,</span> <span class="n">site3</span><span class="p">,</span> <span class="n">site4</span><span class="p">,</span>
                       <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">camps</span><span class="o">=</span><span class="p">[],</span> <span class="n">force_recompute</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                       <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sgrscat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
-                      <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                       <span class="n">clist</span><span class="o">=</span><span class="n">COLORLIST</span><span class="p">,</span> <span class="n">legendlabels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
                       <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                       <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -446,6 +448,7 @@
 
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
@@ -494,7 +497,7 @@
                                <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span>
                                <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="n">rangex</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="n">rangey</span><span class="p">,</span>
                                <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="n">axislabels</span><span class="p">,</span>
-                               <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                               <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                                <span class="n">label</span><span class="o">=</span><span class="n">legendlabels_plot</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">clist_plot</span><span class="p">[</span><span class="n">i</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">clist_plot</span><span class="p">)],</span>
                                <span class="n">marker</span><span class="o">=</span><span class="n">markers</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">markersize</span><span class="o">=</span><span class="n">markersize</span><span class="p">)</span>
 
@@ -536,6 +539,7 @@
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
 <span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
 <span class="sd">           legendlabels (str): should be a list of labels of the same length of obslist or imlist</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           grid (bool): Plot gridlines if True</span>
 <span class="sd">           ebar (bool): Plot error bars if True</span>
@@ -573,6 +577,7 @@
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
 <span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
 <span class="sd">           legendlabels (str): should be a list of labels of the same length of obslist</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           grid (bool): Plot gridlines if True</span>
 <span class="sd">           ebar (bool): Plot error bars if True</span>
@@ -608,6 +613,7 @@
 <span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           rangex (list): [xmin, xmax] x-axis (time) limits</span>
 <span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
@@ -645,6 +651,7 @@
 <span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           rangex (list): [xmin, xmax] x-axis (time) limits</span>
 <span class="sd">           rangey (list): [ymin, ymax] y-axis limits</span>
@@ -681,6 +688,7 @@
 <span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
@@ -720,6 +728,7 @@
 <span class="sd">           ang_unit (str): phase unit &#39;deg&#39; or &#39;rad&#39;</span>
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
@@ -763,6 +772,7 @@
 
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
@@ -806,6 +816,7 @@
 
 <span class="sd">           timetype (str): &#39;GMST&#39; or &#39;UTC&#39;</span>
 <span class="sd">           ttype (str): if &quot;fast&quot; or &quot;nfft&quot; use FFT to produce visibilities. Else &quot;direct&quot; for DTFT</span>
+<span class="sd">           snrcut (float): a  snr cutoff</span>
 
 <span class="sd">           axis (matplotlib.axes.Axes): add plot to this axis</span>
 <span class="sd">           rangex (list): [xmin, xmax] x-axis limits</span>
