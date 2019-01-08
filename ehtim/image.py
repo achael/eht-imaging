@@ -2329,7 +2329,7 @@ class Image(object):
                       cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical"):
+                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical", scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12):
 
         """Display the image.
 
@@ -2373,19 +2373,39 @@ class Image(object):
         #make the image grid
         z = image.imvec.reshape((image.ydim ,image.xdim ))
         maxz = max(image.imvec)
-        ax = plt.gca()
+        if axis is None:
+            ax = plt.gca()
+
+        elif axis is not None:
+            ax = axis
+            plt.sca(axis)
 
         if show_im:
-            image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+            if axis is not None:
+                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=12)
+            else:   
+                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12)
         else:
             image.imvec = 0.0*image.imvec
-            image.display(cfun='afmhot',scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+            if axis is not None:
+                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit, beamparams=beamparams)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=12)
+            else:   
+                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12)
 
-        ax = plt.gcf()
+        if axis is None: ax = plt.gcf()
+        if axis is not None: ax = axis
+
+        if axis is not None:
+            ax = axis
+            plt.sca(axis)
 
         count = 0.
         for level in contour_levels:
@@ -2404,6 +2424,8 @@ class Image(object):
         if export_pdf != "":
             ax.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
 
+        elif axis is not None:
+            return axis
         return ax
 
 
