@@ -2408,7 +2408,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1, cbar_fontsize=12, subfigure=None):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None):
 
         """Display the image.
 
@@ -2457,12 +2457,12 @@ class Image(object):
             label_type = 'none'
             has_title = False
 
-        if subfigure is None:
+        if axis is None:
             f = plt.figure()
             plt.clf()
 
-        if subfigure is not None:
-            plt.sca(subfigure)
+        if axis is not None:
+            plt.sca(axis)
 
         # Get unit scale factor
         factor = 1.
@@ -2752,7 +2752,7 @@ class Image(object):
             plt.plot([start, end], [self.ydim-start-5, self.ydim-start-5], color="white", lw=scale_lw) # plot line
             plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=9)
             ax = plt.gca()
-            if subfigure is None:
+            if axis is None:
                 ax.axes.get_xaxis().set_visible(False)
                 ax.axes.get_yaxis().set_visible(False)
 
@@ -2763,8 +2763,8 @@ class Image(object):
             ax.axes.get_yaxis().set_visible(False)
 
         # Show or save to file
-        if subfigure is not None:
-            return subfigure
+        if axis is not None:
+            return axis
         if show:
             plt.show(block=False)
 
