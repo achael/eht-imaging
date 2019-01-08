@@ -2759,8 +2759,9 @@ class Image(object):
         elif label_type=='none':
             plt.axis('off')
             ax = plt.gca()
-            ax.axes.get_xaxis().set_visible(False)
-            ax.axes.get_yaxis().set_visible(False)
+            if axis is None:
+                ax.axes.get_xaxis().set_visible(False)
+                ax.axes.get_yaxis().set_visible(False)
 
         # Show or save to file
         if axis is not None:
