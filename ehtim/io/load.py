@@ -30,7 +30,7 @@ import os
 import copy
 import sys
 import time as ttime
-import h5py
+
 
 import ehtim.obsdata
 import ehtim.image
@@ -384,7 +384,7 @@ def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1,
     """
 
     # Currently only supports one polarization!
-
+    import h5py
     file    = h5py.File(file_name, 'r')
     name    = list(file.keys())[0]
     d       = file[str(name)]
@@ -1315,4 +1315,125 @@ def load_obs_oifits(filename, flux=1.0):
     # return object
 
     return ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep='stokes', source=src, mjd=time[0])
+
+
+def load_dtype_txt(obs, filename, dtype='cphase'):
+    """Load the dtype data in a text file and put it in the obs
+    """
+    
+    print ("Loading text observation: ", filename)
+
+    # Read the header parameters
+    file = open(filename)
+    src = ' '.join(file.readline().split()[2:])
+    ra = file.readline().split()
+    ra = float(ra[2]) + float(ra[4])/60.0 + float(ra[6])/3600.0
+    dec = file.readline().split()
+    dec = np.sign(float(dec[2])) *(abs(float(dec[2])) + float(dec[4])/60.0 + float(dec[6])/3600.0)
+    mjd = float(file.readline().split()[2])
+    rf = float(file.readline().split()[2]) * 1e9
+    bw = float(file.readline().split()[2]) * 1e9
+    phasecal = bool(file.readline().split()[2])
+    ampcal = bool(file.readline().split()[2])
+
+    # Load the data, convert to list format, return object
+    datatable = np.loadtxt(filename, dtype=bytes).astype(str)
+
+    if dtype=='cphase':
+        datatable2 = []
+        for row in datatable:
+            time = float(row[0])
+            t1 = row[1]
+            t2 = row[2]
+            t3 = row[3]
+            u1 = float(row[4])
+            v1 = float(row[5])
+            u2 = float(row[6])
+            v2 = float(row[7])
+            u3 = float(row[8])
+            v3 = float(row[9])
+            cphase = float(row[10])
+            sigmacp = float(row[11])
+            datatable2.append(np.array((time, t1, t2, t3, u1, v1, u2, v2, u3, v3, cphase, sigmacp), dtype=DTCPHASE))                           
+        obs.cphase = np.array(datatable2)
+        
+    elif dtype=='logcamp':
+        datatable2 = []
+        for row in datatable:
+            time = float(row[0])
+            t1 = row[1]
+            t2 = row[2]
+            t3 = row[3]
+            t4 = row[4]
+            u1 = float(row[5])
+            v1 = float(row[6])
+            u2 = float(row[7])
+            v2 = float(row[8])
+            u3 = float(row[9])
+            v3 = float(row[10])
+            u4 = float(row[11])
+            v4 = float(row[12])
+            logcamp = float(row[13])
+            sigmalogcamp = float(row[14])
+            datatable2.append(np.array((time, t1, t2, t3, t4, u1, v1, u2, v2, u3, v3, u4, v4, logcamp, sigmalogcamp), dtype=DTCAMP))                           
+        obs.logcamp = np.array(datatable2)
+
+    elif dtype=='camp':
+        datatable2 = []
+        for row in datatable:
+            time = float(row[0])
+            t1 = row[1]
+            t2 = row[2]
+            t3 = row[3]
+            t4 = row[4]
+            u1 = float(row[5])
+            v1 = float(row[6])
+            u2 = float(row[7])
+            v2 = float(row[8])
+            u3 = float(row[9])
+            v3 = float(row[10])
+            u4 = float(row[11])
+            v4 = float(row[12])
+            camp = float(row[13])
+            sigmacamp = float(row[14])
+            datatable2.append(np.array((time, t1, t2, t3, t4, u1, v1, u2, v2, u3, v3, u4, v4, camp, sigmacamp), dtype=DTCAMP))                           
+        obs.camp = np.array(datatable2)
+        
+    elif dtype=='bs':
+        datatable2 = []
+        for row in datatable:
+            time = float(row[0])
+            t1 = row[1]
+            t2 = row[2]
+            t3 = row[3]
+            u1 = float(row[4])
+            v1 = float(row[5])
+            u2 = float(row[6])
+            v2 = float(row[7])
+            u3 = float(row[8])
+            v3 = float(row[9])
+            bispec = float(row[10])
+            sigmab = float(row[11])
+            datatable2.append(np.array((time, t1, t2, t3, u1, v1, u2, v2, u3, v3, bispec, sigmab), dtype=DTBIS))                           
+        obs.bispec = np.array(datatable2)
+
+    elif dtype=='amp':
+        datatable2 = []
+        for row in datatable:
+            time = float(row[0])
+            tint = float(row[1])
+            t1 = row[2]
+            t2 = row[3]
+            u = float(row[4])
+            v = float(row[5])
+            amp = float(row[6])
+            sigmaamp = float(row[7])
+            datatable2.append(np.array((time, tint, t1, t2, u, v, amp, sigmaamp), dtype=DTAMP))
+        obs.amp = np.array(datatable2)
+    
+    else:
+        raise Exception(dtype + ' is not a possible data type!')
+
+    return
+    
 

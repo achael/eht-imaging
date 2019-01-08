@@ -41,7 +41,7 @@ PROCESSES=4
 MARKERSIZE=5
 
 def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="", 
-           fontsize=FONTSIZE, cfun='afmhot',
+           fontsize=FONTSIZE, cfun='afmhot', snrcut=0.,
            gainplots=True,ampplots=True, cphaseplots=True,campplots=True,ebar=True,
            debias=True, cp_uv_min=False,
            sysnoise=0,syscnoise=0):
@@ -71,6 +71,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
            sysnoise (float): percent systematic noise added in quadrature
            syscnoise (float): closure phase systematic noise in degrees added in quadrature
 
+           snrcut (dict): a dictionary of snrcut values for each quantity
        Returns:
 
     """
@@ -87,8 +88,19 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
     if fontsize==0: fontsize=FONTSIZE
 
+    snrcut_dict = {key: 0. for key in ['vis','amp','cphase','logcamp','camp']}
+
+    if type(snrcut) is dict:
+        for key in snrcut.keys():
+            snrcut_dict[key] = snrcut[key]
+    else:
+        for key in snrcut_dict.keys():
+            snrcut_dict[key] = snrcut
+
+
     with PdfPages(outname) as pdf:
         titlestr = 'Summary Sheet for %s on MJD %s' % (im.source, im.mjd)
+
         #pdf metadata 
         d = pdf.infodict()
         d['Title'] = title
@@ -149,17 +161,22 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
         maxset=False
         # compute chi^2
-        chi2vis = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
-        chi2amp = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
-        chi2cphase = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, maxset=maxset, cp_uv_min=cp_uv_min)
-        chi2logcamp = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
-        chi2camp = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset)
+        chi2vis = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['vis'])
+        chi2amp = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['amp'])
+        chi2cphase = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, 
+                               maxset=maxset, cp_uv_min=cp_uv_min,snrcut=snrcut_dict['cphase'])
+        chi2logcamp = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=sysnoise,
+                                maxset=maxset,snrcut=snrcut_dict['logcamp'])
+        chi2camp = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['camp'])
 
-        chi2vis_uncal = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset)
-        chi2amp_uncal = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset)
-        chi2cphase_uncal = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,cp_uv_min=cp_uv_min)
-        chi2logcamp_uncal = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset)
-        chi2camp_uncal = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset)
+
+
+        chi2vis_uncal = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['vis'])
+        chi2amp_uncal = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['amp'])
+        chi2cphase_uncal = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,
+                                     cp_uv_min=cp_uv_min,snrcut=snrcut_dict['cphase'])
+        chi2logcamp_uncal = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['logcamp'])
+        chi2camp_uncal = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['camp'])
 
         print("chi^2 vis: %0.2f %0.2f" % (chi2vis, chi2vis_uncal))
         print("chi^2 amp: %0.2f %0.2f" % (chi2amp, chi2amp_uncal))
@@ -230,13 +247,12 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         #display the closure  phase chi2
         ax = plt.subplot(gs[3:6,0:2])
         ax.set_title('Closure phase statistics')
-        #ax.axis('off')
         ax.set_yticks([])
         ax.set_xticks([])
 
         # get closure triangle combinations
         # ANDREW -- hacky, fix this!
-        cp = obs.c_phases(mode="all", count="min", uv_min=cp_uv_min)
+        cp = obs.c_phases(mode="all", count="min", uv_min=cp_uv_min, snrcut=snrcut_dict['cphase'])
         n_cphase = len(cp)
         alltris = [(str(cpp['t1']),str(cpp['t2']),str(cpp['t3'])) for cpp in cp]
         uniqueclosure_tri = []
@@ -245,8 +261,17 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
               
         # generate data
         obs_model = im.observe_same(obs, add_th_noise=False, ttype='nfft')
-        cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min)
-        cphases_model = obs_model.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min)
+
+        # TODO: check SNR cut
+        cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=snrcut_dict['cphase'])
+        if snrcut_dict['cphase']>0:
+            cphases_obs_all = obs.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=0.)
+            cphases_model_all = obs_model.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=0.)
+            mask = [cphase in cphases_obs for cphase in cphases_obs_all]
+            cphases_model = cphases_model_all[mask]
+            print('cphase snr cut',snrcut_dict['cphase'],' : kept', len(cphases_obs),'/', len(cphases_obs_all))
+        else:
+            cphases_model = obs_model.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=0.)
 
 
         #generate chi^2 -- NO SYSTEMATIC NOISES
@@ -259,12 +284,15 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             if len(cphases_obs_tri)>0:
                 cphases_model_tri = obs_model.cphase_tri(uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],
                                                          vtype='vis', ang_unit='deg', cphases=cphases_model)
+
                 chisq_tri= 2*np.sum((1.0 - np.cos(cphases_obs_tri['cphase']*DEGREE-cphases_model_tri['cphase']*DEGREE))/
                                   ((cphases_obs_tri['sigmacp']*DEGREE)**2))
-                #chisq_tri /= len(cphases_obs_tri)
+
                 npts = len(cphases_obs_tri)
                 data =  [uniqueclosure_tri[c][0], uniqueclosure_tri[c][1], uniqueclosure_tri[c][2],npts,chisq_tri]
                 cphase_chisq_data.append(data)
+
+
 
         #sort by decreasing chi^2
         idx = np.argsort([data[-1] for data in cphase_chisq_data])
@@ -300,9 +328,8 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         ax.set_yticks([])
         ax.set_xticks([])
 
-        # get closure triangle combinations
-        # ANDREW -- hacky, fix this!
-
+        # get closure amplitude combinations
+        # TODO -- hacky, fix this!
         cp = obs.c_amplitudes(mode="all", count="min",ctype='logcamp',debias=debias)
         n_camps = len(cp)
         allquads = [(str(cpp['t1']),str(cpp['t2']),str(cpp['t3']),str(cpp['t4'])) for cpp in cp]
@@ -312,8 +339,17 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
                 uniqueclosure_quad.append(quad)
               
         # generate data
-        camps_obs = obs.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=debias)
-        camps_model = obs_model.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=False)
+        # TODO: check SNR cut
+        camps_obs = obs.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=debias, snrcut=snrcut_dict['logcamp'])
+        if snrcut_dict['logcamp']>0:
+            camps_obs_all = obs.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=debias, snrcut=0.)
+            camps_model_all = obs_model.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=False, snrcut=0.)
+            mask = [camp['camp'] in camps_obs['camp'] for camp in camps_obs_all]
+            camps_model = camps_model_all[mask]
+            print('closure amp snrcut',snrcut_dict['logcamp'],': kept', len(camps_obs),'/', len(camps_obs_all))
+        else:
+            camps_model = obs_model.c_amplitudes(mode='all', count='max', ctype='logcamp', debias=False, snrcut=0.)
+
 
         #generate chi2 -- NO SYSTEMATIC NOISES
         ncamp = 0
@@ -328,15 +364,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
                                              uniqueclosure_quad[c][2],  uniqueclosure_quad[c][3],
                                              vtype='vis', camps=camps_model, ctype='logcamp')
 
-#                if np.any(np.isnan(camps_obs_quad['camp'])):
-#                    print("obs nan on ", uniqueclosure_quad[c])
-#                if np.any(np.isnan(camps_model_quad['camp'])):
-#                    print("model nan on ", uniqueclosure_quad[c])
-#                if np.any(np.isnan(camps_obs_quad['sigmaca'])):
-#                    print("sigma nan on ", uniqueclosure_quad[c])
-
                 chisq_quad = np.sum(np.abs((camps_obs_quad['camp'] - camps_model_quad['camp'])/camps_obs_quad['sigmaca'])**2)
-                #chisq_quad /= (len(camps_obs_quad))
                 npts = len(camps_obs_quad)
 
                 data =  (uniqueclosure_quad[c][0], uniqueclosure_quad[c][1], uniqueclosure_quad[c][2],uniqueclosure_quad[c][3],
@@ -370,9 +398,6 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
         #save the first page of the plot
         print('saving pdf page 1')
-        #plt.tight_layout()
-        #plt.subplots_adjust(wspace=1,hspace=1)
-        #plt.savefig(outname, pad_inches=MARGINS,bbox_inches='tight')
         pdf.savefig(pad_inches=MARGINS, bbox_inches='tight')
         plt.close()
 
@@ -388,11 +413,9 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         obs_tmp.data['sigma']*=0.
         ax = plotall_obs_compare([obs, obs_tmp], 
                                  'uvdist','amp', axis=ax,legend=False, clist=['k',SCOLORS[1]], 
-                                  ttype='nfft',show=False, debias=debias, 
+                                  ttype='nfft',show=False, debias=debias, snrcut=snrcut_dict['amp'],
                                   ebar=ebar,markersize=MARKERSIZE)
         #modify the labels
-        #ax.xaxis.label.set_visible(False)
-        #ax.yaxis.label.set_visible(False)
         ax.set_title('Calibrated Visiblity Amplitudes')
         ax.set_xlabel('u-v distance (G$\lambda$)')
         ax.set_xlim([0,1.e10])
@@ -437,7 +460,6 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             #median gains
             ax = plt.subplot(gs[3:6,2:5])
             ax.set_title('Station gain statistics')
-            #ax.axis('off')
             ax.set_yticks([])
             ax.set_xticks([])
 
@@ -476,12 +498,8 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         print("baseline vis amps chisq")
         ax = plt.subplot(gs[3:6,0:2])
         ax.set_title('Visibility amplitude statistics')
-        #ax.axis('off')
         ax.set_yticks([])
         ax.set_xticks([])
-
-        # get closure triangle combinations
-        # ANDREW -- hacky, fix this!
 
         bl_unpk = obs.unpack(['t1','t2'],debias=debias)
         n_bl = len(bl_unpk)
@@ -490,16 +508,23 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         for bl in allbl:
             if bl not in uniquebl: 
                 uniquebl.append(bl)
-              
+
         #generate chi2 -- NO SYSTEMATIC NOISES
         ncamp = 0
         bl_chisq_data=[]
         for ii in range(0, len(uniquebl)):
             bl = uniquebl[ii]
-            amps_bl = obs.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=debias)
 
+            amps_bl = obs.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=debias)
             if len(amps_bl)>0:
+
                 amps_bl_model = obs_model.unpack_bl(bl[0],bl[1],['amp','sigma'], debias=False)
+
+                if snrcut_dict['amp'] > 0:
+                    amask = amps_bl['amp']/amps_bl['sigma'] > snrcut_dict['amp']
+                    amps_bl = amps_bl[amask]
+                    amps_bl_model = amps_bl_model[amask]
+
                 chisq_bl = np.sum(np.abs((amps_bl['amp'] - amps_bl_model['amp'])/amps_bl['sigma'])**2)
                 npts = len(amps_bl_model)
 
@@ -531,7 +556,6 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
         ax.text(0.5,.975,chisqtab,ha="center",va="top",transform=ax.transAxes,size=fontsize)
 
-        
         #save the first page of the plot
         print('saving pdf page 2')
         #plt.tight_layout()
@@ -542,7 +566,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
 ################################################################################
         #plot the visibility amplitudes
-        page =3 
+        page = 3 
         if ampplots:
             print("===========================================")
             print("plotting amplitudes")
@@ -553,15 +577,13 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             j = 0
             switch=False
 
-            #PIN!
             obs_model.data['sigma'] *= 0
             amax = 1.1*np.max(np.abs(np.abs(obs_model.data['vis'])))
             obs_all = [obs, obs_model]
             for bl in uniquebl:
-                print('bl')
                 ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
-                ax = plot_bl_obs_compare(obs_all,bl[0],bl[1], 'amp', rangey=[0,amax], 
-                                         markersize=MARKERSIZE,debias=debias,
+                ax = plot_bl_obs_compare(obs_all, bl[0], bl[1], 'amp', rangey=[0,amax], 
+                                         markersize=MARKERSIZE,debias=debias, snrcut=snrcut_dict['amp'],
                                          axis=ax,legend=False, clist=['k',SCOLORS[1]],
                                          ttype='nfft',show=False, ebar=ebar)
                 if ax is None: continue
@@ -655,7 +677,6 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             camps_all = [camps_obs, camps_model]
             cmax = 1.1*np.max(np.abs(camps_obs['camp']))
             for quad in uniqueclosure_quad:
-
                 ax = plt.subplot(gs[2*i:2*(i+1), 2*j:2*(j+1)])
                 ax = plot_camp_obs_compare(obs_all,quad[0],quad[1],quad[2],quad[3],markersize=MARKERSIZE,
                                              ctype='logcamp',rangey=[-cmax,cmax],camps=camps_all,

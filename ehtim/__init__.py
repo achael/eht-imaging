@@ -6,12 +6,16 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+
 import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
 
 import ehtim.obsdata
 import ehtim.imager
-
 import ehtim.array
 import ehtim.movie
 import ehtim.image
@@ -39,7 +43,12 @@ from ehtim.calibrating.network_cal import network_cal as netcal
 from ehtim.pipeline import Pipeline
 from ehtim.const_def import *
 
-print("Welcome to eht-imaging v 0.1.0")
+try:
+    import pkg_resources
+    version = pkg_resources.require("ehtim")[0].version
+    print("Welcome to eht-imaging! v ",version)
+except:
+    print("Welcome to eht-imaging!")
 
 def logo():
     for line in BHIMAGE:
