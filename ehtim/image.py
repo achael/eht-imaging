@@ -2750,7 +2750,8 @@ class Image(object):
                 plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=beam_lw)
 
             if has_cbar:
-                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cbar = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cbar.ax.tick_params(labelsize=cbar_fontsize) 
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
             if has_title:
