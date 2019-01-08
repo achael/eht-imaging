@@ -2412,7 +2412,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12):
 
         """Display the image.
 
@@ -2754,7 +2754,7 @@ class Image(object):
             start = self.xdim * roughfactor / 3.0 # select the start location
             end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
             plt.plot([start, end], [self.ydim-start-5, self.ydim-start-5], color="white", lw=scale_lw) # plot line
-            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=9)
+            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=scale_fontsize)
             ax = plt.gca()
             if axis is None:
                 ax.axes.get_xaxis().set_visible(False)
