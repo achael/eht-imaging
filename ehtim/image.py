@@ -1568,7 +1568,7 @@ class Image(object):
 
         return outim
     
-    def add_zblterm(self, obs, uv_min, new_fov=False, gauss_sz=False, gauss_sz_factor=0.75, debias=True):
+    def add_zblterm(self, obs, uv_min, zblval=None, new_fov=False, gauss_sz=False, gauss_sz_factor=0.75, debias=True):
         
         """Add a Gaussian term to account for missing flux in the 0 baseline.
             
@@ -1582,7 +1582,7 @@ class Image(object):
             
             Returns:
             (Image): a padded image with a large Gaussian component
-        """
+            """
         
         if gauss_sz == False:
             obs_flag = obs.flag_uvdist(uv_min = uv_min)
@@ -1602,7 +1602,11 @@ class Image(object):
         obs_zerobl = obs.flag_uvdist(uv_max=uv_min)
         obs_zerobl.add_amp(debias=debias)
         orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
-        addedflux = orig_totflux - np.sum(self.imvec)
+        
+        if zblval == None:
+            addedflux = orig_totflux - np.sum(self.imvec)
+        else:
+            addedflux = orig_totflux - zblval
         
         print('Adding a ' + str(addedflux) + ' Jy circular Gaussian of FWHM size ' + str(gauss_sz/RADPERUAS) + ' uas')
         
