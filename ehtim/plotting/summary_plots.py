@@ -364,13 +364,6 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
                                              uniqueclosure_quad[c][2],  uniqueclosure_quad[c][3],
                                              vtype='vis', camps=camps_model, ctype='logcamp')
 
-#                if np.any(np.isnan(camps_obs_quad['camp'])):
-#                    print("obs nan on ", uniqueclosure_quad[c])
-#                if np.any(np.isnan(camps_model_quad['camp'])):
-#                    print("model nan on ", uniqueclosure_quad[c])
-#                if np.any(np.isnan(camps_obs_quad['sigmaca'])):
-#                    print("sigma nan on ", uniqueclosure_quad[c])
-
                 chisq_quad = np.sum(np.abs((camps_obs_quad['camp'] - camps_model_quad['camp'])/camps_obs_quad['sigmaca'])**2)
                 npts = len(camps_obs_quad)
 

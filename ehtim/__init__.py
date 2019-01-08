@@ -19,6 +19,7 @@ import ehtim.vex
 import ehtim.closure
 import ehtim.caltable
 
+
 from ehtim.imaging.imager_utils import imager_func
 from ehtim.calibrating import self_cal
 from ehtim.calibrating import network_cal
@@ -39,7 +40,12 @@ from ehtim.calibrating.network_cal import network_cal as netcal
 from ehtim.pipeline import Pipeline
 from ehtim.const_def import *
 
-print("Welcome to eht-imaging v 0.1.0")
+try:
+    import pkg_resources
+    version = pkg_resources.require("ehtim")[0].version
+    print("Welcome to eht-imaging v ",version)
+except:
+    print("Welcome to eht-imaging")
 
 def logo():
     for line in BHIMAGE:
