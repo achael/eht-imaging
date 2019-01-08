@@ -30,7 +30,7 @@ import os
 import copy
 import sys
 import time as ttime
-import h5py
+
 
 import ehtim.obsdata
 import ehtim.image
@@ -384,7 +384,7 @@ def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1,
     """
 
     # Currently only supports one polarization!
-
+    import h5py
     file    = h5py.File(file_name, 'r')
     name    = list(file.keys())[0]
     d       = file[str(name)]

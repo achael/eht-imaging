@@ -6,19 +6,22 @@
 .. moduleauthor:: Andrew Chael (achael@cfa.harvard.edu)
 
 """
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import range
+
 import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
 
 import ehtim.obsdata
 import ehtim.imager
-
 import ehtim.array
 import ehtim.movie
 import ehtim.image
 import ehtim.vex
 import ehtim.closure
 import ehtim.caltable
-
 
 from ehtim.imaging.imager_utils import imager_func
 from ehtim.calibrating import self_cal
@@ -43,9 +46,9 @@ from ehtim.const_def import *
 try:
     import pkg_resources
     version = pkg_resources.require("ehtim")[0].version
-    print("Welcome to eht-imaging v ",version)
+    print("Welcome to eht-imaging! v ",version)
 except:
-    print("Welcome to eht-imaging")
+    print("Welcome to eht-imaging!")
 
 def logo():
     for line in BHIMAGE:
