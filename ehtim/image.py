@@ -2408,7 +2408,7 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1, cbar_fontsize=12):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=(0,0), scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None):
 
         """Display the image.
 
@@ -2457,8 +2457,12 @@ class Image(object):
             label_type = 'none'
             has_title = False
 
-        f = plt.figure()
-        plt.clf()
+        if axis is None:
+            f = plt.figure()
+            plt.clf()
+
+        if axis is not None:
+            plt.sca(axis)
 
         # Get unit scale factor
         factor = 1.
@@ -2745,11 +2749,12 @@ class Image(object):
             fov_scale = int( math.ceil(fov_uas * roughfactor / 10.0 ) ) * 10 # round around 1/3 the fov to nearest 10
             start = self.xdim * roughfactor / 3.0 # select the start location
             end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
-            plt.plot([start, end], [self.ydim-start, self.ydim-start], color="white", lw=scale_lw) # plot line
-            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=12)
+            plt.plot([start, end], [self.ydim-start-5, self.ydim-start-5], color="white", lw=scale_lw) # plot line
+            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=9)
             ax = plt.gca()
-            ax.axes.get_xaxis().set_visible(False)
-            ax.axes.get_yaxis().set_visible(False)
+            if axis is None:
+                ax.axes.get_xaxis().set_visible(False)
+                ax.axes.get_yaxis().set_visible(False)
 
         elif label_type=='none':
             plt.axis('off')
@@ -2758,6 +2763,8 @@ class Image(object):
             ax.axes.get_yaxis().set_visible(False)
 
         # Show or save to file
+        if axis is not None:
+            return axis
         if show:
             plt.show(block=False)
 
