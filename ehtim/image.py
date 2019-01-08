@@ -2384,21 +2384,21 @@ class Image(object):
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=12)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=scale_fontsize)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=scale_fontsize)
         else:
             image.imvec = 0.0*image.imvec
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=12)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=scale_fontsize)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=scale_fontsize)
 
         if axis is None: ax = plt.gcf()
         if axis is not None: ax = axis
@@ -2750,7 +2750,8 @@ class Image(object):
                 plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=beam_lw)
 
             if has_cbar:
-                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cbar = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cbar.ax.tick_params(labelsize=cbar_fontsize) 
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
             if has_title:
