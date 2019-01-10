@@ -2632,15 +2632,18 @@ class Image(object):
 
             if has_cbar:
                 if only_cbar: im.set_visible(False)
-                
-                cb = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cb = plt.colorbar(im, fraction=0.046, pad=0.04, orientation=cbar_orientation)
+                cb.set_label(unit, fontsize=float(cbar_fontsize))
+                        
+                if cbar_fontsize != 12: cb.set_label(unit, fontsize=float(cbar_fontsize)/1.5)
                 cb.ax.tick_params(labelsize=cbar_fontsize)
-                
+                        
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
                 if scinot:
                     cb.formatter.set_powerlimits((0,0))
                     cb.update_ticks()
+        
 
         else: #plot Stokes parameters!
             im_stokes = self.switch_polrep(polrep_out='stokes')
