@@ -2328,7 +2328,7 @@ class Image(object):
     def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, show_im=True,
                       cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
-                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), contour_im=False, power=0,
+                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), contour_im=False, power=0, beamcolor='w',
                       export_pdf="", show=True, beamparams=None, cbar_orientation="vertical", scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12):
 
         """Display the image.
@@ -2384,11 +2384,11 @@ class Image(object):
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=scale_fontsize,power=power)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=scale_fontsize, power=power)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=scale_fontsize, power=power,beamcolor=beamcolor)
         else:
             if contour_im==False:
                 image.imvec = 0.0*image.imvec
@@ -2398,11 +2398,11 @@ class Image(object):
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=scale_fontsize,power=power)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=scale_fontsize,power=power)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
 
         if axis is None: ax = plt.gcf()
         if axis is not None: ax = axis
@@ -2439,7 +2439,7 @@ class Image(object):
                       label_type='ticks', has_title=True,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=False,
-                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12, power=0):
+                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12, power=0, beamcolor='w'):
 
         """Display the image.
 
@@ -2627,7 +2627,7 @@ class Image(object):
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
                 beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
-                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=beam_lw)
+                plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
 
 
             if has_cbar:
@@ -2776,7 +2776,7 @@ class Image(object):
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
                 beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
-                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=beam_lw)
+                plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
 
             if has_cbar:
                 cbar = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
