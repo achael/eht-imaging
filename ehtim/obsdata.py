@@ -1251,11 +1251,13 @@ class Obsdata(object):
 
         return im
 
-    def fit_beam(self):
+    def fit_beam(self, weighting='uniform', units='rad'):
 
         """Fit a Gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).
 
            Args:
+               weighting (str): 'uniform' or 'natural'. 
+               units (string): 'rad' returns values in radians, 'natural' returns FWHMs in uas and theta in degrees
 
            Returns:
                (tuple): a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.
@@ -1279,8 +1281,13 @@ class Obsdata(object):
         # For a point (x,y) in the image plane, the dirty beam expansion is 1-ax^2-by^2-cxy
         u = self.unpack('u')['u']
         v = self.unpack('v')['v']
+        sigma = self.unpack('sigma')['sigma']
         n = float(len(u))
-        abc = (2.*np.pi**2/n) * np.array([np.sum(u**2), np.sum(v**2), 2*np.sum(u*v)])
+        weights = np.ones(u.shape)
+        if weighting == 'natural':
+            weights = 1./sigma**2
+            
+        abc = (2.*np.pi**2/np.sum(weights)) * np.array([np.sum(weights*u**2), np.sum(weights*v**2), 2*np.sum(weights*u*v)])
         abc = 1e-20 * abc # Decrease size of coefficients
 
         # Fit the beam
@@ -1298,6 +1305,11 @@ class Obsdata(object):
             theta = np.mod(params.x[2] + np.pi/2.0, np.pi)
 
         gparams = np.array((fwhm_maj, fwhm_min, theta))
+
+        if units == 'natural':
+            gparams[0] /= RADPERUAS
+            gparams[1] /= RADPERUAS
+            gparams[2] *= 180./np.pi
 
         return gparams
 
@@ -1340,7 +1352,7 @@ class Obsdata(object):
                              # TODO right normalization? 
 
         src = self.source + "_DB"
-        outim2 = ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
+        outim = ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
 
         return outim
 
