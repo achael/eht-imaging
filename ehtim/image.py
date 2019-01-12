@@ -23,6 +23,7 @@ from builtins import range
 from builtins import object
 
 import numpy as np
+import numpy.matlib as matlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
@@ -2868,7 +2869,7 @@ class Image(object):
             dynamic_range = dynamic_range * np.ones(len(im_list)+1)
 
         if type(shift) != np.ndarray and type(shift) != bool:
-            shift = np.matlib.repmat(shift, len(im_list), 1)
+            shift = matlib.repmat(shift, len(im_list), 1)
 
         psize = self.psize
         max_fov = np.max([self.xdim*self.psize, self.ydim*self.psize])
