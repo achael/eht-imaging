@@ -648,7 +648,7 @@ def get_bins_labels(intervals,dt=0.00001):
 def common_set(obs1, obs2, tolerance = 0,uniquely=False, by_what='uvdist'):
     '''
     Selects common subset of obs1, obs2 data
-    tolerance: time tolerance to accept common subsets [s] if by_what = 'ut' or 'gmst'
+    tolerance: time tolerance to accept common subsets [s] if by_what = 'ut' or in [h] if 'gmst'
     or u,v tolerance in lambdas if by_what='uvdist'
     uniquely: whether matching single value to single value
     by_what: matching common sets by ut time 'ut' or by uvdistance 'uvdist' or by 'gmst'
