@@ -645,11 +645,13 @@ def get_bins_labels(intervals,dt=0.00001):
     
     return binsT, labels
 
-def common_set(obs1, obs2, tolerance = 0,uniquely=False):
+def common_set(obs1, obs2, tolerance = 0,uniquely=False, by_what='uvdist'):
     '''
     Selects common subset of obs1, obs2 data
-    tolerance: time tolerance to accept common subsets
+    tolerance: time tolerance to accept common subsets [s] if by_what = 'ut' or 'gmst'
+    or u,v tolerance in lambdas if by_what='uvdist'
     uniquely: whether matching single value to single value
+    by_what: matching common sets by ut time 'ut' or by uvdistance 'uvdist' or by 'gmst'
     '''
     if obs1.polrep!=obs2.polrep:
         raise ValueError('Observations must be in the same polrep!')
@@ -664,16 +666,44 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
     df2['ta'] = list(map(lambda x: sorted(x)[0],zip(df2.t1,df2.t2)))
     df2['tb'] = list(map(lambda x: sorted(x)[1],zip(df2.t1,df2.t2)))
 
-    if tolerance>0:
-        d_mjd = tolerance/24.0/60.0/60.0      
-        df1['roundtime']=np.round(df1.mjd/d_mjd)
-        df2['roundtime']=np.round(df2.mjd/d_mjd)
-    else:
-        df1['roundtime'] = df1['time']
-        df2['roundtime'] = df2['time']
-        
-    #matching data
-    df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundtime'],uniquely=uniquely)
+    if by_what=='ut':
+        if tolerance>0:
+            d_mjd = tolerance/24.0/60.0/60.0      
+            df1['roundtime']=np.round(df1.mjd/d_mjd)
+            df2['roundtime']=np.round(df2.mjd/d_mjd)
+        else:
+            df1['roundtime'] = df1['time']
+            df2['roundtime'] = df2['time']
+        #matching data
+        df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundtime'],uniquely=uniquely)
+    
+    elif by_what=='gmst':
+        df1 = add_gmst(df1)
+        df2 = add_gmst(df2)
+        if tolerance>0:
+            d_gmst = tolerance      
+            df1['roundgmst']=np.round(df1.gmst/d_gmst)
+            df2['roundgmst']=np.round(df2.gmst/d_gmst)
+        else:
+            df1['roundgmst'] = df1['gmst']
+            df2['roundgmst'] = df2['gmst']
+        #matching data
+        df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundgmst'],uniquely=uniquely)
+
+    elif by_what=='uvdist':
+        if tolerance>0:
+            d_lambda = tolerance
+            df1['roundu'] = np.round(df1.u/d_lambda)
+            df1['roundv'] = np.round(df1.v/d_lambda)
+            df2['roundu'] = np.round(df2.u/d_lambda)
+            df2['roundv'] = np.round(df2.v/d_lambda)
+        else: 
+            df1['roundu'] = df1['u']
+            df1['roundv'] = df1['v']
+            df2['roundu'] = df2['u']
+            df2['roundv'] = df2['v']
+        #matching data
+        df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundu','roundv'],uniquely=uniquely)
 
     #replace visibility data with common subset
     obs1cut = obs1.copy()
@@ -687,6 +717,71 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
 
     return obs1cut,obs2cut
 
+"""
+def common_multiple_sets(obsL, tolerance = 0,uniquely=False, by_what='uvdist'):
+    '''
+    Selects common subset of obs1, obs2 data
+    tolerance: time tolerance to accept common subsets [s] if by_what = 'ut' or 'gmst'
+    or u,v tolerance in lambdas if by_what='uvdist'
+    uniquely: whether matching single value to single value
+    by_what: matching common sets by ut time 'ut' or by uvdistance 'uvdist' or by 'gmst'
+    '''
+    polrepL = list(set([obs.polrep for obs in obsL]))
+    if len(polrepL)>1:
+        raise ValueError('Observations must be in the same polrep!')
+    #make a dataframe with visibilities
+    #tolerance in seconds
+    dfL = [make_df(obs) for obs in obsL]
+
+    #we need this to match baselines with possibly different station orders between the pipelines
+    for df in dfL:
+        df['ta'] = list(map(lambda x: sorted(x)[0],zip(df.t1,df.t2)))
+        df['tb'] = list(map(lambda x: sorted(x)[1],zip(df.t1,df.t2)))
+
+    if by_what=='ut':
+        if tolerance>0:
+            d_mjd = tolerance/24.0/60.0/60.0    
+            for df in dfL:  df['roundtime']=np.round(df.mjd/d_mjd)
+        else:
+            for df in dfL:  df['roundtime']=df['time']
+        #matching data
+        dfcout = match_multiple_frames(dfL,['ta','tb','roundtime'],uniquely=uniquely)
+    
+    elif by_what=='gmst': 
+        dfL = [add_gmst(df) for df in dfL]
+        if tolerance>0:
+            d_gmst = tolerance
+            for df in dfL: df['roundgmst']=np.round(df.gmst/d_gmst)
+        else:
+            for df in dfL: df['roundgmst']= df['gmst']
+        #matching data
+        dfcut = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundgmst'],uniquely=uniquely)
+
+    
+    elif by_what=='uvdist':
+        if tolerance>0:
+            d_lambda = tolerance
+            for df in dfL: df['roundu'] = np.round(df.u/d_lambda)
+            for df in dfL: df['roundv'] = np.round(df.v/d_lambda)
+        else: 
+            for df in dfL: df['roundu'] = df['u']
+            for df in dfL: df['roundv'] = df['v']
+        #matching data
+        dfcut = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundu','roundv'],uniquely=uniquely)
+
+    #replace visibility data with common subset
+    obscutL = [obs.copy() for obs in obsL]
+
+    if obs1.polrep=='stokes':
+
+        for obscut in obscutL: obscut = df_to_rec(df1,'vis')
+        obs2cut.data = df_to_rec(df2,'vis')
+    elif obs1.polrep=='circ':
+        obs1cut.data = df_to_rec(df1,'vis_circ')
+        obs2cut.data = df_to_rec(df2,'vis_circ')
+
+    return obscut_list
+"""
 
 def match_multiple_frames(frames, what_is_same, dt = 0,uniquely=True):
 
@@ -713,3 +808,25 @@ def match_multiple_frames(frames, what_is_same, dt = 0,uniquely=True):
         frame.drop('all_ind', axis=1,inplace=True)
         frames_out.append(frame.copy())
     return frames_out
+
+
+def add_gmst(df):
+    #Lindy Blackburn's work borrowed from eat
+    """add *gmst* column to data frame with *datetime* field using astropy for conversion"""
+    from astropy import time
+    g = df.groupby('datetime')
+    (timestamps, indices) = list(zip(*iter(g.groups.items())))
+    # this broke in pandas 0.9 with API changes
+    if type(timestamps[0]) is np.datetime64: # pandas < 0.9
+        times_unix = 1e-9*np.array(
+            timestamps).astype('float') # note one float64 is not [ns] precision
+    elif type(timestamps[0]) is pd.Timestamp:
+        times_unix = np.array([1e-9 * t.value for t in timestamps]) # will be int64's
+    else:
+        raise Exception("do not know how to convert timestamp of type " + repr(type(timestamps[0])))
+    times_gmst = time.Time(
+        times_unix, format='unix').sidereal_time('mean', 'greenwich').hour # vectorized
+    df['gmst'] = 0. # initialize new column
+    for (gmst, idx) in zip(times_gmst, indices):
+        df.ix[idx, 'gmst'] = gmst
+    return df
