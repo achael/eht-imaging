@@ -973,12 +973,32 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
     taus = np.abs(recarr_to_ndarr(obsdata[['tau1','tau2']],'f8'))
     elevs = recarr_to_ndarr(obs.unpack(['el1','el2'],ang_unit='deg'),'f8')
-    time = obsdata['time']
+    times = obsdata['time']
     tint = obsdata['tint']
     vis1 = obsdata[obs.poldict['vis1']]
     vis2 = obsdata[obs.poldict['vis2']]
     vis3 = obsdata[obs.poldict['vis3']]
     vis4 = obsdata[obs.poldict['vis4']]
+
+    times_stable_phase = times.copy()
+    times_stable_amp = times.copy()
+    times_stable = times.copy()
+
+    if stabilize_scan_phase==True or stabilize_scan_amp==True:
+        scans = obs.scans
+        if np.all(scans) == None or len(scans) == 0:
+            print('ADDING SCANS')
+            obs_scans = obs.copy()
+            obs_scans.add_scans()
+            scans = obs_scans.scans
+        for j in range(len(times_stable)):
+            for scan in scans:
+                if scan[0] <= times_stable[j] and scan[1] >= times_stable[j]:
+                    times_stable[j] = scan[0]
+                    break
+
+    if stabilize_scan_phase==True: times_stable_phase = times_stable.copy()
+    if stabilize_scan_amp==True: times_stable_amp = times_stable.copy()
 
     # Recompute perfect sigmas from SEFDs
     bw = obs.bw
@@ -1018,26 +1038,26 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     if not ampcal:
         # Amplitude gain
         if type(gain_offset) == dict:
-            goff1 = np.fromiter((gain_offset[sites[i,0]] for i in range(len(time))), float)
-            goff2 = np.fromiter((gain_offset[sites[i,1]] for i in range(len(time))), float)
+            goff1 = np.fromiter((gain_offset[sites[i,0]] for i in range(len(times))), float)
+            goff2 = np.fromiter((gain_offset[sites[i,1]] for i in range(len(times))), float)
         else:
-            goff1 = np.fromiter((gain_offset for i in range(len(time))), float)
-            goff2 = np.fromiter((gain_offset for i in range(len(time))), float)
+            goff1 = np.fromiter((gain_offset for i in range(len(times))), float)
+            goff2 = np.fromiter((gain_offset for i in range(len(times))), float)
 
         if type(gainp) is dict:
-            gain_mult_1 = np.fromiter((gainp[sites[i,0]] for i in range(len(time))), float)
-            gain_mult_2 = np.fromiter((gainp[sites[i,1]] for i in range(len(time))), float)
+            gain_mult_1 = np.fromiter((gainp[sites[i,0]] for i in range(len(times))), float)
+            gain_mult_2 = np.fromiter((gainp[sites[i,1]] for i in range(len(times))), float)
         else:
-            gain_mult_1 = np.fromiter((gainp for i in range(len(time))), float)
-            gain_mult_2 = np.fromiter((gainp for i in range(len(time))), float)
+            gain_mult_1 = np.fromiter((gainp for i in range(len(times))), float)
+            gain_mult_2 = np.fromiter((gainp for i in range(len(times))), float)
 
         gain1 = np.abs(np.fromiter(
-                      ((1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gain_mult_1[i] * hashrandn(sites[i,0], 'gain', time[i], seed))
-                       for i in range(len(time))
+                      ((1.0 + goff1[i] * np.abs(hashrandn(sites[i,0], 'gain', seed)))*(1.0 + gain_mult_1[i] * hashrandn(sites[i,0], 'gain', times_stable_amp[i], seed))
+                       for i in range(len(times))
                       ), float))
         gain2 = np.abs(np.fromiter(
-                      ((1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gain_mult_2[i] * hashrandn(sites[i,1], 'gain', time[i], seed))
-                        for i in range(len(time))
+                      ((1.0 + goff2[i] * np.abs(hashrandn(sites[i,1], 'gain', seed)))*(1.0 + gain_mult_2[i] * hashrandn(sites[i,1], 'gain', times_stable_amp[i], seed))
+                        for i in range(len(times))
                       ), float))
         gain_true = np.sqrt(gain1 * gain2)
     else:
@@ -1049,8 +1069,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
         tau_est = np.sqrt(np.exp(taus[:,0]/(EP+np.sin(elevs[:,0]*DEGREE)) + taus[:,1]/(EP+np.sin(elevs[:,1]*DEGREE))))
 
         # Opacity Errors
-        tau1 = np.abs(np.fromiter((taus[i,0]* (1.0 + taup * hashrandn(sites[i,0], 'tau', time[i], seed)) for i in range(len(time))),float))
-        tau2 = np.abs(np.fromiter((taus[i,1]* (1.0 + taup * hashrandn(sites[i,1], 'tau', time[i], seed)) for i in range(len(time))),float))
+        tau1 = np.abs(np.fromiter((taus[i,0]* (1.0 + taup * hashrandn(sites[i,0], 'tau', times_stable_amp[i], seed)) for i in range(len(times))),float))
+        tau2 = np.abs(np.fromiter((taus[i,1]* (1.0 + taup * hashrandn(sites[i,1], 'tau', times_stable_amp[i], seed)) for i in range(len(times))),float))
 
         # Correct noise RMS for opacity
         tau_true = np.sqrt(np.exp(tau1/(EP+np.sin(elevs[:,0]*DEGREE)) + tau2/(EP+np.sin(elevs[:,1]*DEGREE))))
@@ -1082,8 +1102,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
 
     # Add random atmospheric phases
     if not phasecal:
-        phase1 = np.fromiter((2 * np.pi * hashrand(sites[i,0], 'phase', time[i], seed) for i in range(len(time))),float)
-        phase2 = np.fromiter((2 * np.pi * hashrand(sites[i,1], 'phase', time[i], seed) for i in range(len(time))),float)
+        phase1 = np.fromiter((2 * np.pi * hashrand(sites[i,0], 'phase', times_stable_phase[i], seed) for i in range(len(times))),float)
+        phase2 = np.fromiter((2 * np.pi * hashrand(sites[i,1], 'phase', times_stable_phase[i], seed) for i in range(len(times))),float)
 
         vis1 *= np.exp(1j * (phase2-phase1))
         vis2 *= np.exp(1j * (phase2-phase1))

@@ -1783,6 +1783,8 @@ class Image(object):
 
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
+                                       stabilize_scan_phase=stabilize_scan_phase,
+                                       stabilize_scan_amp=stabilize_scan_amp,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
@@ -2437,7 +2439,7 @@ class Image(object):
     def display(self, pol=None, cfun='afmhot', interp='gaussian',
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
-                      label_type='ticks', has_title=True,
+                      label_type='ticks', has_title=True, alpha=1,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=False,
                       scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12, power=0, beamcolor='w'):
@@ -2616,9 +2618,9 @@ class Image(object):
                 plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, pol), fontsize=16)
 
             if cbar_lims:
-                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
-                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp)
 
             if not(beamparams is None or (beamparams==False).any()):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
