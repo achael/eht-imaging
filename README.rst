@@ -66,6 +66,9 @@ Let us know if you use ehtim in your publication and we'll list it here!
 
 - Testing General Relativity with the Black Hole Shadow Size and Asymmetry of Sagittarius A*: Limitations from Interstellar Scattering, `Zhu et al. 2018 <https://arxiv.org/abs/1811.02079>`_
 
+- The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019 <https://arxiv.org/abs/1901.06226>`_
+
+
 Acknowledgements
 ----------------
 The oifits_new code used for reading/writing .oifits files is a slightly modified version of Paul Boley's package at `<http://astro.ins.urfu.ru/pages/~pboley/oifits>`_. The oifits read/write functionality is still being developed and may not work with all versions of python or astropy.
