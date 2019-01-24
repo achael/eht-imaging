@@ -2468,6 +2468,14 @@ class Image(object):
 
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
+               scinot (bool): Display numbers/units in scientific notation
+               scale_lw (float): Linewidth of the scale overlay
+               beam_lw (float): Linewidth of the beam overlay
+               cbar_fontsize (float): Fontsize of the text elements of the colorbar
+               axis (matplotlib.axes.Axes): An axis object, which will be edited so as to not overwrite your plot with a figure object. If none, creates a new figure.
+               scale_fontsize (float): Fontsize of the scale label
+               power (float): Passed to colorbar for division of ticks by 1e(power)
+               beamcolor (str): color of the beam overlay 
 
            Returns:
                (matplotlib.figure.Figure): figure object with image
