@@ -2622,7 +2622,7 @@ class Image(object):
             else:
                 im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp)
 
-            if not(beamparams is None or (beamparams==False).any()):
+            if not(beamparams is None or np.array(np.array(beamparams)==False).any()):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35*self.fovx(), -.35*self.fovy()]
                 beamimage = self.copy()
