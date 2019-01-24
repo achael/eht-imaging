@@ -2479,7 +2479,7 @@ class Image(object):
         else:
             interp = 'linear'
 
-        if not(beamparams is None or (beamparams==False).any()):
+        if not(beamparams is None or np.array(np.array(beamparams)==False).any()):
             if beamparams[0]>self.fovx() or beamparams[1]>self.fovx():
                 raise Exception("beam FWHM must be smaller than fov!")
 
