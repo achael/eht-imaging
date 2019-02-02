@@ -18,6 +18,7 @@
 
 from builtins import range
 import numpy as np
+import numpy.matlib as matlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import itertools as it
@@ -214,7 +215,7 @@ def plot_cphase_compare(obslist, imlist, site1, site2, site3,
     except TypeError: obslist = [obslist]
 
     if len(cphases)==0:
-        cphases = np.matlib.repmat([],len(obslist),1)
+        cphases = matlib.repmat([],len(obslist),1)
 
     if len(cphases) != len(obslist):
         raise Exception("cphases list must be same length as obslist!")
@@ -305,7 +306,7 @@ def plot_camp_compare(obslist, imlist, site1, site2, site3, site4,
     except TypeError: obslist = [obslist]
 
     if len(camps)==0:
-        camps = np.matlib.repmat([],len(obslist),1)
+        camps = matlib.repmat([],len(obslist),1)
 
     if len(camps) != len(obslist):
         raise Exception("camps list must be same length as obslist!")

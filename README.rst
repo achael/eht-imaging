@@ -5,7 +5,6 @@ Python modules for simulating and manipulating VLBI data and producing images wi
 
 The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Array``, ``Obsdata``, ``Imager``, and ``Caltable`` classes, which provide tools for loading images and data, producing simulated data from realistic u-v tracks,  calibrating, inspecting, and  plotting data, and producing images from data sets in various polariazations using various data terms and regularizers.
 
-Note that this is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.
 
 Installation
 ------------

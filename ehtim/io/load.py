@@ -218,11 +218,19 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
 
     # Update the image using the AIPS CC table
     if aipscc:
-        # Get AIPS CC Table
         try:
             aipscctab = hdulist["AIPS CC"]
         except:
-            raise ValueError("Input FITS file does not have an AIPS CC table.")
+            print("Input FITS file does not have an AIPS CC table. Loading image instead.")
+            aipscc = False
+            #raise ValueError("Input FITS file does not have an AIPS CC table.")
+
+    if aipscc:
+        # Get AIPS CC Table
+#        try:
+#            aipscctab = hdulist["AIPS CC"]
+#        except:
+#            raise ValueError("Input FITS file does not have an AIPS CC table.")
 
         print("loading the AIPS CC table.")
         print("force the pulse function to be the delta function.")

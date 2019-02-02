@@ -399,7 +399,8 @@ class Caltable(object):
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
                         source=self.source, mjd=self.mjd, timetype=self.timetype)
 
-    def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol=False, copy_closure_tables=True):
+    def applycal(self, obs, interp='linear', extrapolate=None, 
+                       force_singlepol=False, copy_closure_tables=True):
         """Apply the calibration table to an observation.
 
            Args:
@@ -493,7 +494,9 @@ class Caltable(object):
         calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr,
                                        polrep=obs.polrep, scantable=obs.scans, source=obs.source, mjd=obs.mjd,
                                        ampcal=obs.ampcal, phasecal=obs.phasecal, opacitycal=obs.opacitycal, 
-                                       dcal=obs.dcal, frcal=obs.frcal,timetype=obs.timetype,).switch_polrep(orig_polrep)
+                                       dcal=obs.dcal, frcal=obs.frcal,timetype=obs.timetype)
+        calobs = calobs.switch_polrep(orig_polrep)
+
         if copy_closure_tables:
             calobs.camp = obs_orig.camp
             calobs.logcamp = obs_orig.logcamp
