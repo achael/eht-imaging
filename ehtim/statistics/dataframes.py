@@ -147,6 +147,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             scan_starttimes = obs.mjd+np.asarray(scan_starttimes)/24.
             dic_scan_starttime = dict(zip(range(1,len(obs.scans)+1),scan_starttimes))
             vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
+            vis = vis[vis['scan']>0].copy()
             vis['mjd']= list(map(lambda x: dic_scan_starttime[x], vis['scan']))
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
             aggregated = {'mjd': np.min,
