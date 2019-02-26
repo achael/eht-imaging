@@ -151,9 +151,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
             aggregated = {'mjd': np.min,
         'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
-            aggregated['time']=(aggregated['mjd']-obs.mjd)*24.
-            aggregated['datetime']= Time(aggregated['mjd'], format='mjd').datetime
-
+            
         if err_type not in ['measured', 'predicted']:
             print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
             err_type='predicted'
@@ -202,6 +200,9 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
 
         #ACTUAL AVERAGING
         vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()
+        if scan_avg==True:
+            vis_avg['time']=(vis_avg['mjd']-obs.mjd)*24.
+            vis_avg['datetime']= Time(vis_avg['mjd'], format='mjd').datetime
         
         if err_type=='measured':
             vis_avg[sig1] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['dummy'])]
