@@ -113,7 +113,7 @@ def make_amp(obs,debias=True,polarization='unknown',band='unknown',round_s=0.1):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
-def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3)):
+def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3),round_s=0.1):
     """coherently averages visibilities
     Args:
         obs: ObsData object
@@ -122,13 +122,16 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
         num_samples: 'bootstrap' resample set size for measured error
         scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
+        round_s (float): round-off in seconds
     Returns:
         vis_avg: coherently averaged visibilities
     """
     if (dt<=0)&(scan_avg==False):
         return obs.data
     else:
-        vis = make_df(obs)
+        vis = make_df(obs,round_s=round_s)
+        #column just for counting the elements
+        vis['number'] = 1
         if scan_avg==False:
             #TODO
             #we don't have to work on datetime products at all
@@ -136,14 +139,20 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             t0 = datetime.datetime(1960,1,1) 
             vis['round_time'] = list(map(lambda x: np.floor((x- t0).total_seconds()/float(dt)),vis.datetime))  
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
-        else:
-            bins, labs = get_bins_labels(obs.scans)
-            vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
-            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
-        #column just for counting the elements
-        vis['number'] = 1
-        aggregated = {'datetime': np.min, 'time': np.min,
+            aggregated = {'datetime': np.min, 'time': np.min,'mjd':np.min,
         'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
+        else: #if averaging by scans, use scan info to define final timestamps
+            bins, labs = get_bins_labels(obs.scans)
+            scan_starttimes = [x[0] for x in list(obs.scans)]
+            scan_starttimes = obs.mjd+np.asarray(scan_starttimes)/24.
+            dic_scan_starttime = dict(zip(range(1,len(obs.scans)+1),scan_starttimes))
+            vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
+            vis['mjd']= list(map(lambda x: dic_scan_starttime[x], vis['scan']))
+            grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
+            aggregated = {'mjd': np.min,
+        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
+            aggregated['time']=(aggregated['mjd']-obs.mjd)*24.
+            aggregated['datetime']= Time(aggregated['mjd'], format='mjd').datetime
 
         if err_type not in ['measured', 'predicted']:
             print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
@@ -241,6 +250,8 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
         return obs.data
     else:
         vis = make_df(obs)
+        #column just for counting the elements
+        vis['number'] = 1
         if scan_avg==False:
             #TODO
             #we don't have to work on datetime products at all
@@ -248,13 +259,16 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
             t0 = datetime.datetime(1960,1,1) 
             vis['round_time'] = list(map(lambda x: np.floor((x- t0).total_seconds()/float(dt)),vis.datetime))  
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
+            aggregated = {'datetime': np.min, 'time': np.min,
+        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
+
         else:
             bins, labs = get_bins_labels(obs.scans)
+            scan_starttimes = [x[0] for x in list(obs.scans)]
             vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
+            
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
-        #column just for counting the elements
-        vis['number'] = 1
-        aggregated = {'datetime': np.min, 'time': np.min,
+            aggregated = {'datetime': np.min, 'time': np.min,
         'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
 
         if err_type not in ['measured', 'predicted']:
@@ -640,8 +654,8 @@ def get_bins_labels(intervals,dt=0.00001):
     binsT[::2] = [x[0]-dt for x in intervals]
     binsT[1::2] = [x[1]+dt for x in intervals]
     labels=[None]*(2*np.shape(intervals)[0]-1)
-    labels[::2] = [cou for cou in range(1,len(intervals)+1)]
-    labels[1::2] = [-cou for cou in range(1,len(intervals))]
+    labels[::2] = [cou for cou in range(1,len(intervals)+1)] #positive means timestamp inside predefined scans
+    labels[1::2] = [-cou for cou in range(1,len(intervals))] #negative means timestamp outside of defined scans
     
     return binsT, labels
 
