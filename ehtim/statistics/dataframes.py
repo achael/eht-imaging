@@ -113,7 +113,7 @@ def make_amp(obs,debias=True,polarization='unknown',band='unknown',round_s=0.1):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
-def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3),round_s=0.1,match_by_scans=False):
+def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3),round_s=0.1,scan_timestamps=False):
     """coherently averages visibilities
     Args:
         obs: ObsData object
@@ -123,7 +123,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         num_samples: 'bootstrap' resample set size for measured error
         scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
         round_s (float): round-off in seconds
-        match_by_scans (bool): should the timestamps be global for scans
+        scan_timestamps (bool): should the timestamps be global for scans
     Returns:
         vis_avg: coherently averaged visibilities
     """
@@ -144,7 +144,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             bins, labs = get_bins_labels(obs.scans)
             vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
             vis = vis[vis['scan']>0].copy()
-            if match_by_scans:
+            if scan_timestamps:
                 scan_starttimes = [x[0] for x in list(obs.scans)]
                 scan_starttimes = obs.mjd+np.asarray(scan_starttimes)/24.
                 dic_scan_starttime = dict(zip(range(1,len(obs.scans)+1),scan_starttimes))
