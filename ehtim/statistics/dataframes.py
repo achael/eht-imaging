@@ -113,7 +113,7 @@ def make_amp(obs,debias=True,polarization='unknown',band='unknown',round_s=0.1):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
-def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3)):
+def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3),round_s=0.1,match_by_scans=False):
     """coherently averages visibilities
     Args:
         obs: ObsData object
@@ -122,13 +122,17 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
         num_samples: 'bootstrap' resample set size for measured error
         scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
+        round_s (float): round-off in seconds
+        match_by_scans (bool): should the timestamps be global for scans
     Returns:
         vis_avg: coherently averaged visibilities
     """
     if (dt<=0)&(scan_avg==False):
         return obs.data
     else:
-        vis = make_df(obs)
+        vis = make_df(obs,round_s=round_s)
+        #column just for counting the elements
+        vis['number'] = 1
         if scan_avg==False:
             #TODO
             #we don't have to work on datetime products at all
@@ -136,15 +140,20 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             t0 = datetime.datetime(1960,1,1) 
             vis['round_time'] = list(map(lambda x: np.floor((x- t0).total_seconds()/float(dt)),vis.datetime))  
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
-        else:
+        else: #if averaging by scans, use scan info to define final timestamps
             bins, labs = get_bins_labels(obs.scans)
             vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
+            vis = vis[vis['scan']>0].copy()
+            if match_by_scans:
+                scan_starttimes = [x[0] for x in list(obs.scans)]
+                scan_starttimes = obs.mjd+np.asarray(scan_starttimes)/24.
+                dic_scan_starttime = dict(zip(range(1,len(obs.scans)+1),scan_starttimes))
+                vis['mjd']= list(map(lambda x: dic_scan_starttime[x], vis['scan']))
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
-        #column just for counting the elements
-        vis['number'] = 1
-        aggregated = {'datetime': np.min, 'time': np.min,
-        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
 
+        aggregated = {'datetime': np.min, 'time': np.min,'mjd': np.min,
+        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
+            
         if err_type not in ['measured', 'predicted']:
             print("Error type can only be 'predicted' or 'measured'! Assuming 'predicted'.")
             err_type='predicted'
@@ -193,6 +202,9 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
 
         #ACTUAL AVERAGING
         vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()
+        if (scan_avg==True)&(match_by_scans==True):
+            vis_avg['time']=(vis_avg['mjd']-obs.mjd)*24.
+            vis_avg['datetime']= Time(vis_avg['mjd'], format='mjd').datetime
         
         if err_type=='measured':
             vis_avg[sig1] = [0.5*(x[1][1]-x[1][0]) for x in list(vis_avg['dummy'])]
