@@ -113,7 +113,7 @@ def make_amp(obs,debias=True,polarization='unknown',band='unknown',round_s=0.1):
     df['baselength'] = np.sqrt(np.asarray(df.u)**2+np.asarray(df.v)**2)
     return df
 
-def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3),round_s=0.1):
+def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',num_samples=int(1e3),round_s=0.1,match_by_scans=False):
     """coherently averages visibilities
     Args:
         obs: ObsData object
@@ -123,6 +123,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         num_samples: 'bootstrap' resample set size for measured error
         scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
         round_s (float): round-off in seconds
+        match_by_scans (bool): should the timestamps be global for scans
     Returns:
         vis_avg: coherently averaged visibilities
     """
@@ -139,18 +140,18 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             t0 = datetime.datetime(1960,1,1) 
             vis['round_time'] = list(map(lambda x: np.floor((x- t0).total_seconds()/float(dt)),vis.datetime))  
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','round_time']
-            aggregated = {'datetime': np.min, 'time': np.min,'mjd':np.min,
-        'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
         else: #if averaging by scans, use scan info to define final timestamps
             bins, labs = get_bins_labels(obs.scans)
-            scan_starttimes = [x[0] for x in list(obs.scans)]
-            scan_starttimes = obs.mjd+np.asarray(scan_starttimes)/24.
-            dic_scan_starttime = dict(zip(range(1,len(obs.scans)+1),scan_starttimes))
             vis['scan'] = list(pd.cut(vis.time, bins,labels=labs))
             vis = vis[vis['scan']>0].copy()
-            vis['mjd']= list(map(lambda x: dic_scan_starttime[x], vis['scan']))
+            if match_by_scans:
+                scan_starttimes = [x[0] for x in list(obs.scans)]
+                scan_starttimes = obs.mjd+np.asarray(scan_starttimes)/24.
+                dic_scan_starttime = dict(zip(range(1,len(obs.scans)+1),scan_starttimes))
+                vis['mjd']= list(map(lambda x: dic_scan_starttime[x], vis['scan']))
             grouping=['tau1','tau2','polarization','band','baseline','t1','t2','scan']
-            aggregated = {'mjd': np.min,
+
+        aggregated = {'datetime': np.min, 'time': np.min,'mjd': np.min,
         'number': lambda x: len(x), 'u':np.mean, 'v':np.mean,'tint': np.sum}
             
         if err_type not in ['measured', 'predicted']:
@@ -201,7 +202,7 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
 
         #ACTUAL AVERAGING
         vis_avg = vis.groupby(grouping).agg(aggregated).reset_index()
-        if scan_avg==True:
+        if (scan_avg==True)&(match_by_scans==True):
             vis_avg['time']=(vis_avg['mjd']-obs.mjd)*24.
             vis_avg['datetime']= Time(vis_avg['mjd'], format='mjd').datetime
         
