@@ -185,6 +185,7 @@
 
 <span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">range</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.matlib</span> <span class="k">as</span> <span class="nn">matlib</span>
 <span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">itertools</span> <span class="k">as</span> <span class="nn">it</span>
@@ -381,7 +382,7 @@
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-        <span class="n">cphases</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">([],</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">cphases</span> <span class="o">=</span> <span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">([],</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;cphases list must be same length as obslist!&quot;</span><span class="p">)</span>
@@ -472,7 +473,7 @@
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-        <span class="n">camps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">([],</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">camps</span> <span class="o">=</span> <span class="n">matlib</span><span class="o">.</span><span class="n">repmat</span><span class="p">([],</span><span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">obslist</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;camps list must be same length as obslist!&quot;</span><span class="p">)</span>

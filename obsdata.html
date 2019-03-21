@@ -1003,16 +1003,23 @@ Potentially this could reduce risk of non-closing errors.</p>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.fit_beam">
-<code class="descname">fit_beam</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.fit_beam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.fit_beam" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit_beam</code><span class="sig-paren">(</span><em>weighting='uniform'</em>, <em>units='rad'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.fit_beam"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.fit_beam" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit a Gaussian to the dirty beam and return the parameters (fwhm_maj, fwhm_min, theta).</p>
-<p>Args:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;uniform&#8217; or &#8216;natural&#8217;.</li>
+<li><strong>units</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; &#8216;rad&#8217; returns values in radians, &#8216;natural&#8217; returns FWHMs in uas and theta in degrees</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -1543,6 +1550,31 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An Obsdata object with the rescaled noise values.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.rescale_zbl">
+<code class="descname">rescale_zbl</code><span class="sig-paren">(</span><em>totflux</em>, <em>uv_max</em>, <em>debias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.rescale_zbl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.rescale_zbl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rescale the short baselines to a new level of total flux.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>totflux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; new total flux to rescale to</li>
+<li><strong>uv_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; maximum baseline length to rescale</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Debias amplitudes before computing original total flux from short bls</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An Obsdata object with the inflated noise values.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>

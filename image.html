@@ -671,7 +671,7 @@ Returns metrics only for the primary polarization imvec!</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.contour">
-<code class="descname">contour</code><span class="sig-paren">(</span><em>contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;, legend=True, show_im=True, cfun='afmhot', scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1000.0, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit=('Jy', 'pixel'), export_pdf='', show=True, beamparams=None, cbar_orientation='vertical'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.contour"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.contour" title="Permalink to this definition">¶</a></dt>
+<code class="descname">contour</code><span class="sig-paren">(</span><em>contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;, legend=True, show_im=True, cfun='afmhot', scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1000.0, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit=('Jy', 'pixel'), contour_im=False, power=0, beamcolor='w', export_pdf='', show=True, beamparams=None, cbar_orientation='vertical', scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.contour"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.contour" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -743,7 +743,7 @@ Returns metrics only for the primary polarization imvec!</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.display">
-<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em>, <em>scinot=(0</em>, <em>0)</em>, <em>scale_lw=1</em>, <em>beam_lw=1</em>, <em>cbar_fontsize=12</em>, <em>axis=None</em>, <em>scale_fontsize=12</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
+<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>alpha=1</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em>, <em>scinot=False</em>, <em>scale_lw=1</em>, <em>beam_lw=1</em>, <em>cbar_fontsize=12</em>, <em>axis=None</em>, <em>scale_fontsize=12</em>, <em>power=0</em>, <em>beamcolor='w'</em>, <em>dpi=500</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -767,6 +767,14 @@ Returns metrics only for the primary polarization imvec!</p>
 <li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [fwhm_maj, fwhm_min, theta], set to plot beam contour</li>
 <li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to exported PDF with plot</li>
 <li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if true</li>
+<li><strong>scinot</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display numbers/units in scientific notation</li>
+<li><strong>scale_lw</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Linewidth of the scale overlay</li>
+<li><strong>beam_lw</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Linewidth of the beam overlay</li>
+<li><strong>cbar_fontsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Fontsize of the text elements of the colorbar</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; An axis object, which will be edited so as to not overwrite your plot with a figure object. If none, creates a new figure.</li>
+<li><strong>scale_fontsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Fontsize of the scale label</li>
+<li><strong>power</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Passed to colorbar for division of ticks by 1e(power)</li>
+<li><strong>beamcolor</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; color of the beam overlay</li>
 </ul>
 </td>
 </tr>
@@ -1202,7 +1210,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.overlay_display">
-<code class="descname">overlay_display</code><span class="sig-paren">(</span><em>im_list, color_coding=array([[1, 0, 1],        [0, 1, 0]]), export_pdf='', show=True, f=False, shift=[0, 0], final_fov=False, scale='lin', gamma=0.5, dynamic_range=[1000.0]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.overlay_display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.overlay_display" title="Permalink to this definition">¶</a></dt>
+<code class="descname">overlay_display</code><span class="sig-paren">(</span><em>im_list, color_coding=array([[1, 0, 1],        [0, 1, 0]]), export_pdf='', show=True, f=False, shift=[0, 0], final_fov=False, interp='gaussian', scale='lin', gamma=0.5, dynamic_range=[1000.0], rescale=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.overlay_display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.overlay_display" title="Permalink to this definition">¶</a></dt>
 <dd><p>Overlay primary polarization images of a list of images to compare structures.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
