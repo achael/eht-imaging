@@ -2442,7 +2442,7 @@ class Image(object):
                       label_type='ticks', has_title=True, alpha=1,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=False,
-                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12, power=0, beamcolor='w'):
+                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12, power=0, beamcolor='w', dpi=500):
 
         """Display the image.
 
@@ -2840,7 +2840,7 @@ class Image(object):
             plt.show(block=False)
 
         if export_pdf != "":
-            f.savefig(export_pdf, bbox_inches='tight', pad_inches = pdf_pad_inches)
+            f.savefig(export_pdf, bbox_inches='tight', pad_inches = pdf_pad_inches, dpi=dpi)
 
         return f
 
