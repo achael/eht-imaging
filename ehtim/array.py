@@ -38,7 +38,7 @@ class Array(object):
        Attributes:
            tarr (numpy.recarray): The array of telescope data with datatype DTARR
            tkey (dict): A dictionary of rows in the tarr for each site name
-           ephem (dict): A dictionary of 2TLEs for each space antenna, Space antennas have x=y=z=0 in the tarr
+           ephem (dict): A dictionary of TLEs for each space antenna, Space antennas have x=y=z=0 in the tarr
     """
 
     def __init__(self, tarr, ephem={}):
@@ -77,7 +77,8 @@ class Array(object):
         return np.array(bls)
 
     def obsdata(self, ra, dec, rf, bw, tint, tadv, tstart, tstop, mjd=MJD_DEFAULT, timetype='UTC',
-                      polrep='stokes', elevmin=ELEV_LOW, elevmax=ELEV_HIGH, tau=TAUDEF, fix_theta_GMST=False):
+                      polrep='stokes', elevmin=ELEV_LOW, elevmax=ELEV_HIGH, 
+                      tau=TAUDEF, fix_theta_GMST=False):
 
         """Generate u,v points and baseline uncertainties.
 
@@ -111,7 +112,8 @@ class Array(object):
         source=str(ra) + ":" + str(dec)
         obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, obsarr, self.tarr, 
                                     source=source, mjd=mjd, timetype=timetype, polrep=polrep,
-                                    ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
+                                    ampcal=True, phasecal=True, opacitycal=True, 
+                                    dcal=True, frcal=True,
                                     scantable=scans)
         return obs
 

@@ -172,7 +172,8 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
 
     return out
 
-def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', method="both", minimizer_method='BFGS', show_solution=False, 
+def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', method="both", 
+                  minimizer_method='BFGS', show_solution=False, 
                   pad_amp=0., gain_tol=.2, debias=True, caltable=False):
     """Self-calibrate a scan to an image.
 

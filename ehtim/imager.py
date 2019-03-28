@@ -146,7 +146,7 @@ class Imager(object):
         self.chisq_offset_gradient = 0.0
 
         # FFT parameters
-        self._ttype = kwargs.get('ttype','fast')
+        self._ttype = kwargs.get('ttype','nfft')
         self._fft_gridder_prad = kwargs.get('fft_gridder_prad',GRIDDER_P_RAD_DEFAULT)
         self._fft_conv_func = kwargs.get('fft_conv_func',GRIDDER_CONV_FUNC_DEFAULT)
         self._fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)

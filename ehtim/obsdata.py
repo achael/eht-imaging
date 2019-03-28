@@ -1409,18 +1409,30 @@ class Obsdata(object):
 
         return out
     
-    def rescale_zbl(self, totflux, uv_min, debias=True):
-        
-        obs_zerobl = self.flag_uvdist(uv_max=uv_min)
-        obs_zerobl.add_amp(debias=debias)
+    def rescale_zbl(self, totflux, uv_max, debias=True):
+        """Rescale the short baselines to a new level of total flux.
+
+           Args:
+               totflux (float): new total flux to rescale to
+               uv_max (float): maximum baseline length to rescale
+               debias (bool): Debias amplitudes before computing original total flux from short bls
+
+           Returns:
+               (Obsdata): An Obsdata object with the inflated noise values.
+        """
+
+        # estimate the original total flux 
+        obs_zerobl = self.flag_uvdist(uv_max=uv_max)
+        obs_zerobl.add_amp(debias=True)
         orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
 
         print('Rescaling zero baseline by ' + str(orig_totflux - totflux) + ' Jy to ' + str(totflux) + ' Jy')
 
-        # Rescale short baselines to excize contributions from extended flux (note: this does not do the proper thing for fractional polarization)
+        # Rescale short baselines to excise contributions from extended flux
+        # Note: this does not do the proper thing for fractional polarization)
         obs = self.copy()
         for j in range(len(obs.data)):
-            if (obs.data['u'][j]**2 + obs.data['v'][j]**2)**0.5 < uv_min:
+            if (obs.data['u'][j]**2 + obs.data['v'][j]**2)**0.5 < uv_max:
                 obs.data['vis'][j] *= totflux / orig_totflux
                 obs.data['qvis'][j] *= totflux / orig_totflux
                 obs.data['uvis'][j] *= totflux / orig_totflux
