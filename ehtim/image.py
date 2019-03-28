@@ -705,7 +705,7 @@ class Image(object):
 
     def resample_square(self, xdim_new, ker_size=5):
 
-        """Exactly resample a squre image to new dimensions using the pulse function.
+        """Exactly resample a square image to new dimensions using the pulse function.
 
            Args:
                 xdim_new  (int): new pixel dimension
@@ -1800,7 +1800,8 @@ class Image(object):
                       elevmin=ELEV_LOW, elevmax=ELEV_HIGH,
                       ttype='nfft', fft_pad_factor=2,
                       fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
-                      opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
+                      opacitycal=True, ampcal=True, phasecal=True, 
+                      dcal=True, frcal=True, rlgaincal=True,
                       stabilize_scan_phase=False, stabilize_scan_amp=False,
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
@@ -2328,17 +2329,20 @@ class Image(object):
 
         return x
 
-    def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, show_im=True,
+    def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], 
+                      contour_cfun=None, color='w', legend=True, show_im=True,
                       cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
-                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), contour_im=False, power=0, beamcolor='w',
-                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical", scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12):
+                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
+                      contour_im=False, power=0, beamcolor='w',
+                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical", 
+                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12):
 
-        """Display the image.
+        """Display the image in a contour plot.
 
            Args:
                contour_levels (arr): the fractional contour levels relative to the max flux plotted
-               contour_cfun (pyplot colormap function): the function used to get the RGB colors plotted for each level
+               contour_cfun (pyplot colormap function): the function used to get the RGB colors 
                legend (bool): True to show a legend that says what each contour line corresponds to
                cfun (str): matplotlib.pyplot color function
                scale (str): image scaling in ['log','gamma','lin']
@@ -2349,16 +2353,17 @@ class Image(object):
 
                plotp (bool): True to plot linear polarimetic image
                nvec (int): number of polarimetric vectors to plot
-               pcut (float): minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel
+               pcut (float): minimum stokes P value for displaying polarimetric vectors 
+                             as fraction of maximum Stokes I pixel
                label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
-               cbar_unit (tuple of strings): specifies the unit of each pixel for the colorbar: 'Jy', 'm-Jy', '$\mu$Jy'
+               cbar_unit (tuple of strings): the unit of each pixel for the colorbar: 'Jy', 'm-Jy', '$\mu$Jy'
 
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
-               show_im (bool): Display the image with the contour plot if True, otherwise it will be black
+               show_im (bool): Display the image with the contour plot if True
 
            Returns:
                (matplotlib.figure.Figure): figure object with image
@@ -2387,11 +2392,15 @@ class Image(object):
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, 
+                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=axis,             
+                      scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=None, scale_fontsize=scale_fontsize, power=power,beamcolor=beamcolor)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams,
+                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, 
+                      axis=None, scale_fontsize=scale_fontsize, power=power,beamcolor=beamcolor)
         else:
             if contour_im==False:
                 image.imvec = 0.0*image.imvec
@@ -2401,11 +2410,15 @@ class Image(object):
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, 
+                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, 
+                      axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=None, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams,
+                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=None,
+                      scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
 
         if axis is None: ax = plt.gcf()
         if axis is not None: ax = axis
@@ -2415,9 +2428,13 @@ class Image(object):
             plt.sca(axis)
 
         count = 0.
+
         for level in contour_levels:
-            rgbval = contour_cfun(count/len(contour_levels))
-            rgbstring = '#%02x%02x%02x' % (rgbval[0]*256, rgbval[1]*256, rgbval[2]*256)
+            if not(contour_cfun is None):
+                rgbval = contour_cfun(count/len(contour_levels))
+                rgbstring = '#%02x%02x%02x' % (rgbval[0]*256, rgbval[1]*256, rgbval[2]*256)
+            else:
+                rgbstring=color
             cs = plt.contour(x,y,z, levels=[level*maxz],colors=rgbstring, cmap=None )
             count += 1
             cs.collections[0].set_label(str(int(level*100)) + '%')

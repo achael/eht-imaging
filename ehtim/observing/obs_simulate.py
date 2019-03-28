@@ -372,7 +372,8 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
 # Noise + miscalibration funcitons
 ##################################################################################################
 
-def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
+def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True, 
+               frcal=True, rlgaincal=True,
                stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
                taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF, dterm_offset=DTERMPDEF,
                caltable_path=None, seed=False):
