@@ -399,7 +399,8 @@ class Caltable(object):
         return Caltable(self.ra, self.dec, self.rf, self.bw, outdict, self.tarr,
                         source=self.source, mjd=self.mjd, timetype=self.timetype)
 
-    def applycal(self, obs, interp='linear', extrapolate=None, force_singlepol=False):
+    def applycal(self, obs, interp='linear', extrapolate=None, 
+                       force_singlepol=False, copy_closure_tables=True):
         """Apply the calibration table to an observation.
 
            Args:
@@ -419,6 +420,7 @@ class Caltable(object):
         else:
             fill_value = extrapolate
 
+        obs_orig = obs.copy() # Need to do this before switch_polrep to keep tables
         orig_polrep = obs.polrep
         obs = obs.switch_polrep('circ')
 
@@ -488,12 +490,19 @@ class Caltable(object):
             else:
                 datatable = bl_obs
 
+        #calobs.data = np.array(datatable)
         calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr,
                                        polrep=obs.polrep, scantable=obs.scans, source=obs.source, mjd=obs.mjd,
                                        ampcal=obs.ampcal, phasecal=obs.phasecal, opacitycal=obs.opacitycal, 
-                                       dcal=obs.dcal, frcal=obs.frcal,timetype=obs.timetype,)
+                                       dcal=obs.dcal, frcal=obs.frcal,timetype=obs.timetype)
+        calobs = calobs.switch_polrep(orig_polrep)
 
-        return calobs.switch_polrep(orig_polrep)
+        if copy_closure_tables:
+            calobs.camp = obs_orig.camp
+            calobs.logcamp = obs_orig.logcamp
+            calobs.cphase = obs_orig.cphase
+
+        return calobs
 
     def merge(self, caltablelist, interp='linear', extrapolate=1):
         """Merge the calibration table with a list of other calibration tables

@@ -232,6 +232,7 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
         err_type (str): 'predicted' for modeled error, 'measured' for bootstrap empirical variability estimator
         num_samples: 'bootstrap' resample set size for measured error
         scan_avg (bool): should scan-long averaging be performed. If True, overrides dt
+
     Returns:
         vis_avg: coherently averaged visibilities
     """
@@ -320,7 +321,7 @@ def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type
             return vis_avg
 
 
-def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
+def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.,uv_min=False):
 
     """generate DataFrame of closure phases
 
@@ -332,7 +333,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
         df: closure phase data in DataFrame format
     """
 
-    data=obs.c_phases(mode=mode,count=count)
+    data=obs.c_phases(mode=mode,count=count,snrcut=snrcut,uv_min=uv_min)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -346,7 +347,7 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
     df['source'] = sour
     return df
 
-def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1):
+def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.):
 
     """generate DataFrame of closure amplitudes
 
@@ -358,7 +359,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
         df: closure amplitude data in DataFrame format
     """
 
-    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype)
+    data = obs.c_amplitudes(mode=mode,count=count,debias=debias,ctype=ctype,snrcut=snrcut)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -373,7 +374,7 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['catype'] = ctype
     return df
 
-def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1):
+def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0., uv_min=False):
 
     """generate DataFrame of bispectra
 
@@ -385,7 +386,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min'
         df: bispectra data in DataFrame format
     """
 
-    data = obs.bispectra(mode=mode,count=count)
+    data = obs.bispectra(mode=mode,count=count,snrcut=snrcut,uv_min=uv_min)
     sour=obs.source
     df = pd.DataFrame(data=data).copy()
     df['fmjd'] = df['time']/24.
@@ -399,7 +400,7 @@ def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min'
     df['source'] = sour
     return df
 
-def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=1000):
+def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=1000,snrcut=0.):
 
     """averages DataFrame of cphases
 
@@ -441,6 +442,9 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         cdf2['cphase'] = [x[0] for x in list(cdf2['dummy'])]
         cdf2['sigmacp'] = [0.5*(x[1][1]-x[1][0]) for x in list(cdf2['dummy'])]
 
+    # snrcut
+    cdf2 = cdf2[cdf2['sigmacp'] < 180./np.pi/snrcut].copy()  # TODO CHECK
+
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
     
@@ -453,7 +457,7 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         return cdf2
 
 
-def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
+def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3), snrcut=0.):
 
     """averages DataFrame of bispectra
 
@@ -482,6 +486,9 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
     #ACTUAL AVERAGING
     cdf2 = cdf2.groupby(grouping).agg(aggregated).reset_index()
 
+    # snrcut
+    cdf2 = cdf2[np.abs(cdf2['bispec']/cdf2['sigmacp']) > snrcut].copy()  # TODO CHECK
+
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
     
@@ -495,7 +502,7 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3)):
 
 
 def average_camp(cdf,dt,return_type='rec',err_type='predicted',num_samples=int(1e3)):
-
+    #TODO: SNRCUT?
     """averages DataFrame of closure amplitudes
 
     Args:
@@ -568,7 +575,7 @@ def df_to_rec(df,product_type):
          out=  df[['time','tint','t1','t2','tau1','tau2','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma']].to_records(index=False)
          return np.array(out,dtype=DTPOL_CIRC)
     elif product_type=='amp':
-         out=  df[['time','tint','t1','t2','u','v','vis','amp','sigma']].to_records(index=False)
+         out=  df[['time','tint','t1','t2','u','v','amp','sigma']].to_records(index=False)
          return np.array(out,dtype=DTAMP)
     elif product_type=='bispec':
          out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
@@ -638,11 +645,13 @@ def get_bins_labels(intervals,dt=0.00001):
     
     return binsT, labels
 
-def common_set(obs1, obs2, tolerance = 0,uniquely=False):
+def common_set(obs1, obs2, tolerance = 0,uniquely=False, by_what='uvdist'):
     '''
     Selects common subset of obs1, obs2 data
-    tolerance: time tolerance to accept common subsets
+    tolerance: time tolerance to accept common subsets [s] if by_what = 'ut' or in [h] if 'gmst'
+    or u,v tolerance in lambdas if by_what='uvdist'
     uniquely: whether matching single value to single value
+    by_what: matching common sets by ut time 'ut' or by uvdistance 'uvdist' or by 'gmst'
     '''
     if obs1.polrep!=obs2.polrep:
         raise ValueError('Observations must be in the same polrep!')
@@ -657,16 +666,44 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
     df2['ta'] = list(map(lambda x: sorted(x)[0],zip(df2.t1,df2.t2)))
     df2['tb'] = list(map(lambda x: sorted(x)[1],zip(df2.t1,df2.t2)))
 
-    if tolerance>0:
-        d_mjd = tolerance/24.0/60.0/60.0      
-        df1['roundtime']=np.round(df1.mjd/d_mjd)
-        df2['roundtime']=np.round(df2.mjd/d_mjd)
-    else:
-        df1['roundtime'] = df1['time']
-        df2['roundtime'] = df2['time']
-        
-    #matching data
-    df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundtime'],uniquely=uniquely)
+    if by_what=='ut':
+        if tolerance>0:
+            d_mjd = tolerance/24.0/60.0/60.0      
+            df1['roundtime']=np.round(df1.mjd/d_mjd)
+            df2['roundtime']=np.round(df2.mjd/d_mjd)
+        else:
+            df1['roundtime'] = df1['time']
+            df2['roundtime'] = df2['time']
+        #matching data
+        df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundtime'],uniquely=uniquely)
+    
+    elif by_what=='gmst':
+        df1 = add_gmst(df1)
+        df2 = add_gmst(df2)
+        if tolerance>0:
+            d_gmst = tolerance      
+            df1['roundgmst']=np.round(df1.gmst/d_gmst)
+            df2['roundgmst']=np.round(df2.gmst/d_gmst)
+        else:
+            df1['roundgmst'] = df1['gmst']
+            df2['roundgmst'] = df2['gmst']
+        #matching data
+        df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundgmst'],uniquely=uniquely)
+
+    elif by_what=='uvdist':
+        if tolerance>0:
+            d_lambda = tolerance
+            df1['roundu'] = np.round(df1.u/d_lambda)
+            df1['roundv'] = np.round(df1.v/d_lambda)
+            df2['roundu'] = np.round(df2.u/d_lambda)
+            df2['roundv'] = np.round(df2.v/d_lambda)
+        else: 
+            df1['roundu'] = df1['u']
+            df1['roundv'] = df1['v']
+            df2['roundu'] = df2['u']
+            df2['roundv'] = df2['v']
+        #matching data
+        df1,df2 = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundu','roundv'],uniquely=uniquely)
 
     #replace visibility data with common subset
     obs1cut = obs1.copy()
@@ -680,6 +717,71 @@ def common_set(obs1, obs2, tolerance = 0,uniquely=False):
 
     return obs1cut,obs2cut
 
+"""
+def common_multiple_sets(obsL, tolerance = 0,uniquely=False, by_what='uvdist'):
+    '''
+    Selects common subset of obs1, obs2 data
+    tolerance: time tolerance to accept common subsets [s] if by_what = 'ut' or 'gmst'
+    or u,v tolerance in lambdas if by_what='uvdist'
+    uniquely: whether matching single value to single value
+    by_what: matching common sets by ut time 'ut' or by uvdistance 'uvdist' or by 'gmst'
+    '''
+    polrepL = list(set([obs.polrep for obs in obsL]))
+    if len(polrepL)>1:
+        raise ValueError('Observations must be in the same polrep!')
+    #make a dataframe with visibilities
+    #tolerance in seconds
+    dfL = [make_df(obs) for obs in obsL]
+
+    #we need this to match baselines with possibly different station orders between the pipelines
+    for df in dfL:
+        df['ta'] = list(map(lambda x: sorted(x)[0],zip(df.t1,df.t2)))
+        df['tb'] = list(map(lambda x: sorted(x)[1],zip(df.t1,df.t2)))
+
+    if by_what=='ut':
+        if tolerance>0:
+            d_mjd = tolerance/24.0/60.0/60.0    
+            for df in dfL:  df['roundtime']=np.round(df.mjd/d_mjd)
+        else:
+            for df in dfL:  df['roundtime']=df['time']
+        #matching data
+        dfcout = match_multiple_frames(dfL,['ta','tb','roundtime'],uniquely=uniquely)
+    
+    elif by_what=='gmst': 
+        dfL = [add_gmst(df) for df in dfL]
+        if tolerance>0:
+            d_gmst = tolerance
+            for df in dfL: df['roundgmst']=np.round(df.gmst/d_gmst)
+        else:
+            for df in dfL: df['roundgmst']= df['gmst']
+        #matching data
+        dfcut = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundgmst'],uniquely=uniquely)
+
+    
+    elif by_what=='uvdist':
+        if tolerance>0:
+            d_lambda = tolerance
+            for df in dfL: df['roundu'] = np.round(df.u/d_lambda)
+            for df in dfL: df['roundv'] = np.round(df.v/d_lambda)
+        else: 
+            for df in dfL: df['roundu'] = df['u']
+            for df in dfL: df['roundv'] = df['v']
+        #matching data
+        dfcut = match_multiple_frames([df1.copy(),df2.copy()],['ta','tb','roundu','roundv'],uniquely=uniquely)
+
+    #replace visibility data with common subset
+    obscutL = [obs.copy() for obs in obsL]
+
+    if obs1.polrep=='stokes':
+
+        for obscut in obscutL: obscut = df_to_rec(df1,'vis')
+        obs2cut.data = df_to_rec(df2,'vis')
+    elif obs1.polrep=='circ':
+        obs1cut.data = df_to_rec(df1,'vis_circ')
+        obs2cut.data = df_to_rec(df2,'vis_circ')
+
+    return obscut_list
+"""
 
 def match_multiple_frames(frames, what_is_same, dt = 0,uniquely=True):
 
@@ -706,3 +808,25 @@ def match_multiple_frames(frames, what_is_same, dt = 0,uniquely=True):
         frame.drop('all_ind', axis=1,inplace=True)
         frames_out.append(frame.copy())
     return frames_out
+
+
+def add_gmst(df):
+    #Lindy Blackburn's work borrowed from eat
+    """add *gmst* column to data frame with *datetime* field using astropy for conversion"""
+    from astropy import time
+    g = df.groupby('datetime')
+    (timestamps, indices) = list(zip(*iter(g.groups.items())))
+    # this broke in pandas 0.9 with API changes
+    if type(timestamps[0]) is np.datetime64: # pandas < 0.9
+        times_unix = 1e-9*np.array(
+            timestamps).astype('float') # note one float64 is not [ns] precision
+    elif type(timestamps[0]) is pd.Timestamp:
+        times_unix = np.array([1e-9 * t.value for t in timestamps]) # will be int64's
+    else:
+        raise Exception("do not know how to convert timestamp of type " + repr(type(timestamps[0])))
+    times_gmst = time.Time(
+        times_unix, format='unix').sidereal_time('mean', 'greenwich').hour # vectorized
+    df['gmst'] = 0. # initialize new column
+    for (gmst, idx) in zip(times_gmst, indices):
+        df.ix[idx, 'gmst'] = gmst
+    return df

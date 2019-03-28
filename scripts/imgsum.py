@@ -21,6 +21,7 @@ if __name__=='__main__':
     parser.add_argument('--cp_uv_min', type=float,default=0, help="uv_min for closure phases")
     parser.add_argument('--aipscc', type=bool,default=False, help="load clean components from fits")
     parser.add_argument('--systematic_noise', type=float, default=0, help="systematic noise to add on amplitudes")
+    parser.add_argument('--snrcut', type=float, default=0, help="snr cut")
     parser.add_argument('--systematic_cphase_noise', type=float, default=0,help="systematic noise to add on cphase")
     parser.add_argument('--fontsize', type=int, default=0,help="font size")
     parser.add_argument('--cfun', type=str, default='afmhot',help="image color function")
@@ -29,6 +30,7 @@ if __name__=='__main__':
     parser.add_argument('--no_gains', default=False,action='store_true',help="remove gain plots")
     parser.add_argument('--no_cphase', default=False,action='store_true',help="remove closure phase plots")
     parser.add_argument('--no_camp', default=False,action='store_true',help="remove closure amp plots")
+    parser.add_argument('--no_amp', default=False,action='store_true',help="remove closure amp plots")
 
     opt = parser.parse_args()
     print("Generating Image Summary PDF")
@@ -48,6 +50,8 @@ if __name__=='__main__':
     else: cphaseplots=True
     if opt.no_camp: campplots=False
     else: campplots=True
+    if opt.no_amp: ampplots=False
+    else: ampplots=True
 
     im = eh.image.load_fits(opt.inputim, aipscc=aipscc)
     obs = eh.obsdata.load_uvfits(opt.inputobs)
@@ -60,9 +64,9 @@ if __name__=='__main__':
     else: outname = outdir +'/' + basename + '.pdf'
 
     args = [im, obs, obs_uncal, outname]
-    kwargs = {'commentstr':opt.c, 'outdir':outdir,'ebar':ebar,'cfun':opt.cfun,
+    kwargs = {'commentstr':opt.c, 'outdir':outdir,'ebar':ebar,'cfun':opt.cfun,'snrcut':snrcut,
               'sysnoise':opt.systematic_noise,'syscnoise':opt.systematic_cphase_noise,'fontsize':opt.fontsize,
-              'gainplots':gainplots,'cphaseplots':cphaseplots,'campplots':campplots, 'debias':debias,  
+              'gainplots':gainplots,'cphaseplots':cphaseplots,'campplots':campplots, 'ampplots':ampplots, 'debias':debias,  
               'cp_uv_min':cp_uv_min}
 
     eh.plotting.summary_plots.imgsum(*args, **kwargs)

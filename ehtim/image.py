@@ -23,6 +23,7 @@ from builtins import range
 from builtins import object
 
 import numpy as np
+import numpy.matlib as matlib
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
@@ -1567,6 +1568,54 @@ class Image(object):
                 outim.add_pol_image(polarr, pol)
 
         return outim
+    
+    def add_zblterm(self, obs, uv_min, zblval=None, new_fov=False, gauss_sz=False, gauss_sz_factor=0.75, debias=True):
+        
+        """Add a Gaussian term to account for missing flux in the 0 baseline.
+            
+            Args:
+            obs : an Obsdata object that the min non-zero baseline and 0-bl flux are determined from
+            uv_min (float): The cuttoff in Glambada used to determine what is a 0-bl
+            new_fov (rad): The size of the padded image once the Gaussian is added (safest to keep False, then it will be set to 3 x the gaussian fwhm)
+            gauss_sz (rad): The size of the Gaussian added to add flux to the 0-bl. (safest to keep False and it is computed from the min non-zero baseline)
+            gauss_sz_factor (float): The fraction of the min non-zero baseline that is used to caluclate the Gaussian FWHM.
+            debias (bool): True if you use debiased amplitudes to caluclate the 0-bl flux in Jy
+            
+            Returns:
+            (Image): a padded image with a large Gaussian component
+            """
+        
+        if gauss_sz == False:
+            obs_flag = obs.flag_uvdist(uv_min = uv_min)
+            minuvdist = np.min( np.sqrt(obs_flag.data['u']**2 + obs_flag.data['v']**2) )
+            gauss_sz_sigma = (1/(gauss_sz_factor*minuvdist))
+            gauss_sz = gauss_sz_sigma * 2.355 # convert from stdev to fwhm
+        
+        factor = 5.0
+        if new_fov == False:
+            im_fov = np.max((self.xdim*self.psize, self.ydim*self.psize))
+            new_fov = np.max((factor*(gauss_sz / 2.355), im_fov))
+        
+        if new_fov < factor*(gauss_sz / 2.355):
+            print('WARNING! The specified new fov may not be large enough for the gaussian size and may cause higher frequency effects')
+        
+        # calculate the amount of flux to include in the Gaussian
+        obs_zerobl = obs.flag_uvdist(uv_max=uv_min)
+        obs_zerobl.add_amp(debias=debias)
+        orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
+        
+        if zblval == None:
+            addedflux = orig_totflux - np.sum(self.imvec)
+        else:
+            addedflux = orig_totflux - zblval
+        
+        print('Adding a ' + str(addedflux) + ' Jy circular Gaussian of FWHM size ' + str(gauss_sz/RADPERUAS) + ' uas')
+        
+        im_new = self.copy()
+        im_new = im_new.pad(new_fov, new_fov)
+        im_new = im_new.add_gauss(addedflux, (gauss_sz, gauss_sz, 0, 0, 0))
+        return im_new
+
 
     def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', cache=False, fft_pad_factor=2):
 
@@ -1734,6 +1783,8 @@ class Image(object):
 
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
+                                       stabilize_scan_phase=stabilize_scan_phase,
+                                       stabilize_scan_amp=stabilize_scan_amp,
                                        gainp=gainp, taup=taup, gain_offset=gain_offset, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
@@ -2280,8 +2331,8 @@ class Image(object):
     def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=plt.cm.RdYlGn, legend=True, show_im=True,
                       cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
-                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical"):
+                      has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'), contour_im=False, power=0, beamcolor='w',
+                      export_pdf="", show=True, beamparams=None, cbar_orientation="vertical", scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12):
 
         """Display the image.
 
@@ -2325,19 +2376,43 @@ class Image(object):
         #make the image grid
         z = image.imvec.reshape((image.ydim ,image.xdim ))
         maxz = max(image.imvec)
-        ax = plt.gca()
+        if axis is None:
+            ax = plt.gca()
+
+        elif axis is not None:
+            ax = axis
+            plt.sca(axis)
 
         if show_im:
-            image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+            if axis is not None:
+                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+            else:   
+                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=None, scale_fontsize=scale_fontsize, power=power,beamcolor=beamcolor)
         else:
-            image.imvec = 0.0*image.imvec
-            image.display(cfun='afmhot',scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+            if contour_im==False:
+                image.imvec = 0.0*image.imvec
+            else:
+                image = contour_im.copy()
+            
+            if axis is not None:
+                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
                       plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
-                      has_cbar=False, cbar_lims=(0,10000), cbar_unit=cbar_unit, beamparams=beamparams)
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+            else:   
+                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
+                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=None, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
 
-        ax = plt.gcf()
+        if axis is None: ax = plt.gcf()
+        if axis is not None: ax = axis
+
+        if axis is not None:
+            ax = axis
+            plt.sca(axis)
 
         count = 0.
         for level in contour_levels:
@@ -2356,15 +2431,18 @@ class Image(object):
         if export_pdf != "":
             ax.savefig(export_pdf, bbox_inches='tight', pad_inches = 0)
 
+        elif axis is not None:
+            return axis
         return ax
 
 
     def display(self, pol=None, cfun='afmhot', interp='gaussian',
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
-                      label_type='ticks', has_title=True,
+                      label_type='ticks', has_title=True, alpha=1,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical"):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=False,
+                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12, power=0, beamcolor='w'):
 
         """Display the image.
 
@@ -2390,6 +2468,14 @@ class Image(object):
 
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
+               scinot (bool): Display numbers/units in scientific notation
+               scale_lw (float): Linewidth of the scale overlay
+               beam_lw (float): Linewidth of the beam overlay
+               cbar_fontsize (float): Fontsize of the text elements of the colorbar
+               axis (matplotlib.axes.Axes): An axis object, which will be edited so as to not overwrite your plot with a figure object. If none, creates a new figure.
+               scale_fontsize (float): Fontsize of the scale label
+               power (float): Passed to colorbar for division of ticks by 1e(power)
+               beamcolor (str): color of the beam overlay 
 
            Returns:
                (matplotlib.figure.Figure): figure object with image
@@ -2401,7 +2487,7 @@ class Image(object):
         else:
             interp = 'linear'
 
-        if not(beamparams is None or (beamparams==False).any()):
+        if not(beamparams is None or beamparams is False):
             if beamparams[0]>self.fovx() or beamparams[1]>self.fovx():
                 raise Exception("beam FWHM must be smaller than fov!")
 
@@ -2413,8 +2499,12 @@ class Image(object):
             label_type = 'none'
             has_title = False
 
-        f = plt.figure()
-        plt.clf()
+        if axis is None:
+            f = plt.figure()
+            plt.clf()
+
+        if axis is not None:
+            plt.sca(axis)
 
         # Get unit scale factor
         factor = 1.
@@ -2431,25 +2521,49 @@ class Image(object):
             factor = 3.254e13/(self.rf**2 * self.psize**2)
             fluxunit = 'Brightness Temperature (K)'
             areaunit = ''
-        elif cbar_unit[0] != 'Jy':
-            raise ValueError('cbar_unit ' + cbar_unit[0] + ' is not a possible option')
+            if power!=0:
+                fluxunit = (r'Brightness Temperature ($10^{{' + str(power) + '}}$ K)')
+            else:
+                fluxunit = 'Brightness Temperature (K)'
+        elif cbar_unit[0] in ['Jy']:
+            fluxunit = 'Jy'
+            factor *= 1.
+        else:
+            factor = 1
+            fluxunit = cbar_unit[0]
+            areaunit = ''
+        #elif cbar_unit[0] != 'Jy':
+            #raise ValueError('cbar_unit ' + cbar_unit[0] + ' is not a possible option')
 
         if len(cbar_unit) == 1 or cbar_unit[0] == 'Tb':
             factor *= 1.
+
         elif cbar_unit[1] == 'pixel':
             factor *= 1.
+            if power!=0:
+                areaunit = areaunit + (r' ($10^{{' + str(power) + '}}$ K)')
+
         elif cbar_unit[1] in ['$arcseconds$^2$','as$^2$','as2']:
             areaunit='as$^2$'
             fovfactor = self.xdim*self.psize*(1/RADPERAS)
             factor *= (1./fovfactor)**2 / (1./self.xdim)**2
+            if power!=0:
+                areaunit = areaunit + (r' ($10^{{' + str(power) + '}}$ K)')
+
         elif cbar_unit[1] in ['$\m-arcseconds$^2$','mas$^2$','mas2']:
             areaunit='mas$^2$'
             fovfactor = self.xdim*self.psize*(1/RADPERUAS) / 1000.
             factor *= (1./fovfactor)**2 / (1./self.xdim)**2
+            if power!=0:
+                areaunit = areaunit + (r' ($10^{{' + str(power) + '}}$ K)')
+
         elif cbar_unit[1] in ['$\mu$-arcseconds$^2$','$\mu$as$^2$','muas2']:
             areaunit='$\mu$as$^2$'
             fovfactor = self.xdim*self.psize*(1/RADPERUAS)
             factor *= (1./fovfactor)**2 / (1./self.xdim)**2
+            if power!=0:
+                areaunit = areaunit + (r' ($10^{{' + str(power) + '}}$ K)')
+
         elif cbar_unit[1]=='beam':
             if (beamparams is None or beamparams==False):
                 print("Cannot convert to Jy/beam without beamparams!")
@@ -2457,18 +2571,21 @@ class Image(object):
                 areaunit='beam'
                 beamarea=(2.0*np.pi*beamparams[0]*beamparams[1]/(8.0*np.log(2)))
                 factor = beamarea/(self.psize**2)
+                if power!=0:
+                    areaunit = areaunit + (r' ($10^{{' + str(power) + '}}$ K)')
+
         else:
             raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
 
         if not plotp:
             # Plot single polarization image
             try:
-                imvec = np.array(self._imdict[pol]).reshape(-1)
+                imvec = np.array(self._imdict[pol]).reshape(-1) / (10.**power)
             except KeyError:
                 try:
                     if self.polrep=='stokes': im2 = self.switch_polrep('circ')
                     elif self.polrep=='circ': im2 = self.switch_polrep('stokes')
-                    imvec = np.array(im2._imdict[pol]).reshape(-1)
+                    imvec = np.array(im2._imdict[pol]).reshape(-1) / (10.**power)
                 except KeyError:
                     raise Exception("Cannot make pol %s image in display()!" % pol)
 
@@ -2500,6 +2617,8 @@ class Image(object):
                 unit = '(' + unit + ')^' + str(gamma)
 
             if cbar_lims:
+                cbar_lims[0] = cbar_lims[0] / (10.**power)
+                cbar_lims[1] = cbar_lims[1] / (10.**power)
                 imarr[imarr>cbar_lims[1]] = cbar_lims[1]
                 imarr[imarr<cbar_lims[0]] = cbar_lims[0]
 
@@ -2507,11 +2626,11 @@ class Image(object):
                 plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, pol), fontsize=16)
 
             if cbar_lims:
-                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
-                im = plt.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
+                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp)
 
-            if not(beamparams is None or (beamparams==False).any()):
+            if not(beamparams is None or beamparams is False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
                               -.35*self.fovx(), -.35*self.fovy()]
                 beamimage = self.copy()
@@ -2519,20 +2638,30 @@ class Image(object):
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
                 beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
-                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
+                plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
+
 
             if has_cbar:
                 if only_cbar: im.set_visible(False)
-                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cb = plt.colorbar(im, fraction=0.046, pad=0.04, orientation=cbar_orientation)
+                cb.set_label(unit, fontsize=float(cbar_fontsize))
+                        
+                if cbar_fontsize != 12: cb.set_label(unit, fontsize=float(cbar_fontsize)/1.5)
+                cb.ax.tick_params(labelsize=cbar_fontsize)
+                        
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
+                if scinot:
+                    cb.formatter.set_powerlimits((0,0))
+                    cb.update_ticks()
+        
 
         else: #plot Stokes parameters!
             im_stokes = self.switch_polrep(polrep_out='stokes')
-            imvec = np.array(im_stokes.imvec).reshape(-1)
-            qvec = np.array(im_stokes.qvec).reshape(-1)
-            uvec = np.array(im_stokes.uvec).reshape(-1)
-            vvec = np.array(im_stokes.vvec).reshape(-1)
+            imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
+            qvec = np.array(im_stokes.qvec).reshape(-1) / (10**power)
+            uvec = np.array(im_stokes.uvec).reshape(-1) / (10**power)
+            vvec = np.array(im_stokes.vvec).reshape(-1) / (10**power)
 
             if len(imvec)==0: imvec = np.zeros(im_stokes.ydim*im_stokes.xdim)
             if len(qvec)==0: qvec = np.zeros(im_stokes.ydim*im_stokes.xdim)
@@ -2568,6 +2697,8 @@ class Image(object):
                 unit = '(' + unit + ')^gamma'
 
             if cbar_lims:
+                cbar_lims[0] = cbar_lims[0] / (10.**power)
+                cbar_lims[1] = cbar_lims[1] / (10.**power)
                 imarr2[imarr2>cbar_lims[1]] = cbar_lims[1]
                 imarr2[imarr2<cbar_lims[0]] = cbar_lims[0]
 
@@ -2659,10 +2790,11 @@ class Image(object):
                 beamimage = beamimage.add_gauss(1, beamparams)
                 halflevel = 0.5*np.max(beamimage.imvec)
                 beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
-                plt.contour(beamimarr, levels=[halflevel], colors='w', linewidths=1)
+                plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
 
             if has_cbar:
-                plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cbar = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cbar.ax.tick_params(labelsize=cbar_fontsize) 
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
             if has_title:
@@ -2687,19 +2819,23 @@ class Image(object):
             fov_scale = int( math.ceil(fov_uas * roughfactor / 10.0 ) ) * 10 # round around 1/3 the fov to nearest 10
             start = self.xdim * roughfactor / 3.0 # select the start location
             end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
-            plt.plot([start, end], [self.ydim-start, self.ydim-start], color="white", lw=1) # plot line
-            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=12)
+            plt.plot([start, end], [self.ydim-start-5, self.ydim-start-5], color="white", lw=scale_lw) # plot line
+            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=scale_fontsize)
             ax = plt.gca()
-            ax.axes.get_xaxis().set_visible(False)
-            ax.axes.get_yaxis().set_visible(False)
+            if axis is None:
+                ax.axes.get_xaxis().set_visible(False)
+                ax.axes.get_yaxis().set_visible(False)
 
         elif label_type=='none':
             plt.axis('off')
             ax = plt.gca()
-            ax.axes.get_xaxis().set_visible(False)
-            ax.axes.get_yaxis().set_visible(False)
+            if axis is None:
+                ax.axes.get_xaxis().set_visible(False)
+                ax.axes.get_yaxis().set_visible(False)
 
         # Show or save to file
+        if axis is not None:
+            return axis
         if show:
             plt.show(block=False)
 
@@ -2710,8 +2846,8 @@ class Image(object):
 
     def overlay_display(self, im_list, color_coding = np.array([[1, 0, 1], [0, 1, 0]]),
                               export_pdf="", show=True, f=False,
-                              shift=[0,0], final_fov=False,
-                              scale='lin', gamma=0.5, dynamic_range=[1.e3]):
+                              shift=[0,0], final_fov=False, interp='gaussian',
+                              scale='lin', gamma=0.5, dynamic_range=[1.e3], rescale=True):
 
         """Overlay primary polarization images of a list of images to compare structures.
 
@@ -2743,7 +2879,7 @@ class Image(object):
             dynamic_range = dynamic_range * np.ones(len(im_list)+1)
 
         if type(shift) != np.ndarray and type(shift) != bool:
-            shift = np.matlib.repmat(shift, len(im_list), 1)
+            shift = matlib.repmat(shift, len(im_list), 1)
 
         psize = self.psize
         max_fov = np.max([self.xdim*self.psize, self.ydim*self.psize])
@@ -2778,15 +2914,20 @@ class Image(object):
             else:
                 immtx = im_list_shift[i].imvec.reshape(im0_pad.ydim, im0_pad.xdim)
 
-            immtx = immtx - np.min(np.min(immtx))
-            immtx = immtx / np.max(np.max(immtx))
+            if rescale:
+                immtx = immtx - np.min(np.min(immtx))
+                immtx = immtx / np.max(np.max(immtx))
 
             for c in range(0,3):
                 composite_img[:,:,c] = composite_img[:,:,c] + (color_coding[i+1,c] * immtx)
 
+        if rescale==False:
+            composite_img  = composite_img - np.min(np.min(np.min(composite_img)))
+            composite_img = composite_img / np.max(np.max(np.max(composite_img)))
+
         plt.subplot(111)
         plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
-        im = plt.imshow(composite_img)
+        im = plt.imshow(composite_img, interpolation=interp)
         #plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
         xticks = ticks(im0_pad.xdim, im0_pad.psize/RADPERAS/1e-6)
         yticks = ticks(im0_pad.ydim, im0_pad.psize/RADPERAS/1e-6)

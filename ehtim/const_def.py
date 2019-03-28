@@ -81,7 +81,7 @@ DTPOL_CIRC = [('time','f8'),('tint','f8'),
 
 DTAMP = [('time','f8'),('tint','f8'),
          ('t1','U32'),('t2','U32'),
-         ('u','f8'),('v','f8'),('vis','c16'),
+         ('u','f8'),('v','f8'),
          ('amp','f8'),('sigma','f8')]
 
 DTBIS = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),
@@ -127,6 +127,12 @@ FIELDS = ['time','time_utc','time_gmst',
           'llvis','llamp','llphase','llsnr','llsigma','llsigma_phase'
           'rlvis','rlamp','rlphase','rlsnr','rlsigma','rlsigma_phase'
           'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase']
+FIELDS_AMPS = ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]
+FIELDS_SIGS = ["sigma","qsigma","usigma","vsigma","psigma","msigma","rrsigma","llsigma","rlsigma","lrsigma"]
+FIELDS_PHASE = ["phase", "qphase", "uphase", "vphase","pphase", "mphase","rrphase","llphase","lrphase","rlphase"]
+FIELDS_SIGPHASE = ["sigma_phase","qsigma_phase","usigma_phase","vsigma_phase","psigma_phase","msigma_phase",
+                   "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]
+FIELDS_SNRS = ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr","rrsnr","llsnr","rlsnr","lrsnr"]
 
 #plotting
 MARKERSIZE = 3
@@ -318,7 +324,7 @@ BHIMAGE = [
  '                   ..,**,,.......,,*(((#%&&%#%&@@@@@@@@&&&&%(*...        @     @ @   @        #   #  #  #              ..                                      ',
  '                    .,,*,,,,.......,/(((#%&&%##&@@&@@@&&%%%##(*..         @@   @ @   @@       ##  #  #  #               .                                      ',
  '                    ..,,,,,,,.......,/((((%&&%#(%&&&@@%%%###((/*..                                                      .                                      ',
- '                     ...,,.,,,....,,,*/((/(#%&(#%&@@%%%#(///**,..                  v 1.0 , 2018                         .                                      ',
+ '                     ...,,.,,,....,,,*/((/(#%&(#%&@@%%%#(///**,..                  v 0.1 , 2019                         .                                      ',
  '                      ........,.....,,*////((%&&%###&@&%###(/*,,,,...                                                  ..                                      ',
  '                        .............,,**///((#%&&%%#@&%%#((((/*.......                                                ,.                                      ',
  '                         ............,,,**////((#%%&%@@#####((/***,....                                               .,.                                      ',

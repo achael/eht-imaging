@@ -3,9 +3,8 @@ ehtim (eht-imaging)
 
 Python modules for simulating and manipulating VLBI data and producing images with regularized maximum likelihood methods. This version is an early release so please submit a pull request or email achael@cfa.harvard.edu if you have trouble or need help for your application.
 
-The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Array``, ``Obsdata``, ``Movie``  ``Caltable``  and ``Vex`` classes, which provide tools for loading images and data, producing simulated data from realistic u-v tracks, and calibrating, inspecting, and plotting data. ``Imager``  is a generic Stokes I imaging module that can produce images from data sets using various data terms and regularizers.
+The package contains several primary classes for loading, simulating, and manipulating VLBI data. The main classes are the ``Image``, ``Array``, ``Obsdata``, ``Imager``, and ``Caltable`` classes, which provide tools for loading images and data, producing simulated data from realistic u-v tracks,  calibrating, inspecting, and  plotting data, and producing images from data sets in various polariazations using various data terms and regularizers.
 
-Note that this is a pre-release of ehtim.  If you have a problem please submit a pull request on the git repository.
 
 Installation
 ------------
@@ -15,15 +14,16 @@ Download the latest version from the `GitHub repository <https://github.com/acha
 
     pip install .
 
-It should install the necessary libraries `astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `matplotlib <http://www.matplotlib.org/>`_, `numpy <http://www.numpy.org/>`_, `scipy <http://www.scipy.org/>`_, `pandas <http://www.pandas.pydata.org/>`_ automatically.
+It should install most of the required libraries automatically (`astropy <http://www.astropy.org/>`_, `ephem <http://pypi.python.org/pypi/pyephem/>`_, `future <http://pypi.python.org/pypi/future>`_, `h5py <http://www.h5py.org/>`_ , `html <http://www.decalage.info/python/html>`_ , `networkx <https://networkx.github.io/>`_, `numpy <http://www.numpy.org/>`_, `pandas <http://www.pandas.pydata.org/>`_ , `matplotlib <http://www.matplotlib.org/>`_,  `requests <http://docs.python-requests.org/en/master/>`_, `scipy <http://www.scipy.org/>`_, `skimage <https://scikit-image.org/>`_).
 
-If you want to use fast fourier transforms, you will also need to install `NFFT <https://github.com/NFFT/nfft>`_ and the `pynnft wrapper <https://github.com/ghisvail/pyNFFT/>`_ before installing ehtim. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to to install both NFFT and the pynfft wrapper. 
+**If you want to use fast fourier transforms, you will also need to separately install** `NFFT <https://github.com/NFFT/nfft>`_ **and its** `pynnft wrapper <https://github.com/ghisvail/pyNFFT/>`_. The simplest way is to use `conda <https://anaconda.org/conda-forge/pynfft/>`__ to to install both:
+
 
 .. code-block:: bash
 
     conda install -c conda-forge pynfft
 
-Alternatively, first manually install NFFT following the instructions  `here <https://github.com/NFFT/nfft>`_, making sure to use the --enable-openmp flag in compilation. Then install `pynnft <https://github.com/ghisvail/pyNFFT/>`_ with pip, following the instructions to link the installation to where you installed NFFT. 
+Alternatively, first install NFFT manually following the instructions on the `readme <https://github.com/NFFT/nfft>`_, making sure to use the ``--enable-openmp`` flag in compilation. Then install `pynfft <https://github.com/ghisvail/pyNFFT/>`_, with pip, following the readme instructions to link the installation to where you installed NFFT. Finally, reinstall ehtim.
 
 Documentation
 -------------
@@ -64,6 +64,9 @@ Let us know if you use ehtim in your publication and we'll list it here!
 - How to tell an accreting boson star from a black hole, `Olivares et al. 2018 <https://arxiv.org/abs/1809.08682>`_
 
 - Testing General Relativity with the Black Hole Shadow Size and Asymmetry of Sagittarius A*: Limitations from Interstellar Scattering, `Zhu et al. 2018 <https://arxiv.org/abs/1811.02079>`_
+
+- The Size, Shape, and Scattering of Sagittarius A* at 86 GHz: First VLBI with ALMA, `Issaoun et al. 2019 <https://arxiv.org/abs/1901.06226>`_
+
 
 Acknowledgements
 ----------------
