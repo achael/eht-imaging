@@ -423,9 +423,11 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     # Get data
 
     if polrep_out=='circ':
-        obsdata = obs.unpack(['time','tint','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma','t1','t2','tau1','tau2'])
+        obsdata = obs.unpack(['time','tint','u','v','rrvis','llvis','rlvis','lrvis',
+                              'rrsigma','llsigma','rlsigma','lrsigma','t1','t2','tau1','tau2'])
     elif polrep_out=='stokes':
-        obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
+        obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis',
+                              'sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
 
     ndat = len(obsdata['time'])
 
@@ -465,7 +467,8 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
 
         # If necessary, enforce single polarization
         if force_singlepol == 'L':
-            if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
+            if obs.polrep=='stokes': 
+                raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
             print("force_singlepol='L': treating Stokes 'I' as LL and ignoring Q,U,V!!")
             ll = obsdata['vis']
             rr = rr * 0.0
@@ -475,7 +478,8 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
             weightrl = weightrl * 0.0
             weightlr = weightlr * 0.0
         elif force_singlepol == 'R':
-            if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
+            if obs.polrep=='stokes': 
+                raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
             print("force_singlepol='R': treating Stokes 'I' as RR and ignoring Q,U,V!!")
             rr = obsdata['vis']
             ll = rr * 0.0
@@ -519,7 +523,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     # Data array
     outdat = np.zeros((ndat, 1, 1, 1, 1, 4, 3))
     outdat[:,0,0,0,0,0,0] = np.real(dat1)
-    outdat[:,0,0,0,0,0,1] = np.imag(dat2)
+    outdat[:,0,0,0,0,0,1] = np.imag(dat1)
     outdat[:,0,0,0,0,0,2] = weight1
     outdat[:,0,0,0,0,1,0] = np.real(dat2)
     outdat[:,0,0,0,0,1,1] = np.imag(dat2)

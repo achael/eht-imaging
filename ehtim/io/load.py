@@ -583,10 +583,12 @@ def load_obs_txt(filename, polrep='stokes'):
     tarr = []
     while line[1][0] != "-":
         if len(line) == 6:
-        	tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[5], 0, 0, 0, 0, 0), dtype=DTARR))
+        	tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[5], 
+                                  0, 0, 0, 0, 0), dtype=DTARR))
         elif len(line) == 14:
         	tarr.append(np.array((line[1], line[2], line[3], line[4], line[5], line[6],
-        	                      float(line[10])+1j*float(line[11]), float(line[12])+1j*float(line[13]),
+        	                      float(line[10])+1j*float(line[11]),
+                                  float(line[12])+1j*float(line[13]),
         	                      line[7], line[8], line[9]), dtype=DTARR))
         else: raise Exception("Telescope header doesn't have the right number of fields!")
         line = file.readline().split()
@@ -664,18 +666,23 @@ def load_obs_txt(filename, polrep='stokes'):
 
     # Return the data object
     datatable2 = np.array(datatable2)
-    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, polrep=polrep_orig, source=src, mjd=mjd,
-                                 ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
+    out =  ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable2, tarr, polrep=polrep_orig,
+                                 source=src, mjd=mjd,
+                                 ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, 
+                                 dcal=dcal, frcal=frcal)
     out = out.switch_polrep(polrep_out=polrep)
     return out
 
 
-def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
+def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, 
+                  src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
     """Read an observation from a maps text file and return an Obsdata object
     """
     # Read telescope parameters from the array file
     tdata = np.loadtxt(arrfile, dtype=bytes).astype(str)
-    tdata = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0.), dtype=DTARR) for x in tdata]
+    tdata = [np.array((x[0], float(x[1]), float(x[2]), float(x[3]), 
+                            float(x[-1]), float(x[-1]), 0., 0., 0., 0., 0.), 
+                       dtype=DTARR) for x in tdata]
     tdata = np.array(tdata)
 
     # Read parameters from the obs_spec
@@ -763,15 +770,18 @@ def load_obs_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE
 
 
 #TODO can we save new telescope array terms and flags to uvfits and load them?
-def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=True, force_singlepol=None, channel=all, IF=all, remove_nan=False):
+def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=True,
+                    force_singlepol=None, channel=all, IF=all, remove_nan=False):
+
     """Load observation data from a uvfits file.
        Args:
            fname (str): path to input text file
            polrep (str): load data as either 'stokes' or 'circ'
            flipbl (bool): flip baseline phases if True.
-           allow_singlepol (bool): If True and polrep='stokes', treat single-polarization data as Stokes I
+           allow_singlepol (bool): If True and polrep='stokes', 
+                                   treat single-polarization data as Stokes I
            force_singlepol (str): 'R' or 'L' to load only 1 polarization and treat as Stokes I
-           channel (list): list of channels to average in the import. channel=all averages all channels
+           channel (list): list of channels to average in the import. channel=all averages all 
            IF (list): list of IFs to  average in  the import. IF=all averages all IFS
        Returns:
            obs (Obsdata): Obsdata object loaded from file
@@ -854,6 +864,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
                 raise Exception("header[CRVAL3] not a recognized polarization basis!")
     except:
         raise Exception("STOKES field not in expected header position 'CTYPE3'!")
+    print('POLREP_UVFITS:', polrep_uvfits)
 
     if polrep_uvfits=='stokes' and not(force_singlepol is None):
         raise Exception("force_singlepole not implemented on native Stokes uvfits files!")
@@ -867,6 +878,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     if num_corr == 1 and force_singlepol != None:
         print("Cannot force single polarization when file is not full polarization.")
         force_singlepol = None
+
     # If the user selects force_singlepol, then we must allow_singlepol for stokes conversion
     if not force_singlepol is None and polrep == 'stokes':
         allow_singlepol = True
@@ -1109,8 +1121,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
         v = -v
 
     # determine correct data type:
-    if polrep_uvfits == 'circ': dtpol_out = DTPOL_CIRC
-    elif polrep_uvfits == 'stokes': dtpol_out = DTPOL_STOKES
+    if polrep_uvfits == 'circ': 
+        dtpol_out = DTPOL_CIRC
+    elif polrep_uvfits == 'stokes': 
+        dtpol_out = DTPOL_STOKES
 
     datatable = []
     for i in range(len(times)):

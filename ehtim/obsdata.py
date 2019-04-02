@@ -3695,7 +3695,8 @@ def load_txt(fname, polrep='stokes'):
 
     return ehtim.io.load.load_obs_txt(fname, polrep=polrep)
 
-def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None, channel=all, IF=all, polrep='stokes', ):
+def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
+                channel=all, IF=all, polrep='stokes', allow_singlepol=True):
 
     """Load observation data from a uvfits file.
        Args:
@@ -3704,14 +3705,16 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None, cha
            remove_nan (bool): True to remove nans from missing polarizations
            polrep (str): load data as either 'stokes' or 'circ'
            force_singlepol (str): 'R' or 'L' to load only 1 polarization
-           channel (list): list of channels to average in the import. channel=all averages all channels
+           channel (list): list of channels to average in the import. channel=all averages all
            IF (list): list of IFs to  average in  the import. IF=all averages all IFS
 
        Returns:
            obs (Obsdata): Obsdata object loaded from file
     """
 
-    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, channel=channel, IF=IF, polrep=polrep, remove_nan=remove_nan)
+    return ehtim.io.load.load_obs_uvfits(fname, flipbl=flipbl, force_singlepol=force_singlepol, 
+                                         channel=channel, IF=IF, polrep=polrep, 
+                                         remove_nan=remove_nan, allow_singlepol=allow_singlepol)
 
 def load_oifits(fname, flux=1.0):
 
