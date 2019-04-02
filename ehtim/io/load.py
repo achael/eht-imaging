@@ -796,11 +796,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
         sefdr = np.real(hdulist['AIPS AN'].data['SEFD'])
         sefdl = np.real(hdulist['AIPS AN'].data['SEFD']) #TODO add sefdl to uvfits?
     except KeyError:
-        #print("Warning! no SEFD data in UVfits file")
         sefdr = np.zeros(len(tnames))
         sefdl = np.zeros(len(tnames))
 
-    #TODO - get the *actual* values of these telescope parameters
+    #TODO - get the *actual* values of these telescope parameters from the uvfits file? 
     fr_par = np.zeros(len(tnames))
     fr_el = np.zeros(len(tnames))
     fr_off = np.zeros(len(tnames))
@@ -843,6 +842,21 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
             nif = header['NAXIS5']
     except KeyError:
         print ("no IF in uvfits header!")
+
+
+    try:
+        if header['CTYPE3'] == 'STOKES':
+            if header['CRVAL3'] == 1: 
+                polrep_uvfits='stokes'
+            elif header['CRVAL3'] == -1: 
+                polrep_uvfits='circ'
+            else:
+                raise Exception("header[CRVAL3] not a recognized polarization basis!")
+    except:
+        raise Exception("STOKES field not in expected header position 'CTYPE3'!")
+
+    if polrep_uvfits=='stokes' and not(force_singlepol is None):
+        raise Exception("force_singlepole not implemented on native Stokes uvfits files!")
 
     #determine the bandwidth
     bw = ch_bw * nchan * nif
@@ -892,7 +906,9 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
         raise Exception('The specified IF does not exist')
 
 
-    #TODO CHECK THESE DECISIONS CAREFULLY!!!!
+    # NOTE: here we are assuming data is in RR, LL, RL, LR basis with the variable names
+    # BUT: polrep_uvfits will correctly interpret these data as IQUV if necessary
+    # TODO: change the variable names!
     rrweight = data['DATA'][:,0,0,IF,channel,0,2].reshape(nvis, nifs, nchannels)
     if num_corr >= 2:
         llweight = data['DATA'][:,0,0,IF,channel,1,2].reshape(nvis, nifs, nchannels)
@@ -908,26 +924,27 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
         lrweight = rrweight * 0.0
 
     # If necessary, enforce single polarization
-    if force_singlepol in ['L' or 'LL']:
-        rrweight = rrweight * 0.0
-        rlweight = rlweight * 0.0
-        lrweight = lrweight * 0.0
-    elif force_singlepol in ['R' or 'RR']:
-        llweight = llweight * 0.0
-        rlweight = rlweight * 0.0
-        lrweight = lrweight * 0.0
-    elif force_singlepol == 'LR':
-        print('WARNING: Putting LR data in Stokes I')
-        rrweight = copy.deepcopy(lrweight)
-        llweight = llweight * 0.0
-        rlweight = rlweight * 0.0
-        lrweight = lrweight * 0.0
-    elif force_singlepol == 'RL':
-        print('WARNING: Putting RL data in Stokes I')
-        rrweight = copy.deepcopy(rlweight)
-        llweight = llweight * 0.0
-        rlweight = rlweight * 0.0
-        lrweight = lrweight * 0.0
+    if polrep_uvfits=='circ':
+        if force_singlepol in ['L' or 'LL']:
+            rrweight = rrweight * 0.0
+            rlweight = rlweight * 0.0
+            lrweight = lrweight * 0.0
+        elif force_singlepol in ['R' or 'RR']:
+            llweight = llweight * 0.0
+            rlweight = rlweight * 0.0
+            lrweight = lrweight * 0.0
+        elif force_singlepol == 'LR':
+            print('WARNING: Putting LR data in Stokes I')
+            rrweight = copy.deepcopy(lrweight)
+            llweight = llweight * 0.0
+            rlweight = rlweight * 0.0
+            lrweight = lrweight * 0.0
+        elif force_singlepol == 'RL':
+            print('WARNING: Putting RL data in Stokes I')
+            rrweight = copy.deepcopy(rlweight)
+            llweight = llweight * 0.0
+            rlweight = rlweight * 0.0
+            lrweight = lrweight * 0.0
 
     # first, catch  nans
     rrnanmask_2d = (np.isnan(rrweight))
@@ -953,8 +970,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     lrmask = np.any(np.any(rlmask_2d, axis=2), axis=1)
 
     # Total intensity mask
-    # TODO or or and here? - what if we have only 1 of rr, ll?
-    mask = rrmask + llmask
+    if polrep_uvfits == 'circ':
+        mask = rrmask + llmask
+    elif polrep_uvfits == 'stokes':
+        mask = rrmask #remember rr is really I when polrep_uvfits=='stokes'!
 
     if not np.any(mask):
         raise Exception("No unflagged RR or LL data in uvfits file!")
@@ -971,12 +990,10 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
         nxtable = hdulist['AIPS NX']
         for scan in nxtable.data:
             reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').jd
-            #scantime = (scan['TIME'] + reftime  - mjd)
             scan_start = scan['TIME'] #in days since reference date
             scan_dur = scan['TIME INTERVAL']
             startvis = scan['START VIS'] - 1
             endvis = scan['END VIS'] - 1
-            #scantable.append(np.array((scantime, scanint, startvis, endvis), dtype=DTSCANS))
             scantable.append([scan_start - 0.5*scan_dur,
                               scan_start + 0.5*scan_dur])
         scantable = np.array(scantable*24)
@@ -1022,10 +1039,8 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
             except KeyError:
                 raise Exception("Cant figure out column label for UV coords")
 
-    # Get and average visibility data
+    # Get and coherently average visibility data in frequency
     # replace masked vis with nans so they don't mess up the average
-    #TODO: coherent average ok?
-    #TODO 2d or 1d mask
     rr_2d = data['DATA'][:,0,0,IF,channel,0,0] + 1j*data['DATA'][:,0,0,IF,channel,0,1]
     rr_2d = rr_2d.reshape(nvis, nifs, nchannels)
     if num_corr >= 2:
@@ -1044,10 +1059,11 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     else:
         lr_2d = rr_2d*0.0
 
-    if force_singlepol == 'LR':
-        rr_2d = copy.deepcopy(lr_2d)
-    elif force_singlepol == 'RL':
-        rr_2d = copy.deepcopy(rl_2d)
+    if polrep_uvfits=='circ':
+        if force_singlepol == 'LR':
+            rr_2d = copy.deepcopy(lr_2d)
+        elif force_singlepol == 'RL':
+            rr_2d = copy.deepcopy(rl_2d)
 
     rr_2d[~rrmask_2d] = np.nan
     ll_2d[~llmask_2d] = np.nan
@@ -1059,14 +1075,9 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     rl = np.nanmean(np.nanmean(rl_2d, axis=2), axis=1)[mask]
     lr = np.nanmean(np.nanmean(lr_2d, axis=2), axis=1)[mask]
 
-    #rr = np.mean(data['DATA'][:,0,0,0,:,0,0][mask] + 1j*data['DATA'][:,0,0,0,:,0,1][mask], axis=1)
-    #ll = np.mean(data['DATA'][:,0,0,0,:,1,0][mask] + 1j*data['DATA'][:,0,0,0,:,1,1][mask], axis=1)
-    #rl = np.mean(data['DATA'][:,0,0,0,:,2,0][mask] + 1j*data['DATA'][:,0,0,0,:,2,1][mask], axis=1)
-    #lr = np.mean(data['DATA'][:,0,0,0,:,3,0][mask] + 1j*data['DATA'][:,0,0,0,:,3,1][mask], axis=1)
-
-    # average weights
+    # average the weights
     # variances are mean / N , or sum / N^2
-    # replace masked weights with nans so they don't mess up the average
+    # then replace masked weights with nans so they don't mess up the average
     rrweight[~rrmask_2d] = np.nan
     llweight[~llmask_2d] = np.nan
     rlweight[~rlmask_2d] = np.nan
@@ -1092,88 +1103,14 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     lrsig = np.sqrt(np.nansum(np.nansum(1./lrweight, axis=2), axis=1)) / nsig_lr
     lrsig = lrsig[mask]
 
-    # make sigmas from weights
-    # zero out weights with zero error
-    #rrweight[rrweight==0] = EP
-    #llweight[llweight==0] = EP
-    #rlweight[rlweight==0] = EP
-    #lrweight[lrweight==0] = EP
-
-    #rrsig = np.sqrt(rrweight)
-    #llsig = 1/np.sqrt(llweight)
-    #rlsig = 1/np.sqrt(rlweight)
-    #lrsig = 1/np.sqrt(lrweight)
-
-    # Form stokes parameters from data
-    # look at these mask choices!!
-    rrmask_dsize = rrmask[mask]
-    llmask_dsize = llmask[mask]
-    rlmask_dsize = rlmask[mask]
-    lrmask_dsize = lrmask[mask]
-
-    qumask_dsize = (rlmask_dsize * lrmask_dsize) # must have both RL & LR data to get Q, U
-    vmask_dsize  = (rrmask_dsize * llmask_dsize) # must have both RR & LL data to get V
-
-    # Reverse sign of baselines for correct imaging?
+    # Reverse sign of baselines for correct imaging if asked
     if flipbl:
         u = -u
         v = -v
 
-#    if polrep=='stokes':
-#        # Stokes I
-#        ivis = 0.5 * (rr + ll)
-#        ivis[~llmask_dsize] = rr[~llmask_dsize] #if no RR, then say I is LL
-#        ivis[~rrmask_dsize] = ll[~rrmask_dsize] #if no LL, then say I is RR
-
-#        isigma = 0.5 * np.sqrt(rrsig**2 + llsig**2)
-#        isigma[~llmask_dsize] = rrsig[~llmask_dsize]
-#        isigma[~rrmask_dsize] = llsig[~rrmask_dsize]
-
-#        # TODO what should the polarization  sigmas be if no data?
-#        # Stokes V
-#        vvis = 0.5 * (rr - ll)
-#        vvis[~vmask_dsize] = 0.
-
-#        vsigma = copy.deepcopy(isigma)
-#        vsigma[~vmask_dsize] = isigma[~vmask_dsize]
-
-#        # Stokes Q,U
-#        qvis = 0.5 * (rl + lr)
-#        uvis = 0.5j * (lr - rl)
-#        qvis[~qumask_dsize] = 0.
-#        uvis[~qumask_dsize] = 0.
-
-#        qsigma = 0.5 * np.sqrt(rlsig**2 + lrsig**2)
-#        usigma = qsigma
-#        qsigma[~qumask_dsize] = isigma[~qumask_dsize]
-#        usigma[~qumask_dsize] = isigma[~qumask_dsize]
-
-#        # Make a datatable
-#        datatable = []
-#        for i in range(len(times)):
-#            datatable.append(np.array
-#                             ((
-#                               times[i], tints[i],
-#                               t1[i], t2[i], tau1[i], tau2[i],
-#                               u[i], v[i],
-#                               ivis[i], qvis[i], uvis[i], vvis[i],
-#                               isigma[i], qsigma[i], usigma[i], vsigma[i]
-#                               ), dtype=DTPOL_STOKES
-#                              ))
-
-#    elif polrep=='circ':
-#        # TODO POL do we need any additional masking here??
-#        datatable = []
-#        for i in range(len(times)):
-#            datatable.append(np.array
-#                             ((
-#                               times[i], tints[i],
-#                               t1[i], t2[i], tau1[i], tau2[i],
-#                               u[i], v[i],
-#                               rr[i], ll[i], rl[i], lr[i],
-#                               rrsig[i], llsig[i], rlsig[i], lrsig[i]
-#                               ), dtype=DTPOL_CIRC
-#                             ))
+    # determine correct data type:
+    if polrep_uvfits == 'circ': dtpol_out = DTPOL_CIRC
+    elif polrep_uvfits == 'stokes': dtpol_out = DTPOL_STOKES
 
     datatable = []
     for i in range(len(times)):
@@ -1184,25 +1121,29 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
                            u[i], v[i],
                            rr[i], ll[i], rl[i], lr[i],
                            rrsig[i], llsig[i], rlsig[i], lrsig[i]
-                           ), dtype=DTPOL_CIRC
+                           ), dtype=dtpol_out
                          ))
 
     datatable = np.array(datatable)
-    obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep='circ', 
+    obs = ehtim.obsdata.Obsdata(ra, dec, rf, bw, datatable, tarr, polrep=polrep_uvfits, 
                                 source=src, mjd=mjd, scantable=scantable)
 
     
+    # TODO -- this is bad, ack. use masks!
     if remove_nan:
-        for j in range(len(obs.data)):
-            if np.isnan(obs.data[j]['rrsigma']):
-                obs.data[j]['rrsigma'] = obs.data[j]['llsigma']
-            if np.isnan(obs.data[j]['llsigma']):
-                obs.data[j]['llsigma'] = obs.data[j]['rrsigma']
-            if np.isnan(obs.data[j]['rlsigma']):
-                obs.data[j]['rlsigma'] = obs.data[j]['rrsigma']
-            if np.isnan(obs.data[j]['lrsigma']):
-                obs.data[j]['lrsigma'] = obs.data[j]['rrsigma']
-                
+        if polrep_uvfits == 'circ':
+            for j in range(len(obs.data)):
+                if np.isnan(obs.data[j]['rrsigma']):
+                    obs.data[j]['rrsigma'] = obs.data[j]['llsigma']
+                if np.isnan(obs.data[j]['llsigma']):
+                    obs.data[j]['llsigma'] = obs.data[j]['rrsigma']
+                if np.isnan(obs.data[j]['rlsigma']):
+                    obs.data[j]['rlsigma'] = obs.data[j]['rrsigma']
+                if np.isnan(obs.data[j]['lrsigma']):
+                    obs.data[j]['lrsigma'] = obs.data[j]['rrsigma']
+        else:
+            print ("WARNING: remove_nan not implemented with stokes uvfits files!")
+
     obs = obs.switch_polrep(polrep, allow_singlepol=allow_singlepol)
 
     #TODO get calibration flags from uvfits?

@@ -46,7 +46,7 @@ ELEV_HIGH = 85.0
 
 TAUDEF = 0.1 # Default Optical Depth
 GAINPDEF = 0.1 # Default rms of gain errors
-DTERMPDEF = 0.1 # Default rms of D-term errors
+DTERMPDEF = 0.05 # Default rms of D-term errors
 
 # Sgr A* Kernel Values (Bower et al., in uas/cm^2)
 FWHM_MAJ = 1.309 * 1000 # in uas

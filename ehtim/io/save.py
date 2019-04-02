@@ -320,12 +320,17 @@ def save_obs_txt(obs, fname):
     return
 
 
-def save_obs_uvfits(obs, fname, force_singlepol=None):
+def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     """Save observation data to uvfits.
        To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
     """
 
-    obs = obs.switch_polrep('circ')
+    if polrep_out=='circ':
+        obs = obs.switch_polrep('circ')
+    elif polrep_out=='stokes':
+        obs = obs.switch_polrep('stokes')
+    else:
+        raise Exception("'polrep_out' in 'save_obs_uvfits' must be 'circ' or 'stokes'!")
 
     # Open template UVFITS
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -363,8 +368,12 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     header['CRPIX2'] = 1.e0
     header['CROTA2'] = 0.e0
     header['CTYPE3'] = 'STOKES'
-    header['CRVAL3'] = -1.e0
-    header['CDELT3'] = -1.e0
+    if polrep_out=='circ':
+        header['CRVAL3'] = -1.e0
+        header['CDELT3'] = -1.e0
+    elif polrep_out=='stokes':
+        header['CRVAL3'] = 1.e0
+        header['CDELT3'] = 1.e0
     header['CRPIX3'] = 1.e0
     header['CROTA3'] = 0.e0
     header['CTYPE4'] = 'FREQ'
@@ -412,8 +421,11 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     header['history'] = "AIPS SORT ORDER='TB'"
 
     # Get data
-    #obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
-    obsdata = obs.unpack(['time','tint','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma','t1','t2','tau1','tau2'])
+
+    if polrep_out=='circ':
+        obsdata = obs.unpack(['time','tint','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma','t1','t2','tau1','tau2'])
+    elif polrep_out=='stokes':
+        obsdata = obs.unpack(['time','tint','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma','t1','t2','tau1','tau2'])
 
     ndat = len(obsdata['time'])
 
@@ -440,71 +452,84 @@ def save_obs_uvfits(obs, fname, force_singlepol=None):
     v = obsdata['v']
 
     # rr, ll, lr, rl, weights
-    #rr = obsdata['vis'] + obsdata['vvis']
-    #ll = obsdata['vis'] - obsdata['vvis']
-    #rl = obsdata['qvis'] + 1j*obsdata['uvis']
-    #lr = obsdata['qvis'] - 1j*obsdata['uvis']
-    #weightrr = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
-    #weightll = 1.0/(obsdata[ 'sigma']**2 + obsdata['vsigma']**2)
-    #weightrl = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
-    #weightlr = 1.0/(obsdata['qsigma']**2 + obsdata['usigma']**2)
 
-    rr = obsdata['rrvis'] 
-    ll = obsdata['llvis'] 
-    rl = obsdata['rlvis']
-    lr = obsdata['lrvis'] 
-    weightrr = 1.0/(obsdata['rrsigma']**2)
-    weightll = 1.0/(obsdata['llsigma']**2)
-    weightrl = 1.0/(obsdata['rlsigma']**2)
-    weightlr = 1.0/(obsdata['lrsigma']**2)
+    if polrep_out=='circ':
+        rr = obsdata['rrvis'] 
+        ll = obsdata['llvis'] 
+        rl = obsdata['rlvis']
+        lr = obsdata['lrvis'] 
+        weightrr = 1.0/(obsdata['rrsigma']**2)
+        weightll = 1.0/(obsdata['llsigma']**2)
+        weightrl = 1.0/(obsdata['rlsigma']**2)
+        weightlr = 1.0/(obsdata['lrsigma']**2)
+
+        # If necessary, enforce single polarization
+        if force_singlepol == 'L':
+            if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
+            print("force_singlepol='L': treating Stokes 'I' as LL and ignoring Q,U,V!!")
+            ll = obsdata['vis']
+            rr = rr * 0.0
+            rl = rl * 0.0
+            lr = lr * 0.0
+            weightrr = weightrr * 0.0
+            weightrl = weightrl * 0.0
+            weightlr = weightlr * 0.0
+        elif force_singlepol == 'R':
+            if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
+            print("force_singlepol='R': treating Stokes 'I' as RR and ignoring Q,U,V!!")
+            rr = obsdata['vis']
+            ll = rr * 0.0
+            rl = rl * 0.0
+            lr = lr * 0.0
+            weightll = weightll * 0.0
+            weightrl = weightrl * 0.0
+            weightlr = weightlr * 0.0
+
+        dat1 = rr
+        dat2 = ll
+        dat3 = rl
+        dat4 = lr
+        weight1 = weightrr
+        weight2 = weightll
+        weight3 = weightrl
+        weight4 = weightlr
+
+    elif polrep_out=='stokes':
+        dat1 = obsdata['vis']
+        dat2 = obsdata['qvis']
+        dat3 = obsdata['uvis']
+        dat4 = obsdata['vvis']
+        weight1 = 1.0/(obsdata['sigma']**2)
+        weight2 = 1.0/(obsdata['qsigma']**2)
+        weight3 = 1.0/(obsdata['usigma']**2)
+        weight4 = 1.0/(obsdata['vsigma']**2)
 
 
-    # If necessary, enforce single polarization
-    if force_singlepol == 'L':
-        if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
-        print("force_singlepol='L': treating Stokes 'I' as LL and ignoring Q,U,V!!")
-        ll = obsdata['vis']
-        rr = rr * 0.0
-        rl = rl * 0.0
-        lr = lr * 0.0
-        weightrr = weightrr * 0.0
-        weightrl = weightrl * 0.0
-        weightlr = weightlr * 0.0
-    elif force_singlepol == 'R':
-        if obs.polrep=='stokes': raise Exception("force_singlepol only works with obs.polrep=='stokes'!")
-        print("force_singlepol='R': treating Stokes 'I' as RR and ignoring Q,U,V!!")
-        rr = obsdata['vis']
-        ll = rr * 0.0
-        rl = rl * 0.0
-        lr = lr * 0.0
-        weightll = weightll * 0.0
-        weightrl = weightrl * 0.0
-        weightlr = weightlr * 0.0
 
     # Replace nans by zeros (including zero weights)
-    rr = np.nan_to_num(rr)
-    ll = np.nan_to_num(ll)
-    rl = np.nan_to_num(rl)
-    lr = np.nan_to_num(lr)
-    weightrr = np.nan_to_num(weightrr)
-    weightll = np.nan_to_num(weightll)
-    weightrl = np.nan_to_num(weightrl)
-    weightlr = np.nan_to_num(weightlr)
+    dat1 = np.nan_to_num(dat1)
+    dat2 = np.nan_to_num(dat2)
+    dat3 = np.nan_to_num(dat3)
+    dat4 = np.nan_to_num(dat4)
+    weight1 = np.nan_to_num(weight1)
+    weight2 = np.nan_to_num(weight2)
+    weight3 = np.nan_to_num(weight3)
+    weight4 = np.nan_to_num(weight4)
 
     # Data array
     outdat = np.zeros((ndat, 1, 1, 1, 1, 4, 3))
-    outdat[:,0,0,0,0,0,0] = np.real(rr)
-    outdat[:,0,0,0,0,0,1] = np.imag(rr)
-    outdat[:,0,0,0,0,0,2] = weightrr
-    outdat[:,0,0,0,0,1,0] = np.real(ll)
-    outdat[:,0,0,0,0,1,1] = np.imag(ll)
-    outdat[:,0,0,0,0,1,2] = weightll
-    outdat[:,0,0,0,0,2,0] = np.real(rl)
-    outdat[:,0,0,0,0,2,1] = np.imag(rl)
-    outdat[:,0,0,0,0,2,2] = weightrl
-    outdat[:,0,0,0,0,3,0] = np.real(lr)
-    outdat[:,0,0,0,0,3,1] = np.imag(lr)
-    outdat[:,0,0,0,0,3,2] = weightlr
+    outdat[:,0,0,0,0,0,0] = np.real(dat1)
+    outdat[:,0,0,0,0,0,1] = np.imag(dat2)
+    outdat[:,0,0,0,0,0,2] = weight1
+    outdat[:,0,0,0,0,1,0] = np.real(dat2)
+    outdat[:,0,0,0,0,1,1] = np.imag(dat2)
+    outdat[:,0,0,0,0,1,2] = weight2
+    outdat[:,0,0,0,0,2,0] = np.real(dat3)
+    outdat[:,0,0,0,0,2,1] = np.imag(dat3)
+    outdat[:,0,0,0,0,2,2] = weight3
+    outdat[:,0,0,0,0,3,0] = np.real(dat4)
+    outdat[:,0,0,0,0,3,1] = np.imag(dat4)
+    outdat[:,0,0,0,0,3,2] = weight4
 
     # Save data
     pars = ['UU---SIN', 'VV---SIN', 'WW---SIN', 'BASELINE', 'DATE', 'DATE',

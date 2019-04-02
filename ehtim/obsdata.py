@@ -3602,19 +3602,20 @@ class Obsdata(object):
 
         return
 
-    def save_uvfits(self, fname, force_singlepol=False):
+    def save_uvfits(self, fname, force_singlepol=False, polrep_out='circ'):
 
         """Save visibility data to uvfits file.
 
            Args:
                 fname (str): path to output text file
                 force_singlepol (str): if 'R' or 'L', will interpret stokes I field as 'RR' or 'LL'
+                polrep_out (str): 'circ' or 'stokes': how data should be stored in the uvfits file
         """
 
         if force_singlepol!=False and self.polrep!='stokes':
             raise Exception("force_singlepol is incompatible with polrep!='stokes'")
 
-        ehtim.io.save.save_obs_uvfits(self,fname,force_singlepol=force_singlepol)
+        ehtim.io.save.save_obs_uvfits(self,fname,force_singlepol=force_singlepol, polrep_out=polrep_out)
 
         return
 
