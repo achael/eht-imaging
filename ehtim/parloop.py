@@ -1,5 +1,5 @@
 #parloop.py
-#Andrew Chael, December 3, 2018 
+#Andrew Chael, December 3, 2018
 #Wraps up some helper functions for parallel loops
 
 import subprocess
@@ -48,14 +48,14 @@ class Parloop(object):
             except KeyboardInterrupt:
                 print('\ngot ^C while pool mapping, terminating')
                 pool.terminate()
-                print 'pool terminated'
-            except Exception, e:
+                print('pool terminated')
+            except Exception as e:
                 print('\ngot exception: %r, terminating' % (e,))
                 pool.terminate()
                 print('pool terminated')
             finally:
                 pool.join()
-        
+
         else: # run on a single core
             out = []
             for i in range(n):
