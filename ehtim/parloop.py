@@ -48,8 +48,8 @@ class Parloop(object):
             except KeyboardInterrupt:
                 print('\ngot ^C while pool mapping, terminating')
                 pool.terminate()
-                print 'pool terminated'
-            except Exception, e:
+                print('pool terminated')
+            except Exception:
                 print('\ngot exception: %r, terminating' % (e,))
                 pool.terminate()
                 print('pool terminated')
