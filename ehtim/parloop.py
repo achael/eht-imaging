@@ -50,7 +50,8 @@ class Parloop(object):
                 pool.terminate()
                 print('pool terminated')
             except Exception as e:
-                print('\ngot exception: %r, terminating' % (e,))
+
+              print('\ngot exception: %r, terminating' % (e,))
                 pool.terminate()
                 print('pool terminated')
             finally:
