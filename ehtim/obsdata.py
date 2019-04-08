@@ -1437,7 +1437,7 @@ class Obsdata(object):
                 obs.data['qvis'][j] *= totflux / orig_totflux
                 obs.data['uvis'][j] *= totflux / orig_totflux
                 obs.data['vvis'][j] *= totflux / orig_totflux
-                obs.data['vsigma'][j] *= totflux / orig_totflux
+                obs.data['sigma'][j] *= totflux / orig_totflux
                 obs.data['qsigma'][j] *= totflux / orig_totflux
                 obs.data['usigma'][j] *= totflux / orig_totflux
                 obs.data['vsigma'][j] *= totflux / orig_totflux
