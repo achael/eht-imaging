@@ -1578,8 +1578,8 @@ class Image(object):
             uv_min (float): The cuttoff in Glambada used to determine what is a 0-bl
             new_fov (rad): The size of the padded image once the Gaussian is added (safest to keep False, then it will be set to 3 x the gaussian fwhm)
             gauss_sz (rad): The size of the Gaussian added to add flux to the 0-bl. (safest to keep False and it is computed from the min non-zero baseline)
-            gauss_sz_factor (float): The fraction of the min non-zero baseline that is used to caluclate the Gaussian FWHM.
-            debias (bool): True if you use debiased amplitudes to caluclate the 0-bl flux in Jy
+            gauss_sz_factor (float): The fraction of the min non-zero baseline that is used to calculate the Gaussian FWHM.
+            debias (bool): True if you use debiased amplitudes to calculate the 0-bl flux in Jy
             
             Returns:
             (Image): a padded image with a large Gaussian component
