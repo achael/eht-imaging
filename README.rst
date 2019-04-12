@@ -27,7 +27,7 @@ Alternatively, first install NFFT manually following the instructions on the `re
 
 Documentation
 -------------
-Documentation is  `here <https://achael.github.io/eht-imaging>`_ .
+Documentation is  `here <https://achael.github.io/eht-imaging>`_.
 
 Here are some ways to learn to use the code:
 
