@@ -31,21 +31,25 @@ from ehtim.observing.obs_helpers import *
 
 from multiprocessing import Process, Value, Lock
 
-ZBLCUTOFF = 1.e7;
+ZBLCUTOFF = 1.e7
+
 
 class Counter(object):
     """counter object for sharing among multiprocessing jobs"""
 
-    def __init__(self,initval=0,maxval=0):
-        self.val = Value('i',initval)
+    def __init__(self, initval=0, maxval=0):
+        self.val = Value('i', initval)
         self.maxval = maxval
         self.lock = Lock()
+
     def increment(self):
         with self.lock:
             self.val.value += 1
+
     def value(self):
         with self.lock:
             return self.val.value
+
 
 def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
     """Cluster sites in an observation into groups with intra-group basline length not exceeding zbl_uvdist_max
@@ -68,7 +72,8 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
 
             site1coord = np.array([t1['x'], t1['y'], t1['z']])
             site2coord = np.array([t2['x'], t2['y'], t2['z']])
-            uvdist = np.sqrt(np.sum((site1coord-site2coord)**2)) / (C / obs.rf)
+            uvdist = np.sqrt(
+                np.sum((site1coord - site2coord)**2)) / (C / obs.rf)
 
             if uvdist < zbl_uvdist_max:
                 csites.append(t2['site'])
@@ -78,13 +83,12 @@ def make_cluster_data(obs, zbl_uvdist_max=ZBLCUTOFF):
     clusterdict = {}
     for site in obs.tarr['site']:
         for k in range(len(clusters)):
-            if site in  clusters[k]:
+            if site in clusters[k]:
                 clusterdict[site] = k
 
-    clusterbls = [set(comb) for comb in it.combinations(range(len(clusterdict)),2)]
+    clusterbls = [set(comb)
+                  for comb in it.combinations(range(len(clusterdict)), 2)]
 
     cluster_data = (clusters, clusterdict, clusterbls)
 
     return cluster_data
-
-

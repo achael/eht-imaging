@@ -3,7 +3,7 @@
 import ehtim as eh
 import ruamel.yaml as yaml
 
-input  = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
+input = "M87/er4v2/data/lo/hops_3601_M87.LL+netcal.uvfits"
 config = "example_pipeline.yaml"
 output = "cache.uvfits"
 

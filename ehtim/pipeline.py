@@ -4,9 +4,10 @@
 
 import ehtim as eh
 
+
 class Process(object):
     def __init__(self, func, merge=False):
-        self.func  = func
+        self.func = func
         self.merge = merge
 
     def __get__(self, obj, type=None):
@@ -22,8 +23,10 @@ class Process(object):
                 return Pipeline(apply(obj.data))
         return wrapper
 
+
 def process(merge=False):
     return lambda f: Process(f, merge=merge)
+
 
 class Pipeline(object):
     def __init__(self, input):
@@ -46,18 +49,19 @@ class Pipeline(object):
 
     @process()
     def scale(obs,
-              zbl=None,   uvdist=1.0e9,
+              zbl=None, uvdist=1.0e9,
               noise=None, max_diff_sec=100.0):
         if zbl is not None:
             d = obs.data
             b = d['u']**2 + d['v']**2 < uvdist**2
             for t in ["vis", "sigma"]:
                 for p in ["", "q", "u", "v"]:
-                    d[p+t][b] *= zbl
+                    d[p + t][b] *= zbl
             return obs
         if noise is not None:
             if noise == 'auto':
-                noise = obs.estimate_noise_rescale_factor(max_diff_sec=max_diff_sec)
+                noise = obs.estimate_noise_rescale_factor(
+                    max_diff_sec=max_diff_sec)
             return obs.rescale_noise(noise_rescale_factor=noise)
 
     @process()
@@ -84,7 +88,7 @@ class Pipeline(object):
         if uv_min is not None:
             return obs.flag_uvdist(uv_min)
         if site is not None:
-            obs.tarr = obs.tarr[obs.tarr['site']!=site]
+            obs.tarr = obs.tarr[obs.tarr['site'] != site]
             return obs
 
     @process(merge=True)
@@ -92,10 +96,10 @@ class Pipeline(object):
         for i in range(1, len(obss)):
             obss[i].data['time'] += i * 1e-6
             obss[i].mjd = obss[0].mjd
-            obss[i].rf  = obss[0].rf
-            obss[i].ra  = obss[0].ra
+            obss[i].rf = obss[0].rf
+            obss[i].ra = obss[0].ra
             obss[i].dec = obss[0].dec
-            obss[i].bw  = obss[0].bw
+            obss[i].bw = obss[0].bw
         return eh.obsdata.merge_obs(obss).copy()
 
     @process()

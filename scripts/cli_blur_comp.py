@@ -1,3 +1,6 @@
+import comparisons as comp
+import ehtim as eh
+import os
 import sys
 import glob
 import subprocess
@@ -6,40 +9,42 @@ import matplotlib.pyplot as plt
 
 sys.path.append("../../../fork-eht-imaging/eht-imaging/ehtim/plotting/")
 # import comparisions as comp
-import os
-import ehtim as eh
 # from "../fork-eht-imaging/eht-imaging/" import plotting.comparisons as comp
-import comparisons as comp
 
 
-#### global dictionaries containing parameters and system/command line arguments
+# global dictionaries containing parameters and system/command line arguments
 # command line arguments
 args = {
-    'folderpath':sys.argv[1],
-    'directory':sys.argv[2]
+    'folderpath': sys.argv[1],
+    'directory': sys.argv[2]
 }
 
 # comparison parameters
 params = {
-    'cutoff':0.95,
-    'fov':1.0,
-    'zoom':0.1
+    'cutoff': 0.95,
+    'fov': 1.0,
+    'zoom': 0.1
 }
 
 # list of dictionaries
 dictionaries = {
-    'file_args':args,
-    'parameters':params
+    'file_args': args,
+    'parameters': params
 }
 
 OPTIONS_MESSAGE = 'Press f/F to edit field of view, press c/C to edit cutoff, and press r/R to generate a graph. Press p/P to print values from all dictionaries.\n>>>'
+
 
 def generate_metricmtx(fpath_, directory_):
     path = fpath_
     dirname = directory_
 
     # get the image names
-    filenames = [x for x in os.listdir(path + dirname + '/images/') if x.endswith('.fits') ]
+    filenames = [
+        x for x in os.listdir(
+            path +
+            dirname +
+            '/images/') if x.endswith('.fits')]
 
     # load the obs file
     obs = eh.obsdata.load_uvfits(path + dirname + '/' + dirname + '.uvfits')
@@ -48,32 +53,48 @@ def generate_metricmtx(fpath_, directory_):
     # load the images
     imarr = []
     for i in range(len(filenames)):
-        imarr.append(eh.image.load_fits(path + dirname + '/images/' + filenames[i]))
+        imarr.append(
+            eh.image.load_fits(
+                path +
+                dirname +
+                '/images/' +
+                filenames[i]))
 
-    # do the image comparisions 
-    (metric_mtx, fracsteps) = comp.image_consistency(imarr, beamparams, metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[])
+    # do the image comparisions
+    (metric_mtx, fracsteps) = comp.image_consistency(imarr, beamparams,
+                                                     metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[])
 
     return (metric_mtx, fracsteps, beamparams, imarr)
+
 
 def generate_graph(metric_mtx, fracsteps, beamparams, imarr):
     print "Using settings: "
     print_dicts()
-    (cliques_fraclevels, im_cliques_fraclevels) = comp.image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=params['cutoff'])
-    comp.generate_consistency_plot(cliques_fraclevels, im_cliques_fraclevels, zoom=params['zoom'], fov=params['fov'], show=True)
+    (cliques_fraclevels, im_cliques_fraclevels) = comp.image_agreements(
+        imarr, beamparams, metric_mtx, fracsteps, cutoff=params['cutoff'])
+    comp.generate_consistency_plot(
+        cliques_fraclevels,
+        im_cliques_fraclevels,
+        zoom=params['zoom'],
+        fov=params['fov'],
+        show=True)
+
 
 def print_dicts():
     global dictionaries
     for gk, gv in dictionaries.iteritems():
-        for key, value in gv.iteritems() :
+        for key, value in gv.iteritems():
             print key, value
 
-#### CLI function
+
+# CLI function
 # before any customization can be allowed, the metric_mtx must be generated.
 # these must stay constants
 print_dicts()
-(METRIC_MTX, FRACSTEPS, BEAMPARAMS, IMARR) = generate_metricmtx(args['folderpath'], args['directory'])
+(METRIC_MTX, FRACSTEPS, BEAMPARAMS, IMARR) = generate_metricmtx(
+    args['folderpath'], args['directory'])
 
-while 1:
+while True:
     user_input = raw_input(OPTIONS_MESSAGE).lower()
     if user_input in ['p', 'P']:
         print_dicts()
@@ -105,7 +126,3 @@ while 1:
     elif user_input in ['r', 'R']:
         print 'Generating the graph...'
         generate_graph(METRIC_MTX, FRACSTEPS, BEAMPARAMS, IMARR)
-
-
-
-    

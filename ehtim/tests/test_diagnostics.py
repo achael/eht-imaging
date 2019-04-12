@@ -3,21 +3,24 @@ from .. import diagnostics as ds
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def gauss(x0, sx):
     n = 128
     X = 0.5 * (n - 1)
     x = np.linspace(-X, X, n) / n - x0
     return np.exp(-0.5 * (x * x) / (sx * sx)) / np.sqrt(2 * np.pi * sx * sx)
 
+
 def gauss2(x0, y0, sx, sy):
     return np.sqrt(np.outer(gauss(x0, sx), gauss(y0, sy)))
+
 
 def test_diagnostics_onedimize():
     """Test if onedimize() produces expected results
     """
-    img1 = gauss2(0.0,0.0,0.1,0.1)
-    img2 = 0.5 * (gauss2(0.0,-0.1,0.1,0.1) + gauss2(0.0,0.1,0.1,0.1))
-    img3 = 0.5 * (gauss2(0.0,-0.2,0.1,0.1) + gauss2(0.0,0.2,0.1,0.1))
+    img1 = gauss2(0.0, 0.0, 0.1, 0.1)
+    img2 = 0.5 * (gauss2(0.0, -0.1, 0.1, 0.1) + gauss2(0.0, 0.1, 0.1, 0.1))
+    img3 = 0.5 * (gauss2(0.0, -0.2, 0.1, 0.1) + gauss2(0.0, 0.2, 0.1, 0.1))
     imgs = [img1, img2, img3]
     labels = ['One Gaussian', 'Two nearby Gaussians', 'Two far-away Gaussians']
 
