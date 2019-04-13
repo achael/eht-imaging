@@ -486,7 +486,7 @@ class Movie(object):
 
         elif mov.polrep=='circ':
             mov.lrframes *= [-np.conjugate(lrvec) for lrvec in mov.lrframes]
-            mov.rlframes *= [-np.conjugate(rlvel) for rlvec in mov.rlframes]
+            mov.rlframes *= [-np.conjugate(rlvec) for rlvec in mov.rlframes]
 
         return mov
 
@@ -505,7 +505,7 @@ class Movie(object):
 
         elif mov.polrep=='circ':
             mov.lrframes *= [np.conjugate(lrvec) for lrvec in mov.lrframes]
-            mov.rlframes *= [np.conjugate(rlvel) for rlvec in mov.rlframes]
+            mov.rlframes *= [np.conjugate(rlvec) for rlvec in mov.rlframes]
 
         return mov
 
