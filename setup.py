@@ -29,14 +29,15 @@ if __name__ == "__main__":
                             "ephem",
                             "future",
                             "h5py",
-                          # "html",     # optional; only needed if use dynamical imaging
                             "matplotlib",
                             "networkx",
                             "numpy",
-                          # "pandas",   # optional; only needed if using statistics
-                          # "pynfft",   # optional; only needed if using clean
-                          # "requests", # optional; only needed if using dynamical imaging
                             "scipy",
-                            "scikit-image"]
+                            "scikit-image"],
+          extras_require={
+              'STATS': ["pandas"],
+              'CLEAN': ["pynfft"],
+              'DYNAMIC': ["html", "requests"]
+          }
     )
 
