@@ -35,14 +35,14 @@ MAXIT=1000
 #Polarimetric Calibration
 ###################################################################################################################################
 
-def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', const_fpol=False, minimizer_method='L-BFGS-B',
+def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', const_fpol=False, minimizer_method='L-BFGS-B',
              ttype='direct', fft_pad_factor=2, show_solution=True, obs_apply=False):
 
     """Polarimetric calibration (detects and removes polarimetric leakage, based on consistency with a given image)
 
        Args:
            obs (Obsdata): The observation to be calibrated
-           im (Image): the reference image used for calibration
+           im (Image): the reference image used for calibration (not needed if using const_fpol = True)
            sites (list): list of sites to include in the polarimetric calibration. empty list calibrates all sites
 
            leakage_tol (float): leakage values that exceed this value will be disfavored by the prior
@@ -64,7 +64,10 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
     mask=[]
 
     # Do everything in a circular basis
-    im_circ = im.switch_polrep('circ')        
+    if not const_fpol:
+        im_circ = im.switch_polrep('circ')        
+    else: 
+        im_circ = None
 
     if dtype not in ['vis','amp']:
         raise Exception('dtype must be vis or amp')
@@ -90,10 +93,11 @@ def leakage_cal(obs, im, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype=
     sites = [s for s in sites if s in allsites]
     site_index = [list(obs.tarr['site']).index(s) for s in sites]
 
-    (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RR', ttype=ttype, fft_pad_factor=fft_pad_factor)
-    (dataLL, sigmaLL, ALL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LL', ttype=ttype, fft_pad_factor=fft_pad_factor)
-    (dataRL, sigmaRL, ARL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RL', ttype=ttype, fft_pad_factor=fft_pad_factor)
-    (dataLR, sigmaLR, ALR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LR', ttype=ttype, fft_pad_factor=fft_pad_factor)
+    if not const_fpol:
+        (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RR', ttype=ttype, fft_pad_factor=fft_pad_factor)
+        (dataLL, sigmaLL, ALL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LL', ttype=ttype, fft_pad_factor=fft_pad_factor)
+        (dataRL, sigmaRL, ARL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RL', ttype=ttype, fft_pad_factor=fft_pad_factor)
+        (dataLR, sigmaLR, ALR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LR', ttype=ttype, fft_pad_factor=fft_pad_factor)
 
     def chisq_total(data, im, D):
         if const_fpol: 
