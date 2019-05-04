@@ -192,7 +192,7 @@ class Imager(object):
         if self.pol_next=='P':
             print("Imaging P: switching to Stokes!")
             self.prior_next = self.prior_next.switch_polrep(polrep_out='stokes', pol_prim_out='I')
-            self.init_next = self.prior_next.switch_polrep(polrep_out='stokes', pol_prim_out='I')
+            self.init_next = self.init_next.switch_polrep(polrep_out='stokes', pol_prim_out='I')
             pol_prim = 'I'
 
         # Checks and initialize
