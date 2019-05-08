@@ -35,7 +35,7 @@ MAXIT=1000
 #Polarimetric Calibration
 ###################################################################################################################################
 
-def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', const_fpol=False, minimizer_method='L-BFGS-B',
+def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', const_fpol=False, inverse=False,  minimizer_method='L-BFGS-B',
              ttype='direct', fft_pad_factor=2, show_solution=True, obs_apply=False):
 
     """Polarimetric calibration (detects and removes polarimetric leakage, based on consistency with a given image)
@@ -92,6 +92,7 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
     # only include sites that are present
     sites = [s for s in sites if s in allsites]
     site_index = [list(obs.tarr['site']).index(s) for s in sites]
+    #site_dict = dict(zip(sites, site_index))
 
     if not const_fpol:
         (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RR', ttype=ttype, fft_pad_factor=fft_pad_factor)
@@ -99,15 +100,60 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
         (dataRL, sigmaRL, ARL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RL', ttype=ttype, fft_pad_factor=fft_pad_factor)
         (dataLR, sigmaLR, ALR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LR', ttype=ttype, fft_pad_factor=fft_pad_factor)
 
-    def chisq_total(data, im, D):
+    # If inverse modeling, pre-compute field rotation angles
+    if inverse:    
+        el1  = obs.unpack(['el1'],ang_unit='rad')['el1']
+        el2  = obs.unpack(['el2'],ang_unit='rad')['el2']
+        par1 = obs.unpack(['par_ang1'],ang_unit='rad')['par_ang1']
+        par2 = obs.unpack(['par_ang2'],ang_unit='rad')['par_ang2']
+
+        fr_elev1 = np.array([obs.tarr[obs.tkey[o['t1']]]['fr_elev'] for o in obs.data])
+        fr_elev2 = np.array([obs.tarr[obs.tkey[o['t2']]]['fr_elev'] for o in obs.data])
+        fr_par1  = np.array([obs.tarr[obs.tkey[o['t1']]]['fr_par']  for o in obs.data])
+        fr_par2  = np.array([obs.tarr[obs.tkey[o['t2']]]['fr_par']  for o in obs.data])
+        fr_off1  = np.array([obs.tarr[obs.tkey[o['t1']]]['fr_off']  for o in obs.data])
+        fr_off2  = np.array([obs.tarr[obs.tkey[o['t2']]]['fr_off']  for o in obs.data])
+
+        fr1 = fr_elev1*el1 + fr_par1*par1 + fr_off1*np.pi/180.
+        fr2 = fr_elev2*el2 + fr_par2*par2 + fr_off2*np.pi/180.
+
+    def chisq_total(data, im, D, inverse=False):
         if const_fpol: 
-            fpol_model = D[-1]
-            fpol_data_1  = 2.0 * data['rlvis']/(data['rrvis'] + data['llvis'])
-            fpol_data_2  = 2.0 * np.conj(data['lrvis']/(data['rrvis'] + data['llvis']))
-            fpol_sigma_1 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['rlsigma']
-            fpol_sigma_2 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['lrsigma']
-            return 0.5*np.mean(np.abs((fpol_model - fpol_data_1)/fpol_sigma_1)**2 
-                              + np.abs((fpol_model - fpol_data_2)/fpol_sigma_2)**2)
+            if inverse:
+                # Note: These are linearized approximations (in leakage and source polarization) that also neglect circular polarization
+                fpol_model = D[-1]
+
+                D1R = [D[2*sites.index(o['t1'])]   for o in data]
+                D1L = [D[2*sites.index(o['t1'])+1] for o in data]
+                D2R = [D[2*sites.index(o['t2'])]   for o in data]
+                D2L = [D[2*sites.index(o['t2'])+1] for o in data]
+
+                lrll = data['lrvis']/data['llvis']
+                lrrr = data['lrvis']/data['rrvis']
+                rlll = data['rlvis']/data['llvis']
+                rlrr = data['rlvis']/data['rrvis']
+
+                lrll_sigma = data['lrsigma']/np.abs(data['llvis'])
+                lrrr_sigma = data['lrsigma']/np.abs(data['rrvis'])
+                rlll_sigma = data['rlsigma']/np.abs(data['llvis'])
+                rlrr_sigma = data['rlsigma']/np.abs(data['rrvis'])
+
+                lrll_model = np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + np.conjugate(D2R) * np.exp(-2j*fr2)
+                lrrr_model = np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + np.conjugate(D2R) * np.exp(-2j*fr2)
+                rlll_model = fpol_model + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2)
+                rlrr_model = fpol_model + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2)
+                
+                chisq = np.concatenate([np.abs((lrll - lrll_model)/lrll_sigma)**2,np.abs((lrrr - lrrr_model)/lrrr_sigma)**2,np.abs((rlll - rlll_model)/rlll_sigma)**2,np.abs((rlrr - rlrr_model)/rlrr_sigma)**2])
+                chisq = chisq[~np.isnan(chisq)]
+                return np.mean(chisq)
+            else:
+                fpol_model = D[-1]
+                fpol_data_1  = 2.0 * data['rlvis']/(data['rrvis'] + data['llvis'])
+                fpol_data_2  = 2.0 * np.conj(data['lrvis']/(data['rrvis'] + data['llvis']))
+                fpol_sigma_1 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['rlsigma']
+                fpol_sigma_2 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['lrsigma']
+                return 0.5*np.mean(np.abs((fpol_model - fpol_data_1)/fpol_sigma_1)**2 
+                                  + np.abs((fpol_model - fpol_data_2)/fpol_sigma_2)**2)
         else:
             chisq_RR = chisq_LL = chisq_RL = chisq_LR = 0.0
             if 'RR' in pol_fit: chisq_RR = iu.chisq(im.rrvec, ARR, obs_test.unpack_dat(data,['rr' + dtype])['rr' + dtype], data['rrsigma'], dtype=dtype, ttype=ttype, mask=mask)
@@ -120,15 +166,17 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
 
     def errfunc(Dpar):
         D = Dpar.astype(np.float64).view(dtype=np.complex128) # all the D-terms (complex). If const_fpol, fpol is the last parameter.
-
-        for isite in range(len(sites)):
-            obs_test.tarr['dr'][site_index[isite]] = D[2*isite]
-            obs_test.tarr['dl'][site_index[isite]] = D[2*isite+1]
  
-        data = simobs.apply_jones_inverse(obs_test,dcal=False,verbose=False)
+        if not inverse:
+            for isite in range(len(sites)):
+                obs_test.tarr['dr'][site_index[isite]] = D[2*isite]
+                obs_test.tarr['dl'][site_index[isite]] = D[2*isite+1]
+            data = simobs.apply_jones_inverse(obs_test,dcal=False,verbose=False)
+        else:
+            data = obs.data
 
         # goodness-of-fit for the leakage-corrected data 
-        chisq = chisq_total(data, im_circ, D)
+        chisq = chisq_total(data, im_circ, D, inverse=inverse)
 
         # prior on the D terms
         chisq_D = np.sum(np.abs(D/leakage_tol)**2)
@@ -153,7 +201,7 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
 
     if show_solution:
         print("Original chi-squared: {:.4f}".format(chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit)))
-        print("New chi-squared: {:.4f}\n".format(chisq_total(obs_test.data, im_circ, D_fit)))
+        print("New chi-squared: {:.4f}\n".format(chisq_total(obs_test.data, im_circ, D_fit, inverse=False)))
         for isite in range(len(sites)):       
             print(sites[isite])
             print('   D_R: {:.4f}'.format(D_fit[2*isite]))
