@@ -979,7 +979,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     rrmask = np.any(np.any(rrmask_2d, axis=2), axis=1)
     llmask = np.any(np.any(llmask_2d, axis=2), axis=1)
     rlmask = np.any(np.any(rlmask_2d, axis=2), axis=1)
-    lrmask = np.any(np.any(rlmask_2d, axis=2), axis=1)
+    lrmask = np.any(np.any(lrmask_2d, axis=2), axis=1)
 
     # Total intensity mask
     if polrep_uvfits == 'circ':
