@@ -380,7 +380,7 @@ class Image(object):
         """
 
         if self.polrep!='stokes':
-            raise Excpetion("polrep must be 'stokes' for add_qu() !")
+            raise Exception("polrep must be 'stokes' for add_qu() !")
         self.add_pol_image(qimage,'Q')
         self.add_pol_image(uimage,'U')
 
@@ -396,7 +396,7 @@ class Image(object):
         """
 
         if self.polrep!='stokes':
-            raise Excpetion("polrep must be 'stokes' for add_v() !")
+            raise Exception("polrep must be 'stokes' for add_v() !")
         self.add_pol_image(vimage,'V')
 
         return
