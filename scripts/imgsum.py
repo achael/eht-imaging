@@ -64,7 +64,7 @@ if __name__=='__main__':
     else: outname = outdir +'/' + basename + '.pdf'
 
     args = [im, obs, obs_uncal, outname]
-    kwargs = {'commentstr':opt.c, 'outdir':outdir,'ebar':ebar,'cfun':opt.cfun,'snrcut':snrcut,
+    kwargs = {'commentstr':opt.c, 'outdir':outdir,'ebar':ebar,'cfun':opt.cfun,'snrcut':opt.snrcut,
               'sysnoise':opt.systematic_noise,'syscnoise':opt.systematic_cphase_noise,'fontsize':opt.fontsize,
               'gainplots':gainplots,'cphaseplots':cphaseplots,'campplots':campplots, 'ampplots':ampplots, 'debias':debias,  
               'cp_uv_min':cp_uv_min}
