@@ -3,6 +3,7 @@ ephem
 future
 h5py
 html
+ipython
 matplotlib
 networkx
 numpy
@@ -11,5 +12,4 @@ pyfits
 pynfft
 requests
 scipy
-skimage
-
+scikit-image
