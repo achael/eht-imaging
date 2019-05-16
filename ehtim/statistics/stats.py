@@ -190,7 +190,7 @@ def bootstrap(data, statistic, num_samples=int(1e3), alpha='1sig',wrapping_varia
             statistic: function representing the statistic to be evaluated
             num_samples: number of bootstrap (re)samples
             alpha: parameter of the confidence interval, '1s' gets an analog of 1 sigma confidence for a normal variable
-            wrapping_variable: True for circular variables, attempts to avoid problem related to estimating variablity of wrapping variable
+            wrapping_variable: True for circular variables, attempts to avoid problem related to estimating variability of wrapping variable
 
         Returns:
             bootstrap_value: bootstrap-estimated value of the statistic
