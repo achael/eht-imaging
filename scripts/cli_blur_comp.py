@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import glob
 import subprocess
@@ -56,7 +58,7 @@ def generate_metricmtx(fpath_, directory_):
     return (metric_mtx, fracsteps, beamparams, imarr)
 
 def generate_graph(metric_mtx, fracsteps, beamparams, imarr):
-    print "Using settings: "
+    print("Using settings: ")
     print_dicts()
     (cliques_fraclevels, im_cliques_fraclevels) = comp.image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=params['cutoff'])
     comp.generate_consistency_plot(cliques_fraclevels, im_cliques_fraclevels, zoom=params['zoom'], fov=params['fov'], show=True)
@@ -65,7 +67,7 @@ def print_dicts():
     global dictionaries
     for gk, gv in dictionaries.iteritems():
         for key, value in gv.iteritems() :
-            print key, value
+            print(key, value)
 
 #### CLI function
 # before any customization can be allowed, the metric_mtx must be generated.
@@ -103,7 +105,7 @@ while 1:
         continue
 
     elif user_input in ['r', 'R']:
-        print 'Generating the graph...'
+        print('Generating the graph...')
         generate_graph(METRIC_MTX, FRACSTEPS, BEAMPARAMS, IMARR)
 
 
