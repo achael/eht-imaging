@@ -178,18 +178,20 @@ def self_cal_scan(scan, im, V_scan=[], sites=[], polrep='stokes', pol='I', metho
     """Self-calibrate a scan to an image.
 
        Args:
-           scan (np.recarray): data array of type DTPOL_STOKES or DTPOL_CIRC containing the scan visibility data
+           scan (np.recarray): data array of type DTPOL_STOKES or DTPOL_CIRC 
            im (Image): the image to be calibrated  to
-           sites (list): list of sites to include in the self calibration. empty list calibrates all sites
+           sites (list): list of sites to include in the self calibration. empty list calibrates all 
            V_scan (list) : precomputed scan visibilities
 
            polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
            pol (str): which image polarization to self-calibrate visibilities to 
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
-           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
+           minimizer_method (str): Method for scipy.optimize.minimize 
+                                  (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float or list): gains that exceed this value will be disfavored by the prior
-                                     for asymmetric gain_tol for corrections below/above unity, pass a 2-element list
+                                     for asymmetric gain_tol for corrections below/above unity, 
+                                     pass a 2-element list
 
            debias (bool): If True, debias the amplitudes
            caltable (bool): if True, returns a Caltable instead of an Obsdata 

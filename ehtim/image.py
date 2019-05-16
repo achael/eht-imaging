@@ -129,7 +129,7 @@ class Image(object):
             else:
                 raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
         else:
-            raise Excpetion("polrep must be 'circ' or 'stokes'!")
+            raise Exception("polrep must be 'circ' or 'stokes'!")
 
         # Save the image dimension data
         self.pol_prim =  pol_prim
@@ -380,7 +380,7 @@ class Image(object):
         """
 
         if self.polrep!='stokes':
-            raise Excpetion("polrep must be 'stokes' for add_qu() !")
+            raise Exception("polrep must be 'stokes' for add_qu() !")
         self.add_pol_image(qimage,'Q')
         self.add_pol_image(uimage,'U')
 
@@ -396,7 +396,7 @@ class Image(object):
         """
 
         if self.polrep!='stokes':
-            raise Excpetion("polrep must be 'stokes' for add_v() !")
+            raise Exception("polrep must be 'stokes' for add_v() !")
         self.add_pol_image(vimage,'V')
 
         return
