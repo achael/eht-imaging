@@ -2,7 +2,6 @@ astropy
 ephem
 future
 h5py
-html
 ipython
 matplotlib
 networkx
