@@ -1155,7 +1155,7 @@ class Movie(object):
 
             if label_time:
                 time = self.frametimes()[n]
-                time_str = ("%02d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+                time_str = ("%02d:%02d:%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
                 fig.suptitle(time_str)
 
             return plt_im
