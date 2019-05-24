@@ -200,8 +200,15 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
     obs_test.dcal = True
 
     if show_solution:
-        print("Original chi-squared: {:.4f}".format(chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit)))
-        print("New chi-squared: {:.4f}\n".format(chisq_total(obs_test.data, im_circ, D_fit, inverse=False)))
+        if inverse == False:
+            chisq_orig = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit, inverse=inverse)
+            chisq_new  = chisq_total(obs_test.data, im_circ, D_fit, inverse=inverse)
+        else:
+            chisq_orig = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit*0.0, inverse=inverse)
+            chisq_new  = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit, inverse=inverse)
+
+        print("Original chi-squared: {:.4f}".format(chisq_orig))
+        print("New chi-squared: {:.4f}\n".format(chisq_new))
         for isite in range(len(sites)):       
             print(sites[isite])
             print('   D_R: {:.4f}'.format(D_fit[2*isite]))
