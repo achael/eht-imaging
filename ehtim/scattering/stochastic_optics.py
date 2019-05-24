@@ -380,8 +380,8 @@ class ScatteringModel(object):
         Nx = EpsilonScreen.shape[1]
         Ny = EpsilonScreen.shape[0]
 
-        if Nx%2 == 0:
-            print("The image dimension should really be odd...")
+#        if Nx%2 == 0:
+#            print("The image dimension should really be odd...")
 
         #Now we'll calculate the power spectrum for each pixel in Fourier space
         screen_x_offset_pixels = (Vx_km_per_s*1.e5) * (t_hr*3600.0) / (FOV/float(Nx))
@@ -599,7 +599,7 @@ class ScatteringModel(object):
 
         def get_frame(j):
             if type(Unscattered_Movie) == movie.Movie:
-                im = image.Image(Unscattered_Movie.frames[j].reshape((N,N)), psize, ra, dec, rf, pulse, source, mjd)
+                im = image.Image(Unscattered_Movie.frames[j].reshape((N,N)), psize=psize, ra=ra, dec=dec, rf=rf, pulse=pulse, source=source, mjd=mjd)
                 if len(Unscattered_Movie.qframes) > 0:
                     im.add_qu(Unscattered_Movie.qframes[j].reshape((N,N)), Unscattered_Movie.uframes[j].reshape((N,N)))
 
