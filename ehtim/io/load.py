@@ -143,6 +143,61 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', ze
 
     return outim
 
+def load_im_hdf5(filename):
+    """Read in an image from an hdf5 file.
+       Args:
+            filename (str): path to input hdf5 file
+       Returns:
+            (Image): loaded image object
+    """
+    print ("Loading hdf5 image: ", filename)
+
+    # Load information from hdf5 file
+    import h5py
+
+    hfp = h5py.File(filename)
+    dsource = hfp['header']['dsource'][()]          # distance to source in cm
+    jyscale = hfp['header']['scale'][()]            # convert cgs intensity -> Jy flux density
+    rf = hfp['header']['freqcgs'][()]               # in cgs
+    tunit = hfp['header']['units']['T_unit'][()]    # in seconds
+    lunit = hfp['header']['units']['L_unit'][()]    # in cm
+    DX = hfp['header']['camera']['dx'][()]          # in GM/c^2
+    nx = hfp['header']['camera']['nx'][()]          # width in pixels
+    time = hfp['header']['t'][()]*tunit/3600.       # time in hours
+    unpoldat = np.copy(hfp['unpol'])                # NX,NY
+    poldat = np.copy(hfp['pol'])[:,:,:4]            # NX,NY,{I,Q,U,V}
+    hfp.close()
+
+    # Make a guess at the source based on distance and optionally fall back on mass
+    src = SOURCE_DEFAULT
+    if dsource > 4.e25 and dsource < 6.2e25: src = "M87"
+    elif dsource > 2.45e22 and dsource < 2.6e22: src = "SgrA"
+
+    # Fill in information according to the source
+    ra = RA_DEFAULT
+    dec = DEC_DEFAULT
+    if src == "SgrA":
+        ra = 17.76112247
+        dec = -28.992189444
+    elif src == "M87": 
+        ra = 187.70593075
+        dec = 12.391123306
+
+    # Process image to set proper dimensions
+    fovmuas = DX / dsource * lunit * 2.06265e11
+    psize_x = RADPERUAS * fovmuas / nx
+
+    Iim = poldat[:,:,0]
+    Qim = poldat[:,:,1]
+    Uim = poldat[:,:,2]
+    Vim = poldat[:,:,3]
+
+    outim = ehtim.image.Image(Iim, psize_x, ra, dec, rf=rf, source=src, polrep='stokes', pol_prim='I', time=time)
+    outim.add_qu(Qim, Uim)
+    outim.add_v(Vim)
+
+    return outim
+
 def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT, 
                  punit="deg", polrep='stokes', pol_prim=None, zero_pol=True):
     """Read in an image from a FITS file.
