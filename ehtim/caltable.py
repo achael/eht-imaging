@@ -798,6 +798,8 @@ def make_caltable(obs, gains, sites, times):
     return caltable
 
 def relaxed_interp1d(x, y, **kwargs):
+    try: len(x)
+    except TypeError:x=np.asarray([x]); y=np.asarray([y])#allows to run on a single float number
     if len(x) == 1:
         x = np.array([-0.5, 0.5]) + x[0]
         y = np.array([ 1.0, 1.0]) * y[0]
