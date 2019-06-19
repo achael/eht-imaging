@@ -127,6 +127,7 @@ FIELDS = ['time','time_utc','time_gmst',
           'llvis','llamp','llphase','llsnr','llsigma','llsigma_phase'
           'rlvis','rlamp','rlphase','rlsnr','rlsigma','rlsigma_phase'
           'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase']
+
 FIELDS_AMPS = ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]
 FIELDS_SIGS = ["sigma","qsigma","usigma","vsigma","psigma","msigma","rrsigma","llsigma","rlsigma","lrsigma"]
 FIELDS_PHASE = ["phase", "qphase", "uphase", "vphase","pphase", "mphase","rrphase","llphase","lrphase","rlphase"]

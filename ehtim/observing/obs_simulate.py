@@ -825,9 +825,9 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
     """Apply inverse jones matrices to an observation
 
        Args:
-           obs (Obsdata): the original observation
-           dcal (bool): if False, time-dependent gaussian errors are added to D-terms.
-           frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
+           opacitycal (bool): if False, estimated opacity terms are applied in the inverse gains
+           dcal (bool): if False, estimated inverse d-terms are applied to the inverse Jones matrices
+           frcal (bool): if False, inverse feed rotation angle terms are applied to Jones matrices.
 
        Returns:
            (np.array): an observation data array

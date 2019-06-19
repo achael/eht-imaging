@@ -1539,7 +1539,8 @@ class Image(object):
         dist = 1.0 * 3.086e21
         rdiff = np.abs(corr) * dist / 1e3
         theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
-        sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
+        sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist,
+                                theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
         ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed)
         ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
         qvec = ivec * mag * np.sin(ps)
@@ -1551,7 +1552,8 @@ class Image(object):
             dist = 1.0 * 3.086e21
             rdiff = np.abs(ccorr) * dist / 1e3
             theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
-            sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
+            sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, 
+                                    theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
             ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed*2)
             ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
             vvec = ivec * cmag * np.sin(ps)
@@ -1726,7 +1728,7 @@ class Image(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True then force the applied gains to be negative meaning that you have overestimated your telescope's performance
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms).
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
@@ -2083,8 +2085,10 @@ class Image(object):
 
            Args:
                im2 (Image): image with respect with to switch
-               psize (float): pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes
-               target_fov (float): fov of the comparison image (rad). If None it is twice the largest fov of the input images
+               psize (float): pixel size of comparison image (rad). 
+                              If None it is the smallest of the input image pizel sizes
+               target_fov (float): fov of the comparison image (rad).
+                                   If None it is twice the largest fov of the input images
 
                beamparams (list): the nominal Gaussian beam parameters [fovx, fovy, position angle]
                blur_frac (float): fractional beam to blur each image to before comparison
@@ -2095,8 +2099,7 @@ class Image(object):
                dynamic_range (float): dynamic range for log and gamma scale comparisons
 
            Returns:
-               (tuple): (errormetric, im1_pad, im2_shift) of computed error metric and shifted/resized comparison images
-
+               (tuple): (errormetric, im1_pad, im2_shift)
         """
 
         im1 = self.copy()
@@ -2458,8 +2461,10 @@ class Image(object):
                       plotp=False, nvec=20, pcut=0.1, log_offset=False,
                       label_type='ticks', has_title=True, alpha=1,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
-                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, cbar_orientation="vertical", scinot=False,
-                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12, power=0, beamcolor='w', dpi=500):
+                      export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, 
+                      cbar_orientation="vertical", scinot=False,
+                      scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, 
+                      scale_fontsize=12, power=0, beamcolor='w', dpi=500):
 
         """Display the image.
 
@@ -2474,13 +2479,15 @@ class Image(object):
 
                plotp (bool): True to plot linear polarimetic image
                nvec (int): number of polarimetric vectors to plot
-               pcut (float): minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel
+               pcut (float): minimum stokes P value for displaying polarimetric vectors 
+                             (fraction of maximum Stokes I) 
 
                label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
-               cbar_unit (tuple): specifies the unit of the colorbar: eg ('Jy','pixel'),('m-Jy','$\mu$as$^2$'),['Tb'] (i.e., brightness temperature)
+               cbar_unit (tuple): specifies the unit of the colorbar: e.g., 
+                                  ('Jy','pixel'),('m-Jy','$\mu$as$^2$'),['Tb']
                beamparams (list): [fwhm_maj, fwhm_min, theta], set to plot beam contour
 
                export_pdf (str): path to exported PDF with plot
@@ -2489,7 +2496,7 @@ class Image(object):
                scale_lw (float): Linewidth of the scale overlay
                beam_lw (float): Linewidth of the beam overlay
                cbar_fontsize (float): Fontsize of the text elements of the colorbar
-               axis (matplotlib.axes.Axes): An axis object, which will be edited so as to not overwrite your plot with a figure object. If none, creates a new figure.
+               axis (matplotlib.axes.Axes): An axis object
                scale_fontsize (float): Fontsize of the scale label
                power (float): Passed to colorbar for division of ticks by 1e(power)
                beamcolor (str): color of the beam overlay 
