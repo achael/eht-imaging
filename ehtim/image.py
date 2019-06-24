@@ -841,10 +841,16 @@ class Image(object):
             if np.any(np.imag(imvec)!=0):
                 return rot_imvec(np.real(imvec)) + 1j*rot_imvec(np.imag(imvec))
             imarr_rot = scipy.ndimage.interpolation.rotate(imvec.reshape((self.ydim, self.xdim)),
-                                                           angle*180.0/np.pi, reshape=False, order=order,
-                                                           mode='constant', cval=0.0, prefilter=True)
+                                                           angle*180.0/np.pi, reshape=False, 
+                                                           order=order, mode='constant', 
+                                                           cval=0.0, prefilter=True)
 
             return imarr_rot
+
+
+        # pol_prim needs to be RR,LL,I,or V for a simple rotation to work!
+        if(not (self.pol_prim in ['RR','LL','I','V'])):
+            raise Exception("im.pol_prim must be a scalar ('I','V','RR','LL') for simple rotation!") 
 
         # Make new image
         imarr_rot = rot_imvec(self.imvec)
@@ -858,6 +864,17 @@ class Image(object):
             polvec = self._imdict[pol]
             if len(polvec):
                 polarr_rot = rot_imvec(polvec)
+                if pol=='RL': 
+                    polarr_rot *= np.exp(1j*2*angle)
+                elif pol=='LR': 
+                    polarr_rot *= np.exp(-1j*2*angle)
+                elif pol=='Q':
+                    polarr_rot = polarr_rot + 1j*rot_imvec(self._imdict['U'])
+                    polarr_rot = np.real(np.exp(1j*2*angle) * polarr_rot)
+                elif pol=='U':
+                    polarr_rot = rot_imvec(self._imdict['Q']) + 1j*polarr_rot
+                    polarr_rot = np.imag(np.exp(1j*2*angle) * polarr_rot)
+
                 outim.add_pol_image(polarr_rot, pol)
 
         return outim
