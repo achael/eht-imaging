@@ -1856,7 +1856,8 @@ class Image(object):
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), 
+                             otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
@@ -1925,7 +1926,8 @@ class Image(object):
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), 
+                             otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
@@ -1990,7 +1992,8 @@ class Image(object):
                              beamparams=[1., 1., 1.], metric=['nxcorr', 'nrmse', 'rssd'],
                              blursmall=False, shift=True):
 
-        """Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.
+        """Compare to another image by computing normalized cross correlation, 
+           normalized root mean squared error, or square root of the sum of squared differences.
            Returns metrics only for the primary polarization imvec!
 
            Args:
@@ -2015,7 +2018,8 @@ class Image(object):
             raise Exception("In find_shift, im1 and im2 must have the same pol_prim!")
 
         # Shift the comparison image to maximize normalized cross-corr.
-        [idx, xcorr, im1_pad, im2_pad] = im1.find_shift(im2, psize=psize, target_fov=target_fov, beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
+        [idx, xcorr, im1_pad, im2_pad] = im1.find_shift(im2, psize=psize, target_fov=target_fov, 
+                                                        beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
 
         if type(shift)!=bool:
             idx = shift
@@ -2274,7 +2278,8 @@ class Image(object):
 
     def fit_gauss(self, units='rad'):
 
-        """Determine the Gaussian parameters that short baselines would measure for the source by diagonalizing the image covariance matrix.
+        """Determine the Gaussian parameters that short baselines would measure for the source 
+           by diagonalizing the image covariance matrix.
            Returns parameters only for the primary polarization imvec!
 
            Args:
@@ -2296,7 +2301,8 @@ class Image(object):
         xy = (np.sum(np.outer(ylist - y1, xlist - x1).ravel()*im)/np.sum(im))
 
         eig = np.linalg.eigh(np.array(((x2,xy),(xy,y2))))
-        gauss_params = np.array((eig[0][1]**0.5*(8.*np.log(2.))**0.5, eig[0][0]**0.5*(8.*np.log(2.))**0.5, np.mod(np.arctan2(eig[1][1][0],eig[1][1][1]) + np.pi, np.pi)))
+        gauss_params = np.array((eig[0][1]**0.5*(8.*np.log(2.))**0.5, eig[0][0]**0.5*(8.*np.log(2.))**0.5, 
+                                 np.mod(np.arctan2(eig[1][1][0],eig[1][1][1]) + np.pi, np.pi)))
         if units == 'natural':
             gauss_params[0] /= RADPERUAS
             gauss_params[1] /= RADPERUAS
@@ -2667,7 +2673,8 @@ class Image(object):
                 plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, pol), fontsize=16)
 
             if cbar_lims:
-                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+                im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp, 
+                                vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
                 im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp)
 
@@ -2861,7 +2868,8 @@ class Image(object):
             start = self.xdim * roughfactor / 3.0 # select the start location
             end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
             plt.plot([start, end], [self.ydim-start-5, self.ydim-start-5], color="white", lw=scale_lw) # plot line
-            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=scale_fontsize)
+            plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, 
+                     s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=scale_fontsize)
             ax = plt.gca()
             if axis is None:
                 ax.axes.get_xaxis().set_visible(False)
@@ -2931,7 +2939,8 @@ class Image(object):
         if not final_fov:
             final_fov = max_fov
 
-        (im_list_shift, shifts, im0_pad) = self.align_images(im_list, shift=shift, final_fov=final_fov, scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+        (im_list_shift, shifts, im0_pad) = self.align_images(im_list, shift=shift, final_fov=final_fov, 
+                                                             scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
 
 
         unit = 'Jy/pixel'
@@ -3011,9 +3020,9 @@ class Image(object):
         return
 
 
-###########################################################################################################################################
+################################################################################################
 #Image creation functions
-###########################################################################################################################################
+################################################################################################
 def make_square(obs, npix, fov, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None):
 
     """Make an empty square image.
@@ -3093,7 +3102,8 @@ def load_image(image, display=False, aipscc=False):
       elif image.endswith('.h5'):
         im = ehtim.io.load.load_im_hdf5(image)
       else:
-        print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got <.{0}>. Returning False.".format(image.split('.')[-1]))
+        print("Image format is not recognized. Was expecting .fits, .txt, or Image.")
+        print(" Got <.{0}>. Returning False.".format(image.split('.')[-1]))
         return False
 
 
@@ -3101,7 +3111,8 @@ def load_image(image, display=False, aipscc=False):
       im = image
 
     else:
-      print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got {0}. Returning False.".format(type(image)))
+      print("Image format is not recognized. Was expecting .fits, .txt, or Image.")
+      print(" Got {0}. Returning False.".format(type(image)))
       return False
 
     if display:
