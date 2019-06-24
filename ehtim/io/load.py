@@ -143,6 +143,61 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', ze
 
     return outim
 
+def load_im_hdf5(filename):
+    """Read in an image from an hdf5 file.
+       Args:
+            filename (str): path to input hdf5 file
+       Returns:
+            (Image): loaded image object
+    """
+    print ("Loading hdf5 image: ", filename)
+
+    # Load information from hdf5 file
+    import h5py
+
+    hfp = h5py.File(filename)
+    dsource = hfp['header']['dsource'][()]          # distance to source in cm
+    jyscale = hfp['header']['scale'][()]            # convert cgs intensity -> Jy flux density
+    rf = hfp['header']['freqcgs'][()]               # in cgs
+    tunit = hfp['header']['units']['T_unit'][()]    # in seconds
+    lunit = hfp['header']['units']['L_unit'][()]    # in cm
+    DX = hfp['header']['camera']['dx'][()]          # in GM/c^2
+    nx = hfp['header']['camera']['nx'][()]          # width in pixels
+    time = hfp['header']['t'][()]*tunit/3600.       # time in hours
+    unpoldat = np.copy(hfp['unpol'])                # NX,NY
+    poldat = np.copy(hfp['pol'])[:,:,:4]            # NX,NY,{I,Q,U,V}
+    hfp.close()
+
+    # Make a guess at the source based on distance and optionally fall back on mass
+    src = SOURCE_DEFAULT
+    if dsource > 4.e25 and dsource < 6.2e25: src = "M87"
+    elif dsource > 2.45e22 and dsource < 2.6e22: src = "SgrA"
+
+    # Fill in information according to the source
+    ra = RA_DEFAULT
+    dec = DEC_DEFAULT
+    if src == "SgrA":
+        ra = 17.76112247
+        dec = -28.992189444
+    elif src == "M87": 
+        ra = 187.70593075
+        dec = 12.391123306
+
+    # Process image to set proper dimensions
+    fovmuas = DX / dsource * lunit * 2.06265e11
+    psize_x = RADPERUAS * fovmuas / nx
+
+    Iim = poldat[:,:,0]
+    Qim = poldat[:,:,1]
+    Uim = poldat[:,:,2]
+    Vim = poldat[:,:,3]
+
+    outim = ehtim.image.Image(Iim, psize_x, ra, dec, rf=rf, source=src, polrep='stokes', pol_prim='I', time=time)
+    outim.add_qu(Qim, Uim)
+    outim.add_v(Vim)
+
+    return outim
+
 def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT, 
                  punit="deg", polrep='stokes', pol_prim=None, zero_pol=True):
     """Read in an image from a FITS file.
@@ -226,11 +281,6 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
             #raise ValueError("Input FITS file does not have an AIPS CC table.")
 
     if aipscc:
-        # Get AIPS CC Table
-#        try:
-#            aipscctab = hdulist["AIPS CC"]
-#        except:
-#            raise ValueError("Input FITS file does not have an AIPS CC table.")
 
         print("loading the AIPS CC table.")
         print("force the pulse function to be the delta function.")
@@ -240,13 +290,31 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
         flux = aipscctab.data["FLUX"]
         deltax = aipscctab.data["DELTAX"]
         deltay = aipscctab.data["DELTAY"]
-        checkmtype = np.abs(np.unique(aipscctab.data["TYPE OBJ"]))<1.0
+        
+        # check to make sure all the source types are point sources and gaussian components
+        checkmtype = np.abs(np.unique(aipscctab.data["TYPE OBJ"]))<2.0
         if False in checkmtype.tolist():
             errmsg = "The primary AIPS CC table in the input FITS file has non point-source"
-            errmsg+= " CC components, which are not currently supported."
+            errmsg+= " or Gaussian Source CC components, which are not currently supported."
             raise ValueError(errmsg)
-
-        # the map_coordinates delta x / delta y of each CC component are
+        print("%d CC components are loaded."%(len(flux)))
+            
+        # compile the point source aipscc info
+        point_src = aipscctab.data["TYPE OBJ"] == 0
+        flux_ps = flux[point_src]
+        deltax_ps = deltax[point_src]
+        deltay_ps = deltay[point_src]
+        
+        # compile the gaussian aipscc info
+        gaussian_src = aipscctab.data["TYPE OBJ"] == 1
+        flux_gs = flux[gaussian_src]
+        deltax_gs = deltax[gaussian_src]
+        deltay_gs = deltay[gaussian_src]
+        maj_gs = aipscctab.data["MAJOR AX"][gaussian_src]
+        min_gs = aipscctab.data["MINOR AX"][gaussian_src]
+        pa_gs = aipscctab.data["POSANGLE"][gaussian_src]
+        
+        # the map_coordinates delta x / delta y of each delta CC component are
         # relative to the reference pixel which is defined by CRPIX1 and CRPIX2.
         try:
             Nxref = header.get("CRPIX1")
@@ -257,21 +325,22 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
         except:
             Nyref = header.get("NAXIS2")//2 + 1
 
-        # compute the corresponding index of pixel for each deltax / deltay
-        ix = np.int64(np.round(deltax/header.get("CDELT1") + Nxref - 1))
-        iy = np.int64(np.round(deltay/header.get("CDELT2") + Nyref - 1))
+        # compute the corresponding index of pixel for each deltax_ps / deltay_ps
+        ix = np.array(np.int64(np.round(deltax_ps/header.get("CDELT1") + Nxref - 1)))
+        iy = np.array(np.int64(np.round(deltay_ps/header.get("CDELT2") + Nyref - 1)))
 
-        # reset the image and input flux infromation
+        # reset the image and input flux information
         data[:,:]=0.
         Noutcomp = 0
-        for i in range(len(flux)):
+        for i in range(len(flux_ps)):
             try:
-                data[iy[i],ix[i]] += flux[i]
+                data[iy[i],ix[i]] += flux_ps[i]
             except:
                 Noutcomp += 1
-        print("%d CC components are loaded."%(len(flux)))
+        print("added %d CC delta components."%(len(flux_ps)))
         if Noutcomp > 0:
-            print("%d CC components are outside of the FoV and ignored."%(Noutcomp))
+            print("%d CC delta components are outside of the FoV and ignored."%(Noutcomp))
+
 
     # flip y-axis!
     image = data[::-1,:]
@@ -306,6 +375,21 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
     # make image object in Stokes I
     outim = ehtim.image.Image(image, psize_x, ra, dec, rf=rf, source=src, mjd=mjd, time=time, pulse=pulse,
                               polrep='stokes',pol_prim='I')
+            
+    # add gaussian components to the image from the aipscc table                  
+    if aipscc and len(flux_gs):
+        Noutcomp = 0
+        for i in range(len(flux_gs)):
+            # make sure the aipscc table gaussian is within the FOV
+            if (deltax_gs[i]*DEGREE < outim.fovx() / 2.0) and (deltay_gs[i]*DEGREE < outim.fovy() / 2.0) and (maj_gs[i]*DEGREE * 3 < (np.min([outim.fovx(), outim.fovy()]) / 2.0) ): 
+                # add a gaussian component with the specified flux and location
+                outim = outim.add_gauss(flux_gs[i], (maj_gs[i]*DEGREE, min_gs[i]*DEGREE, 
+                                    pa_gs[i]*DEGREE, deltax_gs[i]*DEGREE, deltay_gs[i]*DEGREE)) 
+            else: 
+                Noutcomp += 1    
+        print("added %d CC gaussian components."%(len(flux_gs)))
+        if Noutcomp > 0:
+            print("%d CC gaussian components are outside of the FoV and ignored."%(Noutcomp))
 
     # Look for Stokes Q and U and V
     qimage = uimage = vimage = np.array([])
@@ -979,7 +1063,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
     rrmask = np.any(np.any(rrmask_2d, axis=2), axis=1)
     llmask = np.any(np.any(llmask_2d, axis=2), axis=1)
     rlmask = np.any(np.any(rlmask_2d, axis=2), axis=1)
-    lrmask = np.any(np.any(rlmask_2d, axis=2), axis=1)
+    lrmask = np.any(np.any(lrmask_2d, axis=2), axis=1)
 
     # Total intensity mask
     if polrep_uvfits == 'circ':

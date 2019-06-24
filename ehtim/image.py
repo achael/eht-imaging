@@ -3073,7 +3073,7 @@ def make_empty(npix, fov, ra, dec, rf=RF_DEFAULT,source=SOURCE_DEFAULT,
 
 def load_image(image, display=False, aipscc=False):
 
-    """Read in an image from a text, .fits, or ehtim.image.Image object
+    """Read in an image from a text, .fits, .h5, or ehtim.image.Image object
 
        Args:
             image (str/Image): path to input file
@@ -3090,6 +3090,8 @@ def load_image(image, display=False, aipscc=False):
         im = ehtim.io.load.load_im_fits(image, aipscc=aipscc)
       elif image.endswith('.txt'):
         im = ehtim.io.load.load_im_txt(image)
+      elif image.endswith('.h5'):
+        im = ehtim.io.load.load_im_hdf5(image)
       else:
         print("Image format is not recognized. Was expecting .fits, .txt, or Image. Got <.{0}>. Returning False.".format(image.split('.')[-1]))
         return False

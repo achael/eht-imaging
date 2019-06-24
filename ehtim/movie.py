@@ -89,7 +89,6 @@ class Movie(object):
 
         #the list of frames
         frames = [image.flatten() for image in movie]
-        self.nframes = len(self.frames)
         if polrep=='stokes':
             if pol_prim is None: pol_prim = 'I'
             if pol_prim=='I':
@@ -116,6 +115,8 @@ class Movie(object):
 
         self.pol_prim =  pol_prim
 
+        self.nframes = len(self.frames)
+
         self.framedur = float(framedur)
         self.polrep = polrep
         self.pulse = pulse
@@ -128,6 +129,7 @@ class Movie(object):
         self.rf = float(rf)
         self.source = str(source)
         self.mjd = int(mjd)
+        self.pa  = 0.0 # TODO: The pa needs to be properly implemented in the movie object (other functions call it though)
         if start_hr > 24:
             self.mjd += int((start_hr - start_hr % 24)/24)
             self.start_hr = float(start_hr % 24)
@@ -1061,7 +1063,7 @@ class Movie(object):
 
     def export_mp4(self, out='movie.mp4', fps=10, dpi=120,
                          interp='gaussian', scale='lin', dynamic_range=1000.0, cfun='afmhot',
-                         nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1, verbose=False):
+                         nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1, label_time=False, verbose=False):
         """Save the Movie to an mp4 file
         """
 
@@ -1069,8 +1071,9 @@ class Movie(object):
         matplotlib.use('agg')
         import matplotlib.pyplot as plt
         import matplotlib.animation as animation
-
-        im = im.switch_polrep('stokes','I')
+        
+        if self.polrep!='stokes':
+            raise Exception("export_mp4 requires self.polrep=='stokes' -- try self.switch_polrep()")
 
         if (interp in ['gauss', 'gaussian', 'Gaussian', 'Gauss']):
             interp = 'gaussian'
@@ -1149,6 +1152,12 @@ class Movie(object):
             if verbose:
                 print("processing frame {0} of {1}".format(n, len(self.frames)*frame_pad_factor))
             plt_im.set_data(im_data(n))
+
+            if label_time:
+                time = self.frametimes()[n]
+                time_str = ("%02d:%02d:%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+                fig.suptitle(time_str)
+
             return plt_im
 
         ani = animation.FuncAnimation(fig,update_img,len(self.frames)*frame_pad_factor,interval=1e3/fps)
