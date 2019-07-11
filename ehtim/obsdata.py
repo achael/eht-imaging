@@ -909,13 +909,77 @@ class Obsdata(object):
         """
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
+        if dtype not in  ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'm']:
+            raise Exception("%s is not a supported dterms!" % dtype)
+
         import ehtim.imaging.imager_utils as iu
         if pol not in im._imdict.keys():
             raise Exception(pol + ' is not in the current image.' + 
-                                  'Consider changing the polarization basis of the image.')
+                                  ' Consider changing the polarization basis of the image.')
 
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
-        chisq = iu.chisq(im._imdict[pol], A, data, sigma, dtype, ttype=ttype, mask=mask)
+
+        imvec = im._imdict[pol]
+        if len(mask)>0 and np.any(np.invert(mask)):
+            imvec = imvec[mask]
+
+        chisq = iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+
+        return chisq
+
+    def polchisq(self, im, dtype='pvis', ttype='nfft', pol_prim='amp_phase', mask=[], **kwargs):
+
+        """Give the reduced chi^2 for the specified image and polarimetric datatype.
+
+           Args:
+                im (Image): image to test polarimetric chi^2
+                dtype (str): data type of polarimetric chi^2 ('pvis','m','pbs')
+                pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
+                mask (arr): mask of same dimension as im.imvec
+                ttype (str): if "fast" or "nfft" or "direct" 
+                pol_prim (str): "amp_phase" I,m,chi "qu" for IQU, "qu_frac" for I,Q/I,U/I
+                fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
+                conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
+                p_rad (int): The pixel radius for the convolving function 
+                order ('str'): Interpolation order for sampling the FFT        
+    
+                systematic_noise (float): adds a fractional systematic noise tolerance to sigmas
+                snrcut (float): a  snr cutoff for including data in the chi^2 sum
+                debias (bool): if True then apply debiasing to amplitudes/closure amplitudes
+                weighting (str): 'natural' or 'uniform' 
+
+                systematic_cphase_noise (float): a value in degrees to add to the closure phase sigmas
+                cp_uv_min (float): flag baselines shorter than this before forming closure quantities
+                maxset (bool):  if True, use maximal set instead of minimal for closure quantities
+
+           Returns:
+                (float): image chi^2
+        """
+
+        if dtype not in ['pvis','m','pbs']:
+            raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs'!")
+        if (pol_prim!="amp_phase"):
+            raise Exception("Only amp_phase pol_prim currently supported!")
+
+        # TODO -- should import this at top, but the circular dependencies create a mess...
+        import ehtim.imaging.pol_imager_utils as piu
+
+        (data, sigma, A) = piu.polchisqdata(self, im, mask, dtype, ttype=ttype, **kwargs)
+
+
+        imstokes = im.switch_polrep(polrep_out='stokes', pol_prim_out='I')
+        ivec = imstokes.imvec
+        mvec = (np.abs(imstokes.qvec + 1j*imstokes.uvec)/ivec)
+        chivec = np.angle(imstokes.qvec + 1j*imstokes.uvec)/2
+
+        if len(mask)>0 and np.any(np.invert(mask)):
+            ivec = ivec[mask]
+            mvec = mvec[mask]
+            chivec = chivec[mask]
+
+        imtuple = np.array((ivec, mvec, chivec))
+        chisq = piu.polchisq(imtuple, A, data, sigma, dtype, 
+                             ttype=ttype, mask=mask, pol_prim=pol_prim)
 
         return chisq
 

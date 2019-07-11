@@ -528,6 +528,9 @@ def polchisq(imtuple, A, data, sigma, dtype, ttype='direct', mask=[], pol_prim="
         raise Exception("FFT not yet implemented in polchisq!")
 
     elif ttype== 'nfft':
+        if len(mask)>0 and np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+
         if dtype == 'pvis':
             chisq = chisq_p_nfft(imtuple, A, data, sigma, pol_prim)
 
@@ -566,6 +569,9 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
         raise Exception("FFT not yet implemented in polchisqgrad!")
 
     elif ttype== 'nfft':
+        if len(mask)>0 and np.any(np.invert(mask)):
+            imtuple = embed_pol(imtuple, mask, randomfloor=True)
+
         if dtype == 'pvis':
             chisqgrad = chisqgrad_p_nfft(imtuple, A, data, sigma, pol_prim,pol_solve)
 
@@ -574,6 +580,9 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
 
         elif dtype == 'pbs':
             chisqgrad = chisqgrad_pbs_nffts(imtuple, A, data, sigma, pol_prim,pol_solve)
+
+        if len(mask)>0 and np.any(np.invert(mask)):
+            chisqgrad = (chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask])
 
     return chisqgrad
 
@@ -1290,7 +1299,6 @@ def chisqdata_m_nfft(Obsdata, Prior, mask, **kwargs):
     uv = np.hstack((mdata['u'].reshape(-1,1), mdata['v'].reshape(-1,1)))
     m = mdata['m']
     sigmam = mdata['msigma']
-    A = ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv, pulse=Prior.pulse, mask=mask)
 
     # get NFFT info
     npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
