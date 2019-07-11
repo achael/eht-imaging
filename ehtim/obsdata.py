@@ -231,12 +231,12 @@ class Obsdata(object):
         if timetype_out == self.timetype:
             return out
     
-
         if timetype_out=='UTC':
             out.data['time'] = gmst_to_utc(out.data['time'], out.mjd)
         if timetype_out=='GMST':
             out.data['time'] = utc_to_gmst(out.data['time'], out.mjd)
         
+        out.timetype = timetype_out
         return out
 
 
@@ -3237,7 +3237,8 @@ class Obsdata(object):
             colors = [color]
 
             # unpack data
-            alldata = [self.unpack([field1, field2], conj=conj, ang_unit=ang_unit, debias=debias)]
+            alldata = [self.unpack([field1, field2], 
+                                   conj=conj, ang_unit=ang_unit, debias=debias, timetype=timetype)]
 
             # X error bars
             if sigtype(field1):

@@ -330,6 +330,7 @@ def save_obs_txt(obs, fname):
 
 
 def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
+
     """Save observation data to uvfits.
        To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
     """
