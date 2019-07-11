@@ -165,13 +165,14 @@ class Image(object):
     def imvec(self, vec):
         if len(vec) != self.xdim*self.ydim:
             raise Exception("imvec size is not consistent with xdim*ydim!")
+
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict[self.pol_prim] =  vec
 
     @property
     def ivec(self):
         if self.polrep!='stokes':
-            raise Exception("ivec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+            raise Exception("ivec is not defined unless self.polrep=='stokes'")
 
         ivec = self._imdict['I']
         return ivec
@@ -187,7 +188,7 @@ class Image(object):
     @property
     def qvec(self):
         if self.polrep!='stokes':
-            raise Exception("qvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+            raise Exception("qvec is not defined unless self.polrep=='stokes'")
 
         qvec = self._imdict['Q']
         return qvec
@@ -203,7 +204,7 @@ class Image(object):
     @property
     def uvec(self):
         if self.polrep!='stokes':
-            raise Exception("uvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+            raise Exception("uvec is not defined unless self.polrep=='stokes'")
 
         uvec = self._imdict['U']
         return uvec
@@ -219,7 +220,7 @@ class Image(object):
     @property
     def vvec(self):
         if self.polrep!='stokes':
-            raise Exception("vvec is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
+            raise Exception("vvec is not defined unless self.polrep=='stokes'")
 
         vvec = self._imdict['V']
         return vvec
@@ -235,7 +236,7 @@ class Image(object):
     @property
     def rrvec(self):
         if self.polrep!='circ':
-            raise Exception("rrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+            raise Exception("rrvec is not defined unless self.polrep=='circ'")
 
         rrvec = self._imdict['RR']
         return rrvec
@@ -251,7 +252,7 @@ class Image(object):
     @property
     def llvec(self):
         if self.polrep!='circ':
-            raise Exception("rrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+            raise Exception("rrvec is not defined unless self.polrep=='circ'")
 
         llvec = self._imdict['LL']
         return llvec
@@ -267,7 +268,7 @@ class Image(object):
     @property
     def rlvec(self):
         if self.polrep!='circ':
-            raise Exception("rlvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+            raise Exception("rlvec is not defined unless self.polrep=='circ'")
 
         rlvec = self._imdict['RL']
         return rlvec
@@ -284,7 +285,7 @@ class Image(object):
     def lrvec(self):
         """Return the imvec of LR"""
         if self.polrep!='circ':
-            raise Exception("lrvec is not defined unless self.polrep=='circ' -- try self.switch_polrep()")
+            raise Exception("lrvec is not defined unless self.polrep=='circ'")
 
         lrvec = self._imdict['LR']
         return lrvec
@@ -351,7 +352,8 @@ class Image(object):
         if image.shape != (self.ydim, self.xdim):
             raise Exception("add_pol_image image shapes incompatible with primary image!")
         if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol in add_pol_image in "%self.polrep + ",".join(list(self._imdict.keys())))
+            raise Exception("for polrep==%s, pol in add_pol_image in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
 
         if self.polrep=='stokes':
             if pol=='I': self.ivec = image.flatten()
@@ -406,7 +408,7 @@ class Image(object):
         """Return a new image with the polarization representation changed
            Args:
                polrep_out (str):  the polrep of the output data
-               pol_prim_out (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
+               pol_prim_out (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for circ
 
            Returns:
                (Image): new Image object with potentially different polrep
@@ -466,8 +468,8 @@ class Image(object):
         # Assemble the new image
         imvec = imdict[pol_prim_out]
         if len(imvec)==0:
-            raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n"%(polrep_out,pol_prim_out) +
-                            "output image is not defined")
+            raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n" % 
+                            (polrep_out,pol_prim_out) + "output image is not defined")
 
         newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
                       polrep=polrep_out, pol_prim=pol_prim_out, time=self.time,
@@ -482,7 +484,6 @@ class Image(object):
 
         return newim
 
-    #TODO -- right convention?
     def flip_chi(self):
 
         """Flip between the different conventions for measuring the EVPA (E of N vs N of E).
@@ -649,7 +650,8 @@ class Image(object):
 
         if pol is None: pol=self.pol_prim
         if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
+            raise Exception("for polrep==%s, pol must be in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
 
         pdim = self.psize
         imvec = self._imdict[pol]
@@ -719,24 +721,28 @@ class Image(object):
         if self.xdim != self.ydim:
             raise Exception("Image must be square to use Image.resample_square!")
         if self.pulse == ehtim.observing.pulses.deltaPulse2D:
-            raise Exception("Image.resample_squre only works on continuously parametrized images: does not work with delta pulses!")
+            raise Exception("Image.resample_squre does not work with delta pulses!")
 
         ydim_new = xdim_new
         fov = self.xdim * self.psize
         psize_new = float(fov) / float(xdim_new)
 
         # Define an interpolation function using the pulse
-        ij = np.array([[[i*self.psize + (self.psize*self.xdim)/2.0 - self.psize/2.0, j*self.psize + (self.psize*self.ydim)/2.0 - self.psize/2.0]
+        ij = np.array([[[i*self.psize + (self.psize*self.xdim)/2.0 - self.psize/2.0, 
+                         j*self.psize + (self.psize*self.ydim)/2.0 - self.psize/2.0]
                         for i in np.arange(0, -self.xdim, -1)]
                         for j in np.arange(0, -self.ydim, -1)]).reshape((self.xdim*self.ydim, 2))
 
         def im_new_val(imvec,x_idx,y_idx):
             x = x_idx*psize_new + (psize_new*xdim_new)/2.0 - psize_new/2.0
             y = y_idx*psize_new + (psize_new*ydim_new)/2.0 - psize_new/2.0
-            mask = (((x - ker_size*self.psize/2.0) < ij[:,0]) * (ij[:,0] < (x + ker_size*self.psize/2.0)) *
-                    ((y - ker_size*self.psize/2.0) < ij[:,1]) * (ij[:,1] < (y + ker_size*self.psize/2.0))
+            mask = (((x - ker_size*self.psize/2.0) < ij[:,0]) * 
+                     (ij[:,0] < (x + ker_size*self.psize/2.0)) *
+                    ((y - ker_size*self.psize/2.0) < ij[:,1]) * 
+                     (ij[:,1] < (y + ker_size*self.psize/2.0))
                    ).flatten()
-            interp = np.sum([imvec[n] * self.pulse(x-ij[n,0], y-ij[n,1], self.psize, dom="I") for n in np.arange(len(imvec))[mask]])
+            interp = np.sum([imvec[n] * self.pulse(x-ij[n,0], y-ij[n,1], self.psize, dom="I") 
+                             for n in np.arange(len(imvec))[mask]])
             return interp
 
         def im_new(imvec):
@@ -795,8 +801,9 @@ class Image(object):
         def interp_imvec(imvec):
             if np.any(np.imag(imvec)!=0):
                 return interp_imvec(np.real(imvec)) + 1j*interp_imvec(np.imag(imvec))
-            #interpfunc = scipy.interpolate.RectBivariateSpline( y, x, np.reshape(imvec, (self.ydim, self.xdim) ) )
-            interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim) ) , kind=interp)
+
+            interpfunc = scipy.interpolate.interp2d(y, x, np.reshape(imvec, (self.ydim, self.xdim)),
+                                                    kind=interp)
             tmpimg = interpfunc(ytarget, xtarget)
             tmpimg[np.abs(xtarget)>fov_x/2.,:] = 0.0
             tmpimg[:,np.abs(ytarget)>fov_y/2.] = 0.0
@@ -831,6 +838,7 @@ class Image(object):
            Returns:
                 (Image): resampled image
         """
+
         order=3
         if interp=='linear': order=1
         elif interp=='cubic': order=3
@@ -915,11 +923,11 @@ class Image(object):
 
     def blur_gauss(self, beamparams, frac=1., frac_pol=0):
 
-        """Blur image with a Gaussian beam defined by beamparams [fwhm_max, fwhm_min, theta] in radians.
+        """Blur image with a Gaussian beam w/ beamparams [fwhm_max, fwhm_min, theta] in radians.
 
            Args:
-               beamparams (list): the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians
-               frac (float): fractional beam size for blurring the main image (polarization defined by self.pol_prim)
+               beamparams (list): [fwhm_maj, fwhm_min, theta, x, y] in radians
+               frac (float): fractional beam size for blurring the main image 
                frac_pol (float): fractional beam size for blurring the other polarizations
 
            Returns:
@@ -938,7 +946,8 @@ class Image(object):
         sth = np.sin(beamparams[2])
 
         def gaussim(blurfrac):
-            gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*(blurfrac*sigma_maj)**2) - (i*cth - j*sth)**2/(2.*(blurfrac*sigma_min)**2))
+            gauss = np.array([[np.exp(-(j*cth + i*sth)**2/(2*(blurfrac*sigma_maj)**2) - 
+                                       (i*cth - j*sth)**2/(2.*(blurfrac*sigma_min)**2))
                                for i in xlist]
                                for j in ylist])
             gauss = gauss[0:self.ydim, 0:self.xdim]
@@ -951,8 +960,6 @@ class Image(object):
 
         # Define a convolution function
         def blur(imarr, gauss):
-            #if np.any(np.imag(imvec)!=0):
-            #    return blur(np.real(imvec)) + 1j*blur(np.imag(imvec))
             imarr_blur = scipy.signal.fftconvolve(gauss, imarr, mode='same')
             return imarr_blur
 
@@ -1027,6 +1034,7 @@ class Image(object):
 
            Args:
                gradtype (str): 'x','y',or 'abs' for the image gradient dimension
+
            Returns:
                Image : an image object containing the gradient image
         """
@@ -1037,8 +1045,7 @@ class Image(object):
                 return gradim(np.real(imvec)) + 1j*gradim(np.imag(imvec))
 
             imarr = imvec.reshape(self.ydim, self.xdim)
-            #gradlist = np.gradient(imarr)
-            #[sy,sx] = gradlist
+
             sx = ndi.sobel(imarr, axis=0, mode='constant')
             sy = ndi.sobel(imarr, axis=1, mode='constant')
 
@@ -1069,12 +1076,12 @@ class Image(object):
 
     def mask(self, cutoff=0.05, beamparams=None, frac=0.0):
 
-        """Produce an image mask that shows all pixels above the specified cutoff percentage of the max flux
+        """Produce an image mask that shows all pixels above the specified cutoff frac of the max
            Works off the primary image
 
            Args:
-               cutoff (float): Primary image pixels with intensities greater than the cuttoff * max intensity are masked
-               beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm
+               cutoff (float): mask pixels with intensities greater than cuttoff * max 
+               beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] or a single fwhm
                frac (float): the fraction of nominal beam to blur with
 
            Returns:
@@ -1115,7 +1122,7 @@ class Image(object):
 
         return mask
 
-    #TODO make this work with a mask image with different dimensions & fov
+    #TODO make this work with a mask image of different dimensions & fov
     def apply_mask(self, mask_im, fill_val=0.):
 
         """Apply a mask to the image
@@ -1128,7 +1135,8 @@ class Image(object):
                (Image): the masked image
 
         """
-        if (self.psize != mask_im.psize) or (self.xdim != mask_im.xdim) or (self.ydim != mask_im.ydim):
+        if ((self.psize != mask_im.psize) or 
+            (self.xdim != mask_im.xdim) or (self.ydim != mask_im.ydim)):
             raise Exception("mask image does not match dimensions of the current image!")
 
         # Get the mask vector
@@ -1153,24 +1161,21 @@ class Image(object):
 
         return outim
 
-    def threshold(self, cutoff=0.05, frac_i=None, beamparams=None, frac=0.0, fill_val=None):
+    def threshold(self, cutoff=0.05, beamparams=None, frac=0.0, fill_val=None):
 
-        """Apply a hard threshold to the primary polarization image. Leave other polarizations untouched.
+        """Apply a hard threshold to the primary polarization image. 
+           Leave other polarizations untouched.
 
            Args:
-               cutoff (float): Pixels with intensities greater than the cuttoff * max intensity are masked
-               frac_i (float): the old name for cutoff: should not be used except in old scripts!
-               beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm
+               cutoff (float): Mask pixels with intensities greater than cuttoff * max
+               beamparams (list): either [fwhm_maj, fwhm_min, pos_ang] or a single fwhm
                frac (float): the fraction of nominal beam to blur with
-               fill_val (float): masked pixels are set to this value. If fill_val==None, they are set to the min unmasked value
+               fill_val (float): masked pixels are set to this value.
+                                 If fill_val==None, they are set to the min unmasked value
 
            Returns:
                (Image): output mask image
         """
-
-        if not (frac_i is None):
-            cutoff=frac_i
-            print("Warning!: using frac_i=%f as cutoff in threshold(). Rename 'frac_i' to 'cutoff' in future scripts!")
 
         if fill_val is None or fill_val==False:
             maxval = np.max(self.imvec)
@@ -1196,12 +1201,14 @@ class Image(object):
 
         if pol is None: pol=self.pol_prim
         if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
+            raise Exception("for polrep==%s, pol must be in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
 
         # Make a flat image array
-        flatarr = ((flux/float(len(self.imvec))) * np.ones(len(self.imvec))).reshape(self.ydim, self.xdim)
+        flatarr = ((flux/float(len(self.imvec))) * np.ones(len(self.imvec)))
+        flatarr = flatarr.reshape(self.ydim, self.xdim)
 
         # Add to the main image and create the new image object
         imarr = self.imvec.reshape(self.ydim, self.xdim).copy()
@@ -1239,7 +1246,8 @@ class Image(object):
 
         if pol is None: pol=self.pol_prim
         if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
+            raise Exception("for polrep==%s, pol must be in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
 
@@ -1281,7 +1289,7 @@ class Image(object):
 
            Args:
                flux (float): the total flux contained in the Gaussian in Jy
-               beamparams (list): the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians
+               beamparams (list): [fwhm_maj, fwhm_min, theta, x, y], all in radians
                pol (str): the polarization to add the flux to. None defaults to pol_prim.
 
            Returns:
@@ -1290,7 +1298,8 @@ class Image(object):
 
         if pol is None: pol=self.pol_prim
         if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
+            raise Exception("for polrep==%s, pol must be in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
 
@@ -1359,7 +1368,8 @@ class Image(object):
 
         if pol is None: pol=self.pol_prim
         if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
+            raise Exception("for polrep==%s, pol must be in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
 
@@ -1418,7 +1428,8 @@ class Image(object):
 
         if pol is None: pol=self.pol_prim
         if not (pol in list(self._imdict.keys())):
-            raise Exception("for polrep==%s, pol must be in "%self.polrep + ",".join(list(self._imdict.keys())))
+            raise Exception("for polrep==%s, pol must be in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
         if not len(self._imdict[pol]):
             raise Exception("no image for pol %s"%pol)
 
@@ -1438,10 +1449,11 @@ class Image(object):
                 return 0.0
 
         ringarr = np.array([[ringm1(i-x, j-y)
-                          for i in xlist]
-                          for j in ylist])
+                             for i in xlist]
+                             for j in ylist])
         ringarr = ringarr[0:self.ydim, 0:self.xdim]
-        tmp = Image(ringarr, self.psize, self.ra, self.dec, self.pa, rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        tmp = Image(ringarr, self.psize, self.ra, self.dec, self.pa, 
+                    rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         tmp = tmp.blur_circ(sigma)
         tmp.imvec *= flux/(tmp.total_flux())
         ringarr = tmp.imvec.reshape(self.ydim, self.xdim)
@@ -1469,8 +1481,7 @@ class Image(object):
 
     def add_const_pol(self, mag, angle, cmag=0, csign=1):
 
-        """Return an image with the same total intensity but fractional linear and circular polarization 
-set to constant values
+        """Return an with constant fractional linear and circular polarization 
 
            Args:
                mag (float): constant polarization fraction to add to the image
@@ -1518,7 +1529,7 @@ set to constant values
 
     def add_random_pol(self, mag, corr, cmag=0., ccorr=0., seed=0):
 
-        """Return an image with the same total intensity but random linear and circular polarization images with specified correlation lengths
+        """Return an image random linear and circular polarizations with certain correlation lengths
 
            Args:
                mag   (float): linear polarization fraction
@@ -1530,6 +1541,7 @@ set to constant values
            Returns:
                 (Image): output image
         """
+
         import ehtim.scattering.stochastic_optics as so
 
         if not (0 <= mag < 1):
@@ -1557,8 +1569,10 @@ set to constant values
         dist = 1.0 * 3.086e21
         rdiff = np.abs(corr) * dist / 1e3
         theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
-        sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist,
-                                theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
+        sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, 
+                                source_screen_distance = 1.e5 * dist,
+                                theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, 
+                                r_in = rdiff*2, r_out = 1e30)
         ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed)
         ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
         qvec = ivec * mag * np.sin(ps)
@@ -1570,8 +1584,10 @@ set to constant values
             dist = 1.0 * 3.086e21
             rdiff = np.abs(ccorr) * dist / 1e3
             theta_mas = 0.37 * 1.0/rdiff * 1000. * 3600. * 180./np.pi
-            sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, source_screen_distance = 1.e5 * dist, 
-                                    theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, r_in = rdiff*2, r_out = 1e30)
+            sm = so.ScatteringModel(scatt_alpha = 1.67, observer_screen_distance = dist, 
+                                    source_screen_distance = 1.e5 * dist, 
+                                    theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, 
+                                    r_in = rdiff*2, r_out = 1e30)
             ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed*2)
             ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
             vvec = ivec * cmag * np.sin(ps)
@@ -1589,21 +1605,25 @@ set to constant values
 
         return outim
     
-    def add_zblterm(self, obs, uv_min, zblval=None, new_fov=False, gauss_sz=False, gauss_sz_factor=0.75, debias=True):
+    def add_zblterm(self, obs, uv_min, zblval=None, new_fov=False, 
+                          gauss_sz=False, gauss_sz_factor=0.75, debias=True):
         
-        """Add a Gaussian term to account for missing flux in the 0 baseline.
+        """Add a large Gaussian term to account for missing flux in the zero baseline.
             
             Args:
-            obs : an Obsdata object that the min non-zero baseline and 0-bl flux are determined from
-            uv_min (float): The cuttoff in Glambada used to determine what is a 0-bl
-            new_fov (rad): The size of the padded image once the Gaussian is added (safest to keep False, then it will be set to 3 x the gaussian fwhm)
-            gauss_sz (rad): The size of the Gaussian added to add flux to the 0-bl. (safest to keep False and it is computed from the min non-zero baseline)
-            gauss_sz_factor (float): The fraction of the min non-zero baseline that is used to caluclate the Gaussian FWHM.
-            debias (bool): True if you use debiased amplitudes to caluclate the 0-bl flux in Jy
-            
+                obs : an Obsdata object to determine min non-zero baseline and 0-bl flux
+                uv_min (float): The cutoff in Glambada used to determine what is a 0-bl
+                new_fov (rad): The size of the padded image once the Gaussian is added 
+                                (if False it will be set to 3 x the gaussian fwhm)
+                gauss_sz (rad): The size of the Gaussian added to add flux to the 0-bl. 
+                                (if False it is computed from the min non-zero baseline)
+                gauss_sz_factor (float): The fraction of the min non-zero baseline 
+                                         used to caluclate the Gaussian FWHM.
+                debias (bool): True if you use debiased amplitudes to caluclate the 0-bl flux in Jy
+                
             Returns:
-            (Image): a padded image with a large Gaussian component
-            """
+                (Image): a padded image with a large Gaussian component
+        """
         
         if gauss_sz == False:
             obs_flag = obs.flag_uvdist(uv_min = uv_min)
@@ -1617,19 +1637,21 @@ set to constant values
             new_fov = np.max((factor*(gauss_sz / 2.355), im_fov))
         
         if new_fov < factor*(gauss_sz / 2.355):
-            print('WARNING! The specified new fov may not be large enough for the gaussian size and may cause higher frequency effects')
+            print('WARNING! The specified new fov may not be large enough')
         
         # calculate the amount of flux to include in the Gaussian
         obs_zerobl = obs.flag_uvdist(uv_max=uv_min)
         obs_zerobl.add_amp(debias=debias)
-        orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
+        orig_totflux =  np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))
+        orig_totflux /= np.sum(1/obs_zerobl.amp['sigma']**2)
         
         if zblval == None:
             addedflux = orig_totflux - np.sum(self.imvec)
         else:
             addedflux = orig_totflux - zblval
         
-        print('Adding a ' + str(addedflux) + ' Jy circular Gaussian of FWHM size ' + str(gauss_sz/RADPERUAS) + ' uas')
+        print('Adding a ' + str(addedflux) + ' Jy circular Gaussian of FWHM size ' + 
+               str(gauss_sz/RADPERUAS) + ' uas')
         
         im_new = self.copy()
         im_new = im_new.pad(new_fov, new_fov)
@@ -1637,16 +1659,16 @@ set to constant values
         return im_new
 
 
-    def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', cache=False, fft_pad_factor=2):
+    def sample_uv(self, uv, sgrscat=False, polrep_obs='stokes', ttype='nfft', 
+                        cache=False, fft_pad_factor=2):
 
         """Sample the image on the selected uv points without adding noise.
 
            Args:
                uv (ndarray): an array of uv points
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
-
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
+               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
+               ttype (str):  "fast" or "nfft" or "direct" 
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
            Returns:
@@ -1662,13 +1684,12 @@ set to constant values
 
     def observe_same_nonoise(self, obs, sgrscat=False,  ttype="nfft", cache=False, fft_pad_factor=2):
 
-        """Observe the image on the same baselines as an existing observation object without adding noise.
+        """Observe the image on the same baselines as an existing observation  without noise.
 
            Args:
-               obs (Obsdata): the existing observation with  baselines where the image FT will be sampled
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+               obs (Obsdata): the existing observation 
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
+               ttype (str):  "fast" or "nfft" or "direct" 
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
            Returns:
@@ -1714,14 +1735,16 @@ set to constant values
 
         obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                              source=self.source, mjd=self.mjd, polrep=obs.polrep,
-                                             ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
+                                             ampcal=True, phasecal=True, opacitycal=True,
+                                             dcal=True, frcal=True,
                                              timetype=obs.timetype, scantable=obs.scans)
 
         return obs_no_noise
 
     def observe_same(self, obs_in, ttype='nfft', fft_pad_factor=2,
                            sgrscat=False, add_th_noise=True,
-                           opacitycal=True, ampcal=True, phasecal=True, dcal=True, frcal=True, rlgaincal=True,
+                           opacitycal=True, ampcal=True, phasecal=True, 
+                           dcal=True, frcal=True, rlgaincal=True,
                            stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
@@ -1731,32 +1754,40 @@ set to constant values
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
-               obs_in (Obsdata): the existing observation with  baselines where the image FT will be sampled
-
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+               obs_in (Obsdata): the existing observation 
+               ttype (str):  "fast" or "nfft" or "direct" 
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
-               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added
+               opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
-               phasecal (bool): if False, time-dependent station-based random phases are added to data points
-               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
+               phasecal (bool): if False, time-dependent station-based random phases are added
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. 
+               dcal (bool): if False, time-dependent gaussian errors added to D-terms. 
+
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
-               neggains (bool): if True then force the applied gains to be negative meaning that you have overestimated your telescope's performance
-               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms).
-               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
+               neggains (bool): if True, force the applied gains to be <1
+                                meaning that you have overestimated your telescope's performance
 
-               tau (float): the base opacity at all sites, or a dict giving one opacity per site
-               gainp (float): the fractional std. dev. of the random error on the gains
-               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
+
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects 
+               inv_jones (bool): if True, applies estimated inverse Jones matrix 
+                                 (not including random terms) to a priori calibrate data
+
+               tau (float): the base opacity at all sites, 
+                            or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains
+               gain_offset (float): the base gain offset at all sites, 
+                                    or a dict giving one offset per site
+               dterm_offset (float): the base dterm offset at all sites, 
+                                     or a dict giving one dterm offset per site
 
-               caltable_path (string): The path and prefix that a caltable is saved with if adding noise through a Jones matrix
-               seed (int): seeds the random component of the noise terms. do not set to 0!
+               caltable_path (string): The path and prefix of a saved caltable
+
+               seed (int): seeds the random component of the noise terms. DO NOT set to 0!
 
            Returns:
                (Obsdata): an observation object
@@ -1765,26 +1796,31 @@ set to constant values
         if seed!=False:
             np.random.seed(seed=seed)
 
-        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor)
+        obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, 
+                                        ttype=ttype, fft_pad_factor=fft_pad_factor)
 
         # Jones Matrix Corruption & Calibration
         if jones:
             obsdata = simobs.add_jones_and_noise(obs, add_th_noise=add_th_noise,
                                                  opacitycal=opacitycal, ampcal=ampcal,
-                                                 phasecal=phasecal, dcal=dcal, frcal=frcal, rlgaincal=rlgaincal,
+                                                 phasecal=phasecal, dcal=dcal, frcal=frcal, 
+                                                 rlgaincal=rlgaincal,
                                                  stabilize_scan_phase=stabilize_scan_phase,
-                                                 stabilize_scan_amp=stabilize_scan_amp, neggains=neggains,
+                                                 stabilize_scan_amp=stabilize_scan_amp, 
+                                                 neggains=neggains,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dterm_offset=dterm_offset,
                                                  caltable_path=caltable_path, seed=seed)
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
-                                         ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, dcal=dcal, frcal=frcal,
+                                         ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal, 
+                                         dcal=dcal, frcal=frcal,
                                          timetype=obs.timetype, scantable=obs.scans)
 
             if inv_jones:
-                obsdata = simobs.apply_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
+                obsdata = simobs.apply_jones_inverse(obs, 
+                                                     opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
                 obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                              source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
@@ -1795,11 +1831,12 @@ set to constant values
 
 
         # No Jones Matrices, Add noise the old way
-        # NOTE There is an asymmetry here - in the old way, we don't offer the ability to *not* unscale estimated noise.
+        # NOTE There is an asymmetry here - in the old way, we don't offer the ability to *not*  
+        # unscale estimated noise.
         else:
 
             if caltable_path:
-                print('WARNING: the caltable is currently only saved if you apply noise with a Jones Matrix')
+                print('WARNING: the caltable is only saved if you apply noise with a Jones Matrix')
 
             obsdata = simobs.add_noise(obs, add_th_noise=add_th_noise,
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
@@ -1809,7 +1846,8 @@ set to constant values
 
             obs =  ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                          source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
-                                         ampcal=ampcal, phasecal=phasecal, opacitycal=True, dcal=True, frcal=True,
+                                         ampcal=ampcal, phasecal=phasecal,
+                                         opacitycal=True, dcal=True, frcal=True,
                                          timetype=obs.timetype, scantable=obs.scans)
                                          #these are always set to True after inverse jones call
 
@@ -1838,35 +1876,42 @@ set to constant values
                tstop (float): the end time of the observation in hours
                bw (float): the observing bandwidth in Hz
 
-               mjd (int): the mjd of the observation, if different from the image mjd
+               mjd (int): the mjd of the observation, if set as different from the image mjd
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
 
-               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
+               ttype (str): "fast", "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
 
-               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v points through time
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
-               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v 
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added 
+               opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
-               phasecal (bool): if False, time-dependent station-based random phases are added to data points
-               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
-               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               phasecal (bool): if False, time-dependent station-based random phases are added 
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. 
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. 
+
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), 
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects 
                              otherwise uses old formalism without D-terms
-               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
+               inv_jones (bool): if True, applies estimated inverse Jones matrix 
+                                 (not including random terms) to calibrate data
 
-               tau (float): the base opacity at all sites, or a dict giving one opacity per site
-               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-               gainp (float): the fractional std. dev. of the random error on the gains
+               tau (float): the base opacity at all sites, 
+                            or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
-               seed (int): seeds the random component of noise added. do not set to 0!
+               gain_offset (float): the base gain offset at all sites, 
+                                    or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains
+
+               dterm_offset (float): the base dterm offset at all sites, 
+                                     or a dict giving one dterm offset per site
+
+               seed (int): seeds the random component of noise added. DO NOT set to 0!
 
            Returns:
                (Obsdata): an observation object
@@ -1875,18 +1920,22 @@ set to constant values
 
         # Generate empty observation
         print("Generating empty observation file . . . ")
+
         if mjd == None:
             mjd = self.mjd
         if polrep_obs is None:
             polrep_obs=self.polrep
 
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, polrep=polrep_obs,
-                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, 
+                            polrep=polrep_obs, tau=tau, timetype=timetype, 
+                            elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
 
         # Observe on the same baselines as the empty observation and add noise
         obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor,
                                      sgrscat=sgrscat, add_th_noise=add_th_noise,
-                                     opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal, rlgaincal=rlgaincal,
+                                     opacitycal=opacitycal,ampcal=ampcal,
+                                     phasecal=phasecal,dcal=dcal,
+                                     frcal=frcal, rlgaincal=rlgaincal,
                                      stabilize_scan_phase=stabilize_scan_phase,
                                      stabilize_scan_amp=stabilize_scan_amp,
                                      gainp=gainp,gain_offset=gain_offset,
@@ -1894,12 +1943,15 @@ set to constant values
                                      dterm_offset=dterm_offset,
                                      jones=jones, inv_jones=inv_jones, seed=seed)
 
+        obs.mjd = mjd
+
         return obs
 
     def observe_vex(self, vex, source, t_int=0.0, tight_tadv=False,
                           polrep_obs=None, ttype='nfft', fft_pad_factor=2,
                           sgrscat=False, add_th_noise=True,
-                          opacitycal=True, ampcal=True, phasecal=True, frcal=True, dcal=True, rlgaincal=True,
+                          opacitycal=True, ampcal=True, phasecal=True, frcal=True, 
+                          dcal=True, rlgaincal=True,
                           stabilize_scan_phase=False, stabilize_scan_amp=False,
                           jones=False, inv_jones=False,
                           tau=TAUDEF, taup=GAINPDEF, gainp=GAINPDEF, gain_offset=GAINPDEF,
@@ -1911,31 +1963,38 @@ set to constant values
                vex (Vex): an vex object containing sites and scan information
                source (str): the source to observe
 
-               t_int (float): if not zero, overrides the vex scans to produce visibilities for each t_int seconds
-               tight_tadv (float): if True, advance right after each integration, otherwise advance after 2x the scan length
+               t_int (float): if not zero, overrides the vex scan lengths
+               tight_tadv (float): if True, advance right after each integration, 
+                                   otherwise advance after 2x the scan length
 
-               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representtion
-               ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
+               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
+               ttype (str): "fast" or "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
-               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A* scattering kernel
-               add_th_noise (bool): if True, baseline-dependent thermal noise is added to each data point
-               opacitycal (bool): if False, time-dependent gaussian errors are added to station opacities
+               sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
+               add_th_noise (bool): if True, baseline-dependent thermal noise is added 
+               opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
                ampcal (bool): if False, time-dependent gaussian errors are added to station gains
-               phasecal (bool): if False, time-dependent station-based random phases are added to data points
-               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. Must have jones=True
-               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
+               phasecal (bool): if False, time-dependent station-based random phases are added 
+               frcal (bool): if False, feed rotation angle terms are added to Jones matrices. 
+               dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. 
+
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), 
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects 
                              otherwise uses old formalism without D-terms
-               inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
+               inv_jones (bool): if True, applies estimated inverse Jones matrix 
+                                 (not including random terms) to calibrate data
 
-               tau (float): the base opacity at all sites, or a dict giving one opacity per site
-               gain_offset (float): the base gain offset at all sites, or a dict giving one gain offset per site
-               gainp (float): the fractional std. dev. of the random error on the gains
+               tau (float): the base opacity at all sites, 
+                            or a dict giving one opacity per site
                taup (float): the fractional std. dev. of the random error on the opacities
-               dterm_offset (float): the base dterm offset at all sites, or a dict giving one dterm offset per site
+               gain_offset (float): the base gain offset at all sites, 
+                                    or a dict giving one gain offset per site
+               gainp (float): the fractional std. dev. of the random error on the gains
+
+               dterm_offset (float): the base dterm offset at all sites, 
+                                     or a dict giving one dterm offset per site
 
            Returns:
                (Obsdata): an observation object
@@ -1966,20 +2025,26 @@ set to constant values
 
             # What subarray is observing now?
             scankeys = list(vex.sched[i_scan]['scan'].keys())
-            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] for key in scankeys])
+            subarray = vex.array.make_subarray([vex.sched[i_scan]['scan'][key]['site'] 
+                                                for key in scankeys])
 
             # Observe with the subarray over the scan interval
             t_start = vex.sched[i_scan]['start_hr']
             t_stop = vex.sched[i_scan]['start_hr'] + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0
             obs = self.observe(subarray, t_int, t_adv, t_start, t_stop, vex.bw_hz,
-                                       mjd=vex.sched[i_scan]['mjd_floor'], elevmin=.01, elevmax=89.99,
-                                       polrep_obs=polrep_obs,
-                                       ttype=ttype, fft_pad_factor=fft_pad_factor, sgrscat=sgrscat, add_th_noise=add_th_noise,
-                                       opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,rlgaincal=rlgaincal,
-                                       stabilize_scan_phase=stabilize_scan_phase,
-                                       stabilize_scan_amp=stabilize_scan_amp,
-                                       taup=taup, gainp=gainp,gain_offset=gain_offset,dterm_offset=dterm_offset,
-                                       jones=jones, inv_jones=inv_jones)
+                                         mjd=vex.sched[i_scan]['mjd_floor'], 
+                                         elevmin=.01, elevmax=89.99,
+                                         polrep_obs=polrep_obs,
+                                         ttype=ttype, fft_pad_factor=fft_pad_factor, 
+                                         sgrscat=sgrscat, add_th_noise=add_th_noise,
+                                         opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,
+                                         dcal=dcal,frcal=frcal,rlgaincal=rlgaincal,
+                                         stabilize_scan_phase=stabilize_scan_phase,
+                                         stabilize_scan_amp=stabilize_scan_amp,
+                                         taup=taup,        
+                                         gainp=gainp,gain_offset=gain_offset,
+                                         dterm_offset=dterm_offset,
+                                         jones=jones, inv_jones=inv_jones)
 
 
             obs_List.append(obs)
@@ -1998,8 +2063,10 @@ set to constant values
            Returns metrics only for the primary polarization imvec!
 
            Args:
-               psize (float): pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes
-               target_fov (float): fov of the comparison image (rad). If None it is twice the largest fov of the input images
+               psize (float): pixel size of comparison image (rad). 
+                              If None it is the smallest of the input image pizel sizes
+               target_fov (float): fov of the comparison image (rad). 
+                              If None it is twice the largest fov of the input images
 
                beamparams (list): the nominal Gaussian beam parameters [fovx, fovy, position angle]
                blur_frac (float): fractional beam to blur each image to before comparison
@@ -2009,7 +2076,7 @@ set to constant values
                shift (int): manual image shift, otherwise use shift from maximum cross-correlation
 
            Returns:
-               (tuple): [errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images
+               (tuple): [errormetric, im1_pad, im2_shift] 
         """
 
         im1 = self.copy()
@@ -2020,7 +2087,8 @@ set to constant values
 
         # Shift the comparison image to maximize normalized cross-corr.
         [idx, xcorr, im1_pad, im2_pad] = im1.find_shift(im2, psize=psize, target_fov=target_fov, 
-                                                        beamparams=beamparams, blur_frac=blur_frac, blursmall=blursmall)
+                                                        beamparams=beamparams, 
+                                                        blur_frac=blur_frac, blursmall=blursmall)
 
         if type(shift)!=bool:
             idx = shift
@@ -2030,30 +2098,34 @@ set to constant values
         # Compute error metrics
         error = []
         if 'nxcorr' in metric:
-            error.append( xcorr[ idx[0], idx[1] ] / (im1_pad.xdim * im1_pad.ydim) )
+            error.append(xcorr[ idx[0], idx[1] ] / (im1_pad.xdim * im1_pad.ydim))
         if 'nrmse' in metric:
-            error.append( np.sqrt( np.sum( ( (im1_pad.imvec - im2_shift.imvec)**2 * im1_pad.psize**2  ) ) / np.sum( (im1_pad.imvec )**2 * im1_pad.psize**2 ) ) )
+            error.append(np.sqrt(np.sum(((im1_pad.imvec - im2_shift.imvec)**2 * im1_pad.psize**2)) / 
+                                 np.sum((im1_pad.imvec)**2 * im1_pad.psize**2)))
         if 'rssd' in metric:
-            error.append( np.sqrt( np.sum(  (im1_pad.imvec - im2_shift.imvec)**2 ) * im1_pad.psize**2 ) )
+            error.append(np.sqrt(np.sum((im1_pad.imvec - im2_shift.imvec)**2) * im1_pad.psize**2))
 
         return (error, im1_pad, im2_shift)
 
-    def align_images(self, im_list, shift=True, final_fov=False, scale='lin', gamma=0.5, dynamic_range=[1.e3]):
+    def align_images(self, im_list, shift=True, final_fov=False, scale='lin', 
+                           gamma=0.5, dynamic_range=[1.e3]):
 
         """Align all the images in im_list to the current image (self)
            Aligns all images by comparison of the primary pol image.
 
            Args:
                im_list (list): list of images to align to the current image
-               shift (list): list of manual image shifts, otherwise use the shift from maximum cross-correlation
-               final_fov (float): fov of the comparison image (rad). If False it is the largestinput image fov
+               shift (list): list of manual image shifts, 
+                             otherwise use the shift from maximum cross-correlation
+               final_fov (float): fov of the comparison image (rad). 
+                             If False it is the largestinput image fov
 
                scale (str) : compare images in 'log','lin',or 'gamma' scale
                gamma (float): exponent for gamma scale comparison
                dynamic_range (float): dynamic range for log and gamma scale comparisons
 
            Returns:
-               (tuple): (im_list_shift, shifts, im0_pad) of shifted images, shift vectors, and padded reference image
+               (tuple): (im_list_shift, shifts, im0_pad)
         """
 
         im0 = self.copy()
@@ -2074,7 +2146,9 @@ set to constant values
         max_fov = np.max([im0.xdim*im0.psize, im0.ydim*im0.psize])
         for i in range(0, len(im_list)):
             psize = np.min([psize, im_list[i].psize])
-            max_fov = np.max([max_fov, im_list[i].xdim*im_list[i].psize, im_list[i].ydim*im_list[i].psize])
+            max_fov = np.max([max_fov, 
+                             im_list[i].xdim*im_list[i].psize, 
+                             im_list[i].ydim*im_list[i].psize])
 
         if not final_fov:
             final_fov = max_fov
@@ -2083,8 +2157,10 @@ set to constant values
         im_list_shift = []
         shifts = []
         for i in range(0, len(im_list)):
-            (idx, _, im0_pad_orig, im_pad) = im0.find_shift(im_list[i], target_fov=2*max_fov, psize=psize,
-                                                            scale=scale, gamma=gamma, dynamic_range=dynamic_range[i+1])
+            (idx, _, im0_pad_orig, im_pad) = im0.find_shift(im_list[i], target_fov=2*max_fov,
+                                                            psize=psize,
+                                                            scale=scale, gamma=gamma,
+                                                            dynamic_range=dynamic_range[i+1])
 
             if i==0:
                 npix = int(im0_pad_orig.xdim/2)
@@ -2168,8 +2244,10 @@ set to constant values
             im2_pad_vec = (im2_pad_vec + np.max(im2_pad_vec)/dynamic_range)**(gamma)
 
         # Normalize images and compute cross correlation with FFT
-        im1_norm = ( im1_pad_vec.reshape(im1_pad.ydim, im1_pad.xdim) - np.mean(im1_pad_vec) ) / np.std(im1_pad_vec)
-        im2_norm = ( im2_pad_vec.reshape(im2_pad.ydim, im2_pad.xdim) - np.mean(im2_pad_vec) ) / np.std(im2_pad_vec)
+        im1_norm = (im1_pad_vec.reshape(im1_pad.ydim, im1_pad.xdim) - np.mean(im1_pad_vec)) 
+        im1_norm /= np.std(im1_pad_vec)
+        im2_norm = (im2_pad_vec.reshape(im2_pad.ydim, im2_pad.xdim) - np.mean(im2_pad_vec)) 
+        im2_norm /= np.std(im2_pad_vec)
 
         fft_im1 = np.fft.fft2( im1_norm )
         fft_im2 = np.fft.fft2( im2_norm )
@@ -2194,8 +2272,9 @@ set to constant values
                thresh(float): fractional threshold for the gradient image
                display_results (bool): True to display results of the fit
                return_type (str): 'rad' to return results in radian, 'pixel' to return in pixel units
+
            Returns:
-               list : a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian
+               list : a list of fitted circles (xpos, ypos, radius, objFunc), in radian
         """
 
         # coordinate values
@@ -2245,7 +2324,8 @@ set to constant values
 
         # perform the hough transform and select the most prominent circles
         hough_res = hough_circle(edges, hough_radii)
-        accums, cy, cx, radii = hough_circle_peaks(hough_res, hough_radii, total_num_peaks=num_circles)
+        accums, cy, cx, radii = hough_circle_peaks(hough_res, hough_radii,         
+                                                   total_num_peaks=num_circles)
         accum_tot = np.sum(accums)
 
         # print results, plot circles, and return
@@ -2281,13 +2361,14 @@ set to constant values
 
         """Determine the Gaussian parameters that short baselines would measure for the source 
            by diagonalizing the image covariance matrix.
-           Returns parameters only for the primary polarization imvec!
+           Returns parameters only for the primary polarization!
 
            Args:
-               units (string): 'rad' returns values in radians, 'natural' returns FWHM in uas and PA in degrees
+               units (string): 'rad' returns values in radians, 
+                               'natural' returns FWHM in uas and PA in degrees
 
            Returns:
-               (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians or natural units.
+               (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters 
         """
 
         (x1,y1) = self.centroid()
@@ -2302,7 +2383,8 @@ set to constant values
         xy = (np.sum(np.outer(ylist - y1, xlist - x1).ravel()*im)/np.sum(im))
 
         eig = np.linalg.eigh(np.array(((x2,xy),(xy,y2))))
-        gauss_params = np.array((eig[0][1]**0.5*(8.*np.log(2.))**0.5, eig[0][0]**0.5*(8.*np.log(2.))**0.5, 
+        gauss_params = np.array((eig[0][1]**0.5*(8.*np.log(2.))**0.5, 
+                                 eig[0][0]**0.5*(8.*np.log(2.))**0.5, 
                                  np.mod(np.arctan2(eig[1][1][0],eig[1][1][1]) + np.pi, np.pi)))
         if units == 'natural':
             gauss_params[0] /= RADPERUAS
@@ -2313,24 +2395,27 @@ set to constant values
 
     def fit_gauss_empirical(self, paramguess=None):
 
-        """Determine the Gaussian parameters that short baselines would measure for the source by fitting short baselines.
-           Returns parameters only for the primary polarization imvec!
+        """Determine the Gaussian parameters that short baselines would measure 
+           Returns parameters only for the primary polarization!
 
            Args:
                 paramguess (tuple): Initial guess (fwhm_maj, fwhm_min, theta) of fit parameters
 
            Returns:
-               (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
+               (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters.
         """
 
 
         # This could be done using moments of the intensity distribution (self.fit_gauss)
         # but we'll use the visibility approach
         u_max = 1.0/(self.psize * self.xdim)/5.0
-        uv = np.array([[u, v] for u in np.arange(-u_max,u_max*1.001,u_max/4.0) for v in np.arange(-u_max,u_max*1.001,u_max/4.0)])
+        uv = np.array([[u, v] 
+                       for u in np.arange(-u_max,u_max*1.001,u_max/4.0) 
+                       for v in np.arange(-u_max,u_max*1.001,u_max/4.0)])
         u = uv[:,0]
         v = uv[:,1]
-        vis = np.dot(ehtim.obsdata.ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse), self.imvec)
+        vis = np.dot(ehtim.obsdata.ftmatrix(self.psize, self.xdim, self.ydim, uv, pulse=self.pulse),
+                     self.imvec)
 
         if paramguess == None:
             paramguess = (self.psize * self.xdim / 4.0, self.psize * self.xdim / 4.0, 0.)
@@ -2340,7 +2425,8 @@ set to constant values
             err = np.sum((np.abs(vis)-np.abs(vismodel))**2)
             return err
 
-        optdict = {'maxiter':5000, 'maxfev':5000, 'xtol': paramguess[0]/1e9, 'ftol': 1e-10} # minimizer params
+        # minimizer params
+        optdict = {'maxiter':5000, 'maxfev':5000, 'xtol': paramguess[0]/1e9, 'ftol': 1e-10}
         res = opt.minimize(errfunc, paramguess, method='Nelder-Mead',options=optdict)
 
         # Return in the form [maj, min, PA]
@@ -2387,7 +2473,8 @@ set to constant values
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
                cbar_lims (tuple): specify the lower and upper limit of the colorbar
-               cbar_unit (tuple of strings): the unit of each pixel for the colorbar: 'Jy', 'm-Jy', '$\mu$Jy'
+               cbar_unit (tuple of strings): the unit of each pixel for the colorbar: 
+                                             'Jy', 'm-Jy', '$\mu$Jy'
 
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
@@ -2418,17 +2505,26 @@ set to constant values
 
         if show_im:
             if axis is not None:
-                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, 
-                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=axis,             
-                      scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma,
+                                     dynamic_range=dynamic_range,
+                                     plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut,
+                                     label_type=label_type, has_title=has_title,
+                                     has_cbar=has_cbar, cbar_lims=cbar_lims,
+                                     cbar_unit=cbar_unit,                 
+                                     beamparams=beamparams, 
+                                     cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1,  
+                                     cbar_fontsize=cbar_fontsize, axis=axis,             
+                                     scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
-                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams,
-                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, 
-                      axis=None, scale_fontsize=scale_fontsize, power=power,beamcolor=beamcolor)
+                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, 
+                              dynamic_range=dynamic_range,
+                              plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, 
+                              has_title=has_title, has_cbar=has_cbar, 
+                              cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams,
+                              cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1,
+                              cbar_fontsize=cbar_fontsize, 
+                              axis=None, scale_fontsize=scale_fontsize,
+                              power=power,beamcolor=beamcolor)
         else:
             if contour_im==False:
                 image.imvec = 0.0*image.imvec
@@ -2436,17 +2532,26 @@ set to constant values
                 image = contour_im.copy()
             
             if axis is not None:
-                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, 
-                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, 
-                      axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+                axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma,
+                                     dynamic_range=dynamic_range,
+                                     plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut,
+                                     label_type=label_type, has_title=has_title,
+                                     has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit,
+                                     beamparams=beamparams, 
+                                     cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1,  
+                                     cbar_fontsize=cbar_fontsize, 
+                                     axis=axis, 
+                                     scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
-                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
-                      has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams,
-                      cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=None,
-                      scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
+                image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma,  
+                              dynamic_range=dynamic_range,
+                              plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, 
+                              has_title=has_title,
+                              has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit,  
+                              beamparams=beamparams,
+                              cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1,       
+                              cbar_fontsize=cbar_fontsize, axis=None,     
+                              scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
 
         if axis is None: ax = plt.gcf()
         if axis is not None: ax = axis
@@ -2760,10 +2865,14 @@ set to constant values
             maskb = (np.abs(qvec + 1j*uvec)/imvec).reshape(self.ydim, self.xdim) > mcut
             mask = maska * maskb
             mask2 = mask[::thin, ::thin]
-            x = (np.array([[i for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
-            y = (np.array([[j for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
-            a = (-np.sin(np.angle(qvec+1j*uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
-            b = ( np.cos(np.angle(qvec+1j*uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])[mask2]
+            x = (np.array([[i for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])
+            x = x[mask2]
+            y = (np.array([[j for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])
+            y = y[mask2]
+            a = (-np.sin(np.angle(qvec+1j*uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])
+            a = a[mask2]
+            b = ( np.cos(np.angle(qvec+1j*uvec)/2).reshape(self.ydim, self.xdim)[::thin, ::thin])
+            b = b[mask2]
 
             m = (np.abs(qvec + 1j*uvec)/imvec).reshape(self.ydim, self.xdim)
             m[np.logical_not(mask)] = 0
@@ -2775,28 +2884,32 @@ set to constant values
             maxval = 1.1*np.max((np.max(np.abs(uarr)),np.max(np.abs(qarr)),np.max(np.abs(varr))))
 
             ax = plt.subplot2grid((2,5),(0,0))
-            plt.imshow(imarr, cmap=plt.get_cmap('bwr'), interpolation=interp, vmin=-maxval, vmax=maxval)
+            plt.imshow(imarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                              vmin=-maxval, vmax=maxval)
             plt.contour(imarr, colors='k',linewidth=.25)
             ax.set_xticks([])
             ax.set_yticks([])
             if has_title: plt.title('I')
 
             ax = plt.subplot2grid((2,5),(0,1))
-            plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp, vmin=-maxval, vmax=maxval)
-            #plt.contour(varr, colors='k',linewidth=.25)
+            plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                             vmin=-maxval, vmax=maxval)
+
             ax.set_xticks([])
             ax.set_yticks([])
             if has_title: plt.title('V')
 
             ax = plt.subplot2grid((2,5),(1,0))
-            plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp, vmin=-maxval, vmax=maxval)
+            plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                             vmin=-maxval, vmax=maxval)
             plt.contour(qarr, colors='k',linewidth=.25)
             ax.set_xticks([])
             ax.set_yticks([])
             if has_title: plt.title('Q')
 
             ax = plt.subplot2grid((2,5),(1,1))
-            plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp, vmin=-maxval, vmax=maxval)
+            plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                             vmin=-maxval, vmax=maxval)
             plt.contour(uarr, colors='k',linewidth=.25)
             ax.set_xticks([])
             ax.set_yticks([])
@@ -2817,24 +2930,29 @@ set to constant values
             if has_title: plt.title('m')
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
+                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
+                   scale=1.0/thin)
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
+                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
+                   scale=1.1/thin)
 
             # Big Stokes I plot
             ax = plt.subplot2grid((2,5),(0,3), rowspan=2, colspan=2)
             if cbar_lims:
-                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp, vmin=cbar_lims[0], vmax=cbar_lims[1])
+                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp, 
+                                vmin=cbar_lims[0], vmax=cbar_lims[1])
             else:
                 im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp)
 
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', scale=1.0/thin)
+                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
+                   scale=1.0/thin)
             plt.quiver(x, y, a, b,
                    headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', scale=1.1/thin)
+                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
+                   scale=1.1/thin)
 
             if not(beamparams is None or beamparams==False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
@@ -2847,7 +2965,8 @@ set to constant values
                 plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
 
             if has_cbar:
-                cbar = plt.colorbar(im, fraction=0.046, pad=0.04, label=unit, orientation=cbar_orientation)
+                cbar = plt.colorbar(im, fraction=0.046, pad=0.04,
+                                    label=unit, orientation=cbar_orientation)
                 cbar.ax.tick_params(labelsize=cbar_fontsize) 
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
@@ -2870,12 +2989,14 @@ set to constant values
             plt.axis('off')
             fov_uas = self.xdim * self.psize / RADPERUAS # get the fov in uas
             roughfactor = 1./3. # make the bar about 1/3 the fov
-            fov_scale = int( math.ceil(fov_uas * roughfactor / 10.0 ) ) * 10 # round around 1/3 the fov to nearest 10
+            fov_scale = int( math.ceil(fov_uas * roughfactor / 10.0 ) ) * 10 
             start = self.xdim * roughfactor / 3.0 # select the start location
-            end = start + fov_scale/fov_uas * self.xdim # determine the end location based on the size of the bar
-            plt.plot([start, end], [self.ydim-start-5, self.ydim-start-5], color="white", lw=scale_lw) # plot line
+            end = start + fov_scale/fov_uas * self.xdim # determine the end location 
+            plt.plot([start, end], [self.ydim-start-5, self.ydim-start-5], 
+                     color="white", lw=scale_lw) # plot a line
             plt.text(x=(start+end)/2.0, y=self.ydim-start+self.ydim/30, 
-                     s= str(fov_scale) + " $\mu$as", color="white", ha="center", va="center", fontsize=scale_fontsize)
+                     s= str(fov_scale) + " $\mu$as", color="white", 
+                     ha="center", va="center", fontsize=scale_fontsize)
             ax = plt.gca()
             if axis is None:
                 ax.axes.get_xaxis().set_visible(False)
@@ -2914,8 +3035,10 @@ set to constant values
                export_pdf (str): path to exported PDF with plot
                show (bool): Display the plot if true
 
-               shift (list): list of manual image shifts, otherwise use the shift from maximum cross-correlation
-               final_fov (float): fov of the comparison image (rad). If False it is the largestinput image fov
+               shift (list): list of manual image shifts, 
+                             otherwise use the shift from maximum cross-correlation
+               final_fov (float): fov of the comparison image (rad). 
+                                  If False it is the largestinput image fov
 
                scale (str) : compare images in 'log','lin',or 'gamma' scale
                gamma (float): exponent for gamma scale comparison
@@ -2945,8 +3068,10 @@ set to constant values
         if not final_fov:
             final_fov = max_fov
 
-        (im_list_shift, shifts, im0_pad) = self.align_images(im_list, shift=shift, final_fov=final_fov, 
-                                                             scale=scale, gamma=gamma,  dynamic_range=dynamic_range)
+        (im_list_shift, shifts, im0_pad) = self.align_images(im_list, shift=shift, 
+                                                             final_fov=final_fov, 
+                                                             scale=scale, gamma=gamma,  
+                                                             dynamic_range=dynamic_range)
 
 
         unit = 'Jy/pixel'
@@ -2954,13 +3079,15 @@ set to constant values
             unit = 'log(Jy/pixel)'
             im0_pad.imvec = np.log10(im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[0])
             for i in range(0, len(im_list)):
-                im_list_shift[i].imvec = np.log10(im_list_shift[i].imvec + np.max(im_list_shift[i].imvec)/dynamic_range[i+1])
+                im_list_shift[i].imvec = np.log10(im_list_shift[i].imvec + 
+                                                  np.max(im_list_shift[i].imvec)/dynamic_range[i+1])
 
         if scale=='gamma':
             unit = '(Jy/pixel)^gamma'
             im0_pad.imvec = (im0_pad.imvec + np.max(im0_pad.imvec)/dynamic_range[0])**(gamma)
             for i in range(0, len(im_list)):
-                im_list_shift[i].imvec = (im_list_shift[i].imvec + np.max(im_list_shift[i].imvec)/dynamic_range[i+1])**(gamma)
+                im_list_shift[i].imvec = (im_list_shift[i].imvec + 
+                                          np.max(im_list_shift[i].imvec)/dynamic_range[i+1])**(gamma)
 
         composite_img = np.zeros((im0_pad.ydim, im0_pad.xdim,3))
         for i in range(-1, len(im_list)):
@@ -2984,7 +3111,6 @@ set to constant values
         plt.subplot(111)
         plt.title('%s   MJD %i  %.2f GHz' % (self.source, self.mjd, self.rf/1e9), fontsize=20)
         im = plt.imshow(composite_img, interpolation=interp)
-        #plt.colorbar(im, fraction=0.046, pad=0.04, label=unit)
         xticks = ticks(im0_pad.xdim, im0_pad.psize/RADPERAS/1e-6)
         yticks = ticks(im0_pad.ydim, im0_pad.psize/RADPERAS/1e-6)
         plt.xticks(xticks[0], xticks[1])
@@ -3029,6 +3155,7 @@ set to constant values
 ################################################################################################
 #Image creation functions
 ################################################################################################
+
 def make_square(obs, npix, fov, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None):
 
     """Make an empty square image.

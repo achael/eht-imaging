@@ -33,12 +33,14 @@ from ehtim.observing.obs_helpers import *
 # Array object
 ###########################################################################################################################################
 class Array(object):
+
     """A VLBI array of telescopes with site locations, SEFDs, and other data.
 
        Attributes:
            tarr (numpy.recarray): The array of telescope data with datatype DTARR
            tkey (dict): A dictionary of rows in the tarr for each site name
-           ephem (dict): A dictionary of TLEs for each space antenna, Space antennas have x=y=z=0 in the tarr
+           ephem (dict): A dictionary of TLEs for each space antenna, 
+                         Space antennas have x=y=z=0 in the tarr
     """
 
     def __init__(self, tarr, ephem={}):
@@ -118,7 +120,8 @@ class Array(object):
         return obs
 
     def make_subarray(self, sites):
-        """Make a subarray from the Array object array that only includes the sites listed in sites.
+
+        """Make a subarray from the Array object array that only includes the sites listed.
 
            Args:
                sites (list) : list of sites in the subarray
@@ -130,6 +133,7 @@ class Array(object):
         return Array(self.tarr[mask],ephem=self.ephem)
 
     def save_txt(self, fname):
+
         """Save the array data in a text file.
 
            Args:
@@ -142,6 +146,7 @@ class Array(object):
 #Array creation functions
 ###########################################################################################################################################
 def load_txt(fname, ephemdir='ephemeris'):
+
     """Read an array from a text file. 
        Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.
 
