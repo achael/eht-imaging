@@ -143,6 +143,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', ze
 
     return outim
 
+
 def load_im_hdf5(filename):
     """Read in an image from an hdf5 file.
        Args:
@@ -168,6 +169,10 @@ def load_im_hdf5(filename):
     poldat = np.copy(hfp['pol'])[:,:,:4]            # NX,NY,{I,Q,U,V}
     hfp.close()
 
+    # Correct image orientation
+    unpoldat = np.flip(unpoldat.transpose((1,0)),axis=0)
+    poldat = np.flip(poldat.transpose((1,0,2)),axis=0)
+
     # Make a guess at the source based on distance and optionally fall back on mass
     src = SOURCE_DEFAULT
     if dsource > 4.e25 and dsource < 6.2e25: src = "M87"
@@ -187,10 +192,10 @@ def load_im_hdf5(filename):
     fovmuas = DX / dsource * lunit * 2.06265e11
     psize_x = RADPERUAS * fovmuas / nx
 
-    Iim = poldat[:,:,0]
-    Qim = poldat[:,:,1]
-    Uim = poldat[:,:,2]
-    Vim = poldat[:,:,3]
+    Iim = poldat[:,:,0] * jyscale
+    Qim = poldat[:,:,1] * jyscale
+    Uim = poldat[:,:,2] * jyscale
+    Vim = poldat[:,:,3] * jyscale
 
     outim = ehtim.image.Image(Iim, psize_x, ra, dec, rf=rf, source=src, polrep='stokes', pol_prim='I', time=time)
     outim.add_qu(Qim, Uim)
@@ -574,6 +579,45 @@ def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep=
     out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur)
 
     return out_mov
+
+
+def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
+    """Read in a movie from dat files and create a Movie object.
+        
+        Args:
+        basename (str): The base name of individual movie frames. Files should have names basename + 000001, etc.
+        nframes (int): The total number of frames
+        startframe (int): The index of the first frame to load
+        framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+        ra (float): the right ascension of the source (default for SgrA*)
+        dec (float): the declination of the source (default for SgrA*)
+        rf (float): The refrence frequency of the observation
+        pulse (function): The function convolved with the pixel values for continuous image
+
+        Returns:
+        Movie: a Movie object
+        """
+
+
+    for i in xrange(startframe, startframe + nframes):
+        
+        filename = basename + "%06d" % i + '.dat'
+        
+        sys.stdout.write('\rReading Movie Image %i/%i...' % (i-startframe,nframes))
+        sys.stdout.flush()
+        
+        datatable = np.loadtxt(filename, dtype=np.float64)
+        
+        if i==startframe:
+            sim = np.zeros([nframes, datatable.shape[0]])
+        
+        sim[i-startframe,:] = datatable[:,2]
+    
+    npix = np.sqrt(sim.shape[1]).astype('int')
+    sim = np.reshape(sim, [sim.shape[0], npix, npix])
+    sim = np.transpose(sim, (0, 2, 1))
+
+    return( ehtim.movie.Movie(sim, framedur_sec, psize, ra, dec, rf) )
 
 
 ##################################################################################################
