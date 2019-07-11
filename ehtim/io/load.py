@@ -143,6 +143,7 @@ def load_im_txt(filename, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim='I', ze
 
     return outim
 
+
 def load_im_hdf5(filename):
     """Read in an image from an hdf5 file.
        Args:
@@ -167,6 +168,10 @@ def load_im_hdf5(filename):
     unpoldat = np.copy(hfp['unpol'])                # NX,NY
     poldat = np.copy(hfp['pol'])[:,:,:4]            # NX,NY,{I,Q,U,V}
     hfp.close()
+
+    # Correct image orientation
+    unpoldat = np.flip(unpoldat.transpose((1,0)),axis=0)
+    poldat = np.flip(poldat.transpose((1,0,2)),axis=0)
 
     # Make a guess at the source based on distance and optionally fall back on mass
     src = SOURCE_DEFAULT
