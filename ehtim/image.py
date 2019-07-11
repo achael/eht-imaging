@@ -1469,7 +1469,8 @@ class Image(object):
 
     def add_const_pol(self, mag, angle, cmag=0, csign=1):
 
-        """Return an image with the same total intensity but fractional linear and circular polarization set to constant values
+        """Return an image with the same total intensity but fractional linear and circular polarization 
+set to constant values
 
            Args:
                mag (float): constant polarization fraction to add to the image
@@ -2358,7 +2359,7 @@ class Image(object):
     def contour(self, contour_levels=[0.1, 0.25, 0.5, 0.75], 
                       contour_cfun=None, color='w', legend=True, show_im=True,
                       cfun='afmhot',scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1.e3,
-                      plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True,
+                      plotp=False, nvec=20, pcut=0.01, mcut=0.1, label_type='ticks', has_title=True,
                       has_cbar=True, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       contour_im=False, power=0, beamcolor='w',
                       export_pdf="", show=True, beamparams=None, cbar_orientation="vertical", 
@@ -2381,6 +2382,7 @@ class Image(object):
                nvec (int): number of polarimetric vectors to plot
                pcut (float): minimum stokes P value for displaying polarimetric vectors 
                              as fraction of maximum Stokes I pixel
+               mcut (float): minimum fractional polarization for plotting vectors
                label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
@@ -2417,13 +2419,13 @@ class Image(object):
         if show_im:
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
                       has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, 
                       cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=axis,             
                       scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
                       has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams,
                       cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, 
                       axis=None, scale_fontsize=scale_fontsize, power=power,beamcolor=beamcolor)
@@ -2435,13 +2437,13 @@ class Image(object):
             
             if axis is not None:
                 axis = image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
                       has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams, 
                       cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, 
                       axis=axis, scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
             else:   
                 image.display(cfun=cfun,scale=scale, interp=interp, gamma=gamma, dynamic_range=dynamic_range,
-                      plotp=plotp, nvec=nvec, pcut=pcut, label_type=label_type, has_title=has_title,
+                      plotp=plotp, nvec=nvec, pcut=pcut, mcut=mcut, label_type=label_type, has_title=has_title,
                       has_cbar=has_cbar, cbar_lims=cbar_lims, cbar_unit=cbar_unit, beamparams=beamparams,
                       cbar_orientation=cbar_orientation, scale_lw=1, beam_lw=1, cbar_fontsize=cbar_fontsize, axis=None,
                       scale_fontsize=scale_fontsize,power=power,beamcolor=beamcolor)
@@ -2481,7 +2483,7 @@ class Image(object):
 
     def display(self, pol=None, cfun='afmhot', interp='gaussian',
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
-                      plotp=False, nvec=20, pcut=0.1, log_offset=False,
+                      plotp=False, nvec=20, pcut=0.1, mcut=0.01, log_offset=False,
                       label_type='ticks', has_title=True, alpha=1,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, 
@@ -2502,9 +2504,9 @@ class Image(object):
 
                plotp (bool): True to plot linear polarimetic image
                nvec (int): number of polarimetric vectors to plot
-               pcut (float): minimum stokes P value for displaying polarimetric vectors 
+               pcut (float): minimum stokes I value for displaying polarimetric vectors 
                              (fraction of maximum Stokes I) 
-
+               mcut (float): minimum fractional polarization value for displaying vectors
                label_type (string): specifies the type of axes labeling: 'ticks', 'scale', 'none'
                has_title (bool): True if you want a title on the plot
                has_cbar (bool): True if you want a colorbar on the plot
@@ -2751,8 +2753,12 @@ class Image(object):
                 imarr2[imarr2<cbar_lims[0]] = cbar_lims[0]
 
             # polarization ticks
+            m = (np.abs(qvec + 1j*uvec)/imvec).reshape(self.ydim, self.xdim)
+
             thin = self.xdim//nvec
-            mask = (imvec).reshape(self.ydim, self.xdim) > pcut * np.max(imvec)
+            maska = (imvec).reshape(self.ydim, self.xdim) > pcut * np.max(imvec)
+            maskb = (np.abs(qvec + 1j*uvec)/imvec).reshape(self.ydim, self.xdim) > mcut
+            mask = maska * maskb
             mask2 = mask[::thin, ::thin]
             x = (np.array([[i for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]
             y = (np.array([[j for i in range(self.xdim)] for j in range(self.ydim)])[::thin, ::thin])[mask2]

@@ -186,6 +186,7 @@ class Obsdata(object):
         self.logcamp=None
 
     def obsdata_args(self):
+
         """"Copy arguments for making a  new obsdata argument into a list and dictonary
         """
 
@@ -209,16 +210,6 @@ class Obsdata(object):
 
         newobs = copy.deepcopy(self)
 
-        #arglist, argdict = self.obsdata_args()
-        #newobs =  Obsdata(*arglist, **argdict)
-
-        ## copy over any precomputed tables
-        #newobs.amp = self.amp
-        #newobs.bispec = self.bispec
-        #newobs.cphase = self.cphase
-        #newobs.camp = self.camp
-        #newobs.logcamp = self.logcamp
-
         return newobs
 
     def switch_polrep(self, polrep_out='stokes', allow_singlepol=True, singlepol_hand='R'):
@@ -227,8 +218,10 @@ class Obsdata(object):
 
            Args:
                polrep_out (str):  the polrep of the output data
-               allow_singlepol (bool): If True, treat single-polarization data as Stokes I when converting from 'circ' polrep to 'stokes'
-               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand is assumed when converting 'stokes' to 'circ' when only I is present
+               allow_singlepol (bool): If True, treat single-polarization data as Stokes I 
+                                       when converting from 'circ' polrep to 'stokes'
+               singlepol_hand (str): 'R' or 'L'; determines which parallel-hand is assumed 
+                                       when converting 'stokes' to 'circ' if only I is present
 
            Returns:
                (Obsdata): new Obsdata object with potentially different polrep
@@ -261,7 +254,8 @@ class Obsdata(object):
                     data[f] = 0.5*np.sqrt(self.data['rlsigma']**2 + self.data['lrsigma']**2)
 
             if allow_singlepol:
-                # In cases where only one polarization is present, use it as an estimator for Stokes I
+                # In cases where only one polarization is present
+                # use it as an estimator for Stokes I
                 data['vis'][rrmask]   = self.data['llvis'][rrmask]
                 data['sigma'][rrmask] = self.data['llsigma'][rrmask]
 
@@ -379,7 +373,8 @@ class Obsdata(object):
         """
 
         snr = self.unpack(['t1','t2','snr'])
-        snr_median = [np.median(snr[(snr['t1']==site) + (snr['t2']==site)]['snr']) for site in self.tarr['site']]
+        snr_median = [np.median(snr[(snr['t1']==site) + (snr['t2']==site)]['snr']) 
+                      for site in self.tarr['site']]
         idx = np.argsort(snr_median)[::-1]
         self.tarr = self.tarr[idx]
         self.tkey = {self.tarr[i]['site']: i for i in range(len(self.tarr))}
@@ -544,7 +539,8 @@ class Obsdata(object):
             for obs in scan:
                 if (obs['t1'], obs['t2']) == (site1, site2):
                     obs = np.array([obs])
-                    out = self.unpack_dat(obs, allfields, ang_unit=ang_unit, debias=debias, timetype=timetype)
+                    out = self.unpack_dat(obs, allfields, ang_unit=ang_unit,
+                                          debias=debias, timetype=timetype)
 
                     allout.append(out)
 
@@ -559,7 +555,8 @@ class Obsdata(object):
 
            Args:
                 fields (list): list of unpacked quantities from availalbe quantities in FIELDS
-                mode (str): 'all' returns all data in single table, 'time' groups output by equal time, 'bl' groups by baseline
+                mode (str): 'all' returns all data in single table, 
+                            'time' groups output by equal time, 'bl' groups by baseline
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
                 conj (bool): True to include conjugate baselines
@@ -700,7 +697,8 @@ class Obsdata(object):
                     sig = merr(data['sigma'], data['qsigma'], data['usigma'], data['vis'], out)
                 elif self.polrep=='circ':
                     out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
-                    sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'], 0.5*(data['rrvis']+data['llvis']), out)
+                    sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
+                                0.5*(data['rrvis']+data['llvis']), out)
             elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
                 ty = 'c16'
                 if self.polrep=='stokes':
@@ -785,7 +783,8 @@ class Obsdata(object):
                            "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]:
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'
-            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr","rrsnr","llsnr","rlsnr","lrsnr"]:
+            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", 
+                           "msnr","rrsnr","llsnr","rlsnr","lrsnr"]:
                 out = np.abs(out)/np.abs(sig)
                 ty = 'f8'
 
@@ -840,7 +839,8 @@ class Obsdata(object):
         print("Splitting Observation File into " + str(len(self.tlist())) + " scans")
         arglist, argdict = self.obsdata_args()
 
-        # note that the tarr of the output includes all sites, even those that don't participate in the scan
+        # note that the tarr of the output includes all sites, 
+        # even those that don't participate in the scan
         splitlist = []
         for tdata in self.tlist():
             arglist[DATPOS] =  tdata
@@ -849,9 +849,6 @@ class Obsdata(object):
         return splitlist
 
     def chisq(self, im, dtype='vis', pol='I', ttype='nfft', mask=[], **kwargs):
-              #cp_uv_min=False,
-              #debias=True, systematic_noise=0.0, systematic_cphase_noise=0.0, maxset=False,
-              #ttype='nfft',fft_pad_factor=2):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
@@ -859,15 +856,14 @@ class Obsdata(object):
                 im (Image): image to test chi^2
                 dtype (str): data type of chi^2 (e.g., 'vis', 'amp', 'bs', 'cphase')
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
-                mask (arr): mask of same dimension as im.imvec to screen out pixels in chi^2 computation
-
-                ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
-                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
-                conv_func ('str'):  The convolving function for gridding; options are 'gaussian', 'pill', and 'cubic'
-                p_rad (int): The pixel radius for the convolving function in gridding for FFTs
+                mask (arr): mask of same dimension as im.imvec
+                ttype (str): if "fast" or "nfft" or "direct" 
+                fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
+                conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
+                p_rad (int): The pixel radius for the convolving function 
                 order ('str'): Interpolation order for sampling the FFT        
     
-                systematic_noise (float): a fractional systematic noise tolerance to add to thermal sigmas
+                systematic_noise (float): adds a fractional systematic noise tolerance to sigmas
                 snrcut (float): a  snr cutoff for including data in the chi^2 sum
                 debias (bool): if True then apply debiasing to amplitudes/closure amplitudes
                 weighting (str): 'natural' or 'uniform' 
@@ -883,7 +879,8 @@ class Obsdata(object):
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
         if pol not in im._imdict.keys():
-            raise Exception(pol + ' is not in the current image. Consider changing the polarization basis of the image.')
+            raise Exception(pol + ' is not in the current image.' + 
+                                  'Consider changing the polarization basis of the image.')
 
         (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
         chisq = iu.chisq(im._imdict[pol], A, data, sigma, dtype, ttype=ttype, mask=mask)
@@ -944,7 +941,8 @@ class Obsdata(object):
             print('No averaging done!')
             return self.copy()
 
-        vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',err_type='predicted',scan_avg=scan_avg)
+        vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',
+                              err_type='predicted',scan_avg=scan_avg)
 
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = vis_avg
@@ -953,6 +951,7 @@ class Obsdata(object):
         return out
 
     def avg_incoherent(self, inttime, scan_avg=False, debias=True, err_type='predicted'):
+
         """Incoherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
@@ -967,14 +966,17 @@ class Obsdata(object):
 
 
         print('Incoherently averaging data, putting phases to zero!')
-        amp_rec = incoh_avg_vis(self,dt=inttime,debias=debias,scan_avg=scan_avg,return_type='rec',rec_type='vis',err_type=err_type)
+        amp_rec = incoh_avg_vis(self, dt=inttime,debias=debias,scan_avg=scan_avg,
+                                return_type='rec',rec_type='vis',err_type=err_type)
         arglist, argdict = self.obsdata_args()
         arglist[DATPOS] = amp_rec
         out = Obsdata(*arglist, **argdict)
 
         return out
 
-    def add_amp(self, avg_time=0, scan_avg=False, debias=True, err_type='predicted', return_type='rec', round_s=0.1, snrcut=0.):
+    def add_amp(self, avg_time=0, scan_avg=False, debias=True, err_type='predicted', 
+                      return_type='rec', round_s=0.1, snrcut=0.):
+
         """Adds attribute self.amp: aan amplitude table with incoherently averaged amplitudes
 
            Args:
@@ -988,9 +990,10 @@ class Obsdata(object):
 
         """
 
-        # Get spacing between datapoints in seconds
+        # Get the spacing between datapoints in seconds
         if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
+                           [x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0.0
 
@@ -1018,7 +1021,8 @@ class Obsdata(object):
            Args:
                avg_time (float): bispectrum averaging timescale
                return_type: data frame ('df') or recarray ('rec')
-               count (str): If 'min', return minimal set of bispectra, if 'max' return all bispectra up to reordering
+               count (str): If 'min', return minimal set of bispectra,
+                            if 'max' return all bispectra up to reordering
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
@@ -1028,16 +1032,20 @@ class Obsdata(object):
 
         # Get spacing between datapoints in seconds
         if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
+                           [x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0
 
 
         if avg_time>tint0:
-            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, snrcut=0., uv_min=uv_min)
-            cdf = average_bispectra(cdf,avg_time,return_type=return_type,num_samples=num_samples, snrcut=snrcut)
+            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, 
+                              snrcut=0., uv_min=uv_min)
+            cdf = average_bispectra(cdf,avg_time,return_type=return_type,
+                              num_samples=num_samples, snrcut=snrcut)
         else:
-            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, snrcut=snrcut, uv_min=uv_min)
+            cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, 
+                              snrcut=snrcut, uv_min=uv_min)
             print("Updated self.bispec: no averaging")
             if return_type=='rec':
                 cdf = df_to_rec(cdf,'bispec')
@@ -1055,7 +1063,8 @@ class Obsdata(object):
            Args:
                avg_time (float): closure phase averaging timescale
                return_type: data frame ('df') or recarray ('rec')
-               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+               count (str): If 'min', return minimal set of phases, 
+                            if 'max' return all closure phases up to reordering
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
@@ -1065,15 +1074,19 @@ class Obsdata(object):
 
         # Get spacing between datapoints in seconds
         if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
+                           [x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0
 
         if avg_time>tint0:
-            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, snrcut=0., uv_min=uv_min)
-            cdf = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, num_samples=num_samples, snrcut=snrcut)
+            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, 
+                                 snrcut=0., uv_min=uv_min)
+            cdf = average_cphases(cdf, avg_time, return_type=return_type, err_type=err_type, 
+                                  num_samples=num_samples, snrcut=snrcut)
         else:
-            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, snrcut=snrcut, uv_min=uv_min)
+            cdf = make_cphase_df(self, mode='all', round_s=round_s, count=count, 
+                                 snrcut=snrcut, uv_min=uv_min)
             if return_type=='rec':
                 cdf = df_to_rec(cdf,'cphase')
             print("Updated self.cphase: no averaging")
@@ -1094,7 +1107,8 @@ class Obsdata(object):
                return_type: data frame ('df') or recarray ('rec')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude
-               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+               count (str): If 'min', return minimal set of amplitudes, 
+                            if 'max' return all closure amplitudes up to inverses
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
@@ -1103,7 +1117,8 @@ class Obsdata(object):
 
         # Get spacing between datapoints in seconds
         if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
-            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set(
+                           [x[0] for x in list(self.unpack('time'))]))))))*3600.
         else:
             tint0 = 0
 
@@ -1140,7 +1155,8 @@ class Obsdata(object):
                return_type: data frame ('df') or recarray ('rec')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                debias (bool): If True, debias the closure amplitude
-               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+               count (str): If 'min', return minimal set of amplitudes, 
+                            if 'max' return all closure amplitudes up to inverses
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
@@ -1159,13 +1175,15 @@ class Obsdata(object):
                       count='max', debias=True, snrcut=0.,
                       err_type='predicted', num_samples=1000, round_s=0.1):
 
-        """Adds tables of all all averaged derived quantities self.amp,self.bispec,self.cphase,self.camp,self.logcamp
+        """Adds tables of all all averaged derived quantities 
+           self.amp,self.bispec,self.cphase,self.camp,self.logcamp
 
            Args:
                avg_time (float): closure amplitude averaging timescale
                return_type: data frame ('df') or recarray ('rec')
                debias (bool): If True, debias the closure amplitude
-               count (str): If 'min', return minimal set of closure quantities, if 'max' return all closure quantities
+               count (str): If 'min', return minimal set of closure quantities, 
+                            if 'max' return all closure quantities
                err_type (str): 'predicted' or 'measured'
                num_samples: number of bootstrap (re)samples if measuring error
                round_s (float): accuracy of datetime object in seconds
@@ -1192,13 +1210,15 @@ class Obsdata(object):
         """Compute scans and add self.scans to Obsdata object.
 
             Args:
-                info (str): 'self' for scans inferred from data, 'txt' for text file, 'vex' for vex schedule file
+                info (str): 'self' to infer from data, 'txt' for text file, 
+                            'vex' for vex schedule file
                 filepath (str): path to txt/vex file with scans info
                 dt (float): minimal time interval between scans in hours
                 margin (float): padding scans by that time margin in hours
 
         """
 
+        # infer scans directly from data
         if info=='self':
             times_uni = np.asarray(sorted(list(set(self.data['time']))))
             scans = np.zeros_like(times_uni)
@@ -1208,18 +1228,23 @@ class Obsdata(object):
                 if (times_uni[cou+1]-times_uni[cou] > dt):
                     scan_id+=1
             scans[-1]=scan_id
-            scanlist = np.asarray([np.asarray([np.min(times_uni[scans==cou])-margin,np.max(times_uni[scans==cou])+margin]) 
+            scanlist = np.asarray([np.asarray([
+                                   np.min(times_uni[scans==cou])-margin,
+                                   np.max(times_uni[scans==cou])+margin]) 
                                    for cou in range(int(scans[-1])+1)])
 
+        # read in scans from a text file
         elif info=='txt':
              scanlist = np.loadtxt(filepath)
 
+        # read in scans from a vex file
         elif info=='vex':
             vex0 = ehtim.vex.Vex(filepath)
             t_min = [vex0.sched[x]['start_hr'] for x in range(len(vex0.sched))]
             duration=[]
             for x in range(len(vex0.sched)):
-                duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] for y in range(len(vex0.sched[x]['scan']))])
+                duration_foo =max([vex0.sched[x]['scan'][y]['scan_sec'] 
+                                   for y in range(len(vex0.sched[x]['scan']))])
                 duration.append(duration_foo)
             t_max = [tmin + dur/3600. for (tmin,dur) in zip(t_min,duration)]
             scanlist = np.array([[tmin,tmax] for (tmin,tmax) in zip(t_min,t_max)])
@@ -1257,7 +1282,8 @@ class Obsdata(object):
 
            Args:
                weighting (str): 'uniform' or 'natural'. 
-               units (string): 'rad' returns values in radians, 'natural' returns FWHMs in uas and theta in degrees
+               units (string): 'rad' returns values in radians, 
+                               'natural' returns FWHMs in uas and theta in degrees
 
            Returns:
                (tuple): a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.
@@ -1287,8 +1313,9 @@ class Obsdata(object):
         if weighting == 'natural':
             weights = 1./sigma**2
             
-        abc = (2.*np.pi**2/np.sum(weights)) * np.array([np.sum(weights*u**2), np.sum(weights*v**2), 2*np.sum(weights*u*v)])
-        abc = 1e-20 * abc # Decrease size of coefficients
+        abc = np.array([np.sum(weights*u**2), np.sum(weights*v**2), 2*np.sum(weights*u*v)])
+        abc *= (2.*np.pi**2/np.sum(weights))
+        abc *= 1e-20  # Decrease size of coefficients
 
         # Fit the beam
         guess = [(50)**2, (50)**2, 0.0]
@@ -1352,7 +1379,8 @@ class Obsdata(object):
                              # TODO right normalization? 
 
         src = self.source + "_DB"
-        outim = ehtim.image.Image(im, pdim, self.ra, self.dec, rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
+        outim = ehtim.image.Image(im, pdim, self.ra, self.dec, 
+                                  rf=self.rf, source=src, mjd=self.mjd, pulse=pulse)
 
         return outim
 
@@ -1402,7 +1430,8 @@ class Obsdata(object):
             im = im[0:npix, 0:npix]
             
             if label=='vis1':
-                out = ehtim.image.Image(im, pdim, self.ra, self.dec, polrep=self.polrep,rf=self.rf, source=self.source, mjd=self.mjd, pulse=pulse)
+                out = ehtim.image.Image(im, pdim, self.ra, self.dec, polrep=self.polrep,
+                                        rf=self.rf, source=self.source, mjd=self.mjd, pulse=pulse)
             else:
                 pol = {vis_poldict[key]: key for key in vis_poldict.keys()}[visname]
                 out.add_pol_image(im, pol)
@@ -1410,6 +1439,7 @@ class Obsdata(object):
         return out
     
     def rescale_zbl(self, totflux, uv_max, debias=True):
+
         """Rescale the short baselines to a new level of total flux.
 
            Args:
@@ -1424,9 +1454,11 @@ class Obsdata(object):
         # estimate the original total flux 
         obs_zerobl = self.flag_uvdist(uv_max=uv_max)
         obs_zerobl.add_amp(debias=True)
-        orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))/np.sum(1/obs_zerobl.amp['sigma']**2)
+        orig_totflux = np.sum(obs_zerobl.amp['amp']*(1/obs_zerobl.amp['sigma']**2))
+        orig_totflux /= np.sum(1/obs_zerobl.amp['sigma']**2)
 
-        print('Rescaling zero baseline by ' + str(orig_totflux - totflux) + ' Jy to ' + str(totflux) + ' Jy')
+        print('Rescaling zero baseline by ' + str(orig_totflux - totflux) + ' Jy' + 
+              ' to ' + str(totflux) + ' Jy')
 
         # Rescale short baselines to excise contributions from extended flux
         # Note: this does not do the proper thing for fractional polarization)
@@ -1449,7 +1481,7 @@ class Obsdata(object):
 
         """Add estimated systematic noise from leakage at quadrature to thermal noise.
            Requires cross-hand visibilities.
-           !!! this operation is not currently tracked in the data so should be applied with extreme caution!!!
+           !!! this operation is not currently tracked and should be applied with extreme caution!!!
 
            Args:
                Dterm_amp (float): Estimated magnitude of leakage terms
@@ -1482,12 +1514,12 @@ class Obsdata(object):
 
     def add_fractional_noise(self, frac_noise, debias=False):
 
-        """Add a constant fraction of each visibility amplitude at quadrature to the corresponding thermal noise.
+        """Add a constant fraction of amplitude at quadrature to thermal noise.
            Effectively imposes a maximal signal-to-noise ratio. 
-           !!! this operation is not currently tracked in the data so should be applied with extreme caution!!!
+           !!! this operation is not currently tracked and should be applied with extreme caution!!!
 
            Args:
-               frac_noise (float): The fraction of noise to add. frac_noise=0.05 imposes max SNR of 20.
+               frac_noise (float): The fraction of noise to add. 
                debias (bool):      Whether or not to add frac_noise of debiased amplitudes.
 
            Returns:
@@ -1508,9 +1540,11 @@ class Obsdata(object):
 
         return out
     
-    def find_amt_fractional_noise(self, im, dtype='vis', target=1.0, debias=False, maxiter=200, ftol=1e-20, gtol=1e-20):
+    def find_amt_fractional_noise(self, im, dtype='vis', target=1.0, debias=False, 
+                                        maxiter=200, ftol=1e-20, gtol=1e-20):
 
-        """Returns the amount of fractional sys error you need to add to an obs to make the image have a chisq close to the targeted value (1.0)
+        """Returns the amount of fractional sys error necessary 
+           to make the image have a chisq close to the targeted value (1.0)
         """
             
         obs = self.copy()
@@ -1528,7 +1562,7 @@ class Obsdata(object):
     def rescale_noise(self, noise_rescale_factor=1.0):
 
         """Rescale the thermal noise on all Stokes parameters by a constant factor.
-           This is useful for AIPS data, which has a missing factor relating 'weights' to thermal noise.
+           This is useful for AIPS data, which has a missing factor relating 'weights' to noise.
 
            Args:
                noise_rescale_factor (float): The number to multiple the existing sigmas by.
@@ -1551,23 +1585,26 @@ class Obsdata(object):
 
         return out
 
-    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, median_snr_cut=0, count='max', vtype='vis', print_std=False, ):
+    def estimate_noise_rescale_factor(self, max_diff_sec=0.0, min_num=10, median_snr_cut=0, 
+                                            count='max', vtype='vis', print_std=False):
 
-        """Estimate a constant rescaling factor for thermal noise across all baselines, times, and polarizations.
-           Uses pairwise differences of closure phases relative to the expected scatter from the thermal noise.
-           This is useful for AIPS data, which has a missing factor relating 'weights' to thermal noise.
+        """Estimate a constant noise rescaling factor on all baselines, times, and polarizations.
+           Uses pairwise differences of closure phases relative to the expected scatter.
+           This is useful for AIPS data, which has a missing factor relating 'weights' to noise.
 
            Args:
-               max_diff_sec (float): The maximum difference of adjacent closure phases (in seconds) to be included in the estimate.
+               max_diff_sec (float): The maximum difference of adjacent closure phases (in seconds) 
                                      If 0, auto-estimates this value to twice the median scan length.
-               min_num (int): The minimum number of closure phase differences for a triangle to be included in the set of estimators.
-               median_snr_cut (float): Do not include a triangle if its median SNR is below this number
-               count (str): If 'min', use minimal set of phases, if 'max' use all closure phases up to reordering
+               min_num (int): The minimum number of closure phase differences for a triangle 
+                              to be included in the set of estimators.
+               median_snr_cut (float): Do not include a triangle if its median SNR is below this 
+               count (str): If 'min', use minimal set of phases, 
+                            if 'max' use all closure phases up to reordering
                vtype (str): Visibility type (e.g., 'vis', 'llvis', 'rrvis', etc.)
-               print_std (bool): Whether or not to print the normalized standard deviation for each closure triangle.
+               print_std (bool): Whether or not to print the std dev. for each closure triangle.
 
            Returns:
-               (float): The rescaling factor. This can be applied to the data using the obsdata member function rescale_noise().
+               (float): The rescaling factor. 
         """
 
         if max_diff_sec == 0.0:
@@ -1585,24 +1622,30 @@ class Obsdata(object):
         std_list = []
         print("Estimating noise rescaling factor from %d triangles...\n" % len(set(all_triangles)))
 
-        # Now determine the differences of adjacent samples on each triangle, relative to the expected thermal noise
+        # Now determine the differences of adjacent samples on each triangle,
+        # relative to the expected thermal noise
         i_count = 0
         for tri in set(all_triangles):
             i_count = i_count + 1
             if print_std:
-                sys.stdout.write('\rGetting noise for triangles %i/%i ' % (i_count, len(set(all_triangles))))
+                sys.stdout.write('\rGetting noise for triangles %i/%i ' % 
+                                    (i_count, len(set(all_triangles))))
                 sys.stdout.flush()
             all_tri = np.array([[]])
             for scan in c_phases:
                 for cphase in scan:
-                    if cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2] and not np.isnan(cphase[-2]) and not np.isnan(cphase[-2]):
+                    if (cphase[1] == tri[0] and cphase[2] == tri[1] and cphase[3] == tri[2] and 
+                        not np.isnan(cphase[-2]) and not np.isnan(cphase[-2])):
+
                         all_tri = np.append(all_tri, ((cphase[0], cphase[-2], cphase[-1])))
+
             all_tri = all_tri.reshape(int(len(all_tri)/3),3)
 
             # See whether the triangle has sufficient SNR
             if np.median(np.abs(all_tri[:,1]/all_tri[:,2])) < median_snr_cut:
                 if print_std:
-                    print(tri, 'median snr too low (%6.4f)' % np.median(np.abs(all_tri[:,1]/all_tri[:,2])))
+                    print(tri, 'median snr too low (%6.4f)' % 
+                          np.median(np.abs(all_tri[:,1]/all_tri[:,2])))
                 continue
 
             # Now go through and find studentized differences of adjacent points
@@ -1619,10 +1662,11 @@ class Obsdata(object):
                     print(tri, '%6.4f [%d differences]' % (np.std(s_list),len(s_list)))
             else:
                 if print_std == True and len(all_tri)>0:
-                    print(tri, '%d cphases found [%d differences < min_num = %d]' % (len(all_tri),len(s_list),min_num))
+                    print(tri, '%d cphases found [%d differences < min_num = %d]' % 
+                          (len(all_tri),len(s_list),min_num))
 
         if len(std_list) == 0:
-            print("No suitable closure phase differences identified! Try using a larger max_diff_sec.")
+            print("No suitable closure phase differences! Try using a larger max_diff_sec.")
             median = 1.0
         else:
             median = np.median(std_list)
@@ -1636,14 +1680,15 @@ class Obsdata(object):
            Args:
                elev_min (float): Minimum elevation (deg)
                elev_max (float): Maximum elevation (deg)
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
         """
 
         el_pairs = self.unpack(['el1','el2'])
-        mask = (np.min((el_pairs['el1'],el_pairs['el2']),axis=0) > elev_min) * (np.max((el_pairs['el1'],el_pairs['el2']),axis=0) < elev_max)
+        mask =  (np.min((el_pairs['el1'],el_pairs['el2']),axis=0) > elev_min)
+        mask *= (np.max((el_pairs['el1'],el_pairs['el2']),axis=0) < elev_max)
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
@@ -1670,7 +1715,7 @@ class Obsdata(object):
 
            Args:
                max_fractional_pol (float): Maximum fractional polarization
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1705,7 +1750,7 @@ class Obsdata(object):
            Args:
                uv_min (float): remove points with uvdist less than  this
                uv_max (float): remove points with uvdist greater than  this
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1738,7 +1783,7 @@ class Obsdata(object):
 
            Args:
                sites (list): list of sites to remove from the data
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1748,7 +1793,8 @@ class Obsdata(object):
         datatable = self.data.copy()
         t1_list = self.unpack('t1')['t1']
         t2_list = self.unpack('t2')['t2']
-        mask = np.array([t1_list[j] not in sites and t2_list[j] not in sites for j in range(len(t1_list))])
+        mask = np.array([t1_list[j] not in sites and t2_list[j] not in sites 
+                         for j in range(len(t1_list))])
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
@@ -1776,7 +1822,7 @@ class Obsdata(object):
 
            Args:
                sites (list): baseline to remove from the data
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1786,7 +1832,8 @@ class Obsdata(object):
         obs_out = self.copy()
         t1_list = obs_out.unpack('t1')['t1']
         t2_list = obs_out.unpack('t2')['t2']
-        mask = np.array([not(t1_list[j] in sites and t2_list[j] in sites) for j in range(len(t1_list))])
+        mask = np.array([not(t1_list[j] in sites and t2_list[j] in sites) 
+                         for j in range(len(t1_list))])
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
@@ -1814,7 +1861,7 @@ class Obsdata(object):
 
            Args:
                snr_cut (float): remove points with snr lower than  this
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1849,7 +1896,7 @@ class Obsdata(object):
            Args:
                sigma_cut (float): remove points with sigma higher than  this
                sigma_type (str): sigma type (sigma, rrsigma, llsigma, etc.)
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1878,16 +1925,17 @@ class Obsdata(object):
             return obs_kept
 
 
-    def flag_UT_range(self, UT_start_hour=0., UT_stop_hour=0.,flag_type='all',flag_what='',output='kept'):
+    def flag_UT_range(self, UT_start_hour=0., UT_stop_hour=0.,
+                            flag_type='all',flag_what='',output='kept'):
 
         """Flag data points within a certain UT range
 
            Args:
                UT_start_hour (float): start of  time window
                UT_stop_hour (float): end of time window
-               flag_type (str): 'all' for flagging everything, 'baseline' for flagginng given baseline, 'station' for flagging givern station
-               flag_what (str): baseline or station to flag (order of stations in baseline doesn't matter)
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               flag_type (str): 'all', 'baseline', or  'station'
+               flag_what (str): baseline or station to flag 
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1902,12 +1950,14 @@ class Obsdata(object):
             t2_list = self.unpack('t2')['t2']
             if flag_type=='station':
                 station=flag_what
-                what_mask = np.array([not (t1_list[j] == station or t2_list[j] == station) for j in range(len(t1_list))])
+                what_mask = np.array([not (t1_list[j] == station or t2_list[j] == station) 
+                                      for j in range(len(t1_list))])
             elif flag_type=='baseline':
                 station1=flag_what.split('-')[0]
                 station2=flag_what.split('-')[1]
                 stations=[station1,station2]
-                what_mask = np.array([not ( (t1_list[j] in stations) and (t2_list[j] in stations) ) for j in range(len(t1_list))])
+                what_mask = np.array([not ((t1_list[j] in stations) and (t2_list[j] in stations)) 
+                                      for j in range(len(t1_list))])
         else:
             what_mask = np.array([False for j in range(len(UT_mask))])
         mask = UT_mask|what_mask
@@ -1936,12 +1986,14 @@ class Obsdata(object):
         """Flagging data based on csv file
 
             Args:
-                flagfile (str): path to csv file with mjd of flagging start / stop time, and optionally baseline / station to flag
-                flag_type (str): 'all' for flagging everything, 'baseline' for flagginng given baseline, 'station' for flagging givern station
+                flagfile (str): path to csv file with mjds of flagging start / stop time, 
+                                and optionally baseline / stations
+               flag_type (str): 'all', 'baseline', or  'station'
 
             Returns:
                 (Obsdata): a observation object with flagged data points removed
         """
+
         df = pd.read_csv(flagfile)
         mjd_start = list(df['mjd_start'])
         mjd_stop = list(df['mjd_stop'])
@@ -1956,7 +2008,8 @@ class Obsdata(object):
             what = whatL[cou]
             starth = (mjd_start[cou] % 1)*24.
             stoph=(mjd_stop[cou] % 1)*24.
-            obs = obs.flag_UT_range( UT_start_hour=starth, UT_stop_hour=stoph, flag_type=flag_type,flag_what=what,output='kept')
+            obs = obs.flag_UT_range(UT_start_hour=starth, UT_stop_hour=stoph, 
+                                    flag_type=flag_type,flag_what=what,output='kept')
 
         return obs
 
@@ -1968,8 +2021,8 @@ class Obsdata(object):
            Args:
                field (str): The quantity to test for
                max_diff_seconds (float): The moving window size for testing outliers
-               robust_nsigma_cut (float): Outliers further than this many sigmas from the mean are removed
-               output (str): return: 'kept' (data after flagging), 'flagged' (data that were flagged), or 'both' (a dictionary)
+               robust_nsigma_cut (float): Outliers further than this from the mean are removed
+               output (str): returns 'kept', 'flagged', or 'both' (a dictionary)
 
            Returns:
                (Obsdata): a observation object with flagged data points removed
@@ -1980,25 +2033,29 @@ class Obsdata(object):
             for t2 in set(self.data['t2']):
                 vals = self.unpack_bl(t1,t2,field)
                 if len(vals) > 0:
-                    vals[field] = np.nan_to_num(vals[field]) # nans will all be dropped, which can be problematic for polarimetric values
+                    # nans will all be dropped, which can be problematic for polarimetric values
+                    vals[field] = np.nan_to_num(vals[field]) 
                 for j in range(len(vals)):
                     near_vals_mask = np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0
-                    fields  = vals[field][np.abs(vals['time'] - vals['time'][j])<max_diff_seconds/3600.0]
+                    fields  = vals[field][near_vals_mask]
 
-                    # Here, we use median absolute deviation from the median as a robust proxy for standard deviation
+                    # Here, we use median absolute deviation as a robust proxy for standard deviation
                     dfields = np.median(np.abs(fields-np.median(fields)))
-                    if dfields == 0.0: # Avoid problem when the MAD is zero (e.g., a single sample)
+                    if dfields == 0.0: # Avoid problems when the MAD is zero (e.g., a single sample)
                         dfields = 1.0
-                    stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = np.abs(vals[field][j]-np.median(fields)) / dfields
+                    stat = np.abs(vals[field][j]-np.median(fields)) / dfields
+                    stats[(vals['time'][j][0], tuple(sorted((t1,t2))))] = stat
 
-        mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut for rec in self.data])
+        mask = np.array([stats[(rec[0], tuple(sorted((rec[2], rec[3]))))][0] < robust_nsigma_cut 
+                         for rec in self.data])
 
         datatable_kept    = self.data.copy()
         datatable_flagged = self.data.copy()
 
         datatable_kept    = datatable_kept[mask]
         datatable_flagged = datatable_flagged[np.invert(mask)]
-        print('anomalous %s flagged %d/%d visibilities' % (field, len(datatable_flagged), len(self.data)))
+        print('anomalous %s flagged %d/%d visibilities' % 
+              (field, len(datatable_flagged), len(self.data)))
 
         # Make new observations with all data first to avoid problems with empty arrays
         obs_kept = self.copy()
@@ -2015,16 +2072,19 @@ class Obsdata(object):
 
 
     def filter_subscan_dropouts(self,perc=0,return_type='rec'):
-        '''Fancy filtration that drops some data to ensure that we only average parts with same timestamp.
-            Potentially this could reduce risk of non-closing errors.
+
+        """Fancy filtration that drops data to ensure that we only average parts with same timestamp.
+           Potentially this could reduce risk of non-closing errors.
 
             Args:
-                perc (float, reasonably in [0,1]) drop baseline from scan if it has less than this fraction of median 
-                baseline observation time during the scan
+                perc (float): drop baseline from scan if it has less than this fraction 
+                              of median baseline observation time during the scan
                 return_type (str): data frame ('df') or recarray ('rec')
-        '''
+        """
+
         if type(self.scans)!=np.ndarray:
             print('List of scans in ndarray format required! Add it with add_scans')
+
         else:    
             #make df and add scan_id to data
             df = make_df(self)
@@ -2034,30 +2094,38 @@ class Obsdata(object):
         
             #first flag baselines that are working for short part of scan
             df['count_samples'] = 1
-            hm1 = df.groupby(['scan_id','baseline','polarization']).agg({'count_samples':np.sum}).reset_index()
+            hm1 = df.groupby(['scan_id','baseline','polarization'])
+            hm1 = hm1.agg({'count_samples':np.sum}).reset_index()
             hm1['count_baselines_before'] = 1
-            hm2 = hm1.groupby(['scan_id','polarization']).agg({'count_samples': lambda x: perc*np.median(x),'count_baselines_before':np.sum}).reset_index()
+            hm2 = hm1.groupby(['scan_id','polarization'])
+            hm2 = hm2.agg({'count_samples': lambda x: perc*np.median(x),
+                           'count_baselines_before':np.sum}).reset_index()
 
             #dictionary with minimum acceptable number of samples per scan
             dict_elem_in_scan = dict(zip(hm2.scan_id,hm2.count_samples))
         
             #list of acceptable scans and baselines
-            hm1=hm1[list(map(lambda x: x[1] >= dict_elem_in_scan[x[0]],list(zip(hm1.scan_id,hm1.count_samples))))]
+            hm1=hm1[list(map(lambda x: x[1] >= dict_elem_in_scan[x[0]],
+                    list(zip(hm1.scan_id,hm1.count_samples))))]
             list_good_scans_baselines=list(zip(hm1.scan_id,hm1.baseline))
         
             #filter out data
-            df_filtered=df[list(map(lambda x: x in list_good_scans_baselines,list(zip(df.scan_id,df.baseline))))]
+            df_filtered=df[list(map(lambda x: x in list_good_scans_baselines,
+                           list(zip(df.scan_id,df.baseline))))]
 
             #how many baselines present during scan?
             df_filtered['count_samples'] = 1
-            hm3 = df_filtered.groupby(['scan_id','baseline','polarization']).agg({'count_samples':np.sum}).reset_index()
+            hm3 = df_filtered.groupby(['scan_id','baseline','polarization'])
+            hm3 = hm3.agg({'count_samples':np.sum}).reset_index()
             hm3['count_baselines_after'] = 1
-            hm4 = hm3.groupby(['scan_id','polarization']).agg({'count_baselines_after': np.sum}).reset_index()
+            hm4 = hm3.groupby(['scan_id','polarization'])
+            hm4 = hm4.agg({'count_baselines_after': np.sum}).reset_index()
             dict_how_many_baselines = dict(zip(hm4.scan_id,hm4.count_baselines_after))
 
             #how many baselines present during each time?
             df_filtered['count_baselines_per_time'] = 1
-            hm5=df_filtered.groupby(['datetime','scan_id','polarization']).agg({'count_baselines_per_time': np.sum}).reset_index()
+            hm5=df_filtered.groupby(['datetime','scan_id','polarization'])
+            hm5 = hm5.agg({'count_baselines_per_time': np.sum}).reset_index()
             dict_datetime_num_baselines = dict(zip(hm5.datetime,hm5.count_baselines_per_time))
 
             #only keep times when all baselines available
@@ -2068,9 +2136,11 @@ class Obsdata(object):
             if return_type=='rec':
                 out_vis = df_to_rec(df_filtered2,'vis')
 
-            out = Obsdata(self.ra, self.dec, self.rf, self.bw, out_vis, self.tarr, source=self.source, mjd=self.mjd,
-                       ampcal=self.ampcal, phasecal=self.phasecal, opacitycal=self.opacitycal, dcal=self.dcal, frcal=self.frcal,
-                       timetype=self.timetype, scantable=self.scans)
+
+            arglist, argdict = self.obsdata_args()
+            arglist[DATPOS] = out_vis
+            out = Obsdata(*arglist, **argdict)
+
             return out
 
 
@@ -2257,7 +2327,7 @@ class Obsdata(object):
                 paramguess (tuble): initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta)
 
            Returns:
-                (tuple) : a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
+                (tuple) : (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.
         """
 
         #TODO this fit doesn't work very well!!
@@ -2289,9 +2359,12 @@ class Obsdata(object):
         """Return a recarray of the equal time bispectra.
 
            Args:
-               vtype (str): The visibilty type ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis') from which to assemble bispectra
-               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
-               count (str): If 'min', return minimal set of bispectra, if 'max' return all bispectra up to reordering
+               vtype (str): The visibilty type from which to assemble bispectra
+                            ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis') 
+               mode (str): If 'time', return phases in a list of equal time arrays, 
+                           if 'all', return all phases in a single array
+               count (str): If 'min', return minimal set of bispectra,
+                            if 'max' return all bispectra up to reordering
                timetype (str): 'GMST' or 'UTC'
                uv_min (float): flag baselines shorter than this before forming closure quantities
                snrcut (float): flag bispectra with snr lower than this               
@@ -2307,7 +2380,8 @@ class Obsdata(object):
         if not count in ('max', 'min', 'min-cut0bl'):
             raise Exception("possible options for count are 'max', 'min', or 'min-cut0bl'")
         if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+            raise Exception("possible options for vtype are" + 
+                            " 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
@@ -2326,7 +2400,8 @@ class Obsdata(object):
         tt = 1
         for tdata in tlist:
 
-            sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % (vtype, count, tt, len(tlist)))
+            sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % 
+                             (vtype, count, tt, len(tlist)))
             sys.stdout.flush()
 
             tt += 1
@@ -2355,7 +2430,7 @@ class Obsdata(object):
             elif count == 'min-cut0bl':
                 tris = tri_minimal_set(sites, self.tarr, self.tkey)
                 
-                # if you cut the 0 baselines then add in triangles that now are not in the minimal set
+                # if you cut the 0 baselines, add in triangles that now are not in the minimal set
                 if uv_min:
                     # get the reference site
                     sites_ordered = [x for x in self.tarr['site'] if x in sites]
@@ -2366,11 +2441,13 @@ class Obsdata(object):
                     if np.sum(zerobls==ref):
                     
                         # determine which sites were cut out of the minimal set
-                        cutsites = np.unique(np.hstack([zerobls[1][zerobls[0] == ref], zerobls[0][zerobls[1] == ref]]))
+                        cutsites = np.unique(np.hstack([zerobls[1][zerobls[0] == ref], 
+                                                        zerobls[0][zerobls[1] == ref]]))
                         
                         # we can only handle if there was 1 connecting site that was cut
                         if len(cutsites)>1:
-                            raise Exception("Cannot have the root node be in a clique with more than 2 sites sharing 0 baselines'")
+                            raise Exception("Cannot have the root node be in a clique" + 
+                                            "with more than 2 sites sharing 0 baselines'")
 
                         # get the remaining sites
                         cutsite = cutsites[0]
@@ -2418,14 +2495,18 @@ class Obsdata(object):
 
         return out
 
-    def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg', timetype=False, uv_min=False, snrcut=0.):
+    def c_phases(self, vtype='vis', mode='all', count='min', ang_unit='deg',
+                       timetype=False, uv_min=False, snrcut=0.):
 
         """Return a recarray of the equal time closure phases.
 
            Args:
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
-               mode (str): If 'time', return phases in a list of equal time arrays, if 'all', return all phases in a single array
-               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+               vtype (str): The visibilty type from which to assemble closure phases
+                            ('vis','qvis','uvis','vvis','pvis') 
+               mode (str): If 'time', return phases in a list of equal time arrays, 
+                           if 'all', return all phases in a single array
+               count (str): If 'min', return minimal set of phases, 
+                            if 'max' return all closure phases up to reordering
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'UTC' or 'GMST'
                uv_min (float): flag baselines shorter than this before forming closure quantities
@@ -2442,7 +2523,8 @@ class Obsdata(object):
         if not count in ('max', 'min', 'min-cut0bl'):
             raise Exception("possible options for count are 'max', 'min', or 'min-cut0bl'")
         if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+            raise Exception("possible options for vtype are" + 
+                            " 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if timetype not  in ['GMST','UTC','gmst','utc']:
             raise Exception("timetype should be 'GMST' or 'UTC'!")
 
@@ -2450,16 +2532,18 @@ class Obsdata(object):
         else: angle = 1.0
 
         # Get the bispectra data
-        bispecs = self.bispectra(vtype=vtype, mode='time', count=count, timetype=timetype, uv_min=uv_min, snrcut=snrcut)
+        bispecs = self.bispectra(vtype=vtype, mode='time', count=count, 
+                                 timetype=timetype, uv_min=uv_min, snrcut=snrcut)
 
         # Reformat into a closure phase list/array
         out = []
         cps = []
 
+        cpnames = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
         for bis in bispecs:
             for bi in bis:
                 if len(bi) == 0: continue
-                bi.dtype.names = ('time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp')
+                bi.dtype.names = cpnames
                 bi['sigmacp'] = np.real(bi['sigmacp']/np.abs(bi['cphase'])/angle)
                 bi['cphase'] = np.real((np.angle(bi['cphase'])/angle))
                 cps.append(bi.astype(np.dtype(DTCPHASE)))
@@ -2483,12 +2567,13 @@ class Obsdata(object):
                site1 (str): station 1 name
                site2 (str): station 2 name
                site3 (str): station 3 name
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+               vtype (str): The visibilty type from which to assemble bispectra
+                            ('vis','qvis','uvis','vvis','pvis')
                timetype (str): 'UTC' or 'GMST'
                snrcut (float): flag bispectra with snr lower than this               
 
-               bs (list): optionally pass in the time-sorted bispectra so they don't have to be recomputed
-               force_recompute (bool): if True, recompute bispectra instead of using obs.cphase saved data
+               bs (list): optionally pass in the precomputed, time-sorted bispectra 
+               force_recompute (bool): if True, recompute bispectra instead of using saved data
 
            Returns:
                (numpy.recarry): A recarray of the bispectra on this triangle with datatype DTBIS
@@ -2497,10 +2582,12 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Get bispectra (maximal set)
-        if (len(bs)==0) and not (self.bispec is None) and not (len(self.bispec)==0) and not force_recompute:
+        if ((len(bs)==0) and not (self.bispec is None) and not (len(self.bispec)==0) and 
+            not force_recompute):
             bs=self.bispec
         elif (len(bs) == 0) or force_recompute:
-            bs = self.bispectra(mode='all', count='max', vtype=vtype, timetype=timetype, snrcut=snrcut)
+            bs = self.bispectra(mode='all', count='max', vtype=vtype, 
+                                timetype=timetype, snrcut=snrcut)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
@@ -2590,8 +2677,8 @@ class Obsdata(object):
         return np.array(outdata)
 
 
-    def cphase_tri(self, site1, site2, site3, snrcut=0.,
-                         vtype='vis', ang_unit='deg', timetype=False, cphases=[], force_recompute=False):
+    def cphase_tri(self, site1, site2, site3, snrcut=0., vtype='vis', ang_unit='deg', 
+                         timetype=False, cphases=[], force_recompute=False):
 
         """Return closure phase  over time on a triangle (1-2-3).
 
@@ -2599,27 +2686,30 @@ class Obsdata(object):
                site1 (str): station 1 name
                site2 (str): station 2 name
                site3 (str): station 3 name
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+               vtype (str): The visibilty type from which to assemble closure phases
+                            ('vis','qvis','uvis','vvis','pvis') 
                ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
                timetype (str): 'GMST' or 'UTC'
                snrcut (float): flag bispectra with snr lower than this               
 
-               cphases (list): optionally pass in the cphase so they are not recomputed if you are plotting multiple triangles
-               force_recompute (bool): if True, recompute closure phases instead of using obs.cphase saved data
+               cphases (list): optionally pass in the precomputed time-sorted cphases 
+               force_recompute (bool): if True, recompute closure phases instead of using saved data
 
            Returns:
-               (numpy.recarry): A recarray of the closure phases on this triangle with datatype DTCPHASE
+               (numpy.recarry): A recarray of the closure phases with datatype DTCPHASE
         """
 
         if timetype==False:
             timetype=self.timetype
 
         # Get closure phases (maximal set)
-        if (len(cphases)==0) and not (self.cphase is None) and not (len(self.cphase)==0) and not force_recompute:
+        if ((len(cphases)==0) and not (self.cphase is None) and not (len(self.cphase)==0) and 
+            not force_recompute):
             cphases=self.cphase
 
         elif (len(cphases) == 0) or force_recompute:
-            cphases = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit, timetype=timetype, snrcut=snrcut)
+            cphases = self.c_phases(mode='all', count='max', vtype=vtype, ang_unit=ang_unit, 
+                                    timetype=timetype, snrcut=snrcut)
 
         # Get requested closure phases over time
         tri = (site1, site2, site3)
@@ -2709,16 +2799,20 @@ class Obsdata(object):
 
         return np.array(outdata)
 
-    def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp', debias=True, timetype=False, snrcut=0.):
+    def c_amplitudes(self, vtype='vis', mode='all', count='min', ctype='camp', debias=True, 
+                           timetype=False, snrcut=0.):
 
         """Return a recarray of the equal time closure amplitudes.
 
            Args:
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               vtype (str): The visibilty type from which to assemble closure amplitudes
+                            ('vis','qvis','uvis','vvis','pvis') 
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
-               mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
-               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
-               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               mode (str): If 'time', return amplitudes in a list of equal time arrays, 
+                           if 'all', return all amplitudes in a single array
+               count (str): If 'min', return minimal set of amplitudes, 
+                            if 'max' return all closure amplitudes up to inverses
+               debias (bool): If True, debias the closure amplitude 
                timetype (str): 'GMST' or 'UTC'
                snrcut (float): flag closure amplitudes with snr lower than this               
 
@@ -2734,7 +2828,8 @@ class Obsdata(object):
         if not count in ('max', 'min'):
             raise Exception("possible options for count are 'max' and 'min'")
         if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
-            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+            raise Exception("possible options for vtype are " + 
+                            "'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
         if not (ctype in ['camp', 'logcamp']):
             raise Exception("closure amplitude type must be 'camp' or 'logcamp'!")
         if timetype not  in ['GMST','UTC','gmst','utc']:
@@ -2747,7 +2842,8 @@ class Obsdata(object):
         tt = 1
         for tdata in tlist:
 
-            sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % (vtype, ctype, count, tt, len(tlist)))
+            sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % 
+                             (vtype, ctype, count, tt, len(tlist)))
             sys.stdout.flush()
             tt += 1
 
@@ -2775,7 +2871,8 @@ class Obsdata(object):
                 # Find all quadrangles
                 quadsets = list(it.combinations(sites,4))
                 # Include 3 closure amplitudes on each quadrangle
-                quadsets = np.array([(q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]) for q in quadsets]).reshape((-1,4))
+                quadsets = np.array([(q, [q[0],q[2],q[1],q[3]], [q[0],q[1],q[3],q[2]]) 
+                                     for q in quadsets]).reshape((-1,4))
 
             # Loop over all closure amplitudes
             for quad in quadsets:
@@ -2837,12 +2934,15 @@ class Obsdata(object):
                site2 (str): station 2 name
                site3 (str): station 3 name
                site4 (str): station 4 name
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               vtype (str): The visibilty type from which to assemble closure amplitudes
+                            ('vis','qvis','uvis','vvis','pvis')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
-               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               debias (bool): If True, debias the closure amplitude 
                timetype (str): 'UTC' or 'GMST'
-               camps (list): optionally pass in the time-sorted camps so they don't have to be recomputed
                snrcut (float): flag closure amplitudes with snr lower than this               
+
+               camps (list): optionally pass in the time-sorted, precomputed camps 
+               force_recompute (bool): if True, recompute closure phases instead of using saved data
 
            Returns:
                (numpy.recarry): A recarray of the closure amplitudes with datatype DTCAMP
@@ -2862,12 +2962,15 @@ class Obsdata(object):
         outdata = []
 
         # Get closure amplitudes (maximal set)
-        if ((ctype=='camp') and (len(camps)==0)) and not (self.camp is None) and not (len(self.camp)==0) and not force_recompute:
+        if (((ctype=='camp') and (len(camps)==0)) and not (self.camp is None) and 
+            not (len(self.camp)==0) and not force_recompute):
             camps=self.camp
-        elif ((ctype=='logcamp') and (len(camps)==0)) and not (self.logcamp is None) and not (len(self.logcamp)==0) and not force_recompute:
+        elif (((ctype=='logcamp') and (len(camps)==0)) and not (self.logcamp is None) and 
+             not (len(self.logcamp)==0) and not force_recompute):
             camps=self.logcamp
         elif (len(camps)==0) or force_recompute:
-            camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype, debias=debias, timetype=timetype, snrcut=snrcut)
+            camps = self.c_amplitudes(mode='all', count='max', vtype=vtype, ctype=ctype, 
+                                      debias=debias, timetype=timetype, snrcut=snrcut)
 
         # camps does not contain inverses
         for obs in camps:
@@ -3078,18 +3181,21 @@ class Obsdata(object):
                 colors.append(cdict[(t1,t2)])
 
                 # Unpack data
-                dat = self.unpack_dat(bl, [field1,field2], ang_unit=ang_unit, debias=debias, timetype=timetype)
+                dat = self.unpack_dat(bl, [field1,field2], 
+                                      ang_unit=ang_unit, debias=debias, timetype=timetype)
                 alldata.append(dat)
 
                 # X error bars
                 if sigtype(field1):
-                    allsigx.append(self.unpack_dat(bl,[sigtype(field1)], ang_unit=ang_unit)[sigtype(field1)])
+                    allsigx.append(self.unpack_dat(bl, [sigtype(field1)], 
+                                                   ang_unit=ang_unit)[sigtype(field1)])
                 else:
                     allsigx.append(None)
 
                 # Y error bars
                 if sigtype(field2):
-                    allsigy.append(self.unpack_dat(bl,[sigtype(field2)], ang_unit=ang_unit)[sigtype(field2)])
+                    allsigy.append(self.unpack_dat(bl, [sigtype(field2)], 
+                                                   ang_unit=ang_unit)[sigtype(field2)])
                 else:
                     allsigy.append(None)
 
@@ -3103,13 +3209,15 @@ class Obsdata(object):
 
             # X error bars
             if sigtype(field1):
-                allsigx = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field1)]]
+                allsigx = self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)
+                allsigx = [allsigx[sigtype(field1)]]
             else:
                 allsigx = [None]
 
             # Y error bars
             if sigtype(field2):
-                allsigy = [self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)[sigtype(field2)]]
+                allsigy = self.unpack(sigtype(field2), conj=conj, ang_unit=ang_unit)
+                allsigy = [allsigy[sigtype(field2)]]
             else:
                 allsigy = [None]
 
@@ -3269,7 +3377,8 @@ class Obsdata(object):
         if field not in FIELDS:
             raise Exception("valid fields are " + string.join(FIELDS))
 
-        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, debias=debias, timetype=timetype)
+        plotdata = self.unpack_bl(site1, site2, field, ang_unit=ang_unit, 
+                                  debias=debias, timetype=timetype)
         sigmatype = sigtype(field)
         if sigtype(field):
             errdata = self.unpack_bl(site1, site2, sigtype(field), ang_unit=ang_unit, debias=debias)
@@ -3359,8 +3468,9 @@ class Obsdata(object):
                site2 (str): station 2 name
                field (str): y-axis field (from FIELDS)
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble bispectra
-               cphases (list): optionally pass in the closure phases so they don't have to be recomputed
+               vtype (str): The visibilty type from which to assemble closure phases
+                            ('vis','qvis','uvis','vvis','pvis') 
+               cphases (list): optionally pass in the prcomputed, time-sorted closure phases 
                force_recompute (bool): if True, recompute closure phases instead of using stored data
                snrcut (float): flag closure amplitudes with snr lower than this               
 
@@ -3435,10 +3545,12 @@ class Obsdata(object):
 
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt=marker, markersize=markersize,
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], 
+                       fmt=marker, markersize=markersize,
                        color=color, linestyle='none',label=label)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1], marker, markersize=markersize, color=color, linestyle='none', label=label)
+            x.plot(plotdata[:,0], plotdata[:,1], marker, markersize=markersize, 
+                   color=color, linestyle='none', label=label)
 
         if axislabels:
             x.set_xlabel(self.timetype + ' (h)')
@@ -3476,13 +3588,14 @@ class Obsdata(object):
                site3 (str): station 3 name
                site4 (str): station 4 name
 
-               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               vtype (str): The visibilty type  from which to assemble closure amplitudes
+                            ('vis','qvis','uvis','vvis','pvis')
                ctype (str): The closure amplitude type ('camp' or 'logcamp')
                camps (list): optionally pass in camps so they don't have to be recomputed
-               force_recompute (bool): if True, recompute closure amplitudes instead of using stored data
+               force_recompute (bool): if True, recompute camps instead of using stored data
                snrcut (float): flag closure amplitudes with snr lower than this               
 
-               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               debias (bool): If True, debias the closure amplitude
                timetype (str): 'GMST' or 'UTC'
 
                axis (matplotlib.axes.Axes): amake_cdd plot to this axis
@@ -3514,9 +3627,11 @@ class Obsdata(object):
             label=str(label)
 
         # Get closure amplitudes (maximal set)
-        if ((ctype=='camp') and (len(camps)==0) and not (self.camp is None) and not (len(self.camp)==0) and not force_recompute):
+        if ((ctype=='camp') and (len(camps)==0) and not (self.camp is None) and 
+            not (len(self.camp)==0) and not force_recompute):
             camps=self.camp
-        elif ((ctype=='logcamp') and (len(camps)==0) and not (self.logcamp is None) and not (len(self.logcamp)==0) and not force_recompute):
+        elif ((ctype=='logcamp') and (len(camps)==0) and not (self.logcamp is None) and 
+              not (len(self.logcamp)==0) and not force_recompute):
             camps=self.logcamp
 
         # Get closure amplitudes (maximal set)
@@ -3562,10 +3677,12 @@ class Obsdata(object):
             x = fig.add_subplot(1,1,1)
 
         if ebar and np.any(plotdata[:,2]):
-            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], fmt=marker, markersize=markersize,
+            x.errorbar(plotdata[:,0], plotdata[:,1], yerr=plotdata[:,2], 
+                       fmt=marker, markersize=markersize,
                        color=color, linestyle='none',label=label)
         else:
-            x.plot(plotdata[:,0], plotdata[:,1],marker, markersize=markersize, color=color, linestyle='none',label=label)
+            x.plot(plotdata[:,0], plotdata[:,1],marker, markersize=markersize, 
+                   color=color, linestyle='none',label=label)
 
         x.set_xlim(rangex)
         x.set_ylim(rangey)
@@ -3576,8 +3693,8 @@ class Obsdata(object):
                 x.set_ylabel('Closure Amplitude')
             elif ctype=='logcamp':
                 x.set_ylabel('Log Closure Amplitude')
-            x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'%(site1,site2,site3,site4,
-                                                                 site1,site4,site2,site3))
+            x.set_title('(%s - %s)(%s - %s)/(%s - %s)(%s - %s)'% (site1,site2,site3,site4,
+                                                                  site1,site4,site2,site3))
         if grid:
             x.grid()
         if legend:
@@ -3615,7 +3732,8 @@ class Obsdata(object):
         if force_singlepol!=False and self.polrep!='stokes':
             raise Exception("force_singlepol is incompatible with polrep!='stokes'")
 
-        ehtim.io.save.save_obs_uvfits(self,fname,force_singlepol=force_singlepol, polrep_out=polrep_out)
+        ehtim.io.save.save_obs_uvfits(self, fname,
+                                      force_singlepol=force_singlepol, polrep_out=polrep_out)
 
         return
 
@@ -3631,7 +3749,8 @@ class Obsdata(object):
         if self.polrep!='stokes':
             raise Exception("save_oifits not yet implemented for polreps other than 'stokes'")
 
-        #Antenna diameter currently incorrect and the exact times are not correct in the datetime object
+        # Antenna diameters are currently incorrect
+        # the exact times are also not correct in the datetime object
         ehtim.io.save.save_obs_oifits(self, fname, flux=flux)
 
         return
@@ -3639,6 +3758,7 @@ class Obsdata(object):
 ##################################################################################################
 # Observation creation functions
 ##################################################################################################
+
 def merge_obs(obs_List):
 
     """Merge a list of observations into a single observation file.
@@ -3730,7 +3850,8 @@ def load_oifits(fname, flux=1.0):
 
     return ehtim.io.load.load_obs_oifits(fname, flux=flux)
 
-def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
+def load_maps(arrfile, obsspec, ifile, qfile=0, ufile=0, vfile=0, 
+              src=SOURCE_DEFAULT, mjd=MJD_DEFAULT, ampcal=False, phasecal=False):
 
     """Read an observation from a maps text file and return an Obsdata object.
 
