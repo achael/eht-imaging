@@ -155,7 +155,7 @@ class Obsdata(object):
         self.frcal = bool(frcal)
 
         if timetype not in ['GMST', 'UTC']:
-            raise Exception("timetype must by 'GMST' or 'UTC'")
+            raise Exception("timetype must be 'GMST' or 'UTC'")
         self.timetype = timetype
 
         # Save the data
@@ -211,6 +211,34 @@ class Obsdata(object):
         newobs = copy.deepcopy(self)
 
         return newobs
+
+
+    def switch_timetype(self, timetype_out='UTC'):
+ 
+        """Return a new observation with the time type switched
+ 
+           Args:
+               timetype (str): "UTC" or "GMST"
+
+           Returns:
+               (Obsdata): new Obsdata object with potentially different timetype
+        """
+
+        if timetype_out not in ['GMST', 'UTC']:
+            raise Exception("timetype_out must be 'GMST' or 'UTC'")
+
+        out = self.copy()
+        if timetype_out == self.timetype:
+            return out
+    
+
+        if timetype_out=='UTC':
+            out.data['time'] = gmst_to_utc(out.data['time'], out.mjd)
+        if timetype_out=='GMST':
+            out.data['time'] = utc_to_gmst(out.data['time'], out.mjd)
+        
+        return out
+
 
     def switch_polrep(self, polrep_out='stokes', allow_singlepol=True, singlepol_hand='R'):
 
@@ -514,7 +542,7 @@ class Obsdata(object):
                 fields (list): list of unpacked quantities from available quantities in FIELDS
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
-                timetype (str): 'GMST' or 'UTC'
+                timetype (str): 'GMST' or 'UTC' changes what is returned for 'time'
 
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
@@ -560,7 +588,7 @@ class Obsdata(object):
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
                 conj (bool): True to include conjugate baselines
-                timetype (str): 'GMST' or 'UTC'
+                timetype (str): 'GMST' or 'UTC' changes what is returned for 'time'
 
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
@@ -607,7 +635,7 @@ class Obsdata(object):
                 conj (bool): True to include conjugate baselines
                 ang_unit (str): 'deg' for degrees and 'rad' for radian phases
                 debias (bool): True to debias visibility amplitudes
-                timetype (str): 'GMST' or 'UTC'
+                timetype (str): 'GMST' or 'UTC' changes what is returned for 'time'
 
            Returns:
                 (numpy.recarray): unpacked numpy array with data in fields requested
@@ -735,9 +763,13 @@ class Obsdata(object):
             else: raise Exception("%s is not a valid field \n" % field +
                                   "valid field values are: " + ' '.join(FIELDS))
 
-            if field in ["time_utc"] and timetype=='GMST':
+            if field in ["time_utc"] and self.timetype=='GMST':
                 out = gmst_to_utc(out, self.mjd)
-            if field in ["time_gmst"] and timetype=='UTC':
+            if field in ["time_gmst"] and self.timetype=='UTC':
+                out = utc_to_gmst(out, self.mjd)
+            if field in ["time"] and self.timetype=='GMST' and timetype=='UTC':
+                out = gmst_to_utc(out, self.mjd)
+            if field in ["time"] and self.timetype=='UTC' and timetype=='GMST':
                 out = utc_to_gmst(out, self.mjd)
 
             # Compute elevation and parallactic angles

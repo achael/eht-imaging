@@ -3269,7 +3269,8 @@ def load_txt(fname, polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT, zero_po
             (Image): loaded image object
     """
 
-    return ehtim.io.load.load_im_txt(fname, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=True)
+    return ehtim.io.load.load_im_txt(fname, pulse=pulse, polrep=polrep, 
+                                     pol_prim=pol_prim, zero_pol=True)
 
 def load_fits(fname, aipscc=False, pulse=PULSE_DEFAULT,
               polrep='stokes', pol_prim=None,  zero_pol=False):

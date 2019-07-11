@@ -35,7 +35,9 @@ from ehtim.observing.obs_helpers import *
 ##################################################################################################
 # Image IO
 ##################################################################################################
+
 def save_im_txt(im, fname, mjd=False, time=False):
+
     """Save image data to text file.
 
        Args:
@@ -253,17 +255,23 @@ def save_array_txt(arr, fname):
 # Observation IO
 ##################################################################################################
 def save_obs_txt(obs, fname):
+
     """Save the observation data in a text file.
     """
+
+    # output times must be in utc
+    obs = obs.switch_timetype(timetype_out='UTC')
 
     # Get the necessary data and the header
     if obs.polrep=='stokes':
         outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
-                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 'vamp', 'vphase',
+                               'u', 'v', 'amp', 'phase', 'qamp', 'qphase', 'uamp', 'uphase', 
+                               'vamp', 'vphase',
                                'sigma', 'qsigma', 'usigma', 'vsigma'])
     elif obs.polrep=='circ':
         outdata = obs.unpack(['time', 'tint', 't1', 't2','tau1','tau2',
-                               'u', 'v', 'rramp', 'rrphase', 'llamp', 'llphase', 'rlamp', 'rlphase', 'lramp', 'lrphase',
+                               'u', 'v', 'rramp', 'rrphase', 'llamp', 'llphase', 'rlamp', 'rlphase',
+                               'lramp', 'lrphase',
                                'rrsigma', 'llsigma', 'rlsigma', 'lrsigma'])
 
     else: raise Exception("obs.polrep not 'stokes' or 'circ'!")
@@ -286,13 +294,14 @@ def save_obs_txt(obs, fname):
             )
 
     for i in range(len(obs.tarr)):
-        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % (obs.tarr[i]['site'],
-                                                                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
-                                                                  obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
-                                                                  obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
-                                                                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
-                                                                  (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
-                                                                 ))
+        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % 
+                 (obs.tarr[i]['site'],
+                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
+                  obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
+                  obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
+                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
+                  (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
+                 ))
 
     if obs.polrep=='stokes':
         head += (
@@ -324,6 +333,9 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     """Save observation data to uvfits.
        To save Stokes I as a single polarization (e.g., only RR) set force_singlepol='R' or 'L'
     """
+
+    # output times must be in utc
+    obs = obs.switch_timetype(timetype_out='UTC')
 
     if polrep_out=='circ':
         obs = obs.switch_polrep('circ')
@@ -720,6 +732,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     return
 
 def save_obs_oifits(obs, fname, flux=1.0):
+
     """ Save visibility data to oifits
         Polarization data is NOT saved
         Antenna diameter currently incorrect and the exact times are not correct in the datetime object
@@ -728,6 +741,9 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
     #TODO: Add polarization to oifits??
     print('Warning: save_oifits does NOT save polarimetric visibility data!')
+
+    # output times must be in utc
+    obs = obs.switch_timetype(timetype_out='UTC')
 
     if (obs.polrep!='stokes'):
         raise Exception("save_obs_oifits only works with polrep 'stokes'!")
@@ -783,7 +799,8 @@ def save_obs_oifits(obs, fname, flux=1.0):
 
     # convert times to datetime objects
     timeClosure = biarr['time']
-    dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x*60.0*60.0) for x in timeClosure]); #TODO: these do not correspond to the acutal times
+    dttimeClosure = np.array([datetime.datetime.utcfromtimestamp(x*60.0*60.0) 
+for x in timeClosure]); #TODO: these do not correspond to the acutal times
 
     # convert antenna name strings to number identifiers
     biarr_ant1 = ehtim.io.writeData.convertStrings(biarr['t1'], union)
@@ -826,13 +843,14 @@ def save_dtype_txt(obs, fname, dtype='cphase'):
             )
 
     for i in range(len(obs.tarr)):
-        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % (obs.tarr[i]['site'],
-                                                                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
-                                                                  obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
-                                                                  obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
-                                                                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
-                                                                  (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
-                                                                 ))
+        head += ("%-8s %15.5f  %15.5f  %15.5f  %8.2f   %8.2f  %5.2f   %5.2f   %5.2f  %8.4f %8.4f %8.4f %8.4f \n" % 
+                 (obs.tarr[i]['site'],
+                  obs.tarr[i]['x'], obs.tarr[i]['y'], obs.tarr[i]['z'],
+                  obs.tarr[i]['sefdr'], obs.tarr[i]['sefdl'],
+                  obs.tarr[i]['fr_par'], obs.tarr[i]['fr_elev'], obs.tarr[i]['fr_off'],
+                  (obs.tarr[i]['dr']).real, (obs.tarr[i]['dr']).imag,
+                  (obs.tarr[i]['dl']).real, (obs.tarr[i]['dl']).imag
+                 ))
 
     if dtype=='cphase':
         outdata = obs.cphase
