@@ -1138,7 +1138,7 @@ class Obsdata(object):
             cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, 
                               snrcut=0., uv_min=uv_min)
             cdf = average_bispectra(cdf,avg_time,return_type=return_type,
-                              num_samples=num_samples, snrcut=snrcut)
+                                    num_samples=num_samples, snrcut=snrcut)
         else:
             cdf = make_bsp_df(self, mode='all', round_s=round_s, count=count, 
                               snrcut=snrcut, uv_min=uv_min)

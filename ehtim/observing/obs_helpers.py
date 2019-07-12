@@ -121,6 +121,7 @@ def compute_uv_coordinates(array, site1, site2, time, mjd, ra, dec, rf, timetype
         coord1space = np.array(coord1space)
         coord1[spacemask1] = coord1space
 
+    # use spacecraft ephemeris to get position of site 2
     spacemask2 = [np.all(coord == (0.,0.,0.)) for coord in coord2]
     if np.any(spacemask2):
         if timetype=='GMST':

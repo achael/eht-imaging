@@ -443,6 +443,9 @@ def average_cphases(cdf,dt,return_type='rec',err_type='predicted',num_samples=10
         cdf2['sigmacp'] = [0.5*(x[1][1]-x[1][0]) for x in list(cdf2['dummy'])]
 
     # snrcut
+    # CHECK 
+    if snrcut==0:
+        snrcut=EP
     cdf2 = cdf2[cdf2['sigmacp'] < 180./np.pi/snrcut].copy()  # TODO CHECK
 
     #round datetime
@@ -487,7 +490,7 @@ def average_bispectra(cdf,dt,return_type='rec',num_samples=int(1e3), snrcut=0.):
     cdf2 = cdf2.groupby(grouping).agg(aggregated).reset_index()
 
     # snrcut
-    cdf2 = cdf2[np.abs(cdf2['bispec']/cdf2['sigmacp']) > snrcut].copy()  # TODO CHECK
+    cdf2 = cdf2[np.abs(cdf2['bispec']/cdf2['sigmab']) > snrcut].copy()  # TODO CHECK
 
     #round datetime
     cdf2['datetime'] =  list(map(lambda x: t0 + datetime.timedelta(seconds= int(dt*x)), cdf2['round_time']))
