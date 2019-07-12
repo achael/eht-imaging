@@ -171,12 +171,12 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
 
 
-        chi2vis_uncal = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['vis'])
-        chi2amp_uncal = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['amp'])
-        chi2cphase_uncal = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,
+        chi2vis_uncal = obs_uncal.chisq(im, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['vis'])
+        chi2amp_uncal = obs_uncal.chisq(im, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['amp'])
+        chi2cphase_uncal = obs_uncal.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,
                                      cp_uv_min=cp_uv_min,snrcut=snrcut_dict['cphase'])
-        chi2logcamp_uncal = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['logcamp'])
-        chi2camp_uncal = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['camp'])
+        chi2logcamp_uncal = obs_uncal.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['logcamp'])
+        chi2camp_uncal = obs_uncal.chisq(im, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['camp'])
 
         print("chi^2 vis: %0.2f %0.2f" % (chi2vis, chi2vis_uncal))
         print("chi^2 amp: %0.2f %0.2f" % (chi2amp, chi2amp_uncal))
