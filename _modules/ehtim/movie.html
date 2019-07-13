@@ -256,7 +256,6 @@
 
         <span class="c1">#the list of frames</span>
         <span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">image</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">movie</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nframes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">pol_prim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">pol_prim</span> <span class="o">=</span> <span class="s1">&#39;I&#39;</span>
             <span class="k">if</span> <span class="n">pol_prim</span><span class="o">==</span><span class="s1">&#39;I&#39;</span><span class="p">:</span>
@@ -283,6 +282,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pol_prim</span> <span class="o">=</span>  <span class="n">pol_prim</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">nframes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">framedur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">framedur</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span> <span class="o">=</span> <span class="n">polrep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pulse</span> <span class="o">=</span> <span class="n">pulse</span>
@@ -295,6 +296,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rf</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mjd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pa</span>  <span class="o">=</span> <span class="mf">0.0</span> <span class="c1"># TODO: The pa needs to be properly implemented in the movie object (other functions call it though)</span>
         <span class="k">if</span> <span class="n">start_hr</span> <span class="o">&gt;</span> <span class="mi">24</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">((</span><span class="n">start_hr</span> <span class="o">-</span> <span class="n">start_hr</span> <span class="o">%</span> <span class="mi">24</span><span class="p">)</span><span class="o">/</span><span class="mi">24</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">start_hr</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">start_hr</span> <span class="o">%</span> <span class="mi">24</span><span class="p">)</span>
@@ -653,7 +655,7 @@
 
         <span class="k">elif</span> <span class="n">mov</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span> <span class="o">*=</span> <span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">lrvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">lrvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span><span class="p">]</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span> <span class="o">*=</span> <span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">rlvel</span><span class="p">)</span> <span class="k">for</span> <span class="n">rlvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span><span class="p">]</span>
+            <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span> <span class="o">*=</span> <span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">rlvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">rlvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">mov</span></div>
 
@@ -672,7 +674,7 @@
 
         <span class="k">elif</span> <span class="n">mov</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
             <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span> <span class="o">*=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">lrvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">lrvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">lrframes</span><span class="p">]</span>
-            <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span> <span class="o">*=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">rlvel</span><span class="p">)</span> <span class="k">for</span> <span class="n">rlvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span><span class="p">]</span>
+            <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span> <span class="o">*=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">conjugate</span><span class="p">(</span><span class="n">rlvec</span><span class="p">)</span> <span class="k">for</span> <span class="n">rlvec</span> <span class="ow">in</span> <span class="n">mov</span><span class="o">.</span><span class="n">rlframes</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">mov</span></div>
 
@@ -1228,7 +1230,7 @@
 
 <div class="viewcode-block" id="Movie.export_mp4"><a class="viewcode-back" href="../../movie.html#ehtim.movie.Movie.export_mp4">[docs]</a>    <span class="k">def</span> <span class="nf">export_mp4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s1">&#39;movie.mp4&#39;</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
                          <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;lin&#39;</span><span class="p">,</span> <span class="n">dynamic_range</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span>
-                         <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">frame_pad_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                         <span class="n">nvec</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">pcut</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">plotp</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">frame_pad_factor</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Save the Movie to an mp4 file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1236,8 +1238,9 @@
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;agg&#39;</span><span class="p">)</span>
         <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
         <span class="kn">import</span> <span class="nn">matplotlib.animation</span> <span class="k">as</span> <span class="nn">animation</span>
-
-        <span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">!=</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;export_mp4 requires self.polrep==&#39;stokes&#39; -- try self.switch_polrep()&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="n">interp</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;gauss&#39;</span><span class="p">,</span> <span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="s1">&#39;Gaussian&#39;</span><span class="p">,</span> <span class="s1">&#39;Gauss&#39;</span><span class="p">]):</span>
             <span class="n">interp</span> <span class="o">=</span> <span class="s1">&#39;gaussian&#39;</span>
@@ -1316,6 +1319,12 @@
             <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;processing frame </span><span class="si">{0}</span><span class="s2"> of </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span><span class="o">*</span><span class="n">frame_pad_factor</span><span class="p">))</span>
             <span class="n">plt_im</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">im_data</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">label_time</span><span class="p">:</span>
+                <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frametimes</span><span class="p">()[</span><span class="n">n</span><span class="p">]</span>
+                <span class="n">time_str</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">:</span><span class="si">%02d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">),</span> <span class="p">(</span><span class="n">time</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span> <span class="o">%</span> <span class="mi">60</span><span class="p">,</span> <span class="p">(</span><span class="n">time</span><span class="o">*</span><span class="mi">3600</span><span class="p">)</span> <span class="o">%</span> <span class="mi">60</span><span class="p">))</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">time_str</span><span class="p">)</span>
+
             <span class="k">return</span> <span class="n">plt_im</span>
 
         <span class="n">ani</span> <span class="o">=</span> <span class="n">animation</span><span class="o">.</span><span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span><span class="n">update_img</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span><span class="o">*</span><span class="n">frame_pad_factor</span><span class="p">,</span><span class="n">interval</span><span class="o">=</span><span class="mf">1e3</span><span class="o">/</span><span class="n">fps</span><span class="p">)</span>

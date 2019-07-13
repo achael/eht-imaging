@@ -339,23 +339,26 @@
 
     <span class="k">return</span> <span class="n">out</span></div>
 
-<div class="viewcode-block" id="self_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="p">[],</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+<div class="viewcode-block" id="self_cal_scan"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.self_cal.self_cal_scan">[docs]</a><span class="k">def</span> <span class="nf">self_cal_scan</span><span class="p">(</span><span class="n">scan</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">V_scan</span><span class="o">=</span><span class="p">[],</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> 
+                  <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span> <span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                   <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Self-calibrate a scan to an image.</span>
 
 <span class="sd">       Args:</span>
-<span class="sd">           scan (np.recarray): data array of type DTPOL_STOKES or DTPOL_CIRC containing the scan visibility data</span>
+<span class="sd">           scan (np.recarray): data array of type DTPOL_STOKES or DTPOL_CIRC </span>
 <span class="sd">           im (Image): the image to be calibrated  to</span>
-<span class="sd">           sites (list): list of sites to include in the self calibration. empty list calibrates all sites</span>
+<span class="sd">           sites (list): list of sites to include in the self calibration. empty list calibrates all </span>
 <span class="sd">           V_scan (list) : precomputed scan visibilities</span>
 
 <span class="sd">           polrep (str): &#39;stokes&#39; or &#39;circ&#39; to specify the  polarization products in scan</span>
 <span class="sd">           pol (str): which image polarization to self-calibrate visibilities to </span>
 <span class="sd">           method (str): chooses what to calibrate, &#39;amp&#39;, &#39;phase&#39;, or &#39;both&#39; </span>
-<span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize (e.g., &#39;CG&#39;, &#39;BFGS&#39;, &#39;Nelder-Mead&#39;, etc.)</span>
+<span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize </span>
+<span class="sd">                                  (e.g., &#39;CG&#39;, &#39;BFGS&#39;, &#39;Nelder-Mead&#39;, etc.)</span>
 <span class="sd">           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature</span>
 <span class="sd">           gain_tol (float or list): gains that exceed this value will be disfavored by the prior</span>
-<span class="sd">                                     for asymmetric gain_tol for corrections below/above unity, pass a 2-element list</span>
+<span class="sd">                                     for asymmetric gain_tol for corrections below/above unity, </span>
+<span class="sd">                                     pass a 2-element list</span>
 
 <span class="sd">           debias (bool): If True, debias the amplitudes</span>
 <span class="sd">           caltable (bool): if True, returns a Caltable instead of an Obsdata </span>

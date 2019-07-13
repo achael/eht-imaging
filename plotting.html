@@ -167,6 +167,49 @@
             
   <span class="target" id="module-plotting"></span><div class="section" id="plotting">
 <span id="id1"></span><h1>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-ehtim.plotting.summary_plots"></span><dl class="function">
+<dt id="ehtim.plotting.summary_plots.display_img">
+<code class="descclassname">ehtim.plotting.summary_plots.</code><code class="descname">display_img</code><span class="sig-paren">(</span><em>im</em>, <em>beamparams=None</em>, <em>scale='linear'</em>, <em>gamma=0.5</em>, <em>cbar_lims=False</em>, <em>has_cbar=True</em>, <em>has_title=True</em>, <em>cfun='afmhot'</em>, <em>axis=False</em>, <em>show=False</em>, <em>fontsize=22</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/summary_plots.html#display_img"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.summary_plots.display_img" title="Permalink to this definition">¶</a></dt>
+<dd><p>display the figure on a given axis
+cannot use im.display because  it makes a new figure</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.summary_plots.imgsum">
+<code class="descclassname">ehtim.plotting.summary_plots.</code><code class="descname">imgsum</code><span class="sig-paren">(</span><em>im</em>, <em>obs</em>, <em>obs_uncal</em>, <em>outname</em>, <em>outdir='.'</em>, <em>title='imgsum'</em>, <em>commentstr=''</em>, <em>fontsize=22</em>, <em>cfun='afmhot'</em>, <em>snrcut=0.0</em>, <em>gainplots=True</em>, <em>ampplots=True</em>, <em>cphaseplots=True</em>, <em>campplots=True</em>, <em>ebar=True</em>, <em>debias=True</em>, <em>cp_uv_min=False</em>, <em>sysnoise=0</em>, <em>syscnoise=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/summary_plots.html#imgsum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.summary_plots.imgsum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce an image summary plot for an image and uvfits file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; an Image object</li>
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the self-calibrated Obsdata object</li>
+<li><strong>obs_uncal</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the original Obsdata object</li>
+<li><strong>outname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; output pdf file name</li>
+<li><strong>outdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; directory for output file</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; the pdf file title</li>
+<li><strong>commentstr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; a comment for the top line of the pdf</li>
+<li><strong>fontsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the font size for text in the sheet</li>
+<li><strong>cfun</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; matplotlib color function</li>
+<li><strong>gainplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include gain plots or not</li>
+<li><strong>ampplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include amplitude consistency plots or not</li>
+<li><strong>cphaseplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include closure phase consistency plots or not</li>
+<li><strong>campplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include closure amplitude consistency plots or not</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include error bars or not</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; debias visibility amplitudes before computing chisq or not</li>
+<li><strong>cp_uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; minimum uv-distance cutoff for including a baseline in closure phase</li>
+<li><strong>sysnoise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; percent systematic noise added in quadrature</li>
+<li><strong>syscnoise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; closure phase systematic noise in degrees added in quadrature</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) &#8211; a dictionary of snrcut values for each quantity</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Returns:</p>
+</dd></dl>
+
 <span class="target" id="module-ehtim.plotting.comp_plots"></span><dl class="function">
 <dt id="ehtim.plotting.comp_plots.plot_bl_compare">
 <code class="descclassname">ehtim.plotting.comp_plots.</code><code class="descname">plot_bl_compare</code><span class="sig-paren">(</span><em>obslist, imlist, site1, site2, field, debias=True, sgrscat=False, ang_unit='deg', timetype='UTC', ttype='nfft', axis=False, rangex=False, rangey=False, snrcut=0.0, clist=[(0.11764705882352941, 0.5647058823529412, 1.0), (1.0, 0.38823529411764707, 0.2784313725490196), (0.5411764705882353, 0.16862745098039217, 0.8862745098039215), (0.4196078431372549, 0.5568627450980392, 0.13725490196078433), (1.0, 0.6470588235294118, 0.0), (0.5450980392156862, 0.27058823529411763, 0.07450980392156863), (0.0, 0.0, 0.803921568627451), (1.0, 0.0, 0.0), (0.0, 1.0, 1.0), (1.0, 0.0, 1.0), (0.0, 0.39215686274509803, 0.0), (0.8235294117647058, 0.7058823529411765, 0.5490196078431373), (0.0, 0.0, 0.0)], legendlabels=None, markersize=3, export_pdf='', grid=False, ebar=True, axislabels=True, legend=True, show=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/comp_plots.html#plot_bl_compare"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.comp_plots.plot_bl_compare" title="Permalink to this definition">¶</a></dt>
@@ -753,7 +796,7 @@
 <dd><p>Return observation, color, marker, legend lists for comp plots</p>
 </dd></dl>
 
-</div>
+<span class="target" id="module-ehtim.plotting.comparisons"></span></div>
 
 
            </div>

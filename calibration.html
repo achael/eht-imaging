@@ -525,17 +525,19 @@ If 0.0, a solution is determined for each unique time in the observation.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>scan</strong> (<em>np.recarray</em>) &#8211; data array of type DTPOL_STOKES or DTPOL_CIRC containing the scan visibility data</li>
+<li><strong>scan</strong> (<em>np.recarray</em>) &#8211; data array of type DTPOL_STOKES or DTPOL_CIRC</li>
 <li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; the image to be calibrated  to</li>
-<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of sites to include in the self calibration. empty list calibrates all sites</li>
+<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of sites to include in the self calibration. empty list calibrates all</li>
 <li><strong>V_scan</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; precomputed scan visibilities</li>
 <li><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; to specify the  polarization products in scan</li>
 <li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; which image polarization to self-calibrate visibilities to</li>
 <li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;</li>
-<li><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Method for scipy.optimize.minimize (e.g., &#8216;CG&#8217;, &#8216;BFGS&#8217;, &#8216;Nelder-Mead&#8217;, etc.)</li>
+<li><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Method for scipy.optimize.minimize
+(e.g., &#8216;CG&#8217;, &#8216;BFGS&#8217;, &#8216;Nelder-Mead&#8217;, etc.)</li>
 <li><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; adds fractional uncertainty to amplitude sigmas in quadrature</li>
 <li><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; gains that exceed this value will be disfavored by the prior
-for asymmetric gain_tol for corrections below/above unity, pass a 2-element list</li>
+for asymmetric gain_tol for corrections below/above unity,
+pass a 2-element list</li>
 <li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias the amplitudes</li>
 <li><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, returns a Caltable instead of an Obsdata</li>
 <li><strong>show_solution</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, display the solution as it is calculated</li>

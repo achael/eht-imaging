@@ -252,7 +252,7 @@
 <dl class="method">
 <dt id="ehtim.image.Image.add_const_pol">
 <code class="descname">add_const_pol</code><span class="sig-paren">(</span><em>mag</em>, <em>angle</em>, <em>cmag=0</em>, <em>csign=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_const_pol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_const_pol" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return an image with the same total intensity but fractional linear and circular polarization set to constant values</p>
+<dd><p>Return an with constant fractional linear and circular polarization</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -339,7 +339,7 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the total flux contained in the Gaussian in Jy</li>
-<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians</li>
+<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [fwhm_maj, fwhm_min, theta, x, y], all in radians</li>
 <li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; the polarization to add the flux to. None defaults to pol_prim.</li>
 </ul>
 </td>
@@ -394,7 +394,7 @@
 <dl class="method">
 <dt id="ehtim.image.Image.add_random_pol">
 <code class="descname">add_random_pol</code><span class="sig-paren">(</span><em>mag</em>, <em>corr</em>, <em>cmag=0.0</em>, <em>ccorr=0.0</em>, <em>seed=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_random_pol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_random_pol" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return an image with the same total intensity but random linear and circular polarization images with specified correlation lengths</p>
+<dd><p>Return an image random linear and circular polarizations with certain correlation lengths</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -490,16 +490,32 @@
 <dl class="method">
 <dt id="ehtim.image.Image.add_zblterm">
 <code class="descname">add_zblterm</code><span class="sig-paren">(</span><em>obs</em>, <em>uv_min</em>, <em>zblval=None</em>, <em>new_fov=False</em>, <em>gauss_sz=False</em>, <em>gauss_sz_factor=0.75</em>, <em>debias=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.add_zblterm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.add_zblterm" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add a Gaussian term to account for missing flux in the 0 baseline.</p>
-<p>Args:
-obs : an Obsdata object that the min non-zero baseline and 0-bl flux are determined from
-uv_min (float): The cuttoff in Glambada used to determine what is a 0-bl
-new_fov (rad): The size of the padded image once the Gaussian is added (safest to keep False, then it will be set to 3 x the gaussian fwhm)
-gauss_sz (rad): The size of the Gaussian added to add flux to the 0-bl. (safest to keep False and it is computed from the min non-zero baseline)
-gauss_sz_factor (float): The fraction of the min non-zero baseline that is used to caluclate the Gaussian FWHM.
-debias (bool): True if you use debiased amplitudes to caluclate the 0-bl flux in Jy</p>
-<p>Returns:
-(Image): a padded image with a large Gaussian component</p>
+<dd><p>Add a large Gaussian term to account for missing flux in the zero baseline.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs</strong> &#8211; an Obsdata object to determine min non-zero baseline and 0-bl flux</li>
+<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The cutoff in Glambada used to determine what is a 0-bl</li>
+<li><strong>new_fov</strong> (<em>rad</em>) &#8211; The size of the padded image once the Gaussian is added
+(if False it will be set to 3 x the gaussian fwhm)</li>
+<li><strong>gauss_sz</strong> (<em>rad</em>) &#8211; The size of the Gaussian added to add flux to the 0-bl.
+(if False it is computed from the min non-zero baseline)</li>
+<li><strong>gauss_sz_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The fraction of the min non-zero baseline
+used to caluclate the Gaussian FWHM.</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if you use debiased amplitudes to caluclate the 0-bl flux in Jy</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a padded image with a large Gaussian component</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -513,15 +529,17 @@ Aligns all images by comparison of the primary pol image.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>im_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of images to align to the current image</li>
-<li><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of manual image shifts, otherwise use the shift from maximum cross-correlation</li>
-<li><strong>final_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad). If False it is the largestinput image fov</li>
+<li><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of manual image shifts,
+otherwise use the shift from maximum cross-correlation</li>
+<li><strong>final_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad).
+If False it is the largestinput image fov</li>
 <li><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; compare images in &#8216;log&#8217;,&#8217;lin&#8217;,or &#8216;gamma&#8217; scale</li>
 <li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; exponent for gamma scale comparison</li>
 <li><strong>dynamic_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; dynamic range for log and gamma scale comparisons</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(im_list_shift, shifts, im0_pad) of shifted images, shift vectors, and padded reference image</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(im_list_shift, shifts, im0_pad)</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</p>
@@ -582,14 +600,14 @@ Aligns all images by comparison of the primary pol image.</p>
 <dl class="method">
 <dt id="ehtim.image.Image.blur_gauss">
 <code class="descname">blur_gauss</code><span class="sig-paren">(</span><em>beamparams</em>, <em>frac=1.0</em>, <em>frac_pol=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.blur_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.blur_gauss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Blur image with a Gaussian beam defined by beamparams [fwhm_max, fwhm_min, theta] in radians.</p>
+<dd><p>Blur image with a Gaussian beam w/ beamparams [fwhm_max, fwhm_min, theta] in radians.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; the gaussian parameters, [fwhm_maj, fwhm_min, theta, x, y], all in radians</li>
-<li><strong>frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fractional beam size for blurring the main image (polarization defined by self.pol_prim)</li>
+<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [fwhm_maj, fwhm_min, theta, x, y] in radians</li>
+<li><strong>frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fractional beam size for blurring the main image</li>
 <li><strong>frac_pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fractional beam size for blurring the other polarizations</li>
 </ul>
 </td>
@@ -642,15 +660,18 @@ Aligns all images by comparison of the primary pol image.</p>
 <dl class="method">
 <dt id="ehtim.image.Image.compare_images">
 <code class="descname">compare_images</code><span class="sig-paren">(</span><em>im2, psize=None, target_fov=None, blur_frac=0.0, beamparams=[1.0, 1.0, 1.0], metric=['nxcorr', 'nrmse', 'rssd'], blursmall=False, shift=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.compare_images"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.compare_images" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compare to another image by computing normalized cross correlation, normalized root mean squared error, or square root of the sum of squared differences.
+<dd><p>Compare to another image by computing normalized cross correlation,
+normalized root mean squared error, or square root of the sum of squared differences.
 Returns metrics only for the primary polarization imvec!</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>psize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes</li>
-<li><strong>target_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad). If None it is twice the largest fov of the input images</li>
+<li><strong>psize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; pixel size of comparison image (rad).
+If None it is the smallest of the input image pizel sizes</li>
+<li><strong>target_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad).
+If None it is twice the largest fov of the input images</li>
 <li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; the nominal Gaussian beam parameters [fovx, fovy, position angle]</li>
 <li><strong>blur_frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fractional beam to blur each image to before comparison</li>
 <li><strong>metric</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; a list of fidelity metrics from [&#8216;nxcorr&#8217;,&#8217;nrmse&#8217;,&#8217;rssd&#8217;]</li>
@@ -659,7 +680,7 @@ Returns metrics only for the primary polarization imvec!</p>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">[errormetric, im1_pad, im2_shift] of computed error metric and shifted/resized comparison images</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">[errormetric, im1_pad, im2_shift]</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</p>
@@ -671,15 +692,15 @@ Returns metrics only for the primary polarization imvec!</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.contour">
-<code class="descname">contour</code><span class="sig-paren">(</span><em>contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=&lt;matplotlib.colors.LinearSegmentedColormap object&gt;, legend=True, show_im=True, cfun='afmhot', scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1000.0, plotp=False, nvec=20, pcut=0.01, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit=('Jy', 'pixel'), contour_im=False, power=0, beamcolor='w', export_pdf='', show=True, beamparams=None, cbar_orientation='vertical', scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.contour"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.contour" title="Permalink to this definition">¶</a></dt>
-<dd><p>Display the image.</p>
+<code class="descname">contour</code><span class="sig-paren">(</span><em>contour_levels=[0.1, 0.25, 0.5, 0.75], contour_cfun=None, color='w', legend=True, show_im=True, cfun='afmhot', scale='lin', interp='gaussian', gamma=0.5, dynamic_range=1000.0, plotp=False, nvec=20, pcut=0.01, mcut=0.1, label_type='ticks', has_title=True, has_cbar=True, cbar_lims=(), cbar_unit=('Jy', 'pixel'), contour_im=False, power=0, beamcolor='w', export_pdf='', show=True, beamparams=None, cbar_orientation='vertical', scale_lw=1, beam_lw=1, cbar_fontsize=12, axis=None, scale_fontsize=12</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.contour"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.contour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the image in a contour plot.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>contour_levels</strong> (<em>arr</em>) &#8211; the fractional contour levels relative to the max flux plotted</li>
-<li><strong>contour_cfun</strong> (<em>pyplot colormap function</em>) &#8211; the function used to get the RGB colors plotted for each level</li>
+<li><strong>contour_cfun</strong> (<em>pyplot colormap function</em>) &#8211; the function used to get the RGB colors</li>
 <li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to show a legend that says what each contour line corresponds to</li>
 <li><strong>cfun</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; matplotlib.pyplot color function</li>
 <li><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; image scaling in [&#8216;log&#8217;,&#8217;gamma&#8217;,&#8217;lin&#8217;]</li>
@@ -688,15 +709,18 @@ Returns metrics only for the primary polarization imvec!</p>
 <li><strong>dynamic_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; dynamic range for log and gamma scaling</li>
 <li><strong>plotp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to plot linear polarimetic image</li>
 <li><strong>nvec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; number of polarimetric vectors to plot</li>
-<li><strong>pcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel</li>
+<li><strong>pcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimum stokes P value for displaying polarimetric vectors
+as fraction of maximum Stokes I pixel</li>
+<li><strong>mcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimum fractional polarization for plotting vectors</li>
 <li><strong>label_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; specifies the type of axes labeling: &#8216;ticks&#8217;, &#8216;scale&#8217;, &#8216;none&#8217;</li>
 <li><strong>has_title</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if you want a title on the plot</li>
 <li><strong>has_cbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if you want a colorbar on the plot</li>
 <li><strong>cbar_lims</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) &#8211; specify the lower and upper limit of the colorbar</li>
-<li><strong>cbar_unit</strong> (<em>tuple of strings</em>) &#8211; specifies the unit of each pixel for the colorbar: &#8216;Jy&#8217;, &#8216;m-Jy&#8217;, &#8216;$mu$Jy&#8217;</li>
+<li><strong>cbar_unit</strong> (<em>tuple of strings</em>) &#8211; the unit of each pixel for the colorbar:
+&#8216;Jy&#8217;, &#8216;m-Jy&#8217;, &#8216;$mu$Jy&#8217;</li>
 <li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to exported PDF with plot</li>
 <li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if true</li>
-<li><strong>show_im</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the image with the contour plot if True, otherwise it will be black</li>
+<li><strong>show_im</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the image with the contour plot if True</li>
 </ul>
 </td>
 </tr>
@@ -743,7 +767,7 @@ Returns metrics only for the primary polarization imvec!</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.display">
-<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>alpha=1</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em>, <em>scinot=False</em>, <em>scale_lw=1</em>, <em>beam_lw=1</em>, <em>cbar_fontsize=12</em>, <em>axis=None</em>, <em>scale_fontsize=12</em>, <em>power=0</em>, <em>beamcolor='w'</em>, <em>dpi=500</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
+<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>mcut=0.01</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>alpha=1</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em>, <em>scinot=False</em>, <em>scale_lw=1</em>, <em>beam_lw=1</em>, <em>cbar_fontsize=12</em>, <em>axis=None</em>, <em>scale_fontsize=12</em>, <em>power=0</em>, <em>beamcolor='w'</em>, <em>dpi=500</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -758,12 +782,15 @@ Returns metrics only for the primary polarization imvec!</p>
 <li><strong>dynamic_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; dynamic range for log and gamma scaling</li>
 <li><strong>plotp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to plot linear polarimetic image</li>
 <li><strong>nvec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; number of polarimetric vectors to plot</li>
-<li><strong>pcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimum stokes P value for displaying polarimetric vectors as fraction of maximum Stokes I pixel</li>
+<li><strong>pcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimum stokes I value for displaying polarimetric vectors
+(fraction of maximum Stokes I)</li>
+<li><strong>mcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimum fractional polarization value for displaying vectors</li>
 <li><strong>label_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; specifies the type of axes labeling: &#8216;ticks&#8217;, &#8216;scale&#8217;, &#8216;none&#8217;</li>
 <li><strong>has_title</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if you want a title on the plot</li>
 <li><strong>has_cbar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if you want a colorbar on the plot</li>
 <li><strong>cbar_lims</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) &#8211; specify the lower and upper limit of the colorbar</li>
-<li><strong>cbar_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) &#8211; specifies the unit of the colorbar: eg (&#8216;Jy&#8217;,&#8217;pixel&#8217;),(&#8216;m-Jy&#8217;,&#8217;$mu$as$^2$&#8217;),[&#8216;Tb&#8217;] (i.e., brightness temperature)</li>
+<li><strong>cbar_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) &#8211; specifies the unit of the colorbar: e.g.,
+(&#8216;Jy&#8217;,&#8217;pixel&#8217;),(&#8216;m-Jy&#8217;,&#8217;$mu$as$^2$&#8217;),[&#8216;Tb&#8217;]</li>
 <li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [fwhm_maj, fwhm_min, theta], set to plot beam contour</li>
 <li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to exported PDF with plot</li>
 <li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if true</li>
@@ -771,7 +798,7 @@ Returns metrics only for the primary polarization imvec!</p>
 <li><strong>scale_lw</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Linewidth of the scale overlay</li>
 <li><strong>beam_lw</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Linewidth of the beam overlay</li>
 <li><strong>cbar_fontsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Fontsize of the text elements of the colorbar</li>
-<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; An axis object, which will be edited so as to not overwrite your plot with a figure object. If none, creates a new figure.</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; An axis object</li>
 <li><strong>scale_fontsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Fontsize of the scale label</li>
 <li><strong>power</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Passed to colorbar for division of ticks by 1e(power)</li>
 <li><strong>beamcolor</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; color of the beam overlay</li>
@@ -799,8 +826,10 @@ Finds shift only by comparison of the primary pol image.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>im2</strong> (<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; image with respect with to switch</li>
-<li><strong>psize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; pixel size of comparison image (rad). If None it is the smallest of the input image pizel sizes</li>
-<li><strong>target_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad). If None it is twice the largest fov of the input images</li>
+<li><strong>psize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; pixel size of comparison image (rad).
+If None it is the smallest of the input image pizel sizes</li>
+<li><strong>target_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad).
+If None it is twice the largest fov of the input images</li>
 <li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; the nominal Gaussian beam parameters [fovx, fovy, position angle]</li>
 <li><strong>blur_frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fractional beam to blur each image to before comparison</li>
 <li><strong>blursmall</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to blur the unpadded image rather than the large image.</li>
@@ -810,7 +839,7 @@ Finds shift only by comparison of the primary pol image.</p>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(errormetric, im1_pad, im2_shift) of computed error metric and shifted/resized comparison images</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(errormetric, im1_pad, im2_shift)</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</p>
@@ -823,15 +852,17 @@ Finds shift only by comparison of the primary pol image.</p>
 <dl class="method">
 <dt id="ehtim.image.Image.fit_gauss">
 <code class="descname">fit_gauss</code><span class="sig-paren">(</span><em>units='rad'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fit_gauss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fit_gauss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine the Gaussian parameters that short baselines would measure for the source by diagonalizing the image covariance matrix.
-Returns parameters only for the primary polarization imvec!</p>
+<dd><p>Determine the Gaussian parameters that short baselines would measure for the source
+by diagonalizing the image covariance matrix.
+Returns parameters only for the primary polarization!</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>units</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; &#8216;rad&#8217; returns values in radians, &#8216;natural&#8217; returns FWHM in uas and PA in degrees</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>units</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; &#8216;rad&#8217; returns values in radians,
+&#8216;natural&#8217; returns FWHM in uas and PA in degrees</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians or natural units.</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</td>
 </tr>
@@ -842,15 +873,15 @@ Returns parameters only for the primary polarization imvec!</p>
 <dl class="method">
 <dt id="ehtim.image.Image.fit_gauss_empirical">
 <code class="descname">fit_gauss_empirical</code><span class="sig-paren">(</span><em>paramguess=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.fit_gauss_empirical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.fit_gauss_empirical" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine the Gaussian parameters that short baselines would measure for the source by fitting short baselines.
-Returns parameters only for the primary polarization imvec!</p>
+<dd><p>Determine the Gaussian parameters that short baselines would measure
+Returns parameters only for the primary polarization!</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>paramguess</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) &#8211; Initial guess (fwhm_maj, fwhm_min, theta) of fit parameters</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a tuple (fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</td>
 </tr>
@@ -946,7 +977,7 @@ Returns metrics only for the primary polarization imvec!</p>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of fitted circle (xpos, ypos, radius, objFunc), with coordinates and radius in radian</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of fitted circles (xpos, ypos, radius, objFunc), in radian</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a></p>
@@ -1000,15 +1031,15 @@ Returns metrics only for the primary polarization imvec!</p>
 <dl class="method">
 <dt id="ehtim.image.Image.mask">
 <code class="descname">mask</code><span class="sig-paren">(</span><em>cutoff=0.05</em>, <em>beamparams=None</em>, <em>frac=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.mask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Produce an image mask that shows all pixels above the specified cutoff percentage of the max flux
+<dd><p>Produce an image mask that shows all pixels above the specified cutoff frac of the max
 Works off the primary image</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>cutoff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Primary image pixels with intensities greater than the cuttoff * max intensity are masked</li>
-<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm</li>
+<li><strong>cutoff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; mask pixels with intensities greater than cuttoff * max</li>
+<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; either [fwhm_maj, fwhm_min, pos_ang] or a single fwhm</li>
 <li><strong>frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fraction of nominal beam to blur with</li>
 </ul>
 </td>
@@ -1025,7 +1056,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe">
-<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>polrep_obs=None</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>fix_theta_GMST=False</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dterm_offset=0.1</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe</code><span class="sig-paren">(</span><em>array</em>, <em>tint</em>, <em>tadv</em>, <em>tstart</em>, <em>tstop</em>, <em>bw</em>, <em>mjd=None</em>, <em>timetype='UTC'</em>, <em>polrep_obs=None</em>, <em>elevmin=10.0</em>, <em>elevmax=85.0</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>fix_theta_GMST=False</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dterm_offset=0.05</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate baselines from an array object and observe the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1038,31 +1069,36 @@ Works off the primary image</p>
 <li><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the start time of the observation in hours</li>
 <li><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the end time of the observation in hours</li>
 <li><strong>bw</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the observing bandwidth in Hz</li>
-<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; the mjd of the observation, if different from the image mjd</li>
+<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; the mjd of the observation, if set as different from the image mjd</li>
 <li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; how to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
 <li><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; station minimum elevation in degrees</li>
 <li><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; station maximum elevation in degrees</li>
-<li><strong>polrep_obs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; sets the data polarimetric representtion</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>polrep_obs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; sets the data polarimetric representation</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221;, &#8220;nfft&#8221; or &#8220;dtft&#8221;</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in the FFT</li>
-<li><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, stops earth rotation to sample fixed u,v points through time</li>
-<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
-<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
-<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
+<li><strong>fix_theta_GMST</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, stops earth rotation to sample fixed u,v</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A*  kernel</li>
+<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added</li>
+<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to opacities</li>
 <li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station gains</li>
-<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added to data points</li>
-<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</li>
-<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added</li>
+<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices.</li>
+<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms.</li>
 <li><strong>stabilize_scan_phase</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random phase errors are constant over scans</li>
 <li><strong>stabilize_scan_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random amplitude errors are constant over scans</li>
-<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</li>
-<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</li>
-<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
-<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
-<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
+<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects
+otherwise uses old formalism without D-terms</li>
+<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix
+(not including random terms) to calibrate data</li>
+<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base opacity at all sites,
+or a dict giving one opacity per site</li>
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
-<li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
-<li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; seeds the random component of noise added. do not set to 0!</li>
+<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites,
+or a dict giving one gain offset per site</li>
+<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
+<li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites,
+or a dict giving one dterm offset per site</li>
+<li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; seeds the random component of noise added. DO NOT set to 0!</li>
 </ul>
 </td>
 </tr>
@@ -1078,35 +1114,40 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe_same">
-<code class="descname">observe_same</code><span class="sig-paren">(</span><em>obs_in</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>neggains=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gain_offset=0.1</em>, <em>gainp=0.1</em>, <em>dterm_offset=0.1</em>, <em>caltable_path=None</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe_same</code><span class="sig-paren">(</span><em>obs_in</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>dcal=True</em>, <em>frcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>neggains=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gain_offset=0.1</em>, <em>gainp=0.1</em>, <em>dterm_offset=0.05</em>, <em>caltable_path=None</em>, <em>seed=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same" title="Permalink to this definition">¶</a></dt>
 <dd><p>Observe the image on the same baselines as an existing observation object and add noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>obs_in</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>obs_in</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
-<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
-<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
-<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A*  kernel</li>
+<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added</li>
+<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to opacities</li>
 <li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station gains</li>
-<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added to data points</li>
-<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added</li>
+<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices.</li>
+<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to D-terms.</li>
 <li><strong>stabilize_scan_phase</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random phase errors are constant over scans</li>
 <li><strong>stabilize_scan_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random amplitude errors are constant over scans</li>
-<li><strong>neggains</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True then force the applied gains to be negative meaning that you have overestimated your telescope&#8217;s performance</li>
-<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</li>
-<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</li>
-<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</li>
-<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
-<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
-<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
+<li><strong>neggains</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, force the applied gains to be &lt;1
+meaning that you have overestimated your telescope&#8217;s performance</li>
+<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects</li>
+<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix
+(not including random terms) to a priori calibrate data</li>
+<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base opacity at all sites,
+or a dict giving one opacity per site</li>
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
-<li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
-<li><strong>caltable_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; The path and prefix that a caltable is saved with if adding noise through a Jones matrix</li>
-<li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; seeds the random component of the noise terms. do not set to 0!</li>
+<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
+<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites,
+or a dict giving one offset per site</li>
+<li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites,
+or a dict giving one dterm offset per site</li>
+<li><strong>caltable_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; The path and prefix of a saved caltable</li>
+<li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; seeds the random component of the noise terms. DO NOT set to 0!</li>
 </ul>
 </td>
 </tr>
@@ -1123,15 +1164,15 @@ Works off the primary image</p>
 <dl class="method">
 <dt id="ehtim.image.Image.observe_same_nonoise">
 <code class="descname">observe_same_nonoise</code><span class="sig-paren">(</span><em>obs</em>, <em>sgrscat=False</em>, <em>ttype='nfft'</em>, <em>cache=False</em>, <em>fft_pad_factor=2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_same_nonoise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_same_nonoise" title="Permalink to this definition">¶</a></dt>
-<dd><p>Observe the image on the same baselines as an existing observation object without adding noise.</p>
+<dd><p>Observe the image on the same baselines as an existing observation  without noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation with  baselines where the image FT will be sampled</li>
-<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the existing observation</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A*  kernel</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
 </ul>
 </td>
@@ -1148,7 +1189,7 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.observe_vex">
-<code class="descname">observe_vex</code><span class="sig-paren">(</span><em>vex</em>, <em>source</em>, <em>t_int=0.0</em>, <em>tight_tadv=False</em>, <em>polrep_obs=None</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dterm_offset=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_vex" title="Permalink to this definition">¶</a></dt>
+<code class="descname">observe_vex</code><span class="sig-paren">(</span><em>vex</em>, <em>source</em>, <em>t_int=0.0</em>, <em>tight_tadv=False</em>, <em>polrep_obs=None</em>, <em>ttype='nfft'</em>, <em>fft_pad_factor=2</em>, <em>sgrscat=False</em>, <em>add_th_noise=True</em>, <em>opacitycal=True</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>frcal=True</em>, <em>dcal=True</em>, <em>rlgaincal=True</em>, <em>stabilize_scan_phase=False</em>, <em>stabilize_scan_amp=False</em>, <em>jones=False</em>, <em>inv_jones=False</em>, <em>tau=0.1</em>, <em>taup=0.1</em>, <em>gainp=0.1</em>, <em>gain_offset=0.1</em>, <em>dterm_offset=0.05</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.observe_vex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.observe_vex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate baselines from a vex file and observes the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1157,27 +1198,33 @@ Works off the primary image</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>vex</strong> (<a class="reference internal" href="vex.html#ehtim.vex.Vex" title="ehtim.vex.Vex"><em>Vex</em></a>) &#8211; an vex object containing sites and scan information</li>
 <li><strong>source</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; the source to observe</li>
-<li><strong>t_int</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; if not zero, overrides the vex scans to produce visibilities for each t_int seconds</li>
-<li><strong>tight_tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; if True, advance right after each integration, otherwise advance after 2x the scan length</li>
-<li><strong>polrep_obs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; sets the data polarimetric representtion</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>t_int</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; if not zero, overrides the vex scan lengths</li>
+<li><strong>tight_tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; if True, advance right after each integration,
+otherwise advance after 2x the scan length</li>
+<li><strong>polrep_obs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; sets the data polarimetric representation</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;dtft&#8221;</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
-<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
-<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added to each data point</li>
-<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station opacities</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A*  kernel</li>
+<li><strong>add_th_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, baseline-dependent thermal noise is added</li>
+<li><strong>opacitycal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to opacities</li>
 <li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors are added to station gains</li>
-<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added to data points</li>
-<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices. Must have jones=True</li>
-<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent station-based random phases are added</li>
+<li><strong>frcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, feed rotation angle terms are added to Jones matrices.</li>
+<li><strong>dcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if False, time-dependent gaussian errors added to Jones matrices D-terms.</li>
 <li><strong>stabilize_scan_phase</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random phase errors are constant over scans</li>
 <li><strong>stabilize_scan_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, random amplitude errors are constant over scans</li>
-<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms</li>
-<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data</li>
-<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
-<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites, or a dict giving one gain offset per site</li>
-<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
+<li><strong>jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, uses Jones matrix to apply mis-calibration effects
+otherwise uses old formalism without D-terms</li>
+<li><strong>inv_jones</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, applies estimated inverse Jones matrix
+(not including random terms) to calibrate data</li>
+<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base opacity at all sites,
+or a dict giving one opacity per site</li>
 <li><strong>taup</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the opacities</li>
-<li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites, or a dict giving one dterm offset per site</li>
+<li><strong>gain_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base gain offset at all sites,
+or a dict giving one gain offset per site</li>
+<li><strong>gainp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fractional std. dev. of the random error on the gains</li>
+<li><strong>dterm_offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base dterm offset at all sites,
+or a dict giving one dterm offset per site</li>
 </ul>
 </td>
 </tr>
@@ -1222,8 +1269,10 @@ Works off the primary image</p>
 <li><strong>f</strong> (<em>matplotlib.pyplot.figure</em>) &#8211; Figure to overlay on top of</li>
 <li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to exported PDF with plot</li>
 <li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if true</li>
-<li><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of manual image shifts, otherwise use the shift from maximum cross-correlation</li>
-<li><strong>final_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad). If False it is the largestinput image fov</li>
+<li><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of manual image shifts,
+otherwise use the shift from maximum cross-correlation</li>
+<li><strong>final_fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; fov of the comparison image (rad).
+If False it is the largestinput image fov</li>
 <li><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; compare images in &#8216;log&#8217;,&#8217;lin&#8217;,or &#8216;gamma&#8217; scale</li>
 <li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; exponent for gamma scale comparison</li>
 <li><strong>dynamic_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; dynamic range for log and gamma scale comparisons</li>
@@ -1288,7 +1337,7 @@ Works off the primary image</p>
 <dl class="method">
 <dt id="ehtim.image.Image.resample_square">
 <code class="descname">resample_square</code><span class="sig-paren">(</span><em>xdim_new</em>, <em>ker_size=5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.resample_square"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.resample_square" title="Permalink to this definition">¶</a></dt>
-<dd><p>Exactly resample a squre image to new dimensions using the pulse function.</p>
+<dd><p>Exactly resample a square image to new dimensions using the pulse function.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1343,9 +1392,9 @@ Works off the primary image</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>uv</strong> (<em>ndarray</em>) &#8211; an array of uv points</li>
-<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A* scattering kernel</li>
-<li><strong>polrep_obs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; sets the data polarimetric representtion</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
+<li><strong>sgrscat</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, the visibilites will be blurred by the Sgr A*  kernel</li>
+<li><strong>polrep_obs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; sets the data polarimetric representation</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to fft_pad_factor * image size in FFT</li>
 </ul>
 </td>
@@ -1431,7 +1480,7 @@ Works off the primary image</p>
 <dd><p>Return a new image with the polarization representation changed
 :param polrep_out: the polrep of the output data
 :type polrep_out: str
-:param pol_prim_out: The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
+:param pol_prim_out: The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for circ
 :type pol_prim_out: str</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1447,18 +1496,19 @@ Works off the primary image</p>
 
 <dl class="method">
 <dt id="ehtim.image.Image.threshold">
-<code class="descname">threshold</code><span class="sig-paren">(</span><em>cutoff=0.05</em>, <em>frac_i=None</em>, <em>beamparams=None</em>, <em>frac=0.0</em>, <em>fill_val=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.threshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply a hard threshold to the primary polarization image. Leave other polarizations untouched.</p>
+<code class="descname">threshold</code><span class="sig-paren">(</span><em>cutoff=0.05</em>, <em>beamparams=None</em>, <em>frac=0.0</em>, <em>fill_val=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a hard threshold to the primary polarization image.
+Leave other polarizations untouched.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>cutoff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Pixels with intensities greater than the cuttoff * max intensity are masked</li>
-<li><strong>frac_i</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the old name for cutoff: should not be used except in old scripts!</li>
-<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; either [fwhm_maj, fwhm_min, pos_ang] parameters of an elliptical gaussian, or a single fwhm</li>
+<li><strong>cutoff</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Mask pixels with intensities greater than cuttoff * max</li>
+<li><strong>beamparams</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; either [fwhm_maj, fwhm_min, pos_ang] or a single fwhm</li>
 <li><strong>frac</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the fraction of nominal beam to blur with</li>
-<li><strong>fill_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; masked pixels are set to this value. If fill_val==None, they are set to the min unmasked value</li>
+<li><strong>fill_val</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; masked pixels are set to this value.
+If fill_val==None, they are set to the min unmasked value</li>
 </ul>
 </td>
 </tr>
@@ -1522,7 +1572,7 @@ Works off the primary image</p>
 <dl class="function">
 <dt id="ehtim.image.load_image">
 <code class="descclassname">ehtim.image.</code><code class="descname">load_image</code><span class="sig-paren">(</span><em>image</em>, <em>display=False</em>, <em>aipscc=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#load_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.load_image" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read in an image from a text, .fits, or ehtim.image.Image object</p>
+<dd><p>Read in an image from a text, .fits, .h5, or ehtim.image.Image object</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

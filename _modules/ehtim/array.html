@@ -200,12 +200,14 @@
 <span class="c1"># Array object</span>
 <span class="c1">###########################################################################################################################################</span>
 <div class="viewcode-block" id="Array"><a class="viewcode-back" href="../../array.html#ehtim.array.Array">[docs]</a><span class="k">class</span> <span class="nc">Array</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
     <span class="sd">&quot;&quot;&quot;A VLBI array of telescopes with site locations, SEFDs, and other data.</span>
 
 <span class="sd">       Attributes:</span>
 <span class="sd">           tarr (numpy.recarray): The array of telescope data with datatype DTARR</span>
 <span class="sd">           tkey (dict): A dictionary of rows in the tarr for each site name</span>
-<span class="sd">           ephem (dict): A dictionary of 2TLEs for each space antenna, Space antennas have x=y=z=0 in the tarr</span>
+<span class="sd">           ephem (dict): A dictionary of TLEs for each space antenna, </span>
+<span class="sd">                         Space antennas have x=y=z=0 in the tarr</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarr</span><span class="p">,</span> <span class="n">ephem</span><span class="o">=</span><span class="p">{}):</span>
@@ -244,7 +246,8 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bls</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Array.obsdata"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.obsdata">[docs]</a>    <span class="k">def</span> <span class="nf">obsdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">tint</span><span class="p">,</span> <span class="n">tadv</span><span class="p">,</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">MJD_DEFAULT</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="s1">&#39;UTC&#39;</span><span class="p">,</span>
-                      <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">elevmin</span><span class="o">=</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ELEV_HIGH</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                      <span class="n">polrep</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">elevmin</span><span class="o">=</span><span class="n">ELEV_LOW</span><span class="p">,</span> <span class="n">elevmax</span><span class="o">=</span><span class="n">ELEV_HIGH</span><span class="p">,</span> 
+                      <span class="n">tau</span><span class="o">=</span><span class="n">TAUDEF</span><span class="p">,</span> <span class="n">fix_theta_GMST</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Generate u,v points and baseline uncertainties.</span>
 
@@ -278,12 +281,14 @@
         <span class="n">source</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">ra</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">dec</span><span class="p">)</span>
         <span class="n">obs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">obsarr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> 
                                     <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="n">timetype</span><span class="p">,</span> <span class="n">polrep</span><span class="o">=</span><span class="n">polrep</span><span class="p">,</span>
-                                    <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                    <span class="n">ampcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                                    <span class="n">dcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                     <span class="n">scantable</span><span class="o">=</span><span class="n">scans</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">obs</span></div>
 
 <div class="viewcode-block" id="Array.make_subarray"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.make_subarray">[docs]</a>    <span class="k">def</span> <span class="nf">make_subarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make a subarray from the Array object array that only includes the sites listed in sites.</span>
+
+        <span class="sd">&quot;&quot;&quot;Make a subarray from the Array object array that only includes the sites listed.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               sites (list) : list of sites in the subarray</span>
@@ -295,6 +300,7 @@
         <span class="k">return</span> <span class="n">Array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span><span class="n">ephem</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ephem</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Array.save_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.Array.save_txt">[docs]</a>    <span class="k">def</span> <span class="nf">save_txt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+
         <span class="sd">&quot;&quot;&quot;Save the array data in a text file.</span>
 
 <span class="sd">           Args:</span>
@@ -307,6 +313,7 @@
 <span class="c1">#Array creation functions</span>
 <span class="c1">###########################################################################################################################################</span>
 <div class="viewcode-block" id="load_txt"><a class="viewcode-back" href="../../array.html#ehtim.array.load_txt">[docs]</a><span class="k">def</span> <span class="nf">load_txt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">ephemdir</span><span class="o">=</span><span class="s1">&#39;ephemeris&#39;</span><span class="p">):</span>
+
     <span class="sd">&quot;&quot;&quot;Read an array from a text file. </span>
 <span class="sd">       Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</span>
 

@@ -1,0 +1,1034 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ehtim.plotting.summary_plots &mdash; ehtim 0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="ehtim 0.1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> ehtim
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../array.html">Array</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../obsdata.html">Obsdata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../movie.html">Movie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../vex.html">Vex</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../imager.html">Imager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../calibration.html">Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../plotting.html">Plotting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scattering.html">Scattering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../statistics.html">Statistics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ehtim</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>ehtim.plotting.summary_plots</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for ehtim.plotting.summary_plots</h1><div class="highlight"><pre>
+<span></span><span class="c1"># summary_plots.py</span>
+<span class="c1"># Make data plots with multiple observations,images etc.</span>
+<span class="c1">#</span>
+<span class="c1">#    Copyright (C) 2018 Andrew Chael</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is free software: you can redistribute it and/or modify</span>
+<span class="c1">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c1">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1">#    (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1">#    This program is distributed in the hope that it will be useful,</span>
+<span class="c1">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1">#    GNU General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1">#    You should have received a copy of the GNU General Public License</span>
+<span class="c1">#    along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="c1">#TODO add systematic noise to individual closure quantities? </span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.gridspec</span> <span class="k">as</span> <span class="nn">gridspec</span>
+<span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="k">import</span> <span class="n">PdfPages</span>
+<span class="kn">from</span> <span class="nn">matplotlib.font_manager</span> <span class="k">import</span> <span class="n">FontProperties</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="kn">from</span> <span class="nn">ehtim.plotting.comp_plots</span> <span class="k">import</span> <span class="n">plotall_obs_compare</span><span class="p">,</span> <span class="n">plot_bl_obs_compare</span><span class="p">,</span> <span class="n">plot_cphase_obs_compare</span><span class="p">,</span> <span class="n">plot_camp_obs_compare</span>
+<span class="kn">from</span> <span class="nn">ehtim.calibrating.self_cal</span> <span class="k">import</span> <span class="n">self_cal</span> <span class="k">as</span> <span class="n">selfcal</span>
+<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="n">FONTSIZE</span> <span class="o">=</span> <span class="mi">22</span>
+<span class="n">WSPACE</span><span class="o">=</span><span class="mf">0.8</span>
+<span class="n">HSPACE</span><span class="o">=</span><span class="mf">0.3</span>
+<span class="n">MARGINS</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="n">PROCESSES</span><span class="o">=</span><span class="mi">4</span>
+<span class="n">MARKERSIZE</span><span class="o">=</span><span class="mi">5</span>
+
+<div class="viewcode-block" id="imgsum"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.summary_plots.imgsum">[docs]</a><span class="k">def</span> <span class="nf">imgsum</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">obs_uncal</span><span class="p">,</span> <span class="n">outname</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;imgsum&#39;</span><span class="p">,</span> <span class="n">commentstr</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> 
+           <span class="n">fontsize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+           <span class="n">gainplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ampplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cphaseplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">campplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+           <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+           <span class="n">sysnoise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">syscnoise</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Produce an image summary plot for an image and uvfits file.</span>
+
+<span class="sd">       Args:</span>
+<span class="sd">           im (Image): an Image object</span>
+<span class="sd">           obs (Obsdata): the self-calibrated Obsdata object</span>
+<span class="sd">           obs_uncal (Obsdata): the original Obsdata object</span>
+<span class="sd">           outname (str): output pdf file name</span>
+<span class="sd">        </span>
+<span class="sd">           outdir (str): directory for output file</span>
+<span class="sd">           title (str): the pdf file title</span>
+<span class="sd">           commentstr (str): a comment for the top line of the pdf</span>
+<span class="sd">           fontsize (float): the font size for text in the sheet</span>
+<span class="sd">           cfun (float): matplotlib color function</span>
+
+<span class="sd">           gainplots (bool): include gain plots or not</span>
+<span class="sd">           ampplots (bool): include amplitude consistency plots or not</span>
+<span class="sd">           cphaseplots (bool): include closure phase consistency plots or not</span>
+<span class="sd">           campplots (bool): include closure amplitude consistency plots or not</span>
+<span class="sd">           ebar (bool): include error bars or not</span>
+<span class="sd">           debias (bool): debias visibility amplitudes before computing chisq or not</span>
+<span class="sd">           cp_uv_min (bool): minimum uv-distance cutoff for including a baseline in closure phase</span>
+
+<span class="sd">           sysnoise (float): percent systematic noise added in quadrature</span>
+<span class="sd">           syscnoise (float): closure phase systematic noise in degrees added in quadrature</span>
+
+<span class="sd">           snrcut (dict): a dictionary of snrcut values for each quantity</span>
+<span class="sd">       Returns:</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;font&#39;</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s1">&#39;serif&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="n">usetex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;font&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">)</span>      
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;axes&#39;</span><span class="p">,</span> <span class="n">titlesize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;axes&#39;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">)</span> 
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;xtick&#39;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;ytick&#39;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">)</span> 
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;legend&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">)</span>    
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;figure&#39;</span><span class="p">,</span> <span class="n">titlesize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">)</span> 
+
+    <span class="k">if</span> <span class="n">fontsize</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">FONTSIZE</span>
+
+    <span class="n">snrcut_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="mf">0.</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span><span class="s1">&#39;cphase&#39;</span><span class="p">,</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span><span class="s1">&#39;camp&#39;</span><span class="p">]}</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">snrcut</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">snrcut</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">snrcut_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">snrcut</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">snrcut_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">snrcut_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">snrcut</span>
+
+
+    <span class="k">with</span> <span class="n">PdfPages</span><span class="p">(</span><span class="n">outname</span><span class="p">)</span> <span class="k">as</span> <span class="n">pdf</span><span class="p">:</span>
+        <span class="n">titlestr</span> <span class="o">=</span> <span class="s1">&#39;Summary Sheet for </span><span class="si">%s</span><span class="s1"> on MJD </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+
+        <span class="c1">#pdf metadata </span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">infodict</span><span class="p">()</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Title&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Author&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">u</span><span class="s1">&#39;EHT Team 1&#39;</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Subject&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">titlestr</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;CreationDate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;ModDate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+
+        <span class="c1">#define the figure</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+        <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+
+        <span class="c1">#user comments</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">commentstr</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">titlestr</span> <span class="o">=</span><span class="n">titlestr</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">commentstr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">titlestr</span> <span class="o">=</span> <span class="n">titlestr</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">titlestr</span><span class="p">,</span><span class="n">y</span><span class="o">=.</span><span class="mi">9</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1.2</span><span class="o">*</span><span class="n">fontsize</span><span class="p">))</span>
+
+<span class="c1">################################################################################</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;displaying the image&quot;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Submitted Image&#39;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">display_img</span><span class="p">(</span><span class="n">im</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">has_title</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">cfun</span><span class="o">=</span><span class="n">cfun</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;displaying the blurred image&quot;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">:</span><span class="mi">5</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Image blurred to nominal resolution&#39;</span><span class="p">)</span>
+        <span class="c1">#beamparams=obs_uncal.fit_gauss()</span>
+        <span class="c1">#fwhm = np.min((np.abs(beamparams[0]),np.abs(beamparams[1])))</span>
+        <span class="n">fwhm</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">res</span><span class="p">()</span>
+        <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;blur_FWHM: &quot;</span> <span class="p">,</span> <span class="n">fwhm</span><span class="o">/</span><span class="n">RADPERUAS</span><span class="p">)</span>
+        <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="n">fwhm</span><span class="p">,</span> <span class="n">fwhm</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">res</span><span class="p">()</span>
+        <span class="n">imblur</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">blur_gauss</span><span class="p">(</span><span class="n">beamparams</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="c1">#imblur = im.blur_circ(res)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">display_img</span><span class="p">(</span><span class="n">imblur</span> <span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="n">beamparams</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">has_title</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">cfun</span><span class="o">=</span><span class="n">cfun</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+
+<span class="c1">################################################################################</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;calculating statistics&quot;</span><span class="p">)</span>
+        <span class="c1">#display the overall chi2</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Image statistics&#39;</span><span class="p">)</span>
+        <span class="c1">#ax.axis(&#39;off&#39;)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">total_flux</span><span class="p">()</span>
+
+        <span class="c1"># SNR ordering</span>
+        <span class="c1">#obs.reorder_tarr_snr()</span>
+        <span class="c1">#obs_uncal.reorder_tarr_snr()</span>
+
+        <span class="n">maxset</span><span class="o">=</span><span class="kc">False</span>
+        <span class="c1"># compute chi^2</span>
+        <span class="n">chi2vis</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">])</span>
+        <span class="n">chi2amp</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">])</span>
+        <span class="n">chi2cphase</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="n">syscnoise</span><span class="p">,</span> 
+                               <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="n">cp_uv_min</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">])</span>
+        <span class="n">chi2logcamp</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span>
+                                <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;logcamp&#39;</span><span class="p">])</span>
+        <span class="n">chi2camp</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="n">sysnoise</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">])</span>
+
+
+
+        <span class="n">chi2vis_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">])</span>
+        <span class="n">chi2amp_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">])</span>
+        <span class="n">chi2cphase_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">systematic_cphase_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span>
+                                     <span class="n">cp_uv_min</span><span class="o">=</span><span class="n">cp_uv_min</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">])</span>
+        <span class="n">chi2logcamp_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;logcamp&#39;</span><span class="p">])</span>
+        <span class="n">chi2camp_uncal</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">systematic_noise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxset</span><span class="o">=</span><span class="n">maxset</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">])</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;chi^2 vis: </span><span class="si">%0.2f</span><span class="s2"> </span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chi2vis</span><span class="p">,</span> <span class="n">chi2vis_uncal</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;chi^2 amp: </span><span class="si">%0.2f</span><span class="s2"> </span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chi2amp</span><span class="p">,</span> <span class="n">chi2amp_uncal</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;chi^2 cphase: </span><span class="si">%0.2f</span><span class="s2"> </span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chi2cphase</span><span class="p">,</span> <span class="n">chi2cphase_uncal</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;chi^2 logcamp: </span><span class="si">%0.2f</span><span class="s2"> </span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chi2logcamp</span><span class="p">,</span> <span class="n">chi2logcamp_uncal</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;chi^2 camp: </span><span class="si">%0.2f</span><span class="s2"> </span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chi2logcamp</span><span class="p">,</span> <span class="n">chi2logcamp_uncal</span><span class="p">))</span>
+
+        <span class="n">fs</span> <span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mi">1</span><span class="o">*</span><span class="n">fontsize</span><span class="p">)</span>
+        <span class="n">fs2</span> <span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="o">.</span><span class="mi">8</span><span class="o">*</span><span class="n">fontsize</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">05</span><span class="p">,</span><span class="o">.</span><span class="mi">9</span><span class="p">,</span><span class="s2">&quot;Source:&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">05</span><span class="p">,</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span><span class="s2">&quot;MJD:&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">05</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="s2">&quot;FREQ:&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">05</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="s2">&quot;FOV:&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">05</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;FLUX:&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">23</span><span class="p">,</span><span class="o">.</span><span class="mi">9</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">im</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">23</span><span class="p">,</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">im</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">23</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.0f</span><span class="s2"> GHz&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">rf</span><span class="o">/</span><span class="mf">1.e9</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">23</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.1f</span><span class="s2"> $\mu$as&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">fovx</span><span class="p">()</span><span class="o">/</span><span class="n">RADPERUAS</span><span class="p">),</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">23</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2"> Jy&quot;</span> <span class="o">%</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="o">.</span><span class="mi">9</span><span class="p">,</span><span class="s2">&quot;$\chi^2_</span><span class="si">{vis}</span><span class="s2">$&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span><span class="s2">&quot;$\chi^2_</span><span class="si">{amp}</span><span class="s2">$&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="s2">&quot;$\chi^2_</span><span class="si">{cphase}</span><span class="s2">$&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="s2">&quot;$\chi^2_{log camp}$&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;$\chi^2_</span><span class="si">{camp}</span><span class="s2">$&quot;</span> <span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">72</span><span class="p">,</span><span class="o">.</span><span class="mi">9</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">chi2vis</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">72</span><span class="p">,</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">chi2amp</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">72</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">chi2cphase</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">72</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">chi2logcamp</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">72</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">chi2camp</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">85</span><span class="p">,</span><span class="o">.</span><span class="mi">9</span><span class="p">,</span><span class="s2">&quot;(</span><span class="si">%0.2f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">chi2vis_uncal</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs2</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">85</span><span class="p">,</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span><span class="s2">&quot;(</span><span class="si">%0.2f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">chi2amp_uncal</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs2</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">85</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="s2">&quot;(</span><span class="si">%0.2f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">chi2cphase_uncal</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs2</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">85</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="s2">&quot;(</span><span class="si">%0.2f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">chi2logcamp</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs2</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">.</span><span class="mi">85</span><span class="p">,</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;(</span><span class="si">%0.2f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">chi2camp_uncal</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fs2</span><span class="p">,</span>
+        <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+
+<span class="c1">################################################################################</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;calculating cphase statistics&quot;</span><span class="p">)</span>
+        <span class="c1">#display the closure  phase chi2</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Closure phase statistics&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+
+        <span class="c1"># get closure triangle combinations</span>
+        <span class="c1"># ANDREW -- hacky, fix this!</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="n">cp_uv_min</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">])</span>
+        <span class="n">n_cphase</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cp</span><span class="p">)</span>
+        <span class="n">alltris</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">str</span><span class="p">(</span><span class="n">cpp</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">]),</span><span class="nb">str</span><span class="p">(</span><span class="n">cpp</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">]),</span><span class="nb">str</span><span class="p">(</span><span class="n">cpp</span><span class="p">[</span><span class="s1">&#39;t3&#39;</span><span class="p">]))</span> <span class="k">for</span> <span class="n">cpp</span> <span class="ow">in</span> <span class="n">cp</span><span class="p">]</span>
+        <span class="n">uniqueclosure_tri</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">alltris</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tri</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">uniqueclosure_tri</span><span class="p">:</span> <span class="n">uniqueclosure_tri</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tri</span><span class="p">)</span>
+              
+        <span class="c1"># generate data</span>
+        <span class="n">obs_model</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">observe_same</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">add_th_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">)</span>
+
+        <span class="c1"># TODO: check SNR cut</span>
+        <span class="n">cphases_obs</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="n">cp_uv_min</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">cphases_obs_all</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="n">cp_uv_min</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+            <span class="n">cphases_model_all</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="n">cp_uv_min</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">cphase</span> <span class="ow">in</span> <span class="n">cphases_obs</span> <span class="k">for</span> <span class="n">cphase</span> <span class="ow">in</span> <span class="n">cphases_obs_all</span><span class="p">]</span>
+            <span class="n">cphases_model</span> <span class="o">=</span> <span class="n">cphases_model_all</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;cphase snr cut&#39;</span><span class="p">,</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">],</span><span class="s1">&#39; : kept&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases_obs</span><span class="p">),</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases_obs_all</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cphases_model</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">c_phases</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">uv_min</span><span class="o">=</span><span class="n">cp_uv_min</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+
+
+        <span class="c1">#generate chi^2 -- NO SYSTEMATIC NOISES</span>
+        <span class="n">ncphase</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">cphase_chisq_data</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">uniqueclosure_tri</span><span class="p">)):</span>
+            <span class="n">cphases_obs_tri</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">cphase_tri</span><span class="p">(</span><span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+                                             <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">cphases</span><span class="o">=</span><span class="n">cphases_obs</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases_obs_tri</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">cphases_model_tri</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">cphase_tri</span><span class="p">(</span><span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+                                                         <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">ang_unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">cphases</span><span class="o">=</span><span class="n">cphases_model</span><span class="p">)</span>
+
+                <span class="n">chisq_tri</span><span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">cphases_obs_tri</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">DEGREE</span><span class="o">-</span><span class="n">cphases_model_tri</span><span class="p">[</span><span class="s1">&#39;cphase&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">DEGREE</span><span class="p">))</span><span class="o">/</span>
+                                  <span class="p">((</span><span class="n">cphases_obs_tri</span><span class="p">[</span><span class="s1">&#39;sigmacp&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">DEGREE</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+                <span class="n">npts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cphases_obs_tri</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">=</span>  <span class="p">[</span><span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">uniqueclosure_tri</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span><span class="n">npts</span><span class="p">,</span><span class="n">chisq_tri</span><span class="p">]</span>
+                <span class="n">cphase_chisq_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+
+
+        <span class="c1">#sort by decreasing chi^2</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">cphase_chisq_data</span><span class="p">])</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+
+        <span class="n">chisqtab</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\begin</span><span class="si">{tabular}</span><span class="s2">{ l|l|l|l } \hline Triangle &amp; $N_</span><span class="si">{tri}</span><span class="s2">$ &amp; $\chi^2_</span><span class="si">{tri}</span><span class="s2">/N_</span><span class="si">{tri}</span><span class="s2">$ &amp; $\chi^2_</span><span class="si">{tri}</span><span class="s2">/N_</span><span class="si">{tot}</span><span class="s2">$</span><span class="se">\\</span><span class="s2"> \hline \hline&quot;</span>
+        <span class="n">first</span><span class="o">=</span><span class="kc">True</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cphase_chisq_data</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">30</span><span class="p">:</span><span class="k">break</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">cphase_chisq_data</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">tristr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">nstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">chisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.1f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">rchisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.1f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]))</span>
+            <span class="n">rrchisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">n_cphase</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">first</span><span class="p">:</span>
+                <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">tristr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">nstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rchisqstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rrchisqstr</span> 
+                <span class="n">first</span><span class="o">=</span><span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; </span><span class="se">\\</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">tristr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">nstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rchisqstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rrchisqstr</span> 
+        <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; \end</span><span class="si">{tabular}</span><span class="s2">&quot;</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="o">.</span><span class="mi">975</span><span class="p">,</span><span class="n">chisqtab</span><span class="p">,</span><span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+
+
+<span class="c1">################################################################################</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;calculating camp statistics&quot;</span><span class="p">)</span>
+        <span class="c1">#display the log closure amplitude chi2</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="mi">2</span><span class="p">::])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Log Closure amplitude statistics&#39;</span><span class="p">)</span>
+        <span class="c1">#ax.axis(&#39;off&#39;)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+
+        <span class="c1"># get closure amplitude combinations</span>
+        <span class="c1"># TODO -- hacky, fix this!</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span><span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
+        <span class="n">n_camps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cp</span><span class="p">)</span>
+        <span class="n">allquads</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">str</span><span class="p">(</span><span class="n">cpp</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">]),</span><span class="nb">str</span><span class="p">(</span><span class="n">cpp</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">]),</span><span class="nb">str</span><span class="p">(</span><span class="n">cpp</span><span class="p">[</span><span class="s1">&#39;t3&#39;</span><span class="p">]),</span><span class="nb">str</span><span class="p">(</span><span class="n">cpp</span><span class="p">[</span><span class="s1">&#39;t4&#39;</span><span class="p">]))</span> <span class="k">for</span> <span class="n">cpp</span> <span class="ow">in</span> <span class="n">cp</span><span class="p">]</span>
+        <span class="n">uniqueclosure_quad</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">quad</span> <span class="ow">in</span> <span class="n">allquads</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">quad</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">uniqueclosure_quad</span><span class="p">:</span> 
+                <span class="n">uniqueclosure_quad</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">quad</span><span class="p">)</span>
+              
+        <span class="c1"># generate data</span>
+        <span class="c1"># TODO: check SNR cut</span>
+        <span class="n">camps_obs</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;logcamp&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;logcamp&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">camps_obs_all</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+            <span class="n">camps_model_all</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">camp</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">camps_obs</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">camp</span> <span class="ow">in</span> <span class="n">camps_obs_all</span><span class="p">]</span>
+            <span class="n">camps_model</span> <span class="o">=</span> <span class="n">camps_model_all</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;closure amp snrcut&#39;</span><span class="p">,</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;logcamp&#39;</span><span class="p">],</span><span class="s1">&#39;: kept&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps_obs</span><span class="p">),</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps_obs_all</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">camps_model</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">c_amplitudes</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+
+
+        <span class="c1">#generate chi2 -- NO SYSTEMATIC NOISES</span>
+        <span class="n">ncamp</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">camp_chisq_data</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">uniqueclosure_quad</span><span class="p">)):</span>
+            <span class="n">camps_obs_quad</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">camp_quad</span><span class="p">(</span><span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> 
+                                         <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>  <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span>
+                                         <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">camps</span><span class="o">=</span><span class="n">camps_obs</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps_obs_quad</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">camps_model_quad</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">camp_quad</span><span class="p">(</span><span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> 
+                                             <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>  <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span>
+                                             <span class="n">vtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">camps</span><span class="o">=</span><span class="n">camps_model</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">)</span>
+
+                <span class="n">chisq_quad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">camps_obs_quad</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">camps_model_quad</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">])</span><span class="o">/</span><span class="n">camps_obs_quad</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">npts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">camps_obs_quad</span><span class="p">)</span>
+
+                <span class="n">data</span> <span class="o">=</span>  <span class="p">(</span><span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span><span class="n">uniqueclosure_quad</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span>
+                         <span class="n">npts</span><span class="p">,</span>
+                         <span class="n">chisq_quad</span><span class="p">)</span>
+                <span class="n">camp_chisq_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1">#sort by decreasing chi^2</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">camp_chisq_data</span><span class="p">])</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+
+        <span class="n">chisqtab</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\begin</span><span class="si">{tabular}</span><span class="s2">{ l|l|l|l } \hline Quadrangle &amp; $N_</span><span class="si">{quad}</span><span class="s2">$ &amp; $\chi^2_</span><span class="si">{quad}</span><span class="s2">/N_</span><span class="si">{quad}</span><span class="s2">$ &amp; $\chi^2_</span><span class="si">{quad}</span><span class="s2">/N_</span><span class="si">{tot}</span><span class="s2">$ </span><span class="se">\\</span><span class="s2"> \hline \hline&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">camp_chisq_data</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">45</span><span class="p">:</span> <span class="k">break</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">camp_chisq_data</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">tristr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="n">nstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">chisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.1f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+            <span class="n">rchisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.1f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">]))</span>
+            <span class="n">rrchisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">n_camps</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">tristr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">nstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rchisqstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rrchisqstr</span> 
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; </span><span class="se">\\</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">tristr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">nstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rchisqstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rrchisqstr</span> 
+
+
+        <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; \end</span><span class="si">{tabular}</span><span class="s2">&quot;</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="o">.</span><span class="mi">975</span><span class="p">,</span><span class="n">chisqtab</span><span class="p">,</span><span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+
+
+        <span class="c1">#save the first page of the plot</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page 1&#39;</span><span class="p">)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1">################################################################################</span>
+        <span class="c1">#plot the vis amps</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+        <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;plotting vis amps&quot;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">obs_tmp</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">obs_tmp</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">*=</span><span class="mf">0.</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plotall_obs_compare</span><span class="p">([</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_tmp</span><span class="p">],</span> 
+                                 <span class="s1">&#39;uvdist&#39;</span><span class="p">,</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> 
+                                  <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">],</span>
+                                  <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">,</span><span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">)</span>
+        <span class="c1">#modify the labels</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Calibrated Visiblity Amplitudes&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;u-v distance (G$\lambda$)&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.e10</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mf">2.e9</span><span class="p">,</span><span class="mf">4.e9</span><span class="p">,</span><span class="mf">6.e9</span><span class="p">,</span><span class="mf">8.e9</span><span class="p">,</span><span class="mf">10.e9</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;2&quot;</span><span class="p">,</span><span class="s2">&quot;4&quot;</span><span class="p">,</span><span class="s2">&quot;6&quot;</span><span class="p">,</span><span class="s2">&quot;8&quot;</span><span class="p">,</span><span class="s2">&quot;10&quot;</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([</span><span class="mf">1.e9</span><span class="p">,</span><span class="mf">3.e9</span><span class="p">,</span><span class="mf">5.e9</span><span class="p">,</span><span class="mf">7.e9</span><span class="p">,</span><span class="mf">9.e9</span><span class="p">],</span> <span class="n">minor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">([],</span> <span class="n">minor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Amplitude (Jy)&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.2</span><span class="o">*</span><span class="n">flux</span><span class="p">])</span>
+        <span class="n">yticks_maj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="o">.</span><span class="mi">2</span><span class="p">,</span><span class="o">.</span><span class="mi">4</span><span class="p">,</span><span class="o">.</span><span class="mi">6</span><span class="p">,</span><span class="o">.</span><span class="mi">8</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">flux</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">yticks_maj</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">fl</span> <span class="k">for</span> <span class="n">fl</span> <span class="ow">in</span> <span class="n">yticks_maj</span><span class="p">])</span>
+        <span class="n">yticks_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="o">.</span><span class="mi">3</span><span class="p">,</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span><span class="o">.</span><span class="mi">9</span><span class="p">])</span><span class="o">*</span><span class="n">flux</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">yticks_min</span><span class="p">,</span><span class="n">minor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([],</span> <span class="n">minor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1">################################################################################3</span>
+        <span class="c1">#plot the caltable gains</span>
+        <span class="k">if</span> <span class="n">gainplots</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;plotting gains&quot;</span><span class="p">)</span>
+            <span class="n">ax2</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span>
+            <span class="n">obs_tmp</span> <span class="o">=</span> <span class="n">obs_uncal</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span> 
+                <span class="n">ct</span> <span class="o">=</span> <span class="n">selfcal</span><span class="p">(</span><span class="n">obs_tmp</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> 
+                              <span class="n">method</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> 
+                              <span class="n">caltable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span>
+                              <span class="n">processes</span><span class="o">=</span><span class="n">PROCESSES</span><span class="p">)</span>
+                <span class="n">ct</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">pad_scans</span><span class="p">()</span>
+                <span class="n">obs_tmp</span> <span class="o">=</span>  <span class="n">ct</span><span class="o">.</span><span class="n">applycal</span><span class="p">(</span><span class="n">obs_tmp</span><span class="p">,</span><span class="n">interp</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span><span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1">#apply caltable</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">obs_tmp</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">])):</span>
+                    <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;Warning: NaN in applycal vis table!&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">ct_out</span> <span class="o">=</span> <span class="n">ct_out</span><span class="o">.</span><span class="n">merge</span><span class="p">([</span><span class="n">ct</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ct_out</span> <span class="o">=</span> <span class="n">ct</span>
+
+            <span class="n">ax2</span> <span class="o">=</span> <span class="n">ct_out</span><span class="o">.</span><span class="n">plot_gains</span><span class="p">(</span><span class="s1">&#39;all&#39;</span><span class="p">,</span><span class="n">rangey</span><span class="o">=</span><span class="p">[</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span><span class="mi">10</span><span class="p">],</span><span class="n">yscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="n">ax2</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="c1">#median gains</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="mi">2</span><span class="p">:</span><span class="mi">5</span><span class="p">])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Station gain statistics&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+
+            <span class="n">gain_data</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">ct_out</span><span class="o">.</span><span class="n">tarr</span><span class="p">[</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span>
+                <span class="k">try</span><span class="p">:</span> 
+                    <span class="n">gain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ct_out</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">station</span><span class="p">][</span><span class="s1">&#39;lscale&#39;</span><span class="p">]))</span>
+                <span class="k">except</span><span class="p">:</span> 
+                    <span class="k">continue</span>
+                <span class="n">pdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">gain</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span>
+                <span class="n">data</span> <span class="o">=</span>  <span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">gain</span><span class="p">,</span> <span class="n">pdiff</span><span class="p">)</span>
+                <span class="n">gain_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+            <span class="c1">#sort by decreasing chi^2</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">gain_data</span><span class="p">])</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+
+            <span class="n">chisqtab</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\begin</span><span class="si">{tabular}</span><span class="s2">{ l|l|l } \hline Site &amp; Median Gain &amp; Percent diff. </span><span class="se">\\</span><span class="s2"> \hline \hline&quot;</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gain_data</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">45</span><span class="p">:</span> <span class="k">break</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">gain_data</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                <span class="n">sitestr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">gstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">pstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.0f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">sitestr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">gstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">pstr</span> 
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; </span><span class="se">\\</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">sitestr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">gstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">pstr</span>
+
+            <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; \end</span><span class="si">{tabular}</span><span class="s2">&quot;</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="o">.</span><span class="mi">975</span><span class="p">,</span><span class="n">chisqtab</span><span class="p">,</span><span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+
+<span class="c1">################################################################################3</span>
+        <span class="c1">#baseline amplitude chi2</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;baseline vis amps chisq&quot;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Visibility amplitude statistics&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+
+        <span class="n">bl_unpk</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">unpack</span><span class="p">([</span><span class="s1">&#39;t1&#39;</span><span class="p">,</span><span class="s1">&#39;t2&#39;</span><span class="p">],</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
+        <span class="n">n_bl</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bl_unpk</span><span class="p">)</span>
+        <span class="n">allbl</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">str</span><span class="p">(</span><span class="n">bl</span><span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">]),</span><span class="nb">str</span><span class="p">(</span><span class="n">bl</span><span class="p">[</span><span class="s1">&#39;t2&#39;</span><span class="p">]))</span> <span class="k">for</span> <span class="n">bl</span> <span class="ow">in</span> <span class="n">bl_unpk</span><span class="p">]</span>
+        <span class="n">uniquebl</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">bl</span> <span class="ow">in</span> <span class="n">allbl</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bl</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">uniquebl</span><span class="p">:</span> 
+                <span class="n">uniquebl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bl</span><span class="p">)</span>
+
+        <span class="c1">#generate chi2 -- NO SYSTEMATIC NOISES</span>
+        <span class="n">ncamp</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">bl_chisq_data</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">uniquebl</span><span class="p">)):</span>
+            <span class="n">bl</span> <span class="o">=</span> <span class="n">uniquebl</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span>
+
+            <span class="n">amps_bl</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">unpack_bl</span><span class="p">(</span><span class="n">bl</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bl</span><span class="p">[</span><span class="mi">1</span><span class="p">],[</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">amps_bl</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+
+                <span class="n">amps_bl_model</span> <span class="o">=</span> <span class="n">obs_model</span><span class="o">.</span><span class="n">unpack_bl</span><span class="p">(</span><span class="n">bl</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bl</span><span class="p">[</span><span class="mi">1</span><span class="p">],[</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span><span class="s1">&#39;sigma&#39;</span><span class="p">],</span> <span class="n">debias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">amask</span> <span class="o">=</span> <span class="n">amps_bl</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">amps_bl</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span>
+                    <span class="n">amps_bl</span> <span class="o">=</span> <span class="n">amps_bl</span><span class="p">[</span><span class="n">amask</span><span class="p">]</span>
+                    <span class="n">amps_bl_model</span> <span class="o">=</span> <span class="n">amps_bl_model</span><span class="p">[</span><span class="n">amask</span><span class="p">]</span>
+
+                <span class="n">chisq_bl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">amps_bl</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">amps_bl_model</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">])</span><span class="o">/</span><span class="n">amps_bl</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">npts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">amps_bl_model</span><span class="p">)</span>
+
+                <span class="n">data</span> <span class="o">=</span>  <span class="p">(</span><span class="n">bl</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bl</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                         <span class="n">npts</span><span class="p">,</span>
+                         <span class="n">chisq_bl</span><span class="p">)</span>
+                <span class="n">bl_chisq_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1">#sort by decreasing chi^2</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">([</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">bl_chisq_data</span><span class="p">])</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">idx</span><span class="p">))</span>
+
+        <span class="n">chisqtab</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\begin</span><span class="si">{tabular}</span><span class="s2">{ l|l|l|l } \hline Baseline &amp; $N_</span><span class="si">{amp}</span><span class="s2">$ &amp; $\chi^2_</span><span class="si">{amp}</span><span class="s2">/N_</span><span class="si">{amp}</span><span class="s2">$ &amp; $\chi^2_</span><span class="si">{amp}</span><span class="s2">/N_</span><span class="si">{total}</span><span class="s2">$ </span><span class="se">\\</span><span class="s2"> \hline \hline&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bl_chisq_data</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">45</span><span class="p">:</span> <span class="k">break</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">bl_chisq_data</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">tristr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">nstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">chisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.1f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">rchisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.1f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="n">rrchisqstr</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;</span><span class="si">%0.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">n_bl</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">tristr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">nstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rchisqstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rrchisqstr</span> 
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; </span><span class="se">\\</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">tristr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">nstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rchisqstr</span> <span class="o">+</span> <span class="s2">&quot; &amp; &quot;</span> <span class="o">+</span> <span class="n">rrchisqstr</span> 
+
+
+        <span class="n">chisqtab</span> <span class="o">+=</span> <span class="sa">r</span><span class="s2">&quot; \end</span><span class="si">{tabular}</span><span class="s2">&quot;</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span><span class="o">.</span><span class="mi">975</span><span class="p">,</span><span class="n">chisqtab</span><span class="p">,</span><span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span><span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+
+        <span class="c1">#save the first page of the plot</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page 2&#39;</span><span class="p">)</span>
+        <span class="c1">#plt.tight_layout()</span>
+        <span class="c1">#plt.subplots_adjust(wspace=1,hspace=1)</span>
+        <span class="c1">#plt.savefig(outname, pad_inches=MARGINS,bbox_inches=&#39;tight&#39;)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1">################################################################################</span>
+        <span class="c1">#plot the visibility amplitudes</span>
+        <span class="n">page</span> <span class="o">=</span> <span class="mi">3</span> 
+        <span class="k">if</span> <span class="n">ampplots</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;plotting amplitudes&quot;</span><span class="p">)</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Amplitude Plots&quot;</span><span class="p">,</span><span class="n">y</span><span class="o">=.</span><span class="mi">9</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1.2</span><span class="o">*</span><span class="n">fontsize</span><span class="p">))</span>
+            <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">switch</span><span class="o">=</span><span class="kc">False</span>
+
+            <span class="n">obs_model</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
+            <span class="n">amax</span> <span class="o">=</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">obs_model</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">])))</span>
+            <span class="n">obs_all</span> <span class="o">=</span> <span class="p">[</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_model</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">bl</span> <span class="ow">in</span> <span class="n">uniquebl</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_bl_obs_compare</span><span class="p">(</span><span class="n">obs_all</span><span class="p">,</span> <span class="n">bl</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bl</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">amax</span><span class="p">],</span> 
+                                         <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span><span class="n">debias</span><span class="o">=</span><span class="n">debias</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="n">snrcut_dict</span><span class="p">[</span><span class="s1">&#39;amp&#39;</span><span class="p">],</span>
+                                         <span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                                         <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">switch</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page </span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">page</span><span class="p">)</span>
+                    <span class="n">page</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+                    <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page </span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">page</span><span class="p">)</span>
+            <span class="n">page</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1">################################################################################</span>
+        <span class="c1">#plot the closure phases</span>
+        <span class="k">if</span> <span class="n">cphaseplots</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;plotting closure phases&quot;</span><span class="p">)</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Closure Phase Plots&quot;</span><span class="p">,</span><span class="n">y</span><span class="o">=.</span><span class="mi">9</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1.2</span><span class="o">*</span><span class="n">fontsize</span><span class="p">))</span>
+            <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">switch</span><span class="o">=</span><span class="kc">False</span>
+            <span class="n">obs_all</span> <span class="o">=</span> <span class="p">[</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_model</span><span class="p">]</span>
+            <span class="n">cphases_model</span><span class="p">[</span><span class="s1">&#39;sigmacp&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
+            <span class="n">cphases_all</span> <span class="o">=</span> <span class="p">[</span><span class="n">cphases_obs</span><span class="p">,</span> <span class="n">cphases_model</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">tri</span> <span class="ow">in</span> <span class="n">uniqueclosure_tri</span><span class="p">:</span>
+
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_cphase_obs_compare</span><span class="p">(</span><span class="n">obs_all</span><span class="p">,</span><span class="n">tri</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">tri</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">tri</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">rangey</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">185</span><span class="p">,</span><span class="mi">185</span><span class="p">],</span>
+                                             <span class="n">cphases</span><span class="o">=</span><span class="n">cphases_all</span><span class="p">,</span><span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
+                                             <span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                                             <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">switch</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page </span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">page</span><span class="p">)</span>
+                    <span class="n">page</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+                    <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page </span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">page</span><span class="p">)</span>
+            <span class="n">page</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="c1">################################################################################</span>
+        <span class="c1">#plot the log closure amps</span>
+        <span class="k">if</span> <span class="n">campplots</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;===========================================&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;plotting closure amplitudes&quot;</span><span class="p">)</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Closure Amplitude Plots&quot;</span><span class="p">,</span><span class="n">y</span><span class="o">=.</span><span class="mi">9</span><span class="p">,</span><span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1.2</span><span class="o">*</span><span class="n">fontsize</span><span class="p">))</span>
+            <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">switch</span><span class="o">=</span><span class="kc">False</span>
+            <span class="n">obs_all</span> <span class="o">=</span> <span class="p">[</span><span class="n">obs</span><span class="p">,</span> <span class="n">obs_model</span><span class="p">]</span>
+            <span class="n">camps_model</span><span class="p">[</span><span class="s1">&#39;sigmaca&#39;</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">0</span>
+            <span class="n">camps_all</span> <span class="o">=</span> <span class="p">[</span><span class="n">camps_obs</span><span class="p">,</span> <span class="n">camps_model</span><span class="p">]</span>
+            <span class="n">cmax</span> <span class="o">=</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">camps_obs</span><span class="p">[</span><span class="s1">&#39;camp&#39;</span><span class="p">]))</span>
+            <span class="k">for</span> <span class="n">quad</span> <span class="ow">in</span> <span class="n">uniqueclosure_quad</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_camp_obs_compare</span><span class="p">(</span><span class="n">obs_all</span><span class="p">,</span><span class="n">quad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">quad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">quad</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">quad</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span>
+                                             <span class="n">ctype</span><span class="o">=</span><span class="s1">&#39;logcamp&#39;</span><span class="p">,</span><span class="n">rangey</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="n">cmax</span><span class="p">,</span><span class="n">cmax</span><span class="p">],</span><span class="n">camps</span><span class="o">=</span><span class="n">camps_all</span><span class="p">,</span>
+                                             <span class="n">axis</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span><span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                                             <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="n">ebar</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">switch</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page </span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">page</span><span class="p">)</span>
+                    <span class="n">page</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">28</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+                    <span class="n">gs</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="n">WSPACE</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="n">HSPACE</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">switch</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;saving pdf page </span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">page</span><span class="p">)</span>
+            <span class="n">page</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">pad_inches</span><span class="o">=</span><span class="n">MARGINS</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="display_img"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.summary_plots.display_img">[docs]</a><span class="k">def</span> <span class="nf">display_img</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">beamparams</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span><span class="n">gamma</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">cbar_lims</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">has_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">has_title</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;display the figure on a given axis</span>
+<span class="sd">       cannot use im.display because  it makes a new figure</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">interp</span> <span class="o">=</span> <span class="s1">&#39;gaussian&#39;</span>
+
+    <span class="k">if</span> <span class="n">axis</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">axis</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">imvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1">#flux unit is mJy/uas^2</span>
+    <span class="n">imvec</span> <span class="o">=</span> <span class="n">imvec</span> <span class="o">*</span> <span class="mf">1.e3</span>
+    <span class="n">fovfactor</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="o">*</span><span class="n">im</span><span class="o">.</span><span class="n">psize</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">RADPERUAS</span><span class="p">)</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">fovfactor</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> 
+    <span class="n">imvec</span> <span class="o">=</span> <span class="n">imvec</span> <span class="o">*</span> <span class="n">factor</span>
+    
+    <span class="n">imarr</span> <span class="o">=</span> <span class="p">(</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>
+    <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;mJy/$\mu$ as$^2$&#39;</span>
+    <span class="k">if</span> <span class="n">scale</span><span class="o">==</span><span class="s1">&#39;log&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">imarr</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values less than 0&#39;</span><span class="p">)</span>
+            <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span><span class="o">&lt;</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">imarr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">imarr</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span><span class="o">/</span><span class="n">dynamic_range</span><span class="p">)</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;log(&#39;</span> <span class="o">+</span> <span class="n">unit</span> <span class="o">+</span><span class="s1">&#39;)&#39;</span>
+
+    <span class="k">if</span> <span class="n">scale</span><span class="o">==</span><span class="s1">&#39;gamma&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">imarr</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;clipping values less than 0&#39;</span><span class="p">)</span>
+            <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span><span class="o">&lt;</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">imarr</span> <span class="o">=</span> <span class="p">(</span><span class="n">imarr</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">imarr</span><span class="p">)</span><span class="o">/</span><span class="n">dynamic_range</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="n">gamma</span><span class="p">)</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="n">unit</span> <span class="o">+</span> <span class="s1">&#39;)^gamma&#39;</span>
+               
+    <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
+        <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span><span class="o">&gt;</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">imarr</span><span class="p">[</span><span class="n">imarr</span><span class="o">&lt;</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+              
+    
+    <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> 
+                        <span class="n">vmin</span><span class="o">=</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">vmax</span><span class="o">=</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imarr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cfun</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">has_cbar</span><span class="p">:</span> 
+        <span class="n">cbar</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.046</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%1.2g</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span> 
+        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_label_position</span><span class="p">(</span><span class="s1">&#39;top&#39;</span><span class="p">)</span> 
+        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span> 
+        <span class="k">if</span> <span class="n">cbar_lims</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">clim</span><span class="p">(</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">cbar_lims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+
+    <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="n">beamparams</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">beamparams</span> <span class="o">=</span> <span class="p">[</span><span class="n">beamparams</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">beamparams</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> 
+                      <span class="o">-.</span><span class="mi">35</span><span class="o">*</span><span class="n">im</span><span class="o">.</span><span class="n">fovx</span><span class="p">(),</span> <span class="o">-.</span><span class="mi">35</span><span class="o">*</span><span class="n">im</span><span class="o">.</span><span class="n">fovy</span><span class="p">()]</span>
+        <span class="n">beamimage</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">beamimage</span><span class="o">.</span><span class="n">imvec</span> <span class="o">*=</span> <span class="mi">0</span>
+        <span class="n">beamimage</span> <span class="o">=</span> <span class="n">beamimage</span><span class="o">.</span><span class="n">add_gauss</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">beamparams</span><span class="p">)</span>
+        <span class="n">halflevel</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">beamimage</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span>
+        <span class="n">beamimarr</span> <span class="o">=</span> <span class="p">(</span><span class="n">beamimage</span><span class="o">.</span><span class="n">imvec</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">beamimage</span><span class="o">.</span><span class="n">ydim</span><span class="p">,</span><span class="n">beamimage</span><span class="o">.</span><span class="n">xdim</span><span class="p">)</span>   
+        <span class="n">plt</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">beamimarr</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="p">[</span><span class="n">halflevel</span><span class="p">],</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span> 
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+    <span class="n">fov_uas</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="n">im</span><span class="o">.</span><span class="n">psize</span> <span class="o">/</span> <span class="n">RADPERUAS</span> <span class="c1"># get the fov in uas</span>
+    <span class="n">roughfactor</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span> <span class="c1"># make the bar about 1/3 the fov</span>
+    <span class="n">fov_scale</span> <span class="o">=</span> <span class="mi">40</span>
+    <span class="c1">#fov_scale = int( math.ceil(fov_uas * roughfactor / 10.0 ) ) * 10 # round around 1/3 the fov to nearest 10</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span> <span class="o">*</span> <span class="n">roughfactor</span> <span class="o">/</span> <span class="mf">3.0</span> <span class="c1"># select the start location </span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">fov_scale</span><span class="o">/</span><span class="n">fov_uas</span> <span class="o">*</span> <span class="n">im</span><span class="o">.</span><span class="n">xdim</span> <span class="c1"># determine the end location based on the size of the bar</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">],</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="o">-</span><span class="n">start</span><span class="p">,</span> <span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="o">-</span><span class="n">start</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># plot line</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">start</span><span class="o">+</span><span class="n">end</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="o">-</span><span class="n">start</span><span class="o">-</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="o">/</span><span class="mi">20</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">fov_scale</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; $\mu$as&quot;</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1.2</span><span class="o">*</span><span class="n">fontsize</span><span class="p">),</span><span class="n">fontweight</span><span class="o">=</span><span class="s1">&#39;bold&#39;</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ax</span></div>
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Andrew Chael.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
