@@ -286,7 +286,6 @@ def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False, markers=
     for i in range(len(tarr)):
         color = clist[i%len(clist)]
         label = tarr['site'][i]
-        plt.hold(True)
         dre, = x.plot(np.real(tarr['dr'][i])*100.0, np.imag(tarr['dr'][i])*100.0, markers[0], markersize=markersize, color=color,
                label=label)
         dim, = x.plot(np.real(tarr['dl'][i])*100.0, np.imag(tarr['dl'][i])*100.0, markers[1], markersize=markersize, color=color,

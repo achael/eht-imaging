@@ -663,6 +663,19 @@ class Image(object):
 
         return frac
 
+    def center(self, pol=None):
+
+        """Center the image based on the coordinates of the centroid().
+           A non-integer shift is used, which wraps the image when rotating.           
+
+           Args:
+                pol (str): The polarization for which to find the image centroid
+
+           Returns:
+               (np.array): centroid positions (x0,y0) in radians
+        """
+
+        return self.shift_fft(-self.centroid(pol=pol))
 
     def centroid(self, pol=None):
 
@@ -947,6 +960,40 @@ class Image(object):
 
         return outim
 
+    def shift_fft(self, shift):
+
+        """Shift the image by a given vector in radians. This allows non-integer pixel shifts, via FFT.
+
+         Args:
+             shift (list): offsets [x_offset, y_offset] for the image shift in radians
+
+         Returns:
+             (Image): shifted image
+        """
+
+        Nx = self.xdim
+        Ny = self.ydim 
+
+        [dx_pixels, dy_pixels] = np.array(shift)/self.psize
+
+        s, t = np.meshgrid(np.fft.fftfreq(Nx, d=1.0/Nx), np.fft.fftfreq(Ny, d=1.0/Ny))
+        rotate = np.exp(2.0*np.pi*1j*(s*dx_pixels + t*dy_pixels)/float(Nx))
+
+        imarr = self.imvec.reshape((Ny,Nx))
+        imarr_rotate = np.real(np.fft.ifft2(np.fft.fft2(imarr)*rotate))
+        out = self.copy(); 
+        out.imvec = imarr_rotate.flatten()
+
+        # Shift all polarizations and copy over
+        for pol in list(self._imdict.keys()):
+            if pol==self.pol_prim: continue
+            polvec = self._imdict[pol]
+            if len(polvec):
+                imarr = polvec.reshape((Ny,Nx))
+                imarr_rotate = np.real(np.fft.ifft2(np.fft.fft2(imarr)*rotate))
+                out.add_pol_image(imarr_rotate, pol)
+
+        return out
 
     def blur_gauss(self, beamparams, frac=1., frac_pol=0):
 
