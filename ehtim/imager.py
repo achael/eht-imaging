@@ -40,8 +40,8 @@ MAXLS = 40 # maximum number of line search steps in BFGS-B
 STOP = 1e-6 # convergence criterion
 EPS = 1e-8
 
-DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'm']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss', 'hw', 'ptv']
+DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss', 'hw']
 
 DATATERMS_POL = ['pvis','m','pbs']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv']
@@ -117,7 +117,7 @@ class Imager(object):
         #weighting/debiasing/snr cut/systematic noise
         self.debias_next=kwargs.get('debias',True)
         snrcut = kwargs.get('snrcut',0.)
-        self.snrcut_next = {key: 0. for key in DATATERMS}
+        self.snrcut_next = {key: 0. for key in set(DATATERMS+DATATERMS_POL)}
 
         if type(snrcut) is dict:
             for key in snrcut.keys():
