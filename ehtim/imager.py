@@ -650,7 +650,7 @@ class Imager(object):
             self._nimage = len(self._iinit)
 
             # initialize m & phi
-            if len(self.init_next.qvec) and len(self.init_next.uvec):
+            if len(self.init_next.qvec) and (np.any(self.init_next.qvec!=0) or np.any(self.init_next.uvec!=0)):
                 init1 = (np.abs(self.init_next.qvec + 1j*self.init_next.uvec) / self.init_next.imvec)[self._embed_mask]
                 init2 = (np.arctan2(self.init_next.uvec, self.init_next.qvec) / 2.0)[self._embed_mask]
             else:
