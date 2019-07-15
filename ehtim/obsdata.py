@@ -958,26 +958,37 @@ class Obsdata(object):
 
         if dtype not in ['pvis','m','pbs']:
             raise Exception("Only supported polarimetric dterms are 'pvis','m, 'pbs'!")
-        if (pol_prim!="amp_phase"):
-            raise Exception("Only amp_phase pol_prim currently supported!")
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.pol_imager_utils as piu
 
+        # unpack the necessary polarimetric data
         (data, sigma, A) = piu.polchisqdata(self, im, mask, dtype, ttype=ttype, **kwargs)
 
-
+        # pack the comparison image in the proper format
         imstokes = im.switch_polrep(polrep_out='stokes', pol_prim_out='I')
-        ivec = imstokes.imvec
-        mvec = (np.abs(imstokes.qvec + 1j*imstokes.uvec)/ivec)
-        chivec = np.angle(imstokes.qvec + 1j*imstokes.uvec)/2
+        if pol_prim=='amp_phase':
+            ivec = imstokes.imvec
+            mvec = (np.abs(imstokes.qvec + 1j*imstokes.uvec)/ivec)
+            chivec = np.angle(imstokes.qvec + 1j*imstokes.uvec)/2
+            if len(mask)>0 and np.any(np.invert(mask)):
+                ivec = ivec[mask]
+                mvec = mvec[mask]
+                chivec = chivec[mask]
+            imtuple = np.array((ivec, mvec, chivec))
+        elif pol_prim=='qu':
+            ivec = imstokes.imvec
+            qvec = imstokes.qvec
+            uvec = imstokes.uvec
+            if len(mask)>0 and np.any(np.invert(mask)):
+                ivec = ivec[mask]
+                qvec = qvec[mask]
+                uvec = uvec[mask]
+            imtuple = np.array((ivec, qvec, uvec))
+        else:
+            raise Exception("Only amp_phase & qu pol_prim are currently supported in polchisq!")
 
-        if len(mask)>0 and np.any(np.invert(mask)):
-            ivec = ivec[mask]
-            mvec = mvec[mask]
-            chivec = chivec[mask]
-
-        imtuple = np.array((ivec, mvec, chivec))
+        # calculate the chi^2
         chisq = piu.polchisq(imtuple, A, data, sigma, dtype, 
                              ttype=ttype, mask=mask, pol_prim=pol_prim)
 
@@ -2176,6 +2187,9 @@ class Obsdata(object):
                 perc (float): drop baseline from scan if it has less than this fraction 
                               of median baseline observation time during the scan
                 return_type (str): data frame ('df') or recarray ('rec')
+
+            Returns:
+               (Obsdata): a observation object with flagged data points removed
         """
 
         if type(self.scans)!=np.ndarray:

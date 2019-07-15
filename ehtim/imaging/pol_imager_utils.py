@@ -1,4 +1,4 @@
-# obsdata.py
+# pol_imager_utils.py
 # General imager functions for polarimetric VLBI data
 #
 #    Copyright (C) 2018 Andrew Chael
