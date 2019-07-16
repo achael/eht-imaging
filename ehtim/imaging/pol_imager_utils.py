@@ -582,7 +582,7 @@ def polchisqgrad(imtuple, A, data, sigma, dtype, ttype='direct',
             chisqgrad = chisqgrad_pbs_nffts(imtuple, A, data, sigma, pol_prim,pol_solve)
 
         if len(mask)>0 and np.any(np.invert(mask)):
-            chisqgrad = (chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask])
+            chisqgrad = np.array(chisqgrad[0][mask],chisqgrad[1][mask],chisqgrad[2][mask])
 
     return chisqgrad
 
@@ -612,7 +612,7 @@ def polregularizergrad(imtuple, mask, xdim, ydim, psize, stype, pol_prim="amp_ph
             imtuple = embed_pol(imtuple, mask, randomfloor=True)
         reggrad = -stv_pol_grad(imtuple, xdim, ydim, pol_prim,pol_solve)
         if np.any(np.invert(mask)):
-            reggrad = (reggrad[0][mask],reggrad[1][mask],reggrad[2][mask])
+            reggrad = np.array(reggrad[0][mask],reggrad[1][mask],reggrad[2][mask])
     else:
         reggrad = np.zeros((3,len(imtuple[0])))
 

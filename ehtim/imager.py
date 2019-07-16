@@ -655,7 +655,8 @@ class Imager(object):
                 init2 = (np.arctan2(self.init_next.uvec, self.init_next.qvec) / 2.0)[self._embed_mask]
             else:
                 # !AC TODO get the actual zero baseline pol. frac from the data!??
-                print("No polarimetric image in init_next -- initializing with 10% pol and random orientation!")
+                print("No polarimetric image in init_next!")
+                print("--initializing with 10% pol and random orientation!")
                 init1 = 0.2 * (np.ones(self._nimage) + 1e-2 * np.random.rand(self._nimage))
                 init2 = np.zeros(self._nimage) + 1e-2 * np.random.rand(self._nimage)
             self._inittuple = np.array((self._iinit, init1, init2))
@@ -691,17 +692,27 @@ class Imager(object):
             self._data_tuples = {}
             for dname in sorted(self.dat_term_next.keys()):
                 if self.pol_next=='P':
-                    tup = polchisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=self.pol_next,
-                                        debias=self.debias_next, snrcut=self.snrcut_next[dname], weighting=self.weighting_next,
-                                        systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
-                                        ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
-                                        conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, cp_uv_min=self.cp_uv_min)
+                    tup = polchisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
+                                        pol=self.pol_next,
+                                        debias=self.debias_next, snrcut=self.snrcut_next[dname], 
+                                        weighting=self.weighting_next,
+                                        systematic_noise=self.systematic_noise_next, 
+                                        systematic_cphase_noise=self.systematic_cphase_noise_next,
+                                        ttype=self._ttype, order=self._fft_interp_order,    
+                                        fft_pad_factor=self._fft_pad_factor,
+                                        conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, 
+                                        cp_uv_min=self.cp_uv_min)
                 else:
-                    tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, pol=self.pol_next,
-                                    debias=self.debias_next, snrcut=self.snrcut_next[dname], weighting=self.weighting_next,
-                                    systematic_noise=self.systematic_noise_next, systematic_cphase_noise=self.systematic_cphase_noise_next,
-                                    ttype=self._ttype, order=self._fft_interp_order, fft_pad_factor=self._fft_pad_factor,
-                                    conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, cp_uv_min=self.cp_uv_min)
+                    tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
+                                    pol=self.pol_next,
+                                    debias=self.debias_next, snrcut=self.snrcut_next[dname], 
+                                    weighting=self.weighting_next,
+                                    systematic_noise=self.systematic_noise_next, 
+                                    systematic_cphase_noise=self.systematic_cphase_noise_next,
+                                    ttype=self._ttype, order=self._fft_interp_order, 
+                                    fft_pad_factor=self._fft_pad_factor,
+                                    conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, 
+                                    cp_uv_min=self.cp_uv_min)
 
                 self._data_tuples[dname] = tup
             self._change_imgr_params = False
@@ -720,7 +731,8 @@ class Imager(object):
         wavelength = C/self.obs_next.rf*100.0 #Observing wavelength [cm]
         wavelengthbar = wavelength/(2.0*np.pi) #lambda/(2pi) [cm]
         N = self.prior_next.xdim
-        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance #Field of view, in cm, at the scattering screen
+        #Field of view, in cm, at the scattering screen
+        FOV = self.prior_next.psize * N * self.scattering_model.observer_screen_distance #
 
         # The ensemble-average convolution kernel and its gradients
         self._ea_ker = self.scattering_model.Ensemble_Average_Kernel(self.prior_next, wavelength_cm = wavelength)
@@ -774,7 +786,7 @@ class Imager(object):
                 chi2grad = chisqgrad(imcur, A, data, sigma, dname,
                                      ttype=self._ttype, mask=self._embed_mask)
 
-            chi2grad_dict[dname] = chi2grad
+            chi2grad_dict[dname] = np.array(chi2grad)
 
         return chi2grad_dict
 
@@ -1176,12 +1188,13 @@ class Imager(object):
 
     def make_image_I_stochastic_optics(self, grads=True, **kwargs):
         """Reconstructs an image of total flux density using the stochastic optics scattering mitigation technique.
-           Uses the scattering model of the imager. If none has been specified, it will default to a standard model for Sgr A*.
+           Uses the scattering model of the imager. If none has been specified, 
+           it will default to a standard model for Sgr A*.
            Returns the estimated unscattered image.
 
            Args:
                 grads (bool): Flag for whether or not to use analytic gradients.
-                show_updates (bool): Flag for whether or not to show updates for each step of convergence.
+                show_updates (bool): Flag for whether or not to show updates 
            Returns:
                out (Image): The estimated *unscattered* image.
         """

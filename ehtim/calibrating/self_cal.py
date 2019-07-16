@@ -57,15 +57,17 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
            sites (list): list of sites to include in the self calibration. empty list calibrates all sites
 
            method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
-           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
            pol (str): which image polarization to self-calibrate visibilities to 
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float or list): gains that exceed this value will be disfavored by the prior
-                                     for asymmetric gain_tol for corrections below/above unity, pass a 2-element list
-           solution_interval (float): solution interval in seconds; one gain is derived for each interval.
-                                      If 0.0, a solution is determined for each unique time in the observation.
-           scan_solutions (bool): If True, determine one gain per site per scan (supersedes solution_interval)
+                                     for asymmetric gain_tol for corrections below/above unity,
+                                     pass a 2-element list
+           solution_interval (float): solution interval in seconds; 
+                                      If 0., determine solution for each unique time
+           scan_solutions (bool): If True, determine one gain per site per scan 
+                                  (supersedes solution_interval)
 
            caltable (bool): if True, returns a Caltable instead of an Obsdata 
            processes (int): number of cores to use in multiprocessing

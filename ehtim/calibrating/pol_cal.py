@@ -35,22 +35,28 @@ MAXIT=1000
 #Polarimetric Calibration
 ###################################################################################################################################
 
-def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis', const_fpol=False, inverse=False,  minimizer_method='L-BFGS-B',
-             ttype='direct', fft_pad_factor=2, show_solution=True, obs_apply=False):
+def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], dtype='vis',
+                const_fpol=False, inverse=False,  minimizer_method='L-BFGS-B',
+                ttype='direct', fft_pad_factor=2, show_solution=True, obs_apply=False):
 
-    """Polarimetric calibration (detects and removes polarimetric leakage, based on consistency with a given image)
+    """Polarimetric calibration (detects and removes polarimetric leakage, 
+       based on consistency with a given image)
 
        Args:
            obs (Obsdata): The observation to be calibrated
-           im (Image): the reference image used for calibration (not needed if using const_fpol = True)
-           sites (list): list of sites to include in the polarimetric calibration. empty list calibrates all sites
+           im (Image): the reference image used for calibration 
+                      (not needed if using const_fpol = True)
+           sites (list): list of sites to include in the polarimetric calibration. 
+                         empty list calibrates all sites
 
            leakage_tol (float): leakage values that exceed this value will be disfavored by the prior
            pol_fit (list): list of visibilities to use; e.g., ['RL','LR'] or ['RR','LL','RL','LR']
-           dtype (str): Type of data to fit ('vis' for complex visibilities; 'amp' for just the amplitudes)
-           const_fpol (bool): If true, solve for a single fractional polarization across all baselines in addition to leakage.
-                             For this option, the passed image is not used.
-           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
+           dtype (str): Type of data to fit ('vis' for complex visibilities; 
+                                             'amp' for just the amplitudes)
+           const_fpol (bool): If true, solve for a single fractional polarization 
+                              across all baselines in addition to leakage.
+                              For this option, the passed image is not used.
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
            ttype (str): if "fast" or "nfft" use FFT to produce visibilities. Else "direct" for DTFT
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
@@ -95,10 +101,14 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
     #site_dict = dict(zip(sites, site_index))
 
     if not const_fpol:
-        (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RR', ttype=ttype, fft_pad_factor=fft_pad_factor)
-        (dataLL, sigmaLL, ALL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LL', ttype=ttype, fft_pad_factor=fft_pad_factor)
-        (dataRL, sigmaRL, ARL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RL', ttype=ttype, fft_pad_factor=fft_pad_factor)
-        (dataLR, sigmaLR, ALR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LR', ttype=ttype, fft_pad_factor=fft_pad_factor)
+        (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RR',
+                                              ttype=ttype, fft_pad_factor=fft_pad_factor)
+        (dataLL, sigmaLL, ALL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LL',
+                                              ttype=ttype, fft_pad_factor=fft_pad_factor)
+        (dataRL, sigmaRL, ARL) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RL', 
+                                              ttype=ttype, fft_pad_factor=fft_pad_factor)
+        (dataLR, sigmaLR, ALR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='LR', 
+                                              ttype=ttype, fft_pad_factor=fft_pad_factor)
 
     # If inverse modeling, pre-compute field rotation angles
     if inverse:    
@@ -120,7 +130,8 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
     def chisq_total(data, im, D, inverse=False):
         if const_fpol: 
             if inverse:
-                # Note: These are linearized approximations (in leakage and source polarization) that also neglect circular polarization
+                # Note: These are linearized approximations (in leakage and source polarization) 
+                # that also neglect circular polarization
                 fpol_model = D[-1]
 
                 D1R = [D[2*sites.index(o['t1'])]   for o in data]
@@ -138,12 +149,17 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
                 rlll_sigma = data['rlsigma']/np.abs(data['llvis'])
                 rlrr_sigma = data['rlsigma']/np.abs(data['rrvis'])
 
-                lrll_model = np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + np.conjugate(D2R) * np.exp(-2j*fr2)
-                lrrr_model = np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + np.conjugate(D2R) * np.exp(-2j*fr2)
+                lrll_model = (np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + 
+                              np.conjugate(D2R) * np.exp(-2j*fr2))
+                lrrr_model = (np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + 
+                              np.conjugate(D2R) * np.exp(-2j*fr2))
                 rlll_model = fpol_model + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2)
                 rlrr_model = fpol_model + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2)
                 
-                chisq = np.concatenate([np.abs((lrll - lrll_model)/lrll_sigma)**2,np.abs((lrrr - lrrr_model)/lrrr_sigma)**2,np.abs((rlll - rlll_model)/rlll_sigma)**2,np.abs((rlrr - rlrr_model)/rlrr_sigma)**2])
+                chisq = np.concatenate([np.abs((lrll - lrll_model)/lrll_sigma)**2,
+                                        np.abs((lrrr - lrrr_model)/lrrr_sigma)**2,
+                                        np.abs((rlll - rlll_model)/rlll_sigma)**2,
+                                        np.abs((rlrr - rlrr_model)/rlrr_sigma)**2])
                 chisq = chisq[~np.isnan(chisq)]
                 return np.mean(chisq)
             else:
@@ -156,16 +172,29 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
                                   + np.abs((fpol_model - fpol_data_2)/fpol_sigma_2)**2)
         else:
             chisq_RR = chisq_LL = chisq_RL = chisq_LR = 0.0
-            if 'RR' in pol_fit: chisq_RR = iu.chisq(im.rrvec, ARR, obs_test.unpack_dat(data,['rr' + dtype])['rr' + dtype], data['rrsigma'], dtype=dtype, ttype=ttype, mask=mask)
-            if 'LL' in pol_fit: chisq_LL = iu.chisq(im.llvec, ALL, obs_test.unpack_dat(data,['ll' + dtype])['ll' + dtype], data['llsigma'], dtype=dtype, ttype=ttype, mask=mask)
-            if 'RL' in pol_fit: chisq_RL = iu.chisq(im.rlvec, ARL, obs_test.unpack_dat(data,['rl' + dtype])['rl' + dtype], data['rlsigma'], dtype=dtype, ttype=ttype, mask=mask)
-            if 'LR' in pol_fit: chisq_LR = iu.chisq(im.lrvec, ALR, obs_test.unpack_dat(data,['lr' + dtype])['lr' + dtype], data['lrsigma'], dtype=dtype, ttype=ttype, mask=mask)
+            if 'RR' in pol_fit: 
+                chisq_RR = iu.chisq(im.rrvec, ARR, 
+                                    obs_test.unpack_dat(data,['rr' + dtype])['rr' + dtype], 
+                                    data['rrsigma'], dtype=dtype, ttype=ttype, mask=mask)
+            if 'LL' in pol_fit: 
+                chisq_LL = iu.chisq(im.llvec, ALL, 
+                                    obs_test.unpack_dat(data,['ll' + dtype])['ll' + dtype], 
+                                    data['llsigma'], dtype=dtype, ttype=ttype, mask=mask)
+            if 'RL' in pol_fit: 
+                chisq_RL = iu.chisq(im.rlvec, ARL, 
+                                    obs_test.unpack_dat(data,['rl' + dtype])['rl' + dtype], 
+                                    data['rlsigma'], dtype=dtype, ttype=ttype, mask=mask)
+            if 'LR' in pol_fit: 
+                chisq_LR = iu.chisq(im.lrvec, ALR, 
+                                    obs_test.unpack_dat(data,['lr' + dtype])['lr' + dtype], 
+                                    data['lrsigma'], dtype=dtype, ttype=ttype, mask=mask)
             return (chisq_RR + chisq_LL + chisq_RL + chisq_LR)/len(pol_fit)
 
     print("Finding leakage for sites:",sites)
 
     def errfunc(Dpar):
-        D = Dpar.astype(np.float64).view(dtype=np.complex128) # all the D-terms (complex). If const_fpol, fpol is the last parameter.
+        # all the D-terms (complex). If const_fpol, fpol is the last parameter.
+        D = Dpar.astype(np.float64).view(dtype=np.complex128) 
  
         if not inverse:
             for isite in range(len(sites)):
@@ -204,7 +233,7 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
             chisq_orig = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit, inverse=inverse)
             chisq_new  = chisq_total(obs_test.data, im_circ, D_fit, inverse=inverse)
         else:
-            chisq_orig = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit*0.0, inverse=inverse)
+            chisq_orig = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit*0,inverse=inverse)
             chisq_new  = chisq_total(obs.switch_polrep('circ').data, im_circ, D_fit, inverse=inverse)
 
         print("Original chi-squared: {:.4f}".format(chisq_orig))
@@ -236,8 +265,9 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
     else:
         return [obs_test, D_fit[-1]]
 
-def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False, markers=['o','s'], markersize=6, 
-                export_pdf="", axislabels=True, legend=True, sort_tarr=True, show=True):
+def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False, 
+                 markers=['o','s'], markersize=6, 
+                 export_pdf="", axislabels=True, legend=True, sort_tarr=True, show=True):
 
     """Plot polarimetric leakage terms in an observation
 
@@ -286,10 +316,10 @@ def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False, markers=
     for i in range(len(tarr)):
         color = clist[i%len(clist)]
         label = tarr['site'][i]
-        dre, = x.plot(np.real(tarr['dr'][i])*100.0, np.imag(tarr['dr'][i])*100.0, markers[0], markersize=markersize, color=color,
-               label=label)
-        dim, = x.plot(np.real(tarr['dl'][i])*100.0, np.imag(tarr['dl'][i])*100.0, markers[1], markersize=markersize, color=color,
-               label=label)
+        dre, = x.plot(np.real(tarr['dr'][i])*100.0, np.imag(tarr['dr'][i])*100.0, markers[0],
+                      markersize=markersize, color=color, label=label)
+        dim, = x.plot(np.real(tarr['dl'][i])*100.0, np.imag(tarr['dl'][i])*100.0, markers[1],
+                      markersize=markersize, color=color, label=label)
         plot_points.append([dre,dim])
 
     # Data ranges
