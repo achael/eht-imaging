@@ -749,17 +749,11 @@ def imgsum_pol(im, obs, obs_uncal, outname,
 
     """
 
-    plt.rc('font', family='serif')
-    plt.rc('text', usetex=True)
-    plt.rc('font', size=FONTSIZE)      
-    plt.rc('axes', titlesize=FONTSIZE)
-    plt.rc('axes', labelsize=FONTSIZE) 
-    plt.rc('xtick', labelsize=FONTSIZE)
-    plt.rc('ytick', labelsize=FONTSIZE) 
-    plt.rc('legend', fontsize=FONTSIZE)    
-    plt.rc('figure', titlesize=FONTSIZE) 
 
-    if fontsize==0: fontsize=FONTSIZE
+    # switch polreps and mask nan data
+    im = im.switch_polrep(polrep_out='stokes')
+    obs =  obs.switch_polrep(polrep_out='stokes')
+    obs_uncal = obs_uncal.switch_polrep(polrep_out='stokes')
 
     mask_nan = (np.isnan(obs_uncal.data['vis']) + 
                 np.isnan(obs_uncal.data['qvis']) + 
@@ -772,6 +766,24 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                 np.isnan(obs.data['uvis']) + 
                 np.isnan(obs.data['vvis']))
     obs.data = obs.data[~mask_nan]
+
+
+    if len(im.qvec)==0 or len(im.uvec)==0:
+        raise Exception("the image isn't polarized!")
+
+
+    plt.rc('font', family='serif')
+    plt.rc('text', usetex=True)
+    plt.rc('font', size=FONTSIZE)      
+    plt.rc('axes', titlesize=FONTSIZE)
+    plt.rc('axes', labelsize=FONTSIZE) 
+    plt.rc('xtick', labelsize=FONTSIZE)
+    plt.rc('ytick', labelsize=FONTSIZE) 
+    plt.rc('legend', fontsize=FONTSIZE)    
+    plt.rc('figure', titlesize=FONTSIZE) 
+
+    if fontsize==0: fontsize=FONTSIZE
+
 
     snrcut_dict = {key: 0. for key in ['m','pvis','qvis','uvis']}
 
@@ -1007,8 +1019,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
                 obs_polcal = obs_uncal.copy()
                 obs_polcal.tarr = leakage_arr.tarr
             else:
-                obs_polcal = leakage_cal(obs_uncal, im,
-                                         leakage_tol=1e6, ttype='nfft')
+                obs_polcal = leakage_cal(obs_uncal, im, leakage_tol=1e6, ttype='nfft')
 
             ax = plot_leakage(obs_polcal, axis=ax, show=False,
                               rangex=[-20,20], rangey=[-20,20], markersize=5) 
