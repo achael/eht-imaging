@@ -31,6 +31,7 @@ import datetime
 
 from ehtim.plotting.comp_plots import plotall_obs_compare, plot_bl_obs_compare, plot_cphase_obs_compare, plot_camp_obs_compare
 from ehtim.calibrating.self_cal import self_cal as selfcal
+from ehtim.calibrating.pol_cal import leakage_cal, plot_leakage
 from ehtim.const_def import *
 
 FONTSIZE = 22
@@ -1572,7 +1573,7 @@ def _display_img_pol(im, beamparams=None, scale='linear',gamma=0.5,cbar_lims=Fal
         ax = ax.imshow(imarr, cmap=plt.get_cmap(cfun), interpolation=interp)
     
     if contour:
-        plt.contour(imarr, colors='k',linewidth=.25)
+        plt.contour(imarr, colors='k',linewidths=.25)
 
     if polticks:
         im_stokes = im.switch_polrep(polrep_out='stokes')
