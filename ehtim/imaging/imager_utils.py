@@ -40,6 +40,7 @@ from . import linearize_energy as le
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
+from ehtim.statistics.dataframes import *
 
 from IPython import display
 
@@ -55,7 +56,7 @@ NHIST = 100 # number of steps to store for hessian approx
 MAXIT = 100 # maximum number of iterations
 STOP = 1.e-8 # convergence criterion
 
-DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'logamp']
+DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag', 'logamp']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1w', 'lA', 'patch', 'simple', 'compact', 'compact2','rgauss']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
@@ -80,9 +81,9 @@ def imager_func(Obsdata, InitIm, Prior, flux,
            Prior (Image): The Image object with the prior image
            flux (float): The total flux of the output image in Jy
 
-           d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
-           d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
-           d3 (str): The third data term; options are 'vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp'
+           d1 (str): The first data term; options are 'vis', 'bs', 'amp', 'cphase', 'cphase_diag' 'camp', 'logcamp', 'logcamp_diag'
+           d2 (str): The second data term; options are 'vis', 'bs', 'amp', 'cphase', 'cphase_diag' 'camp', 'logcamp', 'logcamp_diag'
+           d3 (str): The third data term; options are 'vis', 'bs', 'amp', 'cphase', 'cphase_diag' 'camp', 'logcamp', 'logcamp_diag'
 
            s1 (str): The first regularizer; options are 'simple', 'gs', 'tv', 'tv2', 'l1', 'patch','compact','compact2','rgauss'
            s2 (str): The second regularizer; options are 'simple', 'gs', 'tv', 'tv2','l1', 'patch','compact','compact2','rgauss'
@@ -382,16 +383,22 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
             chisq = chisq_bs(imvec, A, data, sigma)
         elif dtype == 'cphase':
             chisq = chisq_cphase(imvec, A, data, sigma)
+        elif dtype == 'cphase_diag':
+            chisq = chisq_cphase_diag(imvec, A, data, sigma)
         elif dtype == 'camp':
             chisq = chisq_camp(imvec, A, data, sigma)
         elif dtype == 'logcamp':
             chisq = chisq_logcamp(imvec, A, data, sigma)
+        elif dtype == 'logcamp_diag':
+            chisq = chisq_logcamp_diag(imvec, A, data, sigma)
 
     elif ttype== 'fast':
         if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
 
-        vis_arr = fft_imvec(imvec, A[0])
+        if dtype not in ['cphase_diag','logcamp_diag']:
+            vis_arr = fft_imvec(imvec, A[0])
+
         if dtype == 'vis':
             chisq = chisq_vis_fft(vis_arr, A, data, sigma)
         elif dtype == 'amp':
@@ -402,10 +409,14 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
             chisq = chisq_bs_fft(vis_arr, A, data, sigma)
         elif dtype == 'cphase':
             chisq = chisq_cphase_fft(vis_arr, A, data, sigma)
+        elif dtype == 'cphase_diag':
+            chisq = chisq_cphase_diag_fft(imvec, A, data, sigma)
         elif dtype == 'camp':
             chisq = chisq_camp_fft(vis_arr, A, data, sigma)
         elif dtype == 'logcamp':
             chisq = chisq_logcamp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'logcamp_diag':
+            chisq = chisq_logcamp_diag_fft(imvec, A, data, sigma)
 
     elif ttype== 'nfft':
         if len(mask)>0 and np.any(np.invert(mask)):
@@ -421,10 +432,14 @@ def chisq(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
             chisq = chisq_bs_nfft(imvec, A, data, sigma)
         elif dtype == 'cphase':
             chisq = chisq_cphase_nfft(imvec, A, data, sigma)
+        elif dtype == 'cphase_diag':
+            chisq = chisq_cphase_diag_nfft(imvec, A, data, sigma)
         elif dtype == 'camp':
             chisq = chisq_camp_nfft(imvec, A, data, sigma)
         elif dtype == 'logcamp':
             chisq = chisq_logcamp_nfft(imvec, A, data, sigma)
+        elif dtype == 'logcamp_diag':
+            chisq = chisq_logcamp_diag_nfft(imvec, A, data, sigma)
 
     return chisq
 
@@ -438,7 +453,7 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
         return chisqgrad
 
     if ttype not in ['fast','direct','nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
+        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
 
     if ttype == 'direct':
         if dtype == 'vis':
@@ -451,15 +466,21 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
             chisqgrad = chisqgrad_bs(imvec, A, data, sigma)
         elif dtype == 'cphase':
             chisqgrad = chisqgrad_cphase(imvec, A, data, sigma)
+        elif dtype == 'cphase_diag':
+            chisqgrad = chisqgrad_cphase_diag(imvec, A, data, sigma)
         elif dtype == 'camp':
             chisqgrad = chisqgrad_camp(imvec, A, data, sigma)
         elif dtype == 'logcamp':
             chisqgrad = chisqgrad_logcamp(imvec, A, data, sigma)
+        elif dtype == 'logcamp_diag':
+            chisqgrad = chisqgrad_logcamp_diag(imvec, A, data, sigma)
 
     elif ttype== 'fast':
         if len(mask)>0 and np.any(np.invert(mask)):
             imvec = embed(imvec, mask, randomfloor=True)
-        vis_arr = fft_imvec(imvec, A[0])
+        
+        if dtype not in ['cphase_diag','logcamp_diag']:
+            vis_arr = fft_imvec(imvec, A[0])
 
         if dtype == 'vis':
             chisqgrad = chisqgrad_vis_fft(vis_arr, A, data, sigma)
@@ -471,10 +492,14 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
             chisqgrad = chisqgrad_bs_fft(vis_arr, A, data, sigma)
         elif dtype == 'cphase':
             chisqgrad = chisqgrad_cphase_fft(vis_arr, A, data, sigma)
+        elif dtype == 'cphase_diag':
+            chisqgrad = chisqgrad_cphase_diag_fft(imvec, A, data, sigma)
         elif dtype == 'camp':
             chisqgrad = chisqgrad_camp_fft(vis_arr, A, data, sigma)
         elif dtype == 'logcamp':
             chisqgrad = chisqgrad_logcamp_fft(vis_arr, A, data, sigma)
+        elif dtype == 'logcamp_diag':
+            chisqgrad = chisqgrad_logcamp_diag_fft(imvec, A, data, sigma)
 
         if len(mask)>0 and np.any(np.invert(mask)):
             chisqgrad = chisqgrad[mask]
@@ -493,10 +518,14 @@ def chisqgrad(imvec, A, data, sigma, dtype, ttype='direct', mask=None):
             chisqgrad = chisqgrad_bs_nfft(imvec, A, data, sigma)
         elif dtype == 'cphase':
             chisqgrad = chisqgrad_cphase_nfft(imvec, A, data, sigma)
+        elif dtype == 'cphase_diag':
+            chisqgrad = chisqgrad_cphase_diag_nfft(imvec, A, data, sigma)
         elif dtype == 'camp':
             chisqgrad = chisqgrad_camp_nfft(imvec, A, data, sigma)
         elif dtype == 'logcamp':
             chisqgrad = chisqgrad_logcamp_nfft(imvec, A, data, sigma)
+        elif dtype == 'logcamp_diag':
+            chisqgrad = chisqgrad_logcamp_diag_nfft(imvec, A, data, sigma)
 
         if len(mask)>0 and np.any(np.invert(mask)):
             chisqgrad = chisqgrad[mask]
@@ -627,7 +656,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
     ttype=kwargs.get('ttype','direct')
     (data, sigma, A) = (False, False, False)
     if ttype not in ['fast','direct','nfft']:
-        raise Exception("Possible ttype values are 'fast', 'direct','nfft'!")
+        raise Exception("Possible ttype values are 'fast', 'direct', 'nfft'!")
 
     if ttype=='direct':
         if dtype == 'vis':
@@ -638,10 +667,14 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
             (data, sigma, A) = chisqdata_bs(Obsdata, Prior, mask, pol=pol,**kwargs)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase(Obsdata, Prior, mask, pol=pol,**kwargs)
+        elif dtype == 'cphase_diag':
+            (data, sigma, A) = chisqdata_cphase_diag(Obsdata, Prior, mask, pol=pol,**kwargs)
         elif dtype == 'camp':
             (data, sigma, A) = chisqdata_camp(Obsdata, Prior, mask, pol=pol,**kwargs)
         elif dtype == 'logcamp':
             (data, sigma, A) = chisqdata_logcamp(Obsdata, Prior, mask, pol=pol,**kwargs)
+        elif dtype == 'logcamp_diag':
+            (data, sigma, A) = chisqdata_logcamp_diag(Obsdata, Prior, mask, pol=pol,**kwargs)
 
     elif ttype=='fast':
         if dtype=='vis':
@@ -652,10 +685,14 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
             (data, sigma, A) = chisqdata_bs_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase_fft(Obsdata, Prior, pol=pol, **kwargs)
+        elif dtype == 'cphase_diag':
+            (data, sigma, A) = chisqdata_cphase_diag_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'camp':
             (data, sigma, A) = chisqdata_camp_fft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'logcamp':
             (data, sigma, A) = chisqdata_logcamp_fft(Obsdata, Prior, pol=pol, **kwargs)
+        elif dtype == 'logcamp_diag':
+            (data, sigma, A) = chisqdata_logcamp_diag_fft(Obsdata, Prior, pol=pol, **kwargs)
 
     elif ttype=='nfft':
         if dtype=='vis':
@@ -666,10 +703,14 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
             (data, sigma, A) = chisqdata_bs_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'cphase':
             (data, sigma, A) = chisqdata_cphase_nfft(Obsdata, Prior, pol=pol, **kwargs)
+        elif dtype == 'cphase_diag':
+            (data, sigma, A) = chisqdata_cphase_diag_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'camp':
             (data, sigma, A) = chisqdata_camp_nfft(Obsdata, Prior, pol=pol, **kwargs)
         elif dtype == 'logcamp':
             (data, sigma, A) = chisqdata_logcamp_nfft(Obsdata, Prior, pol=pol, **kwargs)
+        elif dtype == 'logcamp_diag':
+            (data, sigma, A) = chisqdata_logcamp_diag_nfft(Obsdata, Prior, pol=pol, **kwargs)
 
 
     return (data, sigma, A)
@@ -753,6 +794,52 @@ def chisqgrad_cphase(imvec, Amatrices, clphase, sigma):
     out  = -(2.0/len(clphase)) * np.imag(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))
     return out
 
+def chisq_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
+    """Diagonalized closure phases (normalized) chi-squared"""
+    clphase_diag = np.concatenate(clphase_diag) * DEGREE
+    sigma = np.concatenate(sigma) * DEGREE
+
+    A3_diag = Amatrices[0]
+    tform_mats = Amatrices[1]
+
+    clphase_diag_samples = []
+    for iA, A3 in enumerate(A3_diag):
+        clphase_samples = np.angle(np.dot(A3[0], imvec) * np.dot(A3[1], imvec) * np.dot(A3[2], imvec))
+        clphase_diag_samples.append(np.dot(tform_mats[iA],clphase_samples))
+    clphase_diag_samples = np.concatenate(clphase_diag_samples)
+
+    chisq = (2.0/len(clphase_diag)) * np.sum((1.0 - np.cos(clphase_diag-clphase_diag_samples))/(sigma**2))
+    return chisq
+
+def chisqgrad_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
+    """The gradient of the diagonalized closure phase chi-squared"""
+    clphase_diag = clphase_diag * DEGREE
+    sigma = sigma * DEGREE
+
+    A3_diag = Amatrices[0]
+    tform_mats = Amatrices[1]
+
+    deriv = np.zeros_like(imvec)
+    for iA, A3 in enumerate(A3_diag):
+
+        i1 = np.dot(A3[0], imvec)
+        i2 = np.dot(A3[1], imvec)
+        i3 = np.dot(A3[2], imvec)
+        clphase_samples = np.angle(i1 * i2 * i3)
+        clphase_diag_samples = np.dot(tform_mats[iA],clphase_samples)
+
+        clphase_diag_measured = clphase_diag[iA]
+        clphase_diag_sigma = sigma[iA]
+
+        term1 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i1)),A3[0])
+        term2 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i2)),A3[1])
+        term3 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i3)),A3[2])
+        deriv += -2.0*np.imag(term1 + term2 + term3)
+
+    deriv *= 1.0/np.float(len(np.concatenate(clphase_diag)))
+
+    return deriv
+
 def chisq_camp(imvec, Amatrices, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared"""
 
@@ -805,6 +892,60 @@ def chisqgrad_logcamp(imvec, Amatrices, log_clamp, sigma):
     pt4 = -pp / i4
     out = (-2.0/len(log_clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
     return out
+
+def chisq_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
+    """Diagonalized log closure amplitudes (normalized) chi-squared"""
+
+    log_clamp_diag = np.concatenate(log_clamp_diag)
+    sigma = np.concatenate(sigma)
+
+    A4_diag = Amatrices[0]
+    tform_mats = Amatrices[1]
+
+    log_clamp_diag_samples = []
+    for iA, A4 in enumerate(A4_diag):
+
+        a1 = np.abs(np.dot(A4[0], imvec))
+        a2 = np.abs(np.dot(A4[1], imvec))
+        a3 = np.abs(np.dot(A4[2], imvec))
+        a4 = np.abs(np.dot(A4[3], imvec))
+
+        log_clamp_samples = np.log(a1) + np.log(a2) - np.log(a3) - np.log(a4)
+        log_clamp_diag_samples.append(np.dot(tform_mats[iA],log_clamp_samples))
+
+    log_clamp_diag_samples = np.concatenate(log_clamp_diag_samples)
+
+    chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / (len(log_clamp_diag))
+    return  chisq
+
+def chisqgrad_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
+    """The gradient of the diagonalized log closure amplitude chi-squared"""
+
+    A4_diag = Amatrices[0]
+    tform_mats = Amatrices[1]
+
+    deriv = np.zeros_like(imvec)
+    for iA, A4 in enumerate(A4_diag):
+
+        i1 = np.dot(A4[0], imvec)
+        i2 = np.dot(A4[1], imvec)
+        i3 = np.dot(A4[2], imvec)
+        i4 = np.dot(A4[3], imvec)
+        log_clamp_samples = np.log(np.abs(i1)) + np.log(np.abs(i2)) - np.log(np.abs(i3)) - np.log(np.abs(i4))
+        log_clamp_diag_samples = np.dot(tform_mats[iA],log_clamp_samples)
+
+        log_clamp_diag_measured = log_clamp_diag[iA]
+        log_clamp_diag_sigma = sigma[iA]
+
+        term1 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i1)),A4[0])
+        term2 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i2)),A4[1])
+        term3 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i3)),A4[2])
+        term4 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i4)),A4[3])
+        deriv += -2.0*np.real(term1 + term2 - term3 - term4)
+
+    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+
+    return deriv
 
 def chisq_logamp(imvec, A, amp, sigma):
     """Log Visibility Amplitudes (normalized) chi-squared"""
@@ -979,6 +1120,70 @@ def chisqgrad_cphase_fft(vis_arr, A, clphase, sigma):
 
     return out
 
+def chisq_cphase_diag_fft(imvec, A, clphase_diag, sigma):
+    """Diagonalized closure phases (normalized) chi-squared from fft
+    """
+
+    clphase_diag = np.concatenate(clphase_diag) * DEGREE
+    sigma = np.concatenate(sigma) * DEGREE
+
+    A3_diag = A[0]
+    tform_mats = A[1]
+
+    clphase_diag_samples = []
+    for iA, A3 in enumerate(A3_diag):
+        im_info, sampler_info_list, gridder_info_list = A3
+        vis_arr = fft_imvec(imvec, A3[0])
+        clphase_samples = np.angle(sampler(vis_arr, sampler_info_list, sample_type="bs"))
+        clphase_diag_samples.append(np.dot(tform_mats[iA],clphase_samples))
+    clphase_diag_samples = np.concatenate(clphase_diag_samples)
+
+    chisq= (2.0/len(clphase_diag)) * np.sum((1.0 - np.cos(clphase_diag-clphase_diag_samples))/(sigma**2))
+    return chisq
+
+def chisqgrad_cphase_diag_fft(imvec, A, clphase_diag, sigma):
+    """The gradient of the closure phase chi-squared from fft"""
+
+    clphase_diag = clphase_diag * DEGREE
+    sigma = sigma * DEGREE
+
+    A3_diag = A[0]
+    tform_mats = A[1]
+
+    deriv = np.zeros_like(imvec)
+    for iA, A3 in enumerate(A3_diag):
+
+        im_info, sampler_info_list, gridder_info_list = A3
+        vis_arr = fft_imvec(imvec, A3[0])
+
+        #sample visibilities and closure phases
+        v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
+        v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
+        v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
+        clphase_samples = np.angle(v1*v2*v3)
+        clphase_diag_samples = np.dot(tform_mats[iA],clphase_samples)
+
+        clphase_diag_measured = clphase_diag[iA]
+        clphase_diag_sigma = sigma[iA]
+
+        for j in range(len(clphase_diag_measured)):
+            pref = 2.0 * tform_mats[iA][j,:] * np.sin(clphase_diag_measured[j] - clphase_diag_samples[j])/(clphase_diag_sigma[j]**2)
+            pt1  = pref/v1.conj() * sampler_info_list[0].pulsefac.conj()
+            pt2  = pref/v2.conj() * sampler_info_list[1].pulsefac.conj()
+            pt3  = pref/v3.conj() * sampler_info_list[2].pulsefac.conj()
+
+            # Setup and perform the inverse FFT
+            wdiff = gridder([pt1,pt2,pt3], gridder_info_list)
+            grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
+            grad_arr = grad_arr * (im_info.npad * im_info.npad)
+
+            # extract relevant cells and flatten
+            deriv += np.imag(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten())
+
+    deriv *= 1.0/np.float(len(np.concatenate(clphase_diag)))
+
+    return deriv
+
 def chisq_camp_fft(vis_arr, A, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared from fft
     """
@@ -1064,6 +1269,72 @@ def chisqgrad_logcamp_fft(vis_arr, A, log_clamp, sigma):
 
     return out
 
+def chisq_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
+    """Diagonalized log closure amplitudes (normalized) chi-squared from fft
+    """
+
+    log_clamp_diag = np.concatenate(log_clamp_diag)
+    sigma = np.concatenate(sigma)
+
+    A4_diag = A[0]
+    tform_mats = A[1]
+
+    log_clamp_diag_samples = []
+    for iA, A4 in enumerate(A4_diag):
+        im_info, sampler_info_list, gridder_info_list = A4
+        vis_arr = fft_imvec(imvec, A4[0])
+        log_clamp_samples = np.log(sampler(vis_arr, sampler_info_list, sample_type='camp'))
+        log_clamp_diag_samples.append(np.dot(tform_mats[iA],log_clamp_samples))
+    log_clamp_diag_samples = np.concatenate(log_clamp_diag_samples)
+
+    chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / (len(log_clamp_diag))
+
+    return chisq
+
+def chisqgrad_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
+
+    """The gradient of the diagonalized log closure amplitude chi-squared from fft
+    """
+
+    A4_diag = A[0]
+    tform_mats = A[1]
+
+    deriv = np.zeros_like(imvec)
+    for iA, A4 in enumerate(A4_diag):
+
+        im_info, sampler_info_list, gridder_info_list = A4
+        vis_arr = fft_imvec(imvec, A4[0])
+
+        # sampled visibility and closure amplitudes
+        v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
+        v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
+        v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
+        v4 = sampler(vis_arr, [sampler_info_list[3]], sample_type="vis")
+        log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
+        log_clamp_diag_samples = np.dot(tform_mats[iA],log_clamp_samples)
+
+        log_clamp_diag_measured = log_clamp_diag[iA]
+        log_clamp_diag_sigma = sigma[iA]
+
+        for j in range(len(log_clamp_diag_measured)):
+
+            pref = -2.0 * tform_mats[iA][j,:] * (log_clamp_diag_measured[j] - log_clamp_diag_samples[j])/(log_clamp_diag_sigma[j]**2)
+            pt1 = pref / v1.conj()* sampler_info_list[0].pulsefac.conj()
+            pt2 = pref / v2.conj()* sampler_info_list[1].pulsefac.conj()
+            pt3 = -pref / v3.conj()* sampler_info_list[2].pulsefac.conj()
+            pt4 = -pref / v4.conj()* sampler_info_list[3].pulsefac.conj()
+
+            # Setup and perform the inverse FFT
+            wdiff = gridder([pt1,pt2,pt3,pt4], gridder_info_list)
+            grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
+            grad_arr = grad_arr * (im_info.npad * im_info.npad)
+
+            # extract relevant cells and flatten
+            deriv += np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten())
+
+    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+
+    return deriv
 
 def chisq_logamp_fft(vis_arr, A, amp, sigma):
     """Visibility amplitude chi-squared from fft
@@ -1373,6 +1644,125 @@ def chisqgrad_cphase_nfft(imvec, A, clphase, sigma):
     out = out1 + out2 + out3
     return out
 
+def chisq_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
+    """Diagonalized closure phases (normalized) chi-squared from nfft
+    """
+
+    clphase_diag = np.concatenate(clphase_diag) * DEGREE
+    sigma = np.concatenate(sigma) * DEGREE
+
+    A3_diag = A[0]
+    tform_mats = A[1]
+
+    clphase_diag_samples = []
+    for iA, A3 in enumerate(A3_diag):
+
+        #get nfft objects
+        nfft_info1 = A3[0]
+        plan1 = nfft_info1.plan
+        pulsefac1 = nfft_info1.pulsefac
+
+        nfft_info2 = A3[1]
+        plan2 = nfft_info2.plan
+        pulsefac2 = nfft_info2.pulsefac
+
+        nfft_info3 = A3[2]
+        plan3 = nfft_info3.plan
+        pulsefac3 = nfft_info3.pulsefac
+
+        #compute uniform --> nonuniform transforms
+        plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+        plan1.trafo()
+        samples1 = plan1.f.copy()*pulsefac1
+
+        plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+        plan2.trafo()
+        samples2 = plan2.f.copy()*pulsefac2
+
+        plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+        plan3.trafo()
+        samples3 = plan3.f.copy()*pulsefac3
+
+        clphase_samples = np.angle(samples1*samples2*samples3)
+        clphase_diag_samples.append(np.dot(tform_mats[iA],clphase_samples))
+
+    clphase_diag_samples = np.concatenate(clphase_diag_samples)
+
+    #compute chi^2
+    chisq= (2.0/len(clphase_diag)) * np.sum((1.0 - np.cos(clphase_diag-clphase_diag_samples))/(sigma**2))
+
+    return chisq
+
+def chisqgrad_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
+    """The gradient of the diagonalized closure phase chi-squared from nfft"""
+
+    clphase_diag = clphase_diag * DEGREE
+    sigma = sigma * DEGREE
+
+    A3_diag = A[0]
+    tform_mats = A[1]
+
+    deriv = np.zeros_like(imvec)
+    for iA, A3 in enumerate(A3_diag):
+
+        #get nfft objects
+        nfft_info1 = A3[0]
+        plan1 = nfft_info1.plan
+        pulsefac1 = nfft_info1.pulsefac
+
+        nfft_info2 = A3[1]
+        plan2 = nfft_info2.plan
+        pulsefac2 = nfft_info2.pulsefac
+
+        nfft_info3 = A3[2]
+        plan3 = nfft_info3.plan
+        pulsefac3 = nfft_info3.pulsefac
+
+        #compute uniform --> nonuniform transforms
+        plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+        plan1.trafo()
+        v1 = plan1.f.copy()*pulsefac1
+
+        plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+        plan2.trafo()
+        v2 = plan2.f.copy()*pulsefac2
+
+        plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+        plan3.trafo()
+        v3 = plan3.f.copy()*pulsefac3
+
+        clphase_samples = np.angle(v1*v2*v3)
+        clphase_diag_samples = np.dot(tform_mats[iA],clphase_samples)
+
+        clphase_diag_measured = clphase_diag[iA]
+        clphase_diag_sigma = sigma[iA]
+
+        for j in range(len(clphase_diag_measured)):
+
+            pref = 2.0 * tform_mats[iA][j,:] * np.sin(clphase_diag_measured[j] - clphase_diag_samples[j])/(clphase_diag_sigma[j]**2)
+            pt1  = pref/v1.conj() * pulsefac1.conj()
+            pt2  = pref/v2.conj() * pulsefac2.conj()
+            pt3  = pref/v3.conj() * pulsefac3.conj()
+
+            # Setup and perform the inverse FFT
+            plan1.f = pt1
+            plan1.adjoint()
+            out1 = np.imag((plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim))
+
+            plan2.f = pt2
+            plan2.adjoint()
+            out2 = np.imag((plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim))
+
+            plan3.f = pt3
+            plan3.adjoint()
+            out3 = np.imag((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
+
+            deriv += out1 + out2 + out3
+
+    deriv *= 1.0/np.float(len(np.concatenate(clphase_diag)))
+
+    return deriv
+
 def chisq_camp_nfft(imvec, A, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared from fft
     """
@@ -1485,7 +1875,7 @@ def chisqgrad_camp_nfft(imvec, A, clamp, sigma):
     return out
 
 def chisq_logcamp_nfft(imvec, A, log_clamp, sigma):
-    """Closure Amplitudes (normalized) chi-squared from fft
+    """Log Closure Amplitudes (normalized) chi-squared from fft
     """
 
     #get nfft objects
@@ -1530,7 +1920,7 @@ def chisq_logcamp_nfft(imvec, A, log_clamp, sigma):
 
 def chisqgrad_logcamp_nfft(imvec, A, log_clamp, sigma):
 
-    """The gradient of the closure amplitude chi-squared from fft
+    """The gradient of the log closure amplitude chi-squared from fft
     """
 
     #get nfft objects
@@ -1596,7 +1986,146 @@ def chisqgrad_logcamp_nfft(imvec, A, log_clamp, sigma):
     out = out1 + out2 + out3 + out4
     return out
 
+def chisq_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
+    """Diagonalized log closure amplitudes (normalized) chi-squared from nfft
+    """
 
+    log_clamp_diag = np.concatenate(log_clamp_diag)
+    sigma = np.concatenate(sigma)
+
+    A4_diag = A[0]
+    tform_mats = A[1]
+
+    log_clamp_diag_samples = []
+    for iA, A4 in enumerate(A4_diag):
+
+        #get nfft objects
+        nfft_info1 = A4[0]
+        plan1 = nfft_info1.plan
+        pulsefac1 = nfft_info1.pulsefac
+
+        nfft_info2 = A4[1]
+        plan2 = nfft_info2.plan
+        pulsefac2 = nfft_info2.pulsefac
+
+        nfft_info3 = A4[2]
+        plan3 = nfft_info3.plan
+        pulsefac3 = nfft_info3.pulsefac
+
+        nfft_info4 = A4[3]
+        plan4 = nfft_info4.plan
+        pulsefac4 = nfft_info4.pulsefac
+
+        #compute uniform --> nonuniform transforms
+        plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+        plan1.trafo()
+        samples1 = plan1.f.copy()*pulsefac1
+
+        plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+        plan2.trafo()
+        samples2 = plan2.f.copy()*pulsefac2
+
+        plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+        plan3.trafo()
+        samples3 = plan3.f.copy()*pulsefac3
+
+        plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim,nfft_info4.xdim)).T
+        plan4.trafo()
+        samples4 = plan4.f.copy()*pulsefac4
+
+        log_clamp_samples = (np.log(np.abs(samples1)) + np.log(np.abs(samples2))
+                            - np.log(np.abs(samples3)) - np.log(np.abs(samples4)))
+
+        log_clamp_diag_samples.append(np.dot(tform_mats[iA],log_clamp_samples))
+
+    log_clamp_diag_samples = np.concatenate(log_clamp_diag_samples)
+
+    #compute chi^2
+    chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / (len(log_clamp_diag))
+
+    return chisq
+
+def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
+
+    """The gradient of the diagonalized log closure amplitude chi-squared from fft
+    """
+
+    A4_diag = A[0]
+    tform_mats = A[1]
+
+    deriv = np.zeros_like(imvec)
+    for iA, A4 in enumerate(A4_diag):
+
+        #get nfft objects
+        nfft_info1 = A4[0]
+        plan1 = nfft_info1.plan
+        pulsefac1 = nfft_info1.pulsefac
+
+        nfft_info2 = A4[1]
+        plan2 = nfft_info2.plan
+        pulsefac2 = nfft_info2.pulsefac
+
+        nfft_info3 = A4[2]
+        plan3 = nfft_info3.plan
+        pulsefac3 = nfft_info3.pulsefac
+
+        nfft_info4 = A4[3]
+        plan4 = nfft_info4.plan
+        pulsefac4 = nfft_info4.pulsefac
+
+        #compute uniform --> nonuniform transforms
+        plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+        plan1.trafo()
+        v1 = plan1.f.copy()*pulsefac1
+
+        plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+        plan2.trafo()
+        v2 = plan2.f.copy()*pulsefac2
+
+        plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+        plan3.trafo()
+        v3 = plan3.f.copy()*pulsefac3
+
+        plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim,nfft_info4.xdim)).T
+        plan4.trafo()
+        v4 = plan4.f.copy()*pulsefac4
+
+        log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
+        log_clamp_diag_samples = np.dot(tform_mats[iA],log_clamp_samples)
+
+        log_clamp_diag_measured = log_clamp_diag[iA]
+        log_clamp_diag_sigma = sigma[iA]
+
+        for j in range(len(log_clamp_diag_measured)):
+
+            pp = -2.0 * tform_mats[iA][j,:] * (log_clamp_diag_measured[j] - log_clamp_diag_samples[j])/(log_clamp_diag_sigma[j]**2)
+            pt1 = pp / v1.conj()* pulsefac1.conj()
+            pt2 = pp / v2.conj()* pulsefac2.conj()
+            pt3 = -pp / v3.conj()* pulsefac3.conj()
+            pt4 = -pp / v4.conj()* pulsefac4.conj()
+
+            # Setup and perform the inverse FFT
+            plan1.f = pt1
+            plan1.adjoint()
+            out1 = np.real((plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim))
+
+            plan2.f = pt2
+            plan2.adjoint()
+            out2 = np.real((plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim))
+
+            plan3.f = pt3
+            plan3.adjoint()
+            out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
+
+            plan4.f = pt4
+            plan4.adjoint()
+            out4 = np.real((plan4.f_hat.copy().T).reshape(nfft_info4.xdim*nfft_info4.ydim))
+
+            deriv += out1 + out2 + out3 + out4
+
+    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+
+    return deriv
 
 def chisq_logamp_nfft(imvec, A, amp, sigma):
     """Visibility log amplitude chi-squared from nfft
@@ -2353,6 +2882,61 @@ def chisqdata_cphase(Obsdata, Prior, mask, pol='I',**kwargs):
          )
     return (clphase, sigma, A3)
 
+def chisqdata_cphase_diag(Obsdata, Prior, mask, pol='I',**kwargs):
+    """Return the data, sigmas, and fourier matrices for diagonalized closure phases
+    """
+
+    # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    uv_min = kwargs.get('cp_uv_min', False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+
+    # unpack data
+    vtype=vis_poldict[pol]
+    clphasearr = Obsdata.c_phases_diag(vtype=vtype,count=count,snrcut=snrcut,uv_min=uv_min)
+
+    # loop over timestamps
+    clphase_diag = []
+    sigma_diag = []
+    A3_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clphasearr):
+
+        # get diagonalized closure phases and errors
+        clphase_diag.append(cl[0]['cphase'])
+        sigma_diag.append(cl[0]['sigmacp'])
+
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        # compute Fourier matrices
+        A3 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
+              ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
+              ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask)
+             )
+        A3_diag.append(A3)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    Amatrices = (np.array(A3_diag),np.array(tform_mats))
+
+    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+
 def chisqdata_camp(Obsdata, Prior, mask, pol='I',**kwargs):
     """Return the data, sigmas, and fourier matrices for closure amplitudes
     """
@@ -2443,6 +3027,64 @@ def chisqdata_logcamp(Obsdata, Prior, mask,pol='I', **kwargs):
 
     return (clamp, sigma, A4)
 
+def chisqdata_logcamp_diag(Obsdata, Prior, mask,pol='I', **kwargs):
+    """Return the data, sigmas, and fourier matrices for diagonalized log closure amplitudes
+    """
+    # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+
+    # unpack data & mask low snr points
+    vtype=vis_poldict[pol]
+    clamparr = Obsdata.c_log_amplitudes_diag(vtype=vtype,count=count,debias=debias,snrcut=snrcut)
+
+    # loop over timestamps
+    clamp_diag = []
+    sigma_diag = []
+    A4_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clamparr):
+
+        # get diagonalized log closure amplitudes and errors
+        clamp_diag.append(cl[0]['camp'])
+        sigma_diag.append(cl[0]['sigmaca'])
+
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        u4 = cl[2][:,3].astype('float')
+        v4 = cl[3][:,3].astype('float')
+        uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
+
+        # compute Fourier matrices
+        A4 = (ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv1, pulse=Prior.pulse, mask=mask),
+              ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv2, pulse=Prior.pulse, mask=mask),
+              ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv3, pulse=Prior.pulse, mask=mask),
+              ftmatrix(Prior.psize, Prior.xdim, Prior.ydim, uv4, pulse=Prior.pulse, mask=mask)
+             )
+        A4_diag.append(A4)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    Amatrices = (np.array(A4_diag),np.array(tform_mats))
+
+    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
 
 ##################################################################################################
 # FFT Chi^2 Data functions
@@ -2643,6 +3285,70 @@ def chisqdata_cphase_fft(Obsdata, Prior, pol='I',**kwargs):
 
     return (clphase, sigma, A)
 
+def chisqdata_cphase_diag_fft(Obsdata, Prior, pol='I',**kwargs):
+
+    """Return the data, sigmas, uv points, and FFT info for diagonalized closure phases
+    """
+    # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    uv_min = kwargs.get('cp_uv_min', False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data
+    vtype=vis_poldict[pol]
+    clphasearr = Obsdata.c_phases_diag(vtype=vtype,count=count,snrcut=snrcut,uv_min=uv_min)
+
+    # loop over timestamps
+    clphase_diag = []
+    sigma_diag = []
+    A3_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clphasearr):
+
+        # get diagonalized closure phases and errors
+        clphase_diag.append(cl[0]['cphase'])
+        sigma_diag.append(cl[0]['sigmacp'])
+
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        # prepare image and fft info objects
+        npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+        im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+        gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
+        gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
+        gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+
+        sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0]]
+        gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1]]
+        A3 = (im_info, sampler_info_list, gridder_info_list)
+        A3_diag.append(A3)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    Amatrices = (A3_diag,np.array(tform_mats))
+
+    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+
 def chisqdata_camp_fft(Obsdata, Prior, pol='I',**kwargs):
 
     """Return the data, sigmas, uv points, and FFT info for closure amplitudes
@@ -2754,6 +3460,76 @@ def chisqdata_logcamp_fft(Obsdata, Prior,pol='I', **kwargs):
     A = (im_info, sampler_info_list, gridder_info_list)
 
     return (clamp, sigma, A)
+
+def chisqdata_logcamp_diag_fft(Obsdata, Prior,pol='I', **kwargs):
+
+    """Return the data, sigmas, uv points, and FFT info for diagonalized log closure amplitudes
+    """
+    # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    conv_func = kwargs.get('conv_func', GRIDDER_CONV_FUNC_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+    order = kwargs.get('order', FFT_INTERP_DEFAULT)
+
+    # unpack data & mask low snr points
+    vtype=vis_poldict[pol]
+    clamparr = Obsdata.c_log_amplitudes_diag(vtype=vtype,count=count,debias=debias,snrcut=snrcut)
+
+    # loop over timestamps
+    clamp_diag = []
+    sigma_diag = []
+    A4_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clamparr):
+
+        # get diagonalized log closure amplitudes and errors
+        clamp_diag.append(cl[0]['camp'])
+        sigma_diag.append(cl[0]['sigmaca'])
+
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        u4 = cl[2][:,3].astype('float')
+        v4 = cl[3][:,3].astype('float')
+        uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
+
+        # prepare image and fft info objects
+        npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+        im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+        gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
+        gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
+        gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+        gs_info4 = make_gridder_and_sampler_info(im_info, uv4, conv_func=conv_func, p_rad=p_rad, order=order)
+
+        sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0],gs_info4[0]]
+        gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1],gs_info4[1]]
+        A = (im_info, sampler_info_list, gridder_info_list)
+
+        A4_diag.append(A)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    Amatrices = (A4_diag,np.array(tform_mats))
+
+    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
 
 ##################################################################################################
 # NFFT Chi^2 Data functions
@@ -2939,9 +3715,71 @@ def chisqdata_cphase_nfft(Obsdata, Prior, pol='I',**kwargs):
 
     return (clphase, sigma, A)
 
+def chisqdata_cphase_diag_nfft(Obsdata, Prior, pol='I',**kwargs):
+
+    """Return the diagonalized closure phases, sigmas, uv points, and nfft info
+    """
+    if (Prior.xdim%2 or Prior.ydim%2):
+        raise Exception("NFFT doesn't work with odd image dimensions!")
+
+    # unpack keyword args    
+    maxset = kwargs.get('maxset',False)
+    uv_min = kwargs.get('cp_uv_min', False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data
+    vtype=vis_poldict[pol]
+    clphasearr = Obsdata.c_phases_diag(vtype=vtype,count=count,snrcut=snrcut,uv_min=uv_min)
+
+    # loop over timestamps
+    clphase_diag = []
+    sigma_diag = []
+    A3_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clphasearr):
+
+        # get diagonalized closure phases and errors
+        clphase_diag.append(cl[0]['cphase'])
+        sigma_diag.append(cl[0]['sigmacp'])
+
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        # get NFFT info
+        npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+        A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
+        A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
+        A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
+        A = [A1,A2,A3]
+
+        A3_diag.append(A)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    Amatrices = (A3_diag,np.array(tform_mats))
+
+    return (np.array(clphase_diag), np.array(sigma_diag), Amatrices)
+
 def chisqdata_camp_nfft(Obsdata, Prior, pol='I',**kwargs):
 
-    """Return the closure phases, sigmas, uv points, and nfft info
+    """Return the closure amplitudes, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
@@ -2993,7 +3831,7 @@ def chisqdata_camp_nfft(Obsdata, Prior, pol='I',**kwargs):
 
 def chisqdata_logcamp_nfft(Obsdata, Prior,pol='I', **kwargs):
 
-    """Return the closure phases, sigmas, uv points, and nfft info
+    """Return the log closure amplitudes, sigmas, uv points, and nfft info
     """
     if (Prior.xdim%2 or Prior.ydim%2):
         raise Exception("NFFT doesn't work with odd image dimensions!")
@@ -3043,6 +3881,72 @@ def chisqdata_logcamp_nfft(Obsdata, Prior,pol='I', **kwargs):
 
     return (clamp, sigma, A)
 
+def chisqdata_logcamp_diag_nfft(Obsdata, Prior,pol='I', **kwargs):
+
+    """Return the diagonalized log closure amplitudes, sigmas, uv points, and nfft info
+    """
+    if (Prior.xdim%2 or Prior.ydim%2):
+        raise Exception("NFFT doesn't work with odd image dimensions!")
+
+    # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+    fft_pad_factor = kwargs.get('fft_pad_factor',FFT_PAD_DEFAULT)
+    p_rad = kwargs.get('p_rad', GRIDDER_P_RAD_DEFAULT)
+
+    # unpack data & mask low snr points
+    vtype=vis_poldict[pol]
+    clamparr = Obsdata.c_log_amplitudes_diag(vtype=vtype,count=count,debias=debias,snrcut=snrcut)
+
+    # loop over timestamps
+    clamp_diag = []
+    sigma_diag = []
+    A4_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clamparr):
+
+        # get diagonalized log closure amplitudes and errors
+        clamp_diag.append(cl[0]['camp'])
+        sigma_diag.append(cl[0]['sigmaca'])
+
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        u4 = cl[2][:,3].astype('float')
+        v4 = cl[3][:,3].astype('float')
+        uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
+
+        # get NFFT info
+        npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+        A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
+        A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
+        A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
+        A4 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
+        A = [A1,A2,A3,A4]
+
+        A4_diag.append(A)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    Amatrices = (A4_diag,np.array(tform_mats))
+
+    return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
 
 ##################################################################################################
 # Restoring ,Embedding, and Plotting Functions
