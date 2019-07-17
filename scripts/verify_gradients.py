@@ -37,7 +37,7 @@ if len(mask) >0 and np.any(np.invert(mask)):
     print("masked size %i"%len(test_imvec))
 
 # Testing the chi^2
-for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
+for dtype in ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']:
     print('\nTesting chi^2 dtype:',dtype)
     chisqdata_dft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
     chisqdata_nfft = eh.imager.chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
@@ -47,7 +47,7 @@ for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
     print("chisq_nfft: %f" % chisq_nfft)
 
 # Testing the gradient of chi^2
-for dtype in ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']:
+for dtype in ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']:
     print('\nTesting chi^2 gradient dtype:',dtype)
     chisqdata_dft = eh.imager.chisqdata(obs_dft, prior, mask, dtype, ttype='direct')
     chisqdata_nfft = eh.imager.chisqdata(obs_nfft, prior, mask, dtype, ttype='nfft')
