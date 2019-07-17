@@ -95,10 +95,14 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
         print("No stations specified for leakage calibration: defaulting to calibrating all !")
         sites = allsites
 
+    # Set all leakage terms in obs_test to zero (we will only correct leakage for those sites with new solutions)
+    for j in range(len(obs_test.tarr)):
+        if obs_test.tarr[j]['site'] in sites: continue
+        obs_test.tarr[j]['dr'] = obs_test.tarr[j]['dl'] = 0.0j
+
     # only include sites that are present
     sites = [s for s in sites if s in allsites]
     site_index = [list(obs.tarr['site']).index(s) for s in sites]
-    #site_dict = dict(zip(sites, site_index))
 
     if not const_fpol:
         (dataRR, sigmaRR, ARR) = iu.chisqdata(obs, im_circ, mask=mask, dtype=dtype, pol='RR',
@@ -131,8 +135,8 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
         if const_fpol: 
             if inverse:
                 # Note: These are linearized approximations (in leakage and source polarization) 
-                # that also neglect circular polarization
-                fpol_model = D[-1]
+                fpol_model = D[-2]
+                cpol_model = np.real(D[-1])
 
                 D1R = [D[2*sites.index(o['t1'])]   for o in data]
                 D1L = [D[2*sites.index(o['t1'])+1] for o in data]
@@ -149,12 +153,10 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
                 rlll_sigma = data['rlsigma']/np.abs(data['llvis'])
                 rlrr_sigma = data['rlsigma']/np.abs(data['rrvis'])
 
-                lrll_model = (np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + 
-                              np.conjugate(D2R) * np.exp(-2j*fr2))
-                lrrr_model = (np.conjugate(fpol_model) + D1L * np.exp(-2j*fr1) + 
-                              np.conjugate(D2R) * np.exp(-2j*fr2))
-                rlll_model = fpol_model + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2)
-                rlrr_model = fpol_model + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2)
+                lrll_model = np.conjugate(fpol_model) * (1.0 + cpol_model) + D1L * np.exp(-2j*fr1) * (1.0 + 2.0*cpol_model) + np.conjugate(D2R) * np.exp(-2j*fr2)
+                lrrr_model = np.conjugate(fpol_model) * (1.0 - cpol_model) + D1L * np.exp(-2j*fr1) + np.conjugate(D2R) * np.exp(-2j*fr2) * (1.0 - 2.0*cpol_model)
+                rlll_model = fpol_model * (1.0 + cpol_model) + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2) * (1.0 + 2.0*cpol_model)
+                rlrr_model = fpol_model * (1.0 - cpol_model) + D1R * np.exp(2j*fr1) * (1.0 - 2.0*cpol_model) + np.conjugate(D2L) * np.exp(2j*fr2)
                 
                 chisq = np.concatenate([np.abs((lrll - lrll_model)/lrll_sigma)**2,
                                         np.abs((lrrr - lrrr_model)/lrrr_sigma)**2,
@@ -163,7 +165,9 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
                 chisq = chisq[~np.isnan(chisq)]
                 return np.mean(chisq)
             else:
-                fpol_model = D[-1]
+                fpol_model = D[-2]
+                cpol_model = np.real(D[-1])
+
                 fpol_data_1  = 2.0 * data['rlvis']/(data['rrvis'] + data['llvis'])
                 fpol_data_2  = 2.0 * np.conj(data['lrvis']/(data['rrvis'] + data['llvis']))
                 fpol_sigma_1 = 2.0/np.abs(data['rrvis'] + data['llvis']) * data['rlsigma']
@@ -214,7 +218,7 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
 
     # Now, we will minimize the total chi-squared. We need two complex leakage terms for each site
     optdict = {'maxiter' : MAXIT} # minimizer params
-    Dpar_guess = np.zeros((len(sites) + const_fpol)*2, dtype=np.complex128).view(dtype=np.float64)
+    Dpar_guess = np.zeros((len(sites) + const_fpol*2)*2, dtype=np.complex128).view(dtype=np.float64)
     print("Minimizing...")
     res = opt.minimize(errfunc, Dpar_guess, method=minimizer_method, options=optdict)
     
@@ -227,6 +231,12 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
         obs_test.tarr['dl'][site_index[isite]] = D_fit[2*isite+1]    
     obs_test.data = simobs.apply_jones_inverse(obs_test,dcal=False,verbose=False)
     obs_test.dcal = True
+
+    # Re-populate any additional leakage terms that were present
+    for j in range(len(obs_test.tarr)):
+        if obs_test.tarr[j]['site'] in sites: continue
+        obs_test.tarr[j]['dr'] = obs.tarr[j]['dr']
+        obs_test.tarr[j]['dl'] = obs.tarr[j]['dl']
 
     if show_solution:
         if inverse == False:
@@ -243,27 +253,45 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
             print('   D_R: {:.4f}'.format(D_fit[2*isite]))
             print('   D_L: {:.4f}\n'.format(D_fit[2*isite+1]))
         if const_fpol:
-            print('Source Fractional Polarization Magnitude: {:.4f}'.format(np.abs(D_fit[-1])))
-            print('Source Fractional Polarization EVPA [deg]: {:.4f}\n'.format(90./np.pi*np.angle(D_fit[-1])))
+            print('Source Fractional Polarization Magnitude: {:.4f}'.format(np.abs(D_fit[-2])))
+            print('Source Fractional Polarization EVPA [deg]: {:.4f}\n'.format(90./np.pi*np.angle(D_fit[-2])))
+            if inverse:            
+                print('Source Fractional Circular Polarization: {:.4f}'.format(np.real(D_fit[-1])))
 
     tstop = time.time()
     print("\nleakage_cal time: %f s" % (tstop - tstart))
 
     if not obs_apply==False:
+        # Apply the solution to another observation
         obs_test = obs_apply.copy()
-        # Apply the solution
+        obs_test.tarr['dr'] *= 0.0
+        obs_test.tarr['dl'] *= 0.0
+
+        # Copy the solved D-terms       
         for isite in range(len(sites)):
-            obs_test.tarr['dr'][site_index[isite]] = D_fit[2*isite]
-            obs_test.tarr['dl'][site_index[isite]] = D_fit[2*isite+1]
+            if sites[isite] in list(obs_test.tarr['site']):
+                i_site = list(obs_test.tarr['site']).index(sites[isite])
+                obs_test.tarr['dr'][i_site] = D_fit[2*isite]
+                obs_test.tarr['dl'][i_site] = D_fit[2*isite+1]
+
         obs_test.data = simobs.apply_jones_inverse(obs_test,dcal=False,verbose=False)
         obs_test.dcal = True
+
+        # Copy in the remaining D-terms that were there before
+        for j in range(len(obs_test.tarr)):
+            if obs_test.tarr[j]['site'] in sites: continue
+            obs_test.tarr[j]['dr'] = obs_apply.tarr[j]['dr']
+            obs_test.tarr[j]['dl'] = obs_apply.tarr[j]['dl']
     else:
         obs_test = obs_test.switch_polrep(obs.polrep)
 
     if not const_fpol:
         return obs_test
     else:
-        return [obs_test, D_fit[-1]]
+        if inverse:
+            return [obs_test, D_fit[-2], D_fit[-1]]
+        else:
+            return [obs_test, D_fit[-2]]
 
 def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False, 
                  markers=['o','s'], markersize=6, 

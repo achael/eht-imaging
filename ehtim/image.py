@@ -2662,7 +2662,7 @@ class Image(object):
 
     def display(self, pol=None, cfun='afmhot', interp='gaussian',
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
-                      plotp=False, nvec=20, pcut=0.1, mcut=0.01, log_offset=False,
+                      plotp=False, plot_stokes=True, nvec=20, pcut=0.1, mcut=0.01, log_offset=False,
                       label_type='ticks', has_title=True, alpha=1,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, 
@@ -2682,6 +2682,7 @@ class Image(object):
                dynamic_range (float): dynamic range for log and gamma scaling
 
                plotp (bool): True to plot linear polarimetic image
+               plot_stokes (bool): True to plot stokes subplots along with plotp
                nvec (int): number of polarimetric vectors to plot
                pcut (float): minimum stokes I value for displaying polarimetric vectors 
                              (fraction of maximum Stokes I) 
@@ -2969,99 +2970,137 @@ class Image(object):
             voi = (vvec/imvec).reshape(self.ydim, self.xdim)
             voi[np.logical_not(mask)] = 0
 
-            # Little pol plots
-            maxval = 1.1*np.max((np.max(np.abs(uarr)),np.max(np.abs(qarr)),np.max(np.abs(varr))))
+            if plot_stokes:
+                # Little pol plots
+                maxval = 1.1*np.max((np.max(np.abs(uarr)),np.max(np.abs(qarr)),np.max(np.abs(varr))))
 
-            ax = plt.subplot2grid((2,5),(0,0))
-            plt.imshow(imarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
-                              vmin=-maxval, vmax=maxval)
-            plt.contour(imarr, colors='k',linewidth=.25)
-            ax.set_xticks([])
-            ax.set_yticks([])
-            if has_title: plt.title('I')
+                ax = plt.subplot2grid((2,5),(0,0))
+                plt.imshow(imarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                                  vmin=-maxval, vmax=maxval)
+                plt.contour(imarr, colors='k',linewidth=.25)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if has_title: plt.title('I')
 
-            ax = plt.subplot2grid((2,5),(0,1))
-            plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
-                             vmin=-maxval, vmax=maxval)
+                ax = plt.subplot2grid((2,5),(0,1))
+                plt.imshow(varr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                                 vmin=-maxval, vmax=maxval)
 
-            ax.set_xticks([])
-            ax.set_yticks([])
-            if has_title: plt.title('V')
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if has_title: plt.title('V')
 
-            ax = plt.subplot2grid((2,5),(1,0))
-            plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
-                             vmin=-maxval, vmax=maxval)
-            plt.contour(qarr, colors='k',linewidth=.25)
-            ax.set_xticks([])
-            ax.set_yticks([])
-            if has_title: plt.title('Q')
+                ax = plt.subplot2grid((2,5),(1,0))
+                plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                                 vmin=-maxval, vmax=maxval)
+                plt.contour(qarr, colors='k',linewidth=.25)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if has_title: plt.title('Q')
 
-            ax = plt.subplot2grid((2,5),(1,1))
-            plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
-                             vmin=-maxval, vmax=maxval)
-            plt.contour(uarr, colors='k',linewidth=.25)
-            ax.set_xticks([])
-            ax.set_yticks([])
-            if has_title: plt.title('U')
+                ax = plt.subplot2grid((2,5),(1,1))
+                plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
+                                 vmin=-maxval, vmax=maxval)
+                plt.contour(uarr, colors='k',linewidth=.25)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if has_title: plt.title('U')
 
-            # V/I plot
-            ax = plt.subplot2grid((2,5),(0,2))
-            plt.imshow(voi, cmap=plt.get_cmap('seismic'), interpolation=interp, vmin=-1, vmax=1)
-            if has_title: plt.title('V/I')
-            ax.set_xticks([])
-            ax.set_yticks([])
+                # V/I plot
+                ax = plt.subplot2grid((2,5),(0,2))
+                plt.imshow(voi, cmap=plt.get_cmap('seismic'), interpolation=interp, vmin=-1, vmax=1)
+                if has_title: plt.title('V/I')
+                ax.set_xticks([])
+                ax.set_yticks([])
 
-            # m plot
-            ax = plt.subplot2grid((2,5),(1,2))
-            plt.imshow(m, cmap=plt.get_cmap('seismic'), interpolation=interp, vmin=-1, vmax=1)
-            ax.set_xticks([])
-            ax.set_yticks([])
-            if has_title: plt.title('m')
-            plt.quiver(x, y, a, b,
-                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
-                   scale=1.0/thin)
-            plt.quiver(x, y, a, b,
-                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
-                   scale=1.1/thin)
+                # m plot
+                ax = plt.subplot2grid((2,5),(1,2))
+                plt.imshow(m, cmap=plt.get_cmap('seismic'), interpolation=interp, vmin=-1, vmax=1)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if has_title: plt.title('m')
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
+                       scale=1.0/thin)
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
+                       scale=1.1/thin)
 
-            # Big Stokes I plot
-            ax = plt.subplot2grid((2,5),(0,3), rowspan=2, colspan=2)
-            if cbar_lims:
-                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp, 
-                                vmin=cbar_lims[0], vmax=cbar_lims[1])
-            else:
-                im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp)
-
-            plt.quiver(x, y, a, b,
-                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
-                   scale=1.0/thin)
-            plt.quiver(x, y, a, b,
-                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
-                   scale=1.1/thin)
-
-            if not(beamparams is None or beamparams==False):
-                beamparams = [beamparams[0], beamparams[1], beamparams[2],
-                              -.35*self.fovx(), -.35*self.fovy()]
-                beamimage = self.copy()
-                beamimage.imvec *= 0
-                beamimage = beamimage.add_gauss(1, beamparams)
-                halflevel = 0.5*np.max(beamimage.imvec)
-                beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
-                plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
-
-            if has_cbar:
-                cbar = plt.colorbar(im, fraction=0.046, pad=0.04,
-                                    label=unit, orientation=cbar_orientation)
-                cbar.ax.tick_params(labelsize=cbar_fontsize) 
+                # Big Stokes I plot
+                ax = plt.subplot2grid((2,5),(0,3), rowspan=2, colspan=2)
                 if cbar_lims:
-                    plt.clim(cbar_lims[0],cbar_lims[1])
-            if has_title:
-                plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, 'I'), fontsize=12)
-            f.subplots_adjust(hspace=-.5,wspace=0.1)
+                    im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp, 
+                                    vmin=cbar_lims[0], vmax=cbar_lims[1])
+                else:
+                    im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp)
+
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
+                       scale=1.0/thin)
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
+                       scale=1.1/thin)
+
+                if not(beamparams is None or beamparams==False):
+                    beamparams = [beamparams[0], beamparams[1], beamparams[2],
+                                  -.35*self.fovx(), -.35*self.fovy()]
+                    beamimage = self.copy()
+                    beamimage.imvec *= 0
+                    beamimage = beamimage.add_gauss(1, beamparams)
+                    halflevel = 0.5*np.max(beamimage.imvec)
+                    beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
+                    plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
+
+                if has_cbar:
+                    cbar = plt.colorbar(im, fraction=0.046, pad=0.04,
+                                        label=unit, orientation=cbar_orientation)
+                    cbar.ax.tick_params(labelsize=cbar_fontsize) 
+                    if cbar_lims:
+                        plt.clim(cbar_lims[0],cbar_lims[1])
+                if has_title:
+                    plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, 'I'), fontsize=12)
+                f.subplots_adjust(hspace=-.5,wspace=0.1)
+            else:
+                # Big Stokes I plot
+                ax = plt.gca()
+                if cbar_lims:
+                    im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp, 
+                                    vmin=cbar_lims[0], vmax=cbar_lims[1])
+                else:
+                    im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp)
+
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
+                       scale=1.0/thin)
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
+                       scale=1.1/thin)
+
+                if not(beamparams is None or beamparams==False):
+                    beamparams = [beamparams[0], beamparams[1], beamparams[2],
+                                  -.35*self.fovx(), -.35*self.fovy()]
+                    beamimage = self.copy()
+                    beamimage.imvec *= 0
+                    beamimage = beamimage.add_gauss(1, beamparams)
+                    halflevel = 0.5*np.max(beamimage.imvec)
+                    beamimarr = (beamimage.imvec).reshape(beamimage.ydim,beamimage.xdim)
+                    plt.contour(beamimarr, levels=[halflevel], colors=beamcolor, linewidths=beam_lw)
+
+                if has_cbar:
+                    cbar = plt.colorbar(im, fraction=0.046, pad=0.04,
+                                        label=unit, orientation=cbar_orientation)
+                    cbar.ax.tick_params(labelsize=cbar_fontsize) 
+                    if cbar_lims:
+                        plt.clim(cbar_lims[0],cbar_lims[1])
+                if has_title:
+                    plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, 'I'), fontsize=12)
+                
 
 
         # Label the plot
