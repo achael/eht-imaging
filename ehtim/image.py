@@ -300,6 +300,33 @@ class Image(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict['LR'] =  vec
 
+    @property
+    def mvec(self):
+        """Return the fractional polarization for each pixel"""
+        if self.polrep=='circ':
+            mvec = 2*np.abs(self.rlvec)/(self.rrvec + self.llvec)
+        elif self.polrep=='stokes':
+            mvec = np.abs(self.qvec + 1j*self.uvec)/self.ivec
+
+        return mvec
+
+    @property
+    def chivec(self):
+        """Return the fractional polarization angle for each pixel"""
+        if self.polrep=='circ':
+            chivec = 0.5*np.angle(self.rlvec/(self.rrvec + self.llvec))
+        elif self.polrep=='stokes':
+            chivec = 0.5*np.angle((self.qvec + 1j*self.uvec)/self.ivec)
+
+        return chivec
+
+    @property
+    def evpavec(self):
+        """Return the fractional polarization angle for each pixel"""
+
+        return self.chivec
+
+
     def copy(self):
 
         """Return a copy of the Image object.
@@ -2780,15 +2807,32 @@ class Image(object):
 
         if not plotp:
             # Plot single polarization image
-            try:
-                imvec = np.array(self._imdict[pol]).reshape(-1) / (10.**power)
-            except KeyError:
+
+            if pol=='m':
+                imvec = self.mvec
+                unit = r'$\|\breve{m}|$'
+                factor = 1
+                cbar_lims = [0,1]
+            elif pol=='chi':
+                imvec = self.chivec / DEGREE
+                unit = r'$\chi (^\circ)$'
+                factor = 1
+                cbar_lims = [0,180]
+            else:
                 try:
-                    if self.polrep=='stokes': im2 = self.switch_polrep('circ')
-                    elif self.polrep=='circ': im2 = self.switch_polrep('stokes')
-                    imvec = np.array(im2._imdict[pol]).reshape(-1) / (10.**power)
+                    imvec = np.array(self._imdict[pol]).reshape(-1) / (10.**power)
                 except KeyError:
-                    raise Exception("Cannot make pol %s image in display()!" % pol)
+                    try:
+                        if self.polrep=='stokes': im2 = self.switch_polrep('circ')
+                        elif self.polrep=='circ': im2 = self.switch_polrep('stokes')
+                        imvec = np.array(im2._imdict[pol]).reshape(-1) / (10.**power)
+                    except KeyError:
+                        raise Exception("Cannot make pol %s image in display()!" % pol)
+
+
+                unit = fluxunit
+                if areaunit != '':
+                    unit += ' / ' + areaunit
 
             if np.any(np.imag(imvec)):
                 print('casting complex image to abs value')
@@ -2796,9 +2840,7 @@ class Image(object):
 
             imvec = imvec * factor
             imarr = imvec.reshape(self.ydim, self.xdim)
-            unit = fluxunit
-            if areaunit != '':
-                unit += ' / ' + areaunit
+
 
             if scale=='log':
                 if (imarr < 0.0).any():
