@@ -102,6 +102,10 @@ DTCAMP = [('time','f8'),('t1','U32'),('t2','U32'),('t3','U32'),('t4','U32'),
           ('u3','f8'),('v3','f8'),('u4','f8'),('v4','f8'),
           ('camp','f8'),('sigmaca','f8')]
 
+DTCPHASEDIAG = [('time','f8'),('cphase','f8'),('sigmacp','f8'),('triangles','O'),('u','O'),('v','O'),('tform_matrix','O')]
+
+DTLOGCAMPDIAG = [('time','f8'),('camp','f8'),('sigmaca','f8'),('quadrangles','O'),('u','O'),('v','O'),('tform_matrix','O')]
+
 DTCAL = [('time','f8'), ('rscale','c16'), ('lscale','c16')]
 
 DTSCANS = [('time','f8'),('interval','f8'),('startvis','f8'),('endvis','f8')]
