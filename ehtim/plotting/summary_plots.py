@@ -77,6 +77,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
     """
 
+    plt.close('all') # close conflicting plots
     plt.rc('font', family='serif')
     plt.rc('text', usetex=True)
     plt.rc('font', size=FONTSIZE)      
@@ -771,7 +772,7 @@ def imgsum_pol(im, obs, obs_uncal, outname,
     if len(im.qvec)==0 or len(im.uvec)==0:
         raise Exception("the image isn't polarized!")
 
-
+    plt.close('all') # close conflicting plots
     plt.rc('font', family='serif')
     plt.rc('text', usetex=True)
     plt.rc('font', size=FONTSIZE)      

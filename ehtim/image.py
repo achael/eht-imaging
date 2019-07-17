@@ -97,6 +97,8 @@ class Image(object):
                (Image): the Image object
         """
 
+        plt.close('all') # close conflicting plots
+
         if len(image.shape) != 2:
             raise Exception("image must be a 2D numpy array")
         if not polrep in ['stokes','circ']:
