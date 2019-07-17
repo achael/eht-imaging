@@ -796,9 +796,10 @@ class Imager(object):
         reg_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
             if self.pol_next=='P':
-                reg = polregularizer(imcur, self._embed_mask,
+                reg = polregularizer(imcur, self._embed_mask, self.flux_next, 
                                      self.prior_next.xdim, self.prior_next.ydim,
                                      self.prior_next.psize, regname,
+                                     norm_reg=self.norm_reg, beam_size=self.beam_size,
                                      pol_prim=POL_PRIM
                                      )
             else:
@@ -819,10 +820,11 @@ class Imager(object):
         for regname in sorted(self.reg_term_next.keys()):
 
             if self.pol_next=='P':
-                reg = polregularizergrad(imcur, self._embed_mask,
+                reg = polregularizergrad(imcur, self._embed_mask, self.flux_next,
                                      self.prior_next.xdim, self.prior_next.ydim,
                                      self.prior_next.psize, regname,
-                                     pol_prim=POL_PRIM, pol_solve=POL_SOLVE
+                                     pol_prim=POL_PRIM, pol_solve=POL_SOLVE,
+                                     norm_reg=self.norm_reg, beam_size=self.beam_size,
                                      )
             else:
                 reg = regularizergrad(imcur, self._nprior, self._embed_mask,
