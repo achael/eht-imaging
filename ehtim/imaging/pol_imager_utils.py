@@ -1195,7 +1195,6 @@ def stv_pol(imtuple, flux, nx, ny, psize, pol_prim="amp_phase",
     if norm_reg: norm = flux*psize / beam_size
     else: norm = 1
 
-    print(norm)
     pimage = make_p_image(imtuple, pol_prim)
     im = pimage.reshape(ny, nx)
 

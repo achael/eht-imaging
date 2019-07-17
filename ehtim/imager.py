@@ -799,7 +799,7 @@ class Imager(object):
                 reg = polregularizer(imcur, self._embed_mask, self.flux_next, 
                                      self.prior_next.xdim, self.prior_next.ydim,
                                      self.prior_next.psize, regname,
-                                     norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
                                      pol_prim=POL_PRIM
                                      )
             else:
