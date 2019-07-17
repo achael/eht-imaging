@@ -337,11 +337,11 @@ def plot_leakage(obs, sites=[], axis=False, rangex=False, rangey=False,
 
     # label and save
     if axislabels:
-        x.set_xlabel('Re[$D$] (%)')
-        x.set_ylabel('Im[$D$] (%)')
+        x.set_xlabel('Re[$D$] (\%)')
+        x.set_ylabel('Im[$D$] (\%)')
     if legend:
         legend1 = plt.legend([l[0] for l in plot_points], tarr['site'], ncol=1, loc=1)
-        plt.legend(plot_points[0], ['$D_R$ (%)','$D_L$ (%)'], loc=4)
+        plt.legend(plot_points[0], ['$D_R$ (\%)','$D_L$ (\%)'], loc=4)
         plt.gca().add_artist(legend1)
     if export_pdf != "": # and not axis:
         fig.savefig(export_pdf, bbox_inches='tight')
