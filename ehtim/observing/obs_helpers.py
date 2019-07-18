@@ -734,6 +734,7 @@ def sigtype(datatype):
     elif datatype in ['llvis', 'llamp']: sigmatype='llsigma'
     elif datatype in ['rlvis', 'rlamp']: sigmatype='rlsigma'
     elif datatype in ['lrvis', 'lramp']: sigmatype='lrsigma'
+    elif datatype in ['rrllvis', 'rrllamp']: sigmatype='rrllsigma'
     elif datatype in ['m', 'mamp']: sigmatype='msigma'
     elif datatype in ['phase']: sigmatype='sigma_phase'
     elif datatype in ['qphase']: sigmatype='qsigma_phase'
@@ -745,6 +746,7 @@ def sigtype(datatype):
     elif datatype in ['llphase']: sigmatype='llsigma_phase'
     elif datatype in ['rlphase']: sigmatype='rlsigma_phase'
     elif datatype in ['lrphase']: sigmatype='lrsigma_phase'
+    elif datatype in ['rrllphase']: sigmatype='rrllsigma_phase'
 
     else: sigmatype = False
 
