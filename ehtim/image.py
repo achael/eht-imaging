@@ -2999,7 +2999,7 @@ class Image(object):
                 ax.set_yticks([])
                 if has_title: plt.title('P')
                 if has_cbar:
-                    cbaxes = plt.gcf().add_axes([0.1, 0.2, 0.01, 0.6],transform=ax.transAxes)
+                    cbaxes = plt.gcf().add_axes([0.1, 0.2, 0.01, 0.6])
                     cbar = plt.colorbar(im, fraction=0.046, pad=0.04, cax=cbaxes,
                                         label=unit, orientation='vertical')
                     cbar.ax.tick_params(labelsize=cbar_fontsize) 
@@ -3044,7 +3044,7 @@ class Image(object):
                 ax.set_xticks([])
                 ax.set_yticks([])
                 if has_cbar:
-                    cbaxes = plt.gcf().add_axes([0.125, 0.1, 0.425, 0.01],transform=ax.transAxes)
+                    cbaxes = plt.gcf().add_axes([0.125, 0.1, 0.425, 0.01])
                     cbar = plt.colorbar(im, fraction=0.046, pad=0.04, cax=cbaxes,
                                         label='|m|', orientation='horizontal')
                     cbar.ax.tick_params(labelsize=cbar_fontsize) 
