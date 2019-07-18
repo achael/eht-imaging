@@ -759,6 +759,17 @@ class Obsdata(object):
                 elif self.polrep=='circ':
                     out = data['lrvis']
                     sig = data['lrsigma']
+            elif field in ['rrllvis', 'rrllamp', 'rrllphase', 'rrllsnr', 'rrllsigma', 'rrllsigma_phase']:
+                ty = 'c16'
+                if self.polrep=='stokes':
+                    out = (data['vis'] + data['vvis'])/(data['vis'] - data['vvis'])
+                    sig = (2.0**0.5 * (np.abs(data['vis'])**2 + np.abs(data['vvis'])**2)**0.5
+                          / np.abs(data['vis'] - data['vvis'])**2 
+                          * (data['sigma']**2 + data['vsigma']**2)**0.5)
+                elif self.polrep=='circ':
+                    out = data['rrvis']/data['llvis']
+                    sig = np.sqrt(np.abs(data['rrsigma']/data['llvis'])**2 
+                                 +np.abs(data['llsigma']*data['rrvis']/data['llvis'])**2)
 
             else: raise Exception("%s is not a valid field \n" % field +
                                   "valid field values are: " + ' '.join(FIELDS))
@@ -797,26 +808,26 @@ class Obsdata(object):
                     ty  = 'f8'
 
             # Get arg/amps/snr
-            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]:
+            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp","rrllamp"]:
                 out = np.abs(out)
                 if debias:
                     out = amp_debias(out, sig)
                 ty = 'f8'
             elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma",
-                           "rrsigma","llsigma","rlsigma","lrsigma"]:
+                           "rrsigma","llsigma","rlsigma","lrsigma","rrllsigma"]:
                 out = np.abs(sig)
                 ty = 'f8'
             elif field in ["phase", "qphase", "uphase", "vphase","pphase",
-                           "mphase","rrphase","llphase","lrphase","rlphase"]:
+                           "mphase","rrphase","llphase","lrphase","rlphase","rrllphase"]:
                 out = np.angle(out)/angle
                 ty = 'f8'
             elif field in ["sigma_phase","qsigma_phase","usigma_phase",
                            "vsigma_phase","psigma_phase","msigma_phase",
-                           "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]:
+                           "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase","rrllsigma_phase"]:
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'
             elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", 
-                           "msnr","rrsnr","llsnr","rlsnr","lrsnr"]:
+                           "msnr","rrsnr","llsnr","rlsnr","lrsnr","rrllsnr"]:
                 out = np.abs(out)/np.abs(sig)
                 ty = 'f8'
 

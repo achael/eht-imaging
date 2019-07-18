@@ -126,14 +126,15 @@ FIELDS = ['time','time_utc','time_gmst',
           'rrvis','rramp','rrphase','rrsnr','rrsigma','rrsigma_phase',
           'llvis','llamp','llphase','llsnr','llsigma','llsigma_phase'
           'rlvis','rlamp','rlphase','rlsnr','rlsigma','rlsigma_phase'
-          'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase']
+          'lrvis','lramp','lrphase','lrsnr','lrsigma','lrsigma_phase'
+          'rrllvis','rrllamp','rrllphase','rrllsnr','rrllsigma','rrllsigma_phase']
 
-FIELDS_AMPS = ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp"]
-FIELDS_SIGS = ["sigma","qsigma","usigma","vsigma","psigma","msigma","rrsigma","llsigma","rlsigma","lrsigma"]
-FIELDS_PHASE = ["phase", "qphase", "uphase", "vphase","pphase", "mphase","rrphase","llphase","lrphase","rlphase"]
+FIELDS_AMPS = ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp","rrllamp"]
+FIELDS_SIGS = ["sigma","qsigma","usigma","vsigma","psigma","msigma","rrsigma","llsigma","rlsigma","lrsigma","rrllsigma"]
+FIELDS_PHASE = ["phase", "qphase", "uphase", "vphase","pphase", "mphase","rrphase","llphase","lrphase","rlphase","rrllphase"]
 FIELDS_SIGPHASE = ["sigma_phase","qsigma_phase","usigma_phase","vsigma_phase","psigma_phase","msigma_phase",
-                   "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase"]
-FIELDS_SNRS = ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr","rrsnr","llsnr","rlsnr","lrsnr"]
+                   "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase","rrllsigma_phase"]
+FIELDS_SNRS = ["snr", "qsnr", "usnr", "vsnr", "psnr", "msnr","rrsnr","llsnr","rlsnr","lrsnr","rrllsnr"]
 
 #plotting
 MARKERSIZE = 3
@@ -162,7 +163,9 @@ FIELD_LABELS = {'time':'Time','time_utc':'Time (UTC)','time_gmst':'Time (GMST)',
           'rlvis':r'RL-Visibility','rlamp':r'RL-Amplitude','rlphase':'RL-Phase','rlsnr':'RL-SNR',
           'rlsigma':r'$\sigma_{RL}$','rlsigma_phase':r'$\sigma_{RL phase}$',
           'lrvis':r'LR-Visibility','lramp':r'LR-Amplitude','lrphase':'LR-Phase','lrsnr':'LR-SNR',
-          'lrsigma':r'$\sigma_{LR}$','lrsigma_phase':r'$\sigma_{LR phase}$'}
+          'lrsigma':r'$\sigma_{LR}$','lrsigma_phase':r'$\sigma_{LR phase}$',
+          'rrllvis':r'RR/LL-Visibility','rrllamp':r'RR/LL-Amplitude','rrllphase':'RR/LL-Phase','rrllsnr':'RR/LL-SNR',
+          'rrllsigma':r'$\sigma_{RR/LL}$','rrllsigma_phase':r'$\sigma_{RR/LL phase}$'}
 
 #Seaborn Colors from Maciek
 #['dodgerblue','tomato','blueviolet','olivedrab','orange','saddlebrown','mediumblue','red','cyan','magenta','darkgreen','tan','k']
