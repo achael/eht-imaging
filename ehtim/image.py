@@ -648,6 +648,22 @@ class Image(object):
 
         return frac
 
+    def evpa(self):
+
+        """Return the total evpa
+
+           Args:
+
+           Returns:
+                (float) : image average evpa (E of N) in radian
+        """
+        if self.polrep=='stokes':
+            frac = 0.5*np.angle(np.sum(self.qvec + 1j*self.uvec)) 
+        elif self.polrep=='circ':
+            frac = np.angle(np.sum(self.rlvec))
+
+        return frac
+
     def circ_polfrac(self):
 
         """Return the total fractional circular polarized flux
@@ -2807,8 +2823,7 @@ class Image(object):
         else:
             raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
 
-        if not plotp:
-            # Plot single polarization image
+        if not plotp: # Plot a single polarization image
 
             if pol=='m':
                 imvec = self.mvec
@@ -2907,7 +2922,7 @@ class Image(object):
                     cb.update_ticks()
         
 
-        else: #plot Stokes parameters!
+        else: #plot polarization with ticks!
             im_stokes = self.switch_polrep(polrep_out='stokes')
             imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
             qvec = np.array(im_stokes.qvec).reshape(-1) / (10**power)
@@ -2929,7 +2944,9 @@ class Image(object):
             uarr = (uvec).reshape(im_stokes.ydim, im_stokes.xdim)
             varr = (vvec).reshape(im_stokes.ydim, im_stokes.xdim)
 
-            unit = fluxunit + ' / ' + areaunit
+            unit = fluxunit
+            if areaunit != '':
+                unit = fluxunit + ' / ' + areaunit
 
             # only the  stokes I image gets transformed! TODO
             imarr2 = imarr.copy()
@@ -3109,7 +3126,7 @@ class Image(object):
                 if cbar_lims:
                     plt.clim(cbar_lims[0],cbar_lims[1])
             if has_title:
-                plt.title("%s %.2f GHz %s" % (self.source, self.rf/1e9, 'I'), fontsize=12)
+                plt.title("%s %.1f GHz : m=%.1f%% , v=%.1f%%" % (self.source, self.rf/1e9, self.lin_polfrac()*100, self.circ_polfrac()*100), fontsize=12)
             f.subplots_adjust(hspace=.1,wspace=0.3)
 
         # Label the plot
