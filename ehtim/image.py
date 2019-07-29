@@ -2735,6 +2735,7 @@ class Image(object):
 
         if axis is not None:
             plt.sca(axis)
+            f = plt.gcf()
 
         # Get unit scale factor
         factor = 1.
