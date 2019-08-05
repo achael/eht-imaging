@@ -82,6 +82,7 @@ class Imager(object):
         self._reg_term_list = []
         self._dat_term_list = []
         self._clipfloor_list = []
+        self._maxset_list = []
         self._pol_list = []
         self._maxit_list = []
         self._stop_list = []
@@ -129,6 +130,9 @@ class Imager(object):
         self.systematic_noise_next = kwargs.get('systematic_noise',0.)
         self.systematic_cphase_noise_next = kwargs.get('systematic_cphase_noise',0.)
         self.weighting_next = kwargs.get('weighting','natural')
+
+        # maximal/minimal set
+        self.maxset_next = kwargs.get('maxset',False)
 
         # clippping
         self.clipfloor_next = kwargs.get('clipfloor',0.)
@@ -693,7 +697,7 @@ class Imager(object):
             for dname in sorted(self.dat_term_next.keys()):
                 if self.pol_next=='P':
                     tup = polchisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
-                                        pol=self.pol_next,
+                                        pol=self.pol_next,maxset=self.maxset_next,
                                         debias=self.debias_next, snrcut=self.snrcut_next[dname], 
                                         weighting=self.weighting_next,
                                         systematic_noise=self.systematic_noise_next, 
@@ -704,7 +708,7 @@ class Imager(object):
                                         cp_uv_min=self.cp_uv_min)
                 else:
                     tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
-                                    pol=self.pol_next,
+                                    pol=self.pol_next,maxset=self.maxset_next,
                                     debias=self.debias_next, snrcut=self.snrcut_next[dname], 
                                     weighting=self.weighting_next,
                                     systematic_noise=self.systematic_noise_next, 
@@ -1277,6 +1281,7 @@ class Imager(object):
         self._flux_list.append(self.flux_next)
         self._pol_list.append(self.pol_next)
         self._clipfloor_list.append(self.clipfloor_next)
+        self._maxset_list.append(self.clipfloor_next)
         self._maxit_list.append(self.maxit_next)
         self._stop_list.append(self.stop_next)
         self._transform_list.append(self.transform_next)

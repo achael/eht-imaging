@@ -3228,7 +3228,7 @@ class Obsdata(object):
                       axis=False, rangex=False, rangey=False,snrcut=0.,
                       color=SCOLORS[0], marker='o', markersize=MARKERSIZE, label=None,
                       grid=True, ebar=True, axislabels=True, legend=False,
-                      show=True, export_pdf="", ):
+                      show=True, export_pdf=""):
 
         """Plot two fields against each other.
 

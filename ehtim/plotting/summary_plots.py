@@ -42,7 +42,7 @@ PROCESSES=4
 MARKERSIZE=5
 
 def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="", 
-           fontsize=FONTSIZE, cfun='afmhot', snrcut=0.,
+           fontsize=FONTSIZE, cfun='afmhot', snrcut=0.,maxset=False,
            gainplots=True,ampplots=True, cphaseplots=True,campplots=True,ebar=True,
            debias=True, cp_uv_min=False,
            sysnoise=0,syscnoise=0):
@@ -60,6 +60,8 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
            commentstr (str): a comment for the top line of the pdf
            fontsize (float): the font size for text in the sheet
            cfun (float): matplotlib color function
+
+           maxset (bool): True to use a maximal set of closure quantities
 
            gainplots (bool): include gain plots or not
            ampplots (bool): include amplitude consistency plots or not
@@ -89,6 +91,11 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
     plt.rc('figure', titlesize=FONTSIZE) 
 
     if fontsize==0: fontsize=FONTSIZE
+
+    if maxset:
+        count='max'
+    else:
+        count='min'
 
     snrcut_dict = {key: 0. for key in ['vis','amp','cphase','logcamp','camp']}
 
@@ -254,7 +261,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
         # get closure triangle combinations
         # ANDREW -- hacky, fix this!
-        cp = obs.c_phases(mode="all", count="min", uv_min=cp_uv_min, snrcut=snrcut_dict['cphase'])
+        cp = obs.c_phases(mode="all", count=count, uv_min=cp_uv_min, snrcut=snrcut_dict['cphase'])
         n_cphase = len(cp)
         alltris = [(str(cpp['t1']),str(cpp['t2']),str(cpp['t3'])) for cpp in cp]
         uniqueclosure_tri = []
@@ -332,7 +339,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
         # get closure amplitude combinations
         # TODO -- hacky, fix this!
-        cp = obs.c_amplitudes(mode="all", count="min",ctype='logcamp',debias=debias)
+        cp = obs.c_amplitudes(mode="all", count=count,ctype='logcamp',debias=debias)
         n_camps = len(cp)
         allquads = [(str(cpp['t1']),str(cpp['t2']),str(cpp['t3']),str(cpp['t4'])) for cpp in cp]
         uniqueclosure_quad = []

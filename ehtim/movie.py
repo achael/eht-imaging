@@ -788,7 +788,8 @@ class Movie(object):
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
 
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), 
+                             otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
@@ -889,7 +890,8 @@ class Movie(object):
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), 
+                             otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
@@ -911,19 +913,25 @@ class Movie(object):
         if polrep_obs is None:
             polrep_obs=self.polrep
 
-        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, mjd=mjd, polrep=polrep_obs,
-                            tau=tau, timetype=timetype, elevmin=elevmin, elevmax=elevmax, fix_theta_GMST=fix_theta_GMST)
+        obs = array.obsdata(self.ra, self.dec, self.rf, bw, tint, tadv, tstart, tstop, 
+                            mjd=mjd, polrep=polrep_obs,
+                            tau=tau, timetype=timetype, 
+                            elevmin=elevmin, elevmax=elevmax, 
+                            fix_theta_GMST=fix_theta_GMST)
 
 
         # Observe on the same baselines as the empty observation and add noise
-        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat,
-                                     sgrscat=sgrscat, add_th_noise=add_th_noise,
-                                     opacitycal=opacitycal,ampcal=ampcal,phasecal=phasecal,dcal=dcal,frcal=frcal,
-                                     stabilize_scan_phase=stabilize_scan_phase, stabilize_scan_amp=stabilize_scan_amp,
-                                     gainp=gainp,gain_offset=gain_offset,
-                                     tau=tau, taup=taup,
-                                     dtermp=dtermp, dterm_offset=dterm_offset,
-                                     jones=jones, inv_jones=inv_jones)
+        obs = self.observe_same(obs, ttype=ttype, fft_pad_factor=fft_pad_factor, 
+                                repeat=repeat, sgrscat=sgrscat, 
+                                add_th_noise=add_th_noise,
+                                opacitycal=opacitycal,ampcal=ampcal,
+                                phasecal=phasecal,dcal=dcal,frcal=frcal,
+                                stabilize_scan_phase=stabilize_scan_phase, 
+                                stabilize_scan_amp=stabilize_scan_amp,
+                                gainp=gainp,gain_offset=gain_offset,
+                                tau=tau, taup=taup,
+                                dtermp=dtermp, dterm_offset=dterm_offset,
+                                jones=jones, inv_jones=inv_jones)
 
 
         return obs
@@ -959,7 +967,8 @@ class Movie(object):
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrices D-terms. Must have jones=True
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
-               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), otherwise uses old formalism without D-terms
+               jones (bool): if True, uses Jones matrix to apply mis-calibration effects (gains, phases, Dterms), 
+                             otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix (not including random terms) to calibrate data
 
                tau (float): the base opacity at all sites, or a dict giving one opacity per site
@@ -1063,7 +1072,8 @@ class Movie(object):
 
     def export_mp4(self, out='movie.mp4', fps=10, dpi=120,
                          interp='gaussian', scale='lin', dynamic_range=1000.0, cfun='afmhot',
-                         nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1, label_time=False, verbose=False):
+                         nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1,
+                         label_time=False, verbose=False):
         """Save the Movie to an mp4 file
         """
 

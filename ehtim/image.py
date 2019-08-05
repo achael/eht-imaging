@@ -3038,7 +3038,7 @@ class Image(object):
                 plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
                                  vmin=-maxval, vmax=maxval)
                 plt.contour(imarr, colors='k',linewidth=.25)
-                plt.contour(qarr, colors='c',linewidth=.25)
+                #plt.contour(qarr, colors='c',linewidth=.25)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 if has_title: plt.title('Q')
@@ -3047,7 +3047,7 @@ class Image(object):
                 plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp, 
                                  vmin=-maxval, vmax=maxval)
                 plt.contour(imarr, colors='k',linewidth=.25)
-                plt.contour(uarr, colors='c',linewidth=.25)
+                #plt.contour(uarr, colors='c',linewidth=.25)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 if has_title: plt.title('U')
