@@ -3299,6 +3299,8 @@ class Obsdata(object):
             timetype=self.timetype
 
         # Determine if fields are valid
+        field1 = field1.lower()
+        field2 = field2.lower()s
         if (field1 not in FIELDS) and (field2 not in FIELDS):
             raise Exception("valid fields are " + ' '.join(FIELDS))
 
@@ -3518,6 +3520,7 @@ class Obsdata(object):
         if ang_unit=='deg': angle=DEGREE
         else: angle = 1.0
 
+        field = field.lower()
         if field=='amp' and not (self.amp is None):
             print ("Warning: plot_bl is not using amplitudes in Obsdata.amp array!")
 
@@ -3614,12 +3617,12 @@ class Obsdata(object):
                           grid=True, ebar=True, axislabels=True, legend=False, 
                           show=True, export_pdf=""):
 
-        """Plot a field over time on a baseline site1-site2.
+        """Plot a closure phase over time on a triangle site1-site2-site3.
 
            Args:
                site1 (str): station 1 name
                site2 (str): station 2 name
-               field (str): y-axis field (from FIELDS)
+               site3 (str): station 3 name
 
                vtype (str): The visibilty type from which to assemble closure phases
                             ('vis','qvis','uvis','vvis','pvis') 
@@ -3733,7 +3736,7 @@ class Obsdata(object):
                         grid=True, ebar=True,axislabels=True, legend=False, 
                         show=True,export_pdf=""):
 
-        """Plot closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).
+        """Plot closure amplitude over time on a quadrangle (1-2)(3-4)/(1-4)(2-3).
 
            Args:
                site1 (str): station 1 name
