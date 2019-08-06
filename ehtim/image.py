@@ -1040,7 +1040,8 @@ class Image(object):
 
     def shift_fft(self, shift):
 
-        """Shift the image by a given vector in radians. This allows non-integer pixel shifts, via FFT.
+        """Shift the image by a given vector in radians. 
+           This allows non-integer pixel shifts, via FFT.
 
          Args:
              shift (list): offsets [x_offset, y_offset] for the image shift in radians

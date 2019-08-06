@@ -3300,7 +3300,7 @@ class Obsdata(object):
 
         # Determine if fields are valid
         field1 = field1.lower()
-        field2 = field2.lower()s
+        field2 = field2.lower()
         if (field1 not in FIELDS) and (field2 not in FIELDS):
             raise Exception("valid fields are " + ' '.join(FIELDS))
 
