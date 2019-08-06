@@ -727,6 +727,36 @@ class Obsdata(object):
                     out = 2 * data['rlvis'] / (data['rrvis'] + data['llvis'])
                     sig = merr2(data['rlsigma'], data['rrsigma'], data['llsigma'],
                                 0.5*(data['rrvis']+data['llvis']), out)
+            elif field in ['evis','eamp','ephase','esnr','esigma','esigma_phase']:
+                ty = 'c16'
+                ang = np.arctan2(data['u'],data['v'])  #TODO: correct convention EofN?
+                if self.polrep=='stokes':
+                    q = data['qvis']
+                    u = data['uvis']
+                    qsig = data['qsigma']
+                    usig = data['usigma']
+                elif self.polrep=='circ':
+                    q = 0.5*(data['lrvis'] + data['rlvis'])
+                    u = 0.5j*(data['lrvis'] - data['rlvis'])
+                    qsig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
+                    usig = qsig
+                out = (np.cos(2*ang)*q + np.sin(2*ang)*u) / np.sqrt(2.) #TODO correct convention/root2? 
+                sig = np.sqrt(0.5*((np.cos(2*ang)*qsig)**2 + (np.sin(2*ang)*usig)**2))
+            elif field in ['bvis','bamp','bphase','bsnr','bsigma','bsigma_phase']:
+                ty = 'c16'
+                ang = np.arctan2(data['u'],data['v'])  #TODO: correct convention EofN?
+                if self.polrep=='stokes':
+                    q = data['qvis']
+                    u = data['uvis']
+                    qsig = data['qsigma']
+                    usig = data['usigma']
+                elif self.polrep=='circ':
+                    q = 0.5*(data['lrvis'] + data['rlvis'])
+                    u = 0.5j*(data['lrvis'] - data['rlvis'])
+                    qsig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
+                    usig = qsig
+                out = (-np.sin(2*ang)*q + np.cos(2*ang)*u) / np.sqrt(2.) #TODO correct convention/root2? 
+                sig = np.sqrt(0.5*((np.sin(2*ang)*qsig)**2 + (np.cos(2*ang)*usig)**2))
             elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
                 ty = 'c16'
                 if self.polrep=='stokes':
@@ -808,25 +838,26 @@ class Obsdata(object):
                     ty  = 'f8'
 
             # Get arg/amps/snr
-            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","rramp","llamp","rlamp","lramp","rrllamp"]:
+            if field in ["amp", "qamp", "uamp","vamp","pamp","mamp","bamp","eamp",
+                         "rramp","llamp","rlamp","lramp","rrllamp"]:
                 out = np.abs(out)
                 if debias:
                     out = amp_debias(out, sig)
                 ty = 'f8'
-            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma",
+            elif field in ["sigma","qsigma","usigma","vsigma","psigma","msigma","bsigma","esigma",
                            "rrsigma","llsigma","rlsigma","lrsigma","rrllsigma"]:
                 out = np.abs(sig)
                 ty = 'f8'
-            elif field in ["phase", "qphase", "uphase", "vphase","pphase",
+            elif field in ["phase", "qphase", "uphase", "vphase","pphase","bphase","ephase",
                            "mphase","rrphase","llphase","lrphase","rlphase","rrllphase"]:
                 out = np.angle(out)/angle
                 ty = 'f8'
             elif field in ["sigma_phase","qsigma_phase","usigma_phase",
-                           "vsigma_phase","psigma_phase","msigma_phase",
+                           "vsigma_phase","psigma_phase","msigma_phase","bsigma_phase","esigma_phase",
                            "rrsigma_phase","llsigma_phase","rlsigma_phase","lrsigma_phase","rrllsigma_phase"]:
                 out = np.abs(sig)/np.abs(out)/angle
                 ty = 'f8'
-            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", 
+            elif field in ["snr", "qsnr", "usnr", "vsnr", "psnr", "bsnr","esnr",
                            "msnr","rrsnr","llsnr","rlsnr","lrsnr","rrllsnr"]:
                 out = np.abs(out)/np.abs(sig)
                 ty = 'f8'

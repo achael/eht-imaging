@@ -327,6 +327,67 @@ class Image(object):
 
         return self.chivec
 
+    #PIN
+    @property
+    def evec(self):
+        """Return the E mode image vector"""
+        if self.polrep=='circ':
+            qvec = np.real(0.5*(self.lrvec + self.rlvec))
+            uvec = np.real(0.5j*(self.lrvec - self.rlvec))
+        elif self.polrep=='stokes':
+            qvec = self.qvec
+            uvec = self.uvec
+
+        qarr = qvec.reshape((self.ydim,self.xdim))
+        uarr = uvec.reshape((self.ydim,self.xdim))
+        qarr_fft = np.fft.fftshift(np.fft.fft2(qarr))
+        uarr_fft = np.fft.fftshift(np.fft.fft2(uarr))
+
+        # TODO -- check conventions for u,v angle
+        s, t = np.meshgrid(np.flip(np.fft.fftshift(np.fft.fftfreq(self.xdim, d=1.0/self.xdim))), 
+                           np.flip(np.fft.fftshift(np.fft.fftfreq(self.ydim, d=1.0/self.ydim))))
+        uvangle = np.arctan2(s,t)
+
+        # TODO -- these conventions for e,b are from kaminokowski aara 54:227-69 sec 4.1
+        # TODO -- check!
+        cos2arr=np.round(np.cos(2*uvangle),decimals=10)
+        sin2arr=np.round(np.sin(2*uvangle),decimals=10)
+        earr_fft = (cos2arr*qarr_fft + sin2arr*uarr_fft)/np.sqrt(2)
+
+        earr =  np.fft.ifft2(np.fft.ifftshift(earr_fft))
+        return np.real(earr.flatten())
+
+    @property
+    def bvec(self):
+        """Return the B mode image vector"""
+
+        if self.polrep=='circ':
+            qvec = np.real(0.5*(self.lrvec + self.rlvec))
+            uvec = np.real(0.5j*(self.lrvec - self.rlvec))
+        elif self.polrep=='stokes':
+            qvec = self.qvec
+            uvec = self.uvec
+
+        # TODO -- check conventions for u,v angle
+        qarr = qvec.reshape((self.ydim,self.xdim))
+        uarr = uvec.reshape((self.ydim,self.xdim))
+        qarr_fft = np.fft.fftshift(np.fft.fft2(qarr))
+        uarr_fft = np.fft.fftshift(np.fft.fft2(uarr))
+
+        # TODO -- are these conventions for u,v right?  
+        s, t = np.meshgrid(np.flip(np.fft.fftshift(np.fft.fftfreq(self.xdim, d=1.0/self.xdim))), 
+                           np.flip(np.fft.fftshift(np.fft.fftfreq(self.ydim, d=1.0/self.ydim))))
+        uvangle = np.arctan2(s,t)
+
+
+        # TODO -- check!
+        cos2arr=np.round(np.cos(2*uvangle),decimals=10)
+        sin2arr=np.round(np.sin(2*uvangle),decimals=10)
+        barr_fft = (-sin2arr*qarr_fft + cos2arr*uarr_fft)/np.sqrt(2)
+
+        barr =  np.fft.ifft2(np.fft.ifftshift(barr_fft))
+        return np.real(barr.flatten())
+
 
     def copy(self):
 
@@ -2825,22 +2886,27 @@ class Image(object):
 
         if not plotp: # Plot a single polarization image
 
-            if pol=='m':
+            if pol.lower()=='m':
                 imvec = self.mvec
                 unit = r'$\|\breve{m}|$'
                 factor = 1
                 cbar_lims = [0,1]
-            if pol=='p':
+            elif pol.lower()=='p':
                 imvec = self.mvec * self.ivec
                 unit = r'$\|P|$'
-                factor = 1
-                cbar_lims = [0,1]
-            elif pol=='chi':
+            elif pol.lower()=='chi':
                 imvec = self.chivec / DEGREE
                 unit = r'$\chi (^\circ)$'
                 factor = 1
                 cbar_lims = [0,180]
+            elif pol.lower()=='e':
+                imvec = self.evec
+                unit = r'$E$-mode'
+            elif pol.lower()=='b':
+                imvec = self.bvec
+                unit = r'$B$-mode'
             else:
+                pol=pol.upper()
                 try:
                     imvec = np.array(self._imdict[pol]).reshape(-1) / (10.**power)
                 except KeyError:
