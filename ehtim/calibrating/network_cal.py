@@ -43,7 +43,7 @@ MAXIT=5000
 ###################################################################################################################################
 #Network-Calibration
 ###################################################################################################################################
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", minimizer_method='BFGS', pol='I',
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", minimizer_method='BFGS', pol='I',
                 pad_amp=0.,gain_tol=.2, solution_interval=0.0, scan_solutions=False, 
                 caltable=False, processes=-1,show_solution=False, debias=True, msgtype='bar'):
 
@@ -55,7 +55,8 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
 
            zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
-           method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'. 
+                         'amp' is default because of degeneracies in the derived phases on inter-site baselines. 
            minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            pol (str): which visibility to compute gains for
 
