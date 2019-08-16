@@ -246,7 +246,7 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec',win_type='boxcar'):
         vis1='rrvis'; vis2='llvis'; vis3='rlvis'; vis4='lrvis'
         sig1='rrsigma'; sig2='llsigma'; sig3='rlsigma'; sig4='lrsigma'
 
-    vis = eh.statistics.dataframes.make_df(obs)
+    vis = make_df(obs)
     vis = vis.sort_values(['baseline','datetime']).reset_index().copy()
     vis['total_seconds'] = list(map(lambda x: int(x.total_seconds()), vis['datetime'] - vis['datetime'].min()))
     vis['roll_vis'] = list(zip(vis['total_seconds'],vis[vis1],vis[vis2],vis[vis3],vis[vis4],vis['datetime']))
