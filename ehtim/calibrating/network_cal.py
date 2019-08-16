@@ -122,12 +122,12 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
     tstart = time.time()
     if processes > 0: # with multiprocessing
         scans_cal = pool.map(get_network_scan_cal,
-                                             [[i, len(scans), scans[i],
-                                               zbl, sites, cluster_data, obs.polrep, pol, 
-                                               method, pad_amp, gain_tol,
-                                               caltable, show_solution,debias,msgtype]
-                                              for i in range(len(scans))
-                                             ])
+                             [[i, len(scans), scans[i],
+                               zbl, sites, cluster_data, obs.polrep, pol, 
+                               method, pad_amp, gain_tol,
+                               caltable, show_solution,debias,msgtype]
+                              for i in range(len(scans))
+                             ])
     else: # without multiprocessing
         for i in range(len(scans)):
             prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i-1)

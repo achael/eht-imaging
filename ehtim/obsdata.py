@@ -3591,7 +3591,7 @@ class Obsdata(object):
         x.set_ylim(rangey)
 
         if axislabels:
-            x.set_xlabel(self.timetype + ' (hr)')
+            x.set_xlabel(timetype + ' (hr)')
             try:
                 x.set_ylabel(FIELD_LABELS[field])
             except:
@@ -3915,42 +3915,73 @@ class Obsdata(object):
 # Observation creation functions
 ##################################################################################################
 
-def merge_obs(obs_List):
+def merge_obs(obs_List, force_merge=False):
 
     """Merge a list of observations into a single observation file.
 
        Args:
            obs_List (list): list of split observation Obsdata objects.
+           force_merge (bool): forces the observations to merge even if parameters are different
 
        Returns:
            mergeobs (Obsdata): merged Obsdata object containing all scans in input list
     """
 
     if (len(set([obs.polrep for obs in obs_List])) > 1):
-        raise Exception("All observations must have the same polarization representaiton !")
+        raise Exception("All observations must have the same polarization representation !")
         return
 
-    if (len(set([obs.ra for obs in obs_List])) > 1 or
-        len(set([obs.dec for obs in obs_List])) > 1 or
-        len(set([obs.rf for obs in obs_List])) > 1 or
-        len(set([obs.bw for obs in obs_List])) > 1 or
-        len(set([obs.source for obs in obs_List])) > 1 or
-        len(set([np.floor(obs.mjd) for obs in obs_List])) > 1):
-
-        raise Exception("All observations must have the same parameters!")
+    if np.any([obs.timetype == 'GMST' for obs in obs_List]):
+        raise Exception("merge_obs only works for observations with obs.timetype='UTC'!")
         return
 
-    # The important things to merge are the mjd, the data, and the list of telescopes
+    if not force_merge:
+        if (len(set([obs.ra for obs in obs_List])) > 1 or
+            len(set([obs.dec for obs in obs_List])) > 1 or
+            len(set([obs.rf for obs in obs_List])) > 1 or
+            len(set([obs.bw for obs in obs_List])) > 1 or
+            len(set([obs.source for obs in obs_List])) > 1):
+            #or  len(set([np.floor(obs.mjd) for obs in obs_List])) > 1):
+
+            raise Exception("All observations must have the same parameters!")
+            return
+
+    # the reference observation is the one with the minimum mjd
+    obs_idx = np.argmin([obs.mjd for obs in obs_List])
+    obs_ref = obs_List[obs_idx]
+
+    # re-reference times to new mjd 
+    # must be in UTC!
+    mjd_ref = obs_ref.mjd
+    for obs in obs_List:
+        mjd_offset = obs.mjd - mjd_ref
+        obs.data['time'] += mjd_offset*24
+        if not(obs.scans is None or obs.scans==[]):
+            obs.scans += mjd_offset*24
+
+    # merge the data
     data_merge = np.hstack([obs.data for obs in obs_List])
 
-    scan_merge = []
+    # merge the scan list
+    scan_merge = None
     for obs in obs_List:
-        if not (scan_merge is None):
+        if (obs.scans is None or obs.scans==[]):
+            continue
+        if (scan_merge is None or scan_merge == []):
+            scan_merge = [obs.scans]
+        else:
             scan_merge.append(obs.scans)
-    scan_merge = np.hstack(scan_merge)
+
+    if not (scan_merge is None  or scan_merge == []):
+        scan_merge = np.vstack(scan_merge)
+        _idxsort = np.argsort(scan_merge[:,0])
+        scan_merge = scan_merge[_idxsort]
+
+    # merge the list of telescopes
     tarr_merge = np.unique(np.concatenate([obs.tarr for obs in obs_List]))
 
-    arglist, argdict = obs_List[0].obsdata_args()
+    
+    arglist, argdict = obs_ref.obsdata_args()
     arglist[DATPOS] = data_merge
     arglist[TARRPOS] = tarr_merge 
     argdict['scantable'] = scan_merge
