@@ -270,7 +270,7 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec',win_type='boxcar'):
         return vis.copy()
 
 
-def roll_vis(ser,dt=1,min_periods=1,win_type='gaussian'):
+def roll_vis(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
     """functtion helper for coh_moving_avg_vis
     """
     foo = pd.DataFrame({'REvis1': [np.real(x[1]) for x in ser],'IMvis1': [np.imag(x[1]) for x in ser],
