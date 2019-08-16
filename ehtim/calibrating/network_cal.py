@@ -201,7 +201,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
     # determine the zero-baseline flux of the scan
     if callable(zbl):
-        zbl_scan = np.median(scan['time'])
+        zbl_scan = np.median(zbl(scan['time']))
     else:
         zbl_scan = zbl
 
