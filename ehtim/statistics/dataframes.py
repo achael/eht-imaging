@@ -222,6 +222,83 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
         elif return_type=='df':
             return vis_avg
 
+
+
+def coh_moving_avg_vis(obs,dt=50,return_type='rec',win_type='boxcar'):
+    """coherently averages visibilities with moving window
+    Args:
+        obs: ObsData object
+        dt (float): averaging window size in seconds
+        return_type (str): 'rec' for numpy record array (as used by ehtim), 'df' for data frame
+        win_type: type of averaging window, options iclude 'boxcar', 'triang', 'blackman','hamming',
+        'gaussian', 'bartlett'
+     Returns:
+        vis: coherently averaged visibilities on same grid
+    """
+    gaussian_std = dt/3.
+    min_periods=1
+    if dt <= 0:
+        raise Exception('Time dt must be positive!')
+    if obs.polrep=='stokes':
+        vis1='vis'; vis2='qvis'; vis3='uvis'; vis4='vvis'
+        sig1='sigma'; sig2='qsigma'; sig3='usigma'; sig4='vsigma'
+    elif obs.polrep=='circ':
+        vis1='rrvis'; vis2='llvis'; vis3='rlvis'; vis4='lrvis'
+        sig1='rrsigma'; sig2='llsigma'; sig3='rlsigma'; sig4='lrsigma'
+
+    vis = eh.statistics.dataframes.make_df(obs)
+    vis = vis.sort_values(['baseline','datetime']).reset_index().copy()
+    vis['total_seconds'] = list(map(lambda x: int(x.total_seconds()), vis['datetime'] - vis['datetime'].min()))
+    vis['roll_vis'] = list(zip(vis['total_seconds'],vis[vis1],vis[vis2],vis[vis3],vis[vis4],vis['datetime']))
+    vis['roll_sig'] = list(zip(vis['total_seconds'],vis[sig1],vis[sig2],vis[sig3],vis[sig4],vis['datetime']))
+
+    roll_vis_local = lambda x: roll_vis(x,dt=int(dt),min_periods=min_periods,win_type=win_type,gaussian_std=gaussian_std)
+    roll_sig_local = lambda x: roll_sig(x,dt=int(dt),min_periods=min_periods,win_type=win_type,gaussian_std=gaussian_std)
+    vis_avg_roll_vis = vis[['baseline','roll_vis']].groupby('baseline').transform(roll_vis_local)['roll_vis'].copy()
+    vis_avg_roll_sig = vis[['baseline','roll_sig']].groupby('baseline').transform(roll_sig_local)['roll_sig'].copy()
+    
+    for cou,col in enumerate([vis1,vis2,vis3,vis4]):
+        vis[col] = [x[2*cou] + 1j*x[2*cou+1] for x in vis_avg_roll_vis]
+    for cou,col in enumerate([sig1,sig2,sig3,sig4]):
+        vis[col] = [x[cou] for x in vis_avg_roll_sig]
+    if return_type=='rec':
+        if obs.polrep=='stokes':
+            return df_to_rec(vis.copy(),'vis')
+        elif obs.polrep=='circ':
+            return df_to_rec(vis.copy(),'vis_circ')
+    elif return_type=='df':
+        return vis.copy()
+
+
+def roll_vis(ser,dt=1,min_periods=1,win_type='gaussian'):
+    """functtion helper for coh_moving_avg_vis
+    """
+    foo = pd.DataFrame({'REvis1': [np.real(x[1]) for x in ser],'IMvis1': [np.imag(x[1]) for x in ser],
+                        'REvis2': [np.real(x[2]) for x in ser],'IMvis2': [np.imag(x[2]) for x in ser],
+                        'REvis3': [np.real(x[3]) for x in ser],'IMvis3': [np.imag(x[3]) for x in ser],
+                        'REvis4': [np.real(x[4]) for x in ser],'IMvis4': [np.imag(x[4]) for x in ser]},
+                        index=[x[0] for x in ser])
+    if win_type=='gaussian': gaussian_std=dt/3.
+    else: gaussian_std==None
+    avg = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).mean(std=gaussian_std)
+    avg_list = list(zip(avg['REvis1'],avg['IMvis1'],avg['REvis2'],avg['IMvis2'],avg['REvis3'],avg['IMvis3'],avg['REvis4'],avg['IMvis4'],[x[5] for x in ser]))
+    return avg_list
+
+def roll_sig(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
+    """functtion helper for coh_moving_avg_vis
+    """
+    foo = pd.DataFrame({'sig1': [x[1]**2 for x in ser],'sig2': [x[2]**2 for x in ser],
+                   'sig3': [x[3]**2 for x in ser],'sig4': [x[4]**2 for x in ser]},
+                   index=[x[0] for x in ser])
+    avg = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).mean(std=gaussian_std)
+    sumSq = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).sum(std=gaussian_std) 
+    avg['sig1'] = (avg['sig1']**1.5)/(sumSq['sig1']**1)
+    avg['sig2'] = (avg['sig2']**1.5)/(sumSq['sig2']**1)
+    avg['sig3'] = (avg['sig3']**1.5)/(sumSq['sig3']**1)
+    avg['sig4'] = (avg['sig4']**1.5)/(sumSq['sig4']**1)
+    avg_list = list(zip(avg['sig1'],avg['sig2'],avg['sig3'],avg['sig4'],[x[5] for x in ser]))
+    return avg_list
+
 def incoh_avg_vis(obs,dt=0,debias=True,scan_avg=False,return_type='rec',rec_type='vis',err_type='predicted',num_samples=int(1e3)):
     """incoherently averages visibilities
     Args:
