@@ -1092,7 +1092,7 @@ class Obsdata(object):
             return self.copy()
 
         if moving:
-            vis_avg = coh_moving_avg_vis(obs,dt=inttime,return_type='rec',win_type='boxcar')
+            vis_avg = coh_moving_avg_vis(self,dt=inttime,return_type='rec',win_type=moving_window)
         else:
             vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',
                               err_type='predicted',scan_avg=scan_avg)
