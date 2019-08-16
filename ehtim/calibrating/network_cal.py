@@ -43,7 +43,7 @@ MAXIT=5000
 ###################################################################################################################################
 #Network-Calibration
 ###################################################################################################################################
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", minimizer_method='BFGS', pol='I',
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", minimizer_method='BFGS', pol='I',
                 pad_amp=0.,gain_tol=.2, solution_interval=0.0, scan_solutions=False, 
                 caltable=False, processes=-1,show_solution=False, debias=True, msgtype='bar'):
 
@@ -51,11 +51,13 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="both", min
 
        Args:
            obs (Obsdata): The observation to be calibrated
-           zbl (float): zero baseline flux in Jy
+           zbl (float or function): zero baseline flux in Jy. Can either pass a constant value or a function that
+                                    returns the zbl as a function of UT hour.
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
 
            zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
-           method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'. 
+                         'amp' is default because of degeneracies in the derived phases on inter-site baselines. 
            minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
            pol (str): which visibility to compute gains for
 
@@ -175,7 +177,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
        Args:
            obs (Obsdata): The observation to be calibrated
-           zbl (float): zero baseline flux in Jy
+           zbl (float or function): zero baseline flux in Jy. Can either pass a constant value or a function that
+                                    returns the zbl as a function of UT hour.
            sites (list): list of sites to include in the network calibration. empty list calibrates all sites
            clustered_sites (tuple): information  on clustered sites, returned by make_cluster_data function
 
@@ -195,6 +198,12 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
            (Obsdata): the calibrated scan, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
     """
+
+    # determine the zero-baseline flux of the scan
+    if callable(zbl):
+        zbl_scan = np.median(zbl(scan['time']))
+    else:
+        zbl_scan = zbl
 
     # clustered site information
     allclusters = clustered_sites[0]
@@ -307,7 +316,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         # append the default values to g for missing points
         # and to v for the zero baseline points
         g = np.append(g, 1.)
-        v = np.append(v, zbl)
+        v = np.append(v, zbl_scan)
 
         # scan visibilities are either an intercluster visibility or the fixed zbl
         v_scan = v[scan_keys]
@@ -331,7 +340,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         # prior on the gains
         g_fracerr = gain_tol 
         chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
-        chisq_v = np.sum((np.abs(v)/zbl)**4)
+        chisq_v = np.sum((np.abs(v)/zbl_scan)**4)
         return chisq + chisq_g + chisq_v
     
     if np.max(g1_keys) > -1 or np.max(g2_keys) > -1: 
@@ -357,7 +366,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
 
     g_fit = np.append(g_fit, 1.)
-    v_fit = np.append(v_fit, zbl)
+    v_fit = np.append(v_fit, zbl_scan)
 
 
     # Derive a calibration table or apply the solution to the scan

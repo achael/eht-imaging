@@ -3472,6 +3472,9 @@ class Obsdata(object):
             x.grid()
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
+        if export_pdf != "" and axis:
+            fig = plt.gcf()
+            fig.savefig(export_pdf, bbox_inches='tight')
         if show:
             plt.show(block=False)
 
@@ -3604,6 +3607,9 @@ class Obsdata(object):
             plt.legend()
         if export_pdf != "" and not axis:
             fig.savefig(export_pdf, bbox_inches='tight')
+        if export_pdf != "" and axis:
+            fig = plt.gcf()
+            fig.savefig(export_pdf, bbox_inches='tight')
         if show:
             plt.show(block=False)
 
@@ -3722,6 +3728,9 @@ class Obsdata(object):
         if legend:
             plt.legend()
         if export_pdf != "" and not axis:
+            fig.savefig(export_pdf, bbox_inches='tight')
+        if export_pdf != "" and axis:
+            fig = plt.gcf()
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
             plt.show(block=False)
@@ -3856,6 +3865,9 @@ class Obsdata(object):
         if legend:
             plt.legend()
         if export_pdf != "" and not axis:
+            fig.savefig(export_pdf, bbox_inches='tight')
+        if export_pdf != "" and axis:
+            fig = plt.gcf()
             fig.savefig(export_pdf, bbox_inches='tight')
         if show:
             plt.show(block=False)
