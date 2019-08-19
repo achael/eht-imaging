@@ -292,10 +292,10 @@ def roll_sig(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
                    index=[x[0] for x in ser])
     avg = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).mean(std=gaussian_std)
     sumSq = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).sum(std=gaussian_std) 
-    avg['sig1'] = (avg['sig1']**1.5)/(sumSq['sig1']**1)
-    avg['sig2'] = (avg['sig2']**1.5)/(sumSq['sig2']**1)
-    avg['sig3'] = (avg['sig3']**1.5)/(sumSq['sig3']**1)
-    avg['sig4'] = (avg['sig4']**1.5)/(sumSq['sig4']**1)
+    avg['sig1'] = (avg['sig1']**1.0)/(sumSq['sig1']**0.5)
+    avg['sig2'] = (avg['sig2']**1.0)/(sumSq['sig2']**0.5)
+    avg['sig3'] = (avg['sig3']**1.0)/(sumSq['sig3']**0.5)
+    avg['sig4'] = (avg['sig4']**1.0)/(sumSq['sig4']**0.5)
     avg_list = list(zip(avg['sig1'],avg['sig2'],avg['sig3'],avg['sig4'],[x[5] for x in ser]))
     return avg_list
 
