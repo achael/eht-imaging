@@ -258,6 +258,8 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec'):
         vis[col] = [x[2*cou] + 1j*x[2*cou+1] for x in vis_avg_roll_vis]
     for cou,col in enumerate([sig1,sig2,sig3,sig4]):
         vis[col] = [x[cou] for x in vis_avg_roll_sig]
+    #shift to match with original data
+    vis.datetime = vis.datetime.apply(lambda x: x-datetime.timedelta(seconds=dt))
     if return_type=='rec':
         if obs.polrep=='stokes':
             return df_to_rec(vis.copy(),'vis')
