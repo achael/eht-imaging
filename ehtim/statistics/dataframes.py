@@ -290,12 +290,13 @@ def roll_sig(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
     foo = pd.DataFrame({'sig1': [x[1]**2 for x in ser],'sig2': [x[2]**2 for x in ser],
                    'sig3': [x[3]**2 for x in ser],'sig4': [x[4]**2 for x in ser]},
                    index=[x[0] for x in ser])
-    avg = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).mean(std=gaussian_std)
-    sumSq = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).sum(std=gaussian_std) 
-    avg['sig1'] = (avg['sig1']**1.0)/(sumSq['sig1']**0.5)
-    avg['sig2'] = (avg['sig2']**1.0)/(sumSq['sig2']**0.5)
-    avg['sig3'] = (avg['sig3']**1.0)/(sumSq['sig3']**0.5)
-    avg['sig4'] = (avg['sig4']**1.0)/(sumSq['sig4']**0.5)
+    avg0 = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).mean(std=gaussian_std)
+    sumSq = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).sum(std=gaussian_std)
+    avg = pd.DataFrame({},index=[x[0] for x in ser]) 
+    avg['sig1'] = (avg0['sig1']**1.0)/(sumSq['sig1']**0.5)
+    avg['sig2'] = (avg0['sig2']**1.0)/(sumSq['sig2']**0.5)
+    avg['sig3'] = (avg0['sig3']**1.0)/(sumSq['sig3']**0.5)
+    avg['sig4'] = (avg0['sig4']**1.0)/(sumSq['sig4']**0.5)
     avg_list = list(zip(avg['sig1'],avg['sig2'],avg['sig3'],avg['sig4'],[x[5] for x in ser]))
     return avg_list
 
