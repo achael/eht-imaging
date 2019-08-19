@@ -255,8 +255,8 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec',win_type='boxcar'):
 
     #roll_vis_local = lambda x: roll_vis(x,dt=int(dt),min_periods=min_periods,win_type=win_type,gaussian_std=gaussian_std)
     #roll_sig_local = lambda x: roll_sig(x,dt=int(dt),min_periods=min_periods,win_type=win_type,gaussian_std=gaussian_std)
-    roll_vis_local = lambda x: roll_vis(x,dt=int(dt),min_periods=min_periods)
-    roll_sig_local = lambda x: roll_sig(x,dt=int(dt),min_periods=min_periods)
+    roll_vis_local = lambda x: roll_vis(x,dt=str(int(dt))+'s',min_periods=min_periods)
+    roll_sig_local = lambda x: roll_sig(x,dt=str(int(dt))+'s',min_periods=min_periods)
     vis_avg_roll_vis = vis[['baseline','roll_vis']].groupby('baseline').transform(roll_vis_local)['roll_vis'].copy()
     vis_avg_roll_sig = vis[['baseline','roll_sig']].groupby('baseline').transform(roll_sig_local)['roll_sig'].copy()
     
@@ -273,7 +273,7 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec',win_type='boxcar'):
         return vis.copy()
 
 
-def roll_vis(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
+def roll_vis(ser,dt='1s',min_periods=1,win_type='gaussian',gaussian_std=1):
     """functtion helper for coh_moving_avg_vis
     """
     foo = pd.DataFrame({'REvis1': [np.real(x[1]) for x in ser],'IMvis1': [np.imag(x[1]) for x in ser],
@@ -284,11 +284,11 @@ def roll_vis(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
     if win_type=='gaussian': gaussian_std=dt/3.
     else: gaussian_std==None
     #avg = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).mean(std=gaussian_std)
-    avg = foo.rolling(window=int(dt), min_periods=min_periods).mean()
+    avg = foo.rolling(dt, min_periods=min_periods).mean()
     avg_list = list(zip(avg['REvis1'],avg['IMvis1'],avg['REvis2'],avg['IMvis2'],avg['REvis3'],avg['IMvis3'],avg['REvis4'],avg['IMvis4'],[x[5] for x in ser]))
     return avg_list
 
-def roll_sig(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
+def roll_sig(ser,dt='1s',min_periods=1,win_type='gaussian',gaussian_std=1):
     """functtion helper for coh_moving_avg_vis
     """
     foo = pd.DataFrame({'sig1': [x[1]**2 for x in ser],'sig2': [x[2]**2 for x in ser],
@@ -296,8 +296,8 @@ def roll_sig(ser,dt=1,min_periods=1,win_type='gaussian',gaussian_std=1):
                    index=[x[0] for x in ser])
     #avg0 = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).mean(std=gaussian_std)
     #sumSq = foo.rolling(window=int(dt), min_periods=min_periods,win_type=win_type,center=True).sum(std=gaussian_std)
-    avg0 = foo.rolling(window=int(dt), min_periods=min_periods).mean()
-    sumSq = foo.rolling(window=int(dt), min_periods=min_periods).sum()
+    avg0 = foo.rolling(dt, min_periods=min_periods).mean()
+    sumSq = foo.rolling(dt, min_periods=min_periods).sum()
     avg = pd.DataFrame({},index=[x[0] for x in ser]) 
     avg['sig1'] = (avg0['sig1']**1.0)/(sumSq['sig1']**0.5)
     avg['sig2'] = (avg0['sig2']**1.0)/(sumSq['sig2']**0.5)
