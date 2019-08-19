@@ -242,7 +242,7 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec'):
         vis1='rrvis'; vis2='llvis'; vis3='rlvis'; vis4='lrvis'
         sig1='rrsigma'; sig2='llsigma'; sig3='rlsigma'; sig4='lrsigma'
 
-    vis = eh.statistics.dataframes.make_df(obs)
+    vis = make_df(obs)
     vis = vis.sort_values(['baseline','datetime']).reset_index().copy()
     #vis['total_seconds'] = list(map(lambda x: int(x.total_seconds()), vis['datetime'] - vis['datetime'].min()))
     vis['total_seconds'] = [pd.Timestamp(x) for x in vis.datetime]
@@ -260,9 +260,9 @@ def coh_moving_avg_vis(obs,dt=50,return_type='rec'):
         vis[col] = [x[cou] for x in vis_avg_roll_sig]
     if return_type=='rec':
         if obs.polrep=='stokes':
-            return eh.statistics.dataframes.df_to_rec(vis.copy(),'vis')
+            return df_to_rec(vis.copy(),'vis')
         elif obs.polrep=='circ':
-            return eh.statistics.dataframes.df_to_rec(vis.copy(),'vis_circ')
+            return df_to_rec(vis.copy(),'vis_circ')
     elif return_type=='df':
         return vis.copy()
 
