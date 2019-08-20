@@ -548,8 +548,10 @@ class ScatteringModel(object):
                Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List.
             """
 
+        print("Warning!! assuming a constant frame duration, but Movie objects now support unequally spaced frames!")
+
         if type(Unscattered_Movie) != movie.Movie and framedur_sec == None:
-            print("If scattering a list of images of static image, the framedur must be specified!")
+            print("If scattering a list of images or static image, the framedur must be specified!")
             return
 
         if type(Unscattered_Movie) == image.Image and N_frames == None:
@@ -557,9 +559,14 @@ class ScatteringModel(object):
             return
 
         if framedur_sec == None:
-            framedur_sec = Unscattered_Movie.framedur
+
+            framedur_sec = (Unscattered_Movie.times[-1] - Unscattered_Movie.times[0]) * 3600
+            #framedur_sec = Unscattered_Movie.framedur
 
         print("Frame Duration (seconds):",framedur_sec)
+
+        # time list in hr
+        tlist_hr = [framedur_sec/3600.0*j for j in range(N_frames)]
 
         if type(Unscattered_Movie) == movie.Movie:
             N = Unscattered_Movie.xdim
@@ -617,12 +624,14 @@ class ScatteringModel(object):
         if Epsilon_Screen.shape[0] == 0:
             Epsilon_Screen = MakeEpsilonScreen(N, N)
 
-        scattered_im_List = [ self.Scatter(get_frame(j), Epsilon_Screen, obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, t_hr=framedur_sec/3600.0*j, sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity) for j in range(N_frames)]
+        scattered_im_List = [ self.Scatter(get_frame(j), Epsilon_Screen, obs_frequency_Hz = obs_frequency_Hz, Vx_km_per_s = Vx_km_per_s, Vy_km_per_s = Vy_km_per_s, 
+                              time=tlist_hr[j], sqrtQ=sqrtQ, Linearized_Approximation=Linearized_Approximation, Force_Positivity=Force_Positivity) for j in range(N_frames)]
 
         if Return_Image_List == True:
             return scattered_im_List
 
-        Scattered_Movie = movie.Movie( [im.imvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List], framedur = framedur_sec, psize = psize, ra = ra, dec = dec, rf=rf, pulse=pulse, source=source, mjd=mjd, start_hr=start_hr)
+        Scattered_Movie = movie.Movie( [im.imvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List],
+                                       times=tlist_hr, psize = psize, ra = ra, dec = dec, rf=rf, pulse=pulse, source=source, mjd=mjd, start_hr=start_hr)
 
         if has_pol:
             Scattered_Movie_Q = [im.qvec.reshape((im.xdim,im.ydim)) for im in scattered_im_List]

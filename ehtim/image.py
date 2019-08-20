@@ -65,10 +65,9 @@ class Image(object):
            dec (float): The source declination in fractional degrees
            rf (float): The image frequency in Hz
 
-           imvec (array): The vector of pixel I values in Jy/pixel (len xdim*ydim)
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
-
+           _imdict (dict): The dictionary with the polarimetric images
     """
 
     def __init__(self, image, psize, ra, dec, pa=0.0,
@@ -387,6 +386,20 @@ class Image(object):
 
         barr =  np.fft.ifft2(np.fft.ifftshift(barr_fft))
         return np.real(barr.flatten())
+
+
+    def image_args(self):
+
+        """"Copy arguments for making a  new Image into a list and dictonary
+        """
+
+        arglist = [self.imarr(), self.psize, self.ra,  self.dec]
+        argdict = {'rf': self.rf, 'pa': self.pa,  
+                   'polrep':self.polrep, 'pol_prim':self.pol_prim, 
+                   'pulse': self.pulse, 'source': self.source, 
+                   'mjd':self.mjd, 'time':self.time}
+
+        return (arglist, argdict)
 
 
     def copy(self):

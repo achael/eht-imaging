@@ -187,7 +187,7 @@ class Obsdata(object):
 
     def obsdata_args(self):
 
-        """"Copy arguments for making a  new obsdata argument into a list and dictonary
+        """"Copy arguments for making a  new Obsdata into a list and dictonary
         """
 
         arglist = [self.ra, self.dec, self.rf, self.bw,  self.data, self.tarr]

@@ -592,7 +592,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 
     # Save a calibration table with the synthetic gains and dterms added
     if caltable_path and len(datatables)>0:
-        caltable = ehtim.caltable.Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw, datatables, obs_tmp.tarr, source=obs_tmp.source, mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
+        caltable = ehtim.caltable.Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw, datatables, obs_tmp.tarr, 
+                                           source=obs_tmp.source, mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
         caltable.save_txt(obs_tmp, datadir=caltable_path+'_simdata_caltable')
 
     return out
@@ -689,7 +690,8 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
             fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
 
         elif frcal and not dcal:
-            # If the field rotation angle has been removed but leakage hasn't, we still need to rotate the leakage terms appropriately (by *twice* the field rotation angle)
+            # If the field rotation angle has been removed but leakage hasn't, 
+            # we still need to rotate the leakage terms appropriately (by *twice* the field rotation angle)
             fr_angle_D = 2.0*(tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
 
         # Assemble the inverse Jones Matrices and save to dictionary

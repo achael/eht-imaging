@@ -30,7 +30,7 @@ import os
 import copy
 import sys
 import time as ttime
-
+import h5py
 
 import ehtim.obsdata
 import ehtim.image
@@ -154,7 +154,6 @@ def load_im_hdf5(filename):
     print ("Loading hdf5 image: ", filename)
 
     # Load information from hdf5 file
-    import h5py
 
     hfp = h5py.File(filename)
     dsource = hfp['header']['dsource'][()]          # distance to source in cm
@@ -457,54 +456,122 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
 # Movie IO
 ##################################################################################################
 
-def load_movie_hdf5(file_name, framedur_sec=-1, psize=-1, 
-                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, source='SgrA',
-                    pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+# Old version  for arizona  datasets
+#def load_movie_hdf5(file_name, framedur_sec=1, psize=-1, 
+#                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, source='SgrA',
+#                    pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+
+
+#    """Read in a movie from an hdf5 file and create a Movie object.
+
+#       Args:
+#           file_name (str): The name of the hdf5 file.
+#           framedur_sec (float): The frame duration in seconds 
+#           psize (float): Pixel size in radian
+#           ra (float): The movie right ascension
+#           dec (float): The movie declination
+#           rf (float): The movie frequency
+#           pulse (function): The function convolved with the pixel values for continuous image
+#           polrep (str): polarization representation, either 'stokes' or 'circ'
+#           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
+#           zero_pol (bool): If True, loads any missing polarizations as zeros
+
+#       Returns:
+#           Movie: a Movie object
+#    """
+
+#    # TODO: Currently only supports one polarization!
+#    file    = h5py.File(file_name, 'r')
+#    name    = list(file.keys())[0]
+#    d       = file[str(name)]
+#    frames  = d[:]
+#    file.close()
+
+#    # TODO: currently no frame times  stored in  hdf5!
+#    framedur_hr = framedur/3600.
+#    mjd0 = MJD_DEFAULT
+#    hour0 =  0
+#    nframes = len(frames)
+#    tstart = hour0
+#    tstop = hour0 + framedur_hr*nframes  
+#    times = np.linspace(tstart, tstop, nframes)
+
+#    movie =  Movie(frames, times, 
+#                   psize, ra, dec, rf=rf, 
+#                   polrep=polrep, pol_prim=pol_prim,
+#                   source=source, mjd=MJD_DEFAULT, pulse=pulse)
+
+#    if zero_pol: 
+#        for pol in list(movie._movdict.keys()):
+#            if pol==movie.pol_prim: continue
+#            polframes = np.zeros(frames.shape)
+#            newmov.add_pol_movie(polframes, pol)
+
+#    return movie
+
+
+def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT):
 
 
     """Read in a movie from an hdf5 file and create a Movie object.
 
        Args:
            file_name (str): The name of the hdf5 file.
-           framedur_sec (float): The frame duration in seconds (default=-1, corresponding to framedur tahen from file header)
-           psize (float): Pixel size in radian, (default=-1, corresponding to framedur taken from file header)
-           ra (float): The movie right ascension
-           dec (float): The movie declination
-           rf (float): The movie frequency
+           framedur_sec (float): The frame duration in seconds (overwrites internal timestamps)
            pulse (function): The function convolved with the pixel values for continuous image
-           polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
-           zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
            Movie: a Movie object
     """
 
-    # Currently only supports one polarization!
-    import h5py
-    file    = h5py.File(file_name, 'r')
-    name    = list(file.keys())[0]
-    d       = file[str(name)]
-    frames  = d[:]
-    file.close()
-    movie =  Movie(frames, 
-                   framedur_sec, psize, ra, dec, rf=rf, 
-                   polrep=polrep, pol_prim=pol_prim, start_hr=0,
-                   source=source, mjd=MJD_DEFAULT, pulse=pulse)
+    # TODO: Currently only supports one polarization!
+    with h5py.File(file_name, 'r') as file:
+    
+        head = file['header']
+        header_pars = head.attrs.keys()
 
-    if zero_pol: 
-        for pol in list(movie._movdict.keys()):
+        mjd =  int(head.attrs['mjd'])
+        psize =  float(head.attrs['psize'])
+        source = head.attrs['source']
+        ra = float(head.attrs['ra'])
+        dec = float(head.attrs['dec'])
+        rf  =  float(head.attrs['rf'])
+        polrep = head.attrs['polrep'] 
+        pol_prim = head.attrs['pol_prim']
+
+        times = file['times'][:]
+        frames = file[pol_prim][:]
+
+        movie =  ehtim.movie.Movie(frames, times, 
+                       psize, ra, dec, rf=rf, 
+                       polrep=polrep, pol_prim=pol_prim,
+                       source=source, mjd=mjd, pulse=pulse)
+
+
+        if polrep=='stokes':
+            keys  = ['I','Q','U','V']
+        elif polrep=='circ':
+            keys = ['RR','LL','RL','LR']
+        else: 
+            raise  Exception("hdf5 polrep is not 'circ' or 'stokes'!")
+
+        for pol in keys:
             if pol==movie.pol_prim: continue
-            polframes = np.zeros(frames.shape)
-            newmov.add_pol_movie(polframes, pol)
+            if pol in file.keys():
+                polframes = file[pol][:]
+                if len(polframes):
+                    movie.add_pol_movie(polframes, pol)
 
     return movie
+
+
 
 def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
     """Read in a movie from text files and create a Movie object.
 
        Args:
-           basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
+           basename (str): The base name of individual movie frames. 
+                           Files should have names basename + 00001, etc.
            nframes (int): The total number of frames
            framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
@@ -529,12 +596,21 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='
 
         hour = im.time
         if i == 0:
+            mjd0 =  im.mjd
             hour0 = im.time
+            times =  [hour0]
         else:
-            pass
+            times.append(hour0)
 
-    if framedur == -1:
-        framedur = ((hour - hour0)/float(nframes))*3600.0
+    if framedur != -1:
+
+        framedur_hr = framedur/3600.
+        nframes = len(imlist)
+        tstart = hour0
+        tstop = hour0 + framedur_hr*nframes  
+        times = np.linspace(tstart, tstop, nframes)
+        for kk in range(len(imlist)):
+            imlist[kk].time = times[kk]
 
     out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur)
 
@@ -559,36 +635,51 @@ def load_movie_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep=
     imlist = []
 
     for i in range(nframes):
-        filename = basename + "%05d" % i
-
         sys.stdout.write('\rReading Movie Image %i/%i...' % (i,nframes))
         sys.stdout.flush()
+        for tag in ["%02d" % i,"%03d" % i,"%04d" % i,"%05d" % i]:
 
-        im = load_im_fits(filename, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
-        imlist.append(im)
+            try:
+                filename = basename + tag + '.fits'
+
+                im = load_im_fits(filename, pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+                imlist.append(im)
+                break
+            except:
+                continue
 
         hour = im.time
         if i == 0:
+            mjd0 = im.mjd
             hour0 = im.time
         else:
             pass
 
-    if framedur == -1:
-        framedur = ((hour - hour0)/float(nframes))*3600.0
+    if framedur != -1:
+
+        framedur_hr = framedur/3600.
+        nframes = len(imlist)
+        tstart = hour0
+        tstop = hour0 + framedur_hr*nframes  
+        times = np.linspace(tstart, tstop, nframes)
+        for kk in range(len(imlist)):
+            imlist[kk].time = times[kk]
 
     out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur)
 
     return out_mov
 
 
-def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
+def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, 
+                   ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
+
     """Read in a movie from dat files and create a Movie object.
         
         Args:
         basename (str): The base name of individual movie frames. Files should have names basename + 000001, etc.
         nframes (int): The total number of frames
         startframe (int): The index of the first frame to load
-        framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+        framedur_sec (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
         ra (float): the right ascension of the source (default for SgrA*)
         dec (float): the declination of the source (default for SgrA*)
         rf (float): The refrence frequency of the observation
@@ -596,7 +687,7 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, r
 
         Returns:
         Movie: a Movie object
-        """
+    """
 
 
     for i in xrange(startframe, startframe + nframes):
@@ -617,7 +708,16 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, r
     sim = np.reshape(sim, [sim.shape[0], npix, npix])
     sim = np.transpose(sim, (0, 2, 1))
 
-    return( ehtim.movie.Movie(sim, framedur_sec, psize, ra, dec, rf) )
+    # TODO: read frame times from files?  
+    mjd0 = MJD_DEFAULT
+    hr0 = 0
+    framedur_hr = framedur_sec/3600.
+    nframes = len(sim)
+    tstart = hour0
+    tstop = hour0 + framedur_hr*nframes 
+    times = np.linspace(tstart, tstop, nframes)
+
+    return(ehtim.movie.Movie(sim, times, psize, ra, dec, rf) )
 
 
 ##################################################################################################

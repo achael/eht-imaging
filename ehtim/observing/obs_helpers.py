@@ -828,16 +828,19 @@ def earthrot(vecs, thetas):
 
     # equal numbers of sites and angles
     if len(thetas) == len(vecs):
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i])
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),
+                                            (np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[i])
                        for i in range(len(vecs))])
 
     # only one rotation angle, many sites
     elif len(thetas) == 1:
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]),-np.sin(thetas[0]),0),(np.sin(thetas[0]),np.cos(thetas[0]),0),(0,0,1))), vecs[i])
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[0]),-np.sin(thetas[0]),0),
+                                            (np.sin(thetas[0]),np.cos(thetas[0]),0),(0,0,1))), vecs[i])
                        for i in range(len(vecs))])
     # only one site, many angles
     elif len(vecs) == 1:
-        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),(np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[0])
+        rotvec = np.array([np.dot(np.array(((np.cos(thetas[i]),-np.sin(thetas[i]),0),
+                                            (np.sin(thetas[i]),np.cos(thetas[i]),0),(0,0,1))), vecs[0])
                        for i in range(len(thetas))])
     else:
         raise Exception("Unequal numbers of vectors and angles in earthrot(vecs, thetas)!")

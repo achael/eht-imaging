@@ -110,7 +110,8 @@ class Caltable(object):
            Returns:
                (Caltable): a copy of the Caltable object.
         """
-        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, source=self.source, mjd=self.mjd, timetype=self.timetype)
+        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, self.data, self.tarr, 
+                                source=self.source, mjd=self.mjd, timetype=self.timetype)
         return new_caltable
 
     def plot_dterms(self, sites='all', label=None, legend=True, clist=SCOLORS,rangex=False,
@@ -401,13 +402,15 @@ class Caltable(object):
 
     def applycal(self, obs, interp='linear', extrapolate=None, 
                        force_singlepol=False, copy_closure_tables=True):
+
         """Apply the calibration table to an observation.
 
            Args:
                obs (Obsdata): The observation  with data to be calibrated
                interp (str): Interpolation method ('linear','nearest','cubic')
                extrapolate (bool): If True, points outside interpolation range will be extrapolated.
-               force_singlepol (str): If 'L' or 'R', will set opposite polarization gains equal to chosen polarization
+               force_singlepol (str): If 'L' or 'R', will set opposite polarization gains 
+                                      equal to chosen polarization
 
            Returns:
                (Obsdata): the calibrated Obsdata object
@@ -492,9 +495,10 @@ class Caltable(object):
 
         #calobs.data = np.array(datatable)
         calobs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, np.array(datatable), obs.tarr,
-                                       polrep=obs.polrep, scantable=obs.scans, source=obs.source, mjd=obs.mjd,
-                                       ampcal=obs.ampcal, phasecal=obs.phasecal, opacitycal=obs.opacitycal, 
-                                       dcal=obs.dcal, frcal=obs.frcal,timetype=obs.timetype)
+                                       polrep=obs.polrep, scantable=obs.scans, source=obs.source, 
+                                       mjd=obs.mjd, ampcal=obs.ampcal, phasecal=obs.phasecal,
+                                       opacitycal=obs.opacitycal, dcal=obs.dcal,
+                                       frcal=obs.frcal,timetype=obs.timetype)
         calobs = calobs.switch_polrep(orig_polrep)
 
         if copy_closure_tables:
@@ -580,7 +584,8 @@ class Caltable(object):
             #update tkeys every time
             tkey1 =  {tarr1[i]['site']: i for i in range(len(tarr1))}
 
-        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1, source=self.source, mjd=self.mjd, timetype=self.timetype)
+        new_caltable = Caltable(self.ra, self.dec, self.rf, self.bw, data1, tarr1, 
+                                source=self.source, mjd=self.mjd, timetype=self.timetype)
 
         return new_caltable
 
@@ -661,7 +666,8 @@ class Caltable(object):
         return self
         
 
-def load_caltable(obs, datadir, sqrt_gains=False ):
+def load_caltable(obs, datadir, sqrt_gains=False):
+
     """Load apriori Caltable object from text files in the given directory
        Args:
            obs (Obsdata): The observation object associated with the Caltable
@@ -671,6 +677,7 @@ def load_caltable(obs, datadir, sqrt_gains=False ):
        Returns:
            (Caltable): a caltable object
     """
+
     tarr = obs.tarr
     array_filename = datadir + '/array.txt'
     if os.path.exists(array_filename):
@@ -761,7 +768,9 @@ def save_caltable(caltable, obs, datadir='.', sqrt_gains=False):
             rimag = float(np.imag(rscale))
             lreal = float(np.real(lscale))
             limag = float(np.imag(lscale))
-            outline = str(float(time)) + ' ' + str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + str(float(lreal)) + ' ' + str(float(limag)) + '\n'
+            outline = (str(float(time)) + ' ' + 
+                      str(float(rreal)) + ' ' + str(float(rimag)) + ' ' + 
+                      str(float(lreal)) + ' ' + str(float(limag)) + '\n')
             outfile.write(outline)
         outfile.close()
 
@@ -799,7 +808,7 @@ def make_caltable(obs, gains, sites, times):
 
 def relaxed_interp1d(x, y, **kwargs):
     try: len(x)
-    except TypeError:x=np.asarray([x]); y=np.asarray([y])#allows to run on a single float number
+    except TypeError:x=np.asarray([x]); y=np.asarray([y]) #allows to run on a single float number
     if len(x) == 1:
         x = np.array([-0.5, 0.5]) + x[0]
         y = np.array([ 1.0, 1.0]) * y[0]
