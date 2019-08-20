@@ -38,6 +38,7 @@ from ehtim.observing.obs_helpers import *
 
 FILL_VALUE = None
 
+
 ###########################################################################################################################################
 #Movie object
 ###########################################################################################################################################
@@ -64,7 +65,7 @@ class Movie(object):
     def __init__(self, frames, times, psize, ra, dec, 
                        rf=RF_DEFAULT, polrep='stokes', pol_prim=None,
                        pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT,
-                       mjd=MJD_DEFAULT, interp='linear'):
+                       mjd=MJD_DEFAULT, interp=INTERP_DEFAULT):
 
         """A polarimetric image (in units of Jy/pixel).
 
@@ -1328,15 +1329,16 @@ class Movie(object):
 ##################################################################################################
 # Movie creation functions
 ##################################################################################################
-def merge_im_list(imlist, framedur=-1):
+def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT):
     """Merge a list of image objects into a movie object.
 
        Args:
            imlist (list): list of Image objects
            framedur (float): duration of a movie frame in seconds
                              use to override times in the individual movies 
-
-       Returns:
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+       
+        Returns:
            (Movie): a Movie object assembled from the images
     """
     framelist = []
@@ -1415,7 +1417,7 @@ def merge_im_list(imlist, framedur=-1):
 
     # Make new  movie with primary polarization
     newmov = Movie(framelist, times,
-                   psize0, ra0, dec0,
+                   psize0, ra0, dec0, interp=interp,
                    polrep=polrep0, pol_prim=pol_prim0,
                    rf=rf0, source=src0, mjd=mjd0, pulse=pulse)
 
@@ -1431,22 +1433,24 @@ def merge_im_list(imlist, framedur=-1):
 
 
 
-def load_hdf5(file_name, pulse=PULSE_DEFAULT):
+def load_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
 
     """Read in a movie from an hdf5 file and create a Movie object.
 
        Args:
            file_name (str): The name of the hdf5 file.
            pulse (function): The function convolved with the pixel values for continuous image
-
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
        Returns:
            Movie: a Movie object
     """
 
-    return ehtim.io.load.load_movie_hdf5(file_name, pulse=pulse)
+    return ehtim.io.load.load_movie_hdf5(file_name, pulse=pulse, interp=interp)
 
 
-def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
+             polrep='stokes', pol_prim=None,  zero_pol=True, interp=INTERP_DEFAULT):
+
     """Read in a movie from text files and create a Movie object.
 
        Args:
@@ -1457,16 +1461,18 @@ def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
-
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
        Returns:
            Movie: a Movie object
     """
 
     return ehtim.io.load.load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse,
-                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+                                        polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol, interp=interp)
 
 
-def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
+              polrep='stokes', pol_prim=None,  zero_pol=True, interp=INTERP_DEFAULT):
+
     """Read in a movie from fits files and create a Movie object.
 
        Args:
@@ -1477,10 +1483,10 @@ def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stoke
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
-
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
        Returns:
            Movie: a Movie object
     """
 
     return ehtim.io.load.load_movie_fits(basename, nframes, framedur=framedur, pulse=pulse,
-                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol, interp=interp)

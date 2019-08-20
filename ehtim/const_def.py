@@ -39,6 +39,7 @@ DEC_DEFAULT = -28.992189444444445
 RF_DEFAULT = 230e9
 MJD_DEFAULT = 51544
 PULSE_DEFAULT = trianglePulse2D
+INTERP_DEFAULT = 'linear'
 
 # Telescope elevation cuts (degrees)
 ELEV_LOW = 10.0
