@@ -431,7 +431,7 @@ class Movie(object):
                 ufun =  None
 
             self._movdict = {'I':self.iframes,'Q':self.qframes,'U':self.uframes,'V':self.vframes}
-            self._fundict = {'I':self.ifun,'Q':self.qfun,'U':self.ufun,'V':self.vfun}
+            self._fundict = {'I':ifun,'Q':qfun,'U':ufun,'V':vfun}
 
         elif self.polrep=='circ':
             if pol=='RR': self.rrframes = [image.flatten() for image in movie]
@@ -457,7 +457,7 @@ class Movie(object):
                 lrfun =  None
 
             self._movdict = {'RR':self.rrframes,'LL':self.llframes,'RL':self.rlframes,'LR':self.lrframes}
-            self._fundict = {'RR':self.rrfun,'LL':self.llfun,'RL':self.rlfun,'LR':self.lrfun}
+            self._fundict = {'RR':rrfun,'LL':llfun,'RL':rlfun,'LR':lrfun}
         return
 
     # TODO deprecated -- replace with generic add_pol_movie
@@ -726,7 +726,7 @@ class Movie(object):
             if pol==self.pol_prim: continue
             polframes = self._movdict[pol]
             if len(polframes):
-                imvec =  self._fundict[pol](time)
+                polvec =  self._fundict[pol](time)
                 polarr = polvec.reshape(self.ydim, self.xdim).copy()
                 outim.add_pol_image(polarr, pol)
 
@@ -1208,6 +1208,18 @@ class Movie(object):
         ehtim.io.save.save_mov_fits(self, fname)
         return
 
+    def save_hdf5(self, fname):
+        """Save the Movie data to a single hdf5 file.
+
+           Args:
+              fname (str): output file name
+
+           Returns:
+        """
+
+        ehtim.io.save.save_mov_hdf5(self, fname)
+        return
+
     def export_mp4(self, out='movie.mp4', fps=10, dpi=120,
                          interp='gaussian', scale='lin', dynamic_range=1000.0, cfun='afmhot',
                          nvec=20, pcut=0.01, plotp=False, gamma=0.5, frame_pad_factor=1,
@@ -1419,30 +1431,19 @@ def merge_im_list(imlist, framedur=-1):
 
 
 
-def load_hdf5(file_name, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, source='SgrA',
-              pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+def load_hdf5(file_name, pulse=PULSE_DEFAULT):
 
     """Read in a movie from an hdf5 file and create a Movie object.
 
        Args:
            file_name (str): The name of the hdf5 file.
-           framedur_sec (float): The frame duration in seconds (default=-1, corresponding to framedur tahen from file header)
-           psize (float): Pixel size in radian, (default=-1, corresponding to framedur taken from file header)
-           ra (float): The movie right ascension
-           dec (float): The movie declination
-           rf (float): The movie frequency
-           source (str) : The source name
            pulse (function): The function convolved with the pixel values for continuous image
-           polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
-           zero_pol (bool): If True, loads any missing polarizations as zeros
 
        Returns:
            Movie: a Movie object
     """
 
-    return ehtim.io.load.load_movie_hdf5(file_name, framedur_sec=framedur_sec, psize=psize, ra=ra, dec=dec, rf=rf, source=source,
-                                         pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+    return ehtim.io.load.load_movie_hdf5(file_name, pulse=pulse)
 
 
 def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):

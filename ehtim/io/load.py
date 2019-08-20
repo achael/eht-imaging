@@ -547,7 +547,6 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT):
                        polrep=polrep, pol_prim=pol_prim,
                        source=source, mjd=mjd, pulse=pulse)
 
-
         if polrep=='stokes':
             keys  = ['I','Q','U','V']
         elif polrep=='circ':
