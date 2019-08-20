@@ -567,7 +567,7 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
 
 
 def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
-                   polrep='stokes', pol_prim=None,  zero_pol=True, interp=INTERP_DEFAULT:
+                   polrep='stokes', pol_prim=None,  zero_pol=True, interp=INTERP_DEFAULT):
     """Read in a movie from text files and create a Movie object.
 
        Args:
