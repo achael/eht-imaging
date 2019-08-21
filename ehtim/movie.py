@@ -106,6 +106,7 @@ class Movie(object):
         else:
             self.start_hr = start_hr
         self.stop_hr =  np.max(self.times)
+        self.duration  = self.stop_hr -  self.start_hr
 
         # frame shape parameters
         self.nframes = len(frames)
@@ -841,10 +842,17 @@ class Movie(object):
         obslist = obs.tlist()
 
         # times
-        obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+        #obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+        #if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
+        #    raise Exception("Some observation times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
-        if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
-            raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
+        obstimes = np.array([obsdata[0]['time'] for obsdata in obslist])
+
+        if (not repeat):
+            if ((obstimes < self.start_hr).any()
+                raise Exception("Some observation times before movie start time %f" % self.start_hr)
+            if ((obstimes > self.stop_hr).any()
+                raise Exception("Some observation times after movie stop time %f" % self.stop_hr)
 
         # Observe nearest frame
         obsdata_out = []
@@ -852,19 +860,19 @@ class Movie(object):
             obsdata = obslist[i]
 
             # Frame number
-            mjd = obsmjds[i]
-            time = (mjd - mjd0)*24
+            time = obsdata[0]['time']
+            #mjd = obsmjds[i]
+            #time = (mjd - mjd0)*24
 
 #            n = int(np.floor((mjd - mjdstart) * 86400. / self.framedur))
 #            if (n >= len(self.frames)):
 #                if repeat: n = np.mod(n, len(self.frames))
 #                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
-            if (time > self.stop_hr):
+            if (time < self.start_hr or time > self.stop_hr):
                 if repeat:
-                    tdur = self.stop_hr - self.start_hr 
-                    time = self.start_hr + np.mod(time, tdur)
-                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (self.start_hr, self.stop_hr))
+                    time = self.start_hr + np.mod(time -  self.start_hr, self.duration)
+                else: raise Exception("Obs time %f outside movie range %f--%f" % (time, self.start_hr, self.stop_hr))
 
             # Get the frame visibilities
             uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
@@ -948,7 +956,7 @@ class Movie(object):
 
         """
 
-        print("Producing clean visibilities from movie . . . ")
+        #print("Producing clean visibilities from movie . . . ")
         obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat)
 
         # Jones Matrix Corruption & Calibration
