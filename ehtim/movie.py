@@ -373,7 +373,7 @@ class Movie(object):
                (Image): copy of the Image.
         """
 
-        arglist, argdict = self.obsdata_args()
+        arglist, argdict = self.movie_args()
 
         # Make new  movie with primary polarization
         newmov = Movie(*arglist, **argdict)
@@ -566,7 +566,7 @@ class Movie(object):
 
 
         # Make new  movie with primary polarization
-        arglist, argdict = self.obsdata_args()
+        arglist, argdict = self.movie_args()
         arglist[0] = frames
         argdict['polrep'] =  polrep_out
         argdict['pol_prim'] = pol_prim_out
@@ -711,7 +711,7 @@ class Movie(object):
                (Image): the Image object at the given time
         """
         if (time<self.start_hr) or (time>self.stop_hr):
-            raise Exception("time must be in the range %f - %f"% (self.start_hr, self.stop_hr))
+            raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
        
         # interpolate the imvec to the given time
         imvec =  self._fundict[self.pol_prim](time)
@@ -833,6 +833,7 @@ class Movie(object):
         else:
             raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
 
+        mjd0 = self.mjd
         mjdstart = float(self.mjd) + float(self.start_hr/24.0)
         mjdend = mjdstart + float(self.stop_hr/24.0)
 
@@ -852,8 +853,7 @@ class Movie(object):
 
             # Frame number
             mjd = obsmjds[i]
-            time = (mjd - mjdstart)*24
-
+            time = (mjd - mjd0)*24
 
 #            n = int(np.floor((mjd - mjdstart) * 86400. / self.framedur))
 #            if (n >= len(self.frames)):
