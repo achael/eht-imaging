@@ -712,7 +712,8 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, i
     
     npix = np.sqrt(sim.shape[1]).astype('int')
     sim = np.reshape(sim, [sim.shape[0], npix, npix])
-    sim = np.transpose(sim, (0, 2, 1))
+    sim = np.array([im.transpose()[::-1,:] for im in sim])
+    #sim = np.transpose(sim, (0, 2, 1))
 
     # TODO: read frame times from files?  
     mjd0 = MJD_DEFAULT
