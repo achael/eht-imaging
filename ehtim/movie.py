@@ -853,18 +853,23 @@ class Movie(object):
             # Frame number
             mjd = obsmjds[i]
             time = (mjd - mjdstart)*24
-            n = np.argmin((time-self.times)**2)
-            #n = int(np.floor((mjd - mjdstart) * 86400. / self.framedur))
 
-            if (n >= len(self.frames)):
-                if repeat: n = np.mod(n, len(self.frames))
-                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
+#            n = int(np.floor((mjd - mjdstart) * 86400. / self.framedur))
+#            if (n >= len(self.frames)):
+#                if repeat: n = np.mod(n, len(self.frames))
+#                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
+
+            if (time > self.stop_hr):
+                if repeat:
+                    tdur = self.stop_hr - self.start_hr 
+                    time = self.start_hr + np.mod(time, tdur)
+                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (self.start_hr, self.stop_hr))
 
             # Get the frame visibilities
             uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
-            im = self.get_frame(n)
-            #im = self.get_image(time)
+            #im = self.get_frame(n)
+            im = self.get_image(time)
             data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
                                          ttype=ttype, fft_pad_factor=fft_pad_factor,
                                          zero_empty_pol=True)
