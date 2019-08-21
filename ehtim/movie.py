@@ -371,7 +371,7 @@ class Movie(object):
            Args:
 
            Returns:
-               (Image): copy of the Image.
+               (Movie): copy of the Image.
         """
 
         arglist, argdict = self.movie_args()
@@ -389,6 +389,42 @@ class Movie(object):
 
         return newmov
 
+
+    def reset_interp(self, interp=INTERP_DEFAULT):
+
+        """Reset the movie interpolation function to e.g. change the interpolation type or to change the frames
+    
+           Args: 
+              interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+        """
+        # Copy over all polarization movies
+        for pol in list(self._movdict.keys()):
+            polframes = self._movdict[pol]
+            if len(polframes):
+                polframes = polframes.reshape((self.nframes, self.ydim, self.xdim))
+                fun = scipy.interpolate.interp1d(self.times, frames.T, kind=interp, fill_value=FILL_VALUE)
+                self._fundcit[pol] = fun
+            else:
+                self._fundict[pol] = None
+
+        self.interp = interp
+        return
+
+    def offset_time(self, t_offset):
+        
+        """Offset the movie in time by t_offset
+
+           Args:
+               t_offset (float): offset time in hours          
+           Returns:
+               
+        """
+        mov = self.copy()
+        mov.start_hr += t_offset
+        mov.stop_hr += t_offset
+        mov.times += t_offset
+        mov.reset_interp(interp=mov.interp)
+        return mov
 
     def add_pol_movie(self, movie, pol):
 
@@ -861,6 +897,7 @@ class Movie(object):
 
             # Frame number
             time = obsdata[0]['time']
+
             #mjd = obsmjds[i]
             #time = (mjd - mjd0)*24
 
@@ -877,7 +914,12 @@ class Movie(object):
             # Get the frame visibilities
             uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
             #im = self.get_frame(n)
-            im = self.get_image(time)
+
+            try:
+                im = self.get_image(time)
+            except ValueError:
+                raise Exception("Interpolation error for time %f: movie range %f--%f" % (time, self.start_hr, self.stop_hr))
+
             data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
                                          ttype=ttype, fft_pad_factor=fft_pad_factor,
                                          zero_empty_pol=True)
