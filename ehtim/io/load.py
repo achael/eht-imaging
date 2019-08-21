@@ -531,12 +531,12 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
         head = file['header']
         header_pars = head.attrs.keys()
 
-        mjd =  int(head.attrs['mjd'])
-        psize =  float(head.attrs['psize'])
+        mjd =  int(head.attrs['mjd'].astype(str))
+        psize =  float(head.attrs['psize'].astype(str))
         source = head.attrs['source'].astype(str)
-        ra = float(head.attrs['ra'])
-        dec = float(head.attrs['dec'])
-        rf  =  float(head.attrs['rf'])
+        ra = float(head.attrs['ra'].astype(str))
+        dec = float(head.attrs['dec'].astype(str))
+        rf  =  float(head.attrs['rf'].astype(str))
         polrep = head.attrs['polrep'].astype(str)
         pol_prim = head.attrs['pol_prim'].astype(str)
 
