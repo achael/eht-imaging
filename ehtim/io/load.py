@@ -561,6 +561,7 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
                 polframes = file[pol][:]
                 if len(polframes):
                     movie.add_pol_movie(polframes, pol)
+    file.close()
 
     return movie
 
@@ -697,7 +698,7 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, i
 
     for i in xrange(startframe, startframe + nframes):
         
-        filename = basename + "%06d" % i + '.dat'
+        filename = basename + "%04d" % i + '.dat'
         
         sys.stdout.write('\rReading Movie Image %i/%i...' % (i-startframe,nframes))
         sys.stdout.flush()
@@ -715,7 +716,7 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, i
 
     # TODO: read frame times from files?  
     mjd0 = MJD_DEFAULT
-    hr0 = 0
+    hour0 = 0
     framedur_hr = framedur_sec/3600.
     nframes = len(sim)
     tstart = hour0

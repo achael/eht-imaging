@@ -230,10 +230,10 @@ def save_mov_hdf5(mov, fname, mjd=False):
         for pol in list(mov._movdict.keys()):
             if pol==mov.pol_prim: 
                 continue
-            polframes = mov._movdict[pol].reshape((mov.nframes, mov.ydim, mov.xdim))
-            if not(len(polframes)>0):
-                continue
-            dset = file.create_dataset(pol, data=polframes, dtype='f8')
+            polframes = mov._movdict[pol]
+            if len(polframes):
+                polframes = polframes.reshape((mov.nframes, mov.ydim, mov.xdim))
+                dset = file.create_dataset(pol, data=polframes, dtype='f8')
     return 
 
 def save_mov_fits(mov, fname, mjd=False):

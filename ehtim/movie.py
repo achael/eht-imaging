@@ -1427,6 +1427,7 @@ def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT):
         if pol==newmov.pol_prim: continue
         polframes = movdict[pol]
         if len(polframes):
+            polframes = polframes.reshape((newmov.nframes, newmov.ydim, newmov.xdim))
             newmov.add_pol_movie(polframes, pol)
 
     return newmov
