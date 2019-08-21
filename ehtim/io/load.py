@@ -533,12 +533,12 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
 
         mjd =  int(head.attrs['mjd'])
         psize =  float(head.attrs['psize'])
-        source = head.attrs['source']
+        source = head.attrs['source'].astype(str)
         ra = float(head.attrs['ra'])
         dec = float(head.attrs['dec'])
         rf  =  float(head.attrs['rf'])
-        polrep = head.attrs['polrep'] 
-        pol_prim = head.attrs['pol_prim']
+        polrep = head.attrs['polrep'].astype(str)
+        pol_prim = head.attrs['pol_prim'].astype(str)
 
         times = file['times'][:]
         frames = file[pol_prim][:]
@@ -675,7 +675,7 @@ def load_movie_fits(basename, nframes, framedur=-1,
     return out_mov
 
 
-def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, interp=INTERP_DEFAULT,
+def load_movie_dat(basename, nframes, startframe=0, framedur_sec=1, psize=-1, interp=INTERP_DEFAULT,
                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
 
     """Read in a movie from dat files and create a Movie object.
@@ -684,7 +684,8 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=-1, psize=-1, i
             basename (str): The base name of individual movie frames. Files should have names basename + 000001, etc.
             nframes (int): The total number of frames
             startframe (int): The index of the first frame to load
-            framedur_sec (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+            framedur_sec (float): The frame duration in seconds (default = 1) 
+            psize (float): The pixel size in radian
             ra (float): the right ascension of the source (default for SgrA*)
             dec (float): the declination of the source (default for SgrA*)
             rf (float): The refrence frequency of the observation
