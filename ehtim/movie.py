@@ -849,9 +849,9 @@ class Movie(object):
         obstimes = np.array([obsdata[0]['time'] for obsdata in obslist])
 
         if (not repeat):
-            if ((obstimes < self.start_hr).any()
+            if (obstimes < self.start_hr).any():
                 raise Exception("Some observation times before movie start time %f" % self.start_hr)
-            if ((obstimes > self.stop_hr).any()
+            if (obstimes > self.stop_hr).any():
                 raise Exception("Some observation times after movie stop time %f" % self.stop_hr)
 
         # Observe nearest frame
