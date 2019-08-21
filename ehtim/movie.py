@@ -402,8 +402,8 @@ class Movie(object):
             polframes = self._movdict[pol]
             if len(polframes):
                 polframes = polframes.reshape((self.nframes, self.ydim, self.xdim))
-                fun = scipy.interpolate.interp1d(self.times, frames.T, kind=interp, fill_value=FILL_VALUE)
-                self._fundcit[pol] = fun
+                fun = scipy.interpolate.interp1d(self.times, polframes.T, kind=interp, fill_value=FILL_VALUE)
+                self._fundict[pol] = fun
             else:
                 self._fundict[pol] = None
 
