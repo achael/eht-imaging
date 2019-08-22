@@ -922,12 +922,12 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', pol='I', ttype='nfft', mask=[], **kwargs):
+    def chisq(self, im_or_mov, dtype='vis', pol='I', ttype='nfft', mask=[], **kwargs):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
            Args:
-                im (Image): image to test chi^2
+                im_or_mov (Image or Movie): image or movie object on which to test chi^2
                 dtype (str): data type of chi^2 (e.g., 'vis', 'amp', 'bs', 'cphase')
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec
@@ -949,23 +949,46 @@ class Obsdata(object):
            Returns:
                 (float): image chi^2
         """
-
-        # TODO -- should import this at top, but the circular dependencies create a mess...
         if dtype not in  ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'm']:
             raise Exception("%s is not a supported dterms!" % dtype)
 
+        # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
         if pol not in im._imdict.keys():
             raise Exception(pol + ' is not in the current image.' + 
                                   ' Consider changing the polarization basis of the image.')
 
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
 
-        imvec = im._imdict[pol]
-        if len(mask)>0 and np.any(np.invert(mask)):
-            imvec = imvec[mask]
+        # Movie -- weighted sum of frame chi^2
+        if hasattr(im_or_mov, 'get_image'):
+            mov = im_or_mov
+            obslist =  self.split_obs()
 
-        chisq = iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+            chisq_list =  []
+            num_list = []
+            for obs in obs_list:
+                im = mov.get_image(obs.data[0]['time']) # get image at the observation time
+                (data, sigma, A) = iu.chisqdata(obs, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
+
+                imvec = im._imdict[pol]
+                if len(mask)>0 and np.any(np.invert(mask)):
+                    imvec = imvec[mask]
+
+                chisq_list.append(iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask))
+                num_list.append(len(data))
+
+            chisq =  np.sum(np.array(num_list) * np.array(chisq_list)) / np.sum(num_list)
+            
+        # Image -- single chi^2
+        else:
+            im = im_or_mov
+            (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
+
+            imvec = im._imdict[pol]
+            if len(mask)>0 and np.any(np.invert(mask)):
+                imvec = imvec[mask]
+
+            chisq = iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
 
         return chisq
 

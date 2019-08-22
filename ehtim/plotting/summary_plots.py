@@ -41,16 +41,16 @@ MARGINS=0.5
 PROCESSES=4
 MARKERSIZE=5
 
-def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="", 
+def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="", 
            fontsize=FONTSIZE, cfun='afmhot', snrcut=0.,maxset=False,
            gainplots=True,ampplots=True, cphaseplots=True,campplots=True,ebar=True,
-           debias=True, cp_uv_min=False,
+           debias=True, cp_uv_min=False, force_extrapolate=True,
            sysnoise=0,syscnoise=0):
 
     """Produce an image summary plot for an image and uvfits file.
 
        Args:
-           im (Image): an Image object
+           im_or_mov (Image or Movie): an Image object or Movie
            obs (Obsdata): the self-calibrated Obsdata object
            obs_uncal (Obsdata): the original Obsdata object
            outname (str): output pdf file name
@@ -75,6 +75,8 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
            syscnoise (float): closure phase systematic noise in degrees added in quadrature
 
            snrcut (dict): a dictionary of snrcut values for each quantity
+
+           force_extrapolate (bool): if True, always extrapolate movie start/stop frames
        Returns:
 
     """
@@ -108,7 +110,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
 
     with PdfPages(outname) as pdf:
-        titlestr = 'Summary Sheet for %s on MJD %s' % (im.source, im.mjd)
+        titlestr = 'Summary Sheet for %s on MJD %s' % (im_or_mov.source, im_or_mov.mjd)
 
         #pdf metadata 
         d = pdf.infodict()
@@ -135,7 +137,18 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         print("displaying the image")
         ax = plt.subplot(gs[0:2,0:2])
         ax.set_title('Submitted Image')
-        ax = _display_img(im,axis=ax, show=False,has_title=False,cfun=cfun,fontsize=fontsize)
+
+        movie = hasattr(im_or_movie, 'get_image')
+        if movie:
+            im_display = im.get_avg()
+
+            # TODO --- ok to always extrapolate? 
+            if force_extrapolate:
+                im_or_mov.reset_interp(bounds_error=False)
+        else:
+            im_display = im_or_mov.copy()
+
+        ax = _display_img(im_display,axis=ax, show=False,has_title=False,cfun=cfun,fontsize=fontsize)
 
         print("===========================================")
         print("displaying the blurred image")
@@ -148,7 +161,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         beamparams = [fwhm, fwhm, 0]
 
         res = obs.res()
-        imblur = im.blur_gauss(beamparams, frac=1.0)
+        imblur = im_display.blur_gauss(beamparams, frac=1.0)
         #imblur = im.blur_circ(res)
         ax = _display_img(imblur , beamparams=beamparams,axis=ax, show=False,has_title=False,cfun=cfun,fontsize=fontsize)
 
@@ -162,7 +175,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         ax.set_yticks([])
         ax.set_xticks([])
 
-        flux = im.total_flux()
+        flux = im_display.total_flux()
 
         # SNR ordering
         #obs.reorder_tarr_snr()
@@ -170,22 +183,22 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
 
         maxset=False
         # compute chi^2
-        chi2vis = obs.chisq(im, dtype='vis', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['vis'])
-        chi2amp = obs.chisq(im, dtype='amp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['amp'])
-        chi2cphase = obs.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, 
+        chi2vis = obs.chisq(im_or_mov, dtype='vis', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['vis'])
+        chi2amp = obs.chisq(im_or_mov, dtype='amp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['amp'])
+        chi2cphase = obs.chisq(im_or_mov, dtype='cphase', ttype='nfft', systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, 
                                maxset=maxset, cp_uv_min=cp_uv_min,snrcut=snrcut_dict['cphase'])
-        chi2logcamp = obs.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=sysnoise,
+        chi2logcamp = obs.chisq(im_or_mov, dtype='logcamp', ttype='nfft', systematic_noise=sysnoise,
                                 maxset=maxset,snrcut=snrcut_dict['logcamp'])
-        chi2camp = obs.chisq(im, dtype='camp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['camp'])
+        chi2camp = obs.chisq(im_or_mov, dtype='camp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['camp'])
 
 
 
-        chi2vis_uncal = obs_uncal.chisq(im, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['vis'])
-        chi2amp_uncal = obs_uncal.chisq(im, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['amp'])
-        chi2cphase_uncal = obs_uncal.chisq(im, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,
+        chi2vis_uncal = obs_uncal.chisq(im_or_mov, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['vis'])
+        chi2amp_uncal = obs_uncal.chisq(im_or_mov, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['amp'])
+        chi2cphase_uncal = obs_uncal.chisq(im_or_mov, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,
                                      cp_uv_min=cp_uv_min,snrcut=snrcut_dict['cphase'])
-        chi2logcamp_uncal = obs_uncal.chisq(im, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['logcamp'])
-        chi2camp_uncal = obs_uncal.chisq(im, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['camp'])
+        chi2logcamp_uncal = obs_uncal.chisq(im_or_mov, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['logcamp'])
+        chi2camp_uncal = obs_uncal.chisq(im_or_mov, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['camp'])
 
         print("chi^2 vis: %0.2f %0.2f" % (chi2vis, chi2vis_uncal))
         print("chi^2 amp: %0.2f %0.2f" % (chi2amp, chi2amp_uncal))
@@ -206,13 +219,13 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
         ax.text(.05,.1,"FLUX:" , fontsize=fs,
         ha='left',va='center',transform=ax.transAxes)
 
-        ax.text(.23,.9,"%s"%im.source, fontsize=fs,
+        ax.text(.23,.9,"%s"%im_or_mov.source, fontsize=fs,
         ha='left',va='center',transform=ax.transAxes)
-        ax.text(.23,.7,"%i" % im.mjd, fontsize=fs,
+        ax.text(.23,.7,"%i" % im_or_mov.mjd, fontsize=fs,
         ha='left',va='center',transform=ax.transAxes)
-        ax.text(.23,.5,"%0.0f GHz" % (im.rf/1.e9), fontsize=fs,
+        ax.text(.23,.5,"%0.0f GHz" % (im_or_mov.rf/1.e9), fontsize=fs,
         ha='left',va='center',transform=ax.transAxes)
-        ax.text(.23,.3,"%0.1f $\mu$as" % (im.fovx()/RADPERUAS), fontsize=fs,
+        ax.text(.23,.3,"%0.1f $\mu$as" % (im_or_mov.fovx()/RADPERUAS), fontsize=fs,
         ha='left',va='center',transform=ax.transAxes)
         ax.text(.23,.1,"%0.2f Jy" % flux, fontsize=fs,
         ha='left',va='center',transform=ax.transAxes)
@@ -269,7 +282,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             if tri not in uniqueclosure_tri: uniqueclosure_tri.append(tri)
               
         # generate data
-        obs_model = im.observe_same(obs, add_th_noise=False, ttype='nfft')
+        obs_model = im_or_mov.observe_same(obs, add_th_noise=False, ttype='nfft')
 
         # TODO: check SNR cut
         cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=snrcut_dict['cphase'])
@@ -450,7 +463,7 @@ def imgsum(im, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="
             ax2 = plt.subplot(gs[0:2,2:6])
             obs_tmp = obs_uncal.copy()
             for i in range(1): 
-                ct = selfcal(obs_tmp, im, 
+                ct = selfcal(obs_tmp, im_or_mov, 
                               method='amp', ttype='nfft', 
                               caltable=True, gain_tol=.2,
                               processes=PROCESSES)
