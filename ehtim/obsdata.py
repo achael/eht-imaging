@@ -954,7 +954,7 @@ class Obsdata(object):
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
-        if pol not in im._imdict.keys():
+        if pol not in im_or_mov._imdict.keys():
             raise Exception(pol + ' is not in the current image.' + 
                                   ' Consider changing the polarization basis of the image.')
 
