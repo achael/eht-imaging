@@ -807,15 +807,17 @@ class Movie(object):
 
         if (time<self.start_hr):
             if not(self.bounds_error):
-                    print ("time %f before movie start time %f" % (time, self.start_hr))
-                    print ("returning constant frame 0! \n")
+                    pass
+                    #print ("time %f before movie start time %f" % (time, self.start_hr))
+                    #print ("returning constant frame 0! \n")
             else:
                 raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
 
         if (time>self.stop_hr):
             if not(self.bounds_error):
-                    print ("time %f after movie stop time %f" % (time, self.stop_hr))
-                    print ("returning constant frame -1! \n")
+                    pass
+                    #print ("time %f after movie stop time %f" % (time, self.stop_hr))
+                    #print ("returning constant frame -1! \n")
             else:
                 raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
 
