@@ -39,7 +39,11 @@ DEC_DEFAULT = -28.992189444444445
 RF_DEFAULT = 230e9
 MJD_DEFAULT = 51544
 PULSE_DEFAULT = trianglePulse2D
+
+# movie parameters
 INTERP_DEFAULT = 'linear'
+BOUNDS_ERROR = True  # When True, movie will return NEAREST NEIGHBOR frames 
+                     # for times beyond [movie.start_hr, movie.stop_hr]
 
 # Telescope elevation cuts (degrees)
 ELEV_LOW = 10.0

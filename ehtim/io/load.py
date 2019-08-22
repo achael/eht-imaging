@@ -510,7 +510,7 @@ def load_im_fits(filename, aipscc=False, pulse=PULSE_DEFAULT,
 #    return movie
 
 
-def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
+def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
 
 
     """Read in a movie from an hdf5 file and create a Movie object.
@@ -520,6 +520,7 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
            framedur_sec (float): The frame duration in seconds (overwrites internal timestamps)
            pulse (function): The function convolved with the pixel values for continuous image
            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
 
        Returns:
            Movie: a Movie object
@@ -544,7 +545,8 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
         frames = file[pol_prim][:]
 
         movie =  ehtim.movie.Movie(frames, times, 
-                       psize, ra, dec, rf=rf, interp=interp,
+                       psize, ra, dec, rf=rf, 
+                       interp=interp, bounds_error=bounds_error,
                        polrep=polrep, pol_prim=pol_prim,
                        source=source, mjd=mjd, pulse=pulse)
 
@@ -568,7 +570,9 @@ def load_movie_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
 
 
 def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
-                   polrep='stokes', pol_prim=None,  zero_pol=True, interp=INTERP_DEFAULT):
+                   polrep='stokes', pol_prim=None,  zero_pol=True, 
+                   interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
+
     """Read in a movie from text files and create a Movie object.
 
        Args:
@@ -581,6 +585,7 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT,
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
            zero_pol (bool): If True, loads any missing polarizations as zeros
            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
 
        Returns:
            Movie: a Movie object
@@ -615,12 +620,13 @@ def load_movie_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT,
         for kk in range(len(imlist)):
             imlist[kk].time = times[kk]
 
-    out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur, interp=interp)
+    out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur, interp=interp, bounds_error=bounds_error)
 
     return out_mov
 
 def load_movie_fits(basename, nframes, framedur=-1, 
-                    interp=INTERP_DEFAULT, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+                    interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR, 
+                    pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
     """Read in a movie from fits files and create a Movie object.
 
        Args:
@@ -632,6 +638,7 @@ def load_movie_fits(basename, nframes, framedur=-1,
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular              
            zero_pol (bool): If True, loads any missing polarizations as zeros
            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
 
        Returns:
            Movie: a Movie object
@@ -670,12 +677,13 @@ def load_movie_fits(basename, nframes, framedur=-1,
         for kk in range(len(imlist)):
             imlist[kk].time = times[kk]
 
-    out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur, interp=interp)
+    out_mov = ehtim.movie.merge_im_list(imlist, framedur=framedur, interp=interp, bounds_error=bounds_error)
 
     return out_mov
 
 
-def load_movie_dat(basename, nframes, startframe=0, framedur_sec=1, psize=-1, interp=INTERP_DEFAULT,
+def load_movie_dat(basename, nframes, startframe=0, framedur_sec=1, psize=-1, 
+                   interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR,
                    ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, pulse=PULSE_DEFAULT):
 
     """Read in a movie from dat files and create a Movie object.
@@ -690,7 +698,8 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=1, psize=-1, in
             dec (float): the declination of the source (default for SgrA*)
             rf (float): The refrence frequency of the observation
             pulse (function): The function convolved with the pixel values for continuous image
-           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+            bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
 
         Returns:
             Movie: a Movie object
@@ -725,7 +734,7 @@ def load_movie_dat(basename, nframes, startframe=0, framedur_sec=1, psize=-1, in
     tstop = hour0 + framedur_hr*nframes 
     times = np.linspace(tstart, tstop, nframes)
 
-    return(ehtim.movie.Movie(sim, times, psize, ra, dec, rf, interp=interp) )
+    return(ehtim.movie.Movie(sim, times, psize, ra, dec, rf, interp=interp, bounds_error=bounds_error))
 
 
 ##################################################################################################

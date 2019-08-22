@@ -36,7 +36,6 @@ import ehtim.io.load
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
-FILL_VALUE = None
 
 
 ###########################################################################################################################################
@@ -59,13 +58,18 @@ class Movie(object):
            
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+                         (e.g. 'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next')
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+
            _movdict (dict): The dictionary with the lists of frames
     """
 
     def __init__(self, frames, times, psize, ra, dec, 
                        rf=RF_DEFAULT, polrep='stokes', pol_prim=None,
                        pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT,
-                       mjd=MJD_DEFAULT, interp=INTERP_DEFAULT):
+                       mjd=MJD_DEFAULT, 
+                       bounds_error=BOUNDS_ERROR, interp=INTERP_DEFAULT):
 
         """A polarimetric image (in units of Jy/pixel).
 
@@ -84,7 +88,9 @@ class Movie(object):
                mjd (int): The integer MJD of the image
                interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
                              (e.g. 'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next')
-           Returns:
+               bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+  
+         Returns:
                (Image): the Image object
         """
 
@@ -119,7 +125,11 @@ class Movie(object):
         #the list of frames
         frames = np.array([image.flatten() for image in frames])
         self.interp = interp
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=interp, fill_value=FILL_VALUE)
+        self.bounds_error = bounds_error
+
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=interp, 
+                                         bounds_error=bounds_error, fill_value=fill_value)
         
         if polrep=='stokes':
             if pol_prim is None: pol_prim = 'I'
@@ -158,8 +168,8 @@ class Movie(object):
         self.dec = float(dec)
         self.rf = float(rf)
         self.source = str(source)
-        self.pa  = 0.0 # TODO: The pa needs to be properly implemented in the movie object (other functions call it though)
-
+        self.pa  = 0.0 # TODO: The pa needs to be properly implemented in the movie object 
+                       # TODO: What is this doing??
     @property
     def frames(self):
         frames = self._movdict[self.pol_prim]
@@ -173,7 +183,10 @@ class Movie(object):
 
         frames = np.array(frames)
         self._movdict[self.pol_prim] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, 
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict[self.pol_prim] = fun
 
     @property
@@ -194,7 +207,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['I'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['I'] = fun
 
     @property
@@ -215,7 +230,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['Q'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['Q'] = fun
 
     @property
@@ -237,7 +254,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['U'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['U'] = fun
 
     @property
@@ -259,7 +278,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['V'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['V'] = fun
 
 
@@ -281,7 +302,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['RR'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['RR'] = fun
 
 
@@ -303,7 +326,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['LL'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['LL'] = fun
 
 
@@ -325,7 +350,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['RL'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['RL'] = fun
 
 
@@ -347,7 +374,9 @@ class Movie(object):
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         frames  =  np.array(frames)
         self._movdict['LR'] =  frames
-        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, fill_value=FILL_VALUE)
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
         self._fundict['LR'] = fun
 
     def movie_args(self):
@@ -359,7 +388,7 @@ class Movie(object):
         arglist = [frames2D, self.times, self.psize, self.ra,  self.dec]
         argdict = {'rf': self.rf, 'polrep': self.polrep,  'pol_prim':self.pol_prim, 
                    'pulse': self.pulse, 'source': self.source, 
-                   'mjd':self.mjd, 'interp':self.interp}
+                   'mjd':self.mjd, 'interp':self.interp, 'bounds_error':self.bounds_error}
 
         return (arglist, argdict)
 
@@ -390,24 +419,28 @@ class Movie(object):
         return newmov
 
 
-    def reset_interp(self, interp=INTERP_DEFAULT):
+    def reset_interp(self, interp=self.interp, bounds_error=self.bounds_error):
 
         """Reset the movie interpolation function to e.g. change the interpolation type or to change the frames
     
            Args: 
               interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+              bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
         """
         # Copy over all polarization movies
         for pol in list(self._movdict.keys()):
             polframes = self._movdict[pol]
             if len(polframes):
                 polframes = polframes.reshape((self.nframes, self.ydim, self.xdim))
-                fun = scipy.interpolate.interp1d(self.times, polframes.T, kind=interp, fill_value=FILL_VALUE)
+                fill_value = (polframes[0], polframes[-1])
+                fun = scipy.interpolate.interp1d(self.times, polframes.T, kind=interp, 
+                                                 fill_value=fill_value, bounds_error=bounds_error)
                 self._fundict[pol] = fun
             else:
                 self._fundict[pol] = None
 
         self.interp = interp
+        self.bounds_error = bounds_error
         return
 
     def offset_time(self, t_offset):
@@ -423,7 +456,7 @@ class Movie(object):
         mov.start_hr += t_offset
         mov.stop_hr += t_offset
         mov.times += t_offset
-        mov.reset_interp(interp=mov.interp)
+        mov.reset_interp(interp=mov.interp, bounds_error=mov.bounds_error)
         return mov
 
     def add_pol_movie(self, movie, pol):
@@ -452,19 +485,27 @@ class Movie(object):
             elif pol=='V': self.vframes = [image.flatten() for image in movie]
 
             if len(self.iframes)>0:
-                ifun = scipy.interpolate.interp1d(self.times, self.iframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (iframes[0], iframes[-1])
+                ifun = scipy.interpolate.interp1d(self.times, self.iframes.T, kind=self.interp, 
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 ifun =  None
             if len(self.vframes)>0:
-                vfun = scipy.interpolate.interp1d(self.times, self.vframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (vframes[0], vframes[-1])
+                vfun = scipy.interpolate.interp1d(self.times, self.vframes.T, kind=self.interp,
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 vfun =  None
             if len(self.qframes)>0:
-                qfun = scipy.interpolate.interp1d(self.times, self.qframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (qframes[0], qframes[-1])
+                qfun = scipy.interpolate.interp1d(self.times, self.qframes.T, kind=self.interp,
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 qfun =  None
             if len(self.uframes)>0:
-                ufun = scipy.interpolate.interp1d(self.times, self.uframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (uframes[0], uframes[-1])
+                ufun = scipy.interpolate.interp1d(self.times, self.uframes.T, kind=self.interp,
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 ufun =  None
 
@@ -478,19 +519,27 @@ class Movie(object):
             elif pol=='LR': self.lrframes = [image.flatten() for image in movie]
 
             if len(self.rrframes)>0:
-                rrfun = scipy.interpolate.interp1d(self.times, self.iframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (rrframes[0], rrframes[-1])
+                rrfun = scipy.interpolate.interp1d(self.times, self.rrframes.T, kind=self.interp,
+                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 rrfun =  None
             if len(self.llframes)>0:
-                llfun = scipy.interpolate.interp1d(self.times, self.vframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (llframes[0], llframes[-1])
+                llfun = scipy.interpolate.interp1d(self.times, self.llframes.T, kind=self.interp,
+                                                    fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 llfun =  None
             if len(self.rlframes)>0:
-                rlfun = scipy.interpolate.interp1d(self.times, self.qframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (rlframes[0], rlframes[-1])
+                rlfun = scipy.interpolate.interp1d(self.times, self.rlframes.T, kind=self.interp,
+                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 rlfun =  None
             if len(self.lrframes)>0:
-                lrfun = scipy.interpolate.interp1d(self.times, self.uframes.T, kind=self.interp, fill_value=FILL_VALUE)
+                fill_value = (lrframes[0], lrframes[-1])
+                lrfun = scipy.interpolate.interp1d(self.times, self.lrframes.T, kind=self.interp,
+                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 lrfun =  None
 
@@ -884,10 +933,23 @@ class Movie(object):
 
         obstimes = np.array([obsdata[0]['time'] for obsdata in obslist])
 
-        if (not repeat):
-            if (obstimes < self.start_hr).any():
+        if (obstimes < self.start_hr).any():
+            if repeat:
+                print ("Some observation times before movie start time %f" % self.start_hr)
+                print ("Looping movie before start\n")
+            elif not(self.bounds_error):
+                print ("Some observation times before movie start time %f" % self.start_hr)
+                print ("bounds_error is  False:  using constant frame 0 before start_hr! \n")
+            else:
                 raise Exception("Some observation times before movie start time %f" % self.start_hr)
-            if (obstimes > self.stop_hr).any():
+        if (obstimes > self.stop_hr).any():
+            if repeat:
+                print ("Some observation times after movie stop time %f" % self.stop_hr)
+                print ("Looping movie after stop\n")
+            elif not(self.bounds_error):
+                print ("Some observation times before movie start time %f" % self.stop_hr)
+                print ("bounds_error is  False:  using constant frame -1 after stop_hr! \n")
+            else:
                 raise Exception("Some observation times after movie stop time %f" % self.stop_hr)
 
         # Observe nearest frame
@@ -898,18 +960,11 @@ class Movie(object):
             # Frame number
             time = obsdata[0]['time']
 
-            #mjd = obsmjds[i]
-            #time = (mjd - mjd0)*24
-
-#            n = int(np.floor((mjd - mjdstart) * 86400. / self.framedur))
-#            if (n >= len(self.frames)):
-#                if repeat: n = np.mod(n, len(self.frames))
-#                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
-
-            if (time < self.start_hr or time > self.stop_hr):
-                if repeat:
-                    time = self.start_hr + np.mod(time -  self.start_hr, self.duration)
-                else: raise Exception("Obs time %f outside movie range %f--%f" % (time, self.start_hr, self.stop_hr))
+            if self.bounds_error:
+                if (time < self.start_hr or time > self.stop_hr):
+                    if repeat:
+                        time = self.start_hr + np.mod(time -  self.start_hr, self.duration)
+                    else: raise Exception("Obs time %f outside movie range %f--%f" % (time, self.start_hr, self.stop_hr))
 
             # Get the frame visibilities
             uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
@@ -1384,7 +1439,7 @@ class Movie(object):
 ##################################################################################################
 # Movie creation functions
 ##################################################################################################
-def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT):
+def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
     """Merge a list of image objects into a movie object.
 
        Args:
@@ -1392,6 +1447,7 @@ def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT):
            framedur (float): duration of a movie frame in seconds
                              use to override times in the individual movies 
            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
        
         Returns:
            (Movie): a Movie object assembled from the images
@@ -1472,7 +1528,7 @@ def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT):
 
     # Make new  movie with primary polarization
     newmov = Movie(framelist, times,
-                   psize0, ra0, dec0, interp=interp,
+                   psize0, ra0, dec0, interp=interp, bounds_error=bounds_error,
                    polrep=polrep0, pol_prim=pol_prim0,
                    rf=rf0, source=src0, mjd=mjd0, pulse=pulse)
 
@@ -1489,7 +1545,7 @@ def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT):
 
 
 
-def load_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
+def load_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
 
     """Read in a movie from an hdf5 file and create a Movie object.
 
@@ -1497,52 +1553,61 @@ def load_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT):
            file_name (str): The name of the hdf5 file.
            pulse (function): The function convolved with the pixel values for continuous image
            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+
        Returns:
            Movie: a Movie object
     """
 
-    return ehtim.io.load.load_movie_hdf5(file_name, pulse=pulse, interp=interp)
+    return ehtim.io.load.load_movie_hdf5(file_name, pulse=pulse, interp=interp, bounds_error=bounds_error)
 
 
 def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
-             polrep='stokes', pol_prim=None,  zero_pol=True, interp=INTERP_DEFAULT):
+             polrep='stokes', pol_prim=None,  zero_pol=True, 
+             interp=INTERP_DEFAULT, bounds_error=bounds_error):
 
     """Read in a movie from text files and create a Movie object.
 
        Args:
            basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
            nframes (int): The total number of frames
-           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           framedur (float): The frame duration in seconds (default = -1, framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
        Returns:
            Movie: a Movie object
     """
 
     return ehtim.io.load.load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse,
-                                        polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol, interp=interp)
+                                        polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol,
+                                        interp=interp, bounds_error=bounds_error)
 
 
 def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
-              polrep='stokes', pol_prim=None,  zero_pol=True, interp=INTERP_DEFAULT):
+              polrep='stokes', pol_prim=None,  zero_pol=True, 
+              interp=INTERP_DEFAULT, bounds_error=bounds_error):
 
     """Read in a movie from fits files and create a Movie object.
 
        Args:
            basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
            nframes (int): The total number of frames
-           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           framedur (float): The frame duration in seconds (default = -1, framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
            interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+
        Returns:
            Movie: a Movie object
     """
 
     return ehtim.io.load.load_movie_fits(basename, nframes, framedur=framedur, pulse=pulse,
-                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol, interp=interp)
+                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol, 
+                                         interp=interp, bounds_error=bounds_error)
