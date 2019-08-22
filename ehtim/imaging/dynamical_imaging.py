@@ -1141,13 +1141,13 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
     global A1_List, A2_List, A3_List, data1_List, data2_List, data3_List, sigma1_List, sigma2_List, sigma3_List
 
     # Make a list of frames if a movie is passed
-    if init_ims is list:
+    if type(init_ims) == list:
         InitIm_List = init_ims
     else:
         InitIm_List = init_ims.im_list()
 
     # Make a list of observations if a single Obsdata object is passed
-    if obs_input is list:
+    if type(obs_input) == list:
         Obsdata_List = obs_input
     else:
         # Create one obsdata object for every frame
@@ -1760,7 +1760,7 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
                          Prior.ra, Prior.dec, rf=Obsdata_List[i].rf, source=Prior.source,
                          mjd=InitIm_List[i].mjd, time=InitIm_List[i].time, pulse=Prior.pulse) for i in range(N_frame)]
 
-    if init_ims is list:
+    if type(init_ims) == list:
         pass
     else: 
         outim = movie.merge_im_list(outim)
