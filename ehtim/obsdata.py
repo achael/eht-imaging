@@ -954,10 +954,6 @@ class Obsdata(object):
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
-        if pol not in im_or_mov._imdict.keys():
-            raise Exception(pol + ' is not in the current image.' + 
-                                  ' Consider changing the polarization basis of the image.')
-
 
         # Movie -- weighted sum of frame chi^2
         if hasattr(im_or_mov, 'get_image'):
@@ -968,6 +964,10 @@ class Obsdata(object):
             num_list = []
             for obs in obs_list:
                 im = mov.get_image(obs.data[0]['time']) # get image at the observation time
+                if pol not in im._imdict.keys():
+                    raise Exception(pol + ' is not in the current image.' + 
+                                          ' Consider changing the polarization basis of the image.')
+
                 (data, sigma, A) = iu.chisqdata(obs, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
 
                 imvec = im._imdict[pol]
@@ -982,6 +982,10 @@ class Obsdata(object):
         # Image -- single chi^2
         else:
             im = im_or_mov
+            if pol not in im._imdict.keys():
+                raise Exception(pol + ' is not in the current image.' + 
+                                      ' Consider changing the polarization basis of the image.')
+
             (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
 
             imvec = im._imdict[pol]
