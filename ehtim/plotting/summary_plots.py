@@ -141,7 +141,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
 
         movie = hasattr(im_or_mov, 'get_image')
         if movie:
-            im_display = im.get_avg()
+            im_display = im_or_mov.avg_frame()
 
             # TODO --- ok to always extrapolate? 
             if force_extrapolate:
