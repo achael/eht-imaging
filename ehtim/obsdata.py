@@ -38,6 +38,7 @@ import ehtim.image
 import ehtim.io.save
 import ehtim.io.load
 import ehtim.observing.obs_simulate as simobs
+import  time as tt
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
@@ -962,18 +963,22 @@ class Obsdata(object):
 
             chisq_list =  []
             num_list = []
-            for obs in obs_list:
+            for ii, obs in enumerate(obs_list):
+
+                t1 = tt.time()
                 im = mov.get_image(obs.data[0]['time']) # get image at the observation time
+                t2 =  tt.time()
                 if pol not in im._imdict.keys():
                     raise Exception(pol + ' is not in the current image.' + 
                                           ' Consider changing the polarization basis of the image.')
 
                 (data, sigma, A) = iu.chisqdata(obs, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
-
+                t3 = tt.time()
                 imvec = im._imdict[pol]
                 if len(mask)>0 and np.any(np.invert(mask)):
                     imvec = imvec[mask]
 
+                print(ii,'/',len(obs_list),' ' , t2-t1, t3-t1)
                 chisq_list.append(iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask))
                 num_list.append(len(data))
 
@@ -2579,9 +2584,9 @@ class Obsdata(object):
         tt = 1
         for tdata in tlist:
 
-            sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % 
-                             (vtype, count, tt, len(tlist)))
-            sys.stdout.flush()
+            #sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % 
+            #                 (vtype, count, tt, len(tlist)))
+            #sys.stdout.flush()
 
             tt += 1
 
@@ -3021,9 +3026,9 @@ class Obsdata(object):
         tt = 1
         for tdata in tlist:
 
-            sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % 
-                             (vtype, ctype, count, tt, len(tlist)))
-            sys.stdout.flush()
+            #sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % 
+            #                 (vtype, ctype, count, tt, len(tlist)))
+            #sys.stdout.flush()
             tt += 1
 
             time = tdata[0]['time']

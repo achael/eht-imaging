@@ -138,7 +138,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
         ax = plt.subplot(gs[0:2,0:2])
         ax.set_title('Submitted Image')
 
-        movie = hasattr(im_or_movie, 'get_image')
+        movie = hasattr(im_or_mov, 'get_image')
         if movie:
             im_display = im.get_avg()
 
