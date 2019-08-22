@@ -958,7 +958,7 @@ class Obsdata(object):
         # Movie -- weighted sum of frame chi^2
         if hasattr(im_or_mov, 'get_image'):
             mov = im_or_mov
-            obslist =  self.split_obs()
+            obs_list =  self.split_obs()
 
             chisq_list =  []
             num_list = []
