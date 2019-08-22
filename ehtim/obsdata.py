@@ -972,16 +972,22 @@ class Obsdata(object):
                     raise Exception(pol + ' is not in the current image.' + 
                                           ' Consider changing the polarization basis of the image.')
 
-                (data, sigma, A) = iu.chisqdata(obs, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
-                t3 = tt.time()
+                try:
+                    (data, sigma, A) = iu.chisqdata(obs, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
+                    t3 = tt.time()
+                except IndexError: # not enough data for the current dtype to form closure phases/amplitudes
+                    continue
+
                 imvec = im._imdict[pol]
                 if len(mask)>0 and np.any(np.invert(mask)):
                     imvec = imvec[mask]
 
-                print(ii,'/',len(obs_list),' ' , t2-t1, t3-t1)
+                #print(ii,'/',len(obs_list),' ' , len(data), t2-t1, t3-t1)
                 chisq_list.append(iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask))
                 num_list.append(len(data))
 
+            #print(chisq_list)
+            #print(num_list)
             chisq =  np.sum(np.array(num_list) * np.array(chisq_list)) / np.sum(num_list)
             
         # Image -- single chi^2
