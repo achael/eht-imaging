@@ -26,6 +26,7 @@ from builtins import object
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate 
+import scipy.ndimage.filters as filt
 
 import ehtim.image
 import ehtim.obsdata
@@ -913,7 +914,45 @@ class Movie(object):
 
         return outim
 
+    def blur_circ(self, fwhm_x, fwhm_t, fwhm_x_pol=0):
+        """Apply a Gaussian filter to a list of images.
 
+           Args:
+               fwhm_x (float): circular beam size for spatial blurring in radians
+               fwhm_t (float): temporal blurring in frames
+               fwhm_x_pol (float): circular beam size for Stokes Q,U,V spatial blurring in radians
+           Returns:
+               (Image): output image list
+        """
+
+        # Unpack the frames
+        frames = self.im_list()
+
+        # Blur Stokes I
+        sigma_x = fwhm_x / self.psize / (2. * np.sqrt(2. * np.log(2.)))
+        sigma_t = fwhm_t / (2. * np.sqrt(2. * np.log(2.)))
+        sigma_x_pol = fwhm_x_pol / self.psize / (2. * np.sqrt(2. * np.log(2.)))
+
+
+        arr = np.array([im.imvec.reshape(self.ydim, self.xdim) for im in frames])
+        arr = filt.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
+
+        # Make a new blurred movie
+        arglist, argdict = self.movie_args()
+        arglist[0] = arr
+        movie_blur = Movie(*arglist, **argdict)
+
+        # Process the remaining polarizations
+        for pol in list(self._movdict.keys()):
+            if pol==self.pol_prim: continue
+            polframes = self._movdict[pol]
+
+            if len(polframes):
+                arr = np.array([imvec.reshape(self.ydim, self.xdim) for imvec in polframes])
+                arr = filt.gaussian_filter(arr, (sigma_t, sigma_x_pol, sigma_x_pol))    
+                movie_blur.add_pol_movie(arr, pol)    
+
+        return movie_blur
 
     def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft", fft_pad_factor=2, repeat=False):
         """Observe the movie on the same baselines as an existing observation object without adding noise.
