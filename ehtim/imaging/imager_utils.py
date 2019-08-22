@@ -56,7 +56,7 @@ MAXIT = 100 # maximum number of iterations
 STOP = 1.e-8 # convergence criterion
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'logamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'simple', 'compact', 'compact2','rgauss']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1w', 'lA', 'patch', 'simple', 'compact', 'compact2','rgauss']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
 
@@ -520,6 +520,8 @@ def regularizer(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
         s = -ssimple(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "l1":
         s = -sl1(imvec, nprior, flux, norm_reg=norm_reg)
+    elif stype == "l1w":
+        s = -sl1w(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "lA":
         s = -slA(imvec, nprior, psize, flux, beam_size, alpha_A, norm_reg)
     elif stype == "gs":
@@ -572,6 +574,8 @@ def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwarg
         s = -ssimplegrad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "l1":
         s = -sl1grad(imvec, nprior, flux, norm_reg=norm_reg)
+    elif stype == "l1w":
+        s = -sl1wgrad(imvec, nprior, flux, norm_reg=norm_reg)
     elif stype == "lA":
         s = -slAgrad(imvec, nprior, psize, flux, beam_size, alpha_A, norm_reg)
     elif stype == "gs":
@@ -1732,6 +1736,39 @@ def sl1grad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     #l1grad = -np.sign(imvec - priorvec)
     l1grad = -np.sign(imvec)
     return l1grad/norm
+
+
+def sl1w(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+    """Weighted L1 norm regularizer a la SMILI
+    """
+
+    if norm_reg:
+        norm = 1 # should be ok? 
+        #This is SMILI normalization
+        #norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))
+    else: norm = 1
+
+    num = imvec / np.sqrt(imvec**2 + EP)
+    denom =  np.sqrt(priorvec**2 + EP) + EP
+
+    l1wgrad = - num / denom
+    return l1wgrad/norm
+
+def sl1wgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+    """Weighted L1 norm gradient
+    """
+    if norm_reg:
+        norm = 1 # should be ok? 
+        #This is SMILI normalization
+        #norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))
+    else: norm = 1
+
+    num = np.sqrt(imvec**2 + EP)
+    denom =  np.sqrt(priorvec**2 + EP) + EP
+
+    l1w =  -np.sum(num/denom)
+    return l1wgrad/norm
+
 
 def fA(imvec, I_ref = 1.0, alpha_A = 1.0):
     """Function to take imvec to itself in the limit alpha_A -> 0 and to a binary representation in the limit alpha_A -> infinity
