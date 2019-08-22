@@ -1737,11 +1737,27 @@ def sl1grad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     l1grad = -np.sign(imvec)
     return l1grad/norm
 
-
 def sl1w(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+
     """Weighted L1 norm regularizer a la SMILI
     """
 
+    if norm_reg:
+        norm = 1 # should be ok? 
+        #This is SMILI normalization
+        #norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))
+    else: norm = 1
+
+    num = np.sqrt(imvec**2 + EP)
+    denom =  np.sqrt(priorvec**2 + EP) + EP
+
+    l1w =  -np.sum(num/denom)
+    return l1wgrad/norm
+
+
+def sl1wgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
+    """Weighted L1 norm gradient
+    """
     if norm_reg:
         norm = 1 # should be ok? 
         #This is SMILI normalization
@@ -1754,20 +1770,6 @@ def sl1w(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     l1wgrad = - num / denom
     return l1wgrad/norm
 
-def sl1wgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
-    """Weighted L1 norm gradient
-    """
-    if norm_reg:
-        norm = 1 # should be ok? 
-        #This is SMILI normalization
-        #norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))
-    else: norm = 1
-
-    num = np.sqrt(imvec**2 + EP)
-    denom =  np.sqrt(priorvec**2 + EP) + EP
-
-    l1w =  -np.sum(num/denom)
-    return l1wgrad/norm
 
 
 def fA(imvec, I_ref = 1.0, alpha_A = 1.0):
