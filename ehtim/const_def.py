@@ -42,7 +42,7 @@ PULSE_DEFAULT = trianglePulse2D
 
 # movie parameters
 INTERP_DEFAULT = 'linear'
-BOUNDS_ERROR = True  # When True, movie will return NEAREST NEIGHBOR frames 
+BOUNDS_ERROR = True  # When False, movie will return NEAREST NEIGHBOR frames 
                      # for times beyond [movie.start_hr, movie.stop_hr]
 
 # Telescope elevation cuts (degrees)
