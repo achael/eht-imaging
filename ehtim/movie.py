@@ -802,8 +802,23 @@ class Movie(object):
            Returns:
                (Image): the Image object at the given time
         """
-        if (time<self.start_hr) or (time>self.stop_hr):
-            raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
+
+    
+
+        if (time<self.start_hr):
+            if not(self.bounds_error):
+                    print ("time %f before movie start time %f" % (time, self.start_hr))
+                    print ("returning constant frame 0! \n")
+            else:
+                raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
+
+        if (time>self.stop_hr):
+            if not(self.bounds_error):
+                    print ("time %f after movie stop time %f" % (time, self.stop_hr))
+                    print ("returning constant frame -1! \n")
+            else:
+                raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
+
        
         # interpolate the imvec to the given time
         imvec =  self._fundict[self.pol_prim](time)
@@ -1570,7 +1585,7 @@ def load_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT, bounds_erro
 
 def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
              polrep='stokes', pol_prim=None,  zero_pol=True, 
-             interp=INTERP_DEFAULT, bounds_error=bounds_error):
+             interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
 
     """Read in a movie from text files and create a Movie object.
 
@@ -1595,7 +1610,7 @@ def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT,
 
 def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
               polrep='stokes', pol_prim=None,  zero_pol=True, 
-              interp=INTERP_DEFAULT, bounds_error=bounds_error):
+              interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
 
     """Read in a movie from fits files and create a Movie object.
 
