@@ -1496,10 +1496,146 @@ class Movie(object):
         writer = animation.writers['ffmpeg'](fps=fps, bitrate=1e6)
         ani.save(out,writer=writer,dpi=dpi)
 
-
 ##################################################################################################
 # Movie creation functions
 ##################################################################################################
+def export_multipanel_mp4(input_list, out='movie.mp4', start_hr=None, stop_hr=None, nframes=100, 
+                            fov=None, npix=None,
+                            nrows=1, fps=10, dpi=120, verbose=False, titles = None,
+                            panel_size=4.0, common_scale=False, scale='linear', label_type='scale',
+                            has_cbar=False, **kwargs):
+
+    """Export a movie comparing multiple movies in a grid.
+
+       Args:
+            input_list (list): The  list of  input Movies or Images
+            out (string): The output filename
+            start_hr (float): The start time in hours. If None, defaults to first start time
+            end_hr (float): The end time in hours. If None, defaults to last start time
+            nframes (int): The number of frames in the output movie
+            fov (float): If specified, use this field of view for all panels
+            npix (int): If specified, use this linear pixel dimension for all panels
+            nrows (int): Number of rows in movie
+            fps (int): Frames per second
+            titles (list): List of panel titles for input_list
+            panel_size (float): Size of individual panels (inches)
+        
+    """
+    import matplotlib
+    matplotlib.use('agg')
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+
+    if start_hr is None:
+        try:
+            start_hr = np.min([x.start_hr for x in input_list if hasattr(x,'start_hr')])    
+        except:
+            raise Exception("no movies in input_list!")
+
+    if stop_hr is None:
+        try:
+            stop_hr = np.max([x.stop_hr for x in input_list if hasattr(x,'stop_hr')])    
+        except:
+            raise Exception("no movies in input_list!")
+    
+    print("%s will have %i frames in the  range %f-%f hr"%(out,nframes,start_hr,stop_hr))
+ 
+    ncols = int(np.ceil(len(input_list)/nrows))
+    suptitle_space = 0.6#inches
+    w = panel_size*ncols
+    h = panel_size*nrows + suptitle_space
+    tgap = suptitle_space / h
+    bgap = .1
+    rgap = .1
+    lgap = .1
+    subw = (1-lgap-rgap)/ncols
+    subh = (1-tgap-bgap)/nrows
+    print("Rows: " +str(nrows))
+    print("Cols: " +str(ncols))
+
+    fig = plt.figure(figsize=(w,h))
+    ax_all = [[] for j in range(nrows)]
+    for y in range(nrows):
+        for x in range(ncols):
+            ax = fig.add_axes([lgap+subw*x, bgap+subh*(nrows-y-1),subw,subh])
+            ax_all[y].append(ax)
+
+    times =  np.linspace(start_hr, stop_hr, nframes)
+    hr_step = times[1]-times[0]
+    mjd_step = hr_step/24.
+    #mjd_step = (im_List_Set[0][0].mjd - im_List_Set[0][-1].mjd)/len(im_List_Set[0])
+
+    im_List_Set = [[x.get_image(time) if hasattr(x,'get_image') else x.copy() for time in times]
+                   for x in input_list]
+    
+    if fov and npix:
+        im_List_Set = [[x.regrid_image(fov,npix) for x in y] for y in im_List_Set]
+    else:
+        print('not rescaling images to common fov and npix!')
+
+    maxi   = [np.max([im.imvec for im in im_List_Set[j]]) for j in range(len(im_List_Set))]
+    if common_scale:
+        maxi = np.max(maxi) + 0.0*maxi
+
+    i = 0
+    for y in range(nrows):
+        for x in range(ncols):
+            if i >= len(im_List_Set):
+                ax_all[y][x].set_visible(False)
+            else:
+                kwargs.get('ttype','nfft')
+                if (y == nrows-1 and x == 0) or fov is None:
+                    label_type_cur = label_type
+                else:
+                    label_type_cur = 'none'
+
+                im_List_Set[i][0].display(axis=ax_all[y][x],scale=scale,label_type=label_type_cur,has_cbar=has_cbar,**kwargs)
+                if y == nrows-1 and x == 0:
+                    plt.xlabel('Relative RA ($\mu$as)')
+                    plt.ylabel('Relative Dec ($\mu$as)')
+                else:
+                    plt.xlabel('')
+                    plt.ylabel('')
+                if not titles:
+                    ax_all[y][x].set_title('')
+                else:
+                    ax_all[y][x].set_title(titles[i])
+            i = i+1
+
+#    fig.suptitle('X')
+#    fig.set_size_inches([panel_size*ncols,panel_size*nrows+0.5]) # Leave extra space for suptitle
+#    plt.tight_layout()
+
+    def im_data(i, n):
+        if scale == 'linear':
+            return im_List_Set[i][n].imvec.reshape((im_List_Set[i][n].ydim,im_List_Set[i][n].xdim))
+        else:
+            return np.log(im_List_Set[i][n].imvec.reshape((im_List_Set[i][n].ydim,im_List_Set[i][n].xdim)) + 1e-20)
+
+    def update_img(n):
+        if verbose:
+            print ("processing frame {0} of {1}".format(n, len(im_List_Set[0])))
+        i = 0
+        for y in range(nrows):
+            for x in range(ncols):
+                ax_all[y][x].images[0].set_data(im_data(i, n))
+                i=i+1
+                if i >= len(im_List_Set):
+                    break
+
+        if mjd_step > 0.1:
+            fig.suptitle('MJD: ' + str(im_List_Set[0][n].mjd), verticalalignment = verticalalignment)
+        else:
+            time = im_List_Set[0][n].time
+            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+            fig.suptitle(time_str)
+
+        return
+
+    ani = animation.FuncAnimation(fig,update_img,len(im_List_Set[0]),interval=1e3/fps)
+    writer = animation.writers['ffmpeg'](fps=fps, bitrate=1e6)
+    ani.save(out,writer=writer,dpi=dpi)
+
 def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
     """Merge a list of image objects into a movie object.
 
