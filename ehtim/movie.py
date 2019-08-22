@@ -438,7 +438,6 @@ class Movie(object):
         for pol in list(self._movdict.keys()):
             polframes = self._movdict[pol]
             if len(polframes):
-                polframes = polframes.reshape((self.nframes, self.ydim, self.xdim))
                 fill_value = (polframes[0], polframes[-1])
                 fun = scipy.interpolate.interp1d(self.times, polframes.T, kind=interp, 
                                                  fill_value=fill_value, bounds_error=bounds_error)
