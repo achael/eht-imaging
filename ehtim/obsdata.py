@@ -965,16 +965,16 @@ class Obsdata(object):
             num_list = []
             for ii, obs in enumerate(obs_list):
 
-                t1 = tt.time()
+                #t1 = tt.time()
                 im = mov.get_image(obs.data[0]['time']) # get image at the observation time
-                t2 =  tt.time()
+                #t2 =  tt.time()
                 if pol not in im._imdict.keys():
                     raise Exception(pol + ' is not in the current image.' + 
                                           ' Consider changing the polarization basis of the image.')
 
                 try:
                     (data, sigma, A) = iu.chisqdata(obs, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
-                    t3 = tt.time()
+                    #t3 = tt.time()
                 except IndexError: # not enough data for the current dtype to form closure phases/amplitudes
                     continue
 
