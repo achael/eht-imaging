@@ -419,7 +419,7 @@ class Movie(object):
         return newmov
 
 
-    def reset_interp(self, interp=self.interp, bounds_error=self.bounds_error):
+    def reset_interp(self, interp=None, bounds_error=None):
 
         """Reset the movie interpolation function to e.g. change the interpolation type or to change the frames
     
@@ -427,6 +427,12 @@ class Movie(object):
               interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
               bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
         """
+
+        if interp is None:
+            interp = self.interp
+        if bounds_error is None:
+            bounds_error = self.bounds_error
+
         # Copy over all polarization movies
         for pol in list(self._movdict.keys()):
             polframes = self._movdict[pol]
