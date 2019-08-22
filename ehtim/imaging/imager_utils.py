@@ -1752,7 +1752,7 @@ def sl1w(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     denom =  np.sqrt(priorvec**2 + EP) + EP
 
     l1w =  -np.sum(num/denom)
-    return l1wgrad/norm
+    return l1w/norm
 
 
 def sl1wgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
