@@ -42,7 +42,7 @@ PROCESSES=4
 MARKERSIZE=5
 
 def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="", 
-           fontsize=FONTSIZE, cfun='afmhot', snrcut=0.,maxset=False,
+           fontsize=FONTSIZE, cfun='afmhot', snrcut=0.,maxset=False, ttype='nfft',
            gainplots=True,ampplots=True, cphaseplots=True,campplots=True,ebar=True,
            debias=True, cp_uv_min=False, force_extrapolate=True,
            sysnoise=0,syscnoise=0):
@@ -76,6 +76,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
 
            snrcut (dict): a dictionary of snrcut values for each quantity
 
+           ttype (str): "fast" or "nfft" or "direct" 
            force_extrapolate (bool): if True, always extrapolate movie start/stop frames
        Returns:
 
@@ -183,22 +184,22 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
 
         maxset=False
         # compute chi^2
-        chi2vis = obs.chisq(im_or_mov, dtype='vis', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['vis'])
-        chi2amp = obs.chisq(im_or_mov, dtype='amp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['amp'])
-        chi2cphase = obs.chisq(im_or_mov, dtype='cphase', ttype='nfft', systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, 
+        chi2vis = obs.chisq(im_or_mov, dtype='vis', ttype=ttype, systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['vis'])
+        chi2amp = obs.chisq(im_or_mov, dtype='amp', ttype=ttype, systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['amp'])
+        chi2cphase = obs.chisq(im_or_mov, dtype='cphase', ttype=ttype, systematic_noise=sysnoise, systematic_cphase_noise=syscnoise, 
                                maxset=maxset, cp_uv_min=cp_uv_min,snrcut=snrcut_dict['cphase'])
-        chi2logcamp = obs.chisq(im_or_mov, dtype='logcamp', ttype='nfft', systematic_noise=sysnoise,
+        chi2logcamp = obs.chisq(im_or_mov, dtype='logcamp', ttype=ttype, systematic_noise=sysnoise,
                                 maxset=maxset,snrcut=snrcut_dict['logcamp'])
-        chi2camp = obs.chisq(im_or_mov, dtype='camp', ttype='nfft', systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['camp'])
+        chi2camp = obs.chisq(im_or_mov, dtype='camp', ttype=ttype, systematic_noise=sysnoise, maxset=maxset,snrcut=snrcut_dict['camp'])
 
 
 
-        chi2vis_uncal = obs_uncal.chisq(im_or_mov, dtype='vis', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['vis'])
-        chi2amp_uncal = obs_uncal.chisq(im_or_mov, dtype='amp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['amp'])
-        chi2cphase_uncal = obs_uncal.chisq(im_or_mov, dtype='cphase', ttype='nfft', systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,
+        chi2vis_uncal = obs_uncal.chisq(im_or_mov, dtype='vis', ttype=ttype, systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['vis'])
+        chi2amp_uncal = obs_uncal.chisq(im_or_mov, dtype='amp', ttype=ttype, systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['amp'])
+        chi2cphase_uncal = obs_uncal.chisq(im_or_mov, dtype='cphase', ttype=ttype, systematic_noise=0, systematic_cphase_noise=0, maxset=maxset,
                                      cp_uv_min=cp_uv_min,snrcut=snrcut_dict['cphase'])
-        chi2logcamp_uncal = obs_uncal.chisq(im_or_mov, dtype='logcamp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['logcamp'])
-        chi2camp_uncal = obs_uncal.chisq(im_or_mov, dtype='camp', ttype='nfft', systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['camp'])
+        chi2logcamp_uncal = obs_uncal.chisq(im_or_mov, dtype='logcamp', ttype=ttype, systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['logcamp'])
+        chi2camp_uncal = obs_uncal.chisq(im_or_mov, dtype='camp', ttype=ttype, systematic_noise=0, maxset=maxset,snrcut=snrcut_dict['camp'])
 
         print("chi^2 vis: %0.2f %0.2f" % (chi2vis, chi2vis_uncal))
         print("chi^2 amp: %0.2f %0.2f" % (chi2amp, chi2amp_uncal))
@@ -282,7 +283,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             if tri not in uniqueclosure_tri: uniqueclosure_tri.append(tri)
               
         # generate data
-        obs_model = im_or_mov.observe_same(obs, add_th_noise=False, ttype='nfft')
+        obs_model = im_or_mov.observe_same(obs, add_th_noise=False, ttype=ttype)
 
         # TODO: check SNR cut
         cphases_obs = obs.c_phases(mode='all', count='max', vtype='vis', uv_min=cp_uv_min, snrcut=snrcut_dict['cphase'])
@@ -435,7 +436,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
         obs_tmp.data['sigma']*=0.
         ax = plotall_obs_compare([obs, obs_tmp], 
                                  'uvdist','amp', axis=ax,legend=False, clist=['k',SCOLORS[1]], 
-                                  ttype='nfft',show=False, debias=debias, snrcut=snrcut_dict['amp'],
+                                  ttype=ttype,show=False, debias=debias, snrcut=snrcut_dict['amp'],
                                   ebar=ebar,markersize=MARKERSIZE)
         #modify the labels
         ax.set_title('Calibrated Visiblity Amplitudes')
@@ -464,7 +465,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             obs_tmp = obs_uncal.copy()
             for i in range(1): 
                 ct = selfcal(obs_tmp, im_or_mov, 
-                              method='amp', ttype='nfft', 
+                              method='amp', ttype=ttype, 
                               caltable=True, gain_tol=.2,
                               processes=PROCESSES)
                 ct = ct.pad_scans()
@@ -607,7 +608,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ax = plot_bl_obs_compare(obs_all, bl[0], bl[1], 'amp', rangey=[0,amax], 
                                          markersize=MARKERSIZE,debias=debias, snrcut=snrcut_dict['amp'],
                                          axis=ax,legend=False, clist=['k',SCOLORS[1]],
-                                         ttype='nfft',show=False, ebar=ebar)
+                                         ttype=ttype,show=False, ebar=ebar)
                 if ax is None: continue
                 if switch:
                     i += 1
@@ -655,7 +656,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ax = plot_cphase_obs_compare(obs_all,tri[0],tri[1],tri[2], rangey=[-185,185],
                                              cphases=cphases_all,markersize=MARKERSIZE,
                                              axis=ax,legend=False, clist=['k',SCOLORS[1]],
-                                             ttype='nfft',show=False, ebar=ebar)
+                                             ttype=ttype,show=False, ebar=ebar)
                 if ax is None: continue
                 if switch:
                     i += 1
@@ -703,7 +704,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ax = plot_camp_obs_compare(obs_all,quad[0],quad[1],quad[2],quad[3],markersize=MARKERSIZE,
                                              ctype='logcamp',rangey=[-cmax,cmax],camps=camps_all,
                                              axis=ax,legend=False, clist=['k',SCOLORS[1]],
-                                             ttype='nfft',show=False, ebar=ebar)
+                                             ttype=ttype,show=False, ebar=ebar)
                 if ax is None: continue
                 if switch:
                     i += 1

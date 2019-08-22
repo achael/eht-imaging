@@ -932,7 +932,7 @@ class Obsdata(object):
                 dtype (str): data type of chi^2 (e.g., 'vis', 'amp', 'bs', 'cphase')
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec
-                ttype (str): if "fast" or "nfft" or "direct" 
+                ttype (str): "fast" or "nfft" or "direct" 
                 fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
                 conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
                 p_rad (int): The pixel radius for the convolving function 
