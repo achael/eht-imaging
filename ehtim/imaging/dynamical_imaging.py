@@ -1245,11 +1245,11 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         print ("If a flow is used, then each frame must have the same prior!")
         return
 
-    logprior_List = [None,] * N_frame
-    loginit_List = [None,] * N_frame
+    logprior_List = [None for _ in range(N_frame)]
+    loginit_List = [None for _ in range(N_frame)]
 
-    nprior_embed_List = [None,] * N_frame
-    nprior_List = [None,] * N_frame
+    nprior_embed_List = [None for _ in range(N_frame)]
+    nprior_List = [None for _ in range(N_frame)]
 
     ninit_embed_List = [InitIm_List[i].imvec for i in range(N_frame)]
     ninit_List = [ninit_embed_List[i][embed_mask_List[i]] for i in range(N_frame)]
