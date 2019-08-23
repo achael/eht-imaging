@@ -2745,7 +2745,7 @@ class Obsdata(object):
         if mode == 'all':
             out = np.array(cps)
 
-        print("\n")
+#        print("\n")
         return out
 
     def bispectra_tri(self, site1, site2, site3, snrcut=0.,
