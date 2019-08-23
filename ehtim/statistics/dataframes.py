@@ -179,8 +179,14 @@ def coh_avg_vis(obs,dt=0,scan_avg=False,return_type='rec',err_type='predicted',n
             def meanerrF(x):
                 x = np.asarray(x)
                 x = x[x==x]
-                try: ret = np.sqrt(np.sum(x**2)/len(x)**2)
-                except: ret = np.nan +1j*np.nan
+
+                if (len(x)>0):
+                    try: 
+                        ret = np.sqrt(np.sum(x**2)/len(x)**2)
+                    except: 
+                        ret = np.nan +1j*np.nan
+                else:
+                    ret = np.nan +1j*np.nan
                 return ret
             aggregated[vis1] = meanF
             aggregated[vis2] = meanF
