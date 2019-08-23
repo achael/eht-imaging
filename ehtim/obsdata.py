@@ -3110,7 +3110,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(cas)
-        print("\n")
+#        print("\n")
         return out
 
     def camp_quad(self, site1, site2, site3, site4, snrcut=0., 
