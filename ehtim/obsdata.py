@@ -1077,8 +1077,7 @@ class Obsdata(object):
            Args:
                 inttime (float): coherent integration time in seconds
                 scan_avg (bool): if True, average over scans in self.scans instead of intime
-                moving (bool): averaging with moving window
-                moving_window (str): averaging window type
+                moving (bool): averaging with moving window (inttime interpreted as boxcar window width in seconds)
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
