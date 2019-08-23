@@ -1008,7 +1008,7 @@ class Movie(object):
                 print ("Some observation times after movie stop time %f" % self.stop_hr)
                 print ("Looping movie after stop\n")
             elif not(self.bounds_error):
-                print ("Some observation times before movie start time %f" % self.stop_hr)
+                print ("Some observation times after movie stop time %f" % self.stop_hr)
                 print ("bounds_error is  False:  using constant frame -1 after stop_hr! \n")
             else:
                 raise Exception("Some observation times after movie stop time %f" % self.stop_hr)
@@ -1739,8 +1739,6 @@ def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT, bounds_error=BOUND
             newmov.add_pol_movie(polframes, pol)
 
     return newmov
-
-
 
 def load_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
 
