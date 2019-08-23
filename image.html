@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Image &mdash; ehtim 0.1.0 documentation</title>
+  <title>Image &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="index.html"/>
         <link rel="next" title="Array" href="array.html"/>
         <link rel="prev" title="ehtim (eht-imaging)" href="index.html"/> 
 
@@ -232,12 +232,6 @@
 </dd></dl>
 
 <dl class="attribute">
-<dt id="ehtim.image.Image.imvec">
-<code class="descname">imvec</code><a class="headerlink" href="#ehtim.image.Image.imvec" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>array</em> &#8211; The vector of pixel I values in Jy/pixel (len xdim*ydim)</p>
-</dd></dl>
-
-<dl class="attribute">
 <dt id="ehtim.image.Image.polrep">
 <code class="descname">polrep</code><a class="headerlink" href="#ehtim.image.Image.polrep" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>str</em> &#8211; polarization representation, either &#8216;stokes&#8217; or &#8216;circ&#8217;</p>
@@ -247,6 +241,12 @@
 <dt id="ehtim.image.Image.pol_prim">
 <code class="descname">pol_prim</code><a class="headerlink" href="#ehtim.image.Image.pol_prim" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>str</em> &#8211; The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image._imdict">
+<code class="descname">_imdict</code><a class="headerlink" href="#ehtim.image.Image._imdict" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> &#8211; The dictionary with the polarimetric images</p>
 </dd></dl>
 
 <dl class="method">
@@ -622,6 +622,31 @@ If False it is the largestinput image fov</li>
 </table>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="ehtim.image.Image.bvec">
+<code class="descname">bvec</code><a class="headerlink" href="#ehtim.image.Image.bvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the B mode image vector</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.center">
+<code class="descname">center</code><span class="sig-paren">(</span><em>pol=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.center"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Center the image based on the coordinates of the centroid().
+A non-integer shift is used, which wraps the image when rotating.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The polarization for which to find the image centroid</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">centroid positions (x0,y0) in radians</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(np.array)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="ehtim.image.Image.centroid">
 <code class="descname">centroid</code><span class="sig-paren">(</span><em>pol=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.centroid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.centroid" title="Permalink to this definition">¶</a></dt>
@@ -638,6 +663,12 @@ If False it is the largestinput image fov</li>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.chivec">
+<code class="descname">chivec</code><a class="headerlink" href="#ehtim.image.Image.chivec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the fractional polarization angle for each pixel</p>
 </dd></dl>
 
 <dl class="method">
@@ -767,7 +798,7 @@ as fraction of maximum Stokes I pixel</li>
 
 <dl class="method">
 <dt id="ehtim.image.Image.display">
-<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>mcut=0.01</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>alpha=1</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em>, <em>scinot=False</em>, <em>scale_lw=1</em>, <em>beam_lw=1</em>, <em>cbar_fontsize=12</em>, <em>axis=None</em>, <em>scale_fontsize=12</em>, <em>power=0</em>, <em>beamcolor='w'</em>, <em>dpi=500</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
+<code class="descname">display</code><span class="sig-paren">(</span><em>pol=None</em>, <em>cfun='afmhot'</em>, <em>interp='gaussian'</em>, <em>scale='lin'</em>, <em>gamma=0.5</em>, <em>dynamic_range=1000.0</em>, <em>plotp=False</em>, <em>plot_stokes=True</em>, <em>nvec=20</em>, <em>pcut=0.1</em>, <em>mcut=0.01</em>, <em>log_offset=False</em>, <em>label_type='ticks'</em>, <em>has_title=True</em>, <em>alpha=1</em>, <em>has_cbar=True</em>, <em>only_cbar=False</em>, <em>cbar_lims=()</em>, <em>cbar_unit=('Jy'</em>, <em>'pixel')</em>, <em>export_pdf=''</em>, <em>pdf_pad_inches=0.0</em>, <em>show=True</em>, <em>beamparams=None</em>, <em>cbar_orientation='vertical'</em>, <em>scinot=False</em>, <em>scale_lw=1</em>, <em>beam_lw=1</em>, <em>cbar_fontsize=12</em>, <em>axis=None</em>, <em>scale_fontsize=12</em>, <em>power=0</em>, <em>beamcolor='w'</em>, <em>dpi=500</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.display"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.display" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -781,6 +812,7 @@ as fraction of maximum Stokes I pixel</li>
 <li><strong>gamma</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; index for gamma scaling</li>
 <li><strong>dynamic_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; dynamic range for log and gamma scaling</li>
 <li><strong>plotp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to plot linear polarimetic image</li>
+<li><strong>plot_stokes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to plot stokes subplots along with plotp</li>
 <li><strong>nvec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; number of polarimetric vectors to plot</li>
 <li><strong>pcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimum stokes I value for displaying polarimetric vectors
 (fraction of maximum Stokes I)</li>
@@ -813,6 +845,35 @@ as fraction of maximum Stokes I pixel</li>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.evec">
+<code class="descname">evec</code><a class="headerlink" href="#ehtim.image.Image.evec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the E mode image vector</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.image.Image.evpa">
+<code class="descname">evpa</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.evpa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.evpa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the total evpa</p>
+<p>Args:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">image average evpa (E of N) in radian</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.evpavec">
+<code class="descname">evpavec</code><a class="headerlink" href="#ehtim.image.Image.evpavec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the fractional polarization angle for each pixel</p>
 </dd></dl>
 
 <dl class="method">
@@ -988,6 +1049,12 @@ Returns metrics only for the primary polarization imvec!</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.image.Image.image_args">
+<code class="descname">image_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.image_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.image_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8220;Copy arguments for making a  new Image into a list and dictonary</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.image.Image.imarr">
 <code class="descname">imarr</code><span class="sig-paren">(</span><em>pol=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.imarr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.imarr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the 2D image array of a given pol parameter.</p>
@@ -1052,6 +1119,12 @@ Works off the primary image</p>
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="ehtim.image.Image.mvec">
+<code class="descname">mvec</code><a class="headerlink" href="#ehtim.image.Image.mvec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the fractional polarization for each pixel</p>
 </dd></dl>
 
 <dl class="method">
@@ -1458,6 +1531,27 @@ If False it is the largestinput image fov</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="ehtim.image.Image.shift_fft">
+<code class="descname">shift_fft</code><span class="sig-paren">(</span><em>shift</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.shift_fft"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.shift_fft" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Shift the image by a given vector in radians.</dt>
+<dd>This allows non-integer pixel shifts, via FFT.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>shift</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; offsets [x_offset, y_offset] for the image shift in radians</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">shifted image</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference internal" href="#ehtim.image.Image" title="ehtim.image.Image">Image</a>)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="ehtim.image.Image.sourcevec">
 <code class="descname">sourcevec</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/image.html#Image.sourcevec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.image.Image.sourcevec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the source position vector in geocentric coordinates at 0h GMST.</p>
@@ -1730,7 +1824,7 @@ of the original brightness distribution.</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ehtim.calibrating.self_cal &mdash; ehtim 0.1.0 documentation</title>
+  <title>ehtim.calibrating.self_cal &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -224,15 +224,17 @@
 <span class="sd">           sites (list): list of sites to include in the self calibration. empty list calibrates all sites</span>
 
 <span class="sd">           method (str): chooses what to calibrate, &#39;amp&#39;, &#39;phase&#39;, or &#39;both&#39; </span>
-<span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize (e.g., &#39;CG&#39;, &#39;BFGS&#39;, &#39;Nelder-Mead&#39;, etc.)</span>
+<span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize (e.g., &#39;CG&#39;, &#39;BFGS&#39;)</span>
 <span class="sd">           pol (str): which image polarization to self-calibrate visibilities to </span>
 
 <span class="sd">           pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature</span>
 <span class="sd">           gain_tol (float or list): gains that exceed this value will be disfavored by the prior</span>
-<span class="sd">                                     for asymmetric gain_tol for corrections below/above unity, pass a 2-element list</span>
-<span class="sd">           solution_interval (float): solution interval in seconds; one gain is derived for each interval.</span>
-<span class="sd">                                      If 0.0, a solution is determined for each unique time in the observation.</span>
-<span class="sd">           scan_solutions (bool): If True, determine one gain per site per scan (supersedes solution_interval)</span>
+<span class="sd">                                     for asymmetric gain_tol for corrections below/above unity,</span>
+<span class="sd">                                     pass a 2-element list</span>
+<span class="sd">           solution_interval (float): solution interval in seconds; </span>
+<span class="sd">                                      If 0., determine solution for each unique time</span>
+<span class="sd">           scan_solutions (bool): If True, determine one gain per site per scan </span>
+<span class="sd">                                  (supersedes solution_interval)</span>
 
 <span class="sd">           caltable (bool): if True, returns a Caltable instead of an Obsdata </span>
 <span class="sd">           processes (int): number of cores to use in multiprocessing</span>
@@ -614,7 +616,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

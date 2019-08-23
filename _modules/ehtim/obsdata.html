@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ehtim.obsdata &mdash; ehtim 0.1.0 documentation</title>
+  <title>ehtim.obsdata &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="../../index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="../../index.html"/>
         <link rel="up" title="Module code" href="../index.html"/> 
 
   
@@ -205,6 +205,7 @@
 <span class="kn">import</span> <span class="nn">ehtim.io.save</span>
 <span class="kn">import</span> <span class="nn">ehtim.io.load</span>
 <span class="kn">import</span> <span class="nn">ehtim.observing.obs_simulate</span> <span class="k">as</span> <span class="nn">simobs</span>
+<span class="kn">import</span>  <span class="nn">time</span> <span class="k">as</span> <span class="nn">tt</span>
 
 <span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
@@ -354,7 +355,7 @@
 
 <div class="viewcode-block" id="Obsdata.obsdata_args"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.obsdata_args">[docs]</a>    <span class="k">def</span> <span class="nf">obsdata_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a  new obsdata argument into a list and dictonary</span>
+        <span class="sd">&quot;&quot;&quot;&quot;Copy arguments for making a  new Obsdata into a list and dictonary</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">arglist</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span>  <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">]</span>
@@ -894,6 +895,36 @@
                     <span class="n">out</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;llvis&#39;</span><span class="p">])</span>
                     <span class="n">sig</span> <span class="o">=</span> <span class="n">merr2</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlsigma&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rrsigma&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;llsigma&#39;</span><span class="p">],</span>
                                 <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;llvis&#39;</span><span class="p">]),</span> <span class="n">out</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;evis&#39;</span><span class="p">,</span><span class="s1">&#39;eamp&#39;</span><span class="p">,</span><span class="s1">&#39;ephase&#39;</span><span class="p">,</span><span class="s1">&#39;esnr&#39;</span><span class="p">,</span><span class="s1">&#39;esigma&#39;</span><span class="p">,</span><span class="s1">&#39;esigma_phase&#39;</span><span class="p">]:</span>
+                <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;c16&#39;</span>
+                <span class="n">ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">])</span>  <span class="c1">#TODO: correct convention EofN?</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+                    <span class="n">q</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;qvis&#39;</span><span class="p">]</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;uvis&#39;</span><span class="p">]</span>
+                    <span class="n">qsig</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;qsigma&#39;</span><span class="p">]</span>
+                    <span class="n">usig</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;usigma&#39;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+                    <span class="n">q</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">])</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="mf">0.5</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">])</span>
+                    <span class="n">qsig</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">usig</span> <span class="o">=</span> <span class="n">qsig</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">q</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span> <span class="c1">#TODO correct convention/root2? </span>
+                <span class="n">sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">qsig</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">usig</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bvis&#39;</span><span class="p">,</span><span class="s1">&#39;bamp&#39;</span><span class="p">,</span><span class="s1">&#39;bphase&#39;</span><span class="p">,</span><span class="s1">&#39;bsnr&#39;</span><span class="p">,</span><span class="s1">&#39;bsigma&#39;</span><span class="p">,</span><span class="s1">&#39;bsigma_phase&#39;</span><span class="p">]:</span>
+                <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;c16&#39;</span>
+                <span class="n">ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">])</span>  <span class="c1">#TODO: correct convention EofN?</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+                    <span class="n">q</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;qvis&#39;</span><span class="p">]</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;uvis&#39;</span><span class="p">]</span>
+                    <span class="n">qsig</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;qsigma&#39;</span><span class="p">]</span>
+                    <span class="n">usig</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;usigma&#39;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+                    <span class="n">q</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">])</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="mf">0.5</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlvis&#39;</span><span class="p">])</span>
+                    <span class="n">qsig</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rlsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">usig</span> <span class="o">=</span> <span class="n">qsig</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">q</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">u</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span> <span class="c1">#TODO correct convention/root2? </span>
+                <span class="n">sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">qsig</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ang</span><span class="p">)</span><span class="o">*</span><span class="n">usig</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
             <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">,</span> <span class="s1">&#39;rramp&#39;</span><span class="p">,</span> <span class="s1">&#39;rrphase&#39;</span><span class="p">,</span> <span class="s1">&#39;rrsnr&#39;</span><span class="p">,</span> <span class="s1">&#39;rrsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;rrsigma_phase&#39;</span><span class="p">]:</span>
                 <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;c16&#39;</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
@@ -926,6 +957,17 @@
                 <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
                     <span class="n">out</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrvis&#39;</span><span class="p">]</span>
                     <span class="n">sig</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;lrsigma&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;rrllvis&#39;</span><span class="p">,</span> <span class="s1">&#39;rrllamp&#39;</span><span class="p">,</span> <span class="s1">&#39;rrllphase&#39;</span><span class="p">,</span> <span class="s1">&#39;rrllsnr&#39;</span><span class="p">,</span> <span class="s1">&#39;rrllsigma&#39;</span><span class="p">,</span> <span class="s1">&#39;rrllsigma_phase&#39;</span><span class="p">]:</span>
+                <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;c16&#39;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;stokes&#39;</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">])</span>
+                    <span class="n">sig</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">**</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
+                          <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;vvis&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> 
+                          <span class="o">*</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;vsigma&#39;</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">polrep</span><span class="o">==</span><span class="s1">&#39;circ&#39;</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;llvis&#39;</span><span class="p">]</span>
+                    <span class="n">sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rrsigma&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;llvis&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> 
+                                 <span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;llsigma&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;rrvis&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;llvis&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is not a valid field </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">field</span> <span class="o">+</span>
                                   <span class="s2">&quot;valid field values are: &quot;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FIELDS</span><span class="p">))</span>
@@ -964,26 +1006,27 @@
                     <span class="n">ty</span>  <span class="o">=</span> <span class="s1">&#39;f8&#39;</span>
 
             <span class="c1"># Get arg/amps/snr</span>
-            <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;amp&quot;</span><span class="p">,</span> <span class="s2">&quot;qamp&quot;</span><span class="p">,</span> <span class="s2">&quot;uamp&quot;</span><span class="p">,</span><span class="s2">&quot;vamp&quot;</span><span class="p">,</span><span class="s2">&quot;pamp&quot;</span><span class="p">,</span><span class="s2">&quot;mamp&quot;</span><span class="p">,</span><span class="s2">&quot;rramp&quot;</span><span class="p">,</span><span class="s2">&quot;llamp&quot;</span><span class="p">,</span><span class="s2">&quot;rlamp&quot;</span><span class="p">,</span><span class="s2">&quot;lramp&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;amp&quot;</span><span class="p">,</span> <span class="s2">&quot;qamp&quot;</span><span class="p">,</span> <span class="s2">&quot;uamp&quot;</span><span class="p">,</span><span class="s2">&quot;vamp&quot;</span><span class="p">,</span><span class="s2">&quot;pamp&quot;</span><span class="p">,</span><span class="s2">&quot;mamp&quot;</span><span class="p">,</span><span class="s2">&quot;bamp&quot;</span><span class="p">,</span><span class="s2">&quot;eamp&quot;</span><span class="p">,</span>
+                         <span class="s2">&quot;rramp&quot;</span><span class="p">,</span><span class="s2">&quot;llamp&quot;</span><span class="p">,</span><span class="s2">&quot;rlamp&quot;</span><span class="p">,</span><span class="s2">&quot;lramp&quot;</span><span class="p">,</span><span class="s2">&quot;rrllamp&quot;</span><span class="p">]:</span>
                 <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">debias</span><span class="p">:</span>
                     <span class="n">out</span> <span class="o">=</span> <span class="n">amp_debias</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">sig</span><span class="p">)</span>
                 <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;f8&#39;</span>
-            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;sigma&quot;</span><span class="p">,</span><span class="s2">&quot;qsigma&quot;</span><span class="p">,</span><span class="s2">&quot;usigma&quot;</span><span class="p">,</span><span class="s2">&quot;vsigma&quot;</span><span class="p">,</span><span class="s2">&quot;psigma&quot;</span><span class="p">,</span><span class="s2">&quot;msigma&quot;</span><span class="p">,</span>
-                           <span class="s2">&quot;rrsigma&quot;</span><span class="p">,</span><span class="s2">&quot;llsigma&quot;</span><span class="p">,</span><span class="s2">&quot;rlsigma&quot;</span><span class="p">,</span><span class="s2">&quot;lrsigma&quot;</span><span class="p">]:</span>
+            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;sigma&quot;</span><span class="p">,</span><span class="s2">&quot;qsigma&quot;</span><span class="p">,</span><span class="s2">&quot;usigma&quot;</span><span class="p">,</span><span class="s2">&quot;vsigma&quot;</span><span class="p">,</span><span class="s2">&quot;psigma&quot;</span><span class="p">,</span><span class="s2">&quot;msigma&quot;</span><span class="p">,</span><span class="s2">&quot;bsigma&quot;</span><span class="p">,</span><span class="s2">&quot;esigma&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;rrsigma&quot;</span><span class="p">,</span><span class="s2">&quot;llsigma&quot;</span><span class="p">,</span><span class="s2">&quot;rlsigma&quot;</span><span class="p">,</span><span class="s2">&quot;lrsigma&quot;</span><span class="p">,</span><span class="s2">&quot;rrllsigma&quot;</span><span class="p">]:</span>
                 <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
                 <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;f8&#39;</span>
-            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;phase&quot;</span><span class="p">,</span> <span class="s2">&quot;qphase&quot;</span><span class="p">,</span> <span class="s2">&quot;uphase&quot;</span><span class="p">,</span> <span class="s2">&quot;vphase&quot;</span><span class="p">,</span><span class="s2">&quot;pphase&quot;</span><span class="p">,</span>
-                           <span class="s2">&quot;mphase&quot;</span><span class="p">,</span><span class="s2">&quot;rrphase&quot;</span><span class="p">,</span><span class="s2">&quot;llphase&quot;</span><span class="p">,</span><span class="s2">&quot;lrphase&quot;</span><span class="p">,</span><span class="s2">&quot;rlphase&quot;</span><span class="p">]:</span>
+            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;phase&quot;</span><span class="p">,</span> <span class="s2">&quot;qphase&quot;</span><span class="p">,</span> <span class="s2">&quot;uphase&quot;</span><span class="p">,</span> <span class="s2">&quot;vphase&quot;</span><span class="p">,</span><span class="s2">&quot;pphase&quot;</span><span class="p">,</span><span class="s2">&quot;bphase&quot;</span><span class="p">,</span><span class="s2">&quot;ephase&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;mphase&quot;</span><span class="p">,</span><span class="s2">&quot;rrphase&quot;</span><span class="p">,</span><span class="s2">&quot;llphase&quot;</span><span class="p">,</span><span class="s2">&quot;lrphase&quot;</span><span class="p">,</span><span class="s2">&quot;rlphase&quot;</span><span class="p">,</span><span class="s2">&quot;rrllphase&quot;</span><span class="p">]:</span>
                 <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="o">/</span><span class="n">angle</span>
                 <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;f8&#39;</span>
             <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;sigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;qsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;usigma_phase&quot;</span><span class="p">,</span>
-                           <span class="s2">&quot;vsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;psigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;msigma_phase&quot;</span><span class="p">,</span>
-                           <span class="s2">&quot;rrsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;llsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;rlsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;lrsigma_phase&quot;</span><span class="p">]:</span>
+                           <span class="s2">&quot;vsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;psigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;msigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;bsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;esigma_phase&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;rrsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;llsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;rlsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;lrsigma_phase&quot;</span><span class="p">,</span><span class="s2">&quot;rrllsigma_phase&quot;</span><span class="p">]:</span>
                 <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="o">/</span><span class="n">angle</span>
                 <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;f8&#39;</span>
-            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;snr&quot;</span><span class="p">,</span> <span class="s2">&quot;qsnr&quot;</span><span class="p">,</span> <span class="s2">&quot;usnr&quot;</span><span class="p">,</span> <span class="s2">&quot;vsnr&quot;</span><span class="p">,</span> <span class="s2">&quot;psnr&quot;</span><span class="p">,</span> 
-                           <span class="s2">&quot;msnr&quot;</span><span class="p">,</span><span class="s2">&quot;rrsnr&quot;</span><span class="p">,</span><span class="s2">&quot;llsnr&quot;</span><span class="p">,</span><span class="s2">&quot;rlsnr&quot;</span><span class="p">,</span><span class="s2">&quot;lrsnr&quot;</span><span class="p">]:</span>
+            <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;snr&quot;</span><span class="p">,</span> <span class="s2">&quot;qsnr&quot;</span><span class="p">,</span> <span class="s2">&quot;usnr&quot;</span><span class="p">,</span> <span class="s2">&quot;vsnr&quot;</span><span class="p">,</span> <span class="s2">&quot;psnr&quot;</span><span class="p">,</span> <span class="s2">&quot;bsnr&quot;</span><span class="p">,</span><span class="s2">&quot;esnr&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;msnr&quot;</span><span class="p">,</span><span class="s2">&quot;rrsnr&quot;</span><span class="p">,</span><span class="s2">&quot;llsnr&quot;</span><span class="p">,</span><span class="s2">&quot;rlsnr&quot;</span><span class="p">,</span><span class="s2">&quot;lrsnr&quot;</span><span class="p">,</span><span class="s2">&quot;rrllsnr&quot;</span><span class="p">]:</span>
                 <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
                 <span class="n">ty</span> <span class="o">=</span> <span class="s1">&#39;f8&#39;</span>
 
@@ -1047,16 +1090,16 @@
 
         <span class="k">return</span> <span class="n">splitlist</span></div>
 
-<div class="viewcode-block" id="Obsdata.chisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.chisq">[docs]</a>    <span class="k">def</span> <span class="nf">chisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Obsdata.chisq"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.Obsdata.chisq">[docs]</a>    <span class="k">def</span> <span class="nf">chisq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im_or_mov</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Give the reduced chi^2 of the observation for the specified image and datatype.</span>
 
 <span class="sd">           Args:</span>
-<span class="sd">                im (Image): image to test chi^2</span>
+<span class="sd">                im_or_mov (Image or Movie): image or movie object on which to test chi^2</span>
 <span class="sd">                dtype (str): data type of chi^2 (e.g., &#39;vis&#39;, &#39;amp&#39;, &#39;bs&#39;, &#39;cphase&#39;)</span>
 <span class="sd">                pol (str): polarization type (&#39;I&#39;, &#39;Q&#39;, &#39;U&#39;, &#39;V&#39;, &#39;LL&#39;, &#39;RR&#39;, &#39;LR&#39;, or &#39;RL&#39;</span>
 <span class="sd">                mask (arr): mask of same dimension as im.imvec</span>
-<span class="sd">                ttype (str): if &quot;fast&quot; or &quot;nfft&quot; or &quot;direct&quot; </span>
+<span class="sd">                ttype (str): &quot;fast&quot; or &quot;nfft&quot; or &quot;direct&quot; </span>
 <span class="sd">                fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT</span>
 <span class="sd">                conv_func (&#39;str&#39;):  The convolving function for gridding; &#39;gaussian&#39;, &#39;pill&#39;,&#39;cubic&#39;</span>
 <span class="sd">                p_rad (int): The pixel radius for the convolving function </span>
@@ -1074,23 +1117,60 @@
 <span class="sd">           Returns:</span>
 <span class="sd">                (float): image chi^2</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="c1"># TODO -- should import this at top, but the circular dependencies create a mess...</span>
         <span class="k">if</span> <span class="n">dtype</span> <span class="ow">not</span> <span class="ow">in</span>  <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is not a supported dterms!&quot;</span> <span class="o">%</span> <span class="n">dtype</span><span class="p">)</span>
 
+        <span class="c1"># TODO -- should import this at top, but the circular dependencies create a mess...</span>
         <span class="kn">import</span> <span class="nn">ehtim.imaging.imager_utils</span> <span class="k">as</span> <span class="nn">iu</span>
-        <span class="k">if</span> <span class="n">pol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">im</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">pol</span> <span class="o">+</span> <span class="s1">&#39; is not in the current image.&#39;</span> <span class="o">+</span> 
-                                  <span class="s1">&#39; Consider changing the polarization basis of the image.&#39;</span><span class="p">)</span>
 
-        <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># Movie -- weighted sum of frame chi^2</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">im_or_mov</span><span class="p">,</span> <span class="s1">&#39;get_image&#39;</span><span class="p">):</span>
+            <span class="n">mov</span> <span class="o">=</span> <span class="n">im_or_mov</span>
+            <span class="n">obs_list</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">split_obs</span><span class="p">()</span>
 
-        <span class="n">imvec</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">pol</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
-            <span class="n">imvec</span> <span class="o">=</span> <span class="n">imvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">chisq_list</span> <span class="o">=</span>  <span class="p">[]</span>
+            <span class="n">num_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">obs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obs_list</span><span class="p">):</span>
 
-        <span class="n">chisq</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+                <span class="c1">#t1 = tt.time()</span>
+                <span class="n">im</span> <span class="o">=</span> <span class="n">mov</span><span class="o">.</span><span class="n">get_image</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">])</span> <span class="c1"># get image at the observation time</span>
+                <span class="c1">#t2 =  tt.time()</span>
+                <span class="k">if</span> <span class="n">pol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">im</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">pol</span> <span class="o">+</span> <span class="s1">&#39; is not in the current image.&#39;</span> <span class="o">+</span> 
+                                          <span class="s1">&#39; Consider changing the polarization basis of the image.&#39;</span><span class="p">)</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">chisqdata</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="c1">#t3 = tt.time()</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span> <span class="c1"># not enough data for the current dtype to form closure phases/amplitudes</span>
+                    <span class="k">continue</span>
+
+                <span class="n">imvec</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">pol</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+                    <span class="n">imvec</span> <span class="o">=</span> <span class="n">imvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+                <span class="c1">#print(ii,&#39;/&#39;,len(obs_list),&#39; &#39; , len(data), t2-t1, t3-t1)</span>
+                <span class="n">chisq_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iu</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">))</span>
+                <span class="n">num_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+            <span class="c1">#print(chisq_list)</span>
+            <span class="c1">#print(num_list)</span>
+            <span class="n">chisq</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">num_list</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">chisq_list</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">num_list</span><span class="p">)</span>
+            
+        <span class="c1"># Image -- single chi^2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">im</span> <span class="o">=</span> <span class="n">im_or_mov</span>
+            <span class="k">if</span> <span class="n">pol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">im</span><span class="o">.</span><span class="n">_imdict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">pol</span> <span class="o">+</span> <span class="s1">&#39; is not in the current image.&#39;</span> <span class="o">+</span> 
+                                      <span class="s1">&#39; Consider changing the polarization basis of the image.&#39;</span><span class="p">)</span>
+
+            <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">chisqdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="n">imvec</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">_imdict</span><span class="p">[</span><span class="n">pol</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+                <span class="n">imvec</span> <span class="o">=</span> <span class="n">imvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+            <span class="n">chisq</span> <span class="o">=</span> <span class="n">iu</span><span class="o">.</span><span class="n">chisq</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">chisq</span></div>
 
@@ -1125,26 +1205,37 @@
 
         <span class="k">if</span> <span class="n">dtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;pvis&#39;</span><span class="p">,</span><span class="s1">&#39;m&#39;</span><span class="p">,</span><span class="s1">&#39;pbs&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only supported polarimetric dterms are &#39;pvis&#39;,&#39;m, &#39;pbs&#39;!&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">pol_prim</span><span class="o">!=</span><span class="s2">&quot;amp_phase&quot;</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only amp_phase pol_prim currently supported!&quot;</span><span class="p">)</span>
 
         <span class="c1"># TODO -- should import this at top, but the circular dependencies create a mess...</span>
         <span class="kn">import</span> <span class="nn">ehtim.imaging.pol_imager_utils</span> <span class="k">as</span> <span class="nn">piu</span>
 
+        <span class="c1"># unpack the necessary polarimetric data</span>
         <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span> <span class="o">=</span> <span class="n">piu</span><span class="o">.</span><span class="n">polchisqdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-
+        <span class="c1"># pack the comparison image in the proper format</span>
         <span class="n">imstokes</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">polrep_out</span><span class="o">=</span><span class="s1">&#39;stokes&#39;</span><span class="p">,</span> <span class="n">pol_prim_out</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
-        <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
-        <span class="n">mvec</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">/</span><span class="n">ivec</span><span class="p">)</span>
-        <span class="n">chivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">if</span> <span class="n">pol_prim</span><span class="o">==</span><span class="s1">&#39;amp_phase&#39;</span><span class="p">:</span>
+            <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
+            <span class="n">mvec</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">/</span><span class="n">ivec</span><span class="p">)</span>
+            <span class="n">chivec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+                <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">mvec</span> <span class="o">=</span> <span class="n">mvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">chivec</span> <span class="o">=</span> <span class="n">chivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">mvec</span><span class="p">,</span> <span class="n">chivec</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">pol_prim</span><span class="o">==</span><span class="s1">&#39;qu&#39;</span><span class="p">:</span>
+            <span class="n">ivec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">imvec</span>
+            <span class="n">qvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">qvec</span>
+            <span class="n">uvec</span> <span class="o">=</span> <span class="n">imstokes</span><span class="o">.</span><span class="n">uvec</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
+                <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">qvec</span> <span class="o">=</span> <span class="n">qvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">uvec</span> <span class="o">=</span> <span class="n">uvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">uvec</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Only amp_phase &amp; qu pol_prim are currently supported in polchisq!&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span><span class="p">)):</span>
-            <span class="n">ivec</span> <span class="o">=</span> <span class="n">ivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-            <span class="n">mvec</span> <span class="o">=</span> <span class="n">mvec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-            <span class="n">chivec</span> <span class="o">=</span> <span class="n">chivec</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
-
-        <span class="n">imtuple</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">ivec</span><span class="p">,</span> <span class="n">mvec</span><span class="p">,</span> <span class="n">chivec</span><span class="p">))</span>
+        <span class="c1"># calculate the chi^2</span>
         <span class="n">chisq</span> <span class="o">=</span> <span class="n">piu</span><span class="o">.</span><span class="n">polchisq</span><span class="p">(</span><span class="n">imtuple</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> 
                              <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">pol_prim</span><span class="o">=</span><span class="n">pol_prim</span><span class="p">)</span>
 
@@ -2343,6 +2434,9 @@
 <span class="sd">                perc (float): drop baseline from scan if it has less than this fraction </span>
 <span class="sd">                              of median baseline observation time during the scan</span>
 <span class="sd">                return_type (str): data frame (&#39;df&#39;) or recarray (&#39;rec&#39;)</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">               (Obsdata): a observation object with flagged data points removed</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scans</span><span class="p">)</span><span class="o">!=</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -2663,9 +2757,9 @@
         <span class="n">tt</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">for</span> <span class="n">tdata</span> <span class="ow">in</span> <span class="n">tlist</span><span class="p">:</span>
 
-            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">Getting bispectra:: type </span><span class="si">%s</span><span class="s1">, count </span><span class="si">%s</span><span class="s1">, scan </span><span class="si">%i</span><span class="s1">/</span><span class="si">%i</span><span class="s1"> &#39;</span> <span class="o">%</span> 
-                             <span class="p">(</span><span class="n">vtype</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">tt</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tlist</span><span class="p">)))</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="c1">#sys.stdout.write(&#39;\rGetting bispectra:: type %s, count %s, scan %i/%i &#39; % </span>
+            <span class="c1">#                 (vtype, count, tt, len(tlist)))</span>
+            <span class="c1">#sys.stdout.flush()</span>
 
             <span class="n">tt</span> <span class="o">+=</span> <span class="mi">1</span>
 
@@ -3105,9 +3199,9 @@
         <span class="n">tt</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">for</span> <span class="n">tdata</span> <span class="ow">in</span> <span class="n">tlist</span><span class="p">:</span>
 
-            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">Getting closure amps:: type </span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1"> , count </span><span class="si">%s</span><span class="s1">, scan </span><span class="si">%i</span><span class="s1">/</span><span class="si">%i</span><span class="s1">&#39;</span> <span class="o">%</span> 
-                             <span class="p">(</span><span class="n">vtype</span><span class="p">,</span> <span class="n">ctype</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">tt</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tlist</span><span class="p">)))</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="c1">#sys.stdout.write(&#39;\rGetting closure amps:: type %s %s , count %s, scan %i/%i&#39; % </span>
+            <span class="c1">#                 (vtype, ctype, count, tt, len(tlist)))</span>
+            <span class="c1">#sys.stdout.flush()</span>
             <span class="n">tt</span> <span class="o">+=</span> <span class="mi">1</span>
 
             <span class="n">time</span> <span class="o">=</span> <span class="n">tdata</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
@@ -3370,7 +3464,7 @@
                       <span class="n">axis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rangey</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
                       <span class="n">color</span><span class="o">=</span><span class="n">SCOLORS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKERSIZE</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                       <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                      <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">):</span>
+                      <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Plot two fields against each other.</span>
 
@@ -3410,6 +3504,8 @@
             <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span>
 
         <span class="c1"># Determine if fields are valid</span>
+        <span class="n">field1</span> <span class="o">=</span> <span class="n">field1</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">field2</span> <span class="o">=</span> <span class="n">field2</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">field1</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FIELDS</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">field2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FIELDS</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;valid fields are &quot;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FIELDS</span><span class="p">))</span>
 
@@ -3581,6 +3677,9 @@
             <span class="n">x</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">axis</span><span class="p">:</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="n">axis</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -3629,6 +3728,7 @@
         <span class="k">if</span> <span class="n">ang_unit</span><span class="o">==</span><span class="s1">&#39;deg&#39;</span><span class="p">:</span> <span class="n">angle</span><span class="o">=</span><span class="n">DEGREE</span>
         <span class="k">else</span><span class="p">:</span> <span class="n">angle</span> <span class="o">=</span> <span class="mf">1.0</span>
 
+        <span class="n">field</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">field</span><span class="o">==</span><span class="s1">&#39;amp&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
             <span class="nb">print</span> <span class="p">(</span><span class="s2">&quot;Warning: plot_bl is not using amplitudes in Obsdata.amp array!&quot;</span><span class="p">)</span>
 
@@ -3699,7 +3799,7 @@
         <span class="n">x</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">rangey</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">axislabels</span><span class="p">:</span>
-            <span class="n">x</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span> <span class="o">+</span> <span class="s1">&#39; (hr)&#39;</span><span class="p">)</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">timetype</span> <span class="o">+</span> <span class="s1">&#39; (hr)&#39;</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">x</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">FIELD_LABELS</span><span class="p">[</span><span class="n">field</span><span class="p">])</span>
             <span class="k">except</span><span class="p">:</span>
@@ -3711,6 +3811,9 @@
         <span class="k">if</span> <span class="n">legend</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">axis</span><span class="p">:</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="n">axis</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -3725,12 +3828,12 @@
                           <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                           <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;Plot a field over time on a baseline site1-site2.</span>
+        <span class="sd">&quot;&quot;&quot;Plot a closure phase over time on a triangle site1-site2-site3.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
 <span class="sd">               site2 (str): station 2 name</span>
-<span class="sd">               field (str): y-axis field (from FIELDS)</span>
+<span class="sd">               site3 (str): station 3 name</span>
 
 <span class="sd">               vtype (str): The visibilty type from which to assemble closure phases</span>
 <span class="sd">                            (&#39;vis&#39;,&#39;qvis&#39;,&#39;uvis&#39;,&#39;vvis&#39;,&#39;pvis&#39;) </span>
@@ -3831,6 +3934,9 @@
             <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">axis</span><span class="p">:</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="n">axis</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -3844,7 +3950,7 @@
                         <span class="n">grid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">axislabels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                         <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">export_pdf</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 
-        <span class="sd">&quot;&quot;&quot;Plot closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</span>
+        <span class="sd">&quot;&quot;&quot;Plot closure amplitude over time on a quadrangle (1-2)(3-4)/(1-4)(2-3).</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               site1 (str): station 1 name</span>
@@ -3965,6 +4071,9 @@
             <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">axis</span><span class="p">:</span>
             <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">export_pdf</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span> <span class="ow">and</span> <span class="n">axis</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">export_pdf</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">return</span>
@@ -4023,42 +4132,73 @@
 <span class="c1"># Observation creation functions</span>
 <span class="c1">##################################################################################################</span>
 
-<div class="viewcode-block" id="merge_obs"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.merge_obs">[docs]</a><span class="k">def</span> <span class="nf">merge_obs</span><span class="p">(</span><span class="n">obs_List</span><span class="p">):</span>
+<div class="viewcode-block" id="merge_obs"><a class="viewcode-back" href="../../obsdata.html#ehtim.obsdata.merge_obs">[docs]</a><span class="k">def</span> <span class="nf">merge_obs</span><span class="p">(</span><span class="n">obs_List</span><span class="p">,</span> <span class="n">force_merge</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;Merge a list of observations into a single observation file.</span>
 
 <span class="sd">       Args:</span>
 <span class="sd">           obs_List (list): list of split observation Obsdata objects.</span>
+<span class="sd">           force_merge (bool): forces the observations to merge even if parameters are different</span>
 
 <span class="sd">       Returns:</span>
 <span class="sd">           mergeobs (Obsdata): merged Obsdata object containing all scans in input list</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">polrep</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;All observations must have the same polarization representaiton !&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;All observations must have the same polarization representation !&quot;</span><span class="p">)</span>
         <span class="k">return</span>
 
-    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
-        <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">dec</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
-        <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">rf</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
-        <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">bw</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
-        <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
-        <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;All observations must have the same parameters!&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span> <span class="o">==</span> <span class="s1">&#39;GMST&#39;</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;merge_obs only works for observations with obs.timetype=&#39;UTC&#39;!&quot;</span><span class="p">)</span>
         <span class="k">return</span>
 
-    <span class="c1"># The important things to merge are the mjd, the data, and the list of telescopes</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">force_merge</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
+            <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">dec</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
+            <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">rf</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
+            <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">bw</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
+            <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="c1">#or  len(set([np.floor(obs.mjd) for obs in obs_List])) &gt; 1):</span>
+
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;All observations must have the same parameters!&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+    <span class="c1"># the reference observation is the one with the minimum mjd</span>
+    <span class="n">obs_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">])</span>
+    <span class="n">obs_ref</span> <span class="o">=</span> <span class="n">obs_List</span><span class="p">[</span><span class="n">obs_idx</span><span class="p">]</span>
+
+    <span class="c1"># re-reference times to new mjd </span>
+    <span class="c1"># must be in UTC!</span>
+    <span class="n">mjd_ref</span> <span class="o">=</span> <span class="n">obs_ref</span><span class="o">.</span><span class="n">mjd</span>
+    <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">:</span>
+        <span class="n">mjd_offset</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">mjd</span> <span class="o">-</span> <span class="n">mjd_ref</span>
+        <span class="n">obs</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">mjd_offset</span><span class="o">*</span><span class="mi">24</span>
+        <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="o">==</span><span class="p">[]):</span>
+            <span class="n">obs</span><span class="o">.</span><span class="n">scans</span> <span class="o">+=</span> <span class="n">mjd_offset</span><span class="o">*</span><span class="mi">24</span>
+
+    <span class="c1"># merge the data</span>
     <span class="n">data_merge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">data</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">])</span>
 
-    <span class="n">scan_merge</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># merge the scan list</span>
+    <span class="n">scan_merge</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">scan_merge</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="o">==</span><span class="p">[]):</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">scan_merge</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">scan_merge</span> <span class="o">==</span> <span class="p">[]):</span>
+            <span class="n">scan_merge</span> <span class="o">=</span> <span class="p">[</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="n">scan_merge</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="p">)</span>
-    <span class="n">scan_merge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span><span class="n">scan_merge</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">scan_merge</span> <span class="ow">is</span> <span class="kc">None</span>  <span class="ow">or</span> <span class="n">scan_merge</span> <span class="o">==</span> <span class="p">[]):</span>
+        <span class="n">scan_merge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">scan_merge</span><span class="p">)</span>
+        <span class="n">_idxsort</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">scan_merge</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">scan_merge</span> <span class="o">=</span> <span class="n">scan_merge</span><span class="p">[</span><span class="n">_idxsort</span><span class="p">]</span>
+
+    <span class="c1"># merge the list of telescopes</span>
     <span class="n">tarr_merge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">obs</span><span class="o">.</span><span class="n">tarr</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">obs_List</span><span class="p">]))</span>
 
-    <span class="n">arglist</span><span class="p">,</span> <span class="n">argdict</span> <span class="o">=</span> <span class="n">obs_List</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">obsdata_args</span><span class="p">()</span>
+    
+    <span class="n">arglist</span><span class="p">,</span> <span class="n">argdict</span> <span class="o">=</span> <span class="n">obs_ref</span><span class="o">.</span><span class="n">obsdata_args</span><span class="p">()</span>
     <span class="n">arglist</span><span class="p">[</span><span class="n">DATPOS</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_merge</span>
     <span class="n">arglist</span><span class="p">[</span><span class="n">TARRPOS</span><span class="p">]</span> <span class="o">=</span> <span class="n">tarr_merge</span> 
     <span class="n">argdict</span><span class="p">[</span><span class="s1">&#39;scantable&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_merge</span>
@@ -4173,7 +4313,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

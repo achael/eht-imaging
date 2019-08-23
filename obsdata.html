@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Obsdata &mdash; ehtim 0.1.0 documentation</title>
+  <title>Obsdata &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="index.html"/>
         <link rel="next" title="Movie" href="movie.html"/>
         <link rel="prev" title="Array" href="array.html"/> 
 
@@ -768,18 +768,18 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.chisq">
-<code class="descname">chisq</code><span class="sig-paren">(</span><em>im</em>, <em>dtype='vis'</em>, <em>pol='I'</em>, <em>ttype='nfft'</em>, <em>mask=[]</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.chisq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.chisq" title="Permalink to this definition">¶</a></dt>
+<code class="descname">chisq</code><span class="sig-paren">(</span><em>im_or_mov</em>, <em>dtype='vis'</em>, <em>pol='I'</em>, <em>ttype='nfft'</em>, <em>mask=[]</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.chisq"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.chisq" title="Permalink to this definition">¶</a></dt>
 <dd><p>Give the reduced chi^2 of the observation for the specified image and datatype.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; image to test chi^2</li>
+<li><strong>im_or_mov</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a><em> or </em><a class="reference internal" href="movie.html#ehtim.movie.Movie" title="ehtim.movie.Movie"><em>Movie</em></a>) &#8211; image or movie object on which to test chi^2</li>
 <li><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; data type of chi^2 (e.g., &#8216;vis&#8217;, &#8216;amp&#8217;, &#8216;bs&#8217;, &#8216;cphase&#8217;)</li>
 <li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; polarization type (&#8216;I&#8217;, &#8216;Q&#8217;, &#8216;U&#8217;, &#8216;V&#8217;, &#8216;LL&#8217;, &#8216;RR&#8217;, &#8216;LR&#8217;, or &#8216;RL&#8217;</li>
 <li><strong>mask</strong> (<em>arr</em>) &#8211; mask of same dimension as im.imvec</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
 <li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to (fft_pad_factor * image size) in FFT</li>
 <li><strong>conv_func</strong> (<em>'str'</em>) &#8211; The convolving function for gridding; &#8216;gaussian&#8217;, &#8216;pill&#8217;,&#8217;cubic&#8217;</li>
 <li><strong>p_rad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The pixel radius for the convolving function</li>
@@ -1011,6 +1011,8 @@ Potentially this could reduce risk of non-closing errors.</p>
 </dl>
 <p class="last">return_type (str): data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</p>
 </dd>
+<dt>Returns:</dt>
+<dd>(Obsdata): a observation object with flagged data points removed</dd>
 </dl>
 </div></blockquote>
 </dd></dl>
@@ -1318,7 +1320,7 @@ and optionally baseline / stations</td>
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.obsdata_args">
 <code class="descname">obsdata_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.obsdata_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.obsdata_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>&#8220;Copy arguments for making a  new obsdata argument into a list and dictonary</p>
+<dd><p>&#8220;Copy arguments for making a  new Obsdata into a list and dictonary</p>
 </dd></dl>
 
 <dl class="method">
@@ -1365,7 +1367,7 @@ and optionally baseline / stations</td>
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_camp">
 <code class="descname">plot_camp</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>site4</em>, <em>vtype='vis'</em>, <em>ctype='camp'</em>, <em>camps=[]</em>, <em>force_recompute=False</em>, <em>debias=False</em>, <em>timetype=False</em>, <em>snrcut=0.0</em>, <em>axis=False</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>color=(0.11764705882352941</em>, <em>0.5647058823529412</em>, <em>1.0)</em>, <em>marker='o'</em>, <em>markersize=3</em>, <em>label=None</em>, <em>grid=True</em>, <em>ebar=True</em>, <em>axislabels=True</em>, <em>legend=False</em>, <em>show=True</em>, <em>export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_camp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_camp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot closure phase over time on a quadrange (1-2)(3-4)/(1-4)(2-3).</p>
+<dd><p>Plot closure amplitude over time on a quadrangle (1-2)(3-4)/(1-4)(2-3).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1412,7 +1414,7 @@ and optionally baseline / stations</td>
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.plot_cphase">
 <code class="descname">plot_cphase</code><span class="sig-paren">(</span><em>site1</em>, <em>site2</em>, <em>site3</em>, <em>vtype='vis'</em>, <em>cphases=[]</em>, <em>force_recompute=False</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>snrcut=0.0</em>, <em>axis=False</em>, <em>rangex=False</em>, <em>rangey=False</em>, <em>color=(0.11764705882352941</em>, <em>0.5647058823529412</em>, <em>1.0)</em>, <em>marker='o'</em>, <em>markersize=3</em>, <em>label=None</em>, <em>grid=True</em>, <em>ebar=True</em>, <em>axislabels=True</em>, <em>legend=False</em>, <em>show=True</em>, <em>export_pdf=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.plot_cphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.plot_cphase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot a field over time on a baseline site1-site2.</p>
+<dd><p>Plot a closure phase over time on a triangle site1-site2-site3.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1420,7 +1422,7 @@ and optionally baseline / stations</td>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 1 name</li>
 <li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 2 name</li>
-<li><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; y-axis field (from FIELDS)</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 3 name</li>
 <li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble closure phases
 (&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
 <li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; optionally pass in the prcomputed, time-sorted closure phases</li>
@@ -2049,17 +2051,23 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 
 <dl class="function">
 <dt id="ehtim.obsdata.merge_obs">
-<code class="descclassname">ehtim.obsdata.</code><code class="descname">merge_obs</code><span class="sig-paren">(</span><em>obs_List</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#merge_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.merge_obs" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.obsdata.</code><code class="descname">merge_obs</code><span class="sig-paren">(</span><em>obs_List</em>, <em>force_merge=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#merge_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.merge_obs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Merge a list of observations into a single observation file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>obs_List</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of split observation Obsdata objects.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obs_List</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of split observation Obsdata objects.</li>
+<li><strong>force_merge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; forces the observations to merge even if parameters are different</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">merged Obsdata object containing all scans in input list</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">merged Obsdata object containing all scans in input list</p>
+</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">mergeobs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">mergeobs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -2111,7 +2119,7 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

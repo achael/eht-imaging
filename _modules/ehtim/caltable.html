@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ehtim.caltable &mdash; ehtim 0.1.0 documentation</title>
+  <title>ehtim.caltable &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="../../index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="../../index.html"/>
         <link rel="up" title="Module code" href="../index.html"/> 
 
   
@@ -277,7 +277,8 @@
 <span class="sd">           Returns:</span>
 <span class="sd">               (Caltable): a copy of the Caltable object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span> 
+                                <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_caltable</span></div>
 
     <span class="k">def</span> <span class="nf">plot_dterms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clist</span><span class="o">=</span><span class="n">SCOLORS</span><span class="p">,</span><span class="n">rangex</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -568,13 +569,15 @@
 
 <div class="viewcode-block" id="Caltable.applycal"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.Caltable.applycal">[docs]</a>    <span class="k">def</span> <span class="nf">applycal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">extrapolate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
                        <span class="n">force_singlepol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy_closure_tables</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
         <span class="sd">&quot;&quot;&quot;Apply the calibration table to an observation.</span>
 
 <span class="sd">           Args:</span>
 <span class="sd">               obs (Obsdata): The observation  with data to be calibrated</span>
 <span class="sd">               interp (str): Interpolation method (&#39;linear&#39;,&#39;nearest&#39;,&#39;cubic&#39;)</span>
 <span class="sd">               extrapolate (bool): If True, points outside interpolation range will be extrapolated.</span>
-<span class="sd">               force_singlepol (str): If &#39;L&#39; or &#39;R&#39;, will set opposite polarization gains equal to chosen polarization</span>
+<span class="sd">               force_singlepol (str): If &#39;L&#39; or &#39;R&#39;, will set opposite polarization gains </span>
+<span class="sd">                                      equal to chosen polarization</span>
 
 <span class="sd">           Returns:</span>
 <span class="sd">               (Obsdata): the calibrated Obsdata object</span>
@@ -659,9 +662,10 @@
 
         <span class="c1">#calobs.data = np.array(datatable)</span>
         <span class="n">calobs</span> <span class="o">=</span> <span class="n">ehtim</span><span class="o">.</span><span class="n">obsdata</span><span class="o">.</span><span class="n">Obsdata</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">datatable</span><span class="p">),</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span><span class="p">,</span>
-                                       <span class="n">polrep</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">scantable</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span>
-                                       <span class="n">ampcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">phasecal</span><span class="p">,</span> <span class="n">opacitycal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">opacitycal</span><span class="p">,</span> 
-                                       <span class="n">dcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">dcal</span><span class="p">,</span> <span class="n">frcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">frcal</span><span class="p">,</span><span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+                                       <span class="n">polrep</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">scantable</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">scans</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> 
+                                       <span class="n">mjd</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">ampcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">ampcal</span><span class="p">,</span> <span class="n">phasecal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">phasecal</span><span class="p">,</span>
+                                       <span class="n">opacitycal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">opacitycal</span><span class="p">,</span> <span class="n">dcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">dcal</span><span class="p">,</span>
+                                       <span class="n">frcal</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">frcal</span><span class="p">,</span><span class="n">timetype</span><span class="o">=</span><span class="n">obs</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
         <span class="n">calobs</span> <span class="o">=</span> <span class="n">calobs</span><span class="o">.</span><span class="n">switch_polrep</span><span class="p">(</span><span class="n">orig_polrep</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">copy_closure_tables</span><span class="p">:</span>
@@ -747,7 +751,8 @@
             <span class="c1">#update tkeys every time</span>
             <span class="n">tkey1</span> <span class="o">=</span>  <span class="p">{</span><span class="n">tarr1</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;site&#39;</span><span class="p">]:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tarr1</span><span class="p">))}</span>
 
-        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">tarr1</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
+        <span class="n">new_caltable</span> <span class="o">=</span> <span class="n">Caltable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bw</span><span class="p">,</span> <span class="n">data1</span><span class="p">,</span> <span class="n">tarr1</span><span class="p">,</span> 
+                                <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">timetype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timetype</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">new_caltable</span></div>
 
@@ -828,7 +833,8 @@
         <span class="k">return</span> <span class="bp">self</span></div>
         
 
-<div class="viewcode-block" id="load_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.load_caltable">[docs]</a><span class="k">def</span> <span class="nf">load_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span> <span class="p">):</span>
+<div class="viewcode-block" id="load_caltable"><a class="viewcode-back" href="../../calibration.html#ehtim.caltable.load_caltable">[docs]</a><span class="k">def</span> <span class="nf">load_caltable</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">datadir</span><span class="p">,</span> <span class="n">sqrt_gains</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
     <span class="sd">&quot;&quot;&quot;Load apriori Caltable object from text files in the given directory</span>
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation object associated with the Caltable</span>
@@ -838,6 +844,7 @@
 <span class="sd">       Returns:</span>
 <span class="sd">           (Caltable): a caltable object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">tarr</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">tarr</span>
     <span class="n">array_filename</span> <span class="o">=</span> <span class="n">datadir</span> <span class="o">+</span> <span class="s1">&#39;/array.txt&#39;</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">array_filename</span><span class="p">):</span>
@@ -928,7 +935,9 @@
             <span class="n">rimag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">rscale</span><span class="p">))</span>
             <span class="n">lreal</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">lscale</span><span class="p">))</span>
             <span class="n">limag</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">lscale</span><span class="p">))</span>
-            <span class="n">outline</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rimag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">limag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="n">outline</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> 
+                      <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">rimag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> 
+                      <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lreal</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">limag</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="n">outfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outline</span><span class="p">)</span>
         <span class="n">outfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
@@ -966,7 +975,7 @@
 
 <span class="k">def</span> <span class="nf">relaxed_interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="k">try</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">x</span><span class="p">]);</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">y</span><span class="p">])</span><span class="c1">#allows to run on a single float number</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">x</span><span class="p">]);</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">y</span><span class="p">])</span> <span class="c1">#allows to run on a single float number</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1191,7 +1200,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

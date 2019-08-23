@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Plotting &mdash; ehtim 0.1.0 documentation</title>
+  <title>Plotting &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="index.html"/>
         <link rel="next" title="Scattering" href="scattering.html"/>
         <link rel="prev" title="Calibration" href="calibration.html"/> 
 
@@ -168,22 +168,15 @@
   <span class="target" id="module-plotting"></span><div class="section" id="plotting">
 <span id="id1"></span><h1>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h1>
 <span class="target" id="module-ehtim.plotting.summary_plots"></span><dl class="function">
-<dt id="ehtim.plotting.summary_plots.display_img">
-<code class="descclassname">ehtim.plotting.summary_plots.</code><code class="descname">display_img</code><span class="sig-paren">(</span><em>im</em>, <em>beamparams=None</em>, <em>scale='linear'</em>, <em>gamma=0.5</em>, <em>cbar_lims=False</em>, <em>has_cbar=True</em>, <em>has_title=True</em>, <em>cfun='afmhot'</em>, <em>axis=False</em>, <em>show=False</em>, <em>fontsize=22</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/summary_plots.html#display_img"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.summary_plots.display_img" title="Permalink to this definition">¶</a></dt>
-<dd><p>display the figure on a given axis
-cannot use im.display because  it makes a new figure</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="ehtim.plotting.summary_plots.imgsum">
-<code class="descclassname">ehtim.plotting.summary_plots.</code><code class="descname">imgsum</code><span class="sig-paren">(</span><em>im</em>, <em>obs</em>, <em>obs_uncal</em>, <em>outname</em>, <em>outdir='.'</em>, <em>title='imgsum'</em>, <em>commentstr=''</em>, <em>fontsize=22</em>, <em>cfun='afmhot'</em>, <em>snrcut=0.0</em>, <em>gainplots=True</em>, <em>ampplots=True</em>, <em>cphaseplots=True</em>, <em>campplots=True</em>, <em>ebar=True</em>, <em>debias=True</em>, <em>cp_uv_min=False</em>, <em>sysnoise=0</em>, <em>syscnoise=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/summary_plots.html#imgsum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.summary_plots.imgsum" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.plotting.summary_plots.</code><code class="descname">imgsum</code><span class="sig-paren">(</span><em>im_or_mov</em>, <em>obs</em>, <em>obs_uncal</em>, <em>outname</em>, <em>outdir='.'</em>, <em>title='imgsum'</em>, <em>commentstr=''</em>, <em>fontsize=22</em>, <em>cfun='afmhot'</em>, <em>snrcut=0.0</em>, <em>maxset=False</em>, <em>ttype='nfft'</em>, <em>gainplots=True</em>, <em>ampplots=True</em>, <em>cphaseplots=True</em>, <em>campplots=True</em>, <em>ebar=True</em>, <em>debias=True</em>, <em>cp_uv_min=False</em>, <em>force_extrapolate=True</em>, <em>sysnoise=0</em>, <em>syscnoise=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/summary_plots.html#imgsum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.summary_plots.imgsum" title="Permalink to this definition">¶</a></dt>
 <dd><p>Produce an image summary plot for an image and uvfits file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; an Image object</li>
+<li><strong>im_or_mov</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a><em> or </em><a class="reference internal" href="movie.html#ehtim.movie.Movie" title="ehtim.movie.Movie"><em>Movie</em></a>) &#8211; an Image object or Movie</li>
 <li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the self-calibrated Obsdata object</li>
 <li><strong>obs_uncal</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the original Obsdata object</li>
 <li><strong>outname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; output pdf file name</li>
@@ -192,6 +185,7 @@ cannot use im.display because  it makes a new figure</p>
 <li><strong>commentstr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; a comment for the top line of the pdf</li>
 <li><strong>fontsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the font size for text in the sheet</li>
 <li><strong>cfun</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; matplotlib color function</li>
+<li><strong>maxset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to use a maximal set of closure quantities</li>
 <li><strong>gainplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include gain plots or not</li>
 <li><strong>ampplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include amplitude consistency plots or not</li>
 <li><strong>cphaseplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include closure phase consistency plots or not</li>
@@ -202,6 +196,44 @@ cannot use im.display because  it makes a new figure</p>
 <li><strong>sysnoise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; percent systematic noise added in quadrature</li>
 <li><strong>syscnoise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; closure phase systematic noise in degrees added in quadrature</li>
 <li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) &#8211; a dictionary of snrcut values for each quantity</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
+<li><strong>force_extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, always extrapolate movie start/stop frames</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Returns:</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ehtim.plotting.summary_plots.imgsum_pol">
+<code class="descclassname">ehtim.plotting.summary_plots.</code><code class="descname">imgsum_pol</code><span class="sig-paren">(</span><em>im</em>, <em>obs</em>, <em>obs_uncal</em>, <em>outname</em>, <em>leakage_arr=False</em>, <em>nvec=False</em>, <em>outdir='.'</em>, <em>title='imgsum_pol'</em>, <em>commentstr=''</em>, <em>fontsize=22</em>, <em>cfun='afmhot'</em>, <em>snrcut=0.0</em>, <em>dtermplots=True</em>, <em>pplots=True</em>, <em>mplots=True</em>, <em>qplots=True</em>, <em>uplots=True</em>, <em>ebar=True</em>, <em>sysnoise=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/plotting/summary_plots.html#imgsum_pol"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.plotting.summary_plots.imgsum_pol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce a polarimetric image summary plot for an image and uvfits file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; an Image object</li>
+<li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the calibrated Obsdata object</li>
+<li><strong>obs_uncal</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; the original Obsdata object</li>
+<li><strong>outname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; output pdf file name</li>
+<li><strong>leakage_arr</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; array with calibrated d-terms</li>
+<li><strong>nvec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; number of polarimetric vectors to plot in  each direction</li>
+<li><strong>outdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; directory for output file</li>
+<li><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; the pdf file title</li>
+<li><strong>commentstr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; a comment for the top line of the pdf</li>
+<li><strong>fontsize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the font size for text in the sheet</li>
+<li><strong>cfun</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; matplotlib color function</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) &#8211; a dictionary of snrcut values for each quantity</li>
+<li><strong>dtermplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; plot the d-terms or not</li>
+<li><strong>mplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; plot the fractional polarizations or not</li>
+<li><strong>pplots</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; plot the P=RL polarization or not</li>
+<li><strong>mplots</strong> &#8211; plot the Q data or not</li>
+<li><strong>pplots</strong> &#8211; plot the U data or not</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; include error bars or not</li>
+<li><strong>sysnoise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; percent systematic noise added in quadrature</li>
 </ul>
 </td>
 </tr>
@@ -842,7 +874,7 @@ cannot use im.display because  it makes a new figure</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

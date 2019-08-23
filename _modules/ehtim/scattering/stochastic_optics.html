@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ehtim.scattering.stochastic_optics &mdash; ehtim 0.1.0 documentation</title>
+  <title>ehtim.scattering.stochastic_optics &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -715,8 +715,10 @@
 <span class="sd">               Scattered_Movie: Either a movie object or a list of images, depending on the flag Return_Image_List.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
 
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning!! assuming a constant frame duration, but Movie objects now support unequally spaced frames!&quot;</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">!=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span> <span class="ow">and</span> <span class="n">framedur_sec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;If scattering a list of images of static image, the framedur must be specified!&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;If scattering a list of images or static image, the framedur must be specified!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span> <span class="ow">and</span> <span class="n">N_frames</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
@@ -724,9 +726,14 @@
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="n">framedur_sec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">framedur_sec</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">framedur</span>
+
+            <span class="n">framedur_sec</span> <span class="o">=</span> <span class="p">(</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">3600</span>
+            <span class="c1">#framedur_sec = Unscattered_Movie.framedur</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Frame Duration (seconds):&quot;</span><span class="p">,</span><span class="n">framedur_sec</span><span class="p">)</span>
+
+        <span class="c1"># time list in hr</span>
+        <span class="n">tlist_hr</span> <span class="o">=</span> <span class="p">[</span><span class="n">framedur_sec</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">*</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
 
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">:</span>
             <span class="n">N</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">xdim</span>
@@ -784,12 +791,14 @@
         <span class="k">if</span> <span class="n">Epsilon_Screen</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">Epsilon_Screen</span> <span class="o">=</span> <span class="n">MakeEpsilonScreen</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
 
-        <span class="n">scattered_im_List</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">Epsilon_Screen</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">obs_frequency_Hz</span><span class="p">,</span> <span class="n">Vx_km_per_s</span> <span class="o">=</span> <span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span> <span class="o">=</span> <span class="n">Vy_km_per_s</span><span class="p">,</span> <span class="n">t_hr</span><span class="o">=</span><span class="n">framedur_sec</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">*</span><span class="n">j</span><span class="p">,</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="n">Linearized_Approximation</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="n">Force_Positivity</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
+        <span class="n">scattered_im_List</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">Epsilon_Screen</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">obs_frequency_Hz</span><span class="p">,</span> <span class="n">Vx_km_per_s</span> <span class="o">=</span> <span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span> <span class="o">=</span> <span class="n">Vy_km_per_s</span><span class="p">,</span> 
+                              <span class="n">time</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="n">Linearized_Approximation</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="n">Force_Positivity</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
 
         <span class="k">if</span> <span class="n">Return_Image_List</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">scattered_im_List</span>
 
-        <span class="n">Scattered_Movie</span> <span class="o">=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">(</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">],</span> <span class="n">framedur</span> <span class="o">=</span> <span class="n">framedur_sec</span><span class="p">,</span> <span class="n">psize</span> <span class="o">=</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span> <span class="o">=</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="o">=</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">rf</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="n">start_hr</span><span class="p">)</span>
+        <span class="n">Scattered_Movie</span> <span class="o">=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">(</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">],</span>
+                                       <span class="n">times</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">,</span> <span class="n">psize</span> <span class="o">=</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span> <span class="o">=</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="o">=</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">rf</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="n">start_hr</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">has_pol</span><span class="p">:</span>
             <span class="n">Scattered_Movie_Q</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">]</span>
@@ -985,7 +994,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

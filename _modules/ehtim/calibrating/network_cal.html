@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ehtim.calibrating.network_cal &mdash; ehtim 0.1.0 documentation</title>
+  <title>ehtim.calibrating.network_cal &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -210,7 +210,7 @@
 <span class="c1">###################################################################################################################################</span>
 <span class="c1">#Network-Calibration</span>
 <span class="c1">###################################################################################################################################</span>
-<div class="viewcode-block" id="network_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.network_cal.network_cal">[docs]</a><span class="k">def</span> <span class="nf">network_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">zbl_uvdist_max</span><span class="o">=</span><span class="n">ZBLCUTOFF</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span>
+<div class="viewcode-block" id="network_cal"><a class="viewcode-back" href="../../../calibration.html#ehtim.calibrating.network_cal.network_cal">[docs]</a><span class="k">def</span> <span class="nf">network_cal</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="o">=</span><span class="p">[],</span> <span class="n">zbl_uvdist_max</span><span class="o">=</span><span class="n">ZBLCUTOFF</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;amp&quot;</span><span class="p">,</span> <span class="n">minimizer_method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="s1">&#39;I&#39;</span><span class="p">,</span>
                 <span class="n">pad_amp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span> <span class="n">solution_interval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">scan_solutions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
                 <span class="n">caltable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">processes</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">show_solution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">msgtype</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">):</span>
 
@@ -218,11 +218,13 @@
 
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation to be calibrated</span>
-<span class="sd">           zbl (float): zero baseline flux in Jy</span>
+<span class="sd">           zbl (float or function): zero baseline flux in Jy. Can either pass a constant value or a function that</span>
+<span class="sd">                                    returns the zbl as a function of UT hour.</span>
 <span class="sd">           sites (list): list of sites to include in the network calibration. empty list calibrates all sites</span>
 
 <span class="sd">           zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines</span>
-<span class="sd">           method (str): chooses what to calibrate, &#39;amp&#39;, &#39;phase&#39;, or &#39;both&#39; </span>
+<span class="sd">           method (str): chooses what to calibrate, &#39;amp&#39;, &#39;phase&#39;, or &#39;both&#39;. </span>
+<span class="sd">                         &#39;amp&#39; is default because of degeneracies in the derived phases on inter-site baselines. </span>
 <span class="sd">           minimizer_method (str): Method for scipy.optimize.minimize (e.g., &#39;CG&#39;, &#39;BFGS&#39;, &#39;Nelder-Mead&#39;, etc.)</span>
 <span class="sd">           pol (str): which visibility to compute gains for</span>
 
@@ -289,12 +291,12 @@
     <span class="n">tstart</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">processes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># with multiprocessing</span>
         <span class="n">scans_cal</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">get_network_scan_cal</span><span class="p">,</span>
-                                             <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
-                                               <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">cluster_data</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> 
-                                               <span class="n">method</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span>
-                                               <span class="n">caltable</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span><span class="n">debias</span><span class="p">,</span><span class="n">msgtype</span><span class="p">]</span>
-                                              <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))</span>
-                                             <span class="p">])</span>
+                             <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">scans</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                               <span class="n">zbl</span><span class="p">,</span> <span class="n">sites</span><span class="p">,</span> <span class="n">cluster_data</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">polrep</span><span class="p">,</span> <span class="n">pol</span><span class="p">,</span> 
+                               <span class="n">method</span><span class="p">,</span> <span class="n">pad_amp</span><span class="p">,</span> <span class="n">gain_tol</span><span class="p">,</span>
+                               <span class="n">caltable</span><span class="p">,</span> <span class="n">show_solution</span><span class="p">,</span><span class="n">debias</span><span class="p">,</span><span class="n">msgtype</span><span class="p">]</span>
+                              <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">))</span>
+                             <span class="p">])</span>
     <span class="k">else</span><span class="p">:</span> <span class="c1"># without multiprocessing</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">)):</span>
             <span class="n">prog_msg</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">scans</span><span class="p">),</span> <span class="n">msgtype</span><span class="o">=</span><span class="n">msgtype</span><span class="p">,</span> <span class="n">nscan_last</span><span class="o">=</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -342,7 +344,8 @@
 
 <span class="sd">       Args:</span>
 <span class="sd">           obs (Obsdata): The observation to be calibrated</span>
-<span class="sd">           zbl (float): zero baseline flux in Jy</span>
+<span class="sd">           zbl (float or function): zero baseline flux in Jy. Can either pass a constant value or a function that</span>
+<span class="sd">                                    returns the zbl as a function of UT hour.</span>
 <span class="sd">           sites (list): list of sites to include in the network calibration. empty list calibrates all sites</span>
 <span class="sd">           clustered_sites (tuple): information  on clustered sites, returned by make_cluster_data function</span>
 
@@ -362,6 +365,12 @@
 <span class="sd">           (Obsdata): the calibrated scan, if caltable==False</span>
 <span class="sd">           (Caltable): the derived calibration table, if caltable==True</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># determine the zero-baseline flux of the scan</span>
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">zbl</span><span class="p">):</span>
+        <span class="n">zbl_scan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">zbl</span><span class="p">(</span><span class="n">scan</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">zbl_scan</span> <span class="o">=</span> <span class="n">zbl</span>
 
     <span class="c1"># clustered site information</span>
     <span class="n">allclusters</span> <span class="o">=</span> <span class="n">clustered_sites</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -474,7 +483,7 @@
         <span class="c1"># append the default values to g for missing points</span>
         <span class="c1"># and to v for the zero baseline points</span>
         <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
-        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">zbl</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">zbl_scan</span><span class="p">)</span>
 
         <span class="c1"># scan visibilities are either an intercluster visibility or the fixed zbl</span>
         <span class="n">v_scan</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">scan_keys</span><span class="p">]</span>
@@ -498,7 +507,7 @@
         <span class="c1"># prior on the gains</span>
         <span class="n">g_fracerr</span> <span class="o">=</span> <span class="n">gain_tol</span> 
         <span class="n">chisq_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">g</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">g_fracerr</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
-        <span class="n">chisq_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">/</span><span class="n">zbl</span><span class="p">)</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">chisq_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">/</span><span class="n">zbl_scan</span><span class="p">)</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">chisq</span> <span class="o">+</span> <span class="n">chisq_g</span> <span class="o">+</span> <span class="n">chisq_v</span>
     
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">g1_keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">g2_keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> 
@@ -524,7 +533,7 @@
 
 
     <span class="n">g_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g_fit</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
-    <span class="n">v_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_fit</span><span class="p">,</span> <span class="n">zbl</span><span class="p">)</span>
+    <span class="n">v_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v_fit</span><span class="p">,</span> <span class="n">zbl_scan</span><span class="p">)</span>
 
 
     <span class="c1"># Derive a calibration table or apply the solution to the scan</span>
@@ -661,7 +670,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

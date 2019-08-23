@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Calibration &mdash; ehtim 0.1.0 documentation</title>
+  <title>Calibration &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="index.html"/>
         <link rel="next" title="Plotting" href="plotting.html"/>
         <link rel="prev" title="Imager" href="imager.html"/> 
 
@@ -242,7 +242,8 @@
 <li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The observation  with data to be calibrated</li>
 <li><strong>interp</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Interpolation method (&#8216;linear&#8217;,&#8217;nearest&#8217;,&#8217;cubic&#8217;)</li>
 <li><strong>extrapolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, points outside interpolation range will be extrapolated.</li>
-<li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;L&#8217; or &#8216;R&#8217;, will set opposite polarization gains equal to chosen polarization</li>
+<li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;L&#8217; or &#8216;R&#8217;, will set opposite polarization gains
+equal to chosen polarization</li>
 </ul>
 </td>
 </tr>
@@ -487,14 +488,16 @@ For site gains that are low, the entire gain curve is rescaled to enforce a spec
 <li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; the image to be calibrated  to</li>
 <li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of sites to include in the self calibration. empty list calibrates all sites</li>
 <li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;</li>
-<li><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Method for scipy.optimize.minimize (e.g., &#8216;CG&#8217;, &#8216;BFGS&#8217;, &#8216;Nelder-Mead&#8217;, etc.)</li>
+<li><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Method for scipy.optimize.minimize (e.g., &#8216;CG&#8217;, &#8216;BFGS&#8217;)</li>
 <li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; which image polarization to self-calibrate visibilities to</li>
 <li><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; adds fractional uncertainty to amplitude sigmas in quadrature</li>
 <li><strong>gain_tol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; gains that exceed this value will be disfavored by the prior
-for asymmetric gain_tol for corrections below/above unity, pass a 2-element list</li>
-<li><strong>solution_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; solution interval in seconds; one gain is derived for each interval.
-If 0.0, a solution is determined for each unique time in the observation.</li>
-<li><strong>scan_solutions</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, determine one gain per site per scan (supersedes solution_interval)</li>
+for asymmetric gain_tol for corrections below/above unity,
+pass a 2-element list</li>
+<li><strong>solution_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; solution interval in seconds;
+If 0., determine solution for each unique time</li>
+<li><strong>scan_solutions</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, determine one gain per site per scan
+(supersedes solution_interval)</li>
 <li><strong>caltable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, returns a Caltable instead of an Obsdata</li>
 <li><strong>processes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; number of cores to use in multiprocessing</li>
 <li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; use FFT to produce visibilities. Else &#8220;direct&#8221; for DTFT</li>
@@ -557,7 +560,7 @@ pass a 2-element list</li>
 
 <span class="target" id="module-ehtim.calibrating.network_cal"></span><dl class="function">
 <dt id="ehtim.calibrating.network_cal.network_cal">
-<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='both'</em>, <em>minimizer_method='BFGS'</em>, <em>pol='I'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>solution_interval=0.0</em>, <em>scan_solutions=False</em>, <em>caltable=False</em>, <em>processes=-1</em>, <em>show_solution=False</em>, <em>debias=True</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">ehtim.calibrating.network_cal.</code><code class="descname">network_cal</code><span class="sig-paren">(</span><em>obs</em>, <em>zbl</em>, <em>sites=[]</em>, <em>zbl_uvdist_max=10000000.0</em>, <em>method='amp'</em>, <em>minimizer_method='BFGS'</em>, <em>pol='I'</em>, <em>pad_amp=0.0</em>, <em>gain_tol=0.2</em>, <em>solution_interval=0.0</em>, <em>scan_solutions=False</em>, <em>caltable=False</em>, <em>processes=-1</em>, <em>show_solution=False</em>, <em>debias=True</em>, <em>msgtype='bar'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/calibrating/network_cal.html#network_cal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.calibrating.network_cal.network_cal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Network-calibrate a dataset with zero baseline constraints.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -565,10 +568,12 @@ pass a 2-element list</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The observation to be calibrated</li>
-<li><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero baseline flux in Jy</li>
+<li><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em> or </em><em>function</em>) &#8211; zero baseline flux in Jy. Can either pass a constant value or a function that
+returns the zbl as a function of UT hour.</li>
 <li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of sites to include in the network calibration. empty list calibrates all sites</li>
 <li><strong>zbl_uvdist_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; considers all baselines of lambda-length less than this as zero baselines</li>
-<li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;</li>
+<li><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; chooses what to calibrate, &#8216;amp&#8217;, &#8216;phase&#8217;, or &#8216;both&#8217;.
+&#8216;amp&#8217; is default because of degeneracies in the derived phases on inter-site baselines.</li>
 <li><strong>minimizer_method</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Method for scipy.optimize.minimize (e.g., &#8216;CG&#8217;, &#8216;BFGS&#8217;, &#8216;Nelder-Mead&#8217;, etc.)</li>
 <li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; which visibility to compute gains for</li>
 <li><strong>pad_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; adds fractional uncertainty to amplitude sigmas in quadrature</li>
@@ -605,7 +610,8 @@ If 0.0, a solution is determined for each unique time in the observation.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>obs</strong> (<a class="reference internal" href="obsdata.html#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata"><em>Obsdata</em></a>) &#8211; The observation to be calibrated</li>
-<li><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero baseline flux in Jy</li>
+<li><strong>zbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a><em> or </em><em>function</em>) &#8211; zero baseline flux in Jy. Can either pass a constant value or a function that
+returns the zbl as a function of UT hour.</li>
 <li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of sites to include in the network calibration. empty list calibrates all sites</li>
 <li><strong>clustered_sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) &#8211; information  on clustered sites, returned by make_cluster_data function</li>
 <li><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;stokes&#8217; or &#8216;circ&#8217; to specify the  polarization products in scan</li>
@@ -677,7 +683,7 @@ If 0.0, a solution is determined for each unique time in the observation.</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

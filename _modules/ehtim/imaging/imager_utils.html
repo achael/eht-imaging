@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ehtim.imaging.imager_utils &mdash; ehtim 0.1.0 documentation</title>
+  <title>ehtim.imaging.imager_utils &mdash; ehtim 0.1.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="ehtim 0.1.0 documentation" href="../../../index.html"/>
+    <link rel="top" title="ehtim 0.1.1 documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -223,7 +223,7 @@
 <span class="n">STOP</span> <span class="o">=</span> <span class="mf">1.e-8</span> <span class="c1"># convergence criterion</span>
 
 <span class="n">DATATERMS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">,</span> <span class="s1">&#39;bs&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="s1">&#39;cphase&#39;</span><span class="p">,</span> <span class="s1">&#39;camp&#39;</span><span class="p">,</span> <span class="s1">&#39;logcamp&#39;</span><span class="p">,</span> <span class="s1">&#39;logamp&#39;</span><span class="p">]</span>
-<span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span><span class="s1">&#39;l1&#39;</span><span class="p">,</span> <span class="s1">&#39;lA&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;compact&#39;</span><span class="p">,</span> <span class="s1">&#39;compact2&#39;</span><span class="p">,</span><span class="s1">&#39;rgauss&#39;</span><span class="p">]</span>
+<span class="n">REGULARIZERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;tv&#39;</span><span class="p">,</span> <span class="s1">&#39;tv2&#39;</span><span class="p">,</span><span class="s1">&#39;l1w&#39;</span><span class="p">,</span> <span class="s1">&#39;lA&#39;</span><span class="p">,</span> <span class="s1">&#39;patch&#39;</span><span class="p">,</span> <span class="s1">&#39;simple&#39;</span><span class="p">,</span> <span class="s1">&#39;compact&#39;</span><span class="p">,</span> <span class="s1">&#39;compact2&#39;</span><span class="p">,</span><span class="s1">&#39;rgauss&#39;</span><span class="p">]</span>
 
 <span class="n">nit</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># global variable to track the iteration number in the plotting callback</span>
 
@@ -687,6 +687,8 @@
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">ssimple</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">norm_reg</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;l1&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sl1</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">norm_reg</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;l1w&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sl1w</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">norm_reg</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;lA&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">slA</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">beam_size</span><span class="p">,</span> <span class="n">alpha_A</span><span class="p">,</span> <span class="n">norm_reg</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;gs&quot;</span><span class="p">:</span>
@@ -739,6 +741,8 @@
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">ssimplegrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">norm_reg</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;l1&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sl1grad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">norm_reg</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;l1w&quot;</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">sl1wgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">norm_reg</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;lA&quot;</span><span class="p">:</span>
         <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">slAgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">nprior</span><span class="p">,</span> <span class="n">psize</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">beam_size</span><span class="p">,</span> <span class="n">alpha_A</span><span class="p">,</span> <span class="n">norm_reg</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s2">&quot;gs&quot;</span><span class="p">:</span>
@@ -1899,6 +1903,41 @@
     <span class="c1">#l1grad = -np.sign(imvec - priorvec)</span>
     <span class="n">l1grad</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">imvec</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">l1grad</span><span class="o">/</span><span class="n">norm</span>
+
+<span class="k">def</span> <span class="nf">sl1w</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Weighted L1 norm regularizer a la SMILI</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># should be ok? </span>
+        <span class="c1">#This is SMILI normalization</span>
+        <span class="c1">#norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">num</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">imvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">EP</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">priorvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">EP</span><span class="p">)</span> <span class="o">+</span> <span class="n">EP</span>
+
+    <span class="n">l1w</span> <span class="o">=</span>  <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">num</span><span class="o">/</span><span class="n">denom</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">l1w</span><span class="o">/</span><span class="n">norm</span>
+
+
+<span class="k">def</span> <span class="nf">sl1wgrad</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">priorvec</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">norm_reg</span><span class="o">=</span><span class="n">NORM_REGULARIZER</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Weighted L1 norm gradient</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">norm_reg</span><span class="p">:</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># should be ok? </span>
+        <span class="c1">#This is SMILI normalization</span>
+        <span class="c1">#norm = np.sum((np.sqrt(priorvec**2 + EP) + EP)/np.sqrt(priorvec**2 + EP))</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">num</span> <span class="o">=</span> <span class="n">imvec</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">imvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">EP</span><span class="p">)</span>
+    <span class="n">denom</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">priorvec</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">EP</span><span class="p">)</span> <span class="o">+</span> <span class="n">EP</span>
+
+    <span class="n">l1wgrad</span> <span class="o">=</span> <span class="o">-</span> <span class="n">num</span> <span class="o">/</span> <span class="n">denom</span>
+    <span class="k">return</span> <span class="n">l1wgrad</span><span class="o">/</span><span class="n">norm</span>
+
+
 
 <span class="k">def</span> <span class="nf">fA</span><span class="p">(</span><span class="n">imvec</span><span class="p">,</span> <span class="n">I_ref</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">alpha_A</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Function to take imvec to itself in the limit alpha_A -&gt; 0 and to a binary representation in the limit alpha_A -&gt; infinity</span>
@@ -3273,7 +3312,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.0',
+            VERSION:'0.1.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
