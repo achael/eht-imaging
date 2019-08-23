@@ -41,7 +41,7 @@ STOP = 1e-6 # convergence criterion
 EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
-REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss', 'hw']
+REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'l1w','lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss', 'hw']
 
 DATATERMS_POL = ['pvis','m','pbs']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv']
