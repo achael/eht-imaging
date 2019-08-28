@@ -25,6 +25,8 @@ from builtins import object
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.interpolate 
+import scipy.ndimage.filters as filt
 
 import ehtim.image
 import ehtim.obsdata
@@ -35,70 +37,115 @@ import ehtim.io.load
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
+
+
 ###########################################################################################################################################
 #Movie object
 ###########################################################################################################################################
 class Movie(object):
+
     """A polarimetric movie (in units of Jy/pixel).
 
        Attributes:
            pulse (function): The function convolved with the pixel values for continuous image
-    	   framedur (float): The frame duration in seconds
            psize (float): The pixel dimension in radians
            xdim (int): The number of pixels along the x dimension
            ydim (int): The number of pixels along the y dimension
            mjd (int): The integer MJD of the image
-           start_hr (float): The start UTC hour of the observation (default = -1.0, meaning it is inherited from the observation)
            source (str): The astrophysical source name
            ra (float): The source Right Ascension in fractional hours
            dec (float): The source declination in fractional degrees
            rf (float): The image frequency in Hz
-           frames (list): The list of frame vectors of stokes I values in Jy/pixel (each of len xdim*ydim)
-           qframes (list): The list of frame vectors of stokes Q values in Jy/pixel (each of len xdim*ydim)
-           uframes (list): The list of frame vectors of stokes U values in Jy/pixel (each of len xdim*ydim)
-           vframes (list): The list of frame vectors of stokes V values in Jy/pixel (each of len xdim*ydim)
+           
+           polrep (str): polarization representation, either 'stokes' or 'circ'
+           pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+                         (e.g. 'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next')
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+
+           _movdict (dict): The dictionary with the lists of frames
     """
 
-    def __init__(self, movie, framedur, psize, ra, dec, rf=RF_DEFAULT,
-                       polrep='stokes', pol_prim=None,
+    def __init__(self, frames, times, psize, ra, dec, 
+                       rf=RF_DEFAULT, polrep='stokes', pol_prim=None,
                        pulse=PULSE_DEFAULT, source=SOURCE_DEFAULT,
-                       mjd=MJD_DEFAULT, start_hr=0.0):
+                       mjd=MJD_DEFAULT, 
+                       bounds_error=BOUNDS_ERROR, interp=INTERP_DEFAULT):
 
         """A polarimetric image (in units of Jy/pixel).
 
            Args:
-               movie (list): The list of 2D frames, each is a Jy/pixel array
-    	       framedur (float): The frame duration in seconds
+               frames (list): The list of 2D frames; each is a Jy/pixel array
+    	       times (list): The list of frame time stamps in hours
                psize (float): The pixel dimension in radians
                ra (float): The source Right Ascension in fractional hours
                dec (float): The source declination in fractional degrees
                rf (float): The image frequency in Hz
+               
                polrep (str): polarization representation, either 'stokes' or 'circ'
                pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
                pulse (function): The function convolved with the pixel values for continuous image.
                source (str): The source name
                mjd (int): The integer MJD of the image
-               start_hr (float): The start time of image (UTC hours)
-
-           Returns:
+               interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+                             (e.g. 'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next')
+               bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+  
+         Returns:
                (Image): the Image object
         """
 
-        if len(movie[0].shape) != 2:
+        if len(frames[0].shape) != 2:
             raise Exception("frames must each be a 2D numpy array")
 
+        if len(frames) != len(times):
+            raise Exception("len(frames) != len(times) !")
+
+        if not (interp in ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next']):
+            raise Exception("'interp' must be a valid agrument for the 'kind' keyword in scipy.interpolate.interp1d")
+
+        self.times = times
+        start_hr = np.min(self.times)
+        self.mjd = int(mjd)
+        if start_hr > 24:
+            self.mjd += int((start_hr - start_hr % 24)/24)
+            self.start_hr = float(start_hr % 24)
+        else:
+            self.start_hr = start_hr
+        self.stop_hr =  np.max(self.times)
+        self.duration  = self.stop_hr -  self.start_hr
+
+        # frame shape parameters
+        self.nframes = len(frames)
+        self.polrep = polrep
+        self.pulse = pulse
+        self.psize = float(psize)
+        self.xdim = frames[0].shape[1]
+        self.ydim = frames[0].shape[0]
+
         #the list of frames
-        frames = [image.flatten() for image in movie]
+        frames = np.array([image.flatten() for image in frames])
+        self.interp = interp
+        self.bounds_error = bounds_error
+
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=interp, 
+                                         bounds_error=bounds_error, fill_value=fill_value)
+        
         if polrep=='stokes':
             if pol_prim is None: pol_prim = 'I'
             if pol_prim=='I':
                 self._movdict = {'I':frames,'Q':[],'U':[],'V':[]}
+                self._fundict = {'I':fun,'Q':None,'U':None,'V':None}
             elif pol_prim=='V':
                 self._movdict = {'I':[],'Q':[],'U':[],'V':frames}
+                self._fundict = {'I':None,'Q':None,'U':None,'V':fun}
             elif pol_prim=='Q':
                 self._movdict = {'I':[],'Q':frames,'U':[],'V':[]}
+                self._fundict = {'I':None,'Q':fun,'U':None,'V':None}
             elif pol_prim=='U':
                 self._movdict = {'I':[],'Q':[],'U':frames,'V':[]}
+                self._fundict = {'I':None,'Q':None,'U':frames,'V':None}
             else:
                 raise Exception("for polrep=='stokes', pol_prim must be 'I','Q','U', or 'V'!")
 
@@ -108,35 +155,22 @@ class Movie(object):
                 pol_prim = 'RR'
             if pol_prim=='RR':
                 self._movdict = {'RR':frames,'LL':[],'RL':[],'LR':[]}
+                self._fundict = {'RR':fun,'LL':None,'RL':None,'LR':None}
             elif pol_prim=='LL':
                 self._movdict = {'RR':[],'LL':frames,'RL':[],'LR':[]}
+                self._fundict = {'RR':None,'LL':fun,'RL':None,'LR':None}
             else:
                 raise Exception("for polrep=='circ', pol_prim must be 'RR' or 'LL'!")
 
         self.pol_prim =  pol_prim
 
-        self.nframes = len(self.frames)
-
-        self.framedur = float(framedur)
-        self.polrep = polrep
-        self.pulse = pulse
-        self.psize = float(psize)
-        self.xdim = movie[0].shape[1]
-        self.ydim = movie[0].shape[0]
 
         self.ra = float(ra)
         self.dec = float(dec)
         self.rf = float(rf)
         self.source = str(source)
-        self.mjd = int(mjd)
-        self.pa  = 0.0 # TODO: The pa needs to be properly implemented in the movie object (other functions call it though)
-        if start_hr > 24:
-            self.mjd += int((start_hr - start_hr % 24)/24)
-            self.start_hr = float(start_hr % 24)
-        else:
-            self.start_hr = start_hr
-
-
+        self.pa  = 0.0 # TODO: The pa needs to be properly implemented in the movie object 
+                       # TODO: What is this doing??
     @property
     def frames(self):
         frames = self._movdict[self.pol_prim]
@@ -148,7 +182,13 @@ class Movie(object):
             raise Exception("imvec size is not consistent with xdim*ydim!")
         #TODO -- more checks on consistency with the existing pol data???
 
+        frames = np.array(frames)
         self._movdict[self.pol_prim] =  frames
+
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp, 
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict[self.pol_prim] = fun
 
     @property
     def iframes(self):
@@ -166,7 +206,12 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['I'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['I'] = fun
 
     @property
     def qframes(self):
@@ -184,7 +229,12 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['Q'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['Q'] = fun
 
     @property
     def uframes(self):
@@ -193,6 +243,7 @@ class Movie(object):
             raise Exception("uframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
 
         frames = self._movdict['U']
+
         return frames
 
     @uframes.setter
@@ -202,7 +253,12 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['U'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['U'] = fun
 
     @property
     def vframes(self):
@@ -211,6 +267,7 @@ class Movie(object):
             raise Exception("vframes is not defined unless self.polrep=='stokes' -- try self.switch_polrep()")
 
         frames = self._movdict['V']
+
         return frames
 
     @vframes.setter
@@ -220,7 +277,13 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['V'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['V'] = fun
+
 
     @property
     def rrframes(self):
@@ -238,7 +301,13 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['RR'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['RR'] = fun
+
 
     @property
     def llframes(self):
@@ -256,7 +325,13 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['LL'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['LL'] = fun
+
 
     @property
     def rlvec(self):
@@ -274,7 +349,13 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['RL'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['RL'] = fun
+
 
     @property
     def lrvec(self):
@@ -292,7 +373,26 @@ class Movie(object):
             raise Exception("vec size is not consistent with xdim*ydim!")
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
+        frames  =  np.array(frames)
         self._movdict['LR'] =  frames
+        fill_value = (frames[0], frames[-1])
+        fun = scipy.interpolate.interp1d(self.times, frames.T, kind=self.interp,
+                                         bounds_error=self.bounds_error, fill_value=fill_value)
+        self._fundict['LR'] = fun
+
+    def movie_args(self):
+
+        """"Copy arguments for making a  new Movie into a list and dictonary
+        """
+
+        frames2D =  self.frames.reshape((self.nframes, self.ydim,self.xdim))
+        arglist = [frames2D, self.times, self.psize, self.ra,  self.dec]
+        argdict = {'rf': self.rf, 'polrep': self.polrep,  'pol_prim':self.pol_prim, 
+                   'pulse': self.pulse, 'source': self.source, 
+                   'mjd':self.mjd, 'interp':self.interp, 'bounds_error':self.bounds_error}
+
+        return (arglist, argdict)
+
 
     def copy(self):
 
@@ -301,24 +401,69 @@ class Movie(object):
            Args:
 
            Returns:
-               (Image): copy of the Image.
+               (Movie): copy of the Image.
         """
 
+        arglist, argdict = self.movie_args()
+
         # Make new  movie with primary polarization
-        newmov = Movie([imvec.reshape(self.ydim,self.xdim) for imvec in self.frames],
-                       self.framedur, self.psize, self.ra, self.dec,
-                       polrep=self.polrep, pol_prim=self.pol_prim, start_hr=self.start_hr,
-                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        newmov = Movie(*arglist, **argdict)
 
         # Copy over all polarization movies
         for pol in list(self._movdict.keys()):
             if pol==self.pol_prim: continue
             polframes = self._movdict[pol]
             if len(polframes):
-                newmov.add_pol_movie([polvec.reshape(self.ydim,self.xdim) for polvec in polframes], pol)
+                polframes = polframes.reshape((self.nframes, self.ydim, self.xdim))
+                newmov.add_pol_movie(polframes, pol)
 
         return newmov
 
+
+    def reset_interp(self, interp=None, bounds_error=None):
+
+        """Reset the movie interpolation function to e.g. change the interpolation type or to change the frames
+    
+           Args: 
+              interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+              bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+        """
+
+        if interp is None:
+            interp = self.interp
+        if bounds_error is None:
+            bounds_error = self.bounds_error
+
+        # Copy over all polarization movies
+        for pol in list(self._movdict.keys()):
+            polframes = self._movdict[pol]
+            if len(polframes):
+                fill_value = (polframes[0], polframes[-1])
+                fun = scipy.interpolate.interp1d(self.times, polframes.T, kind=interp, 
+                                                 fill_value=fill_value, bounds_error=bounds_error)
+                self._fundict[pol] = fun
+            else:
+                self._fundict[pol] = None
+
+        self.interp = interp
+        self.bounds_error = bounds_error
+        return
+
+    def offset_time(self, t_offset):
+        
+        """Offset the movie in time by t_offset
+
+           Args:
+               t_offset (float): offset time in hours          
+           Returns:
+               
+        """
+        mov = self.copy()
+        mov.start_hr += t_offset
+        mov.stop_hr += t_offset
+        mov.times += t_offset
+        mov.reset_interp(interp=mov.interp, bounds_error=mov.bounds_error)
+        return mov
 
     def add_pol_movie(self, movie, pol):
 
@@ -336,21 +481,76 @@ class Movie(object):
         if np.any(np.array([image.shape != (self.ydim, self.xdim) for image in movie])):
             raise Exception("add_pol_movie image shapes incompatible with primary image!")
         if not (pol in list(self._movdict.keys())):
-            raise Exception("for polrep==%s, pol in add_pol_movie must be in "%self.polrep + ",".join(list(self._movdict.keys())))
+            raise Exception("for polrep==%s, pol in add_pol_movie must be in " % 
+                           self.polrep + ",".join(list(self._movdict.keys())))
 
         if self.polrep=='stokes':
             if pol=='I': self.iframes = [image.flatten() for image in movie]
             elif pol=='Q': self.qframes = [image.flatten() for image in movie]
             elif pol=='U': self.uframes = [image.flatten() for image in movie]
             elif pol=='V': self.vframes = [image.flatten() for image in movie]
+
+            if len(self.iframes)>0:
+                fill_value = (iframes[0], iframes[-1])
+                ifun = scipy.interpolate.interp1d(self.times, self.iframes.T, kind=self.interp, 
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                ifun =  None
+            if len(self.vframes)>0:
+                fill_value = (vframes[0], vframes[-1])
+                vfun = scipy.interpolate.interp1d(self.times, self.vframes.T, kind=self.interp,
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                vfun =  None
+            if len(self.qframes)>0:
+                fill_value = (qframes[0], qframes[-1])
+                qfun = scipy.interpolate.interp1d(self.times, self.qframes.T, kind=self.interp,
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                qfun =  None
+            if len(self.uframes)>0:
+                fill_value = (uframes[0], uframes[-1])
+                ufun = scipy.interpolate.interp1d(self.times, self.uframes.T, kind=self.interp,
+                                                  fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                ufun =  None
+
             self._movdict = {'I':self.iframes,'Q':self.qframes,'U':self.uframes,'V':self.vframes}
+            self._fundict = {'I':ifun,'Q':qfun,'U':ufun,'V':vfun}
+
         elif self.polrep=='circ':
             if pol=='RR': self.rrframes = [image.flatten() for image in movie]
             elif pol=='LL': self.llframes = [image.flatten() for image in movie]
             elif pol=='RL': self.rlframes = [image.flatten() for image in movie]
             elif pol=='LR': self.lrframes = [image.flatten() for image in movie]
-            self._movdict = {'RR':self.rrframes,'LL':self.llframes,'RL':self.rlframes,'LR':self.lrframes}
 
+            if len(self.rrframes)>0:
+                fill_value = (rrframes[0], rrframes[-1])
+                rrfun = scipy.interpolate.interp1d(self.times, self.rrframes.T, kind=self.interp,
+                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                rrfun =  None
+            if len(self.llframes)>0:
+                fill_value = (llframes[0], llframes[-1])
+                llfun = scipy.interpolate.interp1d(self.times, self.llframes.T, kind=self.interp,
+                                                    fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                llfun =  None
+            if len(self.rlframes)>0:
+                fill_value = (rlframes[0], rlframes[-1])
+                rlfun = scipy.interpolate.interp1d(self.times, self.rlframes.T, kind=self.interp,
+                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                rlfun =  None
+            if len(self.lrframes)>0:
+                fill_value = (lrframes[0], lrframes[-1])
+                lrfun = scipy.interpolate.interp1d(self.times, self.lrframes.T, kind=self.interp,
+                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
+            else:
+                lrfun =  None
+
+            self._movdict = {'RR':self.rrframes,'LL':self.llframes,'RL':self.rlframes,'LR':self.lrframes}
+            self._fundict = {'RR':rrfun,'LL':llfun,'RL':rlfun,'LR':lrfun}
         return
 
     # TODO deprecated -- replace with generic add_pol_movie
@@ -387,7 +587,6 @@ class Movie(object):
 
         return
 
-
     def switch_polrep(self, polrep_out='stokes', pol_prim_out=None):
 
         """Return a new movie with the polarization representation changed
@@ -410,6 +609,7 @@ class Movie(object):
             return self.copy()
 
         # Assemble a dictionary of new polarization vectors
+        framedim = (self.nframes, self.ydim, self.xdim)
         if polrep_out=='stokes':
             if self.polrep=='stokes':
                 movdict = {'I':self.iframes,'Q':self.qframes,'U':self.uframes,'V':self.vframes}
@@ -418,15 +618,15 @@ class Movie(object):
                     iframes = []
                     vframes = []
                 else:
-                    iframes = [0.5*(self.rrframes[i] + self.llframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
-                    vframes = [0.5*(self.rrframes[i] - self.llframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    iframes = 0.5*(self.rrframes.reshape(framedim) + self.llframes.reshape(framedim))
+                    vframes = 0.5*(self.rrframes.reshape(framedim) - self.llframes.reshape(framedim))
 
                 if len(self.rlframes)==0 or len(self.lrframes)==0:
                     qframes = []
                     uframes = []
                 else:
-                    qframes = [np.real(0.5*(self.lrframes[i] + self.rlframes[i])).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
-                    uframes = [np.real(0.5j*(self.lrframes[i] - self.rlframes[i])).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    qframes = np.real(0.5*(self.lrframes.reshape(framedim) + self.rlframes.reshape(framedim)))
+                    uframes = np.real(0.5j*(self.lrframes.reshape(framedim) - self.rlframes.reshape(framedim)))
 
                 movdict = {'I':iframes,'Q':qframes,'U':uframes,'V':vframes}
 
@@ -438,15 +638,15 @@ class Movie(object):
                     rrframes = []
                     llframes = []
                 else:
-                    rrframes = [(self.iframes[i] + self.vframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
-                    llframes = [(self.iframes[i] - self.vframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    rrframes = (self.iframes.reshape(framedim) + self.vframes.reshape(framedim))
+                    llframes = (self.iframes.reshape(framedim) - self.vframes.reshape(framedim))
 
                 if len(self.qframes)==0 or len(self.uframes)==0:
                     rlframes = []
                     lrframes = []
                 else:
-                    rlframes = [(self.qframes[i] + 1j*self.uframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
-                    lrframes = [(self.qframes[i] - 1j*self.uframes[i]).reshape(self.ydim, self.xdim) for i in range(self.nframes)]
+                    rlframes = (self.qframes.reshape(framedim) + 1j*self.uframes.reshape(framedim))
+                    lrframes = (self.qframes.reshape(framedim) - 1j*self.uframes.reshape(framedim))
 
                 movdict = {'RR':rrframes,'LL':llframes,'RL':rlframes,'LR':lrframes}
 
@@ -456,17 +656,22 @@ class Movie(object):
             raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n"%(polrep_out,pol_prim_out) +
                             "output movie is not defined")
 
-        newmov = Movie(frames,
-                       self.framedur, self.psize, self.ra, self.dec,
-                       polrep=polrep_out, pol_prim=pol_prim_out, start_hr=self.start_hr,
-                       rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        # Make new  movie with primary polarization
+        arglist, argdict = self.movie_args()
+        arglist[0] = frames
+        argdict['polrep'] =  polrep_out
+        argdict['pol_prim'] = pol_prim_out
+        newmov = Movie(*arglist, **argdict)
 
         # Add in any other polarizations
         for pol in list(movdict.keys()):
             if pol==pol_prim_out: continue
             polframes = movdict[pol]
             if len(polframes):
-                newmov.add_pol_movie([polvec.reshape(self.ydim,self.xdim) for polvec in polframes], pol)
+                polframes = polframes.reshape((self.nframes, self.ydim, self.xdim))
+                newmov.add_pol_movie(polframes, pol)
+                #newmov.add_pol_movie([polvec.reshape(self.ydim,self.xdim) for polvec in polframes], pol)
 
         return newmov
 
@@ -511,18 +716,6 @@ class Movie(object):
 
         return mov
 
-    def frametimes(self):
-
-        """Return the list of movie frame times in hours
-
-           Args:
-
-           Returns:
-                (numpy.ndarray) : 1d array of movie frame times
-        """
-
-        return self.start_hr + np.arange(self.nframes)*self.framedur/3600.
-
 
     def fovx(self):
 
@@ -548,6 +741,7 @@ class Movie(object):
 
         return self.psize * self.ydim
 
+    @property
     def lightcurve(self):
 
         """Return the total flux over time of the image in Jy.
@@ -599,6 +793,54 @@ class Movie(object):
 
         return np.array(frac)
 
+    def get_image(self, time):
+        """Return an Image at time 
+
+           Args:
+               time (float): the time  in hours
+
+           Returns:
+               (Image): the Image object at the given time
+        """
+
+    
+
+        if (time<self.start_hr):
+            if not(self.bounds_error):
+                    pass
+                    #print ("time %f before movie start time %f" % (time, self.start_hr))
+                    #print ("returning constant frame 0! \n")
+            else:
+                raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
+
+        if (time>self.stop_hr):
+            if not(self.bounds_error):
+                    pass
+                    #print ("time %f after movie stop time %f" % (time, self.stop_hr))
+                    #print ("returning constant frame -1! \n")
+            else:
+                raise Exception("time %f must be in the range %f - %f"% (time, self.start_hr, self.stop_hr))
+
+       
+        # interpolate the imvec to the given time
+        imvec =  self._fundict[self.pol_prim](time)
+
+        # Make the primary image
+        imarr = imvec.reshape(self.ydim, self.xdim)
+        outim = ehtim.image.Image(imarr, self.psize, self.ra, self.dec, self.pa,
+                                  polrep=self.polrep, pol_prim=self.pol_prim, time=time,
+                                  rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        # Copy over the rest of the polarizations
+        for pol in list(self._movdict.keys()):
+            if pol==self.pol_prim: continue
+            polframes = self._movdict[pol]
+            if len(polframes):
+                polvec =  self._fundict[pol](time)
+                polarr = polvec.reshape(self.ydim, self.xdim).copy()
+                outim.add_pol_image(polarr, pol)
+
+        return outim
 
     def get_frame(self, n):
         """Return an Image of the nth frame
@@ -613,7 +855,7 @@ class Movie(object):
         if n<0 or n>=len(self.frames):
             raise Exception("n must be in the range 0 - %i"% self.nframes)
 
-        time = self.start_hr + n * self.framedur/3600
+        time = self.times[n]
 
         # Make the primary image
         imarr = self.frames[n].reshape(self.ydim, self.xdim)
@@ -671,6 +913,45 @@ class Movie(object):
 
         return outim
 
+    def blur_circ(self, fwhm_x, fwhm_t, fwhm_x_pol=0):
+        """Apply a Gaussian filter to a list of images.
+
+           Args:
+               fwhm_x (float): circular beam size for spatial blurring in radians
+               fwhm_t (float): temporal blurring in frames
+               fwhm_x_pol (float): circular beam size for Stokes Q,U,V spatial blurring in radians
+           Returns:
+               (Image): output image list
+        """
+
+        # Unpack the frames
+        frames = self.im_list()
+
+        # Blur Stokes I
+        sigma_x = fwhm_x / self.psize / (2. * np.sqrt(2. * np.log(2.)))
+        sigma_t = fwhm_t / (2. * np.sqrt(2. * np.log(2.)))
+        sigma_x_pol = fwhm_x_pol / self.psize / (2. * np.sqrt(2. * np.log(2.)))
+
+
+        arr = np.array([im.imvec.reshape(self.ydim, self.xdim) for im in frames])
+        arr = filt.gaussian_filter(arr, (sigma_t, sigma_x, sigma_x))
+
+        # Make a new blurred movie
+        arglist, argdict = self.movie_args()
+        arglist[0] = arr
+        movie_blur = Movie(*arglist, **argdict)
+
+        # Process the remaining polarizations
+        for pol in list(self._movdict.keys()):
+            if pol==self.pol_prim: continue
+            polframes = self._movdict[pol]
+
+            if len(polframes):
+                arr = np.array([imvec.reshape(self.ydim, self.xdim) for imvec in polframes])
+                arr = filt.gaussian_filter(arr, (sigma_t, sigma_x_pol, sigma_x_pol))    
+                movie_blur.add_pol_movie(arr, pol)    
+
+        return movie_blur
 
     def observe_same_nonoise(self, obs, sgrscat=False, ttype="nfft", fft_pad_factor=2, repeat=False):
         """Observe the movie on the same baselines as an existing observation object without adding noise.
@@ -699,17 +980,38 @@ class Movie(object):
         else:
             raise Exception("ttype=%s, options for ttype are 'direct', 'fast', 'nfft'"%ttype)
 
+        mjd0 = self.mjd
         mjdstart = float(self.mjd) + float(self.start_hr/24.0)
-        mjdend = mjdstart + (len(self.frames)*self.framedur)/86400.0
+        mjdend = mjdstart + float(self.stop_hr/24.0)
 
         # Get data
         obslist = obs.tlist()
 
         # times
-        obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+        #obsmjds = np.array([(np.floor(obs.mjd) + (obsdata[0]['time'])/24.0) for obsdata in obslist])
+        #if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
+        #    raise Exception("Some observation times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
 
-        if (not repeat) and ((obsmjds < mjdstart) + (obsmjds > mjdend)).any():
-            raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
+        obstimes = np.array([obsdata[0]['time'] for obsdata in obslist])
+
+        if (obstimes < self.start_hr).any():
+            if repeat:
+                print ("Some observation times before movie start time %f" % self.start_hr)
+                print ("Looping movie before start\n")
+            elif not(self.bounds_error):
+                print ("Some observation times before movie start time %f" % self.start_hr)
+                print ("bounds_error is  False:  using constant frame 0 before start_hr! \n")
+            else:
+                raise Exception("Some observation times before movie start time %f" % self.start_hr)
+        if (obstimes > self.stop_hr).any():
+            if repeat:
+                print ("Some observation times after movie stop time %f" % self.stop_hr)
+                print ("Looping movie after stop\n")
+            elif not(self.bounds_error):
+                print ("Some observation times after movie stop time %f" % self.stop_hr)
+                print ("bounds_error is  False:  using constant frame -1 after stop_hr! \n")
+            else:
+                raise Exception("Some observation times after movie stop time %f" % self.stop_hr)
 
         # Observe nearest frame
         obsdata_out = []
@@ -717,19 +1019,26 @@ class Movie(object):
             obsdata = obslist[i]
 
             # Frame number
-            mjd = obsmjds[i]
-            n = int(np.floor((mjd - mjdstart) * 86400. / self.framedur))
+            time = obsdata[0]['time']
 
-            if (n >= len(self.frames)):
-                if repeat: n = np.mod(n, len(self.frames))
-                else: raise Exception("Obs times outside of movie range of MJD %f - %f" % (mjdstart, mjdend))
-
+            if self.bounds_error:
+                if (time < self.start_hr or time > self.stop_hr):
+                    if repeat:
+                        time = self.start_hr + np.mod(time -  self.start_hr, self.duration)
+                    else: raise Exception("Obs time %f outside movie range %f--%f" % (time, self.start_hr, self.stop_hr))
 
             # Get the frame visibilities
             uv = recarr_to_ndarr(obsdata[['u','v']],'f8')
-            im = self.get_frame(n)
+            #im = self.get_frame(n)
+
+            try:
+                im = self.get_image(time)
+            except ValueError:
+                raise Exception("Interpolation error for time %f: movie range %f--%f" % (time, self.start_hr, self.stop_hr))
+
             data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
-                                         ttype=ttype, fft_pad_factor=fft_pad_factor, zero_empty_pol=True)
+                                         ttype=ttype, fft_pad_factor=fft_pad_factor,
+                                         zero_empty_pol=True)
 
             # Put visibilities into the obsdata
             if obs.polrep=='stokes':
@@ -754,7 +1063,8 @@ class Movie(object):
                 obsdata_out = obsdata
 
         obsdata_out = np.array(obsdata_out, dtype=obs.poltype)
-        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, self.rf, obs.bw, obsdata_out, obs.tarr,
+        obs_no_noise = ehtim.obsdata.Obsdata(self.ra, self.dec, self.rf, obs.bw, 
+                               obsdata_out, obs.tarr,
                                source=self.source, mjd=np.floor(obs.mjd), polrep=obs.polrep,
                                ampcal=True, phasecal=True, opacitycal=True, dcal=True, frcal=True,
                                timetype=obs.timetype, scantable=obs.scans)
@@ -804,7 +1114,7 @@ class Movie(object):
 
         """
 
-        print("Producing clean visibilities from movie . . . ")
+        #print("Producing clean visibilities from movie . . . ")
         obs = self.observe_same_nonoise(obs_in, sgrscat=sgrscat, ttype=ttype, fft_pad_factor=fft_pad_factor, repeat=repeat)
 
         # Jones Matrix Corruption & Calibration
@@ -994,7 +1304,7 @@ class Movie(object):
             movie.start_hr = vex.sched[0]['start_hr']
 
         movie_start = float(movie.mjd) + movie.start_hr/24.0
-        movie_end   = movie_start + len(movie.frames)*movie.framedur/86400.
+        movie_end = float(movie.mjd) + movie.stop_hr/24.0
 
         print("Movie MJD Range: ",movie_start,movie_end)
 
@@ -1068,6 +1378,18 @@ class Movie(object):
         """
 
         ehtim.io.save.save_mov_fits(self, fname)
+        return
+
+    def save_hdf5(self, fname):
+        """Save the Movie data to a single hdf5 file.
+
+           Args:
+              fname (str): output file name
+
+           Returns:
+        """
+
+        ehtim.io.save.save_mov_hdf5(self, fname)
         return
 
     def export_mp4(self, out='movie.mp4', fps=10, dpi=120,
@@ -1164,7 +1486,7 @@ class Movie(object):
             plt_im.set_data(im_data(n))
 
             if label_time:
-                time = self.frametimes()[n]
+                time = self.times[n]
                 time_str = ("%02d:%02d:%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
                 fig.suptitle(time_str)
 
@@ -1174,18 +1496,157 @@ class Movie(object):
         writer = animation.writers['ffmpeg'](fps=fps, bitrate=1e6)
         ani.save(out,writer=writer,dpi=dpi)
 
-
 ##################################################################################################
 # Movie creation functions
 ##################################################################################################
-def merge_im_list(imlist, framedur=-1):
+def export_multipanel_mp4(input_list, out='movie.mp4', start_hr=None, stop_hr=None, nframes=100, 
+                            fov=None, npix=None,
+                            nrows=1, fps=10, dpi=120, verbose=False, titles = None,
+                            panel_size=4.0, common_scale=False, scale='linear', label_type='scale',
+                            has_cbar=False, **kwargs):
+
+    """Export a movie comparing multiple movies in a grid.
+
+       Args:
+            input_list (list): The  list of  input Movies or Images
+            out (string): The output filename
+            start_hr (float): The start time in hours. If None, defaults to first start time
+            end_hr (float): The end time in hours. If None, defaults to last start time
+            nframes (int): The number of frames in the output movie
+            fov (float): If specified, use this field of view for all panels
+            npix (int): If specified, use this linear pixel dimension for all panels
+            nrows (int): Number of rows in movie
+            fps (int): Frames per second
+            titles (list): List of panel titles for input_list
+            panel_size (float): Size of individual panels (inches)
+        
+    """
+    import matplotlib
+    matplotlib.use('agg')
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+
+    if start_hr is None:
+        try:
+            start_hr = np.min([x.start_hr for x in input_list if hasattr(x,'start_hr')])    
+        except:
+            raise Exception("no movies in input_list!")
+
+    if stop_hr is None:
+        try:
+            stop_hr = np.max([x.stop_hr for x in input_list if hasattr(x,'stop_hr')])    
+        except:
+            raise Exception("no movies in input_list!")
+    
+    print("%s will have %i frames in the  range %f-%f hr"%(out,nframes,start_hr,stop_hr))
+ 
+    ncols = int(np.ceil(len(input_list)/nrows))
+    suptitle_space = 0.6#inches
+    w = panel_size*ncols
+    h = panel_size*nrows + suptitle_space
+    tgap = suptitle_space / h
+    bgap = .1
+    rgap = .1
+    lgap = .1
+    subw = (1-lgap-rgap)/ncols
+    subh = (1-tgap-bgap)/nrows
+    print("Rows: " +str(nrows))
+    print("Cols: " +str(ncols))
+
+    fig = plt.figure(figsize=(w,h))
+    ax_all = [[] for j in range(nrows)]
+    for y in range(nrows):
+        for x in range(ncols):
+            ax = fig.add_axes([lgap+subw*x, bgap+subh*(nrows-y-1),subw,subh])
+            ax_all[y].append(ax)
+
+    times =  np.linspace(start_hr, stop_hr, nframes)
+    hr_step = times[1]-times[0]
+    mjd_step = hr_step/24.
+    #mjd_step = (im_List_Set[0][0].mjd - im_List_Set[0][-1].mjd)/len(im_List_Set[0])
+
+    im_List_Set = [[x.get_image(time) if hasattr(x,'get_image') else x.copy() for time in times]
+                   for x in input_list]
+    
+    if fov and npix:
+        im_List_Set = [[x.regrid_image(fov,npix) for x in y] for y in im_List_Set]
+    else:
+        print('not rescaling images to common fov and npix!')
+
+    maxi   = [np.max([im.imvec for im in im_List_Set[j]]) for j in range(len(im_List_Set))]
+    if common_scale:
+        maxi = np.max(maxi) + 0.0*maxi
+
+    i = 0
+    for y in range(nrows):
+        for x in range(ncols):
+            if i >= len(im_List_Set):
+                ax_all[y][x].set_visible(False)
+            else:
+                kwargs.get('ttype','nfft')
+                if (y == nrows-1 and x == 0) or fov is None:
+                    label_type_cur = label_type
+                else:
+                    label_type_cur = 'none'
+
+                im_List_Set[i][0].display(axis=ax_all[y][x],scale=scale,label_type=label_type_cur,has_cbar=has_cbar,**kwargs)
+                if y == nrows-1 and x == 0:
+                    plt.xlabel('Relative RA ($\mu$as)')
+                    plt.ylabel('Relative Dec ($\mu$as)')
+                else:
+                    plt.xlabel('')
+                    plt.ylabel('')
+                if not titles:
+                    ax_all[y][x].set_title('')
+                else:
+                    ax_all[y][x].set_title(titles[i])
+            i = i+1
+
+#    fig.suptitle('X')
+#    fig.set_size_inches([panel_size*ncols,panel_size*nrows+0.5]) # Leave extra space for suptitle
+#    plt.tight_layout()
+
+    def im_data(i, n):
+        if scale == 'linear':
+            return im_List_Set[i][n].imvec.reshape((im_List_Set[i][n].ydim,im_List_Set[i][n].xdim))
+        else:
+            return np.log(im_List_Set[i][n].imvec.reshape((im_List_Set[i][n].ydim,im_List_Set[i][n].xdim)) + 1e-20)
+
+    def update_img(n):
+        if verbose:
+            print ("processing frame {0} of {1}".format(n, len(im_List_Set[0])))
+        i = 0
+        for y in range(nrows):
+            for x in range(ncols):
+                ax_all[y][x].images[0].set_data(im_data(i, n))
+                i=i+1
+                if i >= len(im_List_Set):
+                    break
+
+        if mjd_step > 0.1:
+            fig.suptitle('MJD: ' + str(im_List_Set[0][n].mjd), verticalalignment = verticalalignment)
+        else:
+            time = im_List_Set[0][n].time
+            time_str = ("%d:%02d.%02d" % (int(time), (time*60) % 60, (time*3600) % 60))
+            fig.suptitle(time_str)
+
+        return
+
+    ani = animation.FuncAnimation(fig,update_img,len(im_List_Set[0]),interval=1e3/fps)
+    writer = animation.writers['ffmpeg'](fps=fps, bitrate=1e6)
+    ani.save(out,writer=writer,dpi=dpi)
+
+def merge_im_list(imlist, framedur=-1, interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
     """Merge a list of image objects into a movie object.
 
        Args:
            imlist (list): list of Image objects
            framedur (float): duration of a movie frame in seconds
-
-       Returns:
+                             use to override times in the individual movies 
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
+       
+        Returns:
            (Movie): a Movie object assembled from the images
     """
     framelist = []
@@ -1213,6 +1674,7 @@ def merge_im_list(imlist, framedur=-1):
             mjd0 = im.mjd
             hour0 = im.time
             pulse = im.pulse
+            times = [hour0]
         else:
             if (im.polrep!=polrep0):
                 raise Exception("polrep of image %i != polrep of image 0!" % i)
@@ -1236,6 +1698,7 @@ def merge_im_list(imlist, framedur=-1):
             hour = im.time
             if im.mjd > mjd0:
                 hour += 24*(im.mjd - mjd0)
+            times.append(hour)
 
         imarr = im.imvec.reshape(ydim0, xdim0)
         framelist.append(imarr)
@@ -1250,87 +1713,96 @@ def merge_im_list(imlist, framedur=-1):
                 if movdict[pol]:
                     raise Exception("all frames in merge_im_list must have the same pol layout: error in  frame %i"%i)
 
-    if framedur == -1:
-        framedur = ((hour - hour0)/float(nframes))*3600.0
+    # assume equispaced with a given framedur instead of reading the individual image times
+    if framedur != -1:
+        framedur_hr = framedur/3600.
+        tstart = hour0
+        tstop = hour0 + framedur_hr*nframes  
+        times = np.linspace(tstart, tstop, nframes)
+
+    elif len(set(times))<len(framelist):
+        raise Exception("image times have duplicates!")
 
     # Make new  movie with primary polarization
-    newmov = Movie(framelist,
-                   framedur, psize0, ra0, dec0,
-                   polrep=polrep0, pol_prim=pol_prim0, start_hr=hour0,
+    newmov = Movie(framelist, times,
+                   psize0, ra0, dec0, interp=interp, bounds_error=bounds_error,
+                   polrep=polrep0, pol_prim=pol_prim0,
                    rf=rf0, source=src0, mjd=mjd0, pulse=pulse)
+
 
     # Copy over all polarization movies
     for pol in list(movdict.keys()):
         if pol==newmov.pol_prim: continue
         polframes = movdict[pol]
         if len(polframes):
+            polframes = polframes.reshape((newmov.nframes, newmov.ydim, newmov.xdim))
             newmov.add_pol_movie(polframes, pol)
 
     return newmov
 
-
-
-def load_hdf5(file_name, framedur_sec=-1, psize=-1, ra=17.761122472222223, dec=-28.992189444444445, rf=230e9, source='SgrA',
-              pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+def load_hdf5(file_name, pulse=PULSE_DEFAULT, interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
 
     """Read in a movie from an hdf5 file and create a Movie object.
 
        Args:
            file_name (str): The name of the hdf5 file.
-           framedur_sec (float): The frame duration in seconds (default=-1, corresponding to framedur tahen from file header)
-           psize (float): Pixel size in radian, (default=-1, corresponding to framedur taken from file header)
-           ra (float): The movie right ascension
-           dec (float): The movie declination
-           rf (float): The movie frequency
-           source (str) : The source name
            pulse (function): The function convolved with the pixel values for continuous image
-           polrep (str): polarization representation, either 'stokes' or 'circ'
-           pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
-           zero_pol (bool): If True, loads any missing polarizations as zeros
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
 
        Returns:
            Movie: a Movie object
     """
 
-    return ehtim.io.load.load_movie_hdf5(file_name, framedur_sec=framedur_sec, psize=psize, ra=ra, dec=dec, rf=rf, source=source,
-                                         pulse=pulse, polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+    return ehtim.io.load.load_movie_hdf5(file_name, pulse=pulse, interp=interp, bounds_error=bounds_error)
 
 
-def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+def load_txt(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
+             polrep='stokes', pol_prim=None,  zero_pol=True, 
+             interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
+
     """Read in a movie from text files and create a Movie object.
 
        Args:
            basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
            nframes (int): The total number of frames
-           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           framedur (float): The frame duration in seconds (default = -1, framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
-
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
        Returns:
            Movie: a Movie object
     """
 
     return ehtim.io.load.load_movie_txt(basename, nframes, framedur=framedur, pulse=pulse,
-                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+                                        polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol,
+                                        interp=interp, bounds_error=bounds_error)
 
 
-def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, polrep='stokes', pol_prim=None,  zero_pol=True):
+def load_fits(basename, nframes, framedur=-1, pulse=PULSE_DEFAULT, 
+              polrep='stokes', pol_prim=None,  zero_pol=True, 
+              interp=INTERP_DEFAULT, bounds_error=BOUNDS_ERROR):
+
     """Read in a movie from fits files and create a Movie object.
 
        Args:
            basename (str): The base name of individual movie frames. Files should have names basename + 00001, etc.
            nframes (int): The total number of frames
-           framedur (float): The frame duration in seconds (default = -1, corresponding to framedur taken from file headers)
+           framedur (float): The frame duration in seconds (default = -1, framedur taken from file headers)
            pulse (function): The function convolved with the pixel values for continuous image
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
            zero_pol (bool): If True, loads any missing polarizations as zeros
+           interp (str): Interpolation method, input to scipy.interpolate.interp1d kind keyword 
+           bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
 
        Returns:
            Movie: a Movie object
     """
 
     return ehtim.io.load.load_movie_fits(basename, nframes, framedur=framedur, pulse=pulse,
-                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol)
+                                         polrep=polrep, pol_prim=pol_prim, zero_pol=zero_pol, 
+                                         interp=interp, bounds_error=bounds_error)

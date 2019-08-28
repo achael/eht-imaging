@@ -25,6 +25,8 @@ import string
 import astropy.io.fits as fits
 import datetime
 import os
+import h5py
+import sys
 
 import ehtim.io.writeData
 import ehtim.io.oifits
@@ -174,6 +176,66 @@ def save_im_fits(im, fname, mjd=False, time=False):
 # Movie IO
 ##################################################################################################
 
+def save_mov_hdf5(mov, fname, mjd=False):
+    """Save movie data to an hdf5 file.
+
+       Args:
+            fname (str): basename of output fits file
+            mjd (int): MJD of saved movie
+
+       Returns:
+    """
+
+    # TODO: Currently only supports one polarization!
+    with h5py.File(fname, 'w') as file:
+
+
+#        if sys.version_info > (3,0):
+#            dt  =  h5py.special_dtype(vlen=str)
+#        else:
+#            dt = dtype=h5py.special_dtype(vlen=unicode))
+
+        #dt = dtype=h5py.special_dtype(vlen=bytes))
+        head = file.create_dataset('header', (0,), dtype="S10")
+
+        if mjd==False: 
+            mjd=mov.mjd
+
+#        head.attrs['mjd'] = str(mjd)
+#        head.attrs['psize'] = str(mov.psize)
+#        head.attrs['source'] = str(mov.source)
+#        head.attrs['ra'] = str(mov.ra)
+#        head.attrs['dec'] = str(mov.dec)
+#        head.attrs['rf'] = str(mov.rf)
+#        head.attrs['polrep'] = str(mov.polrep)
+#        head.attrs['pol_prim'] = str(mov.pol_prim)
+
+        head.attrs['mjd'] = np.string_(str(mjd))
+        head.attrs['psize'] = np.string_(str(mov.psize))
+        head.attrs['source'] = np.string_(str(mov.source))
+        head.attrs['ra'] = np.string_(str(mov.ra))
+        head.attrs['dec'] = np.string_(str(mov.dec))
+        head.attrs['rf'] = np.string_(str(mov.rf))
+        head.attrs['polrep'] = np.string_(str(mov.polrep))
+        head.attrs['pol_prim'] = np.string_(str(mov.pol_prim))
+
+        name = 'times'
+        times = mov.times
+        dset = file.create_dataset(name, data=times, dtype='f8')
+
+        name = mov.pol_prim
+        frames = mov.frames.reshape((mov.nframes, mov.ydim, mov.xdim))
+        dset = file.create_dataset(name, data=frames, dtype='f8')
+        
+        for pol in list(mov._movdict.keys()):
+            if pol==mov.pol_prim: 
+                continue
+            polframes = mov._movdict[pol]
+            if len(polframes):
+                polframes = polframes.reshape((mov.nframes, mov.ydim, mov.xdim))
+                dset = file.create_dataset(pol, data=polframes, dtype='f8')
+    return 
+
 def save_mov_fits(mov, fname, mjd=False):
     """Save movie data to series of fits files.
 
@@ -187,7 +249,7 @@ def save_mov_fits(mov, fname, mjd=False):
     if mjd==False: mjd=mov.mjd
 
     for i in range(mov.nframes):
-        time_frame = mov.start_hr + i*mov.framedur/3600.
+        time_frame = mov.times[i]
         fname_frame = fname + "%05d" % i
         print ('saving file '+fname_frame)
         frame_im = mov.get_frame(i)
@@ -208,7 +270,7 @@ def save_mov_txt(mov, fname, mjd=False):
     if mjd==False: mjd=mov.mjd
 
     for i in range(mov.nframes):
-        time_frame = mov.start_hr + i*mov.framedur/3600.
+        time_frame = mov.times[i]
         fname_frame = fname + "%05d" % i
         print ('saving file '+fname_frame)
         frame_im = mov.get_frame(i)

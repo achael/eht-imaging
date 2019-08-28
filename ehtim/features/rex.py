@@ -52,14 +52,14 @@ EP=1.e-16
 BIG = 1./EP
 
 IMSIZE=250*eh.RADPERUAS # FOV of resampled image (muas)
-#NPIX = 256             # pixels in resampled image
-NPIX = 512              # pixels in resampled image
+NPIX = 256             # pixels in resampled image
+#NPIX = 512              # pixels in resampled image
 
 RMAX = 50               # maximum radius in every profile slice (muas) 
 INNERTHRESH = 5         # radius threshold for averaging inside ring (muas)
 
 RPRIOR_MIN = 5.   # minimum radius for search (muas)
-RPRIOR_MAX = 50.  # maximum radius for search (muas)
+RPRIOR_MAX = 60.  # maximum radius for search (muas)
 NRAYS_SEARCH = 25 # number of angular rays in search profiles
 NRS_SEARCH = 50   # number of radial points in search profiles
 THRESH = 0.05     # thresholding level for the images in the search
@@ -67,10 +67,10 @@ BLUR_VALUE_MIN=2  # blur to this value for initial centroid search (uas)
 FOVP_SEARCH = 0.1 # fractional FOV around image center for brute force search
 NSEARCH = 10      # number of points in each dimension for brute force search 
 
-#NRAYS = 360       # number of angular rays in final profile
-#NRS = 100         # number of radial points in final profile
-NRAYS = 720       # number of angular rays in final profile
-NRS = 200         # number of radial points in final profile
+NRAYS = 360       # number of angular rays in final profile
+NRS = 100         # number of radial points in final profile
+#NRAYS = 720       # number of angular rays in final profile
+#NRS = 200         # number of radial points in final profile
 
 NORMFLUX = 0.6    # normalized image flux for outputted profiles (Jy)
 
@@ -492,7 +492,7 @@ class Profiles(object):
     def plot_profs(self, colors=colors,save_png=False):
         plt.figure()
         plt.xlabel("distance from center ($\mu$as)")
-        plt.ylabel("T_{\rm b}")
+        plt.ylabel("$T_{\rm b}$")
         plt.ylim([0,1])
         plt.xlim([-10,60])
         plt.title('All Profiles')

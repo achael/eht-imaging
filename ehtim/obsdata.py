@@ -38,6 +38,7 @@ import ehtim.image
 import ehtim.io.save
 import ehtim.io.load
 import ehtim.observing.obs_simulate as simobs
+import  time as tt
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
@@ -187,7 +188,7 @@ class Obsdata(object):
 
     def obsdata_args(self):
 
-        """"Copy arguments for making a  new obsdata argument into a list and dictonary
+        """"Copy arguments for making a  new Obsdata into a list and dictonary
         """
 
         arglist = [self.ra, self.dec, self.rf, self.bw,  self.data, self.tarr]
@@ -922,16 +923,16 @@ class Obsdata(object):
 
         return splitlist
 
-    def chisq(self, im, dtype='vis', pol='I', ttype='nfft', mask=[], **kwargs):
+    def chisq(self, im_or_mov, dtype='vis', pol='I', ttype='nfft', mask=[], **kwargs):
 
         """Give the reduced chi^2 of the observation for the specified image and datatype.
 
            Args:
-                im (Image): image to test chi^2
+                im_or_mov (Image or Movie): image or movie object on which to test chi^2
                 dtype (str): data type of chi^2 (e.g., 'vis', 'amp', 'bs', 'cphase')
                 pol (str): polarization type ('I', 'Q', 'U', 'V', 'LL', 'RR', 'LR', or 'RL'
                 mask (arr): mask of same dimension as im.imvec
-                ttype (str): if "fast" or "nfft" or "direct" 
+                ttype (str): "fast" or "nfft" or "direct" 
                 fft_pad_factor (float): zero pad the image to (fft_pad_factor * image size) in FFT
                 conv_func ('str'):  The convolving function for gridding; 'gaussian', 'pill','cubic'
                 p_rad (int): The pixel radius for the convolving function 
@@ -949,23 +950,60 @@ class Obsdata(object):
            Returns:
                 (float): image chi^2
         """
-
-        # TODO -- should import this at top, but the circular dependencies create a mess...
         if dtype not in  ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'm']:
             raise Exception("%s is not a supported dterms!" % dtype)
 
+        # TODO -- should import this at top, but the circular dependencies create a mess...
         import ehtim.imaging.imager_utils as iu
-        if pol not in im._imdict.keys():
-            raise Exception(pol + ' is not in the current image.' + 
-                                  ' Consider changing the polarization basis of the image.')
 
-        (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
+        # Movie -- weighted sum of frame chi^2
+        if hasattr(im_or_mov, 'get_image'):
+            mov = im_or_mov
+            obs_list =  self.split_obs()
 
-        imvec = im._imdict[pol]
-        if len(mask)>0 and np.any(np.invert(mask)):
-            imvec = imvec[mask]
+            chisq_list =  []
+            num_list = []
+            for ii, obs in enumerate(obs_list):
 
-        chisq = iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
+                #t1 = tt.time()
+                im = mov.get_image(obs.data[0]['time']) # get image at the observation time
+                #t2 =  tt.time()
+                if pol not in im._imdict.keys():
+                    raise Exception(pol + ' is not in the current image.' + 
+                                          ' Consider changing the polarization basis of the image.')
+
+                try:
+                    (data, sigma, A) = iu.chisqdata(obs, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
+                    #t3 = tt.time()
+                except IndexError: # not enough data for the current dtype to form closure phases/amplitudes
+                    continue
+
+                imvec = im._imdict[pol]
+                if len(mask)>0 and np.any(np.invert(mask)):
+                    imvec = imvec[mask]
+
+                #print(ii,'/',len(obs_list),' ' , len(data), t2-t1, t3-t1)
+                chisq_list.append(iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask))
+                num_list.append(len(data))
+
+            #print(chisq_list)
+            #print(num_list)
+            chisq =  np.sum(np.array(num_list) * np.array(chisq_list)) / np.sum(num_list)
+            
+        # Image -- single chi^2
+        else:
+            im = im_or_mov
+            if pol not in im._imdict.keys():
+                raise Exception(pol + ' is not in the current image.' + 
+                                      ' Consider changing the polarization basis of the image.')
+
+            (data, sigma, A) = iu.chisqdata(self, im, mask, dtype, pol=pol, ttype=ttype, **kwargs)
+
+            imvec = im._imdict[pol]
+            if len(mask)>0 and np.any(np.invert(mask)):
+                imvec = imvec[mask]
+
+            chisq = iu.chisq(imvec, A, data, sigma, dtype, ttype=ttype, mask=mask)
 
         return chisq
 
@@ -2555,9 +2593,9 @@ class Obsdata(object):
         tt = 1
         for tdata in tlist:
 
-            sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % 
-                             (vtype, count, tt, len(tlist)))
-            sys.stdout.flush()
+            #sys.stdout.write('\rGetting bispectra:: type %s, count %s, scan %i/%i ' % 
+            #                 (vtype, count, tt, len(tlist)))
+            #sys.stdout.flush()
 
             tt += 1
 
@@ -2710,7 +2748,7 @@ class Obsdata(object):
         if mode == 'all':
             out = np.array(cps)
 
-        print("\n")
+#        print("\n")
         return out
 
     def bispectra_tri(self, site1, site2, site3, snrcut=0.,
@@ -2997,9 +3035,9 @@ class Obsdata(object):
         tt = 1
         for tdata in tlist:
 
-            sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % 
-                             (vtype, ctype, count, tt, len(tlist)))
-            sys.stdout.flush()
+            #sys.stdout.write('\rGetting closure amps:: type %s %s , count %s, scan %i/%i' % 
+            #                 (vtype, ctype, count, tt, len(tlist)))
+            #sys.stdout.flush()
             tt += 1
 
             time = tdata[0]['time']
@@ -3075,7 +3113,7 @@ class Obsdata(object):
 
         if mode=='all':
             out = np.array(cas)
-        print("\n")
+#        print("\n")
         return out
 
     def camp_quad(self, site1, site2, site3, site4, snrcut=0., 
@@ -3597,7 +3635,7 @@ class Obsdata(object):
         x.set_ylim(rangey)
 
         if axislabels:
-            x.set_xlabel(self.timetype + ' (hr)')
+            x.set_xlabel(timetype + ' (hr)')
             try:
                 x.set_ylabel(FIELD_LABELS[field])
             except:
@@ -3930,42 +3968,73 @@ class Obsdata(object):
 # Observation creation functions
 ##################################################################################################
 
-def merge_obs(obs_List):
+def merge_obs(obs_List, force_merge=False):
 
     """Merge a list of observations into a single observation file.
 
        Args:
            obs_List (list): list of split observation Obsdata objects.
+           force_merge (bool): forces the observations to merge even if parameters are different
 
        Returns:
            mergeobs (Obsdata): merged Obsdata object containing all scans in input list
     """
 
     if (len(set([obs.polrep for obs in obs_List])) > 1):
-        raise Exception("All observations must have the same polarization representaiton !")
+        raise Exception("All observations must have the same polarization representation !")
         return
 
-    if (len(set([obs.ra for obs in obs_List])) > 1 or
-        len(set([obs.dec for obs in obs_List])) > 1 or
-        len(set([obs.rf for obs in obs_List])) > 1 or
-        len(set([obs.bw for obs in obs_List])) > 1 or
-        len(set([obs.source for obs in obs_List])) > 1 or
-        len(set([np.floor(obs.mjd) for obs in obs_List])) > 1):
-
-        raise Exception("All observations must have the same parameters!")
+    if np.any([obs.timetype == 'GMST' for obs in obs_List]):
+        raise Exception("merge_obs only works for observations with obs.timetype='UTC'!")
         return
 
-    # The important things to merge are the mjd, the data, and the list of telescopes
+    if not force_merge:
+        if (len(set([obs.ra for obs in obs_List])) > 1 or
+            len(set([obs.dec for obs in obs_List])) > 1 or
+            len(set([obs.rf for obs in obs_List])) > 1 or
+            len(set([obs.bw for obs in obs_List])) > 1 or
+            len(set([obs.source for obs in obs_List])) > 1):
+            #or  len(set([np.floor(obs.mjd) for obs in obs_List])) > 1):
+
+            raise Exception("All observations must have the same parameters!")
+            return
+
+    # the reference observation is the one with the minimum mjd
+    obs_idx = np.argmin([obs.mjd for obs in obs_List])
+    obs_ref = obs_List[obs_idx]
+
+    # re-reference times to new mjd 
+    # must be in UTC!
+    mjd_ref = obs_ref.mjd
+    for obs in obs_List:
+        mjd_offset = obs.mjd - mjd_ref
+        obs.data['time'] += mjd_offset*24
+        if not(obs.scans is None or obs.scans==[]):
+            obs.scans += mjd_offset*24
+
+    # merge the data
     data_merge = np.hstack([obs.data for obs in obs_List])
 
-    scan_merge = []
+    # merge the scan list
+    scan_merge = None
     for obs in obs_List:
-        if not (scan_merge is None):
+        if (obs.scans is None or obs.scans==[]):
+            continue
+        if (scan_merge is None or scan_merge == []):
+            scan_merge = [obs.scans]
+        else:
             scan_merge.append(obs.scans)
-    scan_merge = np.hstack(scan_merge)
+
+    if not (scan_merge is None  or scan_merge == []):
+        scan_merge = np.vstack(scan_merge)
+        _idxsort = np.argsort(scan_merge[:,0])
+        scan_merge = scan_merge[_idxsort]
+
+    # merge the list of telescopes
     tarr_merge = np.unique(np.concatenate([obs.tarr for obs in obs_List]))
 
-    arglist, argdict = obs_List[0].obsdata_args()
+    
+    arglist, argdict = obs_ref.obsdata_args()
     arglist[DATPOS] = data_merge
     arglist[TARRPOS] = tarr_merge 
     argdict['scantable'] = scan_merge
