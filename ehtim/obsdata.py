@@ -1108,14 +1108,14 @@ class Obsdata(object):
 
         return  out
 
-    def avg_coherent(self, inttime, scan_avg=False):
+    def avg_coherent(self, inttime, scan_avg=False, moving=False):
 
         """Coherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
                 inttime (float): coherent integration time in seconds
                 scan_avg (bool): if True, average over scans in self.scans instead of intime
-
+                moving (bool): averaging with moving window (inttime interpreted as boxcar window width in seconds)
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
@@ -1128,7 +1128,10 @@ class Obsdata(object):
             print('No averaging done!')
             return self.copy()
 
-        vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',
+        if moving:
+            vis_avg = coh_moving_avg_vis(self,dt=inttime,return_type='rec')
+        else:
+            vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',
                               err_type='predicted',scan_avg=scan_avg)
 
         arglist, argdict = self.obsdata_args()
