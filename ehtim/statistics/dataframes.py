@@ -425,6 +425,68 @@ def make_cphase_df(obs,band='unknown',polarization='unknown',mode='all',count='m
     df['source'] = sour
     return df
 
+def make_cphase_diag_df(obs,vtype='vis',band='unknown',polarization='unknown',count='min',round_s=0.1,snrcut=0.,uv_min=False):
+
+    """generate DataFrame of diagonalized closure phases
+
+    Args: 
+        obs: ObsData object
+        round_s: accuracy of datetime object in seconds
+
+    Returns:
+        df: diagonalized closure phase data in DataFrame format
+    """
+
+    data=obs.c_phases_diag(vtype=vtype,count=count,snrcut=snrcut,uv_min=uv_min)
+    sour=obs.source
+
+    tarr = []
+    dcparr = []
+    dcperrarr = []
+    triangle_arr = []
+    u_arr = []
+    v_arr = []
+    tform_arr = []
+    for d in data:
+        tarr.append(list(d[0]['time']))
+        dcparr.append(list(d[0]['cphase']))
+        dcperrarr.append(list(d[0]['sigmacp']))
+
+        triarr = []
+        u = []
+        v = []
+        for ant in d[1]:
+            triarr.append(ant[0][0]+'-'+ant[1][0]+'-'+ant[2][0])
+        for iu in d[2]:
+            u.append((iu[0][0],iu[1][0],iu[2][0]))
+        for iv in d[3]:
+            v.append((iv[0][0],iv[1][0],iv[2][0]))
+
+        for i in range(len(d[0])):
+            triangle_arr.append(triarr)
+            u_arr.append(u)
+            v_arr.append(v)
+            tform_arr.append(list(d[4].view('f8')))
+
+    df = pd.DataFrame()
+    df['time'] = np.concatenate(tarr)
+    df['cphase'] = np.concatenate(dcparr)
+    df['sigmacp'] = np.concatenate(dcperrarr)
+    df['triangles'] = triangle_arr
+    df['u'] = u_arr
+    df['v'] = v_arr
+    df['tform_matrix'] = tform_arr
+
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obs.mjd + df['fmjd']
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] = list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polarization
+    df['band'] = band
+    df['source'] = sour
+    return df
+
 def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='unknown',mode='all',count='max',round_s=0.1,snrcut=0.):
 
     """generate DataFrame of closure amplitudes
@@ -450,6 +512,68 @@ def make_camp_df(obs,ctype='logcamp',debias=False,band='unknown',polarization='u
     df['band'] = band
     df['source'] = sour
     df['catype'] = ctype
+    return df
+
+def make_logcamp_diag_df(obs,debias=True,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0.):
+
+    """generate DataFrame of closure amplitudes
+
+    Args: 
+        obs: ObsData object
+        round_s: accuracy of datetime object in seconds
+
+    Returns:
+        df: closure amplitude data in DataFrame format
+    """
+
+    data = obs.c_log_amplitudes_diag(mode=mode,count=count,debias=debias,snrcut=snrcut)
+    sour=obs.source
+
+    tarr = []
+    dlcaarr = []
+    dlcaerrarr = []
+    quadrangle_arr = []
+    u_arr = []
+    v_arr = []
+    tform_arr = []
+    for d in data:
+        tarr.append(list(d[0]['time']))
+        dlcaarr.append(list(d[0]['camp']))
+        dlcaerrarr.append(list(d[0]['sigmaca']))
+
+        quadarr = []
+        u = []
+        v = []
+        for ant in d[1]:
+            quadarr.append(ant[0][0]+'-'+ant[1][0]+'-'+ant[2][0]+'-'+ant[3][0])
+        for iu in d[2]:
+            u.append((iu[0][0],iu[1][0],iu[2][0],iu[3][0]))
+        for iv in d[3]:
+            v.append((iv[0][0],iv[1][0],iv[2][0],iv[3][0]))
+
+        for i in range(len(d[0])):
+            quadrangle_arr.append(quadarr)
+            u_arr.append(u)
+            v_arr.append(v)
+            tform_arr.append(list(d[4].view('f8')))
+
+    df = pd.DataFrame()
+    df['time'] = np.concatenate(tarr)
+    df['camp'] = np.concatenate(dlcaarr)
+    df['sigmaca'] = np.concatenate(dlcaerrarr)
+    df['quadrangles'] = quadrangle_arr
+    df['u'] = u_arr
+    df['v'] = v_arr
+    df['tform_matrix'] = tform_arr
+
+    df['fmjd'] = df['time']/24.
+    df['mjd'] = obs.mjd + df['fmjd']
+    df['datetime'] = Time(df['mjd'], format='mjd').datetime
+    df['datetime'] = list(map(lambda x: round_time(x,round_s=round_s),df['datetime']))
+    df['jd'] = Time(df['mjd'], format='mjd').jd
+    df['polarization'] = polarization
+    df['band'] = band
+    df['source'] = sour
     return df
 
 def make_bsp_df(obs,band='unknown',polarization='unknown',mode='all',count='min',round_s=0.1,snrcut=0., uv_min=False):
@@ -641,26 +765,32 @@ def df_to_rec(df,product_type):
 
     Args:
         df: DataFrame to convert
-        product_type: vis, cphase, camp
+        product_type: vis, cphase, camp, amp, bispec, cphase_diag, logcamp_diag
     """
     if product_type=='cphase':
-         out= df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
-         return np.array(out,dtype=DTCPHASE)
+        out= df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','cphase','sigmacp']].to_records(index=False)
+        return np.array(out,dtype=DTCPHASE)
     elif product_type=='camp':
-         out=  df[['time','t1','t2','t3','t4','u1','v1','u2','v2','u3','v3','u4','v4','camp','sigmaca']].to_records(index=False)
-         return np.array(out,dtype=DTCAMP)
+        out=  df[['time','t1','t2','t3','t4','u1','v1','u2','v2','u3','v3','u4','v4','camp','sigmaca']].to_records(index=False)
+        return np.array(out,dtype=DTCAMP)
     elif product_type=='vis':
-         out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
-         return np.array(out,dtype=DTPOL_STOKES)
+        out=  df[['time','tint','t1','t2','tau1','tau2','u','v','vis','qvis','uvis','vvis','sigma','qsigma','usigma','vsigma']].to_records(index=False)
+        return np.array(out,dtype=DTPOL_STOKES)
     elif product_type=='vis_circ':
-         out=  df[['time','tint','t1','t2','tau1','tau2','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma']].to_records(index=False)
-         return np.array(out,dtype=DTPOL_CIRC)
+        out=  df[['time','tint','t1','t2','tau1','tau2','u','v','rrvis','llvis','rlvis','lrvis','rrsigma','llsigma','rlsigma','lrsigma']].to_records(index=False)
+        return np.array(out,dtype=DTPOL_CIRC)
     elif product_type=='amp':
-         out=  df[['time','tint','t1','t2','u','v','amp','sigma']].to_records(index=False)
-         return np.array(out,dtype=DTAMP)
+        out=  df[['time','tint','t1','t2','u','v','amp','sigma']].to_records(index=False)
+        return np.array(out,dtype=DTAMP)
     elif product_type=='bispec':
-         out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
-         return np.array(out,dtype=DTBIS)
+        out=  df[['time','t1','t2','t3','u1','v1','u2','v2','u3','v3','bispec','sigmab']].to_records(index=False)
+        return np.array(out,dtype=DTBIS)
+    elif product_type=='cphase_diag':
+        out= df[['time','cphase','sigmacp','triangles','u','v','tform_matrix']].to_records(index=False)
+        return np.array(out,dtype=DTCPHASEDIAG)
+    elif product_type=='logcamp_diag':
+        out= df[['time','camp','sigmaca','quadrangles','u','v','tform_matrix']].to_records(index=False)
+        return np.array(out,dtype=DTLOGCAMPDIAG)
 
 
 def round_time(t,round_s=0.1):
