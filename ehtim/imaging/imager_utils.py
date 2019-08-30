@@ -1285,15 +1285,19 @@ def chisq_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
     log_clamp_diag = np.concatenate(log_clamp_diag)
     sigma = np.concatenate(sigma)
 
-    A4_diag = A[0]
+    A4 = A[0]
     tform_mats = A[1]
 
+    im_info, sampler_info_list, gridder_info_list = A4
+    vis_arr = fft_imvec(imvec, A4[0])
+    log_clamp_samples = np.log(sampler(vis_arr, sampler_info_list, sample_type='camp'))
+
+    count = 0
     log_clamp_diag_samples = []
-    for iA, A4 in enumerate(A4_diag):
-        im_info, sampler_info_list, gridder_info_list = A4
-        vis_arr = fft_imvec(imvec, A4[0])
-        log_clamp_samples = np.log(sampler(vis_arr, sampler_info_list, sample_type='camp'))
-        log_clamp_diag_samples.append(np.dot(tform_mats[iA],log_clamp_samples))
+    for tform_mat in tform_mats:
+        log_clamp_samples_here = log_clamp_samples[count:count+len(tform_mat)]
+        log_clamp_diag_samples.append(np.dot(tform_mat,log_clamp_samples_here))
+        count += len(tform_mat)
     log_clamp_diag_samples = np.concatenate(log_clamp_diag_samples)
 
     chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / (len(log_clamp_diag))
@@ -1305,43 +1309,49 @@ def chisqgrad_logcamp_diag_fft(imvec, A, log_clamp_diag, sigma):
     """The gradient of the diagonalized log closure amplitude chi-squared from fft
     """
 
-    A4_diag = A[0]
+    log_clamp_diag = np.concatenate(log_clamp_diag)
+    sigma = np.concatenate(sigma)
+
+    A4 = A[0]
     tform_mats = A[1]
 
-    deriv = np.zeros_like(imvec)
-    for iA, A4 in enumerate(A4_diag):
+    im_info, sampler_info_list, gridder_info_list = A4
+    vis_arr = fft_imvec(imvec, A4[0])
 
-        im_info, sampler_info_list, gridder_info_list = A4
-        vis_arr = fft_imvec(imvec, A4[0])
+    # sampled visibility and closure amplitudes
+    v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
+    v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
+    v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
+    v4 = sampler(vis_arr, [sampler_info_list[3]], sample_type="vis")
+    log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
 
-        # sampled visibility and closure amplitudes
-        v1 = sampler(vis_arr, [sampler_info_list[0]], sample_type="vis")
-        v2 = sampler(vis_arr, [sampler_info_list[1]], sample_type="vis")
-        v3 = sampler(vis_arr, [sampler_info_list[2]], sample_type="vis")
-        v4 = sampler(vis_arr, [sampler_info_list[3]], sample_type="vis")
-        log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
-        log_clamp_diag_samples = np.dot(tform_mats[iA],log_clamp_samples)
+    # gradient vec stuff
+    count = 0
+    pref = np.zeros_like(log_clamp_samples)
+    for tform_mat in tform_mats:
 
-        log_clamp_diag_measured = log_clamp_diag[iA]
-        log_clamp_diag_sigma = sigma[iA]
+        log_clamp_diag_samples = np.dot(tform_mat,log_clamp_samples[count:count+len(tform_mat)])
+        log_clamp_diag_measured = log_clamp_diag[count:count+len(tform_mat)]
+        log_clamp_diag_sigma = sigma[count:count+len(tform_mat)]
 
         for j in range(len(log_clamp_diag_measured)):
+            pref[count:count+len(tform_mat)] += -2.0 * tform_mat[j,:] * (log_clamp_diag_measured[j] - log_clamp_diag_samples[j])/(log_clamp_diag_sigma[j]**2)
 
-            pref = -2.0 * tform_mats[iA][j,:] * (log_clamp_diag_measured[j] - log_clamp_diag_samples[j])/(log_clamp_diag_sigma[j]**2)
-            pt1 = pref / v1.conj()* sampler_info_list[0].pulsefac.conj()
-            pt2 = pref / v2.conj()* sampler_info_list[1].pulsefac.conj()
-            pt3 = -pref / v3.conj()* sampler_info_list[2].pulsefac.conj()
-            pt4 = -pref / v4.conj()* sampler_info_list[3].pulsefac.conj()
+        count += len(tform_mat)
 
-            # Setup and perform the inverse FFT
-            wdiff = gridder([pt1,pt2,pt3,pt4], gridder_info_list)
-            grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
-            grad_arr = grad_arr * (im_info.npad * im_info.npad)
+    pt1 = pref / v1.conj()* sampler_info_list[0].pulsefac.conj()
+    pt2 = pref / v2.conj()* sampler_info_list[1].pulsefac.conj()
+    pt3 = -pref / v3.conj()* sampler_info_list[2].pulsefac.conj()
+    pt4 = -pref / v4.conj()* sampler_info_list[3].pulsefac.conj()
 
-            # extract relevant cells and flatten
-            deriv += np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten())
+    # Setup and perform the inverse FFT
+    wdiff = gridder([pt1,pt2,pt3,pt4], gridder_info_list)
+    grad_arr = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(wdiff)))
+    grad_arr = grad_arr * (im_info.npad * im_info.npad)
 
-    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+    # extract relevant cells and flatten
+    deriv = np.real(grad_arr[im_info.padvalx1:-im_info.padvalx2,im_info.padvaly1:-im_info.padvaly2].flatten())
+    deriv *= 1.0/np.float(len(log_clamp_diag))
 
     return deriv
 
@@ -1652,7 +1662,6 @@ def chisqgrad_cphase_nfft(imvec, A, clphase, sigma):
 
     out = out1 + out2 + out3
     return out
-
 
 def chisq_cphase_diag_nfft(imvec, A, clphase_diag, sigma):
     """Diagonalized closure phases (normalized) chi-squared from nfft
@@ -2009,50 +2018,52 @@ def chisq_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     log_clamp_diag = np.concatenate(log_clamp_diag)
     sigma = np.concatenate(sigma)
 
-    A4_diag = A[0]
+    A4 = A[0]
     tform_mats = A[1]
 
+    #get nfft objects
+    nfft_info1 = A4[0]
+    plan1 = nfft_info1.plan
+    pulsefac1 = nfft_info1.pulsefac
+
+    nfft_info2 = A4[1]
+    plan2 = nfft_info2.plan
+    pulsefac2 = nfft_info2.pulsefac
+
+    nfft_info3 = A4[2]
+    plan3 = nfft_info3.plan
+    pulsefac3 = nfft_info3.pulsefac
+
+    nfft_info4 = A4[3]
+    plan4 = nfft_info4.plan
+    pulsefac4 = nfft_info4.pulsefac
+
+    #compute uniform --> nonuniform transforms
+    plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+    plan1.trafo()
+    samples1 = plan1.f.copy()*pulsefac1
+
+    plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+    plan2.trafo()
+    samples2 = plan2.f.copy()*pulsefac2
+
+    plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+    plan3.trafo()
+    samples3 = plan3.f.copy()*pulsefac3
+
+    plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim,nfft_info4.xdim)).T
+    plan4.trafo()
+    samples4 = plan4.f.copy()*pulsefac4
+
+    log_clamp_samples = (np.log(np.abs(samples1)) + np.log(np.abs(samples2))
+                        - np.log(np.abs(samples3)) - np.log(np.abs(samples4)))
+
+    count = 0
     log_clamp_diag_samples = []
-    for iA, A4 in enumerate(A4_diag):
-
-        #get nfft objects
-        nfft_info1 = A4[0]
-        plan1 = nfft_info1.plan
-        pulsefac1 = nfft_info1.pulsefac
-
-        nfft_info2 = A4[1]
-        plan2 = nfft_info2.plan
-        pulsefac2 = nfft_info2.pulsefac
-
-        nfft_info3 = A4[2]
-        plan3 = nfft_info3.plan
-        pulsefac3 = nfft_info3.pulsefac
-
-        nfft_info4 = A4[3]
-        plan4 = nfft_info4.plan
-        pulsefac4 = nfft_info4.pulsefac
-
-        #compute uniform --> nonuniform transforms
-        plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
-        plan1.trafo()
-        samples1 = plan1.f.copy()*pulsefac1
-
-        plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
-        plan2.trafo()
-        samples2 = plan2.f.copy()*pulsefac2
-
-        plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
-        plan3.trafo()
-        samples3 = plan3.f.copy()*pulsefac3
-
-        plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim,nfft_info4.xdim)).T
-        plan4.trafo()
-        samples4 = plan4.f.copy()*pulsefac4
-
-        log_clamp_samples = (np.log(np.abs(samples1)) + np.log(np.abs(samples2))
-                            - np.log(np.abs(samples3)) - np.log(np.abs(samples4)))
-
-        log_clamp_diag_samples.append(np.dot(tform_mats[iA],log_clamp_samples))
+    for tform_mat in tform_mats:
+        log_clamp_samples_here = log_clamp_samples[count:count+len(tform_mat)]
+        log_clamp_diag_samples.append(np.dot(tform_mat,log_clamp_samples_here))
+        count += len(tform_mat)
 
     log_clamp_diag_samples = np.concatenate(log_clamp_diag_samples)
 
@@ -2066,80 +2077,86 @@ def chisqgrad_logcamp_diag_nfft(imvec, A, log_clamp_diag, sigma):
     """The gradient of the diagonalized log closure amplitude chi-squared from fft
     """
 
-    A4_diag = A[0]
+    log_clamp_diag = np.concatenate(log_clamp_diag)
+    sigma = np.concatenate(sigma)
+
+    A4 = A[0]
     tform_mats = A[1]
 
-    deriv = np.zeros_like(imvec)
-    for iA, A4 in enumerate(A4_diag):
+    #get nfft objects
+    nfft_info1 = A4[0]
+    plan1 = nfft_info1.plan
+    pulsefac1 = nfft_info1.pulsefac
 
-        #get nfft objects
-        nfft_info1 = A4[0]
-        plan1 = nfft_info1.plan
-        pulsefac1 = nfft_info1.pulsefac
+    nfft_info2 = A4[1]
+    plan2 = nfft_info2.plan
+    pulsefac2 = nfft_info2.pulsefac
 
-        nfft_info2 = A4[1]
-        plan2 = nfft_info2.plan
-        pulsefac2 = nfft_info2.pulsefac
+    nfft_info3 = A4[2]
+    plan3 = nfft_info3.plan
+    pulsefac3 = nfft_info3.pulsefac
 
-        nfft_info3 = A4[2]
-        plan3 = nfft_info3.plan
-        pulsefac3 = nfft_info3.pulsefac
+    nfft_info4 = A4[3]
+    plan4 = nfft_info4.plan
+    pulsefac4 = nfft_info4.pulsefac
 
-        nfft_info4 = A4[3]
-        plan4 = nfft_info4.plan
-        pulsefac4 = nfft_info4.pulsefac
+    #compute uniform --> nonuniform transforms
+    plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
+    plan1.trafo()
+    v1 = plan1.f.copy()*pulsefac1
 
-        #compute uniform --> nonuniform transforms
-        plan1.f_hat = imvec.copy().reshape((nfft_info1.ydim,nfft_info1.xdim)).T
-        plan1.trafo()
-        v1 = plan1.f.copy()*pulsefac1
+    plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
+    plan2.trafo()
+    v2 = plan2.f.copy()*pulsefac2
 
-        plan2.f_hat = imvec.copy().reshape((nfft_info2.ydim,nfft_info2.xdim)).T
-        plan2.trafo()
-        v2 = plan2.f.copy()*pulsefac2
+    plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
+    plan3.trafo()
+    v3 = plan3.f.copy()*pulsefac3
 
-        plan3.f_hat = imvec.copy().reshape((nfft_info3.ydim,nfft_info3.xdim)).T
-        plan3.trafo()
-        v3 = plan3.f.copy()*pulsefac3
+    plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim,nfft_info4.xdim)).T
+    plan4.trafo()
+    v4 = plan4.f.copy()*pulsefac4
 
-        plan4.f_hat = imvec.copy().reshape((nfft_info4.ydim,nfft_info4.xdim)).T
-        plan4.trafo()
-        v4 = plan4.f.copy()*pulsefac4
+    log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
 
-        log_clamp_samples = np.log(np.abs((v1 * v2)/(v3 * v4)))
-        log_clamp_diag_samples = np.dot(tform_mats[iA],log_clamp_samples)
+    # gradient vec for adjoint FT
+    count = 0
+    pp = np.zeros_like(log_clamp_samples)
+    for tform_mat in tform_mats:
 
-        log_clamp_diag_measured = log_clamp_diag[iA]
-        log_clamp_diag_sigma = sigma[iA]
+        log_clamp_diag_samples = np.dot(tform_mat,log_clamp_samples[count:count+len(tform_mat)])
+        log_clamp_diag_measured = log_clamp_diag[count:count+len(tform_mat)]
+        log_clamp_diag_sigma = sigma[count:count+len(tform_mat)]
 
         for j in range(len(log_clamp_diag_measured)):
+            pp[count:count+len(tform_mat)] += -2.0 * tform_mat[j,:] * (log_clamp_diag_measured[j] - log_clamp_diag_samples[j])/(log_clamp_diag_sigma[j]**2)
 
-            pp = -2.0 * tform_mats[iA][j,:] * (log_clamp_diag_measured[j] - log_clamp_diag_samples[j])/(log_clamp_diag_sigma[j]**2)
-            pt1 = pp / v1.conj()* pulsefac1.conj()
-            pt2 = pp / v2.conj()* pulsefac2.conj()
-            pt3 = -pp / v3.conj()* pulsefac3.conj()
-            pt4 = -pp / v4.conj()* pulsefac4.conj()
+        count += len(tform_mat)
 
-            # Setup and perform the inverse FFT
-            plan1.f = pt1
-            plan1.adjoint()
-            out1 = np.real((plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim))
+    pt1 = pp / v1.conj()* pulsefac1.conj()
+    pt2 = pp / v2.conj()* pulsefac2.conj()
+    pt3 = -pp / v3.conj()* pulsefac3.conj()
+    pt4 = -pp / v4.conj()* pulsefac4.conj()
 
-            plan2.f = pt2
-            plan2.adjoint()
-            out2 = np.real((plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim))
+    # Setup and perform the inverse FFT
+    plan1.f = pt1
+    plan1.adjoint()
+    out1 = np.real((plan1.f_hat.copy().T).reshape(nfft_info1.xdim*nfft_info1.ydim))
 
-            plan3.f = pt3
-            plan3.adjoint()
-            out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
+    plan2.f = pt2
+    plan2.adjoint()
+    out2 = np.real((plan2.f_hat.copy().T).reshape(nfft_info2.xdim*nfft_info2.ydim))
 
-            plan4.f = pt4
-            plan4.adjoint()
-            out4 = np.real((plan4.f_hat.copy().T).reshape(nfft_info4.xdim*nfft_info4.ydim))
+    plan3.f = pt3
+    plan3.adjoint()
+    out3 = np.real((plan3.f_hat.copy().T).reshape(nfft_info3.xdim*nfft_info3.ydim))
 
-            deriv += out1 + out2 + out3 + out4
+    plan4.f = pt4
+    plan4.adjoint()
+    out4 = np.real((plan4.f_hat.copy().T).reshape(nfft_info4.xdim*nfft_info4.ydim))
 
-    deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
+    deriv = out1 + out2 + out3 + out4
+    deriv *= 1.0/np.float(len(log_clamp_diag))
 
     return deriv
 
@@ -3515,48 +3532,63 @@ def chisqdata_logcamp_diag_fft(Obsdata, Prior,pol='I', **kwargs):
     sigma_diag = []
     A4_diag = []
     tform_mats = []
+    u1 = []
+    v1 = []
+    u2 = []
+    v2 = []
+    u3 = []
+    v3 = []
+    u4 = []
+    v4 = []
     for ic, cl in enumerate(clamparr):
 
         # get diagonalized log closure amplitudes and errors
         clamp_diag.append(cl[0]['camp'])
         sigma_diag.append(cl[0]['sigmaca'])
 
-        # get uv arrays
-        u1 = cl[2][:,0].astype('float')
-        v1 = cl[3][:,0].astype('float')
-        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
-
-        u2 = cl[2][:,1].astype('float')
-        v2 = cl[3][:,1].astype('float')
-        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
-
-        u3 = cl[2][:,2].astype('float')
-        v3 = cl[3][:,2].astype('float')
-        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
-
-        u4 = cl[2][:,3].astype('float')
-        v4 = cl[3][:,3].astype('float')
-        uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
-
-        # prepare image and fft info objects
-        npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-        im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
-        gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
-        gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
-        gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
-        gs_info4 = make_gridder_and_sampler_info(im_info, uv4, conv_func=conv_func, p_rad=p_rad, order=order)
-
-        sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0],gs_info4[0]]
-        gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1],gs_info4[1]]
-        A = (im_info, sampler_info_list, gridder_info_list)
-
-        A4_diag.append(A)
+        # get u and v values
+        u1.append(cl[2][:,0].astype('float'))
+        v1.append(cl[3][:,0].astype('float'))
+        u2.append(cl[2][:,1].astype('float'))
+        v2.append(cl[3][:,1].astype('float'))
+        u3.append(cl[2][:,2].astype('float'))
+        v3.append(cl[3][:,2].astype('float'))
+        u4.append(cl[2][:,3].astype('float'))
+        v4.append(cl[3][:,3].astype('float'))
 
         # get transformation matrix for this timestamp
         tform_mats.append(cl[4].astype('float'))
 
+    # fix formatting of arrays
+    u1 = np.concatenate(u1)
+    v1 = np.concatenate(v1)
+    u2 = np.concatenate(u2)
+    v2 = np.concatenate(v2)
+    u3 = np.concatenate(u3)
+    v3 = np.concatenate(v3)
+    u4 = np.concatenate(u4)
+    v4 = np.concatenate(v4)
+
+    # get uv arrays
+    uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+    uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+    uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+    uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
+
+    # prepare image and fft info objects
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+    im_info = ImInfo(Prior.xdim, Prior.ydim, npad, Prior.psize, Prior.pulse)
+    gs_info1 = make_gridder_and_sampler_info(im_info, uv1, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info2 = make_gridder_and_sampler_info(im_info, uv2, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info3 = make_gridder_and_sampler_info(im_info, uv3, conv_func=conv_func, p_rad=p_rad, order=order)
+    gs_info4 = make_gridder_and_sampler_info(im_info, uv4, conv_func=conv_func, p_rad=p_rad, order=order)
+
+    sampler_info_list = [gs_info1[0],gs_info2[0],gs_info3[0],gs_info4[0]]
+    gridder_info_list = [gs_info1[1],gs_info2[1],gs_info3[1],gs_info4[1]]
+    A = (im_info, sampler_info_list, gridder_info_list)
+
     # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A4_diag,np.array(tform_mats))
+    Amatrices = (A,np.array(tform_mats))
 
     return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
 
@@ -3948,44 +3980,59 @@ def chisqdata_logcamp_diag_nfft(Obsdata, Prior,pol='I', **kwargs):
     sigma_diag = []
     A4_diag = []
     tform_mats = []
+    u1 = []
+    v1 = []
+    u2 = []
+    v2 = []
+    u3 = []
+    v3 = []
+    u4 = []
+    v4 = []
     for ic, cl in enumerate(clamparr):
 
         # get diagonalized log closure amplitudes and errors
         clamp_diag.append(cl[0]['camp'])
         sigma_diag.append(cl[0]['sigmaca'])
 
-        # get uv arrays
-        u1 = cl[2][:,0].astype('float')
-        v1 = cl[3][:,0].astype('float')
-        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
-
-        u2 = cl[2][:,1].astype('float')
-        v2 = cl[3][:,1].astype('float')
-        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
-
-        u3 = cl[2][:,2].astype('float')
-        v3 = cl[3][:,2].astype('float')
-        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
-
-        u4 = cl[2][:,3].astype('float')
-        v4 = cl[3][:,3].astype('float')
-        uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
-
-        # get NFFT info
-        npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
-        A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
-        A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
-        A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
-        A4 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
-        A = [A1,A2,A3,A4]
-
-        A4_diag.append(A)
+        # get u and v values
+        u1.append(cl[2][:,0].astype('float'))
+        v1.append(cl[3][:,0].astype('float'))
+        u2.append(cl[2][:,1].astype('float'))
+        v2.append(cl[3][:,1].astype('float'))
+        u3.append(cl[2][:,2].astype('float'))
+        v3.append(cl[3][:,2].astype('float'))
+        u4.append(cl[2][:,3].astype('float'))
+        v4.append(cl[3][:,3].astype('float'))
 
         # get transformation matrix for this timestamp
         tform_mats.append(cl[4].astype('float'))
 
+    # fix formatting of arrays
+    u1 = np.concatenate(u1)
+    v1 = np.concatenate(v1)
+    u2 = np.concatenate(u2)
+    v2 = np.concatenate(v2)
+    u3 = np.concatenate(u3)
+    v3 = np.concatenate(v3)
+    u4 = np.concatenate(u4)
+    v4 = np.concatenate(v4)
+
+    # get uv arrays
+    uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+    uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+    uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+    uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
+
+    # get NFFT info
+    npad = int(fft_pad_factor * np.max((Prior.xdim, Prior.ydim)))
+    A1 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv1)
+    A2 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv2)
+    A3 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv3)
+    A4 = NFFTInfo(Prior.xdim, Prior.ydim, Prior.psize, Prior.pulse, npad, p_rad, uv4)
+    A = [A1,A2,A3,A4]
+
     # combine Fourier and transformation matrices into tuple for outputting
-    Amatrices = (A4_diag,np.array(tform_mats))
+    Amatrices = (A,np.array(tform_mats))
 
     return (np.array(clamp_diag), np.array(sigma_diag), Amatrices)
 
