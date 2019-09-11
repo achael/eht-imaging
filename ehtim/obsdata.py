@@ -4042,6 +4042,7 @@ def merge_obs(obs_List, force_merge=False):
 def load_txt(fname, polrep='stokes'):
 
     """Read an observation from a text file.
+
        Args:
            fname (str): path to input text file
            polrep (str): load data as either 'stokes' or 'circ'
@@ -4056,6 +4057,7 @@ def load_uvfits(fname, flipbl=False, remove_nan=False, force_singlepol=None,
                 channel=all, IF=all, polrep='stokes', allow_singlepol=True):
 
     """Load observation data from a uvfits file.
+
        Args:
            fname (str): path to input text file
            flipbl (bool): flip baseline phases if True.

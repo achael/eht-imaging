@@ -44,7 +44,7 @@ MARKERSIZE=5
 def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', commentstr="", 
            fontsize=FONTSIZE, cfun='afmhot', snrcut=0.,maxset=False, ttype='nfft',
            gainplots=True,ampplots=True, cphaseplots=True,campplots=True,ebar=True,
-           debias=True, cp_uv_min=False, force_extrapolate=True,
+           debias=True, cp_uv_min=False, force_extrapolate=True, processes=PROCESSES,
            sysnoise=0,syscnoise=0):
 
     """Produce an image summary plot for an image and uvfits file.
@@ -78,6 +78,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
 
            ttype (str): "fast" or "nfft" or "direct" 
            force_extrapolate (bool): if True, always extrapolate movie start/stop frames
+           processes (int): number of cores to use in multiprocessing
        Returns:
 
     """
@@ -467,7 +468,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
                 ct = selfcal(obs_tmp, im_or_mov, 
                               method='amp', ttype=ttype, 
                               caltable=True, gain_tol=.2,
-                              processes=PROCESSES)
+                              processes=processes)
                 ct = ct.pad_scans()
                 obs_tmp =  ct.applycal(obs_tmp,interp='nearest',extrapolate=True) #apply caltable
                 if np.any(np.isnan(obs_tmp.data['vis'])):
