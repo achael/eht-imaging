@@ -34,15 +34,14 @@ import scipy.stats
 import ehtim.imaging.dynamical_imaging as di
 from scipy.interpolate import UnivariateSpline
 from astropy.stats import median_absolute_deviation
-import time
+
 
 from ehtim.parloop import *
+from ehtim.const_def import *
+from ehtim.image import load_fits
 from multiprocessing import cpu_count
 from multiprocessing import Pool
 from multiprocessing import Process, Value, Lock
-
-colors = eh.SCOLORS
-itercolors=iter(colors)
 
 #################################################################
 # Parameters
@@ -51,31 +50,26 @@ itercolors=iter(colors)
 EP=1.e-16
 BIG = 1./EP
 
-IMSIZE=250*eh.RADPERUAS # FOV of resampled image (muas)
-NPIX = 256             # pixels in resampled image
-#NPIX = 512              # pixels in resampled image
+IMSIZE=250*RADPERUAS # FOV of resampled image (muas)
+NPIX = 128             # pixels in resampled image
+
+NRAYS = 360       # number of angular rays in final profile
+NRS = 100         # number of radial points in final profile
 
 RMAX = 50               # maximum radius in every profile slice (muas) 
-INNERTHRESH = 5         # radius threshold for averaging inside ring (muas)
+RMIN = 5         # radius threshold for averaging inside ring (muas)
 
 RPRIOR_MIN = 5.   # minimum radius for search (muas)
 RPRIOR_MAX = 60.  # maximum radius for search (muas)
 NRAYS_SEARCH = 25 # number of angular rays in search profiles
 NRS_SEARCH = 50   # number of radial points in search profiles
 THRESH = 0.05     # thresholding level for the images in the search
-BLUR_VALUE_MIN=2  # blur to this value for initial centroid search (uas)
+#BLUR_VALUE_MIN=2  # blur to this value for initial centroid search (uas)
 FOVP_SEARCH = 0.1 # fractional FOV around image center for brute force search
 NSEARCH = 10      # number of points in each dimension for brute force search 
-
-NRAYS = 360       # number of angular rays in final profile
-NRS = 100         # number of radial points in final profile
-#NRAYS = 720       # number of angular rays in final profile
-#NRS = 200         # number of radial points in final profile
-
-NORMFLUX = 0.6    # normalized image flux for outputted profiles (Jy)
+NORMFLUX = 1      # normalized image flux for outputted profiles (Jy)
 
 POSTPROCDIR = '.' # default postprocessing directory
-
 
 #################################################################
 
@@ -86,7 +80,6 @@ def quad_interp_radius(r_max, dr, val_list):
 
     rpk = r_max + dr*(v_L - v_R)  / (2 * (v_L + v_R - 2*v_max))
 
-    #vpk = -(v_L**2 + (-4*v_max + v_R)**2 - 2*v_L*(4*v_max+v_R))
     vpk = 8*v_max*(v_L + v_R) - (v_L - v_R)**2 - 16*v_max**2    
     vpk /= (8*(v_L + v_R - 2*v_max ))
 
@@ -94,29 +87,33 @@ def quad_interp_radius(r_max, dr, val_list):
 
 class Profiles(object):
 
-    def __init__(self, im, x0, y0, profs, thetas):
+    def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX, flux_norm=NORMFLUX):
         
         self.x0 = x0
         self.y0 = y0
         self.im = im
+        self.rmin = rmin
+        self.rmax=rmax
 
         # store the center image
-        deltay = -(im.fovy()/2. -  y0*eh.RADPERUAS)/im.psize
-        deltax = (im.fovx()/2. -  x0*eh.RADPERUAS)/im.psize
+        deltay = -(im.fovy()/2. -  y0*RADPERUAS)/im.psize
+        deltax = (im.fovx()/2. -  x0*RADPERUAS)/im.psize
         self.im_center = im.shift([int(np.round(deltay)),int(np.round(deltax))])
 
         # total flux and normalization
         self.flux = im.total_flux()
-        self.parea = (im.psize/eh.RADPERUAS)**2
+        self.parea = (im.psize/RADPERUAS)**2
 
-        self.normfactor = NORMFLUX / im.total_flux() # factor to convert to normalized brightness temperature (total flux of 1 Jy)
+        # factor to convert to normalized brightness temperature (total flux of 1 Jy)
+        self.flux_norm = flux_norm
+        self.normfactor = self.flux_norm / im.total_flux() 
 
         # image array and  profiles
         factor = 3.254e13/(im.rf**2 * im.psize**2) # factor to convert to brightness temperature
         self.imarr = im.imvec.reshape(im.ydim,im.xdim)[::-1] * factor #in Tb
 
-        self.xs = np.arange(im.xdim)*im.psize/eh.RADPERUAS
-        self.ys = np.arange(im.ydim)*im.psize/eh.RADPERUAS
+        self.xs = np.arange(im.xdim)*im.psize/RADPERUAS
+        self.ys = np.arange(im.ydim)*im.psize/RADPERUAS
         #self.interp = scipy.interpolate.interp2d(self.ys,self.xs,self.imarr,kind='quintic')
         self.interp = scipy.interpolate.interp2d(self.ys,self.xs,self.imarr,kind='cubic')
 
@@ -125,7 +122,7 @@ class Profiles(object):
         self.nang=len(thetas)
         self.nrs = len(self.profiles[0])
         self.nthetas = len(self.thetas)
-        self.rs = np.linspace(0, RMAX, self.nrs)
+        self.rs = np.linspace(0, self.rmax, self.nrs)
         self.dr = self.rs[-1] - self.rs[-2]
         self.pks =  []
         self.pk_vals = []
@@ -175,11 +172,11 @@ class Profiles(object):
         self.abspk_ang = self.thetas[self.abspk_loc_ang]
 
         # find inside mean flux 
-        inner_loc = np.argmin((self.rs-INNERTHRESH)**2)
+        inner_loc = np.argmin((self.rs-self.rmin)**2)
         self.in_level = np.mean(self.meanprof[0:inner_loc])  # profile avg inside ring
 
         # find outside mean flux
-        outer_loc = np.argmin((self.rs-(RMAX-INNERTHRESH))**2)
+        outer_loc = np.argmin((self.rs-(self.rmax-self.rmin))**2)
         self.out_level = np.mean(self.meanprof[outer_loc:]) # profile avg outside ring
 
         # find mean profile FWHM with spline interpolation
@@ -213,12 +210,6 @@ class Profiles(object):
             ringwidths.append(width)
 
         self.RingWidth = (np.mean(ringwidths), np.std(ringwidths))
-
-        # lh and rh radial positions from the profile-averaged width
-        #self.lh = self.RingSize1[0] - 0.5*self.RingWidth[0]
-        #self.rh = self.RingSize1[0] - 0.5*self.RingWidth[0]
-        #self.lhloc = np.argmin((self.rs-self.lh)**2)
-        #self.rhloc = np.argmin((self.rs-self.rh)**2)
 
         # ring angle 1: mean and std deviation of individual profiles
         ringangles = []
@@ -258,12 +249,12 @@ class Profiles(object):
         mask_outer = self.im.copy()
         immask = self.im.copy()
 
-        x0_c = self.im.fovx()/2. - self.x0*eh.RADPERUAS
-        y0_c = self.y0*eh.RADPERUAS - self.im.fovy()/2.
+        x0_c = self.im.fovx()/2. - self.x0*RADPERUAS
+        y0_c = self.y0*RADPERUAS - self.im.fovy()/2.
 
         # mask annulus
-        rad_inner = (self.RingSize1[0]/2. - self.RingWidth[0]/2.)*eh.RADPERUAS
-        rad_outer = (self.RingSize1[0]/2. + self.RingWidth[0]/2.)*eh.RADPERUAS
+        rad_inner = (self.RingSize1[0]/2. - self.RingWidth[0]/2.)*RADPERUAS
+        rad_outer = (self.RingSize1[0]/2. + self.RingWidth[0]/2.)*RADPERUAS
 
         mask_inner.imvec *= 0 
         mask_outer.imvec *= 0 
@@ -303,9 +294,9 @@ class Profiles(object):
         mask = self.im.copy()
         immask = self.im.copy()
 
-        x0_c = mask.fovx()/2. - self.x0*eh.RADPERUAS
-        y0_c = self.y0*eh.RADPERUAS - mask.fovy()/2.
-        rad = self.RingSize1[0]*eh.RADPERUAS
+        x0_c = mask.fovx()/2. - self.x0*RADPERUAS
+        y0_c = self.y0*RADPERUAS - mask.fovy()/2.
+        rad = self.RingSize1[0]*RADPERUAS
 
         mask.imvec *= 0 
         mask = mask.add_gauss(1,[2*rad,2*rad,0,x0_c,y0_c])
@@ -350,7 +341,7 @@ class Profiles(object):
         std = np.sqrt(-2*np.log(np.abs(x)))
         return (ang, asym, std)
 
-    def plot_img(self, save_png=False):
+    def plot_img(self, postprocdir=POSTPROCDIR, save_png=False):
         plt.figure()
         plt.contour(self.xs,self.ys,self.imarr,colors='k')
         plt.xlabel("-RA ($\mu$as)")
@@ -364,11 +355,11 @@ class Profiles(object):
 
         if save_png:
             dirname = os.path.basename(os.path.dirname(self.imname))
-            if not os.path.exists(POSTPROCDIR + '/' + dirname):
-                subprocess.call(['mkdir', POSTPROCDIR + '/' + dirname])
+            if not os.path.exists(postprocdir + '/' + dirname):
+                subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
             basename = os.path.basename(self.imname)
-            fname = POSTPROCDIR + '/' +dirname+ '/' + basename[:-5] + '_contour.png'
+            fname = postprocdir + '/' +dirname+ '/' + basename[:-5] + '_contour.png'
 
             plt.savefig(fname)
             plt.close()
@@ -376,7 +367,8 @@ class Profiles(object):
             plt.show()
         
 
-    def plot_unwrapped(self, save_png=False, xlabel=True, ylabel=True, xticklabel=True, yticklabel=True,
+    def plot_unwrapped(self, postprocdir=POSTPROCDIR, save_png=False, 
+                       xlabel=True, ylabel=True, xticklabel=True, yticklabel=True,
                        ax=False, imrange=[], show=True, cfun='jet', linecolor='r', labelsize=14):
 
         # line colors 
@@ -390,7 +382,8 @@ class Profiles(object):
             ax = plt.gca()
 
         if imrange:
-            plt.imshow(imarr,cmap=plt.get_cmap(cfun),origin='lower',vmin=imrange[0],vmax=imrange[1],interpolation='gaussian')
+            plt.imshow(imarr,cmap=plt.get_cmap(cfun),origin='lower',
+                       vmin=imrange[0],vmax=imrange[1],interpolation='gaussian')
         else:
             plt.imshow(imarr,cmap=plt.get_cmap(cfun),origin='lower',interpolation='gaussian')
 
@@ -407,7 +400,8 @@ class Profiles(object):
         plt.axhline(y=rhloc,color=linecolor,linewidth=1,linestyle=':')
 
         # horizontal lines -- width
-        bandloc_sigma = np.sqrt((self.RingWidth[1]/2)**2 + (self.RingSize1[1]/2)**2) # add radius and half width sigma in quadrature
+        # add radius and half width sigma in quadrature
+        bandloc_sigma = np.sqrt((self.RingWidth[1]/2)**2 + (self.RingSize1[1]/2)**2) 
 
         rhloc = (self.RingSize1[0]/2. + self.RingWidth[0]/2.) * uas_to_pix
         rhloc2 = (self.RingSize1[0]/2. + self.RingWidth[0]/2. + bandloc_sigma) * uas_to_pix
@@ -435,7 +429,6 @@ class Profiles(object):
 
         # bright peak point
         brightloc = (self.abspk_loc_rad, self.abspk_loc_ang) 
-        #plt.axvline(x=pkloc,color=pkcolor,linewidth=1)
         plt.plot([self.abspk_loc_ang], [self.abspk_loc_rad], 'kx', mew=2, ms=6, color=pkcolor)
 
         # labels
@@ -458,16 +451,15 @@ class Profiles(object):
 
         plt.xticks(xticks, xticklabels)
         plt.yticks(yticks, yticklabels)
-        #plt.tick_params(axis='both',which='minor',length=6)
         plt.tick_params(axis='both',which='major',length=6)
 
         if save_png:
             dirname = os.path.basename(os.path.dirname(self.imname))
-            if not os.path.exists(POSTPROCDIR + '/' + dirname):
-                subprocess.call(['mkdir', POSTPROCDIR + '/' + dirname])
+            if not os.path.exists(postprocdir + '/' + dirname):
+                subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
             basename = os.path.basename(self.imname)
-            fname = POSTPROCDIR + '/' +dirname+ '/' + basename[:-5] + '_unwrapped.png'
+            fname = postprocdir + '/' +dirname+ '/' + basename[:-5] + '_unwrapped.png'
             plt.savefig(fname)
             plt.close()
         elif show:
@@ -475,7 +467,7 @@ class Profiles(object):
 
     def save_unwrapped(self, fname):
 
-        imarr = np.array(self.profiles).T#.reshape(-1,len(self.profiles))
+        imarr = np.array(self.profiles).T
 
         header = fits.Header()
         header['CTYPE1'] = 'RA---SIN'
@@ -489,7 +481,7 @@ class Profiles(object):
         hdulist.writeto(fname, overwrite=True)
 
 
-    def plot_profs(self, colors=colors,save_png=False):
+    def plot_profs(self, postprocdir=POSTPROCDIR, save_png=False, colors=SCOLORS):
         plt.figure()
         plt.xlabel("distance from center ($\mu$as)")
         plt.ylabel("$T_{\rm b}$")
@@ -500,18 +492,20 @@ class Profiles(object):
             plt.plot(self.rs,self.profiles[j], color=colors[j%len(colors)], linestyle='-',linewidth=1)
         if save_png:
             dirname = os.path.basename(os.path.dirname(self.imname))
-            if not os.path.exists(POSTPROCDIR + '/' + dirname):
-                subprocess.call(['mkdir', POSTPROCDIR + '/' + dirname])
+            if not os.path.exists(postprocdir + '/' + dirname):
+                subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
             basename = os.path.basename(self.imname)
-            fname = POSTPROCDIR + '/' +dirname+ '/' + basename[:-5] + '_profiles.png'
+            fname = postprocdir + '/' +dirname+ '/' + basename[:-5] + '_profiles.png'
 
             plt.savefig(fname)
             plt.close()
         else:
             plt.show()
 
-    def plot_prof_band(self, color='b',save_png=False, fontsize=14, show=True,axis=None,xlabel=True,ylabel=False):
+    def plot_prof_band(self, postprocdir=POSTPROCDIR, save_png=False, 
+                       color='b', fontsize=14, show=True,axis=None,xlabel=True,ylabel=False):
+
         """2-sided plot of radial profiles, cut across orthogonal to position angle"""
         if axis is None:
             plt.figure()
@@ -572,11 +566,11 @@ class Profiles(object):
 
         if save_png:
             dirname = os.path.basename(os.path.dirname(self.imname))
-            if not os.path.exists(POSTPROCDIR + '/' + dirname):
-                subprocess.call(['mkdir', POSTPROCDIR + '/' + dirname])
+            if not os.path.exists(postprocdir + '/' + dirname):
+                subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
             basename = os.path.basename(self.imname)
-            fname = POSTPROCDIR + '/' +dirname+ '/' + basename[:-5] + '_band_profile.png'
+            fname = postprocdir + '/' +dirname+ '/' + basename[:-5] + '_band_profile.png'
 
             plt.savefig(fname)
             plt.close()
@@ -584,7 +578,7 @@ class Profiles(object):
             plt.show()
 
 
-    def plot_meanprof(self, color='k',save_png=False):
+    def plot_meanprof(self, postprocdir=POSTPROCDIR, save_png=False, color='k'):
         fig=plt.figure()
         plt.plot(self.rs, self.meanprof, 
                  color=color, linestyle='-',linewidth=1)
@@ -597,32 +591,32 @@ class Profiles(object):
         plt.title('Mean Profile')
         if save_png:
             dirname = os.path.basename(os.path.dirname(self.imname))
-            if not os.path.exists(POSTPROCDIR + '/' + dirname):
-                subprocess.call(['mkdir', POSTPROCDIR + '/' + dirname])
+            if not os.path.exists(postprocdir + '/' + dirname):
+                subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
             basename = os.path.basename(self.imname)
-            fname = POSTPROCDIR + '/' +dirname+ '/' + basename[:-5] + '_meanprofile.png'
+            fname = postprocdir + '/' +dirname+ '/' + basename[:-5] + '_meanprofile.png'
 
             plt.savefig(fname)
             plt.close()
         else:
             plt.show()
 
-    def plot_meanprof_theta(self, color='k',save_png=False):
+    def plot_meanprof_theta(self, postprocdir=POSTPROCDIR, save_png=False, color='k'):
         fig=plt.figure()
-        plt.plot(self.thetas/eh.DEGREE, self.meanprof_theta, 
+        plt.plot(self.thetas/DEGREE, self.meanprof_theta, 
                  color=color, linestyle='-',linewidth=1)
 
-        ang1 = self.RingAngle1[0]/eh.DEGREE
-        std1 = self.RingAngle1[1]/eh.DEGREE
+        ang1 = self.RingAngle1[0]/DEGREE
+        std1 = self.RingAngle1[1]/DEGREE
         up = np.mod(ang1+std1,360)
         down = np.mod(ang1-std1,360)
         plt.axvline(x=ang1,color='b',linewidth=1)
         plt.axvline(x=up,color='b',linewidth=1,linestyle='--')
         plt.axvline(x=down,color='b',linewidth=1,linestyle='--')
 
-        ang2 = self.RingAngle2[0]/eh.DEGREE
-        std2 = self.RingAngle2[1]/eh.DEGREE
+        ang2 = self.RingAngle2[0]/DEGREE
+        std2 = self.RingAngle2[1]/DEGREE
         up = np.mod(ang2+std2,360)
         down = np.mod(ang2-std2,360)
         plt.axvline(x=ang2,color='r',linewidth=1)
@@ -634,31 +628,32 @@ class Profiles(object):
         plt.title('Mean Angular Profile')
         if save_png:
             dirname = os.path.basename(os.path.dirname(self.imname))
-            if not os.path.exists(POSTPROCDIR + '/' + dirname):
-                subprocess.call(['mkdir', POSTPROCDIR + '/' + dirname])
+            if not os.path.exists(postprocdir + '/' + dirname):
+                subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
             basename = os.path.basename(self.imname)
-            fname = POSTPROCDIR + '/' +dirname+ '/' + basename[:-5] + '_meanangprofile.png'
+            fname = postprocdir + '/' +dirname+ '/' + basename[:-5] + '_meanangprofile.png'
 
             plt.savefig(fname)
             plt.close()
         else:
             plt.show()
 
-def compute_ring_profile(im, x0, y0, title="", nrays=NRAYS, nrs=NRS):
+def compute_ring_profile(im, x0, y0, title="", 
+                         nrays=NRAYS, nrs=NRS, rmin=RMIN, rmax=RMAX, 
+                         flux_norm=NORMFLUX):
+
     """compute a ring profile  given a center location"""
 
-    rs = np.linspace(0, RMAX, nrs)
+    rs = np.linspace(0, rmax, nrs)
     thetas = np.linspace(0,2*np.pi,nrays)
 
-    #parea = (im.psize/eh.RADPERUAS)**2
     factor = 3.254e13/(im.rf**2 * im.psize**2) # convert to brightness temperature
     imarr = im.imvec.reshape(im.ydim,im.xdim)[::-1] * factor #in brightness temperature K
-    xs = np.arange(im.xdim)*im.psize/eh.RADPERUAS
-    ys = np.arange(im.ydim)*im.psize/eh.RADPERUAS
+    xs = np.arange(im.xdim)*im.psize/RADPERUAS
+    ys = np.arange(im.ydim)*im.psize/RADPERUAS
 
     # TODO: test fiducial images with linear?
-    #interp = scipy.interpolate.interp2d(ys,xs,imarr,kind='quintic') 
     interp = scipy.interpolate.interp2d(ys,xs,imarr,kind='cubic') 
 
     def ringVals(theta):
@@ -674,153 +669,112 @@ def compute_ring_profile(im, x0, y0, title="", nrays=NRAYS, nrs=NRS):
         vals = ringVals(thetas[j])
         profs.append(vals)
 
-    profiles = Profiles(im,x0,y0,profs,thetas)
+    profiles = Profiles(im,x0,y0,profs,thetas,rmin=rmin,rmax=rmax,flux_norm=flux_norm)
 
     return  profiles
 
-def findCenter(im):
+def findCenter(im, 
+               rmin=RMIN, rmax=RMAX, 
+               rmin_search=RPRIOR_MIN,  rmax_search=RPRIOR_MAX, 
+               nrays_search=NRAYS_SEARCH, nrs_search=NRS_SEARCH,
+               fov_search=FOVP_SEARCH, n_search=NSEARCH, flux_norm=NORMFLUX):
+
     """Find the ring center by looking at profiles over a given range"""
 
+    print("nrays",nrays_search,"nrs",nrs_search,"fov",fov_search,"n",n_search)
     def objFunc(pos):
         (x0,y0) = pos
-        profiles = compute_ring_profile(im, x0, y0,nrs=NRS_SEARCH,nrays=NRAYS_SEARCH)
+        profiles = compute_ring_profile(im, x0, y0, nrays=nrays_search, nrs=nrs_search, 
+                                        rmin=rmin, rmax=rmax, flux_norm=flux_norm)
 
         mean,std = profiles.RingSize1
-        if mean < RPRIOR_MIN or mean > RPRIOR_MAX:
+        if mean < rmin_search or mean > rmax_search:
             return np.inf
         else:
             J = np.abs(std/mean)
             return J
 
-    fovx = im.fovx()/eh.RADPERUAS
-    fovy = im.fovy()/eh.RADPERUAS
-
-    #simple fmin to find
-    #t = time.time()
-    #res0 =scipy.optimize.fmin(objFunc,(.5*fovx,.5*fovy))#,bounds=[(0,fovx),(0,fovy)])
-    #print (time.time() - t)
+    fovx = im.fovx()/RADPERUAS
+    fovy = im.fovy()/RADPERUAS
 
     #brute force search + fmin finisher to find
-    #t = time.time()
-    fovmin_x = (.5-FOVP_SEARCH) * fovx
-    fovmax_x = (.5+FOVP_SEARCH) * fovx
-    fovmin_y = (.5-FOVP_SEARCH) * fovy
-    fovmax_y = (.5+FOVP_SEARCH) * fovy
-    res = scipy.optimize.brute(objFunc,ranges=((fovmin_x,fovmax_x),(fovmin_y, fovmax_y)),Ns=NSEARCH)
-    #print (time.time() - t)
+    fovmin_x = (.5-fov_search) * fovx
+    fovmax_x = (.5+fov_search) * fovx
+    fovmin_y = (.5-fov_search) * fovy
+    fovmax_y = (.5+fov_search) * fovy
+    res = scipy.optimize.brute(objFunc,ranges=((fovmin_x,fovmax_x),(fovmin_y, fovmax_y)),
+                               Ns=n_search)
 
     return res
 
-#def findCenter2(im_lo, im_hi):
-#    """Find the ring center by looking at profiles over a given range"""
+def FindProfileSingle(imname, postprocdir, 
+                      save_files=False, blur=0, aipscc=False, tag='',
+                      rerun=True,return_pp=True, 
+                      imsize=IMSIZE, npix=NPIX, rmin=RMIN, rmax=RMAX, nrays=NRAYS, nrs=NRS,
+                      rmin_search=RPRIOR_MIN, rmax_search=RPRIOR_MAX, 
+                      nrays_search=NRAYS_SEARCH, nrs_search=NRS_SEARCH,
+                      thresh_search=THRESH, fov_search=FOVP_SEARCH, n_search=NSEARCH, 
+                      flux_norm=NORMFLUX):
 
-#    def objFuncLo(pos):
-#        (x0,y0) = pos
-#        profiles = compute_ring_profile(im_lo, x0, y0,nrs=NRS_SEARCH,nrays=NRAYS_SEARCH)
-
-#        mean,std = profiles.RingSize1
-#        if mean < RPRIOR_MIN or mean > RPRIOR_MAX:
-#            return np.inf
-#        else:
-#            J = np.abs(std/mean)
-#            return J
-
-#    def objFuncHi(pos):
-#        (x0,y0) = pos
-#        profiles = compute_ring_profile(im_hi, x0, y0,nrs=NRS,nrays=NRAYS)
-
-#        mean,std = profiles.RingSize1
-#        if mean < RPRIOR_MIN or mean > RPRIOR_MAX:
-#            return np.inf
-#        else:
-#            J = np.abs(std/mean)
-#            return J
-
-#    fovx = im_lo.fovx()/eh.RADPERUAS
-#    fovy = im_lo.fovy()/eh.RADPERUAS
-
-#    if fovx != im_hi.fovx()/eh.RADPERUAS or fovy != im_hi.fovx()/eh.RADPERUAS: 
-#        raise Exception("hi res fov != lo res fov!")
-
-#    #simple fmin to find
-#    #t = time.time()
-#    #res0 =scipy.optimize.fmin(objFunc,(.5*fovx,.5*fovy))#,bounds=[(0,fovx),(0,fovy)])
-#    #print (time.time() - t)
-
-#    #brute force search + fmin finisher to find
-#    #t = time.time()
-#    fovmin_x = (.5-FOVP_SEARCH) * fovx
-#    fovmax_x = (.5+FOVP_SEARCH) * fovx
-#    fovmin_y = (.5-FOVP_SEARCH) * fovy
-#    fovmax_y = (.5+FOVP_SEARCH) * fovy
-#    res = scipy.optimize.brute(objFuncLo,ranges=((fovmin_x,fovmax_x),(fovmin_y, fovmax_y)),Ns=NSEARCH)
-#    res1 =scipy.optimize.fmin(objFuncHi,(res[0],res[1]))#,bounds=[(0,fovx),(0,fovy)])
-#    
-#    #print (time.time() - t)
-
-#    return res
-
-
-def FindProfileSingle(imname, save_files=False, blur=0, aipscc=False, tag='', rerun=True,return_pp=True):
     """find the best ring profile for an image and save results"""
     
     dirname = os.path.basename(os.path.dirname(imname))
     basename = os.path.basename(imname)
-    txtname = POSTPROCDIR + '/' + dirname + '/' + basename[:-5] +tag+ '.txt'
+    txtname = postprocdir + '/' + dirname + '/' + basename[:-5] +tag+ '.txt'
     if rerun==False and os.path.exists(txtname):
         return -1
 
+    #print("nrays",nrays_search,"nrs",nrs_search,"fov",fov_search)
     with HiddenPrints():
-        im_raw = eh.image.load_fits(imname, aipscc=aipscc)
+    #if True:
+        im_raw = load_fits(imname, aipscc=aipscc)
 
         # center image and regrid to uniform pixel size and fox
         im = di.center_core(im_raw)
         
-        #im_search = im.regrid_image(IMSIZE, NPIX_SEARCH)
-        
-        im_search = im.regrid_image(IMSIZE, NPIX)
-        im = im.regrid_image(IMSIZE,NPIX)
+        im_search = im.regrid_image(imsize, npix)
+        im = im.regrid_image(imsize,npix)
 
         # blur image if requested
         if blur>0:
-            im_search = im_search.blur_circ(blur*eh.RADPERUAS)
-            im = im.blur_circ(blur*eh.RADPERUAS)
+            im_search = im_search.blur_circ(blur*RADPERUAS)
+            im = im.blur_circ(blur*RADPERUAS)
 
         # blur and threshold image FOR SEARCH ONLY
         #if blur==0:
-        #    im_search = im.blur_circ(BLUR_VALUE_MIN*eh.RADPERUAS) 
+        #    im_search = im.blur_circ(BLUR_VALUE_MIN*RADPERUAS) 
         #else:
         #    im_search = im.copy()
 
         # threshold the search image to 5% of the maximum
-        im_search.imvec[im_search.imvec<THRESH*np.max(im_search.imvec)] = 0
+        im_search.imvec[im_search.imvec<thresh_search*np.max(im_search.imvec)] = 0
 
         # find center
-        #t = time.time()
-        res = findCenter(im_search)
-        #print(time.time() - t)
+        res = findCenter(im_search, rmin=rmin, rmax=rmax, 
+                         rmin_search=rmin_search,  rmax_search=rmax_search, 
+                         nrays_search=nrays_search, nrs_search=nrs_search,
+                         fov_search=fov_search, n_search=n_search, flux_norm=flux_norm)
 
-        #t = time.time()
-        #res3 = findCenter2(im_search, im)
-        #print(time.time() - t)
-
+        print("compute profile")
         # compute profiles using the original (regridded, flux centroid centered) image
-        pp = compute_ring_profile(im, res[0], res[1], nrs=NRS, nrays=NRAYS)
+        pp = compute_ring_profile(im, res[0], res[1], nrs=nrs, nrays=nrays, 
+                                  rmin=rmin, rmax=rmax, flux_norm=flux_norm)
         pp.calc_meanprof_and_stats()
         pp.imname = imname
         
+        print("save files")
         if save_files:
             dirname = os.path.basename(os.path.dirname(imname))
-            if not os.path.exists(POSTPROCDIR + '/' + dirname):
-                subprocess.call(['mkdir', POSTPROCDIR + '/' + dirname])
+            if not os.path.exists(postprocdir + '/' + dirname):
+                subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
             basename = os.path.basename(imname)
-            txtname = POSTPROCDIR + '/' + dirname + '/' + basename[:-5] +tag+ '.txt'
-            radprof_name = POSTPROCDIR + '/' + dirname + '/' + basename[:-5] +tag+ '_radprof.txt'
-            angprof_name = POSTPROCDIR + '/' + dirname + '/' + basename[:-5] +tag+ '_angprof.txt'
+            txtname = postprocdir + '/' + dirname + '/' + basename[:-5] +tag+ '.txt'
+            radprof_name = postprocdir + '/' + dirname + '/' + basename[:-5] +tag+ '_radprof.txt'
+            angprof_name = postprocdir + '/' + dirname + '/' + basename[:-5] +tag+ '_angprof.txt'
 
-            fitsname = POSTPROCDIR + '/' +  dirname + '/' + basename[:-5] + tag+ '.fits'
-            fitsname_centered = POSTPROCDIR + '/' +  dirname + '/' + basename[:-5] +tag+ '_cent.fits'
+            fitsname = postprocdir + '/' +  dirname + '/' + basename[:-5] + tag+ '.fits'
+            fitsname_centered = postprocdir + '/' +  dirname + '/' + basename[:-5] +tag+ '_cent.fits'
 
             if os.path.exists(txtname):
                 os.remove(txtname)
@@ -868,20 +822,21 @@ def FindProfileSingle(imname, save_files=False, blur=0, aipscc=False, tag='', re
             f.close()
 
             # save unwrapped and centered fits image
-            pp.save_unwrapped(fitsname)
-            pp.im_center.save_fits(fitsname_centered)
+            
+            #pp.save_unwrapped(fitsname)
+            #pp.im_center.save_fits(fitsname_centered)
 
             # save radial profile
-            data=np.hstack((pp.rs.reshape(pp.nrs,1), 
-                            pp.meanprof.reshape(pp.nrs,1), 
-                            pp.normfactor * pp.meanprof.reshape(pp.nrs,1)))
-            np.savetxt(radprof_name, data)
+            #data=np.hstack((pp.rs.reshape(pp.nrs,1), 
+            #                pp.meanprof.reshape(pp.nrs,1), 
+            #                pp.normfactor * pp.meanprof.reshape(pp.nrs,1)))
+            #np.savetxt(radprof_name, data)
 
             # save angular profile
-            data=np.hstack((pp.thetas.reshape(pp.nthetas,1), 
-                            pp.meanprof_theta.reshape(pp.nthetas,1), 
-                            pp.normfactor * pp.meanprof_theta.reshape(pp.nthetas,1)))
-            np.savetxt(angprof_name, data)
+            #data=np.hstack((pp.thetas.reshape(pp.nthetas,1), 
+            #                pp.meanprof_theta.reshape(pp.nthetas,1), 
+            #                pp.normfactor * pp.meanprof_theta.reshape(pp.nthetas,1)))
+            #np.savetxt(angprof_name, data)
 
             #pp.plot_unwrapped(save_png=True)
             #pp.plot_img(save_png=True)
@@ -895,10 +850,20 @@ def FindProfileSingle(imname, save_files=False, blur=0, aipscc=False, tag='', re
             del pp
             return 
 
+def FindProfiles(foldername, postprocdir, processes=-1, 
+                 save_files=False, blur=0, 
+                 aipscc=False, tag='', rerun=True, return_pp=True,
+                 imsize=IMSIZE, npix=NPIX, rmin=RMIN, rmax=RMAX, nrays=NRAYS, nrs=NRS,
+                 rmin_search=RPRIOR_MIN, rmax_search=RPRIOR_MAX, 
+                 nrays_search=NRAYS_SEARCH, nrs_search=NRS_SEARCH,
+                 thresh_search=THRESH, fov_search=FOVP_SEARCH, n_search=NSEARCH, 
+                 flux_norm=NORMFLUX
+                ):
 
-def FindProfiles(foldername, processes=-1, save_files=False, blur=0, aipscc=False, tag='',rerun=True,return_pp=True):
-    """find profiles for all images  in a directory"""
+    """find profiles for all images  in a directory
+    """
 
+    print("HI")
     foldername = os.path.abspath(foldername)
     imlist =  np.array(glob.glob(foldername + '/*.fits'))
 
@@ -908,7 +873,13 @@ def FindProfiles(foldername, processes=-1, save_files=False, blur=0, aipscc=Fals
     if len(imlist)==0: 
         return []
 
-    arglist = [[imlist[i], save_files, blur, aipscc,tag,rerun,return_pp] for i in range(len(imlist))]
+    arglist = [[imlist[i], postprocdir, 
+                save_files, blur, 
+                aipscc, tag, rerun, return_pp,
+                imsize, npix, rmin, rmax, nrays, nrs,
+                rmin_search, rmax_search, nrays_search, nrs_search, 
+                thresh_search, fov_search, n_search, flux_norm] 
+                for i in range(len(imlist))]
 
     parloop = Parloop(FindProfileSingle)
     pplist = parloop.run_loop(arglist, processes)

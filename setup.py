@@ -22,6 +22,7 @@ if __name__ == "__main__":
                       "ehtim.io",
                       "ehtim.observing",
                       "ehtim.plotting",
+                      "ehtim.features",
                       "ehtim.scattering",
                       "ehtim.statistics"],
           long_description=read('README.rst'),

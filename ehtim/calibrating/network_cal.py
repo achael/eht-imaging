@@ -36,10 +36,9 @@ from multiprocessing import Pool
 
 from ehtim.calibrating.cal_helpers import *
 
-
-
 ZBLCUTOFF = 1.e7;
 MAXIT=5000
+
 ###################################################################################################################################
 #Network-Calibration
 ###################################################################################################################################
@@ -173,6 +172,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", mini
 def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I',
                      zbl_uvidst_max=ZBLCUTOFF, method="both", minimizer_method='BFGS', 
                      show_solution=False, pad_amp=0., gain_tol=.2, caltable=False, debias=True):
+
     """Network-calibrate a scan with zero baseline constraints.
 
        Args:
@@ -220,7 +220,8 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
     # only include sites that are present
     sites = [s for s in sites if s in allsites]
 
-    # create a dictionary to keep track of gains; sites that aren't network calibrated (no co-located partners) get a value of -1 so that they won't be network calibrated; other sites get a unique number
+    # create a dictionary to keep track of gains; sites that aren't network calibrated (no co-located partners) 
+    # get a value of -1 so that they won't be network calibrated; other sites get a unique number
     tkey = {b:a for a,b in enumerate(sites)}
     for cluster in allclusters:
         if len(cluster)==1:
@@ -230,6 +231,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
     
     # restrict solved cluster visibilities to ones present in the scan (this is much faster than allowing many unconstrained variables
     clusterbls_scan = [set([clusterkey[row['t1']], clusterkey[row['t2']]]) for row in scan if len(set([clusterkey[row['t1']], clusterkey[row['t2']]]))==2]
+
     # now delete duplicates
     clusterbls = [cluster for cluster in clusterbls if cluster in clusterbls_scan]
 
@@ -284,6 +286,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             vis = np.abs(vis)
 
     sigma_inv = 1.0/np.sqrt(sigma**2+ (pad_amp*np.abs(vis))**2)
+
     # initial guesses for parameters
     n_gains = len(sites)
     n_clusterbls = len(clusterbls)
@@ -295,6 +298,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         if scan_keys[i] < 0: continue
         if np.isnan(vis[i]): continue
         vpar_guess[scan_keys[i]] = vis[i]
+
     vpar_guess = vpar_guess.view(dtype=np.float64)
     gvpar_guess = np.hstack((gpar_guess, vpar_guess))
 
@@ -380,23 +384,10 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             else:
                 site_key = -1
 
-            # We will *always* set the R and L gain corrections to be equal in network calibration, to avoid breaking polarization consistency relationships
+            # We will *always* set the R and L gain corrections to be equal in network calibration, 
+            # to avoid breaking polarization consistency relationships
             rscale = g_fit[site_key]**-1
             lscale = g_fit[site_key]**-1
-
-#            # If we selfcal on a stokes image, set R&L gains equal.
-#            if pol in ['I','Q','U','V']:
-#                rscale = g_fit[site_key]**-1
-#                lscale = g_fit[site_key]**-1
-
-#            # TODO is this right??
-#            # But if we selfcal  on RR or LL, only set the appropriate gain
-#            elif pol=='RR':
-#                rscale = g_fit[site_key]**-1
-#                lscale = 1
-#            elif pol=='LL':
-#                lscale = g_fit[site_key]**-1
-#                rscale = 1
 
             # Note: we may want to give two entries for the start/stop times when a non-zero solution interval is used
             caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
@@ -423,27 +414,6 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             # scale sigmas
             for sigtype in ['rrsigma','llsigma','rlsigma','lrsigma']:
                 scan[sigtype]  *= np.abs(gij_inv)  
-#            if pol=='RR':
-#                scan['rrvis'] *= (g1_fit * g2_fit.conj())**(-1)
-#                scan['llvis'] *= 1
-#                scan['rlvis'] *= g1_fit**(-1)
-#                scan['lrvis'] *= g2_fit.conj()**(-1)
-
-#                scan['rrsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
-#                scan['llsigma'] *= 1
-#                scan['rlsigma'] *= np.abs(g1_fit**(-1))
-#                scan['lrsigma'] *= np.abs(g2_fit.conj()**(-1))
-
-#            elif pol=='LL':
-#                scan['rrvis'] *= 1
-#                scan['llvis'] *= (g1_fit * g2_fit.conj())**(-1)
-#                scan['rlvis'] *= g2_fit.conj()**(-1)
-#                scan['lrvis'] *= g1_fit**(-1)
-
-#                scan['rrsigma'] *= 1
-#                scan['llsigma'] *= np.abs((g1_fit * g2_fit.conj())**(-1))
-#                scan['rlsigma'] *= np.abs(g2_fit.conj()**(-1))
-#                scan['lrsigma'] *= np.abs(g1_fit**(-1))
 
         out = scan
 

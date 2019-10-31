@@ -63,6 +63,9 @@ class Movie(object):
                          (e.g. 'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'previous', 'next')
            bounds_error (bool): if False, movie will return nearest frame outside interval [start_hr, stop_hr]
 
+
+    	   times (list): The list of frame time stamps in hours
+           
            _movdict (dict): The dictionary with the lists of frames
     """
 

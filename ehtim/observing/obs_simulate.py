@@ -836,6 +836,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
     """
 
     if verbose: print("Applying a priori calibration with estimated Jones matrices . . . ")
+
     # Build Inverse Jones Matrices
     jm_dict = make_jones_inverse(obs, opacitycal=opacitycal, dcal=dcal, frcal=frcal)
 
