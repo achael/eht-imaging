@@ -271,3 +271,66 @@ def coh_sig(amp,sig):
     Nc = len(amp)
     sigma0 = np.sqrt(np.sum(sig**2)/Nc**2)
     return sigma0
+
+
+def dicts_TV_report(obs,snr_cut=2.):
+    """Computes mean total variation reports
+        Args:
+            obs: ObsData object
+            snr_cut: threshold for data  snr
+        Returns:
+            amptv: dictionary of baseline mean TV
+            cptv: dictionary of triangle mean TV
+            lcatv: dictionary of quadrangle mean TV
+        """
+    amp = obs.data
+    baselines = list(set([(x[0],x[1]) for x in lca[['t1','t2']]]))
+    amptv = {}
+    for cou,quad in enumerate(baselines):
+        amptv[quad] = np.mean(np.abs(np.diff(np.abs(amp[(amp['t1']==baselines[cou][0])&(amp['t2']==baselines[cou][1])]['vis']))))
+      
+    cp = obs.c_phases()
+    obs = obs.flag_low_snr(snr_cut=snr_cut)
+    triangles = list(set([(x[0],x[1],x[2]) for x in cp[['t1','t2','t3']]]))
+    cptv = {}
+    for cou,tri in enumerate(triangles):
+        cptv[tri] = np.mean(np.abs(np.diff(cp[(cp['t1']==triangles[cou][0])&(cp['t2']==triangles[cou][1])&(cp['t3']==triangles[cou][2])]['cphase'])))
+
+    lca = obs.c_amplitudes(ctype='logcamp')   
+    quadrangles = list(set([(x[0],x[1],x[2],x[3]) for x in lca[['t1','t2','t3','t4']]]))
+    lcatv = {}
+    for cou,quad in enumerate(quadrangles):
+        lcatv[quad] = np.mean(np.abs(np.diff(lca[(lca['t1']==quadrangles[cou][0])&(lca['t2']==quadrangles[cou][1])&(lca['t3']==quadrangles[cou][2])&(lca['t4']==quadrangles[cou][3])]['camp'])))
+  
+    return amptv, cptv, lcatv
+
+def compare_TV(obs,obsref,snr_cut=2.,output=''):
+    """Computes mean total variation reports
+        Args:
+            obs: ObsData object
+            obref: ObsData object to use as a reference
+            snr_cut: threshold for data  snr
+            output (str): if empty, returns median relative TV across all (baselines, triangles, quadrangles)
+            if 'Full', returns full dictionaries comparing all (baselines, triangles, quadrangles)
+        Returns:
+            amprel / ampmed: dictionary of baseline relative differences in mean TV / median of baseline relative differences in mean TV
+            cprel / cpmed: dictionary of triangle relative differences in mean TV / median of triangle relative differences in mean TV
+            lcarel / lcamed: dictionary of quadrangle relative differences in mean TV / median of quadrangle relative differences in mean TV
+        """
+    amptv, cptv, lcatv = dicts_TV(obs,snr_cut=snr_cut)
+    ampref, cpref, lcaref = dicts_TV(obsref,snr_cut=snr_cut)
+    
+    cprel = {key: (cptv[key] - cpref[key])/cpref[key] for key in cptv.keys() if key in set(cpref.keys())}
+    amprel = {key: (amptv[key] - ampref[key])/ampref[key] for key in amptv.keys() if key in set(ampref.keys())}
+    lcarel = {key: (lcatv[key] - lcaref[key])/lcaref[key] for key in lcatv.keys() if key in set(lcaref.keys())}
+    amprel = {key:amprel[key] for key in amprel.keys() if amprel[key]==amprel[key]}
+    cprel = {key:cprel[key] for key in cprel.keys() if cprel[key]==cprel[key]}
+    lcarel = {key:lcarel[key] for key in lcarel.keys() if lcarel[key]==lcarel[key]}
+    
+    if output=='Full':
+        return amprel, cprel, lcarel
+    else: 
+        ampmed =np.median([amprel[key] for key in amprel.keys() if amprel[key]==amprel[key]])
+        cpmed =np.median([cprel[key] for key in cprel.keys() if cprel[key]==cprel[key]])
+        lcamed =np.median([lcarel[key] for key in lcarel.keys() if lcarel[key]==lcarel[key]])
+        return ampmed,cpmed,lcamed

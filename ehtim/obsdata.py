@@ -91,8 +91,10 @@ class Obsdata(object):
            amp (numpy.recarray): An array of saved (averaged) visibility amplitudes
            bispec (numpy.recarray): An array of saved (averaged) bispectra
            cphase (numpy.recarray): An array of saved (averaged) closure phases
+           cphase_diag (numpy.recarray): An array of saved (averaged) diagonalized closure phases
            camp (numpy.recarray): An array of saved (averaged) closure amplitudes
            logcamp (numpy.recarray): An array of saved (averaged) log closure amplitudes
+           logcamp_diag (numpy.recarray): An array of saved (averaged) diagonalized log closure amplitudes
     """
 
     def __init__(self, ra, dec, rf, bw, datatable, tarr, scantable=None,
@@ -183,8 +185,10 @@ class Obsdata(object):
         self.amp=None
         self.bispec=None
         self.cphase=None
+        self.cphase_diag=None
         self.camp=None
         self.logcamp=None
+        self.logcamp_diag=None
 
     def obsdata_args(self):
 
@@ -950,7 +954,7 @@ class Obsdata(object):
            Returns:
                 (float): image chi^2
         """
-        if dtype not in  ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp', 'm']:
+        if dtype not in  ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag', 'm']:
             raise Exception("%s is not a supported dterms!" % dtype)
 
         # TODO -- should import this at top, but the circular dependencies create a mess...
@@ -1108,14 +1112,14 @@ class Obsdata(object):
 
         return  out
 
-    def avg_coherent(self, inttime, scan_avg=False):
+    def avg_coherent(self, inttime, scan_avg=False, moving=False):
 
         """Coherently average data along u,v tracks in chunks of length inttime (sec)
 
            Args:
                 inttime (float): coherent integration time in seconds
                 scan_avg (bool): if True, average over scans in self.scans instead of intime
-
+                moving (bool): averaging with moving window (inttime interpreted as boxcar window width in seconds)
            Returns:
                 (Obsdata): Obsdata object containing averaged data
         """
@@ -1128,7 +1132,10 @@ class Obsdata(object):
             print('No averaging done!')
             return self.copy()
 
-        vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',
+        if moving:
+            vis_avg = coh_moving_avg_vis(self,dt=inttime,return_type='rec')
+        else:
+            vis_avg = coh_avg_vis(self,dt=inttime,return_type='rec',
                               err_type='predicted',scan_avg=scan_avg)
 
         arglist, argdict = self.obsdata_args()
@@ -1283,6 +1290,44 @@ class Obsdata(object):
 
         return
 
+    def add_cphase_diag(self,avg_time=0, return_type='rec', vtype='vis', count='min', snrcut=0.,
+                        err_type='predicted', num_samples=1000, round_s=0.1, uv_min=False):
+
+        """Adds attribute self.cphase_diag: cphase_diag table averaged for dt
+
+           Args:
+               avg_time (float): closure phase averaging timescale
+               return_type: data frame ('df') or recarray ('rec')
+               vtype (str): Visibility type (e.g., 'vis', 'llvis', 'rrvis', etc.)
+               count (str): If 'min', return minimal set of phases, if 'max' return all closure phases up to reordering
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+               snrcut (float): flag closure phases with snr lower than this               
+
+        """
+
+        # Get spacing between datapoints in seconds
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+
+        # Dom TODO: implement averaging during diagonal closure phase creation
+        if avg_time>tint0:
+            print("Averaging while creating diagonal closure phases is not yet implemented; please average the data first separately. Proceeding for now without averaging.")
+            cdf = make_cphase_diag_df(self, vtype=vtype, round_s=round_s, count=count, snrcut=snrcut, uv_min=uv_min)
+        else:
+            cdf = make_cphase_diag_df(self, vtype=vtype, round_s=round_s, count=count, snrcut=snrcut, uv_min=uv_min)
+            if return_type=='rec':
+                cdf = df_to_rec(cdf,'cphase_diag')
+            print("Updated self.cphase_diag: no averaging")
+
+        self.cphase_diag = cdf
+        print("updated self.cphase_diag: avg_time %f s\n"%avg_time)
+
+        return
+
     def add_camp(self, avg_time=0, return_type='rec', ctype='camp',
                        count='max', debias=True, snrcut=0.,
                        err_type='predicted', num_samples=1000, round_s=0.1):
@@ -1358,6 +1403,44 @@ class Obsdata(object):
 
         return
 
+    def add_logcamp_diag(self,avg_time=0, return_type='rec',count='min', snrcut=0.,
+                        debias=True, err_type='predicted', num_samples=1000, round_s=0.1):
+
+        """Adds attribute self.logcamp_diag: logcamp_diag table averaged for dt
+
+           Args:
+               avg_time (float): diagonal log closure amplitude averaging timescale
+               return_type: data frame ('df') or recarray ('rec')
+               debias (bool): If True, debias the diagonal log closure amplitude
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all diagonal log closure amplitudes up to inverses
+               err_type (str): 'predicted' or 'measured'
+               num_samples: number of bootstrap (re)samples if measuring error
+               round_s (float): accuracy of datetime object in seconds
+               snrcut (float): flag diagonal log closure amplitudes with snr lower than this
+
+        """
+
+        # Get spacing between datapoints in seconds
+        if len(set([x[0] for x in list(self.unpack('time'))])) > 1:
+            tint0 = np.min(np.diff(np.asarray(sorted(list(set([x[0] for x in list(self.unpack('time'))]))))))*3600.
+        else:
+            tint0 = 0
+
+        if avg_time>tint0:
+            foo = self.avg_incoherent(avg_time,debias=debias,err_type=err_type)
+            cdf = make_logcamp_diag_df(foo,debias='False',count=count,round_s=round_s,snrcut=snrcut)
+        else:
+            foo = self
+            cdf = make_logcamp_diag_df(foo,debias=debias,count=count,round_s=round_s,snrcut=snrcut)
+
+        if return_type=='rec':
+            cdf = df_to_rec(cdf,'logcamp_diag')
+
+        self.logcamp_diag = cdf
+        print("updated self.logcamp_diag: avg_time %f s\n" % avg_time)
+
+        return
+
     def add_all(self, avg_time=0, return_type='rec',
                       count='max', debias=True, snrcut=0.,
                       err_type='predicted', num_samples=1000, round_s=0.1):
@@ -1383,12 +1466,16 @@ class Obsdata(object):
                         err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_cphase(return_type=return_type, count=count, avg_time=avg_time, snrcut=snrcut,
                         err_type=err_type, num_samples=num_samples, round_s=round_s)
+        self.add_cphase_diag(return_type=return_type, count='min', avg_time=avg_time, snrcut=snrcut,
+                        err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='camp',
                      count=count, debias=debias, snrcut=snrcut,
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
         self.add_camp(return_type=return_type, ctype='logcamp',
                      count=count, debias=debias, snrcut=snrcut,
                      avg_time=avg_time, err_type=err_type, num_samples=num_samples, round_s=round_s)
+        self.add_logcamp_diag(return_type=return_type, count='min', debias=debias, avg_time=avg_time,
+                     snrcut=snrcut, err_type=err_type, num_samples=num_samples, round_s=round_s)
 
         return
 
@@ -2748,6 +2835,139 @@ class Obsdata(object):
 #        print("\n")
         return out
 
+    def c_phases_diag(self, vtype='vis', count='min', ang_unit='deg', timetype=False, uv_min=False, snrcut=0.):
+
+        """Return a recarray of the equal time diagonalized closure phases.
+
+           Args:
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure phases
+               count (str): If 'min', return minimal set of phases, if 'min-cut0bl' return minimal set after flaggin zero-baselines
+               ang_unit (str): If 'deg', return closure phases in degrees, else return in radians
+               timetype (str): 'UTC' or 'GMST'
+               uv_min (float): flag baselines shorter than this before forming closure quantities
+               snrcut (float): flag bispectra with snr lower than this               
+
+           Returns:
+               (numpy.recarry): A recarray of the diagonalized closure phases (with datatype DTCPHASEDIAG),
+                                along with associated triangles and transformation matrices
+        """
+
+        if timetype==False:
+            timetype=self.timetype
+        if not count in ('min', 'min-cut0bl'):
+            raise Exception("possible options for count are only 'min' or 'min-cut0bl' for diagonal closure phases")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if timetype not  in ['GMST','UTC','gmst','utc']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
+
+        if ang_unit=='deg': angle=DEGREE
+        else: angle = 1.0
+
+        # determine the appropriate sigmatype
+        if vtype in ["vis", "qvis", "uvis","vvis"]:
+            if vtype=='vis':  sigmatype='sigma'
+            if vtype=='qvis': sigmatype='qsigma'
+            if vtype=='uvis': sigmatype='usigma'
+            if vtype=='vvis': sigmatype='vsigma'
+        if vtype in ["rrvis", "llvis", "rlvis","lrvis"]:
+            if vtype=='rrvis': sigmatype='rrsigma'
+            if vtype=='llvis': sigmatype='llsigma'
+            if vtype=='rlvis': sigmatype='rlsigma'
+            if vtype=='lrvis': sigmatype='lrsigma'
+
+        # get the time-sorted visibility data including conjugate baselines
+        viss = np.concatenate(self.tlist(conj=True))
+
+        # get the closure phase data
+        cps = self.c_phases(vtype=vtype, mode='all', count=count, ang_unit=ang_unit, timetype=timetype, uv_min=uv_min, snrcut=snrcut)
+
+        # get the unique timestamps for the closure phases
+        T_cps = np.unique(cps['time'])
+
+        # list of diagonalized closure phases and corresponding transformation matrices
+        dcps = []
+        dcp_errs = []
+        tfmats = []
+
+        tris = []
+        us = []
+        vs = []
+
+        # loop over the timestamps
+        for it, t in enumerate(T_cps):
+
+            sys.stdout.write('\rDiagonalizing closure phases:: type %s, count %s, scan %i/%i ' % (vtype, count, it+1, len(T_cps)))
+            sys.stdout.flush()
+
+            # index masks for this timestamp
+            mask_cp = (cps['time'] == t)
+            mask_vis = (viss['time'] == t)
+
+            # closure phases for this timestamp
+            cps_here = cps[mask_cp]
+
+            # visibilities for this timestamp
+            viss_here = viss[mask_vis]
+
+            # initialize the design matrix
+            design_mat = np.zeros((mask_cp.sum(),mask_vis.sum()))
+
+            # loop over the closure phases within this timestamp
+            trilist = []
+            ulist = []
+            vlist = []
+            for ic, cp in enumerate(cps_here):
+
+                trilist.append((cp['t1'],cp['t2'],cp['t3']))
+                ulist.append((cp['u1'],cp['u2'],cp['u3']))
+                vlist.append((cp['v1'],cp['v2'],cp['v3']))
+
+                # matrix entry for first leg of triangle
+                ind1 = ((viss_here['t1'] == cp['t1']) & (viss_here['t2'] == cp['t2']))
+                design_mat[ic,ind1] = 1.0
+
+                # matrix entry for second leg of triangle
+                ind2 = ((viss_here['t1'] == cp['t2']) & (viss_here['t2'] == cp['t3']))
+                design_mat[ic,ind2] = 1.0
+
+                # matrix entry for third leg of triangle
+                ind3 = ((viss_here['t1'] == cp['t3']) & (viss_here['t2'] == cp['t1']))
+                design_mat[ic,ind3] = 1.0
+
+            # construct the covariance matrix
+            visphase_err = viss_here[sigmatype]/np.abs(viss_here[vtype])
+            sigma_mat = np.diag(visphase_err**2.0)
+            covar_mat = np.matmul(np.matmul(design_mat,sigma_mat),np.transpose(design_mat))
+
+            # diagonalize via eigendecomposition
+            eigeninfo = np.linalg.eigh(covar_mat)
+            S_matrix = np.copy(eigeninfo[1]).transpose()
+            dcphase = np.matmul(S_matrix,cps_here['cphase'])
+            if ang_unit!='deg': dcphase *= angle
+            dcphase_err = np.sqrt(np.copy(eigeninfo[0])) / angle
+
+            dcps.append(dcphase)
+            dcp_errs.append(dcphase_err)
+            tfmats.append(S_matrix)
+            tris.append(trilist)
+            us.append(ulist)
+            vs.append(vlist)
+
+        # Reformat into a list
+        out = []
+        for it, t in enumerate(T_cps):
+            dcparr = []
+            for idcp, dcp in enumerate(dcps[it]):
+                dcparr.append((t,dcp,dcp_errs[it][idcp]))
+            out.append((np.array(dcparr,dtype=[('time','f8'),('cphase','f8'),('sigmacp','f8')]),
+                np.array(tris[it]).astype(np.dtype([('trianges','U2')])),
+                np.array(us[it]).astype(np.dtype([('u','f8')])),
+                np.array(vs[it]).astype(np.dtype([('v','f8')])),
+                tfmats[it].astype(np.dtype([('tform_matrix','f8')]))))
+        print("\n")
+        return out
+
     def bispectra_tri(self, site1, site2, site3, snrcut=0.,
                             vtype='vis', timetype=False, bs=[],force_recompute=False):
 
@@ -3111,6 +3331,142 @@ class Obsdata(object):
         if mode=='all':
             out = np.array(cas)
 #        print("\n")
+        return out
+
+    def c_log_amplitudes_diag(self, vtype='vis', mode='all', count='min', debias=True, timetype=False, snrcut=0.):
+
+        """Return a recarray of the equal time diagonalized log closure amplitudes.
+
+           Args:
+               vtype (str): The visibilty type ('vis','qvis','uvis','vvis','pvis') from which to assemble closure amplitudes
+               ctype (str): The closure amplitude type ('camp' or 'logcamp')
+               mode (str): If 'time', return amplitudes in a list of equal time arrays, if 'all', return all amplitudes in a single array
+               count (str): If 'min', return minimal set of amplitudes, if 'max' return all closure amplitudes up to inverses
+               debias (bool): If True, debias the closure amplitude - the individual visibility amplitudes are always debiased.
+               timetype (str): 'GMST' or 'UTC'
+               snrcut (float): flag closure amplitudes with snr lower than this               
+
+           Returns:
+               (numpy.recarry): A recarray of the diagonalized log closure amplitudes with datatype DTLOGCAMPDIAG
+
+        """
+
+        if timetype==False:
+            timetype=self.timetype
+        if not mode in ('time','all'):
+            raise Exception("possible options for mode are 'time' and 'all'")
+        if not count in ('min'):
+            raise Exception("count can only be 'min' for diagonal log closure amplitudes")
+        if not vtype in ('vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'):
+            raise Exception("possible options for vtype are 'vis', 'qvis', 'uvis','vvis','rrvis','lrvis','rlvis','llvis'")
+        if timetype not  in ['GMST','UTC','gmst','utc']:
+            raise Exception("timetype should be 'GMST' or 'UTC'!")
+
+        # determine the appropriate sigmatype
+        if vtype in ["vis", "qvis", "uvis","vvis"]:
+            if vtype=='vis':  sigmatype='sigma'
+            if vtype=='qvis': sigmatype='qsigma'
+            if vtype=='uvis': sigmatype='usigma'
+            if vtype=='vvis': sigmatype='vsigma'
+        if vtype in ["rrvis", "llvis", "rlvis","lrvis"]:
+            if vtype=='rrvis': sigmatype='rrsigma'
+            if vtype=='llvis': sigmatype='llsigma'
+            if vtype=='rlvis': sigmatype='rlsigma'
+            if vtype=='lrvis': sigmatype='lrsigma'
+
+        # get the time-sorted visibility data including conjugate baselines
+        viss = np.concatenate(self.tlist(conj=True))
+
+        # get the log closure amplitude data
+        lcas = self.c_amplitudes(vtype=vtype, mode=mode, count=count, ctype='logcamp', debias=debias, timetype=timetype, snrcut=snrcut)
+
+        # get the unique timestamps for the log closure amplitudes
+        T_lcas = np.unique(lcas['time'])
+
+        # list of diagonalized log closure camplitudes and corresponding transformation matrices
+        dlcas = []
+        dlca_errs = []
+        tfmats = []
+
+        quads = []
+        us = []
+        vs = []
+
+        # loop over the timestamps
+        for it, t in enumerate(T_lcas):
+
+            sys.stdout.write('\rDiagonalizing log closure amplitudes:: type %s, count %s, scan %i/%i ' % (vtype, count, it+1, len(T_lcas)))
+            sys.stdout.flush()
+
+            # index masks for this timestamp
+            mask_lca = (lcas['time'] == t)
+            mask_vis = (viss['time'] == t)
+
+            # log closure amplitudes for this timestamp
+            lcas_here = lcas[mask_lca]
+
+            # visibilities for this timestamp
+            viss_here = viss[mask_vis]
+
+            # initialize the design matrix
+            design_mat = np.zeros((mask_lca.sum(),mask_vis.sum()))
+
+            # loop over the log closure amplitudes within this timestamp
+            quadlist = []
+            ulist = []
+            vlist = []
+            for il, lca in enumerate(lcas_here):
+
+                quadlist.append((lca['t1'],lca['t2'],lca['t3'],lca['t4']))
+                ulist.append((lca['u1'],lca['u2'],lca['u3'],lca['u4']))
+                vlist.append((lca['v1'],lca['v2'],lca['v3'],lca['v4']))
+
+                # matrix entry for first leg of quadrangle
+                ind1 = ((viss_here['t1'] == lca['t1']) & (viss_here['t2'] == lca['t2']))
+                design_mat[il,ind1] = 1.0
+
+                # matrix entry for second leg of quadrangle
+                ind2 = ((viss_here['t1'] == lca['t3']) & (viss_here['t2'] == lca['t4']))
+                design_mat[il,ind2] = 1.0
+
+                # matrix entry for third leg of quadrangle
+                ind3 = ((viss_here['t1'] == lca['t1']) & (viss_here['t2'] == lca['t4']))
+                design_mat[il,ind3] = -1.0
+
+                # matrix entry for fourth leg of quadrangle
+                ind4 = ((viss_here['t1'] == lca['t2']) & (viss_here['t2'] == lca['t3']))
+                design_mat[il,ind4] = -1.0
+
+            # construct the covariance matrix
+            logvisamp_err = viss_here[sigmatype]/np.abs(viss_here[vtype])
+            sigma_mat = np.diag(logvisamp_err**2.0)
+            covar_mat = np.matmul(np.matmul(design_mat,sigma_mat),np.transpose(design_mat))
+
+            # diagonalize via eigendecomposition
+            eigeninfo = np.linalg.eigh(covar_mat)
+            T_matrix = np.copy(eigeninfo[1]).transpose()
+            dlogcamp = np.matmul(T_matrix,lcas_here['camp'])
+            dlogcamp_err = np.sqrt(np.copy(eigeninfo[0]))
+
+            dlcas.append(dlogcamp)
+            dlca_errs.append(dlogcamp_err)
+            tfmats.append(T_matrix)
+            quads.append(quadlist)
+            us.append(ulist)
+            vs.append(vlist)
+
+        # Reformat into a list
+        out = []
+        for it, t in enumerate(T_lcas):
+            dlcaarr = []
+            for idlca, dlca in enumerate(dlcas[it]):
+                dlcaarr.append((t,dlca,dlca_errs[it][idlca]))
+            out.append((np.array(dlcaarr,dtype=[('time','f8'),('camp','f8'),('sigmaca','f8')]),
+                np.array(quads[it]).astype(np.dtype([('quadrangles','U2')])),
+                np.array(us[it]).astype(np.dtype([('u','f8')])),
+                np.array(vs[it]).astype(np.dtype([('v','f8')])),
+                tfmats[it].astype(np.dtype([('tform_matrix','f8')]))))
+        print("\n")
         return out
 
     def camp_quad(self, site1, site2, site3, site4, snrcut=0., 

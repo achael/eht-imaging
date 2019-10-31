@@ -1161,7 +1161,6 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         c = 0
         for j in range(len(frame_mjds)):
             Obsdata_List[j].mjd  = InitIm_List[j].mjd
-            Obsdata_List[j].time = InitIm_List[j].time
             try: 
                 Obsdata_List[j].data = np.concatenate(tlist[[x == j for x in idx_list]])
             except: 
@@ -1755,7 +1754,6 @@ minimizer_method = 'L-BFGS-B', update_interval = 1
         pool.close()
 
     #Return Frames
-
     outim = [image.Image(Frames[i].reshape(Prior.ydim, Prior.xdim), Prior.psize,
                          Prior.ra, Prior.dec, rf=Obsdata_List[i].rf, source=Prior.source,
                          mjd=InitIm_List[i].mjd, time=InitIm_List[i].time, pulse=Prior.pulse) for i in range(N_frame)]

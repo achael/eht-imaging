@@ -40,7 +40,7 @@ MAXLS = 40 # maximum number of line search steps in BFGS-B
 STOP = 1e-6 # convergence criterion
 EPS = 1e-8
 
-DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'camp', 'logcamp']
+DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'l1w','lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss', 'hw']
 
 DATATERMS_POL = ['pvis','m','pbs']
