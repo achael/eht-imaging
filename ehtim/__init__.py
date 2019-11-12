@@ -19,6 +19,7 @@ import ehtim.imager
 import ehtim.array
 import ehtim.movie
 import ehtim.image
+import ehtim.model
 import ehtim.vex
 import ehtim.closure
 import ehtim.caltable
