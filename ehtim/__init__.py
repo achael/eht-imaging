@@ -26,6 +26,7 @@ import ehtim.caltable
 import ehtim.parloop
 
 from ehtim.imaging.imager_utils import imager_func
+from ehtim.modeling.modeling_utils import modeler_func
 from ehtim.calibrating import self_cal
 from ehtim.calibrating import network_cal
 from ehtim.calibrating import pol_cal

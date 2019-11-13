@@ -20,6 +20,7 @@ if __name__ == "__main__":
                       "ehtim.calibrating",
                       "ehtim.imaging",
                       "ehtim.io",
+                      "ehtim.modeling",
                       "ehtim.observing",
                       "ehtim.plotting",
                       "ehtim.scattering",

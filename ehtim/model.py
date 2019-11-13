@@ -9,12 +9,14 @@ from builtins import object
 
 import numpy as np
 import scipy.special as sps
+import copy
 
 import ehtim.observing.obs_simulate as simobs
 import ehtim.observing.pulses
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
+from ehtim.modeling.modeling_utils import *
 
 ###########################################################################################################################################
 # Model types
@@ -123,11 +125,54 @@ def sample_1model_uv(u, v, model_type, params):
     else:
         return 0.0
 
+def sample_1model_grad_uv(u, v, model_type, params):
+    # Gradient of the model for each parameter
+    if model_type == 'point': # F0, x0, y0
+        return np.array([ params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+                 1j * 2.0 * np.pi * u * params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+                 1j * 2.0 * np.pi * v * params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))])
+    elif model_type == 'gauss': 
+        u_maj = u*np.sin(params['PA']) + v*np.cos(params['PA'])
+        u_min = u*np.cos(params['PA']) - v*np.sin(params['PA'])
+        return (params['F0'] 
+               * np.exp(-np.pi**2/(4.*np.log(2.)) * ((u_maj * params['FWHM_maj'])**2 + (u_min * params['FWHM_min'])**2))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+    elif model_type == 'disk':
+        z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        return (params['F0'] * 2.0/z * sps.jv(1, z) 
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+    elif model_type == 'ring': # F0, d, x0, y0
+        z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        return np.array([ sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
+                -np.pi * (u**2 + v**2)**0.5 * params['F0'] * sps.jv(1, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
+                 2.0 * np.pi * 1j * u * params['F0'] * sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
+                 2.0 * np.pi * 1j * v * params['F0'] * sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))])
+    elif model_type == 'thick_ring':
+        z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        return (params['F0'] * sps.jv(0, z) 
+               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+    elif model_type == 'mring':
+        phi = np.angle(v + 1j*u)
+        # Flip the baseline sign to match eht-imaging conventions
+        phi += np.pi
+        z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        return (params['F0'] * (sps.jv(0, z) 
+               + np.sum([params['beta_list'][m-1] * sps.jv(m, z) * np.exp(1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+    else:
+        return 0.0
+
 def sample_model_xy(models, params, x, y, psize=1.*RADPERUAS):
     return np.sum(sample_1model_xy(x, y, models[j], params[j], psize=psize) for j in range(len(models)))
 
 def sample_model_uv(models, params, u, v):
     return np.sum(sample_1model_uv(u, v, models[j], params[j]) for j in range(len(models)))
+
+def sample_model_grad_uv(models, params, u, v):
+    # Gradient of a sum of models for each parameter
+    return np.concatenate([sample_1model_grad_uv(u, v, models[j], params[j]) for j in range(len(models))])
 
 class Model(object):
     """A model with analytic representations in the image and visibility domains.
@@ -147,6 +192,12 @@ class Model(object):
         # The model is a sum of component models, each defined by a tag and associated parameters
         self.models = []
         self.params = []
+
+    def copy(self):
+        out = Model()
+        out.models = copy.deepcopy(self.models)
+        out.params = copy.deepcopy(self.params.copy())
+        return out
 
     def N_models(self):
         return len(self.models)
@@ -205,6 +256,18 @@ class Model(object):
                (complex): complex visibility
         """   
         return sample_model_uv(self.models, self.params, u, v)
+
+    def sample_grad_uv(self, u, v):
+        """Sample model visibility gradient on the specified u and v coordinates wrt all parameters
+
+           Args:
+               u (float): u coordinate (dimensionless)
+               v (float): v coordinate (dimensionless)
+
+           Returns:
+               (complex): complex visibility
+        """   
+        return sample_model_grad_uv(self.models, self.params, u, v)
 
     def image_same(self, im):
         """Create an image of the model with parameters equal to a reference image.
