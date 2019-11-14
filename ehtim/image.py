@@ -68,6 +68,7 @@ class Image(object):
            polrep (str): polarization representation, either 'stokes' or 'circ'
            pol_prim (str): The default image: I,Q,U or V for Stokes, or RR,LL,LR,RL for Circular
            _imdict (dict): The dictionary with the polarimetric images
+           _mflist (list): List of spectral index images (and higher order terms)f
     """
 
     def __init__(self, image, psize, ra, dec, pa=0.0,
@@ -131,6 +132,13 @@ class Image(object):
         else:
             raise Exception("polrep must be 'circ' or 'stokes'!")
 
+        # multifrequency spectral index, curvature arrays
+        # TODO -- higher orders? 
+        # TODO -- don't initialize to zero? 
+        avec = [] #np.zeros(imvec.shape)
+        bvec = [] #np.zeros(imvec.shape)
+        self._mflist = [avec,bvec]
+
         # Save the image dimension data
         self.pol_prim =  pol_prim
         self.polrep = polrep
@@ -168,6 +176,28 @@ class Image(object):
 
         #TODO -- more checks on the consistency of the imvec with the existing pol data???
         self._imdict[self.pol_prim] =  vec
+
+    @property
+    def specvec(self):
+        specvec = self._mflist[0]
+        return specvec
+
+    @specvec.setter
+    def specvec(self,vec):
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        self._mflist[0] = vec
+
+    @property
+    def curvvec(self):
+        curvvec = self._mflist[1]
+        return curvvec
+
+    @curvvec.setter
+    def curvvec(self,vec):
+        if len(vec) != self.xdim*self.ydim:
+            raise Exception("vec size is not consistent with xdim*ydim!")
+        self._mflist[1] = vec
 
     @property
     def ivec(self):
@@ -326,7 +356,6 @@ class Image(object):
 
         return self.chivec
 
-    #PIN
     @property
     def evec(self):
         """Return the E mode image vector"""
@@ -387,7 +416,6 @@ class Image(object):
         barr =  np.fft.ifft2(np.fft.ifftshift(barr_fft))
         return np.real(barr.flatten())
 
-
     def image_args(self):
 
         """"Copy arguments for making a  new Image into a list and dictonary
@@ -413,12 +441,14 @@ class Image(object):
         """
 
         # Make new  image with primary polarization
-        newim = Image(self.imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        newim = Image(*arglist, **argdict)
 
         # Copy over all polarization images
         newim.copy_pol_images(self)
+
+        # Copy over spectral index information  
+        newim._mflist = copy.deepcopy(self._mflist)
 
         return newim
 
@@ -573,16 +603,26 @@ class Image(object):
             raise Exception("for switch_polrep to %s with pol_prim_out=%s, \n" % 
                             (polrep_out,pol_prim_out) + "output image is not defined")
 
-        newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
-                      polrep=polrep_out, pol_prim=pol_prim_out, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        arglist[0] = imvec.reshape(self.ydim,self.xdim)
+        argdict['polrep'] = polrep_out
+        argdict['pol_prim'] = pol_prim_out
+        newim = Image(*arglist, **argdict)
+
+        #newim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
+        #              polrep=polrep_out, pol_prim=pol_prim_out, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Add in any other polarizations
         for pol in list(imdict.keys()):
             if pol==newim.pol_prim: continue
             polvec = imdict[pol]
             if len(polvec):
-                newim.add_pol_image(polvec.reshape(self.ydim,self.xdim), pol)
+                polarr = polvec.reshape(self.ydim,self.xdim)
+                newim.add_pol_image(polarr, pol)
+
+        # Add in spectral index
+        newim._mflist = copy.deepcopy(self._mflist)
 
         return newim
 
@@ -624,6 +664,41 @@ class Image(object):
 
         return im
 
+
+    def get_image_mf(self, nu):
+        
+        """Get image at a given frequency given the spectral information in self._mflist
+           
+           Args:
+               nu (float): frequency in Hz
+
+           Returns:
+               (Image): image at the desired frequency
+        """
+        #TODO -- what to do about polarization? Faraday rotation?
+        
+        nuref = self.rf
+        log_nufrac = np.log(nu/nuref)
+        log_imvec = np.log(self.imvec)
+
+        for n, mfvec in enumerate(self._mflist):
+            if len(mfvec):
+                log_imvec += mfvec * (log_nufrac**(n+1))
+        imvec = np.exp(log_imvec)
+
+        arglist, argdict = self.image_args()
+        arglist[0] = imvec.reshape(self.ydim, self.xdim)
+        argdict['rf'] = nu
+        outim = Image(*arglist, **argdict)
+
+        # Copy over all polarization images -- unchanged for now
+        outim.copy_pol_images(self)
+
+        # DON'T copy over spectral index information for now
+        #outim._mflist = copy.deepcopy(self._mflist)
+
+        return outim
+                
     def imarr(self, pol=None):
 
         """Return the 2D image array of a given pol parameter.
@@ -820,9 +895,13 @@ class Image(object):
         imarr=np.pad(imarr,((pady,pady),(padx,padx)),'constant')
 
         # Make new image
-        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Pad all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -832,6 +911,18 @@ class Image(object):
                 polarr=polvec.reshape(self.ydim, self.xdim)
                 polarr=np.pad(polarr,((pady,pady),(padx,padx)), 'constant')
                 outim.add_pol_image(polarr, pol)
+
+        # Add in spectral index
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr=mfvec.reshape(self.ydim, self.xdim)
+                mfarr=np.pad(mfarr,((pady,pady),(padx,padx)), 'constant')
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        newim._mflist = mflist_out
 
         return outim
 
@@ -890,9 +981,14 @@ class Image(object):
         imarr_new *= scaling
 
         # Make new image
-        outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr_new
+        arglist[1] = psize_new
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Interpolate all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -902,6 +998,17 @@ class Image(object):
                 polarr_new = im_new(polvec)
                 polarr_new *= scaling
                 outim.add_pol_image(polarr_new, pol)
+
+        # Interpolate spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr=im_new(mfvec)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
 
         return outim
 
@@ -943,10 +1050,15 @@ class Image(object):
 
         # Make new image
         imarr_new = interp_imvec(self.imvec)
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr_new
+        arglist[1] = psize_new
 
-        outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr_new, psize_new, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Interpolate all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -955,6 +1067,17 @@ class Image(object):
             if len(polvec):
                 polarr_new = interp_imvec(polvec)
                 outim.add_pol_image(polarr_new, pol)
+
+        # Interpolate spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = interp_imvec(mfvec)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
 
         return outim
 
@@ -993,9 +1116,14 @@ class Image(object):
 
         # Make new image
         imarr_rot = rot_imvec(self.imvec)
-        outim = Image(imarr_rot, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr_rot
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr_rot, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Rotate all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -1015,6 +1143,17 @@ class Image(object):
                     polarr_rot = np.imag(np.exp(1j*2*angle) * polarr_rot)
 
                 outim.add_pol_image(polarr_rot, pol)
+
+        # Rotate spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = rot_imvec(mfvec)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
 
         return outim
 
@@ -1037,9 +1176,14 @@ class Image(object):
 
         # Make new image
         imarr_shift = shift_imvec(self.imvec)
-        outim = Image(imarr_shift, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr_shift
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr_shift, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Shift all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -1048,6 +1192,17 @@ class Image(object):
             if len(polvec):
                 polarr_shift = shift_imvec(polvec)
                 outim.add_pol_image(polarr_shift, pol)
+
+        # Shift spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = shift_imvec(mfvec)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
 
         return outim
 
@@ -1073,8 +1228,11 @@ class Image(object):
 
         imarr = self.imvec.reshape((Ny,Nx))
         imarr_rotate = np.real(np.fft.ifft2(np.fft.fft2(imarr)*rotate))
-        out = self.copy(); 
-        out.imvec = imarr_rotate.flatten()
+
+        # make new Image
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr_rotate
+        outim = Image(*arglist, **argdict)
 
         # Shift all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -1083,9 +1241,21 @@ class Image(object):
             if len(polvec):
                 imarr = polvec.reshape((Ny,Nx))
                 imarr_rotate = np.real(np.fft.ifft2(np.fft.fft2(imarr)*rotate))
-                out.add_pol_image(imarr_rotate, pol)
+                outim.add_pol_image(imarr_rotate, pol)
 
-        return out
+        # Shift spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = mfvec.reshape((Ny,Nx))
+                mfarr = np.real(np.fft.ifft2(np.fft.fft2(mfarr)*rotate))
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
+
+        return outim
 
     def blur_gauss(self, beamparams, frac=1., frac_pol=0):
 
@@ -1131,11 +1301,16 @@ class Image(object):
 
         # Convolve the primary image
         imarr = (self.imvec).reshape(self.ydim, self.xdim)
+        imarr_blur = blur(imarr,gauss)
 
+        # Make new image object
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr_blur
+        outim = Image(*arglist, **argdict)
 
-        outim = Image(blur(imarr,gauss), self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        #outim = Image(blur(imarr,gauss), self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Blur all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -1144,8 +1319,20 @@ class Image(object):
             if len(polvec):
                 polarr = polvec.reshape(self.ydim, self.xdim)
                 if frac_pol:
-                    polarr = blur(polarr,gauss)
+                    polarr = blur(polarr, gausspol)
                 outim.add_pol_image(polarr, pol)
+
+        # Blur spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = mfvec.reshape(self.ydim, self.xdim)
+                mfarr = blur(mfarr,gauss)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
 
         return outim
 
@@ -1174,10 +1361,15 @@ class Image(object):
 
         # Blur the primary image
         imarr = self.imvec.reshape(self.ydim, self.xdim)
-        imarr = blur(imarr,sigmap)
-        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        imarr_blur = blur(imarr,sigmap)
+
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr_blur
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Blur all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -1191,6 +1383,18 @@ class Image(object):
                     sigmap = sigma / self.psize
                     polarr = blur(polarr, sigmap)
                 outim.add_pol_image(polarr, pol)
+
+        # Blur spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = mfvec.reshape(self.ydim, self.xdim)
+                mfarr = blur(mfarr, sigmap)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
 
         return outim
 
@@ -1226,9 +1430,14 @@ class Image(object):
 
         # Find the gradient for the primary image
         gradarr = gradim(self.imvec)
-        outim = Image(gradarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        arglist, argdict = self.image_args()
+        arglist[0] = gradarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(gradarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Find the gradient for all polarizations and copy over
         for pol in list(self._imdict.keys()):
@@ -1237,6 +1446,17 @@ class Image(object):
             if len(polvec):
                 gradarr = gradim(polvec)
                 outim.add_pol_image(gradarr, pol)
+
+        # Find the spectral index gradients and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfarr = gradim(mfvec)
+                mfvec_out = mfarr.flatten()
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
 
         return outim
 
@@ -1277,14 +1497,21 @@ class Image(object):
 
         # make the primary image
         maskarr = maskvec.reshape(mask.ydim, mask.xdim)
-        mask = Image(maskarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        arglist, argdict = self.image_args()
+        arglist[0] = maskarr
+        mask = Image(*arglist, **argdict)
+
+        #mask = Image(maskarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Replace all polarization imvecs with mask
         for pol in list(self._imdict.keys()):
             if pol==self.pol_prim: continue
             mask.add_pol_image(maskarr, pol)
+
+        # No spectral index information in mask
 
         return mask
 
@@ -1313,17 +1540,36 @@ class Image(object):
         # Mask the primary image
         imvec = self.imvec
         imvec[~maskvec] = fill_val
-        outim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        imarr = imvec.reshape(self.ydim,self.xdim)
 
-        # Find the gradient for all polarizations and copy over
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imvec.reshape(self.ydim,self.xdim), self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+
+        # Apply mask to all polarizations and copy over
         for pol in list(self._imdict.keys()):
             if pol==self.pol_prim: continue
             polvec = self._imdict[pol]
             if len(polvec):
                 polvec[~maskvec] = fill_val
-                outim.add_pol_image(polvec.reshape(self.ydim,self.xdim), pol)
+                polarr = polvec.reshape(self.ydim,self.xdim)
+                outim.add_pol_image(polarr, pol)
+
+        # Apply mask to spectral index and copy over
+        mflist_out = []
+        for mfvec in self._mflist:
+            if len(mfvec):
+                mfvec_out = copy.deepcopy(mfvec)
+                mfvec_out[~maskvec] = 0.
+            else:
+                mfvec_out = []
+            mflist_out.append(mfvec_out)
+        outim._mflist = mflist_out
+
 
         return outim
 
@@ -1381,9 +1627,13 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += flatarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the polarizations
         for pol2 in list(self._imdict.keys()):
@@ -1394,6 +1644,9 @@ class Image(object):
                 if pol2==pol:
                     polarr += flatarr
                 outim.add_pol_image(polarr, pol2)
+
+        # Copy the spectral index (unchanged)
+        outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
 
@@ -1433,9 +1686,13 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += hatarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the polarizations
         for pol2 in list(self._imdict.keys()):
@@ -1446,6 +1703,9 @@ class Image(object):
                 if pol2==pol:
                     polarr += hatarr
                 outim.add_pol_image(polarr, pol2)
+
+        # Copy the spectral index (unchanged)
+        outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
 
@@ -1498,9 +1758,13 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += gaussarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the polarizations
         for pol2 in list(self._imdict.keys()):
@@ -1511,6 +1775,9 @@ class Image(object):
                 if pol2==pol:
                     polarr += gaussarr
                 outim.add_pol_image(polarr, pol2)
+
+        # Copy the spectral index (unchanged)
+        outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
 
@@ -1559,9 +1826,13 @@ class Image(object):
         if pol==self.pol_prim:
             imarr += crescarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist, argdict = self.image_args()
+        arglist[0] = imarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim,  time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the polarizations
         for pol2 in list(self._imdict.keys()):
@@ -1572,6 +1843,9 @@ class Image(object):
                 if pol2==pol:
                     polarr += crescarr
                 outim.add_pol_image(polarr, pol2)
+
+        # Copy the spectral index (unchanged)
+        outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
 
@@ -1618,20 +1892,28 @@ class Image(object):
                              for i in xlist]
                              for j in ylist])
         ringarr = ringarr[0:self.ydim, 0:self.xdim]
-        tmp = Image(ringarr, self.psize, self.ra, self.dec, self.pa, 
-                    rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
-        tmp = tmp.blur_circ(sigma)
-        tmp.imvec *= flux/(tmp.total_flux())
-        ringarr = tmp.imvec.reshape(self.ydim, self.xdim)
+
+        arglist, argdict = self.image_args()
+        arglist[0] = ringarr
+        outim = Image(*arglist, **argdict)
+
+        #tmp = Image(ringarr, self.psize, self.ra, self.dec, self.pa, 
+        #            rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        outim = outim.blur_circ(sigma)
+        outim.imvec *= flux/(tmp.total_flux())
+        ringarr = outim.imvec.reshape(self.ydim, self.xdim)
 
         # Add to the main image and create the new image object
         imarr = self.imvec.reshape(self.ydim, self.xdim).copy()
         if pol==self.pol_prim:
             imarr += ringarr
 
-        outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        arglist[0] = imarr
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(imarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep=self.polrep, pol_prim=self.pol_prim, time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the polarizations
         for pol2 in list(self._imdict.keys()):
@@ -1642,6 +1924,9 @@ class Image(object):
                 if pol2==pol:
                     polarr += ringarr
                 outim.add_pol_image(polarr, pol2)
+
+        # Copy the spectral index (unchanged)
+        outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
 
@@ -1665,8 +1950,6 @@ class Image(object):
         if not (0 <= cmag < 1):
             raise Exception("circular polarization magnitude must be between 0 and 1!")
 
-        im = self
-
         if self.polrep=='stokes':
             im_stokes = self
         elif self.polrep=='circ':
@@ -1677,10 +1960,17 @@ class Image(object):
         vvec = cmag * np.sign(csign) * ivec
 
         # create the new stokes image object
-        iarr = ivec.reshape(im.ydim,im.xdim).copy()
-        outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep='stokes', pol_prim='I', time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        iarr = ivec.reshape(self.ydim,self.xdim).copy()
+        
+        arglist, argdict = self.image_args()
+        arglist[0] = iarr
+        argdict['polrep']='stokes'
+        argdict['pol_prim']='I'
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep='stokes', pol_prim='I', time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Copy over the rest of the polarizations
         imdict = {'I':ivec,'Q':qvec,'U':uvec,'V':vvec}
@@ -1690,6 +1980,9 @@ class Image(object):
             if len(polvec):
                 polarr = polvec.reshape(self.ydim, self.xdim).copy()
                 outim.add_pol_image(polarr, pol)
+
+        # Copy the spectral index (unchanged)
+        outim._mflist = copy.deepcopy(self._mflist)
 
         return outim
 
@@ -1716,8 +2009,6 @@ class Image(object):
         if not (0 <= cmag < 1):
             raise Exception("circular polarization magnitude must be between 0 and 1!")
 
-        im = self
-
         if self.polrep=='stokes':
             im_stokes = self
         elif self.polrep=='circ':
@@ -1725,10 +2016,17 @@ class Image(object):
         ivec = im_stokes.ivec.copy()
 
         # create the new stokes image object
-        iarr = ivec.reshape(im.ydim,im.xdim).copy()
-        outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
-                      polrep='stokes', pol_prim='I', time=self.time,
-                      rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
+        iarr = ivec.reshape(self.ydim,self.xdim).copy()
+
+        arglist, argdict = self.image_args()
+        arglist[0] = iarr
+        argdict['polrep']='stokes'
+        argdict['pol_prim']='I'
+        outim = Image(*arglist, **argdict)
+
+        #outim = Image(iarr, self.psize, self.ra, self.dec, self.pa,
+        #              polrep='stokes', pol_prim='I', time=self.time,
+        #              rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
 
         # Make a random phase screen using the scattering tools
         # Use this screen to define the EVPA
@@ -1739,7 +2037,7 @@ class Image(object):
                                 source_screen_distance = 1.e5 * dist,
                                 theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, 
                                 r_in = rdiff*2, r_out = 1e30)
-        ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed)
+        ep = so.MakeEpsilonScreen(self.xdim, self.ydim, rngseed = seed)
         ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
         qvec = ivec * mag * np.sin(ps)
         uvec = ivec * mag * np.cos(ps)
@@ -1754,7 +2052,7 @@ class Image(object):
                                     source_screen_distance = 1.e5 * dist, 
                                     theta_maj_mas_ref = theta_mas, theta_min_mas_ref = theta_mas, 
                                     r_in = rdiff*2, r_out = 1e30)
-            ep = so.MakeEpsilonScreen(im.xdim, im.ydim, rngseed = seed*2)
+            ep = so.MakeEpsilonScreen(self.xdim, self.ydim, rngseed = seed*2)
             ps = np.array(sm.MakePhaseScreen(ep, im, obs_frequency_Hz=29.979e9).imvec)/1000**(1.66/2)
             vvec = ivec * cmag * np.sin(ps)
         else:
@@ -1769,6 +2067,30 @@ class Image(object):
                 polarr = polvec.reshape(self.ydim, self.xdim).copy()
                 outim.add_pol_image(polarr, pol)
 
+        # Copy the spectral index (unchanged)
+        outim._mflist = copy.deepcopy(self._mflist)
+
+        return outim
+
+    def add_const_mf(self, alpha, beta=0.):
+
+        """Add a constant spectral index and curvature term 
+
+           Args:
+               alpha (float): spectral index (with no - sign)
+               beta (float): curvature
+
+           Returns:
+                (Image): output image with constant mf information added
+        """
+
+        avec = alpha* np.ones(len(self.imvec))
+        bvec = beta * np.ones(len(self.imvec))
+
+        # create the new image object
+        outim = self.copy()
+        outim._mflist = [avec, bvec]
+        
         return outim
     
     def add_zblterm(self, obs, uv_min, zblval=None, new_fov=False, 

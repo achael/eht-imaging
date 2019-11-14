@@ -213,6 +213,7 @@ class Obsdata(object):
                (Obsdata): a copy of the Obsdata object.
         """
 
+        # TODO: Is this right? Do we want to copy over e.g. closure tables?
         newobs = copy.deepcopy(self)
 
         return newobs

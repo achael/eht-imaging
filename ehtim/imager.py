@@ -213,7 +213,8 @@ class Imager(object):
         self.plotcur(self._xinit, **kwargs)
 
         # Minimize
-        optdict = {'maxiter':self.maxit_next, 'ftol':self.stop_next, 'gtol':self.stop_next,
+        optdict = {'maxiter':self.maxit_next, 
+                   'ftol':self.stop_next, 'gtol':self.stop_next,
                    'maxcor':NHIST, 'maxls':MAXLS}
         tstart = time.time()
         if grads:
@@ -290,7 +291,7 @@ class Imager(object):
                 outim.add_pol_image(polarr, pol2)
 
         # Append to history
-        logstr = str(self.nruns) + ": make_image(pol=%s)"%pol #TODO - what should the log string be?
+        logstr = str(self.nruns) + ": make_image(pol=%s)" % pol #TODO - what should the log string be?
         self._append_image_history(outim, logstr)
         self.nruns += 1
 
