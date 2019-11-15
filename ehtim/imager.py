@@ -978,14 +978,14 @@ class Imager(object):
             # multifrequency regularizer
             elif self.mf_next:
                 if regname in REGULARIZERS: 
-                    reg = regularizer(imcur[0], self._nprior, self._embed_mask,
+                    reg = regularizer(imcur[0], self.priortuple[0], self._embed_mask,
                                           self.flux_next, self.prior_next.xdim,
                                           self.prior_next.ydim, self.prior_next.psize,
                                           regname,
                                           norm_reg=self.norm_reg, beam_size=self.beam_size,
                                           **self.regparams)
                 elif regname in REGULARIZERS_SPECIND:
-                    reg = regularizer_mf(imcur[1], self._nprior, self._embed_mask,
+                    reg = regularizer_mf(imcur[1], self.priortuple[1], self._embed_mask,
                                           self.flux_next, self.prior_next.xdim,
                                           self.prior_next.ydim, self.prior_next.psize,
                                           regname,
@@ -993,7 +993,7 @@ class Imager(object):
                                           **self.regparams)
 
                 elif regname in REGULARIZERS_CURV:
-                    reg = regularizer_mf(imcur[2], self._nprior, self._embed_mask,
+                    reg = regularizer_mf(imcur[2], self.priortuple[2], self._embed_mask,
                                           self.flux_next, self.prior_next.xdim,
                                           self.prior_next.ydim, self.prior_next.psize,
                                           regname,
@@ -1031,8 +1031,9 @@ class Imager(object):
 
             # multifrequency regularizer
             elif self.mf_next:
+
                 if regname in REGULARIZERS: 
-                    reg = regularizergrad(imcur[0], self._nprior, self._embed_mask,
+                    reg = regularizergrad(imcur[0], self.priortuple[0], self._embed_mask,
                                           self.flux_next, self.prior_next.xdim,
                                           self.prior_next.ydim, self.prior_next.psize,
                                           regname,
@@ -1041,7 +1042,7 @@ class Imager(object):
                     reg = np.array((reg, np.zeros(self._nimage), np.zeros(self._nimage)))
 
                 elif regname in REGULARIZERS_SPECIND:
-                    reg = regularizergrad_mf(imcur[1], self._nprior, self._embed_mask,
+                    reg = regularizergrad_mf(imcur[1], self.priortuple[1], self._embed_mask,
                                           self.flux_next, self.prior_next.xdim,
                                           self.prior_next.ydim, self.prior_next.psize,
                                           regname,
@@ -1050,7 +1051,7 @@ class Imager(object):
                     reg = np.array((np.zeros(self._nimage), reg, np.zeros(self._nimage)))
 
                 elif regname in REGULARIZERS_CURV:
-                    reg = regularizergrad_mf(imcur[2], self._nprior, self._embed_mask,
+                    reg = regularizergrad_mf(imcur[2], self.priortuple[2], self._embed_mask,
                                           self.flux_next, self.prior_next.xdim,
                                           self.prior_next.ydim, self.prior_next.psize,
                                           regname,
