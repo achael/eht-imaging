@@ -23,7 +23,7 @@ im230 = im.get_image_mf(230.e9)
 im345 = im.get_image_mf(345.e9)
 
 # Observe the image at two different frequencies
-tint_sec = 240
+tint_sec = 120
 tadv_sec = 600
 tstart_hr = 0
 tstop_hr = 24
@@ -33,6 +33,13 @@ obs230 = im230.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
 obs345 = im345.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
                         sgrscat=False, ampcal=True, phasecal=True)
 obslist = [obs230,obs345]
+
+#observe at 345 with no spectral index applied
+im345_nospec = im230.copy()
+im345_nospec.rf = 345e9
+obs345_nospec = im345_nospec.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz,
+                                     sgrscat=False, ampcal=True, phasecal=True)
+obslist_nospec = [obs230,obs345_nospec]
 
 # Resolution
 beamparams230 = obs230.fit_beam() # fitted beam parameters (fwhm_maj, fwhm_min, theta) in radians
@@ -49,51 +56,50 @@ prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
 emptyprior = eh.image.make_square(obs230, npix, fov)
 flatprior = emptyprior.add_flat(zbl)
 gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
-gaussprior = gaussprior.add_const_mf(2.3) #regularize to the slightly wrong value
+
 
 ## Image both frequencies independently with complex visibilities
 flux230 = zbl
 imgr230  = eh.imager.Imager(obs230, gaussprior, gaussprior, flux230,
                             data_term={'vis':100}, show_updates=False,
-                            reg_term={'simple':1,'flux':100,'cm':50},
+                            reg_term={'tv2':1.e4,'l1':5},
                             maxit=200, ttype='nfft')
-imgr230.make_image_I(show_updates=False)
+imgr230.make_image_I(show_updates=True)
 out230 = imgr230.out_last()
 
 
 flux345 = im345.total_flux()
 imgr345  = eh.imager.Imager(obs345, gaussprior, gaussprior, flux345,
                             data_term={'vis':100}, show_updates=False,
-                            reg_term={'simple':1,'flux':100,'cm':50},
+                            reg_term={'tv2':1},
                             maxit=200, ttype='nfft')
 imgr345.make_image_I(show_updates=False)
 out345 = imgr345.out_last()
 
-
-## Image both frequencies together with multifrequency imaging
-#imgr  = eh.imager.Imager(obslist, gaussprior, gaussprior, zbl,
-#                            data_term={'vis':100}, show_updates=False,
-#                            reg_term={'simple':1,'flux':100,'cm':50,'l2_alpha':1},
-#                            maxit=200, ttype='nfft')
-#imgr.make_image_I(mf=True)
-#out = imgr.out_last()
-
-# Image both frequencies together, starting with 230 solution
-out230_b = out230.add_const_mf(2.3).blur_circ(15*eh.RADPERUAS) #regularize to the slightly wrong value
-imgr  = eh.imager.Imager(obslist, out230_b, out230_b, zbl,
+## Image both frequencies together without multifrequency imaging (no spectral index)
+imgr  = eh.imager.Imager(obslist_nospec, gaussprior, gaussprior, zbl,
                             data_term={'vis':100}, show_updates=False,
-                            reg_term={'simple':1,'flux':100,'cm':50,'l2_alpha':1},
+                            reg_term={'tv2':1.e4,'l1':5},
                             maxit=200, ttype='nfft')
+imgr.make_image_I(show_updates=False)
+out_nospec = imgr.out_last()
+
+# Image both frequencies together with spectral index
+plt.close('all')
+gaussprior = gaussprior.add_const_mf(3)
+imgr  = eh.imager.Imager(obslist, gaussprior, gaussprior, zbl,
+                            data_term={'vis':100}, show_updates=False,
+                            reg_term={'tv2':1.e4,'l1':5},
+                            maxit=100, ttype='nfft')
 imgr.make_image_I(mf=True,show_updates=False)
 out = imgr.out_last()
 
-# blur and reimage
-out = out.blur_circ(15*eh.RADPERUAS)
-imgr.maxit_next=500
-imgr.init_next = out
-imgr.stop_next = 1.e-6
-imgr.make_image_I(mf=True,show_updates=False)
-out = imgr.out_last()
+for i in range(3): # blur and reimage
+    out = out.blur_circ(15*eh.RADPERUAS)
+    imgr.maxit_next=500
+    imgr.init_next = out
+    imgr.make_image_I(mf=True,show_updates=False)
+    out = imgr.out_last()
 
 # look at results
 out230_mf = out.get_image_mf(230.e9)
