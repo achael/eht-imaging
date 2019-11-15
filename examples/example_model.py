@@ -9,17 +9,17 @@ import numpy as np
 import ehtim as eh
 
 mod = eh.model.Model()
-mod.add_mring(1.5, 50.*eh.RADPERUAS, beta_list=[0.5])
+#mod.add_circ_gauss(1.5, 50.*eh.RADPERUAS, x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
+#mod.add_mring(1.5, 50.*eh.RADPERUAS, beta_list=[0.5])
 mod.add_thick_ring(1.5, 50.*eh.RADPERUAS, alpha=10.*eh.RADPERUAS, x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
 #mod.add_ring(1.5, 25.*eh.RADPERUAS, x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
 #mod.add_gauss(1.5, 20.*eh.RADPERUAS, 40.*eh.RADPERUAS, PA=20.*np.pi/180., x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
 #mod.add_point(0.5, 5.02*eh.RADPERUAS, 25.04*eh.RADPERUAS)
 
 # View the model as an image
-im = eh.image.load_txt('../models/avery_sgra_eofn.txt')
-mod_im = mod.image_same(im)
+mod_im = mod.make_image(100.*eh.RADPERUAS, 256)
 mod_im.display()
-mod_im.blur_circ(10.*eh.RADPERUAS).display()
+#mod_im.blur_circ(10.*eh.RADPERUAS).display()
 
 # Make an observation
 obs = eh.obsdata.load_uvfits('/home/michael/Dropbox/ER5_polarization_calibration/ER5/postproc-hops-lo/3.+netcal/3601/hops_3601_M87+netcal.uvfits')

@@ -59,13 +59,40 @@ nit = 0 # global variable to track the iteration number in the plotting callback
 ##################################################################################################
 
 
+def prior_func(x, prior_params):
+    prior_min = 1e-200 # to avoid problems with log-prior
+    if prior_params['prior_type'] == 'flat':
+        return (x > prior_params['min']) * (x < prior_params['max']) * 1.0/(prior_params['max'] - prior_params['min']) + prior_min
+    elif prior_params['prior_type'] == 'positive':
+        return (x >= 0.0) * 1.0 + prior_min
+    elif prior_params['prior_type'] == 'none':
+        return 1.0
+    elif prior_params['prior_type'] == 'fixed':
+        return 1.0
+    else:
+        print('Prior not recognized!')
+        return 1.0
+
+def prior_grad_func(x, prior_params):
+    if prior_params['prior_type'] == 'flat':
+        return 0.0
+    elif prior_params['prior_type'] == 'positive':
+        return 0.0
+    elif prior_params['prior_type'] == 'none':
+        return 0.0
+    elif prior_params['prior_type'] == 'fixed':
+        return 0.0
+    else:
+        print('Prior not recognized!')
+        return 0.0
+
 ##################################################################################################
 # Modeler
 ##################################################################################################
 def modeler_func(Obsdata, model, model_prior,
                    d1='vis', d2=False, d3=False,
                    alpha_d1=100, alpha_d2=100, alpha_d3=100,
-                   **kwargs):
+                   minimizer_method='L-BFGS-B', **kwargs):
 
     """Fit a specified model. 
 
@@ -116,18 +143,21 @@ def modeler_func(Obsdata, model, model_prior,
 
     # Define the mapping between solved parameters and the model
     # Each fitted model parameter is rescaled to give values closer to order unity
-    param_map = []
-    param_mask = []
+    param_map = []  # Define mapping for every fitted parameter: model component #, parameter name, rescale multiplier, unit
+    param_mask = [] # True or False for whether to fit each model parameter
+    param_details = {'F0':[1,'Jy'], 'FWHM':[RADPERUAS,'uas'], 'd':[RADPERUAS,'uas'], 'x0':[RADPERUAS,'uas'], 'y0':[RADPERUAS,'uas']}
     for j in range(model.N_models()):
-        if model.models[j] == 'ring':
-            param_map.append([j,'F0',1,'Jy'])
-            param_mask.append(True)
-            param_map.append([j,'d',RADPERUAS,'uas'])
-            param_mask.append(True)
-            param_map.append([j,'x0',RADPERUAS,'uas'])
-            param_mask.append(True)
-            param_map.append([j,'y0',RADPERUAS,'uas'])
-            param_mask.append(True)
+        if model.models[j] == 'circ_gauss':
+            params = ['F0','FWHM','x0','y0']
+        elif model.models[j] == 'ring':
+            params = ['F0','d','x0','y0']
+
+        for param in params:
+            if model_prior[j][param]['prior_type'] != 'fixed':
+                param_mask.append(True)
+                param_map.append([j,param,param_details[param][0],param_details[param][1]])
+            else:
+                param_mask.append(False)
 
     # Get data and info for the data terms
     (data1, sigma1, uv1) = chisqdata(Obsdata, d1)
@@ -161,26 +191,30 @@ def modeler_func(Obsdata, model, model_prior,
             trial_model.params[param_map[j][0]][param_map[j][1]] = params[j] * param_map[j][2]
 
     # Define prior
-    def prior():
-        return np.log(1.0) #prior(params, model_prior)
+    def prior(params):
+#        print(params)
+#        print(np.sum([np.log(prior_func(params[j], model_prior[param_map[j][0]][param_map[j][1]])) for j in range(len(params))]))
+        return np.sum([np.log(prior_func(params[j], model_prior[param_map[j][0]][param_map[j][1]])) for j in range(len(params))])
 
-    def prior_grad():
-        return np.log(1.0) #prior(params, model_prior)
+    def prior_grad(params):
+        f  = np.array([prior_func(params[j], model_prior[param_map[j][0]][param_map[j][1]]) for j in range(len(params))])
+        df = np.array([prior_grad_func(params[j], model_prior[param_map[j][0]][param_map[j][1]]) for j in range(len(params))])
+        return df/f
 
     # Define the objective function and gradient
     def objfunc(params):
         set_params(params)
         datterm  = alpha_d1 * (chisq1() - 1) + alpha_d2 * (chisq2() - 1) + alpha_d3 * (chisq3() - 1)
-        priterm  = prior()
+        priterm  = prior(params)
 
-        return datterm + priterm
+        return datterm - priterm
 
     def objgrad(params):
         set_params(params)
         datterm  = alpha_d1 * chisq1grad() + alpha_d2 * chisq2grad() + alpha_d3 * chisq3grad()
-        priterm  = prior_grad()
+        priterm  = prior_grad(params)
 
-        grad = datterm + priterm
+        grad = datterm - priterm
 
         for j in range(len(params)):
             grad[j] *= param_map[j][2]
@@ -198,7 +232,7 @@ def modeler_func(Obsdata, model, model_prior,
             chi2_2 = chisq2()
             chi2_3 = chisq3()
             #plot_i(im_step, Prior, nit, {d1:chi2_1, d2:chi2_2, d3:chi2_3}, pol=pol)   # could sample model and plot it
-            print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_3: %0.2f" % (nit, chi2_1, chi2_2, chi2_3))
+            print("i: %d chi2_1: %0.2f chi2_2: %0.2f chi2_3: %0.2f prior: %0.2f" % (nit, chi2_1, chi2_2, chi2_3, prior(params_step)))
         nit += 1
 
     # Initial parameters
@@ -221,7 +255,7 @@ def modeler_func(Obsdata, model, model_prior,
     # Minimize
     optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST,'gtol':stop,'maxls':MAXLS} # minimizer dict params
     tstart = time.time()
-    res = opt.minimize(objfunc, param_init, method='L-BFGS-B', jac=objgrad,
+    res = opt.minimize(objfunc, param_init, method=minimizer_method, jac=objgrad,
                        options=optdict, callback=plotcur)
 
     tstop = time.time()
@@ -356,180 +390,220 @@ def chisqgrad_vis(model, uv, vis, sigma):
     out = -np.real(np.dot(grad.conj(), wdiff))/len(vis)
     return out
 
-def chisq_amp(imvec, A, amp, sigma):
+def chisq_amp(model, uv, amp, sigma):
     """Visibility Amplitudes (normalized) chi-squared"""
 
-    amp_samples = np.abs(np.dot(A, imvec))
+    amp_samples = np.abs(model.sample_uv(uv[:,0],uv[:,1]))
     return np.sum(np.abs((amp - amp_samples)/sigma)**2)/len(amp)
 
-def chisqgrad_amp(imvec, A, amp, sigma):
+def chisqgrad_amp(model, uv, amp, sigma):
     """The gradient of the amplitude chi-squared"""
 
-    i1 = np.dot(A, imvec)
+    i1 = model.sample_uv(uv[:,0],uv[:,1])
     amp_samples = np.abs(i1)
 
     pp = ((amp - amp_samples) * amp_samples) / (sigma**2) / i1
-    out = (-2.0/len(amp)) * np.real(np.dot(pp, A))
+    grad = model.sample_grad_uv(uv[:,0],uv[:,1])
+    out = (-2.0/len(amp)) * np.real(np.dot(grad, pp))
     return out
 
-def chisq_bs(imvec, Amatrices, bis, sigma):
+def chisq_bs(model, uv, bis, sigma):
     """Bispectrum chi-squared"""
 
-    bisamples = np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) * np.dot(Amatrices[2], imvec)
+    bisamples = model.sample_uv(uv[0][:,0],uv[0][:,1]) * model.sample_uv(uv[1][:,0],uv[1][:,1]) * model.sample_uv(uv[2][:,0],uv[2][:,1])
     chisq= np.sum(np.abs(((bis - bisamples)/sigma))**2)/(2.*len(bis))
     return chisq
 
-def chisqgrad_bs(imvec, Amatrices, bis, sigma):
+def chisqgrad_bs(model, uv, bis, sigma):
     """The gradient of the bispectrum chi-squared"""
 
-    bisamples = np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) * np.dot(Amatrices[2], imvec)
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1])
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1])
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1])
+    bisamples = V1 * V2 * V3 
     wdiff = ((bis - bisamples).conj())/(sigma**2)
-    pt1 = wdiff * np.dot(Amatrices[1],imvec) * np.dot(Amatrices[2],imvec)
-    pt2 = wdiff * np.dot(Amatrices[0],imvec) * np.dot(Amatrices[2],imvec)
-    pt3 = wdiff * np.dot(Amatrices[0],imvec) * np.dot(Amatrices[1],imvec)
-    out = -np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))/len(bis)
+    pt1 = wdiff * V2 * V3
+    pt2 = wdiff * V1 * V3
+    pt3 = wdiff * V1 * V2
+    out = -np.real(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T))/len(bis)
     return out
 
-def chisq_cphase(imvec, Amatrices, clphase, sigma):
+def chisq_cphase(model, uv, clphase, sigma):
     """Closure Phases (normalized) chi-squared"""
     clphase = clphase * DEGREE
     sigma = sigma * DEGREE
-    clphase_samples = np.angle(np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) * np.dot(Amatrices[2], imvec))
+
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
+
+    clphase_samples = np.angle(V1 * V2 * V3)
     chisq= (2.0/len(clphase)) * np.sum((1.0 - np.cos(clphase-clphase_samples))/(sigma**2))
     return chisq
 
-def chisqgrad_cphase(imvec, Amatrices, clphase, sigma):
+def chisqgrad_cphase(model, uv, clphase, sigma):
     """The gradient of the closure phase chi-squared"""
     clphase = clphase * DEGREE
     sigma = sigma * DEGREE
 
-    i1 = np.dot(Amatrices[0], imvec)
-    i2 = np.dot(Amatrices[1], imvec)
-    i3 = np.dot(Amatrices[2], imvec)
-    clphase_samples = np.angle(i1 * i2 * i3)
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1])
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1])
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1])
+
+    clphase_samples = np.angle(V1 * V2 * V3)
 
     pref = np.sin(clphase - clphase_samples)/(sigma**2)
-    pt1  = pref/i1
-    pt2  = pref/i2
-    pt3  = pref/i3
-    out  = -(2.0/len(clphase)) * np.imag(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]))
+    pt1  = pref/V1
+    pt2  = pref/V2
+    pt3  = pref/V3
+    out  = -(2.0/len(clphase)) * np.imag(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T))
     return out
 
-def chisq_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
+def chisq_cphase_diag(model, uv, clphase_diag, sigma):
     """Diagonalized closure phases (normalized) chi-squared"""
     clphase_diag = np.concatenate(clphase_diag) * DEGREE
     sigma = np.concatenate(sigma) * DEGREE
 
-    A3_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    uv_diag = uv[0]
+    tform_mats = uv[1]
 
     clphase_diag_samples = []
-    for iA, A3 in enumerate(A3_diag):
-        clphase_samples = np.angle(np.dot(A3[0], imvec) * np.dot(A3[1], imvec) * np.dot(A3[2], imvec))
+    for iA, uv3 in enumerate(uv_diag):
+        i1 = model.sample_uv(uv3[0][:,0],uv3[0][:,1])    
+        i2 = model.sample_uv(uv3[1][:,0],uv3[1][:,1])    
+        i3 = model.sample_uv(uv3[2][:,0],uv3[2][:,1])  
+
+        clphase_samples = np.angle(i1 * i2 * i3)
         clphase_diag_samples.append(np.dot(tform_mats[iA],clphase_samples))
     clphase_diag_samples = np.concatenate(clphase_diag_samples)
 
     chisq = (2.0/len(clphase_diag)) * np.sum((1.0 - np.cos(clphase_diag-clphase_diag_samples))/(sigma**2))
     return chisq
 
-def chisqgrad_cphase_diag(imvec, Amatrices, clphase_diag, sigma):
+def chisqgrad_cphase_diag(model, uv, clphase_diag, sigma):
     """The gradient of the diagonalized closure phase chi-squared"""
     clphase_diag = clphase_diag * DEGREE
     sigma = sigma * DEGREE
 
-    A3_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    uv_diag = uv[0]
+    tform_mats = uv[1]
 
     deriv = np.zeros_like(imvec)
-    for iA, A3 in enumerate(A3_diag):
+    for iA, uv3 in enumerate(uv_diag):
 
-        i1 = np.dot(A3[0], imvec)
-        i2 = np.dot(A3[1], imvec)
-        i3 = np.dot(A3[2], imvec)
+        i1 = model.sample_uv(uv3[0][:,0],uv3[0][:,1])    
+        i2 = model.sample_uv(uv3[1][:,0],uv3[1][:,1])    
+        i3 = model.sample_uv(uv3[2][:,0],uv3[2][:,1])   
+
+        i1_grad = model.sample_grad_uv(uv3[0][:,0],uv3[0][:,1])
+        i2_grad = model.sample_grad_uv(uv3[1][:,0],uv3[1][:,1])
+        i3_grad = model.sample_grad_uv(uv3[2][:,0],uv3[2][:,1])
+ 
         clphase_samples = np.angle(i1 * i2 * i3)
         clphase_diag_samples = np.dot(tform_mats[iA],clphase_samples)
 
         clphase_diag_measured = clphase_diag[iA]
         clphase_diag_sigma = sigma[iA]
 
-        term1 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i1)),A3[0])
-        term2 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i2)),A3[1])
-        term3 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i3)),A3[2])
+        term1 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i1)),i1_grad.T)
+        term2 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i2)),i2_grad.T)
+        term3 = np.dot(np.dot((np.sin(clphase_diag_measured-clphase_diag_samples)/(clphase_diag_sigma**2.0)),(tform_mats[iA]/i3)),i3_grad.T)
         deriv += -2.0*np.imag(term1 + term2 + term3)
 
     deriv *= 1.0/np.float(len(np.concatenate(clphase_diag)))
 
     return deriv
 
-def chisq_camp(imvec, Amatrices, clamp, sigma):
+def chisq_camp(model, uv, clamp, sigma):
     """Closure Amplitudes (normalized) chi-squared"""
 
-    clamp_samples = np.abs(np.dot(Amatrices[0], imvec) * np.dot(Amatrices[1], imvec) / (np.dot(Amatrices[2], imvec) * np.dot(Amatrices[3], imvec)))
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
+    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1])
+
+    clamp_samples = np.abs(V1 * V2 / (V3 * V4))
     chisq = np.sum(np.abs((clamp - clamp_samples)/sigma)**2)/len(clamp)
     return chisq
 
-def chisqgrad_camp(imvec, Amatrices, clamp, sigma):
+def chisqgrad_camp(model, uv, clamp, sigma):
     """The gradient of the closure amplitude chi-squared"""
 
-    i1 = np.dot(Amatrices[0], imvec)
-    i2 = np.dot(Amatrices[1], imvec)
-    i3 = np.dot(Amatrices[2], imvec)
-    i4 = np.dot(Amatrices[3], imvec)
-    clamp_samples = np.abs((i1 * i2)/(i3 * i4))
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
+    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1])
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1])
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1])
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1])
+    V4_grad = model.sample_grad_uv(uv[3][:,0],uv[3][:,1])
+
+    clamp_samples = np.abs((V1 * V2)/(V3 * V4))
 
     pp = ((clamp - clamp_samples) * clamp_samples)/(sigma**2)
-    pt1 =  pp/i1
-    pt2 =  pp/i2
-    pt3 = -pp/i3
-    pt4 = -pp/i4
-    out = (-2.0/len(clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    pt1 =  pp/V1
+    pt2 =  pp/V2
+    pt3 = -pp/V3
+    pt4 = -pp/V4
+    out = (-2.0/len(clamp)) * np.real(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T) + np.dot(pt4, V4_grad.T))
     return out
 
-def chisq_logcamp(imvec, Amatrices, log_clamp, sigma):
+def chisq_logcamp(model, uv, log_clamp, sigma):
     """Log Closure Amplitudes (normalized) chi-squared"""
 
-    a1 = np.abs(np.dot(Amatrices[0], imvec))
-    a2 = np.abs(np.dot(Amatrices[1], imvec))
-    a3 = np.abs(np.dot(Amatrices[2], imvec))
-    a4 = np.abs(np.dot(Amatrices[3], imvec))
+    a1 = np.abs(model.sample_uv(uv[0][:,0],uv[0][:,1]))
+    a2 = np.abs(model.sample_uv(uv[1][:,0],uv[1][:,1]))
+    a3 = np.abs(model.sample_uv(uv[2][:,0],uv[2][:,1]))
+    a4 = np.abs(model.sample_uv(uv[3][:,0],uv[3][:,1]))
 
     samples = np.log(a1) + np.log(a2) - np.log(a3) - np.log(a4)
     chisq = np.sum(np.abs((log_clamp - samples)/sigma)**2) / (len(log_clamp))
     return  chisq
 
-def chisqgrad_logcamp(imvec, Amatrices, log_clamp, sigma):
+def chisqgrad_logcamp(model, uv, log_clamp, sigma):
     """The gradient of the Log closure amplitude chi-squared"""
 
-    i1 = np.dot(Amatrices[0], imvec)
-    i2 = np.dot(Amatrices[1], imvec)
-    i3 = np.dot(Amatrices[2], imvec)
-    i4 = np.dot(Amatrices[3], imvec)
-    log_clamp_samples = np.log(np.abs(i1)) + np.log(np.abs(i2)) - np.log(np.abs(i3)) - np.log(np.abs(i4))
+    V1 = model.sample_uv(uv[0][:,0],uv[0][:,1])
+    V2 = model.sample_uv(uv[1][:,0],uv[1][:,1])
+    V3 = model.sample_uv(uv[2][:,0],uv[2][:,1])
+    V4 = model.sample_uv(uv[3][:,0],uv[3][:,1])
+    V1_grad = model.sample_grad_uv(uv[0][:,0],uv[0][:,1])
+    V2_grad = model.sample_grad_uv(uv[1][:,0],uv[1][:,1])
+    V3_grad = model.sample_grad_uv(uv[2][:,0],uv[2][:,1])
+    V4_grad = model.sample_grad_uv(uv[3][:,0],uv[3][:,1])
+
+    log_clamp_samples = np.log(np.abs(V1)) + np.log(np.abs(V2)) - np.log(np.abs(V3)) - np.log(np.abs(V4))
 
     pp = (log_clamp - log_clamp_samples) / (sigma**2)
-    pt1 = pp / i1
-    pt2 = pp / i2
-    pt3 = -pp / i3
-    pt4 = -pp / i4
-    out = (-2.0/len(log_clamp)) * np.real(np.dot(pt1, Amatrices[0]) + np.dot(pt2, Amatrices[1]) + np.dot(pt3, Amatrices[2]) + np.dot(pt4, Amatrices[3]))
+    pt1 = pp / V1
+    pt2 = pp / V2
+    pt3 = -pp / V3
+    pt4 = -pp / V4
+    out = (-2.0/len(log_clamp)) * np.real(np.dot(pt1, V1_grad.T) + np.dot(pt2, V2_grad.T) + np.dot(pt3, V3_grad.T) + np.dot(pt4, V4_grad.T))
     return out
 
-def chisq_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
+def chisq_logcamp_diag(model, uv, log_clamp_diag, sigma):
     """Diagonalized log closure amplitudes (normalized) chi-squared"""
 
     log_clamp_diag = np.concatenate(log_clamp_diag)
     sigma = np.concatenate(sigma)
 
-    A4_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    uv_diag = uv[0]
+    tform_mats = uv[1]
 
     log_clamp_diag_samples = []
-    for iA, A4 in enumerate(A4_diag):
+    for iA, uv4 in enumerate(uv_diag):
 
-        a1 = np.abs(np.dot(A4[0], imvec))
-        a2 = np.abs(np.dot(A4[1], imvec))
-        a3 = np.abs(np.dot(A4[2], imvec))
-        a4 = np.abs(np.dot(A4[3], imvec))
+        a1 = np.abs(model.sample_uv(uv4[0][:,0],uv4[0][:,1]))          
+        a2 = np.abs(model.sample_uv(uv4[1][:,0],uv4[1][:,1])) 
+        a3 = np.abs(model.sample_uv(uv4[2][:,0],uv4[2][:,1])) 
+        a4 = np.abs(model.sample_uv(uv4[3][:,0],uv4[3][:,1])) 
 
         log_clamp_samples = np.log(a1) + np.log(a2) - np.log(a3) - np.log(a4)
         log_clamp_diag_samples.append(np.dot(tform_mats[iA],log_clamp_samples))
@@ -539,57 +613,65 @@ def chisq_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
     chisq = np.sum(np.abs((log_clamp_diag - log_clamp_diag_samples)/sigma)**2) / (len(log_clamp_diag))
     return  chisq
 
-def chisqgrad_logcamp_diag(imvec, Amatrices, log_clamp_diag, sigma):
+def chisqgrad_logcamp_diag(model, uv, log_clamp_diag, sigma):
     """The gradient of the diagonalized log closure amplitude chi-squared"""
 
-    A4_diag = Amatrices[0]
-    tform_mats = Amatrices[1]
+    uv_diag = uv[0]
+    tform_mats = uv[1]
 
     deriv = np.zeros_like(imvec)
-    for iA, A4 in enumerate(A4_diag):
+    for iA, uv4 in enumerate(uv_diag):
 
-        i1 = np.dot(A4[0], imvec)
-        i2 = np.dot(A4[1], imvec)
-        i3 = np.dot(A4[2], imvec)
-        i4 = np.dot(A4[3], imvec)
+        i1 = model.sample_uv(uv4[0][:,0],uv4[0][:,1])
+        i2 = model.sample_uv(uv4[1][:,0],uv4[1][:,1])
+        i3 = model.sample_uv(uv4[2][:,0],uv4[2][:,1])
+        i4 = model.sample_uv(uv4[3][:,0],uv4[3][:,1])
+
+        i1_grad = model.sample_grad_uv(uv4[0][:,0],uv4[0][:,1])
+        i2_grad = model.sample_grad_uv(uv4[1][:,0],uv4[1][:,1])
+        i3_grad = model.sample_grad_uv(uv4[2][:,0],uv4[2][:,1])
+        i4_grad = model.sample_grad_uv(uv4[3][:,0],uv4[3][:,1])
+
         log_clamp_samples = np.log(np.abs(i1)) + np.log(np.abs(i2)) - np.log(np.abs(i3)) - np.log(np.abs(i4))
         log_clamp_diag_samples = np.dot(tform_mats[iA],log_clamp_samples)
 
         log_clamp_diag_measured = log_clamp_diag[iA]
         log_clamp_diag_sigma = sigma[iA]
 
-        term1 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i1)),A4[0])
-        term2 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i2)),A4[1])
-        term3 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i3)),A4[2])
-        term4 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i4)),A4[3])
+        term1 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i1)),i1_grad.T)
+        term2 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i2)),i2_grad.T)
+        term3 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i3)),i3_grad.T)
+        term4 = np.dot(np.dot(((log_clamp_diag_measured-log_clamp_diag_samples)/(log_clamp_diag_sigma**2.0)),(tform_mats[iA]/i4)),i4_grad.T)
         deriv += -2.0*np.real(term1 + term2 - term3 - term4)
 
     deriv *= 1.0/np.float(len(np.concatenate(log_clamp_diag)))
 
     return deriv
 
-def chisq_logamp(imvec, A, amp, sigma):
+def chisq_logamp(model, uv, amp, sigma):
     """Log Visibility Amplitudes (normalized) chi-squared"""
 
     # to lowest order the variance on the logarithm of a quantity x is
     # sigma^2_log(x) = sigma^2/x^2
     logsigma = sigma / amp
 
-    amp_samples = np.abs(np.dot(A, imvec))
+    amp_samples = np.abs(model.sample_uv(uv[:,0],uv[:,1]))
     return np.sum(np.abs((np.log(amp) - np.log(amp_samples))/logsigma)**2)/len(amp)
 
-def chisqgrad_logamp(imvec, A, amp, sigma):
+def chisqgrad_logamp(model, uv, amp, sigma):
     """The gradient of the Log amplitude chi-squared"""
 
     # to lowest order the variance on the logarithm of a quantity x is
     # sigma^2_log(x) = sigma^2/x^2
     logsigma = sigma / amp
 
-    i1 = np.dot(A, imvec)
+    i1 = model.sample_uv(uv[:,0],uv[:,1])
     amp_samples = np.abs(i1)
 
+    V_grad = model.sample_grad_uv(uv[:,0],uv[:,1])
+
     pp = ((np.log(amp) - np.log(amp_samples))) / (logsigma**2) / i1
-    out = (-2.0/len(amp)) * np.real(np.dot(pp, A))
+    out = (-2.0/len(amp)) * np.real(np.dot(pp, V_grad.T))
     return out
 
 ##################################################################################################
@@ -784,6 +866,61 @@ def chisqdata_cphase(Obsdata, pol='I',**kwargs):
 
     return (clphase, sigma, (uv1, uv2, uv3))
 
+def chisqdata_cphase_diag(Obsdata, pol='I',**kwargs):
+    """Return the data, sigmas, and fourier matrices for diagonalized closure phases
+    """
+
+    # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    uv_min = kwargs.get('cp_uv_min', False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+
+    # unpack data
+    vtype=vis_poldict[pol]
+    clphasearr = Obsdata.c_phases_diag(vtype=vtype,count=count,snrcut=snrcut,uv_min=uv_min)
+
+    # loop over timestamps
+    clphase_diag = []
+    sigma_diag = []
+    uv_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clphasearr):
+
+        # get diagonalized closure phases and errors
+        clphase_diag.append(cl[0]['cphase'])
+        sigma_diag.append(cl[0]['sigmacp'])
+        
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        # compute Fourier matrices
+        uv = (uv1,
+              uv2,
+              uv3
+             )
+        uv_diag.append(uv)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    uvmatrices = (np.array(uv_diag),np.array(tform_mats))
+
+    return (np.array(clphase_diag), np.array(sigma_diag), uvmatrices)
+
 def chisqdata_camp(Obsdata, pol='I',**kwargs):
     """Return the data, sigmas, and fourier matrices for closure amplitudes
     """
@@ -859,3 +996,62 @@ def chisqdata_logcamp(Obsdata, pol='I', **kwargs):
         sigma = np.median(sigma) * np.ones(len(sigma))
 
     return (clamp, sigma, (uv1, uv2, uv3, uv4))
+
+def chisqdata_logcamp_diag(Obsdata, pol='I', **kwargs):
+    """Return the data, sigmas, and fourier matrices for diagonalized log closure amplitudes
+    """
+    # unpack keyword args
+    maxset = kwargs.get('maxset',False)
+    if maxset: count='max'
+    else: count='min'
+
+    snrcut = kwargs.get('snrcut',0.)
+    debias = kwargs.get('debias',True)
+
+    # unpack data & mask low snr points
+    vtype=vis_poldict[pol]
+    clamparr = Obsdata.c_log_amplitudes_diag(vtype=vtype,count=count,debias=debias,snrcut=snrcut)
+
+    # loop over timestamps
+    clamp_diag = []
+    sigma_diag = []
+    uv_diag = []
+    tform_mats = []
+    for ic, cl in enumerate(clamparr):
+
+        # get diagonalized log closure amplitudes and errors
+        clamp_diag.append(cl[0]['camp'])
+        sigma_diag.append(cl[0]['sigmaca'])
+
+        # get uv arrays
+        u1 = cl[2][:,0].astype('float')
+        v1 = cl[3][:,0].astype('float')
+        uv1 = np.hstack((u1.reshape(-1,1), v1.reshape(-1,1)))
+
+        u2 = cl[2][:,1].astype('float')
+        v2 = cl[3][:,1].astype('float')
+        uv2 = np.hstack((u2.reshape(-1,1), v2.reshape(-1,1)))
+
+        u3 = cl[2][:,2].astype('float')
+        v3 = cl[3][:,2].astype('float')
+        uv3 = np.hstack((u3.reshape(-1,1), v3.reshape(-1,1)))
+
+        u4 = cl[2][:,3].astype('float')
+        v4 = cl[3][:,3].astype('float')
+        uv4 = np.hstack((u4.reshape(-1,1), v4.reshape(-1,1)))
+
+        # compute Fourier matrices
+        uv = (uv1,
+              uv2,
+              uv3,
+              uv4
+             )
+        uv_diag.append(uv)
+
+        # get transformation matrix for this timestamp
+        tform_mats.append(cl[4].astype('float'))
+
+    # combine Fourier and transformation matrices into tuple for outputting
+    uvmatrices = (np.array(uv_diag),np.array(tform_mats))
+
+    return (np.array(clamp_diag), np.array(sigma_diag), uvmatrices)

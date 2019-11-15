@@ -60,9 +60,39 @@ from ehtim.modeling.modeling_utils import *
 #Model object
 ###########################################################################################################################################
 
+def default_prior(model_type):
+    if model_type == 'point':
+        return {'F0':{'prior_type':'positive'}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+    elif model_type == 'circ_gauss':
+        return {'F0':{'prior_type':'positive'}, 
+                'FWHM':{'prior_type':'positive'}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+    elif model_type == 'gauss':
+        return {'F0':{'prior_type':'positive'}, 
+                'FWHM_maj':{'prior_type':'positive'}, 
+                'FWHM_min':{'prior_type':'positive'}, 
+                'PA':{'prior_type':'flat','min':0,'max':np.pi}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+    elif model_type == 'ring':
+        return {'F0':{'prior_type':'positive'}, 
+                'd':{'prior_type':'positive'}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+    else:
+        print('Model not recognized!')
+        return
+
 def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
     if model_type == 'point':
         return params['F0'] * (np.abs( x - params['x0']) < psize/2.0) * (np.abs( y - params['y0']) < psize/2.0)
+    elif model_type == 'circ_gauss':
+        sigma = params['FWHM'] / (2. * np.sqrt(2. * np.log(2.)))
+        return (params['F0']*psize**2 * 4.0 * np.log(2.)/(np.pi * params['FWHM']**2) * 
+               np.exp(-((x - params['x0'])**2 + (y - params['y0'])**2)/(2*sigma**2)))
     elif model_type == 'gauss':
         sigma_maj = params['FWHM_maj'] / (2. * np.sqrt(2. * np.log(2.)))
         sigma_min = params['FWHM_min'] / (2. * np.sqrt(2. * np.log(2.)))
@@ -94,6 +124,10 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
 def sample_1model_uv(u, v, model_type, params):
     if model_type == 'point':
         return params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))
+    elif model_type == 'circ_gauss':
+        return (params['F0'] 
+               * np.exp(-np.pi**2/(4.*np.log(2.)) * (u**2 + v**2) * params['FWHM']**2)
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
     elif model_type == 'gauss':
         u_maj = u*np.sin(params['PA']) + v*np.cos(params['PA'])
         u_min = u*np.cos(params['PA']) - v*np.sin(params['PA'])
@@ -128,9 +162,16 @@ def sample_1model_uv(u, v, model_type, params):
 def sample_1model_grad_uv(u, v, model_type, params):
     # Gradient of the model for each parameter
     if model_type == 'point': # F0, x0, y0
-        return np.array([ params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+        return np.array([ np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
                  1j * 2.0 * np.pi * u * params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
                  1j * 2.0 * np.pi * v * params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))])
+    elif model_type == 'circ_gauss': # F0, FWHM, x0, y0
+        gauss = (params['F0'] * np.exp(-np.pi**2/(4.*np.log(2.)) * (u**2 + v**2) * params['FWHM']**2)
+                *np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])))
+        return np.array([ 1.0/params['F0'] * gauss,
+                         -np.pi**2/(2.*np.log(2.)) * (u**2 + v**2) * params['FWHM'] * gauss,
+                          1j * 2.0 * np.pi * u * gauss,
+                          1j * 2.0 * np.pi * v * gauss])                          
     elif model_type == 'gauss': 
         u_maj = u*np.sin(params['PA']) + v*np.cos(params['PA'])
         u_min = u*np.cos(params['PA']) - v*np.sin(params['PA'])
@@ -211,8 +252,8 @@ class Model(object):
         return
 
     def add_circ_gauss(self, F0 = 1.0, FWHM = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0):
-        self.models.append('gauss')
-        self.params.append({'F0':F0,'FWHM_maj':FWHM,'FWHM_min':FWHM,'PA':0.0,'x0':x0,'y0':y0})
+        self.models.append('circ_gauss')
+        self.params.append({'F0':F0,'FWHM':FWHM,'x0':x0,'y0':y0})
         return
 
     def add_gauss(self, F0 = 1.0, FWHM_maj = 50.*RADPERUAS, FWHM_min = 50.*RADPERUAS, PA = 0.0, x0 = 0.0, y0 = 0.0):
@@ -268,6 +309,42 @@ class Model(object):
                (complex): complex visibility
         """   
         return sample_model_grad_uv(self.models, self.params, u, v)
+
+    def default_prior(self):
+        return [default_prior(model) for model in self.models]        
+
+    def make_image(self, fov, npix, ra=RA_DEFAULT, dec=DEC_DEFAULT, rf=RF_DEFAULT, source=SOURCE_DEFAULT,
+               polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT,
+               mjd=MJD_DEFAULT, time=0.):
+        """Sample the model onto a square image.
+
+           Args:
+               fov (float): the field of view of each axis in radians
+               npix (int): the number of pixels on each axis
+               ra (float): The source Right Ascension in fractional hours
+               dec (float): The source declination in fractional degrees
+               rf (float): The image frequency in Hz
+
+               source (str): The source name
+               polrep (str): polarization representation, either 'stokes' or 'circ'
+               pol_prim (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for Circular
+               pulse (function): The function convolved with the pixel values for continuous image.
+
+               mjd (int): The integer MJD of the image
+               time (float): The observing time of the image (UTC hours)
+
+           Returns:
+               (Image): an image object
+        """
+
+        pdim = fov/float(npix)
+        npix = int(npix)
+        imarr = np.zeros((npix,npix))
+        outim = image.Image(imarr, pdim, ra, dec,
+                      polrep=polrep, pol_prim=pol_prim,
+                      rf=rf, source=source, mjd=mjd, time=time, pulse=pulse)
+        
+        return self.image_same(outim)
 
     def image_same(self, im):
         """Create an image of the model with parameters equal to a reference image.
