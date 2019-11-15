@@ -49,7 +49,7 @@ prior_fwhm = 200*eh.RADPERUAS # Gaussian size in microarcssec
 emptyprior = eh.image.make_square(obs230, npix, fov)
 flatprior = emptyprior.add_flat(zbl)
 gaussprior = emptyprior.add_gauss(zbl, (prior_fwhm, prior_fwhm, 0, 0, 0))
-gaussprior = gaussprior.add_const_mf(2.5) #regularize to the right value for now
+gaussprior = gaussprior.add_const_mf(2.3) #regularize to the slightly wrong value
 
 ## Image both frequencies independently with complex visibilities
 flux230 = zbl
@@ -79,7 +79,7 @@ out345 = imgr345.out_last()
 #out = imgr.out_last()
 
 # Image both frequencies together, starting with 230 solution
-out230_b = out230.add_const_mf(2.5).blur_circ(15*eh.RADPERUAS) #regularize to the right value for now
+out230_b = out230.add_const_mf(2.3).blur_circ(15*eh.RADPERUAS) #regularize to the slightly wrong value
 imgr  = eh.imager.Imager(obslist, out230_b, out230_b, zbl,
                             data_term={'vis':100}, show_updates=False,
                             reg_term={'simple':1,'flux':100,'cm':50,'l2_alpha':1},
