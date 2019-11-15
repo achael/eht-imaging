@@ -608,6 +608,7 @@ def polregularizer(imtuple, mask, flux, xdim, ydim, psize, stype, **kwargs):
 
     norm_reg = kwargs.get('norm_reg', NORM_REGULARIZER)
     pol_prim = kwargs.get('pol_prim', 'amp_phase')
+    pol_solve = kwargs.get('pol_solve', (0,1,1))
     beam_size = kwargs.get('beam_size',1)
 
     if stype == "msimple":

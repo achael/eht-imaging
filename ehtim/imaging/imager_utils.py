@@ -653,6 +653,7 @@ def chisqdata(Obsdata, Prior, mask, dtype, pol='I', **kwargs):
     """Return the data, sigma, and matrices for the appropriate dtype
     """
 
+
     ttype=kwargs.get('ttype','direct')
     (data, sigma, A) = (False, False, False)
     if ttype not in ['fast','direct','nfft']:
