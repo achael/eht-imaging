@@ -2230,7 +2230,7 @@ def sfluxgrad(imvec, priorvec, flux, norm_reg=NORM_REGULARIZER):
     if norm_reg: norm = flux**2
     else: norm = 1
 
-    out = -2*(np.sum(imvec) - flux)
+    out = -2*(np.sum(imvec) - flux)*np.ones(len(imvec))
     return out/ norm
 
 def scm(imvec, nx, ny, psize, flux, embed_mask, norm_reg=NORM_REGULARIZER, beam_size=None):

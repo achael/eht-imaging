@@ -104,8 +104,10 @@ class Imager(object):
 
         # observations, frequencies
         if isinstance(obs_in, list):
+            self._obslist_next = obs_in
             self.obslist_next = obs_in
         else:
+            self._obslist_next = [obs_in]
             self.obslist_next = [obs_in]
 
         #init, prior, flux
@@ -181,6 +183,7 @@ class Imager(object):
         # imager history
         self._change_imgr_params = True
         self.nruns = 0
+        self.mf_next = False
 
         #set embedding matrices and prepare imager
         self.check_params()
@@ -195,7 +198,7 @@ class Imager(object):
     def obslist_next(self, obslist):
         if not isinstance(obslist,list):
             raise Exception("obslist_next must be a list!")
-        self._obslist_next[0] = obslist
+        self._obslist_next = obslist
         self.freq_list = [obs.rf for obs in self.obslist_next]
         self.reffreq = self.freq_list[0]
         self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
@@ -208,7 +211,7 @@ class Imager(object):
     @obs_next.setter
     def obs_next(self, obs):
         """the next Obsdata to be used in imaging"""
-        self.obslist_next[0] = obs
+        self.obslist_next = [obs]
 
     def make_image(self, pol=None, grads=True, mf=False, **kwargs):
 
@@ -308,7 +311,7 @@ class Imager(object):
             qimage_out = make_q_image(out, POL_PRIM_SOLVE)
             uimage_out = make_u_image(out, POL_PRIM_SOLVE)
 
-        elif self.pol_next:
+        elif self.mf_next:
             if np.any(np.invert(self._embed_mask)):
                 out = embed_mf(out, self._embed_mask)
             iimage_out = out[0]
@@ -323,7 +326,7 @@ class Imager(object):
         arglist, argdict = self.prior_next.image_args()
         arglist[0] = iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim)
         argdict['pol_prim'] = pol_prim
-        outim = Image(*arglist, **argdict)
+        outim = ehtim.image.Image(*arglist, **argdict)
 
         # copy over other polarizations
         for pol2 in list(outim._imdict.keys()):
@@ -759,14 +762,14 @@ class Imager(object):
                 nprior_I = self.prior_next.imvec[self._embed_mask]
                 ninit_I = self.init_next.imvec[self._embed_mask]
             if len(self.init_next.specvec):
-                niinit_a = self.init_next.specvec
+                ninit_a = self.init_next.specvec
             else:
                 ninit_a = np.zeros(self._nimage)
             if len(self.init_next.curvvec):
-                niinit_b = self.init_next.curvvec
+                ninit_b = self.init_next.curvvec
             else:
                 ninit_b = np.zeros(self._nimage)
-            if len(prior_next.specvec):
+            if len(self.prior_next.specvec):
                 nprior_a = self.prior_next.specvec
             else:
                 nprior_a = np.zeros(self._nimage)
@@ -784,6 +787,7 @@ class Imager(object):
                 self._xtuple = self.inittuple
 
             # pack into single vector
+            self._ninit = pack_mftuple(self.inittuple, MF_WHICH_SOLVE)
             self._xinit = pack_mftuple(self._xtuple, MF_WHICH_SOLVE)
 
         # set prior & initial image vectors for single stokes or RR/LL imaging
@@ -912,7 +916,7 @@ class Imager(object):
                     chi2 = chisq(imcur_nu, A, data, sigma, dname,
                                  ttype=self._ttype, mask=self._embed_mask)
 
-            chi2_dict[dname_key] = chi2
+                chi2_dict[dname_key] = chi2
 
         return chi2_dict
 
@@ -954,7 +958,7 @@ class Imager(object):
                         logfreqratio = self._logfreqratio_list[i]
                         chi2grad = mf_all_chisqgrads(chi2grad, imcur_nu, imref, logfreqratio)
 
-            chi2grad_dict[dname_key] = np.array(chi2grad)
+                chi2grad_dict[dname_key] = np.array(chi2grad)
 
         return chi2grad_dict
 
@@ -1020,7 +1024,8 @@ class Imager(object):
             if self.pol_next=='P':
                 reg = polregularizergrad(imcur, self._embed_mask, self.flux_next, 
                                      self.prior_next.xdim, self.prior_next.ydim,
-                                     self.prior_next.psize, regname,
+                                     self.prior_next.psize, 
+                                    regname,
                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
                                      pol_prim=POL_PRIM_SOLVE, pol_solve=POL_WHICH_SOLVE)
 
@@ -1053,19 +1058,17 @@ class Imager(object):
                                           **self.regparams)
                     reg = np.array((np.zeros(self._nimage), np.zeros(self._nimage), reg))
 
-
             # normal regularizer
             else: 
-                reg = regularizergrad(imcur, self._nprior, self._embed_mask,
-                                      self.flux_next, self.prior_next.xdim,
-                                      self.prior_next.ydim, self.prior_next.psize,
+                reg = regularizergrad(imcur, self._nprior, self._embed_mask, self.flux_next, 
+                                      self.prior_next.xdim, self.prior_next.ydim, 
+                                      self.prior_next.psize,
                                       regname,
                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
                                       **self.regparams)
-
             reggrad_dict[regname] = reg
 
-        return reg_dict
+        return reggrad_dict
 
 
     def objfunc(self, imvec):
@@ -1140,7 +1143,7 @@ class Imager(object):
 
         # data terms
         datterm = 0.
-        chi2_term_dict = self.make_chisq_dict(imcur)
+        chi2_term_dict = self.make_chisqgrad_dict(imcur)
         if self.chisq_transform:
             chi2_value_dict =  self.make_chisq_dict(imcur)
         for dname in sorted(self.dat_term_next.keys()):
@@ -1173,7 +1176,7 @@ class Imager(object):
             if self.mf_next:
                 grad[0] *= imcur[0]
             else:
-                imcur *= imcur
+                grad *= imcur
         elif self.transform_next == 'mcv':
             grad *= mchain(cvcur)
 
@@ -1181,7 +1184,7 @@ class Imager(object):
         if self.pol_next=='P':
             grad = pack_poltuple(grad, POL_WHICH_SOLVE)
         # repack gradient for multifrequency imaging
-        if self.pol_next=='P':
+        if self.mf_next:
             grad = pack_mftuple(grad, MF_WHICH_SOLVE)
 
         return grad
@@ -1222,7 +1225,7 @@ class Imager(object):
                     for i, obs in enumerate(self.obslist_next): 
                         if i==0: dname_key = dname
                         else: dname_key = dname + ('_%i'%i)
-                        outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname_key])
+                        outstr += "chi2_%s : %0.2f " % (dname_key, chi2_term_dict[dname_key])
                 outstr += "\n        "
                 for dname in sorted(self.dat_term_next.keys()):
                     for i, obs in enumerate(self.obslist_next): 

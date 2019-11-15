@@ -63,7 +63,7 @@ def regularizer_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs
 
     return s
 
-def regularizergrad(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
+def regularizergrad_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs):
     """return the regularizer gradient
     """
 
@@ -83,7 +83,7 @@ def l2_alpha(imvec, priorvec):
     """
 
     norm = float(len(imvec))
-    out = -(np.sum((imvec - priorvec)**2)
+    out = -(np.sum((imvec - priorvec)**2))
     return out/norm
 
 def l2_alpha_grad(imvec, priorvec):
@@ -91,7 +91,7 @@ def l2_alpha_grad(imvec, priorvec):
     """
 
     norm = float(len(imvec))
-    out = -2*(np.sum(imvec) - flux)
+    out = -2*(np.sum(imvec - priorvec))*np.ones(len(imvec))
     return out/norm
 
 
@@ -126,7 +126,7 @@ def unpack_mftuple(imvec, inittuple, nimage, mf_solve = (1,1,0)):
             imct += 1
         return np.array((im0, im1, im2))
 
-def pack_poltuple(mftuple, mf_solve = (1,1,0)):       
+def pack_mftuple(mftuple, mf_solve = (1,1,0)):       
         """pack multifreq data into image vector, 
            ignore quantities not iterated
         """
