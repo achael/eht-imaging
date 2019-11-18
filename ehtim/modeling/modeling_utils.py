@@ -32,7 +32,6 @@ import matplotlib.pyplot as plt
 from  scipy.special import jv
 
 import ehtim.image as image
-#from . import linearize_energy as le
 
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
@@ -332,14 +331,14 @@ def chisqgrad(model, uv, data, sigma, dtype, param_mask):
         chisqgrad = chisqgrad_bs(model, uv, data, sigma)
     elif dtype == 'cphase':
         chisqgrad = chisqgrad_cphase(model, uv, data, sigma)
-#    elif dtype == 'cphase_diag':
-#        chisqgrad = chisqgrad_cphase_diag(imvec, A, data, sigma)
+    elif dtype == 'cphase_diag':
+        chisqgrad = chisqgrad_cphase_diag(model, uv, data, sigma)
     elif dtype == 'camp':
         chisqgrad = chisqgrad_camp(model, uv, data, sigma)
     elif dtype == 'logcamp':
         chisqgrad = chisqgrad_logcamp(model, uv, data, sigma)
-#    elif dtype == 'logcamp_diag':
-#        chisqgrad = chisqgrad_logcamp_diag(imvec, A, data, sigma)
+    elif dtype == 'logcamp_diag':
+        chisqgrad = chisqgrad_logcamp_diag(model, uv, data, sigma)
 
     return chisqgrad[param_mask]
 
@@ -358,14 +357,14 @@ def chisqdata(Obsdata, dtype, pol='I', **kwargs):
         (data, sigma, uv) = chisqdata_bs(Obsdata, pol=pol,**kwargs)
     elif dtype == 'cphase':
         (data, sigma, uv) = chisqdata_cphase(Obsdata, pol=pol,**kwargs)
-#    elif dtype == 'cphase_diag':
-#        (data, sigma, uv) = chisqdata_cphase_diag(Obsdata, Prior, mask, pol=pol,**kwargs)
+    elif dtype == 'cphase_diag':
+        (data, sigma, uv) = chisqdata_cphase_diag(Obsdata, pol=pol,**kwargs)
     elif dtype == 'camp':
         (data, sigma, uv) = chisqdata_camp(Obsdata, pol=pol,**kwargs)
     elif dtype == 'logcamp':
         (data, sigma, uv) = chisqdata_logcamp(Obsdata, pol=pol,**kwargs)
-#    elif dtype == 'logcamp_diag':
-#        (data, sigma, A) = chisqdata_logcamp_diag(Obsdata, Prior, mask, pol=pol,**kwargs)
+    elif dtype == 'logcamp_diag':
+        (data, sigma, uv) = chisqdata_logcamp_diag(Obsdata, pol=pol,**kwargs)
 
     return (data, sigma, uv)
 
@@ -494,7 +493,7 @@ def chisqgrad_cphase_diag(model, uv, clphase_diag, sigma):
     uv_diag = uv[0]
     tform_mats = uv[1]
 
-    deriv = np.zeros_like(imvec)
+    deriv = np.zeros(len(model.sample_grad_uv(0,0)))
     for iA, uv3 in enumerate(uv_diag):
 
         i1 = model.sample_uv(uv3[0][:,0],uv3[0][:,1])    
@@ -619,7 +618,7 @@ def chisqgrad_logcamp_diag(model, uv, log_clamp_diag, sigma):
     uv_diag = uv[0]
     tform_mats = uv[1]
 
-    deriv = np.zeros_like(imvec)
+    deriv = np.zeros(len(model.sample_grad_uv(0,0)))
     for iA, uv4 in enumerate(uv_diag):
 
         i1 = model.sample_uv(uv4[0][:,0],uv4[0][:,1])
