@@ -1,6 +1,12 @@
 # model.py
 # an interferometric model class
 
+# To do:
+# 1. Polarimetric models
+# 2. Fix diagonal closure stuff
+# 3. Finish and test all model gradients
+# 4. Add documentation 
+
 from __future__ import division
 from __future__ import print_function
 from builtins import str
@@ -118,7 +124,15 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
                 * (1.0 + np.sum([2.*np.real(params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0))  
                 * (params['d']/2.0 - psize/2 < np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2))
                 * (params['d']/2.0 + psize/2 > np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)))
+    elif model_type == 'thick_mring':
+        phi = np.angle((y - params['y0']) + 1j*(x - params['x0']))
+        r = np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)
+        z = 4.*np.log(2.) * r * params['d']/params['alpha']**2
+        return (params['F0']*psize**2 * 4.0 * np.log(2.)/(np.pi * params['alpha']**2)
+                * np.exp(-4.*np.log(2.)/params['alpha']**2*(r**2 + params['d']**2/4.))
+                * (sps.iv(0, z) + np.sum([2.*np.real(sps.iv(m, z) * params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0)))
     else:
+        print('Model ' + model_type + ' not recognized!')
         return 0.0
 
 def sample_1model_uv(u, v, model_type, params):
@@ -156,7 +170,18 @@ def sample_1model_uv(u, v, model_type, params):
                + np.sum([params['beta_list'][m-1] * sps.jv(m, z) * np.exp(1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
                + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+    elif model_type == 'thick_mring':
+        phi = np.angle(v + 1j*u)
+        # Flip the baseline sign to match eht-imaging conventions
+        phi += np.pi
+        z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        return (params['F0'] * (sps.jv(0, z) 
+               + np.sum([params['beta_list'][m-1] * sps.jv(m, z) * np.exp(1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
     else:
+        print('Model ' + model_type + ' not recognized!')
         return 0.0
 
 def sample_1model_grad_uv(u, v, model_type, params):
@@ -175,13 +200,10 @@ def sample_1model_grad_uv(u, v, model_type, params):
     elif model_type == 'gauss': 
         u_maj = u*np.sin(params['PA']) + v*np.cos(params['PA'])
         u_min = u*np.cos(params['PA']) - v*np.sin(params['PA'])
-        return (params['F0'] 
-               * np.exp(-np.pi**2/(4.*np.log(2.)) * ((u_maj * params['FWHM_maj'])**2 + (u_min * params['FWHM_min'])**2))
-               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        return 0.0
     elif model_type == 'disk':
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
-        return (params['F0'] * 2.0/z * sps.jv(1, z) 
-               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        return 0.0
     elif model_type == 'ring': # F0, d, x0, y0
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         return np.array([ sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
@@ -190,19 +212,21 @@ def sample_1model_grad_uv(u, v, model_type, params):
                  2.0 * np.pi * 1j * v * params['F0'] * sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))])
     elif model_type == 'thick_ring':
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
-        return (params['F0'] * sps.jv(0, z) 
-               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
-               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        return 0.0
     elif model_type == 'mring':
         phi = np.angle(v + 1j*u)
         # Flip the baseline sign to match eht-imaging conventions
         phi += np.pi
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
-        return (params['F0'] * (sps.jv(0, z) 
-               + np.sum([params['beta_list'][m-1] * sps.jv(m, z) * np.exp(1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
-               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
-               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        return 0.0
+    elif model_type == 'thick_mring':
+        phi = np.angle(v + 1j*u)
+        # Flip the baseline sign to match eht-imaging conventions
+        phi += np.pi
+        z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        return 0.0
     else:
+        print('Model ' + model_type + ' not recognized!')
         return 0.0
 
 def sample_model_xy(models, params, x, y, psize=1.*RADPERUAS):
@@ -281,6 +305,13 @@ class Model(object):
             beta_list = [0.0]
         self.models.append('mring')
         self.params.append({'F0':F0,'d':d,'beta_list':beta_list,'x0':x0,'y0':y0})
+        return
+
+    def add_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, beta_list = None, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0):
+        if beta_list is None:
+            beta_list = [0.0]
+        self.models.append('thick_mring')
+        self.params.append({'F0':F0,'d':d,'beta_list':beta_list,'alpha':alpha,'x0':x0,'y0':y0})
         return
 
     def sample_xy(self, x, y, psize=1.*RADPERUAS):
