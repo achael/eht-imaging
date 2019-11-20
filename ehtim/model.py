@@ -66,28 +66,93 @@ from ehtim.modeling.modeling_utils import *
 #Model object
 ###########################################################################################################################################
 
-def default_prior(model_type):
+def model_params(model_type, model_params=None):
+    """Return the ordered list of model parameters for a specified model type
+    """
+
     if model_type == 'point':
-        return {'F0':{'prior_type':'positive'}, 
+        params = ['F0','x0','y0']
+    elif model_type == 'circ_gauss':
+        params = ['F0','FWHM','x0','y0']
+    elif model_type == 'gauss':
+        params = ['F0','FWHM_maj','FWHM_min','PA','x0','y0']
+    elif model_type == 'disk':
+        params = ['F0','d','x0','y0']
+    elif model_type == 'ring':
+        params = ['F0','d','x0','y0']
+    elif model_type == 'thick_ring':
+        params = ['F0','d','alpha','x0','y0']
+    elif model_type == 'mring':
+        params = ['F0','d','x0','y0']
+        for j in range(len(model_params['beta_list'])):
+            params.append('beta' + str(j+1) + '_re')
+            params.append('beta' + str(j+1) + '_im')
+    elif model_type == 'thick_mring':
+        params = ['F0','d','alpha', 'x0','y0']
+        for j in range(len(model_params['beta_list'])):
+            params.append('beta' + str(j+1) + '_re')
+            params.append('beta' + str(j+1) + '_im')
+    else:
+        print('Model ' + model_init.models[j] + ' not recognized.')
+        params = []
+
+    return params
+
+def default_prior(model_type,model_params=None):
+    """Return the default model prior and transformation for a specified model type
+    """
+
+    if model_type == 'point':
+        return {'F0':{'prior_type':'none','transform':'log'}, 
                 'x0':{'prior_type':'none'}, 
                 'y0':{'prior_type':'none'}}
     elif model_type == 'circ_gauss':
-        return {'F0':{'prior_type':'positive'}, 
-                'FWHM':{'prior_type':'positive'}, 
+        return {'F0':{'prior_type':'none','transform':'log'}, 
+                'FWHM':{'prior_type':'none','transform':'log'}, 
                 'x0':{'prior_type':'none'}, 
                 'y0':{'prior_type':'none'}}
     elif model_type == 'gauss':
-        return {'F0':{'prior_type':'positive'}, 
-                'FWHM_maj':{'prior_type':'positive'}, 
-                'FWHM_min':{'prior_type':'positive'}, 
-                'PA':{'prior_type':'flat','min':0,'max':np.pi}, 
+        return {'F0':{'prior_type':'positive','transform':'log'}, 
+                'FWHM_maj':{'prior_type':'positive','transform':'log'}, 
+                'FWHM_min':{'prior_type':'positive','transform':'log'}, 
+                'PA':{'prior_type':'none'}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+    elif model_type == 'disk':
+        return {'F0':{'prior_type':'positive','transform':'log'}, 
+                'd':{'prior_type':'positive','transform':'log'}, 
                 'x0':{'prior_type':'none'}, 
                 'y0':{'prior_type':'none'}}
     elif model_type == 'ring':
-        return {'F0':{'prior_type':'positive'}, 
-                'd':{'prior_type':'positive'}, 
+        return {'F0':{'prior_type':'positive','transform':'log'}, 
+                'd':{'prior_type':'positive','transform':'log'}, 
                 'x0':{'prior_type':'none'}, 
                 'y0':{'prior_type':'none'}}
+    elif model_type == 'thick_ring':
+        return {'F0':{'prior_type':'positive','transform':'log'}, 
+                'd':{'prior_type':'positive','transform':'log'}, 
+                'alpha':{'prior_type':'positive','transform':'log'}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+    elif model_type == 'mring':
+        prior = {'F0':{'prior_type':'positive','transform':'log'}, 
+                'd':{'prior_type':'positive','transform':'log'}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+        for j in range(len(model_params['beta_list'])):
+            prior['beta' + str(j+1) + '_re'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+            prior['beta' + str(j+1) + '_im'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+        return prior
+    elif model_type == 'thick_mring':
+        prior = {'F0':{'prior_type':'none','transform':'log'}, 
+                'd':{'prior_type':'none','transform':'log'}, 
+                'alpha':{'prior_type':'none','transform':'log'}, 
+                'x0':{'prior_type':'none'}, 
+                'y0':{'prior_type':'none'}}
+        for j in range(len(model_params['beta_list'])):
+            prior['beta' + str(j+1) + '_re'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+            prior['beta' + str(j+1) + '_im'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+        return prior
     else:
         print('Model not recognized!')
         return
@@ -115,9 +180,10 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
                 * (params['d']/2.0 + psize/2 > np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)))
     elif model_type == 'thick_ring':
         r = np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)
+        z = 4.*np.log(2.) * r * params['d']/params['alpha']**2
         return (params['F0']*psize**2 * 4.0 * np.log(2.)/(np.pi * params['alpha']**2)
-                * np.exp(-4.*np.log(2.)/params['alpha']**2*(r**2 + params['d']**2/4.))
-                * sps.iv(0, 4.*np.log(2.) * r * params['d']/params['alpha']**2)) 
+                * np.exp(-4.*np.log(2.)/params['alpha']**2*(r**2 + params['d']**2/4.) + z)
+                * sps.ive(0, z)) 
     elif model_type == 'mring':
         phi = np.angle((y - params['y0']) + 1j*(x - params['x0']))
         return (params['F0']*psize**2/(np.pi*params['d']*psize)
@@ -129,8 +195,8 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
         r = np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)
         z = 4.*np.log(2.) * r * params['d']/params['alpha']**2
         return (params['F0']*psize**2 * 4.0 * np.log(2.)/(np.pi * params['alpha']**2)
-                * np.exp(-4.*np.log(2.)/params['alpha']**2*(r**2 + params['d']**2/4.))
-                * (sps.iv(0, z) + np.sum([2.*np.real(sps.iv(m, z) * params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0)))
+                * np.exp(-4.*np.log(2.)/params['alpha']**2*(r**2 + params['d']**2/4.) + z)
+                * (sps.ive(0, z) + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0)))
     else:
         print('Model ' + model_type + ' not recognized!')
         return 0.0
@@ -167,7 +233,7 @@ def sample_1model_uv(u, v, model_type, params):
         phi += np.pi
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         return (params['F0'] * (sps.jv(0, z) 
-               + np.sum([params['beta_list'][m-1] * sps.jv(m, z) * np.exp(1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
                + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
     elif model_type == 'thick_mring':
@@ -176,7 +242,7 @@ def sample_1model_uv(u, v, model_type, params):
         phi += np.pi
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         return (params['F0'] * (sps.jv(0, z) 
-               + np.sum([params['beta_list'][m-1] * sps.jv(m, z) * np.exp(1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
                + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
@@ -197,34 +263,97 @@ def sample_1model_grad_uv(u, v, model_type, params):
                          -np.pi**2/(2.*np.log(2.)) * (u**2 + v**2) * params['FWHM'] * gauss,
                           1j * 2.0 * np.pi * u * gauss,
                           1j * 2.0 * np.pi * v * gauss])                          
-    elif model_type == 'gauss': 
+    elif model_type == 'gauss': # F0, FWHM_maj, FWHM_min, PA, x0, y0
         u_maj = u*np.sin(params['PA']) + v*np.cos(params['PA'])
         u_min = u*np.cos(params['PA']) - v*np.sin(params['PA'])
-        return 0.0
-    elif model_type == 'disk':
+        vis = (params['F0'] 
+               * np.exp(-np.pi**2/(4.*np.log(2.)) * ((u_maj * params['FWHM_maj'])**2 + (u_min * params['FWHM_min'])**2))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        return np.array([ 1.0/params['F0'] * vis,
+                         -np.pi**2/(2.*np.log(2.)) * params['FWHM_maj'] * u_maj**2 * vis,
+                         -np.pi**2/(2.*np.log(2.)) * params['FWHM_min'] * u_min**2 * vis,
+                         -np.pi**2/(2.*np.log(2.)) * (params['FWHM_maj']**2 - params['FWHM_min']**2) * u_maj * u_min * vis,
+                          1j * 2.0 * np.pi * u * vis,
+                          1j * 2.0 * np.pi * v * vis])    
+    elif model_type == 'disk': # F0, d, x0, y0
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
-        return 0.0
+        vis = (params['F0'] * 2.0/z * sps.jv(1, z) 
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        return np.array([ 1.0/params['F0'] * vis,
+                         -(params['F0'] * 2.0/z * sps.jv(2, z) * np.pi * (u**2 + v**2)**0.5 * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) ,
+                          1j * 2.0 * np.pi * u * vis,
+                          1j * 2.0 * np.pi * v * vis])    
     elif model_type == 'ring': # F0, d, x0, y0
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         return np.array([ sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
                 -np.pi * (u**2 + v**2)**0.5 * params['F0'] * sps.jv(1, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
                  2.0 * np.pi * 1j * u * params['F0'] * sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])), 
                  2.0 * np.pi * 1j * v * params['F0'] * sps.jv(0, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))])
-    elif model_type == 'thick_ring':
+    elif model_type == 'thick_ring': # F0, d, alpha, x0, y0
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
-        return 0.0
-    elif model_type == 'mring':
+        vis = (params['F0'] * sps.jv(0, z) 
+               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        return np.array([ 1.0/params['F0'] * vis,
+                         -(params['F0'] * np.pi * (u**2 + v**2)**0.5 * sps.jv(1, z) 
+                            * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+                            * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))),
+                         -np.pi**2 * (u**2 + v**2) * params['alpha']/(2.*np.log(2.)) * vis,
+                          1j * 2.0 * np.pi * u * vis,
+                          1j * 2.0 * np.pi * v * vis])    
+    elif model_type == 'mring': # F0, d, x0, y0, beta1_re, beta1_im, beta2_re, beta2_im, ...
         phi = np.angle(v + 1j*u)
         # Flip the baseline sign to match eht-imaging conventions
         phi += np.pi
-        z = np.pi * params['d'] * (u**2 + v**2)**0.5
-        return 0.0
-    elif model_type == 'thick_mring':
+        uvdist = (u**2 + v**2)**0.5
+        z = np.pi * params['d'] * uvdist
+        vis = (params['F0'] * (sps.jv(0, z) 
+               + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        grad = [ 1.0/params['F0'] * vis, 
+                (params['F0'] * (-np.pi * uvdist * sps.jv(1, z) 
+               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv( -m-1, z) - sps.jv( -m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))),
+                 1j * 2.0 * np.pi * u * vis, 
+                 1j * 2.0 * np.pi * v * vis]
+        # Add derivatives of the beta terms
+        for m in range(1,len(params['beta_list'])+1):
+            beta_grad = params['F0'] * (
+               sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) + sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) 
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+            grad.append(beta_grad)
+            grad.append(1j * beta_grad)
+        return np.array(grad)
+    elif model_type == 'thick_mring': # F0, d, alpha, x0, y0, beta1_re, beta1_im, beta2_re, beta2_im, ...
         phi = np.angle(v + 1j*u)
         # Flip the baseline sign to match eht-imaging conventions
         phi += np.pi
-        z = np.pi * params['d'] * (u**2 + v**2)**0.5
-        return 0.0
+        uvdist = (u**2 + v**2)**0.5
+        z = np.pi * params['d'] * uvdist
+        vis = (params['F0'] * (sps.jv(0, z) 
+               + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+        grad = [ 1.0/params['F0'] * vis, 
+                 (params['F0'] * (-np.pi * uvdist * sps.jv(1, z) 
+               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))),
+                -np.pi**2/(2.*np.log(2)) * uvdist**2 * params['alpha'] * vis, 
+                 1j * 2.0 * np.pi * u * vis, 
+                 1j * 2.0 * np.pi * v * vis]
+        # Add derivatives of the beta terms
+        for m in range(1,len(params['beta_list'])+1):
+            beta_grad = (params['F0'] * (sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) + sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)))
+               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])))  
+            grad.append(beta_grad)
+            grad.append(1j * beta_grad)
+        return np.array(grad)
     else:
         print('Model ' + model_type + ' not recognized!')
         return 0.0
@@ -300,14 +429,14 @@ class Model(object):
         self.params.append({'F0':F0,'d':d,'alpha':alpha,'x0':x0,'y0':y0})
         return
 
-    def add_mring(self, F0 = 1.0, d = 50.*RADPERUAS, beta_list = None, x0 = 0.0, y0 = 0.0):
+    def add_mring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None):
         if beta_list is None:
             beta_list = [0.0]
         self.models.append('mring')
         self.params.append({'F0':F0,'d':d,'beta_list':beta_list,'x0':x0,'y0':y0})
         return
 
-    def add_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, beta_list = None, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0):
+    def add_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None):
         if beta_list is None:
             beta_list = [0.0]
         self.models.append('thick_mring')
@@ -342,7 +471,7 @@ class Model(object):
         return sample_model_grad_uv(self.models, self.params, u, v)
 
     def default_prior(self):
-        return [default_prior(model) for model in self.models]        
+        return [default_prior(self.models[j],self.params[j]) for j in range(self.N_models())]        
 
     def make_image(self, fov, npix, ra=RA_DEFAULT, dec=DEC_DEFAULT, rf=RF_DEFAULT, source=SOURCE_DEFAULT,
                polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT,
