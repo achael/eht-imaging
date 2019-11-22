@@ -4,8 +4,6 @@
 # To do:
 # 1. Polarimetric models
 # 2. Fix diagonal closure stuff
-# 3. Finish and test all model gradients
-# 4. Add documentation 
 
 from __future__ import division
 from __future__ import print_function
