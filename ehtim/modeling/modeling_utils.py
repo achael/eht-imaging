@@ -351,6 +351,8 @@ def modeler_func(Obsdata, model_init, model_prior,
     # Print stats
     print("time: %f s" % (tstop - tstart))
     print("J: %f" % res.fun)
+    print("Final Chi^2_1: %f Chi^2_2: %f  Chi^2_3: %f" % (chisq1(), chisq2(), chisq3()))
+
     print(res.message)
 
     # Return fitted model

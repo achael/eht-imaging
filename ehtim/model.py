@@ -22,6 +22,8 @@ from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 from ehtim.modeling.modeling_utils import *
 
+from ehtim.const_def import *
+
 ###########################################################################################################################################
 # Model types
 ###########################################################################################################################################
@@ -372,7 +374,10 @@ class Model(object):
        Attributes:
     """
 
-    def __init__(self):
+    def __init__(self, ra=RA_DEFAULT, dec=DEC_DEFAULT, pa=0.0,
+                       polrep='stokes', pol_prim=None,
+                       rf=RF_DEFAULT, source=SOURCE_DEFAULT,
+                       mjd=MJD_DEFAULT, time=0.):
 
         """A model with analytic representations in the image and visibility domains.
 
@@ -382,14 +387,64 @@ class Model(object):
         """
 
         # The model is a sum of component models, each defined by a tag and associated parameters
-        self.models = []
-        self.params = []
+        self.pol_prim =  'I'
+        self.polrep   = 'stokes'
+        self._imdict = {'I':{'models':[],'params':[]},'Q':{'models':[],'params':[]},'U':{'models':[],'params':[]},'V':{'models':[],'params':[]}}
+
+        # Save the image metadata
+        self.ra  = float(ra)
+        self.dec = float(dec)
+        self.pa  = float(pa)
+        self.rf  = float(rf)
+        self.source = str(source)
+        self.mjd = int(mjd)
+        if time > 24:
+            self.mjd += int((time - time % 24)/24)
+            self.time = float(time % 24)
+        else:
+            self.time = time
+
+    @property
+    def models(self):
+        return self._imdict[self.pol_prim]['models']
+
+    @models.setter
+    def models(self, model_list):
+        self._imdict[self.pol_prim]['models'] = model_list
+
+    @property
+    def params(self):
+        return self._imdict[self.pol_prim]['params']
+
+    @params.setter
+    def params(self, param_list):
+        self._imdict[self.pol_prim]['params'] = param_list
 
     def copy(self):
         out = Model()
         out.models = copy.deepcopy(self.models)
         out.params = copy.deepcopy(self.params.copy())
         return out
+
+    def switch_polrep(self, polrep_out='stokes', pol_prim_out=None):
+
+        """Return a new model with the polarization representation changed
+           Args:
+               polrep_out (str):  the polrep of the output data
+               pol_prim_out (str): The default image: I,Q,U or V for Stokes, RR,LL,LR,RL for circ
+
+           Returns:
+               (Model): new Model object with potentially different polrep
+        """
+
+        # Note: this currently does nothing, but it is put here for compatibility with functions such as selfcal
+        if polrep_out not in ['stokes','circ']:
+            raise Exception("polrep_out must be either 'stokes' or 'circ'")
+        if pol_prim_out is None:
+            if polrep_out=='stokes': pol_prim_out = 'I'
+            elif polrep_out=='circ': pol_prim_out = 'RR'
+
+        return self.copy()
 
     def N_models(self):
         return len(self.models)
@@ -524,7 +579,7 @@ class Model(object):
 
         return out
 
-    def observe_same_nonoise(self, obs):
+    def observe_same_nonoise(self, obs, **kwargs):
         """Observe the model on the same baselines as an existing observation, without noise.
 
            Args:
@@ -561,7 +616,7 @@ class Model(object):
                            jones=False, inv_jones=False,
                            tau=TAUDEF, taup=GAINPDEF,
                            gain_offset=GAINPDEF, gainp=GAINPDEF,
-                           dterm_offset=DTERMPDEF, caltable_path=None, seed=False):
+                           dterm_offset=DTERMPDEF, caltable_path=None, seed=False, **kwargs):
 
         """Observe the image on the same baselines as an existing observation object and add noise.
 
@@ -671,7 +726,7 @@ class Model(object):
                       jones=False, inv_jones=False,
                       tau=TAUDEF, taup=GAINPDEF,
                       gainp=GAINPDEF, gain_offset=GAINPDEF,
-                      dterm_offset=DTERMPDEF, seed=False):
+                      dterm_offset=DTERMPDEF, seed=False, **kwargs):
 
         """Generate baselines from an array object and observe the image.
 
