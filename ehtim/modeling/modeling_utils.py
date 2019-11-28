@@ -55,7 +55,7 @@ DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'lo
 nit = 0 # global variable to track the iteration number in the plotting callback
 
 # Details on each fitted parameter (convenience rescaling factor and associated unit)
-PARAM_DETAILS = {'F0':[1.,'Jy'], 'FWHM':[RADPERUAS,'uas'], 'FWHM_maj':[RADPERUAS,'uas'], 'FWHM_min':[RADPERUAS,'uas'], 'd':[RADPERUAS,'uas'], 'PA':[np.pi/180.,'deg'], 'alpha':[RADPERUAS,'uas'], 'x0':[RADPERUAS,'uas'], 'y0':[RADPERUAS,'uas']}
+PARAM_DETAILS = {'F0':[1.,'Jy'], 'FWHM':[RADPERUAS,'uas'], 'FWHM_maj':[RADPERUAS,'uas'], 'FWHM_min':[RADPERUAS,'uas'], 'd':[RADPERUAS,'uas'], 'PA':[np.pi/180.,'deg'], 'alpha':[RADPERUAS,'uas'], 'x0':[RADPERUAS,'uas'], 'y0':[RADPERUAS,'uas'], 'stretch':[1.,''], 'stretch_PA':[np.pi/180.,'deg']}
 
 ##################################################################################################
 # Priors
@@ -67,6 +67,8 @@ def prior_func(x, prior_params):
         return (x > prior_params['min']) * (x < prior_params['max']) * 1.0/(prior_params['max'] - prior_params['min']) + prior_min
     elif prior_params['prior_type'] == 'gauss':
         return 1./((2.*np.pi)**0.5 * prior_params['std']) * np.exp(-(x - prior_params['mean'])**2/(2.*prior_params['std']**2))
+    elif prior_params['prior_type'] == 'exponential':
+        return (1./prior_params['std'] * np.exp(-x/prior_params['std'])) * (x >= 0.0) + prior_min
     elif prior_params['prior_type'] == 'positive':
         return (x >= 0.0) * 1.0 + prior_min
     elif prior_params['prior_type'] == 'none':
@@ -82,6 +84,8 @@ def prior_grad_func(x, prior_params):
         return 0.0
     elif prior_params['prior_type'] == 'gauss':
         return -(x - prior_params['mean'])/((2.*np.pi)**0.5 * prior_params['std']**3) * np.exp(-(x - prior_params['mean'])**2/(2.*prior_params['std']**2))
+    elif prior_params['prior_type'] == 'exponential':
+        return (-1./prior_params['std']**2 * np.exp(-x/prior_params['std'])) * (x >= 0.0)
     elif prior_params['prior_type'] == 'positive':
         return 0.0
     elif prior_params['prior_type'] == 'none':
@@ -339,6 +343,14 @@ def modeler_func(Obsdata, model_init, model_prior,
     set_params(out)
     tparams = transform_params(out)
 
+    # Compute uncertainties (assuming that the chi^2 is not normalized!)    
+#    uncertainty = np.zeros(len(res.x))
+#    for j in range(len(res.x)):
+#        proj = np.zeros(len(res.x))
+#        proj[j] = 1.0
+#        uncertainty[j] = np.sqrt(res.hess_inv(proj)[j])
+#        uncertainty[j] *= transform_grad_param(out[j], model_prior[param_map[j][0]][param_map[j][1]])
+
     print("\nFitted Parameters:")
     cur_idx = -1
     for j in range(len(param_map)):
@@ -346,6 +358,7 @@ def modeler_func(Obsdata, model_init, model_prior,
             cur_idx = param_map[j][0]
             print(model_init.models[cur_idx] + ' (component %d/%d):' % (cur_idx+1,model_init.N_models()))
         print(('\t' + param_map[j][1] + ': %f ' + param_map[j][3]) % tparams[j])
+#        print(('\t' + param_map[j][1] + ': %f +/- %f ' + param_map[j][3]) % (tparams[j], uncertainty[j]))
     print('\n')
 
     # Print stats
@@ -356,7 +369,7 @@ def modeler_func(Obsdata, model_init, model_prior,
     print(res.message)
 
     # Return fitted model
-    return trial_model
+    return trial_model #{'model':trial_model, 'res':res}
 
 ##################################################################################################
 # Wrapper Functions

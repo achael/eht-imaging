@@ -24,50 +24,14 @@ from ehtim.modeling.modeling_utils import *
 
 from ehtim.const_def import *
 
-###########################################################################################################################################
-# Model types
-###########################################################################################################################################
-# point: point source
-#   F0: total flux density
-#   (x0, y0): location
-#
-# gauss: Gaussian 
-#   F0: total flux density
-#   (x0, y0): centroid
-#   FWHM_maj: 
-#   FWHM_min:
-#   PA: position angle 
-#
-# disk: disk with uniform brightness
-#   F0: total flux density
-#   (x0, y0): centroid
-#   d: disk diameter 
-#
-# ring: ring with brightness asymmetry
-#   F0: total flux density
-#   (x0, y0): centroid
-#   d: ring diameter 
-#   beta_list: list of angular mode coefficients [\beta_1, \beta_2, ...]. Total flux density F0 is \beta_0.
-#
-# thick_ring: uniform ring with finite thickness (Gaussian convolution with FWHM alpha; see EHTC Paper IV)
-#   F0: total flux density
-#   (x0, y0): centroid
-#   d: ring diameter 
-#   alpha: FWHM of blurring kernel
-#
-# mring: ring with brightness asymmetry (see https://arxiv.org/abs/1907.04329)
-#   F0: total flux density
-#   (x0, y0): centroid
-#   d: ring diameter 
-#   beta_list: list of angular mode coefficients [\beta_1, \beta_2, ...]. \beta_0 is assumed to be 1, with everything scaled by total flux density F0.
-###########################################################################################################################################
+LINE_THICKNESS = 2 # Thickness of 1D models on the image, in pixels
 
 ###########################################################################################################################################
 #Model object
 ###########################################################################################################################################
 
 def model_params(model_type, model_params=None):
-    """Return the ordered list of model parameters for a specified model type
+    """Return the ordered list of model parameters for a specified model type. This order must match that of the gradient function, sample_1model_grad_uv.
     """
 
     if model_type == 'point':
@@ -80,18 +44,36 @@ def model_params(model_type, model_params=None):
         params = ['F0','d','x0','y0']
     elif model_type == 'ring':
         params = ['F0','d','x0','y0']
+    elif model_type == 'stretched_ring':
+        params = ['F0','d','x0','y0','stretch','stretch_PA']
     elif model_type == 'thick_ring':
         params = ['F0','d','alpha','x0','y0']
+    elif model_type == 'stretched_thick_ring':
+        params = ['F0','d','alpha','x0','y0','stretch','stretch_PA']
     elif model_type == 'mring':
         params = ['F0','d','x0','y0']
         for j in range(len(model_params['beta_list'])):
             params.append('beta' + str(j+1) + '_re')
             params.append('beta' + str(j+1) + '_im')
+    elif model_type == 'stretched_mring':
+        params = ['F0','d','x0','y0']
+        for j in range(len(model_params['beta_list'])):
+            params.append('beta' + str(j+1) + '_re')
+            params.append('beta' + str(j+1) + '_im')
+        params.append('stretch')
+        params.append('stretch_PA')
     elif model_type == 'thick_mring':
         params = ['F0','d','alpha', 'x0','y0']
         for j in range(len(model_params['beta_list'])):
             params.append('beta' + str(j+1) + '_re')
             params.append('beta' + str(j+1) + '_im')
+    elif model_type == 'stretched_thick_mring':
+        params = ['F0','d','alpha', 'x0','y0']
+        for j in range(len(model_params['beta_list'])):
+            params.append('beta' + str(j+1) + '_re')
+            params.append('beta' + str(j+1) + '_im')
+        params.append('stretch')
+        params.append('stretch_PA')
     else:
         print('Model ' + model_init.models[j] + ' not recognized.')
         params = []
@@ -102,60 +84,77 @@ def default_prior(model_type,model_params=None):
     """Return the default model prior and transformation for a specified model type
     """
 
+    prior = {'F0':{'prior_type':'none','transform':'log'}, 
+             'x0':{'prior_type':'none'}, 
+             'y0':{'prior_type':'none'}}
     if model_type == 'point':
-        return {'F0':{'prior_type':'none','transform':'log'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        pass
     elif model_type == 'circ_gauss':
-        return {'F0':{'prior_type':'none','transform':'log'}, 
-                'FWHM':{'prior_type':'none','transform':'log'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        prior['FWHM'] = {'prior_type':'none','transform':'log'}
     elif model_type == 'gauss':
-        return {'F0':{'prior_type':'positive','transform':'log'}, 
-                'FWHM_maj':{'prior_type':'positive','transform':'log'}, 
-                'FWHM_min':{'prior_type':'positive','transform':'log'}, 
-                'PA':{'prior_type':'none'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        prior['FWHM_maj'] = {'prior_type':'positive','transform':'log'}
+        prior['FWHM_min'] = {'prior_type':'positive','transform':'log'}
+        prior['PA'] = {'prior_type':'none'}
     elif model_type == 'disk':
-        return {'F0':{'prior_type':'positive','transform':'log'}, 
-                'd':{'prior_type':'positive','transform':'log'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        prior['d'] = {'prior_type':'positive','transform':'log'}
     elif model_type == 'ring':
-        return {'F0':{'prior_type':'positive','transform':'log'}, 
-                'd':{'prior_type':'positive','transform':'log'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+    elif model_type == 'stretched_ring':
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['stretch'] = {'prior_type':'positive','transform':'log'}
+        prior['stretch_PA'] = {'prior_type':'none'}
     elif model_type == 'thick_ring':
-        return {'F0':{'prior_type':'positive','transform':'log'}, 
-                'd':{'prior_type':'positive','transform':'log'}, 
-                'alpha':{'prior_type':'positive','transform':'log'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['alpha'] = {'prior_type':'positive','transform':'log'}
+    elif model_type == 'stretched_thick_ring':
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['alpha'] = {'prior_type':'positive','transform':'log'}
+        prior['stretch'] = {'prior_type':'positive','transform':'log'}
+        prior['stretch_PA'] = {'prior_type':'none'}
     elif model_type == 'mring':
-        prior = {'F0':{'prior_type':'positive','transform':'log'}, 
-                'd':{'prior_type':'positive','transform':'log'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        prior['d'] = {'prior_type':'positive','transform':'log'}
         for j in range(len(model_params['beta_list'])):
             prior['beta' + str(j+1) + '_re'] = {'prior_type':'flat','min':-0.5,'max':0.5}
             prior['beta' + str(j+1) + '_im'] = {'prior_type':'flat','min':-0.5,'max':0.5}
-        return prior
+    elif model_type == 'stretched_mring':
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        for j in range(len(model_params['beta_list'])):
+            prior['beta' + str(j+1) + '_re'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+            prior['beta' + str(j+1) + '_im'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+        prior['stretch'] = {'prior_type':'positive','transform':'log'}
+        prior['stretch_PA'] = {'prior_type':'none'}
     elif model_type == 'thick_mring':
-        prior = {'F0':{'prior_type':'none','transform':'log'}, 
-                'd':{'prior_type':'none','transform':'log'}, 
-                'alpha':{'prior_type':'none','transform':'log'}, 
-                'x0':{'prior_type':'none'}, 
-                'y0':{'prior_type':'none'}}
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['alpha'] = {'prior_type':'positive','transform':'log'}
         for j in range(len(model_params['beta_list'])):
             prior['beta' + str(j+1) + '_re'] = {'prior_type':'flat','min':-0.5,'max':0.5}
             prior['beta' + str(j+1) + '_im'] = {'prior_type':'flat','min':-0.5,'max':0.5}
-        return prior
+    elif model_type == 'stretched_thick_mring':
+        prior['d'] = {'prior_type':'positive','transform':'log'}
+        prior['alpha'] = {'prior_type':'positive','transform':'log'}
+        for j in range(len(model_params['beta_list'])):
+            prior['beta' + str(j+1) + '_re'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+            prior['beta' + str(j+1) + '_im'] = {'prior_type':'flat','min':-0.5,'max':0.5}
+        prior['stretch'] = {'prior_type':'positive','transform':'log'}
+        prior['stretch_PA'] = {'prior_type':'none'}
     else:
         print('Model not recognized!')
-        return
+
+    return prior
+
+def stretch_xy(x, y, params):
+    x_stretch = ((x - params['x0']) * (np.cos(params['stretch_PA'])**2 + np.sin(params['stretch_PA'])**2 / params['stretch'])
+               + (y - params['y0']) * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA']) * (1.0/params['stretch'] - 1.0))
+    y_stretch = ((y - params['y0']) * (np.cos(params['stretch_PA'])**2 / params['stretch'] + np.sin(params['stretch_PA'])**2)
+               + (x - params['x0']) * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA']) * (1.0/params['stretch'] - 1.0))
+    return (params['x0'] + x_stretch,params['y0'] + y_stretch)
+
+def stretch_uv(u, v, params):
+    u_stretch = (u * (np.cos(params['stretch_PA'])**2 + np.sin(params['stretch_PA'])**2 * params['stretch'])
+               + v * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA']) * (params['stretch'] - 1.0))
+    v_stretch = (v * (np.cos(params['stretch_PA'])**2 * params['stretch'] + np.sin(params['stretch_PA'])**2)
+               + u * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA']) * (params['stretch'] - 1.0))
+    return (u_stretch,v_stretch)
 
 def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
     if model_type == 'point':
@@ -175,9 +174,9 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
     elif model_type == 'disk':
         return params['F0']*psize**2/(np.pi*params['d']**2/4.) * (np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2) < params['d']/2.0) 
     elif model_type == 'ring':
-        return (params['F0']*psize**2/(np.pi*params['d']*psize)
-                * (params['d']/2.0 - psize/2 < np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2))
-                * (params['d']/2.0 + psize/2 > np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)))
+        return (params['F0']*psize**2/(np.pi*params['d']*psize*LINE_THICKNESS)
+                * (params['d']/2.0 - psize*LINE_THICKNESS/2 < np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2))
+                * (params['d']/2.0 + psize*LINE_THICKNESS/2 > np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)))
     elif model_type == 'thick_ring':
         r = np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)
         z = 4.*np.log(2.) * r * params['d']/params['alpha']**2
@@ -186,10 +185,10 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
                 * sps.ive(0, z)) 
     elif model_type == 'mring':
         phi = np.angle((y - params['y0']) + 1j*(x - params['x0']))
-        return (params['F0']*psize**2/(np.pi*params['d']*psize)
+        return (params['F0']*psize**2/(np.pi*params['d']*psize*LINE_THICKNESS)
                 * (1.0 + np.sum([2.*np.real(params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0))  
-                * (params['d']/2.0 - psize/2 < np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2))
-                * (params['d']/2.0 + psize/2 > np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)))
+                * (params['d']/2.0 - psize*LINE_THICKNESS/2 < np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2))
+                * (params['d']/2.0 + psize*LINE_THICKNESS/2 > np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)))
     elif model_type == 'thick_mring':
         phi = np.angle((y - params['y0']) + 1j*(x - params['x0']))
         r = np.sqrt((x - params['x0'])**2 + (y - params['y0'])**2)
@@ -197,6 +196,10 @@ def sample_1model_xy(x, y, model_type, params, psize=1.*RADPERUAS):
         return (params['F0']*psize**2 * 4.0 * np.log(2.)/(np.pi * params['alpha']**2)
                 * np.exp(-4.*np.log(2.)/params['alpha']**2*(r**2 + params['d']**2/4.) + z)
                 * (sps.ive(0, z) + np.sum([2.*np.real(sps.ive(m, z) * params['beta_list'][m-1] * np.exp(1j * m * phi)) for m in range(1,len(params['beta_list'])+1)],axis=0)))
+    elif model_type[:9] == 'stretched':
+        params_stretch = params.copy()
+        params_stretch['F0'] /= params['stretch']
+        return sample_1model_xy(*stretch_xy(x, y, params), model_type[10:], params_stretch, psize)
     else:
         print('Model ' + model_type + ' not recognized!')
         return 0.0
@@ -216,6 +219,8 @@ def sample_1model_uv(u, v, model_type, params):
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
     elif model_type == 'disk':
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        #Add a small offset to avoid issues with division by zero
+        z += (z == 0.0) * 1e-10
         return (params['F0'] * 2.0/z * sps.jv(1, z) 
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
     elif model_type == 'ring':
@@ -233,8 +238,8 @@ def sample_1model_uv(u, v, model_type, params):
         phi += np.pi
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         return (params['F0'] * (sps.jv(0, z) 
-               + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
-               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
     elif model_type == 'thick_mring':
         phi = np.angle(v + 1j*u)
@@ -243,15 +248,144 @@ def sample_1model_uv(u, v, model_type, params):
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
         return (params['F0'] * (sps.jv(0, z) 
                + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
-               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+    elif model_type[:9] == 'stretched':
+        params_stretch = params.copy()        
+        params_stretch['x0'] = 0.0
+        params_stretch['y0'] = 0.0
+        return sample_1model_uv(*stretch_uv(u,v,params), model_type[10:], params_stretch) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
+    else:
+        print('Model ' + model_type + ' not recognized!')
+        return 0.0
+
+def sample_1model_graduv_uv(u, v, model_type, params):
+    # Gradient of the visibility function, (dV/du, dV/dv)
+    # This function makes it convenient to, e.g., compute gradients of stretched images and to compute the model centroid
+
+    vis = sample_1model_uv(u, v, model_type, params)
+    if model_type == 'point': 
+        return np.array([ 1j * 2.0 * np.pi * params['x0'] * vis,
+                          1j * 2.0 * np.pi * params['y0'] * vis])
+    elif model_type == 'circ_gauss': 
+        return np.array([ (1j * 2.0 * np.pi * params['x0'] - params['FWHM']**2 * np.pi**2 * u/(2. * np.log(2.))) * vis,
+                          (1j * 2.0 * np.pi * params['y0'] - params['FWHM']**2 * np.pi**2 * v/(2. * np.log(2.))) * vis])                          
+    elif model_type == 'gauss': 
+        u_maj = u*np.sin(params['PA']) + v*np.cos(params['PA'])
+        u_min = u*np.cos(params['PA']) - v*np.sin(params['PA'])
+        return np.array([ (1j * 2.0 * np.pi * params['x0'] - params['FWHM_maj']**2 * np.pi**2 * u_maj/(2. * np.log(2.)) * np.sin(params['PA']) - params['FWHM_min']**2 * np.pi**2 * u_min/(2. * np.log(2.)) * np.cos(params['PA'])) * vis,
+                          (1j * 2.0 * np.pi * params['y0'] - params['FWHM_maj']**2 * np.pi**2 * u_maj/(2. * np.log(2.)) * np.cos(params['PA']) + params['FWHM_min']**2 * np.pi**2 * u_min/(2. * np.log(2.)) * np.sin(params['PA'])) * vis])       
+    elif model_type == 'disk': 
+        # Take care of the degenerate origin point by a small offset
+        u += (u==0.)*(v==0.)*1e-10
+        uvdist = (u**2 + v**2)**0.5
+        z = np.pi * params['d'] * uvdist
+        bessel_deriv = 0.5 * (sps.jv( 0, z) - sps.jv( 2, z))
+        return np.array([ (1j * 2.0 * np.pi * params['x0'] - u/uvdist**2) * vis 
+                            + params['F0'] * 2./z * np.pi * params['d'] * u/uvdist * bessel_deriv * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+                          (1j * 2.0 * np.pi * params['y0'] - v/uvdist**2) * vis 
+                            + params['F0'] * 2./z * np.pi * params['d'] * v/uvdist * bessel_deriv * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) ])
+    elif model_type == 'ring':
+        # Take care of the degenerate origin point by a small offset
+        u += (u==0.)*(v==0.)*1e-10
+        uvdist = (u**2 + v**2)**0.5
+        z = np.pi * params['d'] * uvdist
+        return np.array([ 1j * 2.0 * np.pi * params['x0'] * vis 
+                            - params['F0'] * np.pi*params['d']*u/uvdist * sps.jv(1, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+                          1j * 2.0 * np.pi * params['y0'] * vis 
+                            - params['F0'] * np.pi*params['d']*v/uvdist * sps.jv(1, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) ])
+    elif model_type == 'thick_ring':
+        uvdist = (u**2 + v**2)**0.5
+        #Add a small offset to avoid issues with division by zero
+        uvdist += (uvdist == 0.0) * 1e-10
+        z = np.pi * params['d'] * uvdist
+        return np.array([ (1j * 2.0 * np.pi * params['x0'] - params['alpha']**2 * np.pi**2 * u/(2. * np.log(2.))) * vis 
+                        - params['F0'] * np.pi*params['d']*u/uvdist * sps.jv(1, z) 
+                                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.))) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+                          (1j * 2.0 * np.pi * params['y0'] - params['alpha']**2 * np.pi**2 * v/(2. * np.log(2.))) * vis 
+                        - params['F0'] * np.pi*params['d']*v/uvdist * sps.jv(1, z) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))
+                                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.))) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) ])
+    elif model_type == 'mring': 
+        # Take care of the degenerate origin point by a small offset
+        u += (u==0.)*(v==0.)*1e-10
+        phi = np.angle(v + 1j*u)
+        # Flip the baseline sign to match eht-imaging conventions
+        phi += np.pi
+        uvdist = (u**2 + v**2)**0.5
+        dphidu =  v/uvdist**2 
+        dphidv = -u/uvdist**2 
+        z = np.pi * params['d'] * uvdist
+        return np.array([ 
+                 1j * 2.0 * np.pi * params['x0'] * vis 
+                    + params['F0'] * (-np.pi * params['d'] * u/uvdist * sps.jv(1, z)
+                    + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * ( 1j * m * dphidu) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * (-1j * m * dphidu) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([params['beta_list'][m-1]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+                    * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+                 1j * 2.0 * np.pi * params['y0'] * vis 
+                    + params['F0'] * (-np.pi * params['d'] * v/uvdist * sps.jv(1, z)
+                    + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * ( 1j * m * dphidv) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * (-1j * m * dphidv) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([params['beta_list'][m-1]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+                    * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) ])
+    elif model_type == 'thick_mring':
+        # Take care of the degenerate origin point by a small offset
+        u += (u==0.)*(v==0.)*1e-10
+        phi = np.angle(v + 1j*u)
+        # Flip the baseline sign to match eht-imaging conventions
+        phi += np.pi
+        uvdist = (u**2 + v**2)**0.5
+        dphidu =  v/uvdist**2
+        dphidv = -u/uvdist**2
+        z = np.pi * params['d'] * uvdist
+        return np.array([ 
+                 (1j * 2.0 * np.pi * params['x0'] - params['alpha']**2 * np.pi**2 * u/(2. * np.log(2.))) * vis 
+                    + params['F0'] * (-np.pi * params['d'] * u/uvdist * sps.jv(1, z)
+                    + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * ( 1j * m * dphidu) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * (-1j * m * dphidu) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([params['beta_list'][m-1]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * u/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+                    * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+                    * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
+                 (1j * 2.0 * np.pi * params['y0'] - params['alpha']**2 * np.pi**2 * v/(2. * np.log(2.))) * vis 
+                    + params['F0'] * (-np.pi * params['d'] * v/uvdist * sps.jv(1, z)
+                    + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * ( 1j * m * dphidv) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * (-1j * m * dphidv) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([params['beta_list'][m-1]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+                    + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * params['d'] * v/uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+                    * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+                    * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) ])
+    elif model_type[:9] == 'stretched':
+        # Take care of the degenerate origin point by a small offset
+        u += (u==0.)*(v==0.)*1e-10
+        params_stretch = params.copy()        
+        params_stretch['x0'] = 0.0
+        params_stretch['y0'] = 0.0
+        (u_stretch, v_stretch) = stretch_uv(u,v,params)
+        
+        # First calculate the gradient of the unshifted but stretched image
+        grad0 = sample_1model_graduv_uv(u_stretch, v_stretch, model_type[10:], params_stretch) * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))
+        grad  = grad0.copy() * 0.0
+        grad[0] = ( grad0[0] * (np.cos(params['stretch_PA'])**2 + np.sin(params['stretch_PA'])**2*params['stretch'])
+                  + grad0[1] * ((params['stretch'] - 1.0) * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA'])))
+        grad[1] = ( grad0[1] * (np.cos(params['stretch_PA'])**2*params['stretch'] + np.sin(params['stretch_PA'])**2)
+                  + grad0[0] * ((params['stretch'] - 1.0) * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA'])))
+
+        # Add the gradient term from the shift
+        vis = sample_1model_uv(u_stretch, v_stretch, model_type[10:], params_stretch) 
+        grad[0] += vis * 1j * 2.0 * np.pi * params['x0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
+        grad[1] += vis * 1j * 2.0 * np.pi * params['y0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
+
+        return grad              
     else:
         print('Model ' + model_type + ' not recognized!')
         return 0.0
 
 def sample_1model_grad_uv(u, v, model_type, params):
-    # Gradient of the model for each parameter
+    # Gradient of the model for each model parameter
     if model_type == 'point': # F0, x0, y0
         return np.array([ np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
                  1j * 2.0 * np.pi * u * params['F0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])),
@@ -277,6 +411,8 @@ def sample_1model_grad_uv(u, v, model_type, params):
                           1j * 2.0 * np.pi * v * vis])    
     elif model_type == 'disk': # F0, d, x0, y0
         z = np.pi * params['d'] * (u**2 + v**2)**0.5
+        #Add a small offset to avoid issues with division by zero
+        z += (z == 0.0) * 1e-10
         vis = (params['F0'] * 2.0/z * sps.jv(1, z) 
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
         return np.array([ 1.0/params['F0'] * vis,
@@ -308,23 +444,26 @@ def sample_1model_grad_uv(u, v, model_type, params):
         uvdist = (u**2 + v**2)**0.5
         z = np.pi * params['d'] * uvdist
         vis = (params['F0'] * (sps.jv(0, z) 
-               + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
-               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
         grad = [ 1.0/params['F0'] * vis, 
                 (params['F0'] * (-np.pi * uvdist * sps.jv(1, z) 
-               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
-               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv( -m-1, z) - sps.jv( -m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               + np.sum([params['beta_list'][m-1]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv( -m-1, z) - sps.jv( -m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                 * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))),
                  1j * 2.0 * np.pi * u * vis, 
                  1j * 2.0 * np.pi * v * vis]
-        # Add derivatives of the beta terms
+        # Add derivatives of the beta terms 
         for m in range(1,len(params['beta_list'])+1):
-            beta_grad = params['F0'] * (
+            beta_grad_re = params['F0'] * (
                sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) + sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) 
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
-            grad.append(beta_grad)
-            grad.append(1j * beta_grad)
+            beta_grad_im = params['F0'] * (
+               sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) - sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) 
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+            grad.append(beta_grad_re)
+            grad.append(1j * beta_grad_im)
         return np.array(grad)
     elif model_type == 'thick_mring': # F0, d, alpha, x0, y0, beta1_re, beta1_im, beta2_re, beta2_im, ...
         phi = np.angle(v + 1j*u)
@@ -333,27 +472,70 @@ def sample_1model_grad_uv(u, v, model_type, params):
         uvdist = (u**2 + v**2)**0.5
         z = np.pi * params['d'] * uvdist
         vis = (params['F0'] * (sps.jv(0, z) 
-               + np.sum([params['beta_list'][m-1] * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
-               + np.sum([params['beta_list'][m-1] * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               + np.sum([params['beta_list'][m-1]          * sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([np.conj(params['beta_list'][m-1]) * sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
         grad = [ 1.0/params['F0'] * vis, 
                  (params['F0'] * (-np.pi * uvdist * sps.jv(1, z) 
-               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
-               + np.sum([params['beta_list'][m-1] * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
+               + np.sum([params['beta_list'][m-1]          * 0.5 * (sps.jv( m-1, z) - sps.jv( m+1, z)) * np.pi * uvdist * np.exp( 1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0)
+               + np.sum([np.conj(params['beta_list'][m-1]) * 0.5 * (sps.jv(-m-1, z) - sps.jv(-m+1, z)) * np.pi * uvdist * np.exp(-1j * m * (phi - np.pi/2.)) for m in range(1,len(params['beta_list'])+1)],axis=0))
                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))),
                 -np.pi**2/(2.*np.log(2)) * uvdist**2 * params['alpha'] * vis, 
                  1j * 2.0 * np.pi * u * vis, 
                  1j * 2.0 * np.pi * v * vis]
-        # Add derivatives of the beta terms
+        # Add derivatives of the beta terms 
         for m in range(1,len(params['beta_list'])+1):
-            beta_grad = (params['F0'] * (sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) + sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)))
+            beta_grad_re = (params['F0'] * (sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) + sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)))
                * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])))  
-            grad.append(beta_grad)
-            grad.append(1j * beta_grad)
+            beta_grad_im = (params['F0'] * (sps.jv( m, z) * np.exp( 1j * m * (phi - np.pi/2.)) - sps.jv(-m, z) * np.exp(-1j * m * (phi - np.pi/2.)))
+               * np.exp(-(np.pi * params['alpha'] * (u**2 + v**2)**0.5)**2/(4. * np.log(2.)))
+               * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))) 
+            grad.append(beta_grad_re)
+            grad.append(1j * beta_grad_im)
         return np.array(grad)
+    elif model_type[:9] == 'stretched':
+        # Start with the model visibility
+        vis  = sample_1model_uv(u, v, model_type, params)
+
+        # Next, calculate the gradient wrt model parameters other than stretch and stretch_PA
+        # These are the same as the gradient of the unstretched model on stretched baselines
+        params_stretch = params.copy()        
+        params_stretch['x0'] = 0.0
+        params_stretch['y0'] = 0.0
+        (u_stretch, v_stretch) = stretch_uv(u,v,params)
+        grad = (sample_1model_grad_uv(u_stretch, v_stretch, model_type[10:], params_stretch)
+                * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])))
+
+        # Add the gradient terms for the centroid
+        grad[model_params(model_type, params).index('x0')] = 1j * 2.0 * np.pi * u * vis
+        grad[model_params(model_type, params).index('y0')] = 1j * 2.0 * np.pi * v * vis
+
+        # Now calculate the gradient with respect to stretch and stretch PA
+        grad_uv = sample_1model_graduv_uv(u_stretch, v_stretch, model_type[10:], params_stretch)
+        #grad_uv = sample_1model_graduv_uv(u, v, model_type, params)                   
+        grad_stretch = grad_uv.copy() * 0.0 
+        grad_stretch[0] = ( grad_uv[0] * (u * np.sin(params['stretch_PA'])**2 + v * np.sin(params['stretch_PA']) * np.cos(params['stretch_PA']))
+                          + grad_uv[1] * (v * np.cos(params['stretch_PA'])**2 + u * np.sin(params['stretch_PA']) * np.cos(params['stretch_PA'])))
+        grad_stretch[0] *= np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))
+
+        grad_stretch[1] = ( grad_uv[0] * (params['stretch'] - 1.0) * ( u * np.sin(2.0 * params['stretch_PA']) + v * np.cos(2.0 * params['stretch_PA']))
+                          + grad_uv[1] * (params['stretch'] - 1.0) * (-v * np.sin(2.0 * params['stretch_PA']) + u * np.cos(2.0 * params['stretch_PA'])))
+        grad_stretch[1] *= np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0']))
+#        grad  = grad0.copy() * 0.0
+#        grad[0] = ( grad0[0] * (np.cos(params['stretch_PA'])**2 + np.sin(params['stretch_PA'])**2*params['stretch'])
+#                  + grad0[1] * ((params['stretch'] - 1.0) * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA'])))
+#        grad[1] = ( grad0[1] * (np.cos(params['stretch_PA'])**2*params['stretch'] + np.sin(params['stretch_PA'])**2)
+#                  + grad0[0] * ((params['stretch'] - 1.0) * np.cos(params['stretch_PA']) * np.sin(params['stretch_PA'])))
+
+#        # Add the gradient term from the shift
+#        vis = sample_1model_uv(u_stretch, v_stretch, model_type[10:], params_stretch) 
+#        grad[0] += vis * 1j * 2.0 * np.pi * params['x0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
+#        grad[1] += vis * 1j * 2.0 * np.pi * params['y0'] * np.exp(1j * 2.0 * np.pi * (u * params['x0'] + v * params['y0'])) 
+
+        return np.concatenate([grad, grad_stretch])
     else:
         print('Model ' + model_type + ' not recognized!')
         return 0.0
@@ -363,6 +545,10 @@ def sample_model_xy(models, params, x, y, psize=1.*RADPERUAS):
 
 def sample_model_uv(models, params, u, v):
     return np.sum(sample_1model_uv(u, v, models[j], params[j]) for j in range(len(models)))
+
+def sample_model_graduv_uv(models, params, u, v):
+    # Gradient of a sum of models wrt (u,v)
+    return np.sum([sample_1model_graduv_uv(u, v, models[j], params[j]) for j in range(len(models))],axis=0)
 
 def sample_model_grad_uv(models, params, u, v):
     # Gradient of a sum of models for each parameter
@@ -421,7 +607,14 @@ class Model(object):
         self._imdict[self.pol_prim]['params'] = param_list
 
     def copy(self):
-        out = Model()
+        """Return a copy of the Model object.
+
+           Args:
+
+           Returns:
+               (Model): copy of the Model.
+        """
+        out = Model(ra=self.ra, dec=self.dec, pa=self.pa, polrep=self.polrep, pol_prim=self.pol_prim,rf=self.rf,source=self.source,mjd=self.mjd,time=self.time)
         out.models = copy.deepcopy(self.models)
         out.params = copy.deepcopy(self.params.copy())
         return out
@@ -447,56 +640,277 @@ class Model(object):
         return self.copy()
 
     def N_models(self):
+        """Return the number of model components
+
+           Args:
+
+           Returns:
+                (int): number of model components
+        """
         return len(self.models)
 
     def total_flux(self):
+        """Return the total flux of the model in Jy.
+
+           Args:
+
+           Returns:
+                (float) : model total flux (Jy)
+        """
         return np.sum([self.params[j]['F0'] for j in range(self.N_models())])
 
     def add_point(self, F0 = 1.0, x0 = 0.0, y0 = 0.0):
-        self.models.append('point')
-        self.params.append({'F0':F0,'x0':x0,'y0':y0})
-        return
+        """Add a point source model.
+
+           Args:
+               F0 (float): The total flux of the point source (Jy)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+
+        out = self.copy()
+        out.models.append('point')
+        out.params.append({'F0':F0,'x0':x0,'y0':y0})
+        return out
 
     def add_circ_gauss(self, F0 = 1.0, FWHM = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0):
-        self.models.append('circ_gauss')
-        self.params.append({'F0':F0,'FWHM':FWHM,'x0':x0,'y0':y0})
-        return
+        """Add a circular Gaussian model.
+
+           Args:
+               F0 (float): The total flux of the Gaussian (Jy)
+               FWHM (float): The FWHM of the Gaussian (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('circ_gauss')
+        out.params.append({'F0':F0,'FWHM':FWHM,'x0':x0,'y0':y0})
+        return out
 
     def add_gauss(self, F0 = 1.0, FWHM_maj = 50.*RADPERUAS, FWHM_min = 50.*RADPERUAS, PA = 0.0, x0 = 0.0, y0 = 0.0):
-        self.models.append('gauss')
-        self.params.append({'F0':F0,'FWHM_maj':FWHM_maj,'FWHM_min':FWHM_min,'PA':PA,'x0':x0,'y0':y0})
-        return
+        """Add an anisotropic Gaussian model.
+
+           Args:
+               F0 (float): The total flux of the Gaussian (Jy)
+               FWHM_maj (float): The FWHM of the Gaussian major axis (radians)
+               FWHM_min (float): The FWHM of the Gaussian minor axis (radians)
+               PA (float): Position angle of the major axis, east of north (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('gauss')
+        out.params.append({'F0':F0,'FWHM_maj':FWHM_maj,'FWHM_min':FWHM_min,'PA':PA,'x0':x0,'y0':y0})
+        return out
 
     def add_disk(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0):
-        self.models.append('disk')
-        self.params.append({'F0':F0,'d':d,'x0':x0,'y0':y0})
-        return
+        """Add a circular disk model.
+
+           Args:
+               F0 (float): The total flux of the disk (Jy)
+               d (float): The diameter (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('disk')
+        out.params.append({'F0':F0,'d':d,'x0':x0,'y0':y0})
+        return out
 
     def add_ring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0):
-        self.models.append('ring')
-        self.params.append({'F0':F0,'d':d,'x0':x0,'y0':y0})
-        return
+        """Add a ring model with infinitesimal thickness.
+
+           Args:
+               F0 (float): The total flux of the ring (Jy)
+               d (float): The diameter (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('ring')
+        out.params.append({'F0':F0,'d':d,'x0':x0,'y0':y0})
+        return out
+
+    def add_stretched_ring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, stretch = 1.0, stretch_PA = 0.0):
+        """Add a stretched ring model with infinitesimal thickness.
+
+           Args:
+               F0 (float): The total flux of the ring (Jy)
+               d (float): The diameter (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+               stretch (float): The stretch to apply (1.0 = no stretch)
+               stretch_PA (float): Position angle of the stretch, east of north (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('stretched_ring')
+        out.params.append({'F0':F0,'d':d,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
+        return out
 
     def add_thick_ring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0):
-        self.models.append('thick_ring')
-        self.params.append({'F0':F0,'d':d,'alpha':alpha,'x0':x0,'y0':y0})
-        return
+        """Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.
+           For details, see Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf
+
+           Args:
+               F0 (float): The total flux of the ring (Jy)
+               d (float): The ring diameter (radians)
+               alpha (float): The ring thickness (FWHM of Gaussian convolution) (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('thick_ring')
+        out.params.append({'F0':F0,'d':d,'alpha':alpha,'x0':x0,'y0':y0})
+        return out
+
+    def add_stretched_thick_ring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0, stretch = 1.0, stretch_PA = 0.0):
+        """Add a ring model with finite thickness, determined by circular Gaussian convolution of a thin ring.
+           For details, see Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf
+
+           Args:
+               F0 (float): The total flux of the ring (Jy)
+               d (float): The ring diameter (radians)
+               alpha (float): The ring thickness (FWHM of Gaussian convolution) (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+               stretch (float): The stretch to apply (1.0 = no stretch)
+               stretch_PA (float): Position angle of the stretch, east of north (radians)
+
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        out.models.append('stretched_thick_ring')
+        out.params.append({'F0':F0,'d':d,'alpha':alpha,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
+        return out
 
     def add_mring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None):
+        """Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion.
+           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329
+
+           Args:
+               F0 (float): The total flux of the ring (Jy), which is also beta_0.
+               d (float): The diameter (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+               beta_list (list): List of complex Fourier coefficients, [beta_1, beta_2, ...]. 
+                                 Negative indices are determined by the condition beta_{-m} = beta_m*.
+                                 Indices are all scaled by F0 = beta_0, so they are dimensionless. 
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
         if beta_list is None:
             beta_list = [0.0]
-        self.models.append('mring')
-        self.params.append({'F0':F0,'d':d,'beta_list':beta_list,'x0':x0,'y0':y0})
-        return
+        out.models.append('mring')
+        out.params.append({'F0':F0,'d':d,'beta_list':beta_list,'x0':x0,'y0':y0})
+        return out
+
+    def add_stretched_mring(self, F0 = 1.0, d = 50.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, stretch = 1.0, stretch_PA = 0.0):
+        """Add a stretched ring model with azimuthal brightness variations determined by a Fourier mode expansion.
+           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329
+
+           Args:
+               F0 (float): The total flux of the ring (Jy), which is also beta_0.
+               d (float): The diameter (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+               beta_list (list): List of complex Fourier coefficients, [beta_1, beta_2, ...]. 
+                                 Negative indices are determined by the condition beta_{-m} = beta_m*.
+                                 Indices are all scaled by F0 = beta_0, so they are dimensionless. 
+               stretch (float): The stretch to apply (1.0 = no stretch)
+               stretch_PA (float): Position angle of the stretch, east of north (radians)
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        if beta_list is None:
+            beta_list = [0.0]
+        out.models.append('stretched_mring')
+        out.params.append({'F0':F0,'d':d,'beta_list':beta_list,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
+        return out
 
     def add_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None):
+        """Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.
+           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329
+           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf
+
+           Args:
+               F0 (float): The total flux of the ring (Jy), which is also beta_0.
+               d (float): The ring diameter (radians)
+               alpha (float): The ring thickness (FWHM of Gaussian convolution) (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+               beta_list (list): List of complex Fourier coefficients, [beta_1, beta_2, ...]. 
+                                 Negative indices are determined by the condition beta_{-m} = beta_m*.
+                                 Indices are all scaled by F0 = beta_0, so they are dimensionless. 
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
         if beta_list is None:
             beta_list = [0.0]
-        self.models.append('thick_mring')
-        self.params.append({'F0':F0,'d':d,'beta_list':beta_list,'alpha':alpha,'x0':x0,'y0':y0})
-        return
+        out.models.append('thick_mring')
+        out.params.append({'F0':F0,'d':d,'beta_list':beta_list,'alpha':alpha,'x0':x0,'y0':y0})
+        return out
+
+    def add_stretched_thick_mring(self, F0 = 1.0, d = 50.*RADPERUAS, alpha = 10.*RADPERUAS, x0 = 0.0, y0 = 0.0, beta_list = None, stretch = 1.0, stretch_PA = 0.0):
+        """Add a ring model with azimuthal brightness variations determined by a Fourier mode expansion and thickness determined by circular Gaussian convolution.
+           For details, see Eq. 18-20 of https://arxiv.org/abs/1907.04329
+           The Gaussian convolution calculation is a trivial generalization of Appendix G of https://iopscience.iop.org/article/10.3847/2041-8213/ab0e85/pdf
+
+           Args:
+               F0 (float): The total flux of the ring (Jy), which is also beta_0.
+               d (float): The ring diameter (radians)
+               alpha (float): The ring thickness (FWHM of Gaussian convolution) (radians)
+               x0 (float): The x-coordinate (radians)
+               y0 (float): The y-coordinate (radians)
+               beta_list (list): List of complex Fourier coefficients, [beta_1, beta_2, ...]. 
+                                 Negative indices are determined by the condition beta_{-m} = beta_m*.
+                                 Indices are all scaled by F0 = beta_0, so they are dimensionless. 
+               stretch (float): The stretch to apply (1.0 = no stretch)
+               stretch_PA (float): Position angle of the stretch, east of north (radians)
+           Returns:
+                (Model): Updated Model
+        """
+        out = self.copy()
+        if beta_list is None:
+            beta_list = [0.0]
+        out.models.append('stretched_thick_mring')
+        out.params.append({'F0':F0,'d':d,'beta_list':beta_list,'alpha':alpha,'x0':x0,'y0':y0,'stretch':stretch,'stretch_PA':stretch_PA})
+        return out
 
     def sample_xy(self, x, y, psize=1.*RADPERUAS):
+        """Sample model image on the specified x and y coordinates
+
+           Args:
+               x (float): x coordinate (dimensionless)
+               y (float): y coordinate (dimensionless)
+
+           Returns:
+               (float): Image brightness (Jy/radian^2)
+        """  
         return sample_model_xy(self.models, self.params, x, y, psize=psize)
 
     def sample_uv(self, u, v):
@@ -507,21 +921,51 @@ class Model(object):
                v (float): v coordinate (dimensionless)
 
            Returns:
-               (complex): complex visibility
+               (complex): complex visibility (Jy)
         """   
         return sample_model_uv(self.models, self.params, u, v)
 
-    def sample_grad_uv(self, u, v):
-        """Sample model visibility gradient on the specified u and v coordinates wrt all parameters
+    def sample_graduv_uv(self, u, v):
+        """Sample model visibility gradient on the specified u and v coordinates wrt (u,v)
 
            Args:
                u (float): u coordinate (dimensionless)
                v (float): v coordinate (dimensionless)
 
            Returns:
-               (complex): complex visibility
+               (complex): complex visibility (Jy)
+        """   
+        return sample_model_graduv_uv(self.models, self.params, u, v)
+
+    def sample_grad_uv(self, u, v):
+        """Sample model visibility gradient on the specified u and v coordinates wrt all model parameters
+
+           Args:
+               u (float): u coordinate (dimensionless)
+               v (float): v coordinate (dimensionless)
+
+           Returns:
+               (complex): complex visibility (Jy)
         """   
         return sample_model_grad_uv(self.models, self.params, u, v)
+
+    def centroid(self, pol=None):
+        """Compute the location of the image centroid (corresponding to the polarization pol)
+           Note: This quantity is only well defined for total intensity
+
+           Args:
+                pol (str): The polarization for which to find the image centroid
+
+           Returns:
+               (np.array): centroid positions (x0,y0) in radians
+        """
+
+        if pol is None: pol=self.pol_prim
+        if not (pol in list(self._imdict.keys())):
+            raise Exception("for polrep==%s, pol must be in " % 
+                             self.polrep + ",".join(list(self._imdict.keys())))
+
+        return np.real(self.sample_graduv_uv(0,0)/(2.*np.pi*1j))/self.total_flux()
 
     def default_prior(self):
         return [default_prior(self.models[j],self.params[j]) for j in range(self.N_models())]        
@@ -777,7 +1221,6 @@ class Model(object):
                (Obsdata): an observation object
         """
 
-
         # Generate empty observation
         print("Generating empty observation file . . . ")
 
@@ -807,6 +1250,7 @@ class Model(object):
         return obs
 
     def save_txt(self,filename):
+        # Note: need to save extra information (ra, dec, etc.)
         out = []
         for j in range(self.N_models()):
             out.append(self.models[j])
@@ -814,11 +1258,13 @@ class Model(object):
         np.savetxt(filename, out, fmt="%s")
 
     def load_txt(self,filename):
+        # Note: need to load extra information (ra, dec, etc.)
         lines = open(filename).read().splitlines()
         self.models = lines[::2]
         self.params = [eval(x) for x in lines[1::2]]
 
 def load_txt(filename):
+    # Note: need to load extra information (ra, dec, etc.)
     out = Model()
 
     lines = open(filename).read().splitlines()
