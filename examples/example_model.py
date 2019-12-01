@@ -8,33 +8,43 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ehtim as eh
 
+# Load a sample array
+eht = eh.array.load_txt('../arrays/EHT2019.txt')
+
+# Make a ring model
 mod = eh.model.Model()
-#mod.add_circ_gauss(1.5, 50.*eh.RADPERUAS, x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
-#mod.add_mring(1.5, 50.*eh.RADPERUAS, beta_list=[0.5])
-mod.add_thick_ring(1.5, 50.*eh.RADPERUAS, alpha=10.*eh.RADPERUAS, x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
-#mod.add_ring(1.5, 25.*eh.RADPERUAS, x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
-#mod.add_gauss(1.5, 20.*eh.RADPERUAS, 40.*eh.RADPERUAS, PA=20.*np.pi/180., x0 = 10.*eh.RADPERUAS, y0 = 30.*eh.RADPERUAS)
-#mod.add_point(0.5, 5.02*eh.RADPERUAS, 25.04*eh.RADPERUAS)
+mod = mod.add_mring(1.5, 40.*eh.RADPERUAS, beta_list=[0.1+0.2j])
 
-# View the model as an image
-mod_im = mod.make_image(100.*eh.RADPERUAS, 256)
-mod_im.display()
-#mod_im.blur_circ(10.*eh.RADPERUAS).display()
+# View the model
+mod.display()
 
-# Make an observation
-obs = eh.obsdata.load_uvfits('/home/michael/Dropbox/ER5_polarization_calibration/ER5/postproc-hops-lo/3.+netcal/3601/hops_3601_M87+netcal.uvfits')
-obs.add_scans()
-obs = obs.avg_coherent(0.,scan_avg=True)
-im.ra = obs.ra
-im.dec = obs.dec
-im.rf = obs.rf
-eh.comp_plots.plotall_obs_im_compare(obs,[im,mod],'uvdist','amp') 
+# View the model after blurring with a circular Gaussian
+mod.blur_circ(5.*eh.RADPERUAS).display()
 
-# Manual check of visibility consistency
-im = im.regrid_image(im.fovx()*2, 1024)
-mod_im = mod.image_same(im)
-mod_im.display()
-mod_im.blur_circ(10.*eh.RADPERUAS).display()
-for u in np.arange(0, 4e9, 1e9):
-    for v in np.arange(-4e9, 4e9, 1e9):
-        print('%f %f %f %f %f %f' % (u/1e9,v/1e9,np.abs(mod.sample_uv(u,v)),np.abs(mod_im.sample_uv([[u,v]])[0][0]),np.angle(mod.sample_uv(u,v)),np.angle(mod_im.sample_uv([[u,v]])[0][0])))
+# Add another model component
+mod = mod.add_circ_gauss(1., 20.*eh.RADPERUAS, x0=-15.*eh.RADPERUAS, y0=20.*eh.RADPERUAS)
+mod.blur_circ(5.*eh.RADPERUAS).display()
+
+# Make an image of the model
+im = mod.make_image(200.*eh.RADPERUAS, 1024)
+
+# Observe the model
+tint_sec = 30
+tadv_sec = 600
+tstart_hr = 0
+tstop_hr = 24
+bw_hz = 4e9
+obs = mod.observe(eht, tint_sec, tadv_sec, tstart_hr, tstop_hr, bw_hz, ampcal=True, phasecal=False)
+
+# Fit the observation using visibility amplitudes and closure phase
+mod_init  = eh.model.Model()
+mod_init  = mod_init.add_mring(1.5, 40.*eh.RADPERUAS, beta_list=[0.1+0.1j]).add_circ_gauss(1., 20.*eh.RADPERUAS)
+mod_prior = mod_init.default_prior()
+mod_prior[0]['x0'] = {'prior_type':'fixed'}
+mod_prior[0]['y0'] = {'prior_type':'fixed'}
+mod_prior[0]['F0'] = {'prior_type':'fixed'}
+mod_prior[1]['F0'] = {'prior_type':'gauss','mean':1.0,'std':0.1}
+mod_fit   = eh.modeler_func(obs, mod_init, mod_prior, d1='amp', d2='cphase')
+
+eh.comp_plots.plotall_obs_im_compare(obs,mod_fit,'uvdist','amp') 
+mod_fit.blur_circ(5.*eh.RADPERUAS).display()
