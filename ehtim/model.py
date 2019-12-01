@@ -25,6 +25,8 @@ from ehtim.modeling.modeling_utils import *
 from ehtim.const_def import *
 
 LINE_THICKNESS = 2 # Thickness of 1D models on the image, in pixels
+FOV_DEFAULT = 100.*RADPERUAS
+NPIX_DEFAULT = 256
 
 ###########################################################################################################################################
 #Model object
@@ -554,6 +556,40 @@ def sample_model_grad_uv(models, params, u, v):
     # Gradient of a sum of models for each parameter
     return np.concatenate([sample_1model_grad_uv(u, v, models[j], params[j]) for j in range(len(models))])
 
+def blur_circ_1model(model_type, params, fwhm):
+    """Blur a single model, returning new model type and associated parameters
+
+       Args:
+            fwhm (float) : Full width at half maximum of the kernel (radians)
+
+       Returns:
+            (dict) : Dictionary with new 'model_type' and new 'params'
+    """
+
+    model_type_blur = model_type
+    params_blur = params.copy()
+
+    if model_type == 'point':
+        model_type_blur = 'circ_gauss'
+        params_blur['FWHM'] = fwhm
+    elif model_type == 'circ_gauss':
+        params_blur['FWHM'] = (params_blur['FWHM']**2 + fwhm**2)**0.5
+    elif model_type == 'gauss':
+        params_blur['FWHM_maj'] = (params_blur['FWHM_maj']**2 + fwhm**2)**0.5
+        params_blur['FWHM_min'] = (params_blur['FWHM_min']**2 + fwhm**2)**0.5
+    elif 'thick' in model_type:
+        params_blur['alpha'] = (params_blur['alpha']**2 + fwhm**2)**0.5
+    elif model_type == 'ring' or model_type == 'mring':
+        model_type_blur = 'thick_' + model_type
+        params_blur['alpha'] = fwhm
+    elif model_type == 'stretched_ring' or model_type == 'stretched_mring':
+        model_type_blur = 'stretched_thick_' + model_type[10:]
+        params_blur['alpha'] = fwhm
+    else:
+        raise Exception("A blurred " + model_type + " is not yet a supported model!")
+    
+    return {'model_type':model_type_blur, 'params':params_blur}
+
 class Model(object):
     """A model with analytic representations in the image and visibility domains.
 
@@ -658,6 +694,37 @@ class Model(object):
                 (float) : model total flux (Jy)
         """
         return np.sum([self.params[j]['F0'] for j in range(self.N_models())])
+
+    def blur_circ(self, fwhm_i, fwhm_pol=0):
+        """Return a new model, equal to the current one convolved with a circular Gaussian kernel
+
+           Args:
+                fwhm (float) : Full width at half maximum of the kernel (radians)
+                fwhm_pol (float): Beam size for Stokes Q,U,V blurring kernel
+
+           Returns:
+                (Model) : Blurred model
+        """
+
+        out = self.copy()
+
+        # Blur the primary image
+        for j in range(len(out.models)):
+            blur_model = blur_circ_1model(out.models[j], out.params[j], fwhm_i)
+            out.models[j] = blur_model['model_type']
+            out.params[j] = blur_model['params']
+
+        # Blur all polarizations and copy over
+        for pol in list(self._imdict.keys()):
+            if pol==out.pol_prim: continue
+            for j in range(len(out._imdict[pol]['models'])):
+                blur_model = blur_circ_1model(out._imdict[pol]['models'][j], out._imdict[pol]['params'], fwhm_i)
+                out._imdict[pol]['models'][j] = blur_model['model_type']
+                out._imdict[pol]['models'][j] = blur_model['params']
+
+        return out
+
+
 
     def add_point(self, F0 = 1.0, x0 = 0.0, y0 = 0.0):
         """Add a point source model.
@@ -969,6 +1036,9 @@ class Model(object):
 
     def default_prior(self):
         return [default_prior(self.models[j],self.params[j]) for j in range(self.N_models())]        
+
+    def display(self, fov=FOV_DEFAULT, npix=NPIX_DEFAULT, **kwargs):        
+        return self.make_image(fov, npix, **kwargs).display(**kwargs)
 
     def make_image(self, fov, npix, ra=RA_DEFAULT, dec=DEC_DEFAULT, rf=RF_DEFAULT, source=SOURCE_DEFAULT,
                polrep='stokes', pol_prim=None, pulse=PULSE_DEFAULT,
