@@ -146,7 +146,7 @@ def imgsum(im_or_mov, obs, obs_uncal, outname, outdir='.', title='imgsum', comme
             # TODO --- ok to always extrapolate? 
             if force_extrapolate:
                 im_or_mov.reset_interp(bounds_error=False)
-        elif hasattr(im_or_mov,'N_models'):      
+        elif hasattr(im_or_mov,'make_image'):      
             im_display = im_or_mov.make_image(obs.res() * 10., 512)
         else:
             im_display = im_or_mov.copy()
