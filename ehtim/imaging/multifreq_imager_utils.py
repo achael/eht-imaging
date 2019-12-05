@@ -44,6 +44,7 @@ from ehtim.statistics.dataframes import *
 from IPython import display
 
 NORM_REGULARIZER = True 
+EPSILON = 1.e-12
 
 ##################################################################################################
 # Mulitfrequency regularizers
@@ -58,6 +59,10 @@ def regularizer_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kwargs
 
     if stype == "l2_alpha":
         s = -l2_alpha(imvec, nprior)
+    elif stype == "tv_alpha":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=False)
+        s = -tv_alpha(imvec, xdim, ydim, psize, norm_reg=norm_reg, beam_size=beam_size)
     else:
         s = 0
 
@@ -72,6 +77,11 @@ def regularizergrad_mf(imvec, nprior, mask, flux, xdim, ydim, psize, stype, **kw
 
     if stype == "l2_alpha":
         s = -l2_alpha_grad(imvec, nprior)
+    elif stype == "tv_alpha":
+        if np.any(np.invert(mask)):
+            imvec = embed(imvec, mask, randomfloor=False)
+        s = -tv_alpha_grad(imvec, xdim, ydim, psize, norm_reg=norm_reg, beam_size=beam_size)
+        s = s[mask]
     else:
         s = 0
 
@@ -94,6 +104,56 @@ def l2_alpha_grad(imvec, priorvec):
     out = -2*(np.sum(imvec - priorvec))*np.ones(len(imvec))
     return out/norm
 
+
+def tv_alpha(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Total variation regularizer
+    """
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = psize / beam_size
+    else: norm = 1
+
+    im = imvec.reshape(ny, nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    out = -np.sum(np.sqrt(np.abs(im_l1 - im)**2 + np.abs(im_l2 - im)**2 + EPSILON))
+
+    return out/norm
+
+def tv_alpha_grad(imvec, nx, ny, psize, norm_reg=NORM_REGULARIZER, beam_size=None):
+    """Total variation gradient
+    """
+    if beam_size is None: beam_size = psize
+    if norm_reg: norm = psize / beam_size
+    else: norm = 1
+
+    im = imvec.reshape(ny,nx)
+    impad = np.pad(im, 1, mode='constant', constant_values=0)
+    im_l1 = np.roll(impad, -1, axis=0)[1:ny+1, 1:nx+1]
+    im_l2 = np.roll(impad, -1, axis=1)[1:ny+1, 1:nx+1]
+    im_r1 = np.roll(impad, 1, axis=0)[1:ny+1, 1:nx+1]
+    im_r2 = np.roll(impad, 1, axis=1)[1:ny+1, 1:nx+1]
+
+    #rotate images
+    im_r1l2 = np.roll(np.roll(impad,  1, axis=0),-1, axis=1)[1:ny+1, 1:nx+1]
+    im_l1r2 = np.roll(np.roll(impad, -1, axis=0), 1, axis=1)[1:ny+1, 1:nx+1]
+
+    #add together terms and return
+    g1 = (2*im - im_l1 - im_l2) / np.sqrt((im - im_l1)**2 + (im - im_l2)**2 + EPSILON)
+    g2 = (im - im_r1) / np.sqrt((im - im_r1)**2 + (im_r1l2 - im_r1)**2 + EPSILON)
+    g3 = (im - im_r2) / np.sqrt((im - im_r2)**2 + (im_l1r2 - im_r2)**2 + EPSILON)
+
+    #mask the first row column gradient terms that don't exist
+    mask1 = np.zeros(im.shape)
+    mask2 = np.zeros(im.shape)
+    mask1[0,:] = 1
+    mask2[:,0] = 1
+    g2[mask1.astype(bool)] = 0
+    g3[mask2.astype(bool)] = 0
+
+    # add terms together and return
+    out= -(g1 + g2 + g3).flatten()
+    return out/norm
 
 ##################################################################################################
 

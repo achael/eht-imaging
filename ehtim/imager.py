@@ -43,7 +43,7 @@ EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'l1w','lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss', 'hw']
-REGULARIZERS_SPECIND = ['l2_alpha']
+REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
 REGULARIZERS_CURV = []
 
 DATATERMS_POL = ['pvis','m','pbs']
@@ -239,7 +239,6 @@ class Imager(object):
         print("Imager run %i " % (int(self.nruns)+1))
 
         # For polarimetric imaging, switch polrep to Stokes
-        # TODO: make polarimetric imaging more general
         if self.pol_next=='P':
             print("Imaging P: switching to Stokes!")
             self.prior_next = self.prior_next.switch_polrep(polrep_out='stokes', pol_prim_out='I')
@@ -1255,8 +1254,8 @@ class Imager(object):
 
                 if self._nit == 0: print()
                 print(outstr)
-        self._nit += 1
 
+        self._nit += 1
 
     def objfunc_scattering(self, minvec):
         """Current stochastic optics objective function.

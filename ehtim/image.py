@@ -3076,7 +3076,9 @@ class Image(object):
 
     def display(self, pol=None, cfun='afmhot', interp='gaussian',
                       scale='lin',gamma=0.5, dynamic_range=1.e3,
-                      plotp=False, plot_stokes=True, nvec=20, pcut=0.1, mcut=0.01, log_offset=False,
+                      plotp=False, plot_stokes=True, nvec=20, 
+                      vec_cfun=None,
+                      pcut=0.1, mcut=0.01, log_offset=False,
                       label_type='ticks', has_title=True, alpha=1,
                       has_cbar=True, only_cbar=False, cbar_lims=(), cbar_unit = ('Jy', 'pixel'),
                       export_pdf="", pdf_pad_inches=0.0, show=True, beamparams=None, 
@@ -3098,6 +3100,8 @@ class Image(object):
                plotp (bool): True to plot linear polarimetic image
                plot_stokes (bool): True to plot stokes subplots along with plotp
                nvec (int): number of polarimetric vectors to plot
+               vec_cfun (str): color function for vectors colored by |m|
+
                pcut (float): minimum stokes I value for displaying polarimetric vectors 
                              (fraction of maximum Stokes I) 
                mcut (float): minimum fractional polarization value for displaying vectors
@@ -3392,8 +3396,6 @@ class Image(object):
 
             m = (np.abs(qvec + 1j*uvec)/imvec).reshape(self.ydim, self.xdim)
             p = (np.abs(qvec + 1j*uvec)).reshape(self.ydim, self.xdim)
-
-
             m[np.logical_not(mask)] = 0
             p[np.logical_not(mask)] = 0
             qarr[np.logical_not(mask)] = 0
@@ -3502,14 +3504,30 @@ class Image(object):
             else:
                 im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp)
 
-            plt.quiver(x, y, a, b,
-                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
-                   scale=1.0/thin)
-            plt.quiver(x, y, a, b,
-                   headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
-                   width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
-                   scale=1.1/thin)
+            if vec_cfun is None:
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.01*self.xdim, units='x', pivot='mid', color='k', angles='uv', 
+                       scale=1.0/thin)
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.005*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
+                       scale=1.1/thin)
+            else:
+                mthin = (np.abs(qvec+1j*uvec)/imvec).reshape(self.ydim, self.xdim)[::thin, ::thin]
+                mthin = mthin[mask2]
+                #print(x.shape,mthin.shape, np.min(mthin), np.max(mthin))
+                plt.quiver(x, y, a, b,
+                       headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                       width=.01*self.xdim, units='x', pivot='mid', color='w', angles='uv', 
+                       scale=1.0/thin)
+                plt.quiver(x, y, a, b, mthin,
+                           norm=mpl.colors.Normalize(vmin=0,vmax=1.), cmap=vec_cfun,
+                           headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
+                           width=.007*self.xdim, units='x', pivot='mid', angles='uv', 
+                           scale=1.1/thin)
+
+
 
             if not(beamparams is None or beamparams==False):
                 beamparams = [beamparams[0], beamparams[1], beamparams[2],
