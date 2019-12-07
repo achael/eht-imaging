@@ -307,7 +307,7 @@ def merge_obs(obs_List):
     #The important things to merge are the mjd and the data
     data_merge = np.hstack([obs.data for obs in obs_List])
 
-    return obsdata.Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, obs_List[0].tarr, source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal)
+    return obsdata.Obsdata(obs_List[0].ra, obs_List[0].dec, obs_List[0].rf, obs_List[0].bw, data_merge, obs_List[0].tarr, polrep=obs_List[0].polrep, source=obs_List[0].source, mjd=obs_List[0].mjd, ampcal=obs_List[0].ampcal, phasecal=obs_List[0].phasecal)
 
 def average_im_list(im_List):
     """Return the average of a list of images
