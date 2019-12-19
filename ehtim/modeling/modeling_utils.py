@@ -50,6 +50,13 @@ NHIST = 100 # number of steps to store for hessian approx
 MAXIT = 100 # maximum number of iterations
 STOP = 1.e-8 # convergence criterion
 
+BOUNDS_MIN = -1e4
+BOUNDS_MAX = 1e4
+BOUNDS_GAUSS_NSIGMA = 10.
+BOUNDS_EXP_NSIGMA = 10.
+
+PRIOR_MIN = 1e-200 # to avoid problems with log-prior
+
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag', 'logamp']
 
 nit = 0 # global variable to track the iteration number in the plotting callback
@@ -62,34 +69,33 @@ PARAM_DETAILS = {'F0':[1.,'Jy'], 'FWHM':[RADPERUAS,'uas'], 'FWHM_maj':[RADPERUAS
 ##################################################################################################
 
 def param_bounds(prior_params):
-    return [-1e4,1e4]
+    if prior_params['prior_type'] == 'flat':
+        bounds = [prior_params['min'],prior_params['max']]
+    elif prior_params['prior_type'] == 'gauss':
+        bounds = [prior_params['mean'] - prior_params['std'] * BOUNDS_GAUSS_NSIGMA, prior_params['mean'] + prior_params['std'] * BOUNDS_GAUSS_NSIGMA]
+    elif prior_params['prior_type'] == 'exponential':
+        bounds = [PRIOR_MIN, BOUNDS_EXP_NSIGMA * prior_params['std']]
+    elif prior_params['prior_type'] == 'positive':
+        bounds = [PRIOR_MIN, BOUNDS_MAX]
+    elif prior_params['prior_type'] == 'none':
+        bounds = [BOUNDS_MIN,BOUNDS_MAX]
+    elif prior_params['prior_type'] == 'fixed':
+        bounds = [1.0, 1.0]
+    else:
+        print('Prior type not recognized!')
+        bounds = [BOUNDS_MIN,BOUNDS_MAX]
 
-#    if prior_params['prior_type'] == 'flat':
-#        return [BOUNDS_MIN,BOUNDS_MAX]
-#    elif prior_params['prior_type'] == 'gauss':
-#        return [prior_params['mean'] - prior_params['std']
-#    elif prior_params['prior_type'] == 'exponential':
-#        return (1./prior_params['std'] * np.exp(-x/prior_params['std'])) * (x >= 0.0) + prior_min
-#    elif prior_params['prior_type'] == 'positive':
-#        return (x >= 0.0) * 1.0 + prior_min
-#    elif prior_params['prior_type'] == 'none':
-#        return 1.0
-#    elif prior_params['prior_type'] == 'fixed':
-#        return 1.0
-#    else:
-#        print('Prior not recognized!')
-#        return 1.0
+    return bounds
 
 def prior_func(x, prior_params):
-    prior_min = 1e-200 # to avoid problems with log-prior
     if prior_params['prior_type'] == 'flat':
-        return (x > prior_params['min']) * (x < prior_params['max']) * 1.0/(prior_params['max'] - prior_params['min']) + prior_min
+        return (x > prior_params['min']) * (x < prior_params['max']) * 1.0/(prior_params['max'] - prior_params['min']) + PRIOR_MIN
     elif prior_params['prior_type'] == 'gauss':
         return 1./((2.*np.pi)**0.5 * prior_params['std']) * np.exp(-(x - prior_params['mean'])**2/(2.*prior_params['std']**2))
     elif prior_params['prior_type'] == 'exponential':
-        return (1./prior_params['std'] * np.exp(-x/prior_params['std'])) * (x >= 0.0) + prior_min
+        return (1./prior_params['std'] * np.exp(-x/prior_params['std'])) * (x >= 0.0) + PRIOR_MIN
     elif prior_params['prior_type'] == 'positive':
-        return (x >= 0.0) * 1.0 + prior_min
+        return (x >= 0.0) * 1.0 + PRIOR_MIN
     elif prior_params['prior_type'] == 'none':
         return 1.0
     elif prior_params['prior_type'] == 'fixed':
@@ -150,6 +156,7 @@ def modeler_func(Obsdata, model_init, model_prior,
                    alpha_d1=100, alpha_d2=100, alpha_d3=100,
                    minimizer_func='scipy.optimize.minimize',
                    minimizer_kwargs=None,
+                   bounds=None, use_bounds=False,
                    test_gradient=False, **kwargs):
 
     """Fit a specified model. 
@@ -355,10 +362,22 @@ def modeler_func(Obsdata, model_init, model_prior,
     plotcur(param_init)
 
     # Define bounds
-    bounds = []
-    for j in range(len(param_init)):
-        bounds.append([-1e4,1e4])
-    bounds = np.array(bounds)
+    if bounds is None:
+        bounds = []
+        for j in range(len(param_map)):
+            pm = param_map[j]
+            pb = param_bounds(model_prior[pm[0]][pm[1]])
+            if model_prior[pm[0]][pm[1]]['prior_type'] not in ['positive','none','fixed']:
+                pb[0] = transform_param(pb[0]/pm[2], model_prior[pm[0]][pm[1]], inverse=False)
+                pb[1] = transform_param(pb[1]/pm[2], model_prior[pm[0]][pm[1]], inverse=False)
+            bounds.append(pb)
+        bounds = np.array(bounds)
+
+    if use_bounds == False:
+        if minimizer_func in ['scipy.optimize.dual_annealing']:
+            print('Bounds are required for ' + minimizer_func + '!')
+        else:
+            bounds = None
 
     # Minimize
     tstart = time.time()
@@ -376,14 +395,14 @@ def modeler_func(Obsdata, model_init, model_prior,
             else:
                 min_kwargs[key] = minimizer_kwargs[key]
 
-        res = opt.minimize(objfunc, param_init, jac=objgrad, callback=plotcur, **min_kwargs)
+        res = opt.minimize(objfunc, param_init, jac=objgrad, callback=plotcur, bounds=bounds, **min_kwargs)
     elif minimizer_func == 'scipy.optimize.dual_annealing':
         # scipy.optimize.dual_annealing(func, bounds, args=(), maxiter=1000, local_search_options={}, initial_temp=5230.0, restart_temp_ratio=2e-05, visit=2.62, accept=-5.0, maxfun=10000000.0, seed=None, no_local_search=False, callback=None, x0=None)
         min_kwargs = {}
         for key in minimizer_kwargs.keys():
             min_kwargs[key] = minimizer_kwargs[key]
 
-        res = opt.dual_annealing(objfunc, bounds=bounds, x0=param_init, **min_kwargs) #callback=plotcur, 
+        res = opt.dual_annealing(objfunc, x0=param_init, bounds=bounds, **min_kwargs) #callback=plotcur, 
     elif minimizer_func == 'scipy.optimize.basinhopping':
         # def basinhopping(func, x0, niter=100, T=1.0, stepsize=0.5,
         #         minimizer_kwargs=None, take_step=None, accept_test=None,
@@ -393,7 +412,7 @@ def modeler_func(Obsdata, model_init, model_prior,
         for key in minimizer_kwargs.keys():
             min_kwargs[key] = minimizer_kwargs[key]
 
-        res = opt.basinhopping(objfunc, param_init, **min_kwargs)  #
+        res = opt.basinhopping(objfunc, param_init, **min_kwargs)  
     else:
         raise Exception('Minimizer function ' + minimizer_func + ' is not recognized!')
 
