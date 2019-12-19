@@ -61,6 +61,25 @@ PARAM_DETAILS = {'F0':[1.,'Jy'], 'FWHM':[RADPERUAS,'uas'], 'FWHM_maj':[RADPERUAS
 # Priors
 ##################################################################################################
 
+def param_bounds(prior_params):
+    return [-1e4,1e4]
+
+#    if prior_params['prior_type'] == 'flat':
+#        return [BOUNDS_MIN,BOUNDS_MAX]
+#    elif prior_params['prior_type'] == 'gauss':
+#        return [prior_params['mean'] - prior_params['std']
+#    elif prior_params['prior_type'] == 'exponential':
+#        return (1./prior_params['std'] * np.exp(-x/prior_params['std'])) * (x >= 0.0) + prior_min
+#    elif prior_params['prior_type'] == 'positive':
+#        return (x >= 0.0) * 1.0 + prior_min
+#    elif prior_params['prior_type'] == 'none':
+#        return 1.0
+#    elif prior_params['prior_type'] == 'fixed':
+#        return 1.0
+#    else:
+#        print('Prior not recognized!')
+#        return 1.0
+
 def prior_func(x, prior_params):
     prior_min = 1e-200 # to avoid problems with log-prior
     if prior_params['prior_type'] == 'flat':
@@ -129,7 +148,9 @@ def transform_grad_param(x, x_prior):
 def modeler_func(Obsdata, model_init, model_prior,
                    d1='vis', d2=False, d3=False,
                    alpha_d1=100, alpha_d2=100, alpha_d3=100,
-                   minimizer_method='L-BFGS-B', test_gradient=False, **kwargs):
+                   minimizer_func='scipy.optimize.minimize',
+                   minimizer_kwargs=None,
+                   test_gradient=False, **kwargs):
 
     """Fit a specified model. 
 
@@ -166,6 +187,9 @@ def modeler_func(Obsdata, model_init, model_prior,
     # some kwarg default values
     maxit = kwargs.get('maxit', MAXIT)
     stop = kwargs.get('stop', STOP)
+
+    if minimizer_kwargs is None:
+        minimizer_kwargs = {}
 
     show_updates = kwargs.get('show_updates',True)
 
@@ -330,11 +354,48 @@ def modeler_func(Obsdata, model_init, model_prior,
     print("Total Fitted Real Parameters #: ",(len(param_init)))
     plotcur(param_init)
 
+    # Define bounds
+    bounds = []
+    for j in range(len(param_init)):
+        bounds.append([-1e4,1e4])
+    bounds = np.array(bounds)
+
     # Minimize
-    optdict = {'maxiter':maxit, 'ftol':stop, 'maxcor':NHIST,'gtol':stop,'maxls':MAXLS} # minimizer dict params
     tstart = time.time()
-    res = opt.minimize(objfunc, param_init, method=minimizer_method, jac=objgrad,
-                       options=optdict, callback=plotcur)
+    if minimizer_func == 'scipy.optimize.minimize':
+        min_kwargs = {'method':minimizer_kwargs.get('method','L-BFGS-B'),
+                      'options':{'maxiter':MAXIT, 'ftol':STOP, 'maxcor':NHIST,'gtol':STOP,'maxls':MAXLS}}
+
+        if 'options' in minimizer_kwargs.keys():
+            for key in minimizer_kwargs['options'].keys():
+                min_kwargs['options'][key] = minimizer_kwargs['options'][key]
+
+        for key in minimizer_kwargs.keys():
+            if key in ['options','method']:
+                continue
+            else:
+                min_kwargs[key] = minimizer_kwargs[key]
+
+        res = opt.minimize(objfunc, param_init, jac=objgrad, callback=plotcur, **min_kwargs)
+    elif minimizer_func == 'scipy.optimize.dual_annealing':
+        # scipy.optimize.dual_annealing(func, bounds, args=(), maxiter=1000, local_search_options={}, initial_temp=5230.0, restart_temp_ratio=2e-05, visit=2.62, accept=-5.0, maxfun=10000000.0, seed=None, no_local_search=False, callback=None, x0=None)
+        min_kwargs = {}
+        for key in minimizer_kwargs.keys():
+            min_kwargs[key] = minimizer_kwargs[key]
+
+        res = opt.dual_annealing(objfunc, bounds=bounds, x0=param_init, **min_kwargs) #callback=plotcur, 
+    elif minimizer_func == 'scipy.optimize.basinhopping':
+        # def basinhopping(func, x0, niter=100, T=1.0, stepsize=0.5,
+        #         minimizer_kwargs=None, take_step=None, accept_test=None,
+        #         callback=None, interval=50, disp=False, niter_success=None,
+        #         seed=None)
+        min_kwargs = {}
+        for key in minimizer_kwargs.keys():
+            min_kwargs[key] = minimizer_kwargs[key]
+
+        res = opt.basinhopping(objfunc, param_init, **min_kwargs)  #
+    else:
+        raise Exception('Minimizer function ' + minimizer_func + ' is not recognized!')
 
     tstop = time.time()
 
