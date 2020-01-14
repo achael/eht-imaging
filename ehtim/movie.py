@@ -491,25 +491,25 @@ class Movie(object):
             elif pol=='V': self.vframes = [image.flatten() for image in movie]
 
             if len(self.iframes)>0:
-                fill_value = (iframes[0], iframes[-1])
+                fill_value = (self.iframes[0], self.iframes[-1])
                 ifun = scipy.interpolate.interp1d(self.times, self.iframes.T, kind=self.interp, 
                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 ifun =  None
             if len(self.vframes)>0:
-                fill_value = (vframes[0], vframes[-1])
+                fill_value = (self.vframes[0], self.vframes[-1])
                 vfun = scipy.interpolate.interp1d(self.times, self.vframes.T, kind=self.interp,
                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 vfun =  None
             if len(self.qframes)>0:
-                fill_value = (qframes[0], qframes[-1])
+                fill_value = (self.qframes[0], self.qframes[-1])
                 qfun = scipy.interpolate.interp1d(self.times, self.qframes.T, kind=self.interp,
                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
                 qfun =  None
             if len(self.uframes)>0:
-                fill_value = (uframes[0], uframes[-1])
+                fill_value = (self.uframes[0], self.uframes[-1])
                 ufun = scipy.interpolate.interp1d(self.times, self.uframes.T, kind=self.interp,
                                                   fill_value=fill_value,  bounds_error=self.bounds_error)
             else:
