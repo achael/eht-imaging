@@ -110,8 +110,8 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop, polrep='sto
                 # Optical Depth
                 if type(tau) == dict:
                     try:
-                        tau1 = tau[i1]
-                        tau2 = tau[i2]
+                        tau1 = tau[site1]
+                        tau2 = tau[site2]
                     except KeyError:
                         tau1 = tau2 = TAUDEF
                 else:
