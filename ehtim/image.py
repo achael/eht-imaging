@@ -1900,7 +1900,7 @@ class Image(object):
         #tmp = Image(ringarr, self.psize, self.ra, self.dec, self.pa, 
         #            rf=self.rf, source=self.source, mjd=self.mjd, pulse=self.pulse)
         outim = outim.blur_circ(sigma)
-        outim.imvec *= flux/(tmp.total_flux())
+        outim.imvec *= flux/(outim.total_flux())
         ringarr = outim.imvec.reshape(self.ydim, self.xdim)
 
         # Add to the main image and create the new image object
