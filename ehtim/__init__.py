@@ -44,8 +44,8 @@ from ehtim.calibrating.network_cal import network_cal as netcal
 from ehtim.const_def import *
 
 # necessary to prevent hangs from astropy iers bug in astropy v 2.0.8
-from astropy.utils import iers
-iers.conf.auto_download = False 
+#from astropy.utils import iers
+#iers.conf.auto_download = False 
 
 
 try:

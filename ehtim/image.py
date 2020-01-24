@@ -374,13 +374,15 @@ class Image(object):
         # TODO -- check conventions for u,v angle
         s, t = np.meshgrid(np.flip(np.fft.fftshift(np.fft.fftfreq(self.xdim, d=1.0/self.xdim))), 
                            np.flip(np.fft.fftshift(np.fft.fftfreq(self.ydim, d=1.0/self.ydim))))
+        s = s+.5 #.5 offset to reference to pixel center
+        t = t+.5 #.5 offset to reference to pixel center
         uvangle = np.arctan2(s,t)
 
         # TODO -- these conventions for e,b are from kaminokowski aara 54:227-69 sec 4.1
         # TODO -- check!
         cos2arr=np.round(np.cos(2*uvangle),decimals=10)
         sin2arr=np.round(np.sin(2*uvangle),decimals=10)
-        earr_fft = (cos2arr*qarr_fft + sin2arr*uarr_fft)/np.sqrt(2)
+        earr_fft = (cos2arr*qarr_fft + sin2arr*uarr_fft)
 
         earr =  np.fft.ifft2(np.fft.ifftshift(earr_fft))
         return np.real(earr.flatten())
@@ -405,13 +407,15 @@ class Image(object):
         # TODO -- are these conventions for u,v right?  
         s, t = np.meshgrid(np.flip(np.fft.fftshift(np.fft.fftfreq(self.xdim, d=1.0/self.xdim))), 
                            np.flip(np.fft.fftshift(np.fft.fftfreq(self.ydim, d=1.0/self.ydim))))
+        s = s+.5 #.5 offset to reference to pixel center
+        t = t+.5 #.5 offset to reference to pixel center
         uvangle = np.arctan2(s,t)
 
 
         # TODO -- check!
         cos2arr=np.round(np.cos(2*uvangle),decimals=10)
         sin2arr=np.round(np.sin(2*uvangle),decimals=10)
-        barr_fft = (-sin2arr*qarr_fft + cos2arr*uarr_fft)/np.sqrt(2)
+        barr_fft = (-sin2arr*qarr_fft + cos2arr*uarr_fft)
 
         barr =  np.fft.ifft2(np.fft.ifftshift(barr_fft))
         return np.real(barr.flatten())
