@@ -329,5 +329,5 @@ def vexdate_to_MJD_hr(vexdate):
     t = Time(yeardatetime, format='yday')
     mjd = t.mjd
     hour = int(time[2]) + float(time[3]) / 60. + float(time[4]) / 60. / 60.
-    
+
     return mjd, hour
