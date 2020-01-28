@@ -30,6 +30,7 @@ import ehtim.scattering as so
 
 from ehtim.imaging.imager_utils import *
 from ehtim.imaging.pol_imager_utils import *
+from ehtim.imaging.multifreq_imager_utils import *
 from ehtim.const_def import *
 from ehtim.observing.obs_helpers import *
 
@@ -42,6 +43,8 @@ EPS = 1e-8
 
 DATATERMS = ['vis', 'bs', 'amp', 'cphase', 'cphase_diag', 'camp', 'logcamp', 'logcamp_diag']
 REGULARIZERS = ['gs', 'tv', 'tv2','l1', 'l1w','lA', 'patch', 'flux', 'cm', 'simple', 'compact', 'compact2','rgauss', 'hw']
+REGULARIZERS_SPECIND = ['l2_alpha', 'tv_alpha']
+REGULARIZERS_CURV = []
 
 DATATERMS_POL = ['pvis','m','pbs']
 REGULARIZERS_POL = ['msimple', 'hw', 'ptv']
@@ -54,8 +57,9 @@ FFT_INTERP_DEFAULT = 3
 REG_DEFAULT = {'simple':1}
 DAT_DEFAULT = {'vis':100}
 
-POL_PRIM = "amp_phase" # this means we solve for polarization in the m, chi basis
-POL_SOLVE = (0,1,1) # this means that pol imaging solves for m & chi (not I), for now
+POL_PRIM_SOLVE = "amp_phase" # this means we solve for polarization in the m, chi basis
+POL_WHICH_SOLVE = (0,1,1) # this means that pol imaging solves for m & chi (not I), for now
+MF_WHICH_SOLVE = (1,1,0) # this means that mf imaging solves for I0 and alpha (not beta), for now
 
 #TODO -- pol_next tracks polarization of next image to make
 #     -- checks on the polrep of the prior & init --> exception to switch if necessary
@@ -69,7 +73,7 @@ class Imager(object):
     """A general interferometric imager.
     """
 
-    def __init__(self, obsdata, init_im, prior_im=None, flux=None, data_term=DAT_DEFAULT, reg_term=REG_DEFAULT, **kwargs):
+    def __init__(self, obs_in, init_im, prior_im=None, flux=None, data_term=DAT_DEFAULT, reg_term=REG_DEFAULT, **kwargs):
 
         self.logstr = ""
         self._obs_list = []
@@ -98,8 +102,15 @@ class Imager(object):
         self.reg_term_next = reg_term  #e.g. [('simple',1), ('l1',10), ('flux',500), ('cm',500)]
         self.dat_term_next = data_term #e.g. [('amp', 1000), ('cphase',100)]
 
-        # obs, prior, flux, init
-        self.obs_next = obsdata
+        # observations, frequencies
+        if isinstance(obs_in, list):
+            self._obslist_next = obs_in
+            self.obslist_next = obs_in
+        else:
+            self._obslist_next = [obs_in]
+            self.obslist_next = [obs_in]
+
+        #init, prior, flux
         self.init_next = init_im
 
         if prior_im is None:
@@ -140,10 +151,10 @@ class Imager(object):
         self.stop_next = kwargs.get('stop',STOP)
         self.transform_next = kwargs.get('transform','log')
 
-        # normalize or not
+        # normalize or not?
         self.norm_init=kwargs.get('norm_init',True)
         self.norm_reg=kwargs.get('norm_reg',False)
-        self.beam_size=self.obs_next.res()
+        self.beam_size=self.obslist_next[0].res()
         self.regparams = {k:kwargs.get(k, 1.0) for k in ('major', 'minor', 'PA', 'alpha_A')}
 
         self.chisq_transform = False
@@ -172,15 +183,51 @@ class Imager(object):
         # imager history
         self._change_imgr_params = True
         self.nruns = 0
+        self.mf_next = False
 
         #set embedding matrices and prepare imager
         self.check_params()
         self.check_limits()
         self.init_imager()
 
-    def make_image(self, pol=None, grads=True, **kwargs):
+    @property
+    def obslist_next(self):
+        return self._obslist_next
+
+    @obslist_next.setter
+    def obslist_next(self, obslist):
+        if not isinstance(obslist,list):
+            raise Exception("obslist_next must be a list!")
+        self._obslist_next = obslist
+        self.freq_list = [obs.rf for obs in self.obslist_next]
+        self.reffreq = self.freq_list[0]
+        self._logfreqratio_list = [np.log(nu/self.reffreq) for nu in self.freq_list]
+
+    @property
+    def obs_next(self):
+        """the next Obsdata to be used in imaging"""
+        return self.obslist_next[0]
+
+    @obs_next.setter
+    def obs_next(self, obs):
+        """the next Obsdata to be used in imaging"""
+        self.obslist_next = [obs]
+
+    def make_image(self, pol=None, grads=True, mf=False, **kwargs):
+
         """Make an image using current imager settings.
+
+           Args:
+               pol (str): which polarization to image
+               grads (bool): whether or not to use image gradients
+               mf (bool): whether or not to do multifrequency (spectral index only for now)
+
+           Returns:
+               (Image): output image
+
         """
+
+        self.mf_next = mf
 
         if pol is None:
             pol_prim = self.pol_next
@@ -191,8 +238,7 @@ class Imager(object):
         print("==============================")
         print("Imager run %i " % (int(self.nruns)+1))
 
-        # for polarimetric imaging, switch polrep to Stokes
-        # TODO: make polarimetric imaging more general
+        # For polarimetric imaging, switch polrep to Stokes
         if self.pol_next=='P':
             print("Imaging P: switching to Stokes!")
             self.prior_next = self.prior_next.switch_polrep(polrep_out='stokes', pol_prim_out='I')
@@ -230,9 +276,13 @@ class Imager(object):
         self.tmpout = res.x
 
         if self.pol_next=='P':
-            out = unpack_poltuple(out, self._xtuple, self._nimage, POL_SOLVE)
+            out = unpack_poltuple(out, self._xtuple, self._nimage, POL_WHICH_SOLVE)
             if self.transform_next == 'mcv':
                 out = mcv(out)
+        elif self.mf_next:
+            out = unpack_mftuple(out, self._xtuple, self._nimage, MF_WHICH_SOLVE)
+            if self.transform_next == 'log':
+                out[0] = np.exp(out[0])
 
         elif self.transform_next == 'log':
             out = np.exp(out)
@@ -241,7 +291,10 @@ class Imager(object):
         outstr = ""
         chi2_term_dict = self.make_chisq_dict(out)
         for dname in sorted(self.dat_term_next.keys()):
-            outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
+            for i, obs in enumerate(self.obslist_next): 
+                if i==0: dname_key = dname
+                else: dname_key = dname + ('_%i'%i)
+                outstr += "chi2_%s : %0.2f " % (dname_key, chi2_term_dict[dname_key])
 
         print("time: %f s" % (tstop - tstart))
         print("J: %f" % res.fun)
@@ -254,23 +307,25 @@ class Imager(object):
             if np.any(np.invert(self._embed_mask)):
                 out = embed_pol(out, self._embed_mask)
             iimage_out = out[0]
-            qimage_out = make_q_image(out, POL_PRIM)
-            uimage_out = make_u_image(out, POL_PRIM)
+            qimage_out = make_q_image(out, POL_PRIM_SOLVE)
+            uimage_out = make_u_image(out, POL_PRIM_SOLVE)
 
+        elif self.mf_next:
+            if np.any(np.invert(self._embed_mask)):
+                out = embed_mf(out, self._embed_mask)
+            iimage_out = out[0]
+            specind_out = out[1]
+            curv_out = out[2]
         else:
             if np.any(np.invert(self._embed_mask)):
                 out = embed(out, self._embed_mask)
             iimage_out = out
 
-
         # return image
-        outim = image.Image(iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim), self.prior_next.psize,
-                            self.prior_next.ra, self.prior_next.dec, self.prior_next.pa,
-                            rf=self.prior_next.rf, source=self.prior_next.source,
-                            polrep=self.prior_next.polrep, pol_prim=pol_prim,
-                            mjd=self.prior_next.mjd, time=self.prior_next.time,
-                            pulse=self.prior_next.pulse)
-
+        arglist, argdict = self.prior_next.image_args()
+        arglist[0] = iimage_out.reshape(self.prior_next.ydim, self.prior_next.xdim)
+        argdict['pol_prim'] = pol_prim
+        outim = ehtim.image.Image(*arglist, **argdict)
 
         # copy over other polarizations
         for pol2 in list(outim._imdict.keys()):
@@ -289,6 +344,12 @@ class Imager(object):
             if len(polvec):
                 polarr=polvec.reshape(outim.ydim, outim.xdim)
                 outim.add_pol_image(polarr, pol2)
+
+        # copy over spectral index information
+        outim._mflist = copy.deepcopy(self.init_next._mflist)
+        if self.mf_next:
+            outim._mflist[0] = specind_out
+            outim._mflist[1] = curv_out
 
         # Append to history
         logstr = str(self.nruns) + ": make_image(pol=%s)" % pol #TODO - what should the log string be?
@@ -351,6 +412,10 @@ class Imager(object):
           ('gs' in self.reg_term_next.keys() or 'simple' in self.reg_term_next.keys())):
             raise Exception("'simple' and 'gs' MEM methods do not work with potentially negative Stokes Q, U, or V images!")
 
+        # Catch errors in multifrequency imaging setup
+        if self.mf_next and len(set(self.freq_list))<2:
+            raise Exception("must have observations at at least two frequencies for multifrequency imaging!")
+
         # Catch errors for polarimetric imaging setup
         if (self.pol_next=='P'):
             if self.transform_next!='mcv':
@@ -383,14 +448,18 @@ class Imager(object):
             dt_here = False
             dt_type = True
             for term in sorted(self.dat_term_next.keys()):
-                if (term != None) and (term != False): dt_here = True
-                if not ((term in DATATERMS) or term==False): dt_type = False
+                if (term != None) and (term != False): 
+                    dt_here = True
+                if not ((term in DATATERMS) or term==False): 
+                    dt_type = False
 
             st_here = False
             st_type = True
             for term in sorted(self.reg_term_next.keys()):
-                if (term != None) and (term != False): st_here = True
-                if not ((term in REGULARIZERS) or term == False): st_type = False
+                if (term != None) and (term != False): 
+                    st_here = True
+                if not ((term in REGULARIZERS or term in REGULARIZERS_SPECIND or term in REGULARIZERS_CURV) or term==False): 
+                    st_type = False
 
             if not dt_here:
                 raise Exception("Must have at least one data term!")
@@ -410,7 +479,7 @@ class Imager(object):
             self._change_imgr_params = True
             return
 
-        if self.obs_next != self.obs_last():
+        if self.obslist_next != self.obslist_last():
             print("changed observation!")
             self._change_imgr_params = True
             return
@@ -475,7 +544,6 @@ class Imager(object):
         maxbl = np.max(uvdists)
         minbl = np.max(uvdists[uvdists > 0])
 
-
         if uvmax < maxbl:
             print("Warning! Pixel size is than smallest spatial wavelength!")
         if uvmin > minbl:
@@ -505,13 +573,21 @@ class Imager(object):
             return
         return self._dat_term_list[-1]
 
-    def obs_last(self):
+    def obslist_last(self):
         """Return last used observation.
         """
         if self.nruns == 0:
             print("No imager runs yet!")
             return
         return self._obs_list[-1]
+
+    def obs_last(self):
+        """Return last used observation.
+        """
+        if self.nruns == 0:
+            print("No imager runs yet!")
+            return
+        return self._obs_list[-1][0]
 
     def prior_last(self):
         """Return last used prior image.
@@ -648,8 +724,8 @@ class Imager(object):
         # set embedding
         self.set_embed()
 
-        # set prior & initial image vectors
-        if self.pol_next=='P': # polarimetric imaging
+        # set prior & initial image vectors for polarimetric imaging
+        if self.pol_next=='P': 
             # initial I, kept constant
             self._iinit = self.init_next.imvec[self._embed_mask]
             self._nimage = len(self._iinit)
@@ -673,9 +749,49 @@ class Imager(object):
                 raise Exception("Polarimetric imaging only works with transform_next='mcv'")
 
             # pack into single vector
-            self._xinit = pack_poltuple(self._xtuple, POL_SOLVE)
+            self._xinit = pack_poltuple(self._xtuple, POL_WHICH_SOLVE)
 
-        else: # single stokes or RR/LL imaging
+        # set prior & initial image vectors for multifrequency imaging
+        elif self.mf_next:
+            self._nimage = len(self.prior_next.imvec)
+            if self.norm_init:
+                nprior_I = (self.flux_next * self.prior_next.imvec / np.sum((self.prior_next.imvec)[self._embed_mask]))[self._embed_mask]
+                ninit_I = (self.flux_next * self.init_next.imvec / np.sum((self.init_next.imvec)[self._embed_mask]))[self._embed_mask]
+            else:
+                nprior_I = self.prior_next.imvec[self._embed_mask]
+                ninit_I = self.init_next.imvec[self._embed_mask]
+            if len(self.init_next.specvec):
+                ninit_a = self.init_next.specvec
+            else:
+                ninit_a = np.zeros(self._nimage)
+            if len(self.init_next.curvvec):
+                ninit_b = self.init_next.curvvec
+            else:
+                ninit_b = np.zeros(self._nimage)
+            if len(self.prior_next.specvec):
+                nprior_a = self.prior_next.specvec
+            else:
+                nprior_a = np.zeros(self._nimage)
+            if len(self.prior_next.curvvec):
+                nprior_b = self.init_next.curvvec
+            else:
+                nprior_b = np.zeros(self._nimage)
+            self.inittuple = np.array((ninit_I, ninit_a, ninit_b))
+            self.priortuple = np.array((nprior_I, nprior_a, nprior_b))
+
+            # change of variables
+            if self.transform_next == 'log':
+                self._xtuple = np.array((np.log(ninit_I), ninit_a, ninit_b))
+            else: 
+                self._xtuple = self.inittuple
+
+            # pack into single vector
+            self._ninit = pack_mftuple(self.inittuple, MF_WHICH_SOLVE)
+            self._xinit = pack_mftuple(self._xtuple, MF_WHICH_SOLVE)
+
+        # set prior & initial image vectors for single stokes or RR/LL imaging
+        else:
+            self._nimage = len(self.prior_next.imvec)
             if self.norm_init:
                 self._nprior = (self.flux_next * self.prior_next.imvec / np.sum((self.prior_next.imvec)[self._embed_mask]))[self._embed_mask]
                 self._ninit = (self.flux_next * self.init_next.imvec / np.sum((self.init_next.imvec)[self._embed_mask]))[self._embed_mask]
@@ -695,31 +811,45 @@ class Imager(object):
             if self.nruns>0:
                 print("Recomputing imager data products . . .")
             self._data_tuples = {}
+
+            # loop over all data term types
             for dname in sorted(self.dat_term_next.keys()):
-                if self.pol_next=='P':
-                    tup = polchisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
-                                        pol=self.pol_next,maxset=self.maxset_next,
+
+                # loop over all observations in the list
+                for i, obs in enumerate(self.obslist_next): 
+                    # each entry in the dterm dictionary past the first has an appended number
+                    if i==0: dname_key = dname
+                    else: dname_key = dname + ('_%i'%i)
+
+                    # polarimetric data products
+                    if self.pol_next=='P':
+                        tup = polchisqdata(obs, self.prior_next, self._embed_mask, dname, 
+                                            pol=self.pol_next,maxset=self.maxset_next,
+                                            debias=self.debias_next, snrcut=self.snrcut_next[dname], 
+                                            weighting=self.weighting_next,
+                                            systematic_noise=self.systematic_noise_next, 
+                                            systematic_cphase_noise=self.systematic_cphase_noise_next,
+                                            ttype=self._ttype, order=self._fft_interp_order,    
+                                            fft_pad_factor=self._fft_pad_factor,
+                                            conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, 
+                                            cp_uv_min=self.cp_uv_min)
+
+                    # single polarization data products
+                    else:
+                        tup = chisqdata(obs, self.prior_next, self._embed_mask, dname, 
+                                        pol=self.pol_next, maxset=self.maxset_next,
                                         debias=self.debias_next, snrcut=self.snrcut_next[dname], 
                                         weighting=self.weighting_next,
                                         systematic_noise=self.systematic_noise_next, 
                                         systematic_cphase_noise=self.systematic_cphase_noise_next,
-                                        ttype=self._ttype, order=self._fft_interp_order,    
+                                        ttype=self._ttype, order=self._fft_interp_order, 
                                         fft_pad_factor=self._fft_pad_factor,
                                         conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, 
                                         cp_uv_min=self.cp_uv_min)
-                else:
-                    tup = chisqdata(self.obs_next, self.prior_next, self._embed_mask, dname, 
-                                    pol=self.pol_next,maxset=self.maxset_next,
-                                    debias=self.debias_next, snrcut=self.snrcut_next[dname], 
-                                    weighting=self.weighting_next,
-                                    systematic_noise=self.systematic_noise_next, 
-                                    systematic_cphase_noise=self.systematic_cphase_noise_next,
-                                    ttype=self._ttype, order=self._fft_interp_order, 
-                                    fft_pad_factor=self._fft_pad_factor,
-                                    conv_func=self._fft_conv_func, p_rad=self._fft_gridder_prad, 
-                                    cp_uv_min=self.cp_uv_min)
 
-                self._data_tuples[dname] = tup
+
+                    self._data_tuples[dname_key] = tup
+            
             self._change_imgr_params = False
 
         return
@@ -756,42 +886,78 @@ class Imager(object):
 
     def make_chisq_dict(self, imcur):
         """make dictionary of current chi^2 term values
+           i indexes the observation number in self.obslist_next
         """
+
         chi2_dict = {}
         for dname in sorted(self.dat_term_next.keys()):
-            data = self._data_tuples[dname][0]
-            sigma = self._data_tuples[dname][1]
-            A = self._data_tuples[dname][2]
+            # loop over all observations in the list
+            for i, obs in enumerate(self.obslist_next): 
+                if i==0: dname_key = dname
+                else: dname_key = dname + ('_%i'%i)
 
-            if self.pol_next=='P':
-                chi2 = polchisq(imcur, A, data, sigma, dname,
-                                ttype=self._ttype, mask=self._embed_mask,
-                                pol_prim=POL_PRIM)
-            else:
-                chi2 = chisq(imcur, A, data, sigma, dname,
-                             ttype=self._ttype, mask=self._embed_mask)
-            chi2_dict[dname] = chi2
+                (data, sigma, A) = self._data_tuples[dname_key]
+
+
+                if self.pol_next=='P':
+                    chi2 = polchisq(imcur, A, data, sigma, dname,
+                                    ttype=self._ttype, mask=self._embed_mask,
+                                    pol_prim=POL_PRIM_SOLVE)
+                else:
+                    # if multifrequency imaging, get the image at the right frequency
+                    if self.mf_next:
+                        logfreqratio = self._logfreqratio_list[i]
+                        imref =  imcur[0]
+                        imcur_nu = imvec_at_freq(imcur, logfreqratio)
+                    else: 
+                        imcur_nu = imcur
+
+                    chi2 = chisq(imcur_nu, A, data, sigma, dname,
+                                 ttype=self._ttype, mask=self._embed_mask)
+
+                chi2_dict[dname_key] = chi2
 
         return chi2_dict
 
-    def make_chisqgrad_dict(self, imcur):
+    def make_chisqgrad_dict(self, imcur, i=0):
         """make dictionary of current chi^2 term gradient values
+           i indexes the observation number in self.obslist_next
         """
         chi2grad_dict = {}
         for dname in sorted(self.dat_term_next.keys()):
-            data = self._data_tuples[dname][0]
-            sigma = self._data_tuples[dname][1]
-            A = self._data_tuples[dname][2]
+            # loop over all observations in the list
+            for i, obs in enumerate(self.obslist_next): 
+                if i==0: dname_key = dname
+                else: dname_key = dname + ('_%i'%i)
 
-            if self.pol_next=='P':
-                chi2grad = polchisqgrad(imcur, A, data, sigma, dname,
-                                        ttype=self._ttype, mask=self._embed_mask,
-                                        pol_prim=POL_PRIM, pol_solve=POL_SOLVE)
-            else:
-                chi2grad = chisqgrad(imcur, A, data, sigma, dname,
-                                     ttype=self._ttype, mask=self._embed_mask)
+                (data, sigma, A) = self._data_tuples[dname_key]
 
-            chi2grad_dict[dname] = np.array(chi2grad)
+                # polarimetric data products
+                if self.pol_next=='P':
+                    chi2grad = polchisqgrad(imcur, A, data, sigma, dname,
+                                            ttype=self._ttype, mask=self._embed_mask,
+                                            pol_prim=POL_PRIM_SOLVE, pol_solve=POL_WHICH_SOLVE)
+
+                # single polarization data products
+                else:
+
+                    # if multifrequency imaging, get the image at the right frequency
+                    if self.mf_next:
+                        logfreqratio = self._logfreqratio_list[i]
+                        imref =  imcur[0]
+                        imcur_nu = imvec_at_freq(imcur, logfreqratio)
+                    else: 
+                        imcur_nu = imcur
+                        
+                    chi2grad = chisqgrad(imcur_nu, A, data, sigma, dname,
+                                         ttype=self._ttype, mask=self._embed_mask)
+
+                    # if multifrequency imaging, transform the image gradients for all the solved quantities
+                    if self.mf_next:
+                        logfreqratio = self._logfreqratio_list[i]
+                        chi2grad = mf_all_chisqgrads(chi2grad, imcur_nu, imref, logfreqratio)
+
+                chi2grad_dict[dname_key] = np.array(chi2grad)
 
         return chi2grad_dict
 
@@ -800,20 +966,48 @@ class Imager(object):
         """
         reg_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
+            # polarimetric regularizer
             if self.pol_next=='P':
                 reg = polregularizer(imcur, self._embed_mask, self.flux_next, 
                                      self.prior_next.xdim, self.prior_next.ydim,
                                      self.prior_next.psize, regname,
-                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                     pol_prim=POL_PRIM
-                                     )
-            else:
+                                     norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                     pol_prim=POL_PRIM_SOLVE, pol_solve=POL_WHICH_SOLVE)
+
+            # multifrequency regularizer
+            elif self.mf_next:
+                if regname in REGULARIZERS: 
+                    reg = regularizer(imcur[0], self.priortuple[0], self._embed_mask,
+                                          self.flux_next, self.prior_next.xdim,
+                                          self.prior_next.ydim, self.prior_next.psize,
+                                          regname,
+                                          norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                          **self.regparams)
+                elif regname in REGULARIZERS_SPECIND:
+                    reg = regularizer_mf(imcur[1], self.priortuple[1], self._embed_mask,
+                                          self.flux_next, self.prior_next.xdim,
+                                          self.prior_next.ydim, self.prior_next.psize,
+                                          regname,
+                                          norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                          **self.regparams)
+
+                elif regname in REGULARIZERS_CURV:
+                    reg = regularizer_mf(imcur[2], self.priortuple[2], self._embed_mask,
+                                          self.flux_next, self.prior_next.xdim,
+                                          self.prior_next.ydim, self.prior_next.psize,
+                                          regname,
+                                          norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                          **self.regparams)
+
+            # normal regularizer
+            else: 
                 reg = regularizer(imcur, self._nprior, self._embed_mask,
-                                  self.flux_next, self.prior_next.xdim,
-                                  self.prior_next.ydim, self.prior_next.psize,
-                                  regname,
-                                  norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                  **self.regparams)
+                                      self.flux_next, self.prior_next.xdim,
+                                      self.prior_next.ydim, self.prior_next.psize,
+                                      regname,
+                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                      **self.regparams)
+
             reg_dict[regname] = reg
 
         return reg_dict
@@ -821,20 +1015,54 @@ class Imager(object):
     def make_reggrad_dict(self, imcur):
         """make dictionary of current regularizer gradient values
         """
+
         reggrad_dict = {}
         for regname in sorted(self.reg_term_next.keys()):
-
+            
+            # polarimetric regularizer
             if self.pol_next=='P':
-                reg = polregularizergrad(imcur, self._embed_mask, self.flux_next,
+                reg = polregularizergrad(imcur, self._embed_mask, self.flux_next, 
                                      self.prior_next.xdim, self.prior_next.ydim,
-                                     self.prior_next.psize, regname,
-                                     pol_prim=POL_PRIM, pol_solve=POL_SOLVE,
+                                     self.prior_next.psize, 
+                                    regname,
                                      norm_reg=self.norm_reg, beam_size=self.beam_size,
-                                     )
-            else:
-                reg = regularizergrad(imcur, self._nprior, self._embed_mask,
-                                      self.flux_next, self.prior_next.xdim,
-                                      self.prior_next.ydim, self.prior_next.psize,
+                                     pol_prim=POL_PRIM_SOLVE, pol_solve=POL_WHICH_SOLVE)
+
+            # multifrequency regularizer
+            elif self.mf_next:
+
+                if regname in REGULARIZERS: 
+                    reg = regularizergrad(imcur[0], self.priortuple[0], self._embed_mask,
+                                          self.flux_next, self.prior_next.xdim,
+                                          self.prior_next.ydim, self.prior_next.psize,
+                                          regname,
+                                          norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                          **self.regparams)
+                    reg = np.array((reg, np.zeros(self._nimage), np.zeros(self._nimage)))
+
+                elif regname in REGULARIZERS_SPECIND:
+                    reg = regularizergrad_mf(imcur[1], self.priortuple[1], self._embed_mask,
+                                          self.flux_next, self.prior_next.xdim,
+                                          self.prior_next.ydim, self.prior_next.psize,
+                                          regname,
+                                          norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                          **self.regparams)
+                    reg = np.array((np.zeros(self._nimage), reg, np.zeros(self._nimage)))
+
+                elif regname in REGULARIZERS_CURV:
+                    reg = regularizergrad_mf(imcur[2], self.priortuple[2], self._embed_mask,
+                                          self.flux_next, self.prior_next.xdim,
+                                          self.prior_next.ydim, self.prior_next.psize,
+                                          regname,
+                                          norm_reg=self.norm_reg, beam_size=self.beam_size,
+                                          **self.regparams)
+                    reg = np.array((np.zeros(self._nimage), np.zeros(self._nimage), reg))
+
+            # normal regularizer
+            else: 
+                reg = regularizergrad(imcur, self._nprior, self._embed_mask, self.flux_next, 
+                                      self.prior_next.xdim, self.prior_next.ydim, 
+                                      self.prior_next.psize,
                                       regname,
                                       norm_reg=self.norm_reg, beam_size=self.beam_size,
                                       **self.regparams)
@@ -842,18 +1070,25 @@ class Imager(object):
 
         return reggrad_dict
 
+
     def objfunc(self, imvec):
         """Current objective function.
         """
-        # unpack polarimetric vector into an array
+
+        # unpack polarimetric/multifrequency vector into an array
         if self.pol_next=='P':
-            imcur = unpack_poltuple(imvec, self._xtuple, self._nimage, POL_SOLVE)
+            imcur = unpack_poltuple(imvec, self._xtuple, self._nimage, POL_WHICH_SOLVE)
+        elif self.mf_next:
+            imcur = unpack_mftuple(imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
         else:
             imcur = imvec
 
         # image change of variables
         if self.transform_next == 'log':
-            imcur = np.exp(imcur)
+            if self.mf_next:
+                imcur[0] = np.exp(imcur[0])
+            else:
+                imcur = np.exp(imcur)
         elif self.transform_next== 'mcv':
             imcur = mcv(imcur)
 
@@ -861,16 +1096,26 @@ class Imager(object):
         datterm = 0.
         chi2_term_dict = self.make_chisq_dict(imcur)
         for dname in sorted(self.dat_term_next.keys()):
-            if self.chisq_transform:
-                datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] + 1./chi2_term_dict[dname] - 1.)
-            else:
-                datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] - 1.)
+            hyperparameter = self.dat_term_next[dname] 
+
+            for i, obs in enumerate(self.obslist_next): 
+                if i==0: dname_key = dname
+                else: dname_key = dname + ('_%i'%i)
+
+                chi2 = chi2_term_dict[dname_key]
+
+                if self.chisq_transform:
+                    datterm += hyperparameter * (chi2 + 1./chi2 - 1.)
+                else:
+                    datterm += hyperparameter * (chi2 - 1.)
 
         # regularizer terms
         regterm = 0
         reg_term_dict = self.make_reg_dict(imcur)
         for regname in sorted(self.reg_term_next.keys()):
-            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+            hyperparameter = self.reg_term_next[regname]
+            regularizer = reg_term_dict[regname]
+            regterm += hyperparameter * regularizer
 
         return datterm + regterm
 
@@ -878,47 +1123,69 @@ class Imager(object):
     def objgrad(self, imvec):
         """Current objective function gradient.
         """
-        # unpack polarimetric vector into an array
+        # unpack polarimetric/multifrequency vector into an array
         if self.pol_next=='P':
-            imcur = unpack_poltuple(imvec, self._xtuple, self._nimage, POL_SOLVE)
+            imcur = unpack_poltuple(imvec, self._xtuple, self._nimage, POL_WHICH_SOLVE)
+        elif self.mf_next:
+            imcur = unpack_mftuple(imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
         else:
             imcur = imvec
 
         # image change of variabbles
         if self.transform_next == 'log':
-            imcur = np.exp(imcur)
+            if self.mf_next:
+                imcur[0] = np.exp(imcur[0])
+            else:
+                imcur = np.exp(imcur)
         elif self.transform_next== 'mcv':
             cvcur = imcur.copy()
             imcur = mcv(imcur)
 
+        # data terms
         datterm = 0.
         chi2_term_dict = self.make_chisqgrad_dict(imcur)
         if self.chisq_transform:
             chi2_value_dict =  self.make_chisq_dict(imcur)
-
         for dname in sorted(self.dat_term_next.keys()):
+            hyperparameter = self.dat_term_next[dname] 
 
-            if self.chisq_transform:
-                datterm += self.dat_term_next[dname] * chi2_term_dict[dname] * (1 - 1./(chi2_value_dict[dname]**2))
-            else:
-                datterm += self.dat_term_next[dname] * (chi2_term_dict[dname] + self.chisq_offset_gradient)
+            for i, obs in enumerate(self.obslist_next): 
+                if i==0: dname_key = dname
+                else: dname_key = dname + ('_%i'%i)
 
+                chi2_grad = chi2_term_dict[dname_key]
+
+                if self.chisq_transform:
+                    chi2_val = chi2_value_dict[dname]
+                    datterm += hyperparameter * chi2_grad * (1. - 1./(chi2_val**2))
+                else:
+                    datterm += hyperparameter * (chi2_grad + self.chisq_offset_gradient)
+
+        # regularizer terms
         regterm = 0
         reg_term_dict = self.make_reggrad_dict(imcur)
         for regname in sorted(self.reg_term_next.keys()):
-            regterm += self.reg_term_next[regname] * reg_term_dict[regname]
+            hyperparameter = self.reg_term_next[regname]
+            regularizer_grad = reg_term_dict[regname]
+            regterm += hyperparameter * regularizer_grad
 
         grad = datterm + regterm
 
         # chain rule term for change of variables
         if self.transform_next == 'log':
-            grad *= imcur
+            if self.mf_next:
+                grad[0] *= imcur[0]
+            else:
+                grad *= imcur
         elif self.transform_next == 'mcv':
             grad *= mchain(cvcur)
 
         # repack gradient for polarimetric imaging
         if self.pol_next=='P':
-            grad = pack_poltuple(grad, POL_SOLVE)
+            grad = pack_poltuple(grad, POL_WHICH_SOLVE)
+        # repack gradient for multifrequency imaging
+        if self.mf_next:
+            grad = pack_mftuple(grad, MF_WHICH_SOLVE)
 
         return grad
 
@@ -926,13 +1193,18 @@ class Imager(object):
         if self._show_updates:
             if self._nit % self._update_interval == 0:
                 if self.pol_next=='P':
-                    imcur = unpack_poltuple(imvec, self._xtuple, self._nimage, POL_SOLVE)
+                    imcur = unpack_poltuple(imvec, self._xtuple, self._nimage, POL_WHICH_SOLVE)
+                elif self.mf_next:
+                    imcur = unpack_mftuple(imvec, self._xtuple, self._nimage, MF_WHICH_SOLVE)
                 else:
                     imcur = imvec
 
                 #change of variables
                 if self.transform_next == 'log':
-                    imcur = np.exp(imcur)
+                    if self.mf_next:
+                        imcur[0] = np.exp(imcur[0])
+                    else:
+                        imcur = np.exp(imcur)
                 elif self.transform_next == "mcv":
                     imcur = mcv(imcur)
 
@@ -950,11 +1222,16 @@ class Imager(object):
                 outstr = "------------------------------------------------------------------"
                 outstr += "\n%4d | " % self._nit
                 for dname in sorted(self.dat_term_next.keys()):
-                    outstr += "chi2_%s : %0.2f " % (dname, chi2_term_dict[dname])
-
+                    for i, obs in enumerate(self.obslist_next): 
+                        if i==0: dname_key = dname
+                        else: dname_key = dname + ('_%i'%i)
+                        outstr += "chi2_%s : %0.2f " % (dname_key, chi2_term_dict[dname_key])
                 outstr += "\n        "
                 for dname in sorted(self.dat_term_next.keys()):
-                    outstr += "%s : %0.1f " % (dname, chi2_term_dict[dname]*self.dat_term_next[dname])
+                    for i, obs in enumerate(self.obslist_next): 
+                        if i==0: dname_key = dname
+                        else: dname_key = dname + ('_%i'%i)
+                        outstr += "%s : %0.1f " % (dname_key, chi2_term_dict[dname_key]*self.dat_term_next[dname])
                 outstr += "\n        "
                 for regname in sorted(self.reg_term_next.keys()):
                     outstr += "%s : %0.1f " % (regname, reg_term_dict[regname]*self.reg_term_next[regname])
@@ -966,15 +1243,19 @@ class Imager(object):
                     plot_m(imcur, self.prior_next, self._nit, chi2_term_dict, **kwargs)
 
                 else:
+                    if self.mf_next:
+                        implot = imcur[0]
+                    else:
+                        implot = imcur
                     if np.any(np.invert(self._embed_mask)):
-                        imcur = embed(imcur, self._embed_mask)
+                        implot = embed(implot, self._embed_mask)
 
-                    plot_i(imcur, self.prior_next, self._nit, chi2_term_dict, pol=self.pol_next, **kwargs)
+                    plot_i(implot, self.prior_next, self._nit, chi2_term_dict, pol=self.pol_next, **kwargs)
 
                 if self._nit == 0: print()
                 print(outstr)
-        self._nit += 1
 
+        self._nit += 1
 
     def objfunc_scattering(self, minvec):
         """Current stochastic optics objective function.
@@ -1051,7 +1332,10 @@ class Imager(object):
         EA_Gradient_y = -EA_Gradient[0]
 
         Epsilon_Screen = so.MakeEpsilonScreenFromList(EpsilonList, N)
-        phi = self.scattering_model.MakePhaseScreen(Epsilon_Screen, IM, obs_frequency_Hz=self.obs_next.rf,sqrtQ_init=self._sqrtQ).imvec.reshape((N, N))
+        phi_scr = self.scattering_model.MakePhaseScreen(Epsilon_Screen, IM, 
+                                                        obs_frequency_Hz=self.obs_next.rf,
+                                                        sqrtQ_init=self._sqrtQ)
+        phi = phi_scr.imvec.reshape((N, N))
         phi_Gradient = so.Wrapped_Gradient(phi/(FOV/N))
         phi_Gradient_x = -phi_Gradient[1]
         phi_Gradient_y = -phi_Gradient[0]
@@ -1271,7 +1555,7 @@ class Imager(object):
 
     def _append_image_history(self, outim, logstr):
         self.logstr += (logstr + "\n")
-        self._obs_list.append(self.obs_next)
+        self._obs_list.append(self.obslist_next)
         self._init_list.append(self.init_next)
         self._prior_list.append(self.prior_next)
         self._debias_list.append(self.debias_next)

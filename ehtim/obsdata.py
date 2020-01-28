@@ -746,7 +746,7 @@ class Obsdata(object):
                     u = 0.5j*(data['lrvis'] - data['rlvis'])
                     qsig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
                     usig = qsig
-                out = (np.cos(2*ang)*q + np.sin(2*ang)*u) / np.sqrt(2.) #TODO correct convention/root2? 
+                out = (np.cos(2*ang)*q + np.sin(2*ang)*u)
                 sig = np.sqrt(0.5*((np.cos(2*ang)*qsig)**2 + (np.sin(2*ang)*usig)**2))
             elif field in ['bvis','bamp','bphase','bsnr','bsigma','bsigma_phase']:
                 ty = 'c16'
@@ -761,7 +761,7 @@ class Obsdata(object):
                     u = 0.5j*(data['lrvis'] - data['rlvis'])
                     qsig = 0.5*np.sqrt(data['lrsigma']**2 + data['rlsigma']**2)
                     usig = qsig
-                out = (-np.sin(2*ang)*q + np.cos(2*ang)*u) / np.sqrt(2.) #TODO correct convention/root2? 
+                out = (-np.sin(2*ang)*q + np.cos(2*ang)*u) 
                 sig = np.sqrt(0.5*((np.sin(2*ang)*qsig)**2 + (np.cos(2*ang)*usig)**2))
             elif field in ['rrvis', 'rramp', 'rrphase', 'rrsnr', 'rrsigma', 'rrsigma_phase']:
                 ty = 'c16'

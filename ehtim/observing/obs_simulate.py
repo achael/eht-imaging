@@ -687,7 +687,7 @@ def make_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True):
         fr_angle_D = np.zeros(len(times)) # This is for when field rotation is corrected but not leakage
         if not frcal:
             # Total Angle (Radian)
-            fr_angle = tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE
+            fr_angle = (tarr[i]['fr_elev']*el_angles + tarr[i]['fr_par']*par_angles + tarr[i]['fr_off']*DEGREE)
 
         elif frcal and not dcal:
             # If the field rotation angle has been removed but leakage hasn't, 

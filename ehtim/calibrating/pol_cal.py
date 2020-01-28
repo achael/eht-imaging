@@ -153,10 +153,18 @@ def leakage_cal(obs, im=None, sites=[], leakage_tol=.1, pol_fit = ['RL','LR'], d
                 rlll_sigma = data['rlsigma']/np.abs(data['llvis'])
                 rlrr_sigma = data['rlsigma']/np.abs(data['rrvis'])
 
-                lrll_model = np.conjugate(fpol_model) * (1.0 + cpol_model) + D1L * np.exp(-2j*fr1) * (1.0 + 2.0*cpol_model) + np.conjugate(D2R) * np.exp(-2j*fr2)
-                lrrr_model = np.conjugate(fpol_model) * (1.0 - cpol_model) + D1L * np.exp(-2j*fr1) + np.conjugate(D2R) * np.exp(-2j*fr2) * (1.0 - 2.0*cpol_model)
-                rlll_model = fpol_model * (1.0 + cpol_model) + D1R * np.exp(2j*fr1) + np.conjugate(D2L) * np.exp(2j*fr2) * (1.0 + 2.0*cpol_model)
-                rlrr_model = fpol_model * (1.0 - cpol_model) + D1R * np.exp(2j*fr1) * (1.0 - 2.0*cpol_model) + np.conjugate(D2L) * np.exp(2j*fr2)
+                lrll_model = (np.conjugate(fpol_model) * (1.0 + cpol_model) + 
+                              D1L * np.exp(-2j*fr1) * (1.0 + 2.0*cpol_model) + 
+                              np.conjugate(D2R) * np.exp(-2j*fr2))
+                lrrr_model = (np.conjugate(fpol_model) * (1.0 - cpol_model) + 
+                              D1L * np.exp(-2j*fr1) + 
+                              np.conjugate(D2R) * np.exp(-2j*fr2) * (1.0 - 2.0*cpol_model))
+                rlll_model = (fpol_model * (1.0 + cpol_model) + 
+                              D1R * np.exp(2j*fr1) + 
+                              np.conjugate(D2L) * np.exp(2j*fr2) * (1.0 + 2.0*cpol_model))
+                rlrr_model = (fpol_model * (1.0 - cpol_model) + 
+                              D1R * np.exp(2j*fr1) * (1.0 - 2.0*cpol_model) + 
+                              np.conjugate(D2L) * np.exp(2j*fr2))
                 
                 chisq = np.concatenate([np.abs((lrll - lrll_model)/lrll_sigma)**2,
                                         np.abs((lrrr - lrrr_model)/lrrr_sigma)**2,

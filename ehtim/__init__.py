@@ -43,12 +43,18 @@ from ehtim.calibrating.network_cal import network_cal as netcal
 #from ehtim.pipeline import Pipeline
 from ehtim.const_def import *
 
+# necessary to prevent hangs from astropy iers bug in astropy v 2.0.8
+#from astropy.utils import iers
+#iers.conf.auto_download = False 
+
+
 try:
     import pkg_resources
     version = pkg_resources.get_distribution("ehtim").version
     print("Welcome to eht-imaging! v ",version)
 except:
     print("Welcome to eht-imaging!")
+
 
 def logo():
     for line in BHIMAGE:
