@@ -17,10 +17,11 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import division
-from builtins import str
-from builtins import map
-from builtins import range
+from __future__ import print_function
 
+from builtins import str
+from builtins import range
+from builtins import object
 try:
     import ephem
 except ImportError:

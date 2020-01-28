@@ -19,10 +19,13 @@
 
 from __future__ import division
 from __future__ import print_function
+
+from builtins import str
 from builtins import range
 from builtins import object
 
 import numpy as np
+
 
 def sumdown_lin(y, n=16):
     """Sum segments of a line together to reduce its size
@@ -33,15 +36,16 @@ def sumdown_lin(y, n=16):
     xold = np.linspace(0, 1, num=nold, endpoint=False)
     xnew = np.linspace(0, 1, num=nnew, endpoint=False)
 
-    csum  = np.zeros(nnew+1)
+    csum = np.zeros(nnew+1)
     for i, x in enumerate(xnew):
         u = np.argmax(xold > x)
-        l = u - 1
-        csum[i] = (np.sum(y[0:l]) +
-                   y[l] * (x - xold[l]) / (xold[u] - xold[l]))
+        k = u - 1
+        csum[i] = (np.sum(y[0:k]) +
+                   y[k] * (x - xold[k]) / (xold[u] - xold[k]))
     csum[nnew] = sum(y)
 
     return np.diff(csum)
+
 
 def sumdown_img(img, n=16):
     """Summing patches of an image together to reduce its size
@@ -61,7 +65,8 @@ def sumdown_img(img, n=16):
     py = (Ny - ny)//2
 
     img = np.pad(img, ((px, Nx-nx-px), (py, Ny-ny-py)), 'constant')
-    return img.reshape(n, mx, n, my).sum(axis=(1,3))
+    return img.reshape(n, mx, n, my).sum(axis=(1, 3))
+
 
 def onedimize(imgs, n=16, gt=None):
     """One-dimensionalize an image by sorting in terms of pixel intensity
