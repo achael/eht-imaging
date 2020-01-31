@@ -44,7 +44,6 @@ except ImportError:
 import ehtim.image
 import ehtim.io.save
 import ehtim.io.load
-
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
 import ehtim.statistics.dataframes as ehdf

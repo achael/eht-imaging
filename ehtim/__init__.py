@@ -20,7 +20,6 @@ import ehtim.array
 import ehtim.movie
 import ehtim.image
 import ehtim.vex
-import ehtim.closure
 import ehtim.caltable
 import ehtim.parloop
 

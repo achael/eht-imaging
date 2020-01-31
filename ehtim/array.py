@@ -26,10 +26,9 @@ from builtins import object
 import numpy as np
 
 import ehtim.observing.obs_simulate as simobs
-import ehtim.const_def as ehc
 import ehtim.io.save
 import ehtim.io.load
-
+import ehtim.const_def as ehc
 
 ###################################################################################################
 # Array object

@@ -26,7 +26,8 @@ from builtins import object
 import sys
 import numpy as np
 import matplotlib as mpl
-import ehtim.observing.pulses as pulses
+
+from ehtim.observing.pulses import trianglePulse2D
 
 mpl.rc('font', **{'family': 'serif', 'size': 12})
 
@@ -43,7 +44,7 @@ RA_DEFAULT = 17.761122472222223
 DEC_DEFAULT = -28.992189444444445
 RF_DEFAULT = 230e9
 MJD_DEFAULT = 51544
-PULSE_DEFAULT = pulses.trianglePulse2D
+PULSE_DEFAULT = trianglePulse2D
 
 # movie parameters
 INTERP_DEFAULT = 'linear'

@@ -37,12 +37,12 @@ from scipy import ndimage as ndi
 from skimage.feature import canny
 from skimage.transform import hough_circle, hough_circle_peaks
 
-import ehtim.const_def as ehc
-import ehtim.observing.obs_helpers as obsh
 import ehtim.observing.obs_simulate as simobs
 import ehtim.observing.pulses as pulses
 import ehtim.io.save
 import ehtim.io.load
+import ehtim.const_def as ehc
+import ehtim.observing.obs_helpers as obsh
 
 # TODO : add time to all images
 # TODO : add arbitrary center location

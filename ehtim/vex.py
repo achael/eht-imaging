@@ -30,7 +30,6 @@ import re
 from astropy.time import Time
 import os
 import ehtim.array
-
 import ehtim.const_def as ehc
 
 ###################################################################################################
