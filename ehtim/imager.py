@@ -384,7 +384,7 @@ class Imager(object):
                          for y in np.arange(self.prior_next.ydim//2, -self.prior_next.ydim//2, -1)])
 
         coord = coord.reshape(self.prior_next.ydim * self.prior_next.xdim, 2)
-        coord *= self.prior_next.psize
+        coord = coord * self.prior_next.psize
 
         self._coord_matrix = coord[self._embed_mask]
 
