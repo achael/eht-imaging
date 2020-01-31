@@ -23,6 +23,7 @@ from builtins import map
 from builtins import range
 
 import numpy as np 
+
 try:
     import pandas as pd
 except ImportError:

@@ -44,8 +44,6 @@ import ehtim.const_def
 from ehtim.const_def import *
 import scipy.ndimage as nd
 
-
-
 import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in double_scalars")
 
@@ -1362,3 +1360,111 @@ def make_gridder_and_sampler_info(im_info, uv, conv_func=GRIDDER_CONV_FUNC_DEFAU
     sampler_info = SamplerInfo(order, vu2, pulsefac)
     gridder_info = GridderInfo(npad, conv_func, p_rad, coords, weights)
     return (sampler_info, gridder_info)
+
+
+##################################################################################################
+# miscellaneous functions
+##################################################################################################
+
+# TODO this makes a copy -- is there a faster robust way?
+def recarr_to_ndarr(x, typ):
+    """converts a record array x to a normal ndarray with all fields converted to datatype typ
+    """
+
+    fields = x.dtype.names
+    shape = x.shape + (len(fields),)
+    dt = [(name, typ) for name in fields]
+    y = x.astype(dt).view(typ).reshape(shape)
+    return y
+
+
+def prog_msg(nscan, totscans, msgtype='bar', nscan_last=0):
+    """print a progress method for calibration
+    """
+    complete_percent_last = int(100*float(nscan_last)/float(totscans))
+    complete_percent = int(100*float(nscan)/float(totscans))
+    ndigit = str(len(str(totscans)))
+
+    if msgtype == 'bar':
+        bar_width = 30
+        progress = int(bar_width * complete_percent/float(100))
+        barparams = (nscan, totscans, ("-"*progress) +
+                     (" " * (bar_width-progress)), complete_percent)
+
+        printstr = "\rScan %0"+ndigit+"i/%i : [%s]%i%%"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
+    elif msgtype == 'bar2':
+        bar_width = 30
+        progress = int(bar_width * complete_percent/float(100))
+        barparams = (nscan, totscans, ("/"*progress) +
+                     (" " * (bar_width-progress)), complete_percent)
+
+        printstr = "\rScan %0"+ndigit+"i/%i : [%s]%i%%"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
+    elif msgtype == 'casa':
+        message_list = [".", ".", ".", "10", ".", ".", ".", "20",
+                        ".", ".", ".", "30", ".", ".", ".", "40",
+                        ".", ".", ".", "50", ".", ".", ".", "60",
+                        ".", ".", ".", "70", ".", ".", ".", "80",
+                        ".", ".", ".", "90", ".", ".", ".", "DONE"]
+        bar_width = len(message_list)
+        progress = int(bar_width * complete_percent/float(100))
+        message = ''.join(message_list[:progress])
+
+        barparams = (nscan, totscans, message)
+        printstr = "\rScan %0"+ndigit+"i/%i : %s"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
+    elif msgtype == 'itcrowd':
+        message_list = ["0", "1", "1", "8", " ", "9", "9", "9", " ", "8", "8", "1", "9", "9", " ",
+                        "9", "1", "1", "9", " ", "7", "2", "5", " ", " ", " ", "3"]
+        bar_width = len(message_list)
+        progress = int(bar_width * complete_percent/float(100))
+        message = ''.join(message_list[:progress])
+        if complete_percent < 100:
+            message += "."
+            message += " "*(bar_width-progress-1)
+
+        barparams = (nscan, totscans, message)
+
+        printstr = "\rScan %0"+ndigit+"i/%i : [%s]"
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+
+    elif msgtype == 'bh':
+        message_all = BHIMAGE
+        bar_width = len(message_all)
+        progress = int(np.floor(bar_width * complete_percent/float(100)))-1
+        progress_last = int(np.floor(bar_width * complete_percent_last/float(100)))-1
+        if progress > progress_last:
+            for i in range(progress_last+1, progress+1):
+                message_line = ''.join(message_all[i])
+                message_line = '%03i' % int(complete_percent) + message_line
+                print(message_line)
+
+    elif msgtype == 'eht':
+        message_all = EHTIMAGE
+        bar_width = len(message_all)
+        progress = int(np.floor(bar_width * complete_percent/float(100)))-1
+        progress_last = int(np.floor(bar_width * complete_percent_last/float(100)))-1
+        if progress > progress_last:
+            for i in range(progress_last+1, progress+1):
+                message_line = ''.join(message_all[i])
+                message_line = '%03i' % int(complete_percent) + message_line
+                print(message_line)
+
+    elif msgtype == 'dots':
+        sys.stdout.write('.')
+        sys.stdout.flush()
+
+    else:  # msgtype=='default':
+        barparams = (nscan, totscans, complete_percent)
+        printstr = "\rScan %0"+ndigit+"i/%i : %i%% done . . ."
+        sys.stdout.write(printstr % barparams)
+        sys.stdout.flush()
+

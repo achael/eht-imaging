@@ -29,7 +29,7 @@ import time
 import copy
 
 import ehtim.obsdata
-from ehtim.observing.obs_helpers import *
+
 import ehtim.imaging.imager_utils as iu
 
 from multiprocessing import cpu_count
@@ -37,6 +37,8 @@ from multiprocessing import Pool
 from multiprocessing import Process, Value, Lock
 
 from ehtim.calibrating.cal_helpers import *
+from ehtim.observing.obs_helpers import *
+
 import warnings
 warnings.filterwarnings("ignore", message="divide by zero encountered in log")
 

@@ -29,12 +29,13 @@ import time
 import copy
 
 import ehtim.obsdata
-from ehtim.observing.obs_helpers import *
+
 
 from multiprocessing import cpu_count
 from multiprocessing import Pool
 
 from ehtim.calibrating.cal_helpers import *
+from ehtim.observing.obs_helpers import *
 
 ZBLCUTOFF = 1.e7;
 MAXIT=5000

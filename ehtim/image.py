@@ -2137,7 +2137,7 @@ class Image(object):
         obsdata = copy.deepcopy(obs.data)
 
         # Extract uv datasample
-        uv = ehc.recarr_to_ndarr(obsdata[['u', 'v']], 'f8')
+        uv = obsh.recarr_to_ndarr(obsdata[['u', 'v']], 'f8')
         data = simobs.sample_vis(self, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
                                  ttype=ttype, cache=cache, fft_pad_factor=fft_pad_factor)
 
