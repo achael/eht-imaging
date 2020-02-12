@@ -32,9 +32,9 @@ try:
 except ImportError:
     print("Warning: No NFFT installed!")
 
-import ehtim.caltable
+from . import obs_helpers as obsh
+from ehtim.caltable import Caltable
 import ehtim.const_def as ehc
-import ehtim.observing.obs_helpers as obsh
 
 ##################################################################################################
 # Generate U-V Points
@@ -603,7 +603,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
 
     # Save a calibration table with the synthetic gains and dterms added
     if caltable_path and len(datatables) > 0:
-        caltable = ehtim.caltable.Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw,
+        caltable = Caltable(obs_tmp.ra, obs_tmp.dec, obs_tmp.rf, obs_tmp.bw,
                                            datatables, obs_tmp.tarr, source=obs_tmp.source,
                                            mjd=obs_tmp.mjd, timetype=obs_tmp.timetype)
 

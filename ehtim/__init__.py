@@ -14,14 +14,14 @@ from builtins import range
 import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed, may indicate binary incompatibility.")
 
+import ehtim.vex
+import ehtim.caltable
+import ehtim.parloop
 import ehtim.obsdata
 import ehtim.imager
 import ehtim.array
 import ehtim.movie
 import ehtim.image
-import ehtim.vex
-import ehtim.caltable
-import ehtim.parloop
 
 from ehtim.imaging.imager_utils import imager_func
 from ehtim.calibrating import self_cal
