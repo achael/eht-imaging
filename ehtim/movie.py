@@ -37,15 +37,8 @@ import ehtim.io.load
 import ehtim.const_def as ehc
 import ehtim.observing.obs_helpers as obsh
 
-INTERPOLATION_KINDS = [
-    'linear',
-    'nearest',
-    'zero',
-    'slinear',
-    'quadratic',
-    'cubic',
-    'previous',
-     'next']
+INTERPOLATION_KINDS = ['linear', 'nearest', 'zero', 'slinear',
+                       'quadratic', 'cubic', 'previous', 'next']
 
 ###################################################################################################
 # Movie object
