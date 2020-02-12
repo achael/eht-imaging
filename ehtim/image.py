@@ -2173,7 +2173,8 @@ class Image(object):
                      jones=False, inv_jones=False,
                      tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                      gain_offset=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
-                     dterm_offset=ehc.DTERMPDEF, caltable_path=None, seed=False):
+                     dterm_offset=ehc.DTERMPDEF,
+                     caltable_path=None, seed=False):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
@@ -2188,12 +2189,10 @@ class Image(object):
                phasecal (bool): if False, time-dependent station-based random phases are added
                frcal (bool): if False, feed rotation angle terms are added to Jones matrices.
                dcal (bool): if False, time-dependent gaussian errors added to D-terms.
-
+               rlgaincal (bool): if False, time-dependent gains are not equal for R and L pol
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
                neggains (bool): if True, force the applied gains to be <1
-                                meaning that you have overestimated your telescope's performance
-
 
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects
                inv_jones (bool): if True, applies estimated inverse Jones matrix
@@ -2209,7 +2208,6 @@ class Image(object):
                                      or a dict giving one dterm offset per site
 
                caltable_path (string): The path and prefix of a saved caltable
-
                seed (int): seeds the random component of the noise terms. DO NOT set to 0!
 
            Returns:
@@ -2250,11 +2248,10 @@ class Image(object):
                                             ampcal=ampcal, phasecal=phasecal,
                                             opacitycal=True, dcal=True, frcal=True,
                                             timetype=obs.timetype, scantable=obs.scans)
-                # these are always set to True after inverse jones call
 
         # No Jones Matrices, Add noise the old way
-        # NOTE There is an asymmetry here - in the old way, we don't offer the ability to *not*
-        # unscale estimated noise.
+        # NOTE There is an asymmetry here - in the old way, we don't offer the ability to
+        # *not* unscale estimated noise.
         else:
 
             if caltable_path:
@@ -2264,14 +2261,14 @@ class Image(object):
                                        ampcal=ampcal, phasecal=phasecal, opacitycal=opacitycal,
                                        stabilize_scan_phase=stabilize_scan_phase,
                                        stabilize_scan_amp=stabilize_scan_amp,
-                                       gainp=gainp, taup=taup, gain_offset=gain_offset, seed=seed)
+                                       gainp=gainp, taup=taup, gain_offset=gain_offset,
+                                       seed=seed)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
                                         ampcal=ampcal, phasecal=phasecal,
                                         opacitycal=True, dcal=True, frcal=True,
                                         timetype=obs.timetype, scantable=obs.scans)
-            # these are always set to True after inverse jones call
 
         return obs
 
@@ -2283,6 +2280,7 @@ class Image(object):
                 opacitycal=True, ampcal=True, phasecal=True,
                 dcal=True, frcal=True, rlgaincal=True,
                 stabilize_scan_phase=False, stabilize_scan_amp=False,
+                neggains=False,
                 jones=False, inv_jones=False,
                 tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                 gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
@@ -2299,10 +2297,10 @@ class Image(object):
 
                mjd (int): the mjd of the observation, if set as different from the image mjd
                timetype (str): how to interpret tstart and tstop; either 'GMST' or 'UTC'
+               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
                elevmin (float): station minimum elevation in degrees
                elevmax (float): station maximum elevation in degrees
 
-               polrep_obs (str): 'stokes' or 'circ' sets the data polarimetric representation
                ttype (str): "fast", "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in the FFT
 
@@ -2314,9 +2312,11 @@ class Image(object):
                phasecal (bool): if False, time-dependent station-based random phases are added
                frcal (bool): if False, feed rotation angle terms are added to Jones matrix.
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrix D-terms.
-
+               rlgaincal (bool): if False, time-dependent gains are not equal for R and L pol
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
+               neggains (bool): if True, force the applied gains to be <1
+
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects
                              otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix
@@ -2328,7 +2328,6 @@ class Image(object):
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
-
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
 
@@ -2358,6 +2357,7 @@ class Image(object):
                                 frcal=frcal, rlgaincal=rlgaincal,
                                 stabilize_scan_phase=stabilize_scan_phase,
                                 stabilize_scan_amp=stabilize_scan_amp,
+                                neggains=neggains,
                                 gainp=gainp, gain_offset=gain_offset,
                                 tau=tau, taup=taup,
                                 dterm_offset=dterm_offset,
@@ -2369,14 +2369,15 @@ class Image(object):
 
     def observe_vex(self, vex, source, t_int=0.0, tight_tadv=False,
                     polrep_obs=None, ttype='nfft', fft_pad_factor=2,
-                    sgrscat=False, add_th_noise=True,
+                    fix_theta_GMST=False, sgrscat=False, add_th_noise=True,
                     opacitycal=True, ampcal=True, phasecal=True, frcal=True,
                     dcal=True, rlgaincal=True,
                     stabilize_scan_phase=False, stabilize_scan_amp=False,
+                    neggains=False,
                     jones=False, inv_jones=False,
                     tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                     gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
-                    dterm_offset=ehc.DTERMPDEF):
+                    dterm_offset=ehc.DTERMPDEF, seed=False):
         """Generate baselines from a vex file and observes the image.
 
            Args:
@@ -2391,6 +2392,7 @@ class Image(object):
                ttype (str): "fast" or "nfft" or "dtft"
                fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
 
+               fix_theta_GMST (bool): if True, stops earth rotation to sample fixed u,v
                sgrscat (bool): if True, the visibilites will be blurred by the Sgr A*  kernel
                add_th_noise (bool): if True, baseline-dependent thermal noise is added
                opacitycal (bool): if False, time-dependent gaussian errors are added to opacities
@@ -2398,9 +2400,11 @@ class Image(object):
                phasecal (bool): if False, time-dependent station-based random phases are added
                frcal (bool): if False, feed rotation angle terms are added to Jones matrix.
                dcal (bool): if False, time-dependent gaussian errors added to Jones matrix D-terms.
-
+               rlgaincal (bool): if False, time-dependent gains are not equal for R and L pol
                stabilize_scan_phase (bool): if True, random phase errors are constant over scans
                stabilize_scan_amp (bool): if True, random amplitude errors are constant over scans
+               neggains (bool): if True, force the applied gains to be <1
+
                jones (bool): if True, uses Jones matrix to apply mis-calibration effects
                              otherwise uses old formalism without D-terms
                inv_jones (bool): if True, applies estimated inverse Jones matrix
@@ -2412,9 +2416,9 @@ class Image(object):
                gain_offset (float): the base gain offset at all sites,
                                     or a dict giving one gain offset per site
                gainp (float): the fractional std. dev. of the random error on the gains
-
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
+               seed (int): seeds the random component of noise added. DO NOT set to 0!
 
            Returns:
                (Obsdata): an observation object
@@ -2450,22 +2454,24 @@ class Image(object):
 
             # Observe with the subarray over the scan interval
             t_start = vex.sched[i_scan]['start_hr']
-            t_stop = vex.sched[i_scan]['start_hr'] + \
-                vex.sched[i_scan]['scan'][0]['scan_sec'] / 3600.0
+            t_stop = t_start + vex.sched[i_scan]['scan'][0]['scan_sec']/3600.0 - ehc.EP
+
             obs = self.observe(subarray, t_int, t_adv, t_start, t_stop, vex.bw_hz,
                                mjd=vex.sched[i_scan]['mjd_floor'],
                                elevmin=.01, elevmax=89.99,
                                polrep_obs=polrep_obs,
                                ttype=ttype, fft_pad_factor=fft_pad_factor,
-                               sgrscat=sgrscat, add_th_noise=add_th_noise,
+                               fix_theta_GMST=fix_theta_GMST, sgrscat=sgrscat,
+                               add_th_noise=add_th_noise,
                                opacitycal=opacitycal, ampcal=ampcal, phasecal=phasecal,
                                dcal=dcal, frcal=frcal, rlgaincal=rlgaincal,
                                stabilize_scan_phase=stabilize_scan_phase,
                                stabilize_scan_amp=stabilize_scan_amp,
+                               neggains=neggains,
                                taup=taup,
                                gainp=gainp, gain_offset=gain_offset,
                                dterm_offset=dterm_offset,
-                               jones=jones, inv_jones=inv_jones)
+                               jones=jones, inv_jones=inv_jones, seed=seed)
 
             obs_List.append(obs)
 
