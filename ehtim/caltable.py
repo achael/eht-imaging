@@ -29,8 +29,6 @@ import os
 import copy
 import scipy.interpolate
 
-import ehtim.image
-import ehtim.observing.obs_simulate
 import ehtim.io.save
 import ehtim.io.load
 

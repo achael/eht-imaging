@@ -30,7 +30,6 @@ if __name__ == "__main__":
                             "ephem",
                             "future",
                             "h5py",
-                          # "html",     # optional; only needed if use dynamical imaging
                             "matplotlib",
                             "networkx",
                             "numpy",
