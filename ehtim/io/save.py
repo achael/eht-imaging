@@ -414,7 +414,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     hdulist_new = fits.HDUList()
     hdulist_new.append(fits.GroupsHDU())
 
-    ##################### AIPS Data TABLE #####################################################################################################
+    ##################### AIPS Data TABLE #########################################################
     # Data table
     # Data header (based on the BU format)
     #header = fits.Header()

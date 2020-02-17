@@ -89,6 +89,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
     # Generate uv points at all times
     outlist = []
     blpairs = []
+
     for i1 in range(len(array.tarr)):
         for i2 in range(len(array.tarr)):
             if (i1 != i2 and
@@ -142,6 +143,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
                                                     ra, dec, rf, timetype=timetype,
                                                     elevmin=elevmin, elevmax=elevmax,
                                                     fix_theta_GMST=fix_theta_GMST)
+
                 (timesout, uout, vout) = uvdat
                 for k in range(len(timesout)):
                     outlist.append(np.array((
@@ -735,7 +737,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
                         neggains=False,
                         taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                         gain_offset=ehc.GAINPDEF, dterm_offset=ehc.DTERMPDEF,
-                        caltable_path=None, seed=False):
+                        caltable_path=None, seed=False,
+                        verbose=True):
     """Corrupt visibilities in obs with jones matrices and add thermal noise
 
        Args:
@@ -755,13 +758,13 @@ def add_jones_and_noise(obs, add_th_noise=True,
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
-
-
+s
        Returns:
            (np.array): an observation  data array
     """
 
-    print("Applying Jones Matrices to data . . . ")
+    if verbose:
+        print("Applying Jones Matrices to data . . . ")
     # Build Jones Matrices
     jm_dict = make_jones(obs,
                          ampcal=ampcal, opacitycal=opacitycal, phasecal=phasecal,
@@ -787,8 +790,9 @@ def add_jones_and_noise(obs, add_th_noise=True,
 
     # Recompute the noise std. deviations from the SEFDs
     if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <= 0):
-        print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!")
-        print("Resorting to data point sigmas, which may add too much systematic noise!")
+        if verbose:
+            print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!")
+            print("Resorting to data point sigmas, which may add too much systematic noise!")
         sig_rr = obsdata['rrsigma']
         sig_ll = obsdata['llsigma']
         sig_rl = obsdata['rlsigma']
@@ -811,17 +815,17 @@ def add_jones_and_noise(obs, add_th_noise=True,
                                            tints[i], obs.bw)
                               for i in range(len(lr))), float)
 
-    if not opacitycal:
+    if verbose and not opacitycal:
         print("   Applying opacity attenuation: opacitycal-->False")
-    if not ampcal:
+    if verbose and not ampcal:
         print("   Applying gain corruption: ampcal-->False")
-    if not phasecal:
+    if verbose and not phasecal:
         print("   Applying atmospheric phase corruption: phasecal-->False")
-    if not dcal:
+    if verbose and not dcal:
         print("   Applying D Term mixing: dcal-->False")
-    if not frcal:
+    if verbose and not frcal:
         print("   Applying Field Rotation: frcal-->False")
-    if add_th_noise:
+    if verbose and add_th_noise:
         print("Adding thermal noise to data . . . ")
 
     # Corrupt each IQUV visibility set with the jones matrices and add noise
@@ -896,9 +900,6 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 
     # Recompute the noise std. deviations from the SEFDs
     if np.any(obs.tarr['sefdr'] <= 0) or np.any(obs.tarr['sefdl'] <= 0):
-        if verbose:
-            print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!")
-            print("resorting to data point sigmas, which may add too much systematic noise!")
         if verbose:
             print("Warning!: in add_jones_and_noise, some SEFDs are <= 0!")
             print("resorting to data point sigmas, which may add too much systematic noise!")
@@ -992,7 +993,7 @@ def apply_jones_inverse(obs, opacitycal=True, dcal=True, frcal=True, verbose=Tru
 def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=True,
               stabilize_scan_amp=False, stabilize_scan_phase=False,
               taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
-              seed=False):
+              seed=False, verbose=True):
     """Add thermal noise and gain & phase calibration errors to a dataset.
        Old routine replaced by add_jones_and_noise.
 
@@ -1014,15 +1015,16 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
            (np.array): an observation data array
     """
 
-    print("Adding gain + phase errors to data and applying a priori calibration . . . ")
-
-    if not opacitycal:
+    if verbose:
+        print("Adding gain + phase errors to data and applying a priori calibration . . . ")
+    
+    if verbose and not opacitycal:
         print("   Applying opacity attenuation AND estimated opacity corrections: opacitycal-->True")
-    if not ampcal:
+    if verbose and not ampcal:
         print("   Applying gain corruption: ampcal-->False")
-    if not phasecal:
+    if verbose and not phasecal:
         print("   Applying atmospheric phase corruption: phasecal-->False")
-    if add_th_noise:
+    if verbose and add_th_noise:
         print("Adding thermal noise to data . . . ")
 
     # Get data
@@ -1045,7 +1047,8 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     if stabilize_scan_phase is True or stabilize_scan_amp is True:
         scans = obs.scans
         if np.all(scans) is None or len(scans) == 0:
-            print('ADDING SCANS')
+            if verbose:
+                print("Adding scan table")
             obs_scans = obs.copy()
             obs_scans.add_scans()
             scans = obs_scans.scans
@@ -1063,8 +1066,9 @@ def add_noise(obs, add_th_noise=True, opacitycal=True, ampcal=True, phasecal=Tru
     # Recompute perfect sigmas from SEFDs
     bw = obs.bw
     if np.any(obs.tarr['sefdr'] <= 0):
-        print("Warning!: in add_noise, some SEFDs are <= 0!")
-        print("NOT recomputing sigmas, which may result in double systematic noise")
+        if verbose:
+            print("Warning!: in add_noise, some SEFDs are <= 0!")
+            print("NOT recomputing sigmas, which may result in double systematic noise")
         sigma_perf1 = obsdata[obs.poldict['sigma1']]
         sigma_perf2 = obsdata[obs.poldict['sigma2']]
         sigma_perf3 = obsdata[obs.poldict['sigma3']]
