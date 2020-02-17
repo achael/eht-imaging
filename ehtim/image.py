@@ -23,6 +23,7 @@ from builtins import str
 from builtins import range
 from builtins import object
 
+import sys
 import copy
 import math
 import numpy as np
@@ -34,8 +35,12 @@ import scipy.signal
 import scipy.ndimage.filters as filt
 import scipy.interpolate
 from scipy import ndimage as ndi
-from skimage.feature import canny
-from skimage.transform import hough_circle, hough_circle_peaks
+
+try:
+    from skimage.feature import canny
+    from skimage.transform import hough_circle, hough_circle_peaks
+except ImportError:
+    print("Warning: scikit-image not installed! Cannot use hough transform")
 
 import ehtim.observing.obs_simulate as simobs
 import ehtim.observing.pulses as pulses
@@ -2698,6 +2703,9 @@ class Image(object):
            Returns:
                list : a list of fitted circles (xpos, ypos, radius, objFunc), in radian
         """
+
+        if 'skimage' not in sys.modules:
+            raise Exception("scikit-image not installed: cannot use hough_ring!")
 
         # coordinate values
         pdim = self.psize

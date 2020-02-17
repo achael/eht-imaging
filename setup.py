@@ -26,17 +26,17 @@ if __name__ == "__main__":
                       "ehtim.scattering",
                       "ehtim.statistics"],
           long_description=read('README.rst'),
-          install_requires=["astropy",
-                            "ephem",
-                            "future",
-                            "h5py",
-                            "matplotlib",
-                            "networkx",
-                            "numpy",
-                            "pandas",   # optional; only needed if using statistics
-                            "pynfft",   # optional; only needed if using clean
-                            "requests", # optional; only needed if using dynamical imaging
+          install_requires=["numpy",
                             "scipy",
-                            "scikit-image"]
-    )
+                            "astropy",
+                            "matplotlib",
+                            "ephem",
+                            "h5py",
+                            "pandas",
+                          # "pynfft",   # optional (but highly recommended)
+                          # "networkx", # optional, only needed if using image_agreements()
+                          # "requests", # optional; only needed if using dynamical imaging
+                          # "scikit-image", #optional; only needed for hough transforms  
+                            "future"]
+         )
 

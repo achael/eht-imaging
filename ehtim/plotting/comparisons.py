@@ -25,18 +25,22 @@ from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
 import sys
 import os
 import argparse
-
+import glob
 import ehtim as eh
-import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
-
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from matplotlib.offsetbox import (TextArea, DrawingArea, OffsetImage,
                                   AnnotationBbox)
-import glob
 from itertools import cycle
+
+try:
+    import networkx as nx
+except ImportError:
+    print("Warning: networkx not installed! Cannot use image_agreements()")
+
+
+import ehtim.const_def as ehc
 
 
 def image_consistency(imarr, beamparams, metric='nxcorr', blursmall=True, beam_max=1.0, beam_steps=5, savepath=[]):
@@ -96,6 +100,9 @@ def get_psize_fov(imarr):
 
 
 def image_agreements(imarr, beamparams, metric_mtx, fracsteps, cutoff=0.95):
+
+    if 'networkx' not in sys.modules:
+        raise Exception("networkx not installed: cannot use image_agreements()!")
 
     (min_psize, max_fov) = get_psize_fov(imarr)
 
@@ -220,7 +227,7 @@ def generate_consistency_plot(clique_fraclevels, im_clique_fraclevels, zoom=0.1,
     ax.spines['left'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
 
-    ax.set_title('Blurred comparison of all images; cutoff={0}, fov (uas)={1}'.format(str(cutoff), str(im_clique_fraclevels[-1][-1].fovx()/eh.RADPERUAS)))
+    ax.set_title('Blurred comparison of all images; cutoff={0}, fov (uas)={1}'.format(str(cutoff), str(im_clique_fraclevels[-1][-1].fovx()/ehc.RADPERUAS)))
 
 #     for item in [fig, ax]:
 #         item.patch.set_visible(False)
