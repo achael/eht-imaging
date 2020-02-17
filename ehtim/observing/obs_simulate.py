@@ -93,7 +93,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
         for i2 in range(len(array.tarr)):
             if (i1 != i2 and
                 i1 < i2 and  # This is the right condition for uvfits save order
-                    not ((i2, i1) in blpairs)):  # This cuts out the conjugate baselines
+                not ((i2, i1) in blpairs)):  # This cuts out the conjugate baselines
 
                 blpairs.append((i1, i2))
 

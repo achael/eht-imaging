@@ -1246,7 +1246,7 @@ def load_obs_uvfits(filename, polrep='stokes', flipbl=False, allow_singlepol=Tru
         scantable = []
         nxtable = hdulist['AIPS NX']
         for scan in nxtable.data:
-            reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').jd
+            #reftime = astropy.time.Time(hdulist['AIPS AN'].header['RDATE'], format='isot', scale='utc').jd
             scan_start = scan['TIME'] #in days since reference date
             scan_dur = scan['TIME INTERVAL']
             startvis = scan['START VIS'] - 1

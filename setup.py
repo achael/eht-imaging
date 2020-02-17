@@ -33,9 +33,9 @@ if __name__ == "__main__":
                             "matplotlib",
                             "networkx",
                             "numpy",
-                          # "pandas",   # optional; only needed if using statistics
-                          # "pynfft",   # optional; only needed if using clean
-                          # "requests", # optional; only needed if using dynamical imaging
+                            "pandas",   # optional; only needed if using statistics
+                            "pynfft",   # optional; only needed if using clean
+                            "requests", # optional; only needed if using dynamical imaging
                             "scipy",
                             "scikit-image"]
     )

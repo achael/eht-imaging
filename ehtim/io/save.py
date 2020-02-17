@@ -622,7 +622,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     hdulist_new['PRIMARY'].data = x
     hdulist_new['PRIMARY'].header = header # TODO necessary, or is it a pointer?
 
-    ##################### AIPS AN TABLE #####################################################################################################
+    ##################### AIPS AN TABLE ###########################################################
     # Antenna table
 
     # Load the array data
@@ -668,6 +668,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     #rdate_offset_out = 0.e0
     rdate_tt_new = Time(obs.mjd + MJD_0, format='jd', scale='utc', out_subfmt='date')
     rdate_out = rdate_tt_new.iso
+    rdate_tt_new.out_subfmt = 'float'  # TODO ANDREW -- needed to fix subformat issue in astropy 4.0
     rdate_jd_out = rdate_tt_new.jd
     rdate_gstiao_out = rdate_tt_new.sidereal_time('apparent','greenwich').degree
     rdate_offset_out = (rdate_tt_new.ut1.datetime.second - rdate_tt_new.utc.datetime.second)
@@ -695,7 +696,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
 
     hdulist_new['AIPS AN'].header = head # TODO necessary, or is it a pointer?
 
-    ##################### AIPS FQ TABLE #####################################################################################################
+    ##################### AIPS FQ TABLE ###########################################################
     # Convert types & columns
 
     nif=1
@@ -721,8 +722,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
     tbhdu.header.append(("EXTVER",1))
     hdulist_new.append(tbhdu)
 
-    ##################### AIPS NX TABLE #####################################################################################################
-
+    ##################### AIPS NX TABLE ###########################################################
     scan_times = []
     scan_time_ints = []
     start_vis = []
@@ -788,6 +788,7 @@ def save_obs_uvfits(obs, fname, force_singlepol=None, polrep_out='circ'):
             hdulist_new.append(tbhdu) 
         except TypeError:
             print ("No NX table in saved uvfits")
+
     # Write final HDUList to file
     #hdulist.writeto(fname, overwrite=True)
     hdulist_new.writeto(fname, overwrite=True)
