@@ -1,5 +1,5 @@
 # polgains_cal.py
-# functions for calibrating RCP-LCP phase offsets 
+# functions for calibrating RCP-LCP phase offsets
 #
 #    Copyright (C) 2019 Maciek Wielgus (maciek.wielgus(at)gmail.com)
 #
@@ -20,53 +20,60 @@
 from __future__ import division
 from __future__ import print_function
 
+from builtins import str
+from builtins import range
+from builtins import object
+
 import numpy as np
-import scipy.special as spec
 import scipy.optimize as opt
-import sys
-import itertools as it
 import time
 import copy
+from multiprocessing import cpu_count, Pool
 
 import ehtim.obsdata
+import ehtim.parloop as parloop
+import ehtim.calibrating.cal_helpers as calh
+import ehtim.observing.obs_helpers as obsh
+import ehtim.const_def as ehc
+
+MAXIT = 5000
+
+###################################################################################################
+# Polarimetric-Phase-Gains-Calibration
+###################################################################################################
 
 
-from multiprocessing import cpu_count
-from multiprocessing import Pool
+def polgains_cal(obs, reference='AA', sites=[], method='phase', minimizer_method='BFGS', pad_amp=0.,
+                 solution_interval=0.0, scan_solutions=False,
+                 caltable=False, processes=-1, show_solution=False, msgtype='bar'):
 
-from ehtim.calibrating.cal_helpers import *
-from ehtim.observing.obs_helpers import *
-
-MAXIT=5000
-###################################################################################################################################
-#Polarimetric-Phase-Gains-Calibration
-###################################################################################################################################
-def polgains_cal(obs,reference='AA', sites=[], method='phase', minimizer_method='BFGS', pad_amp=0., solution_interval=0.0, scan_solutions=False, 
-                caltable=False, processes=-1,show_solution=False, msgtype='bar'):
-    
-    #TODO: function to globalize the polarimetric solution in time given provided absolute calibration of 
-    #the reference station so that we have a meaningful EVPA
-
+    # TODO: function to globalize the polarimetric solution in time
+    # given provided absolute calibration of the reference station
+    # so that we have a meaningful EVPA
     """Polarimeteric-phase-gains-calibrate a dataset.
-        Numerically solves for polarimetric gains to align RCP and LCP feeds. 
-        Uses all baselines to find the solution. Effectively assumes phase of Stokes V component to be zero.
+        Numerically solves for polarimetric gains to align RCP and LCP feeds.
+        Uses all baselines to find the solution. Effectively assumes phase of Stokes V to be zero.
         Because fits are local, it's not providing absolute phase calibration.
 
        Args:
         obs (Obsdata): The observation to be calibrated
-        reference (str): station used as reference to break the degeneracy (LCP on baselines to the reference station remains unchanged)
-        sites (list): list of sites to include in the polarimetric calibration. Empty list calibrates all sites
+        reference (str): station used as reference to break the degeneracy
+                         (LCP on baselines to the reference station remains unchanged)
+        sites (list): list of sites to include in the polarimetric calibration.
+                      Empty list calibrates all sites
         method (str): chooses what to calibrate, 'phase' or 'both'
-        'phase' is default, most useful (instrumental offsets), 'both' will align RCP/LCP amplitudes as well 
-        minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
+                      'phase' is default, most useful (instrumental offsets),
+                      'both' will align RCP/LCP amplitudes as well
+        minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
         pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
-        solution_interval (float): solution interval in seconds; one gain is derived for each interval.
-                                      If 0.0, a solution is determined for each unique time in the observation.
-        scan_solutions (bool): If True, determine one gain per site per scan (supersedes solution_interval)
-        caltable (bool): if True, returns a Caltable instead of an Obsdata 
+        solution_interval (float): solution interval in seconds; one gain is derived per interval.
+                                   If 0.0, a solution is determined for each unique time.
+        scan_solutions (bool): If True, determine one gain per site per scan
+                               Supersedes solution_interval.
+        caltable (bool): if True, returns a Caltable instead of an Obsdata
         processes (int): number of cores to use in multiprocessing
         show_solution (bool): if True, display the solution as it is calculated
-        msgtype (str): type of progress message to be printed, default is 'bar'           
+        msgtype (str): type of progress message to be printed, default is 'bar'
 
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
@@ -77,27 +84,23 @@ def polgains_cal(obs,reference='AA', sites=[], method='phase', minimizer_method=
         obs = obs.switch_polrep('circ')
 
     if len(sites) == 0:
-        print("No stations specified in polgain cal: defaulting to calibrating all non-reference stations!")
-        print('Polarimetric gains calibration with reference station: '+reference)
-        #sites = obs.tarr['site']
-        sites = np.array([x for x in obs.tarr['site'] if x != reference],dtype='<U32')
-        
+        print("No stations specified in polgain cal!")
+        print('Defaulting to calibrating all stations with reference station as: ' + reference)
+        sites = np.array([x for x in obs.tarr['site'] if x != reference], dtype='<U32')
 
     # get scans
-    scans     = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
+    scans = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
     scans_cal = copy.copy(scans)
-
-
 
     # Make the pool for parallel processing
     if processes > 0:
-        counter = Counter(initval=0, maxval=len(scans))
+        counter = parloop.Counter(initval=0, maxval=len(scans))
         if processes > len(scans):
             processes = len(scans)
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
-        counter = Counter(initval=0, maxval=len(scans))
+        counter = parloop.Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
         if processes > len(scans):
             processes = len(scans)
@@ -108,43 +111,48 @@ def polgains_cal(obs,reference='AA', sites=[], method='phase', minimizer_method=
 
     # loop over scans and calibrate
     tstart = time.time()
-    if processes > 0: # with multiprocessing
+    if processes > 0:  # with multiprocessing
         scans_cal = pool.map(get_polgains_scan_cal,
-                                             [[i, len(scans), scans[i], reference,
-                                            sites, method,pad_amp,caltable,show_solution,msgtype]
-                                              for i in range(len(scans))
-                                        ])
-    
-    else: # without multiprocessing
+                             [[i, len(scans), scans[i], reference,
+                               sites, method, pad_amp, caltable, show_solution, msgtype]
+                              for i in range(len(scans))
+                              ])
+
+    else:  # without multiprocessing
         for i in range(len(scans)):
-            prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i-1)
+            obsh.prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i - 1)
             scans_cal[i] = polgains_cal_scan(scans[i], reference, sites,
-                                            method=method, minimizer_method=minimizer_method, show_solution=show_solution, caltable=caltable,
-                                            pad_amp=pad_amp)
+                                             method=method, minimizer_method=minimizer_method,
+                                             show_solution=show_solution, caltable=caltable,
+                                             pad_amp=pad_amp)
 
     tstop = time.time()
     print("\npolgain_cal time: %f s" % (tstop - tstart))
 
-    if caltable: # create and return  a caltable
+    if caltable:  # create and return  a caltable
         allsites = obs.tarr['site']
-        caldict = {k:v.reshape(1) for k,v in scans_cal[0].items()}
-        for i in range(1,len(scans_cal)):
+        caldict = {k: v.reshape(1) for k, v in scans_cal[0].items()}
+        for i in range(1, len(scans_cal)):
             row = scans_cal[i]
             if len(row) == 0:
                 continue
 
             for site in allsites:
-                try: dat = row[site]
-                except KeyError: continue
+                try:
+                    dat = row[site]
+                except KeyError:
+                    continue
 
-                try: caldict[site] = np.append(caldict[site], row[site])
-                except KeyError: caldict[site] = [dat]
+                try:
+                    caldict[site] = np.append(caldict[site], row[site])
+                except KeyError:
+                    caldict[site] = [dat]
 
         caltable = ehtim.caltable.Caltable(obs.ra, obs.dec, obs.rf, obs.bw, caldict, obs.tarr,
-                                           source = obs.source, mjd=obs.mjd, timetype=obs.timetype)
+                                           source=obs.source, mjd=obs.mjd, timetype=obs.timetype)
         out = caltable
 
-    else: # return the calibrated observation
+    else:  # return the calibrated observation
         arglist, argdict = obs.obsdata_args()
         arglist[4] = np.concatenate(scans_cal)
         out = ehtim.obsdata.Obsdata(*arglist, **argdict)
@@ -155,48 +163,50 @@ def polgains_cal(obs,reference='AA', sites=[], method='phase', minimizer_method=
 
     return out
 
-def polgains_cal_scan(scan, reference='AA', sites=[],method='phase', minimizer_method='BFGS', 
-                     show_solution=False, pad_amp=0., caltable=False, msgtype='bar'):
-    
+
+def polgains_cal_scan(scan, reference='AA', sites=[], method='phase', minimizer_method='BFGS',
+                      show_solution=False, pad_amp=0., caltable=False, msgtype='bar'):
     """Polarimeteric-phase-gains-calibrate a dataset.
-        Numerically solves for polarimetric gains to align RCP and LCP feeds. 
-        Uses all baselines to find the solution. Effectively assumes phase of Stokes V component to be zero.
+        Numerically solves for polarimetric gains to align RCP and LCP feeds.
+        Uses all baselines to find the solution. Effectively assumes phase of Stokes V to be zero.
         Because fits are local, it's not providing absolute phase calibration.
 
        Args:
         obs (Obsdata): The observation to be calibrated
-        reference (str): station used as reference to break the degeneracy (LCP on baselines to the reference station remains unchanged)
-        sites (list): list of sites to include in the polarimetric calibration. Empty list calibrates all sites
+        reference (str): station used as reference to break the degeneracy
+                         (LCP on baselines to the reference station remains unchanged)
+        sites (list): list of sites to include in the polarimetric calibration.
+                      Empty list calibrates all sites
         method (str): chooses what to calibrate, 'phase' or 'both'
-        'phase' is default, most useful (instrumental offsets), 'both' will align RCP/LCP amplitudes as well
-        minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
+                      'phase' is default, most useful (instrumental offsets),
+                      'both' will align RCP/LCP amplitudes as well
+        minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
         pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
-        caltable (bool): if True, returns a Caltable instead of an Obsdata 
+        caltable (bool): if True, returns a Caltable instead of an Obsdata
         show_solution (bool): if True, display the solution as it is calculated
-        msgtype (str): type of progress message to be printed, default is 'bar'           
+        msgtype (str): type of progress message to be printed, default is 'bar'
 
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
     """
-    indices_no_vis_nans = (~np.isnan(scan[vis_poldict['RR']]))& (~np.isnan(scan[vis_poldict['LL']])) 
+    indices_no_vis_nans = (~np.isnan(scan[ehc.vis_poldict['RR']])) & (
+        ~np.isnan(scan[ehc.vis_poldict['LL']]))
     scan_no_vis_nans = scan[indices_no_vis_nans]
     allsites_no_vis_nans = list(set(np.hstack((scan_no_vis_nans['t1'], scan_no_vis_nans['t2']))))
+
     # all the sites in the scan
     allsites = list(set(np.hstack((scan['t1'], scan['t2']))))
     if len(sites) == 0:
-        print("No stations specified in polgain cal: defaulting to calibrating all non-reference stations!")
+        print("No stations specified in polgain cal")
+        print("defaulting to calibrating all non-reference stations!")
         sites = allsites
 
-    #if reference station is not present, skip calibration of this scan by providing empty list of sites
-    #if reference not in allsites:
-    #    sites=[]
-    #    print("Reference station is missing!")
     # only include sites that are present, not singlepol and not reference
-    sites = [s for s in sites if (s in allsites_no_vis_nans)&(s!=reference)]
+    sites = [s for s in sites if (s in allsites_no_vis_nans) & (s != reference)]
 
     # create a dictionary to keep track of gains; reference site and singlepol sites get key -1
-    tkey = {b:a for a,b in enumerate(sites)}
+    tkey = {b: a for a, b in enumerate(sites)}
     # make two lists of gain keys that relates scan bl gains to solved site ones
     # -1 means that this station does not have a gain that is being solved for
     g1_keys = []
@@ -212,12 +222,12 @@ def polgains_cal_scan(scan, reference='AA', sites=[],method='phase', minimizer_m
             g2_keys.append(-1)
 
     # get scan visibilities of the specified polarization
-    visRR = scan_no_vis_nans[vis_poldict['RR']]
-    visLL = scan_no_vis_nans[vis_poldict['LL']]
-    sigmaRR = scan_no_vis_nans[sig_poldict['RR']]
-    sigmaLL = scan_no_vis_nans[sig_poldict['LL']]
+    visRR = scan_no_vis_nans[ehc.vis_poldict['RR']]
+    visLL = scan_no_vis_nans[ehc.vis_poldict['LL']]
+    sigmaRR = scan_no_vis_nans[ehc.sig_poldict['RR']]
+    sigmaLL = scan_no_vis_nans[ehc.sig_poldict['LL']]
     sigma = np.sqrt(sigmaRR**2 + sigmaLL**2)
-    sigma_inv = 1.0/np.sqrt(  sigma**2+ (  pad_amp*0.5*(np.abs(visRR)+np.abs(visLL))  )**2)
+    # sigma_inv = 1.0/np.sqrt(sigma**2 + (pad_amp*0.5*(np.abs(visRR)+np.abs(visLL)))**2)
     # initial guesses for parameters
     n_gains = len(sites)
     gpar_guess = np.ones(n_gains, dtype=np.complex128).view(dtype=np.float64)
@@ -225,31 +235,32 @@ def polgains_cal_scan(scan, reference='AA', sites=[],method='phase', minimizer_m
     # error function
     def errfunc(g):
         g = g.view(dtype=np.complex128)
-        g = np.append(g, 1.+0.j)
-        if method=="phase":
-            g = g/np.abs(g)
+        g = np.append(g, 1. + 0.j)
+        if method == "phase":
+            g = g / np.abs(g)
         g1 = g[g1_keys]
         g2 = g[g2_keys]
-        chisq = np.sum(np.abs((visRR - g1[indices_no_vis_nans]*g2[indices_no_vis_nans].conj()*visLL)/sigma)**2)
+        chisq = np.sum(np.abs((visRR - g1[indices_no_vis_nans] *
+                               g2[indices_no_vis_nans].conj() * visLL) / sigma)**2)
         return chisq
-    
-    if np.max(g1_keys) > -1 or np.max(g2_keys) > -1: 
+
+    if np.max(g1_keys) > -1 or np.max(g2_keys) > -1:
         # run the minimizer to get a solution (but only run if there's at least one gain to fit)
-        optdict = {'maxiter' : MAXIT} # minimizer params
+        optdict = {'maxiter': MAXIT}  # minimizer params
         res = opt.minimize(errfunc, gpar_guess, method=minimizer_method, options=optdict)
 
         # get solution
         g_fit = res.x.view(np.complex128)
-        if method=="phase":
+        if method == "phase":
             g_fit = g_fit / np.abs(g_fit)
 
-        if show_solution == True:
-            print (g_fit)
+        if show_solution:
+            print(g_fit)
     else:
         g_fit = []
     g_fit = np.append(g_fit, 1.)
     # Derive a calibration table or apply the solution to the scan
-    if caltable: 
+    if caltable:
         allsites = list(set(scan['t1']).union(set(scan['t2'])))
 
         caldict = {}
@@ -261,38 +272,41 @@ def polgains_cal_scan(scan, reference='AA', sites=[],method='phase', minimizer_m
 
             # Convention is that we calibrate RCP phase to align with the LCP phase
             rscale = g_fit[site_key]**-1
-            lscale = 1.+0.j
+            lscale = 1. + 0.j
 
-            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
+            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=ehc.DTCAL)
         out = caldict
-    else: 
-        g1_fit = g_fit[g1_keys] 
+    else:
+        g1_fit = g_fit[g1_keys]
         g2_fit = g_fit[g2_keys]
-        g1_inv = g1_fit**(-1)  
+        g1_inv = g1_fit**(-1)
         g2_inv = g2_fit**(-1)
         # scale visibilities
-        scan['rrvis'] *= g1_inv*g2_inv.conj()
-        scan['llvis'] *= 1.+0.j
+        scan['rrvis'] *= g1_inv * g2_inv.conj()
+        scan['llvis'] *= 1. + 0.j
         scan['rlvis'] *= g1_inv
         scan['lrvis'] *= g2_inv.conj()
         # don't scale sigmas
         out = scan
     return out
 
+
 def init(x):
     global counter
     counter = x
 
+
 def get_polgains_scan_cal(args):
     return get_polgains_scan_cal2(*args)
 
-def get_polgains_scan_cal2(i, n, scan, reference, sites,method, pad_amp,caltable, show_solution,msgtype):
+
+def get_polgains_scan_cal2(i, n, scan, reference, sites, method, pad_amp, caltable, show_solution, msgtype):
+
     if n > 1:
         global counter
         counter.increment()
-        prog_msg(counter.value(), counter.maxval,msgtype,counter.value()-1)
+        obsh.prog_msg(counter.value(), counter.maxval, msgtype, counter.value() - 1)
 
-    return polgains_cal_scan(scan, reference, sites, 
-                            method=method,caltable=caltable, show_solution=show_solution, 
-                            pad_amp=pad_amp,msgtype=msgtype)
-
+    return polgains_cal_scan(scan, reference, sites,
+                             method=method, caltable=caltable, show_solution=show_solution,
+                             pad_amp=pad_amp, msgtype=msgtype)

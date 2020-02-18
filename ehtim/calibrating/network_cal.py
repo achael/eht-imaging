@@ -20,76 +20,76 @@
 from __future__ import division
 from __future__ import print_function
 
+from builtins import str
+from builtins import range
+from builtins import object
+
 import numpy as np
-import scipy.special as spec
 import scipy.optimize as opt
-import sys
-import itertools as it
 import time
 import copy
+from multiprocessing import cpu_count, Pool
 
 import ehtim.obsdata
-
-
-from multiprocessing import cpu_count
-from multiprocessing import Pool
-
-from ehtim.calibrating.cal_helpers import *
-from ehtim.observing.obs_helpers import *
+import ehtim.parloop as parloop
+import ehtim.calibrating.cal_helpers as calh
+import ehtim.observing.obs_helpers as obsh
+import ehtim.const_def as ehc
 
 ZBLCUTOFF = 1.e7
 MAXIT = 5000
 
-###################################################################################################################################
+###################################################################################################
 # Network-Calibration
-###################################################################################################################################
+###################################################################################################
 
 
-def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", minimizer_method='BFGS', pol='I',
-                pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False,
+def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", minimizer_method='BFGS',
+                pol='I', pad_amp=0., gain_tol=.2, solution_interval=0.0, scan_solutions=False,
                 caltable=False, processes=-1, show_solution=False, debias=True, msgtype='bar'):
     """Network-calibrate a dataset with zero baseline constraints.
 
        Args:
            obs (Obsdata): The observation to be calibrated
-           zbl (float or function): zero baseline flux in Jy. Can either pass a constant value or a function that
-                                    returns the zbl as a function of UT hour.
-           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
-
-           zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
-           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'. 
-                         'amp' is default because of degeneracies in the derived phases on inter-site baselines. 
-           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS', 'Nelder-Mead', etc.)
+           zbl (float or function): constant zero baseline flux in Jy, or a function of UT hour.
+           sites (list): list of sites to include in the network calibration.
+                         empty list calibrates all sites
+           zbl_uvdist_max (float): maximum uv-distance considered a zero baseline
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'.
+           minimizer_method (str): Method for scipy.optimize.minimize (e.g., 'CG', 'BFGS')
            pol (str): which visibility to compute gains for
 
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
-           solution_interval (float): solution interval in seconds; one gain is derived for each interval.
-                                      If 0.0, a solution is determined for each unique time in the observation.
-           scan_solutions (bool): If True, determine one gain per site per scan (supersedes solution_interval)
+           solution_interval (float): solution interval in seconds;
+                                      one gain is derived for each interval.
+                                      If 0.0, a solution is determined for each unique time
+           scan_solutions (bool): If True, determine one gain per site per scan.
+                                  Supersedes solution_interval
 
            debias (bool): If True, debias the amplitudes
-           caltable (bool): if True, returns a Caltable instead of an Obsdata 
+           caltable (bool): if True, returns a Caltable instead of an Obsdata
            processes (int): number of cores to use in multiprocessing
            show_solution (bool): if True, display the solution as it is calculated
-           msgtype (str): type of progress message to be printed, default is 'bar'           
+           msgtype (str): type of progress message to be printed, default is 'bar'
 
        Returns:
            (Obsdata): the calibrated observation, if caltable==False
            (Caltable): the derived calibration table, if caltable==True
     """
 
-    # Here, RRLL means to use both RR and LL (both as proxies for Stokes I) to derive a network calibration solution
+    # Here, RRLL means to use both RR and LL (both as proxies for Stokes I)
+    # to derive a network calibration solution
     if pol not in ['I', 'Q', 'U', 'V', 'RR', 'LL', 'RRLL']:
         raise Exception("Can only network-calibrate to I, Q, U, V, RR, LL, or RRLL!")
     if pol in ['I', 'Q', 'U', 'V']:
         if obs.polrep != 'stokes':
             raise Exception("netcal pol is a stokes parameter, but obs.polrep!='stokes'")
-        #obs = obs.switch_polrep('stokes',pol)
+        # obs = obs.switch_polrep('stokes',pol)
     elif pol in ['RR', 'LL', 'RRLL']:
         if obs.polrep != 'circ':
             raise Exception("netcal pol is RR or LL or RRLL, but obs.polrep!='circ'")
-        #obs = obs.switch_polrep('circ',pol)
+        # obs = obs.switch_polrep('circ',pol)
 
     # V = model visibility, V' = measured visibility, G_i = site gain
     # G_i * conj(G_j) * V_ij = V'_ij
@@ -98,7 +98,7 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", mini
         sites = obs.tarr['site']
 
     # find colocated sites and put into list allclusters
-    cluster_data = make_cluster_data(obs, zbl_uvdist_max)
+    cluster_data = calh.make_cluster_data(obs, zbl_uvdist_max)
 
     # get scans
     scans = obs.tlist(t_gather=solution_interval, scan_gather=scan_solutions)
@@ -106,13 +106,13 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", mini
 
     # Make the pool for parallel processing
     if processes > 0:
-        counter = Counter(initval=0, maxval=len(scans))
+        counter = parloop.Counter(initval=0, maxval=len(scans))
         if processes > len(scans):
             processes = len(scans)
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
-        counter = Counter(initval=0, maxval=len(scans))
+        counter = parloop.Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
         if processes > len(scans):
             processes = len(scans)
@@ -133,9 +133,11 @@ def network_cal(obs, zbl, sites=[], zbl_uvdist_max=ZBLCUTOFF, method="amp", mini
                               ])
     else:  # without multiprocessing
         for i in range(len(scans)):
-            prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i-1)
-            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data, polrep=obs.polrep, pol=pol,
-                                            method=method, minimizer_method=minimizer_method, show_solution=show_solution, caltable=caltable,
+            obsh.prog_msg(i, len(scans), msgtype=msgtype, nscan_last=i - 1)
+            scans_cal[i] = network_cal_scan(scans[i], zbl, sites, cluster_data,
+                                            polrep=obs.polrep, pol=pol,
+                                            method=method, minimizer_method=minimizer_method,
+                                            show_solution=show_solution, caltable=caltable,
                                             pad_amp=pad_amp, gain_tol=gain_tol, debias=debias)
 
     tstop = time.time()
@@ -183,20 +185,20 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
        Args:
            obs (Obsdata): The observation to be calibrated
-           zbl (float or function): zero baseline flux in Jy. Can either pass a constant value or a function that
-                                    returns the zbl as a function of UT hour.
-           sites (list): list of sites to include in the network calibration. empty list calibrates all sites
-           clustered_sites (tuple): information  on clustered sites, returned by make_cluster_data function
+           zbl (float or function): constant zero baseline flux in Jy, or a function of UT hour.
+           sites (list): list of sites to include in the network calibration.
+                         empty list calibrates all sites
+           clustered_sites (tuple): information  on clustered sites, returned by make_cluster_data
 
            polrep (str): 'stokes' or 'circ' to specify the  polarization products in scan
-           pol (str): which image polarization to self-calibrate visibilities to 
-           zbl_uvdist_max (float): considers all baselines of lambda-length less than this as zero baselines
-           method (str): chooses what to calibrate, 'amp', 'phase', or 'both' 
+           pol (str): which image polarization to self-calibrate visibilities to
+           zbl_uvdist_max (float): maximum uv-distance considered a zero baseline
+           method (str): chooses what to calibrate, 'amp', 'phase', or 'both'
            pad_amp (float): adds fractional uncertainty to amplitude sigmas in quadrature
            gain_tol (float): gains that exceed this value will be disfavored by the prior
 
            debias (bool): If True, debias the amplitudes
-           caltable (bool): if True, returns a Caltable instead of an Obsdata 
+           caltable (bool): if True, returns a Caltable instead of an Obsdata
            show_solution (bool): if True, display the solution as it is calculated
 
 
@@ -226,8 +228,9 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
     # only include sites that are present
     sites = [s for s in sites if s in allsites]
 
-    # create a dictionary to keep track of gains; sites that aren't network calibrated (no co-located partners)
-    # get a value of -1 so that they won't be network calibrated; other sites get a unique number
+    # create a dictionary to keep track of gains;
+    # sites that aren't network calibrated (no co-located partners) get a value of -1
+    # so that they won't be network calibrated; other sites get a unique number
     tkey = {b: a for a, b in enumerate(sites)}
     for cluster in allclusters:
         if len(cluster) == 1:
@@ -235,18 +238,19 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
     clusterkey = clusterdict
 
-    # restrict solved cluster visibilities to ones present in the scan (this is much faster than allowing many unconstrained variables
+    # restrict solved cluster visibilities to ones present in the scan
+    # (this is much faster than allowing many unconstrained variables)
     clusterbls_scan = [set([clusterkey[row['t1']], clusterkey[row['t2']]])
-                       for row in scan if len(set([clusterkey[row['t1']], clusterkey[row['t2']]])) == 2]
+                       for row in scan
+                       if len(set([clusterkey[row['t1']], clusterkey[row['t2']]])) == 2]
 
     # now delete duplicates
     clusterbls = [cluster for cluster in clusterbls if cluster in clusterbls_scan]
 
     # make two lists of gain keys that relates scan bl gains to solved site ones
-    # -1 means that this station does not have a gain that is being solved for
-
-    # and make a list of scan keys that relates scan bl visibilities to solved cluster ones
-    # -1 means it's a zero baseline!
+    # (-1 means that this station does not have a gain that is being solved for)
+    # and make one list of scan keys that relates scan bl visibilities to solved cluster ones
+    # (-1 means it's a zero baseline!)
 
     g1_keys = []
     g2_keys = []
@@ -280,20 +284,20 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
 
     # get scan visibilities of the specified polarization
     if pol != 'RRLL':
-        vis = scan[vis_poldict[pol]]
-        sigma = scan[sig_poldict[pol]]
+        vis = scan[ehc.vis_poldict[pol]]
+        sigma = scan[ehc.sig_poldict[pol]]
     else:
-        vis = np.concatenate([scan[vis_poldict['RR']], scan[vis_poldict['LL']]])
-        sigma = np.concatenate([scan[sig_poldict['RR']], scan[sig_poldict['LL']]])
+        vis = np.concatenate([scan[ehc.vis_poldict['RR']], scan[ehc.vis_poldict['LL']]])
+        sigma = np.concatenate([scan[ehc.sig_poldict['RR']], scan[ehc.sig_poldict['LL']]])
         vis_mask = np.concatenate([vis_mask, vis_mask])
 
     if method == 'amp':
         if debias:
-            vis = amp_debias(np.abs(vis), np.abs(sigma))
+            vis = obsh.amp_debias(np.abs(vis), np.abs(sigma))
         else:
             vis = np.abs(vis)
 
-    sigma_inv = 1.0/np.sqrt(sigma**2 + (pad_amp*np.abs(vis))**2)
+    sigma_inv = 1.0 / np.sqrt(sigma**2 + (pad_amp * np.abs(vis))**2)
 
     # initial guesses for parameters
     n_gains = len(sites)
@@ -317,14 +321,14 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
     def errfunc(gvpar):
 
         # all the forward site gains (complex)
-        g = gvpar[0:2*n_gains].astype(np.float64).view(dtype=np.complex128)
+        g = gvpar[0:2 * n_gains].astype(np.float64).view(dtype=np.complex128)
 
         # all the intercluster visibilities (complex)
-        v = gvpar[2*n_gains:].astype(np.float64).view(dtype=np.complex128)
+        v = gvpar[2 * n_gains:].astype(np.float64).view(dtype=np.complex128)
 
         # choose to only scale ampliltudes or phases
         if method == "phase":
-            g = g/np.abs(g)  # TODO: use exp(i*np.arg())?
+            g = g / np.abs(g)  # TODO: use exp(i*np.arg())?
         if method == "amp":
             g = np.abs(np.real(g))
 
@@ -343,9 +347,9 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             g2 = np.concatenate([g2, g2])
 
         if method == 'amp':
-            verr = np.abs(vis) - g1*g2.conj() * np.abs(v_scan)
+            verr = np.abs(vis) - g1 * g2.conj() * np.abs(v_scan)
         else:
-            verr = vis - g1*g2.conj() * v_scan
+            verr = vis - g1 * g2.conj() * v_scan
 
         nan_mask = np.array([not np.isnan(viter) for viter in verr]) * \
             np.array([not np.isnan(viter) for viter in sigma_inv])
@@ -357,7 +361,7 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         # prior on the gains
         g_fracerr = gain_tol
         chisq_g = np.sum((np.log(np.abs(g))**2 / g_fracerr**2))
-        chisq_v = np.sum((np.abs(v)/zbl_scan)**4)
+        chisq_v = np.sum((np.abs(v) / zbl_scan)**4)
         return chisq + chisq_g + chisq_v
 
     if np.max(g1_keys) > -1 or np.max(g2_keys) > -1:
@@ -366,15 +370,15 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
         res = opt.minimize(errfunc, gvpar_guess, method=minimizer_method, options=optdict)
 
         # get solution
-        g_fit = res.x[0:2*n_gains].view(np.complex128)
-        v_fit = res.x[2*n_gains:].view(np.complex128)
+        g_fit = res.x[0:2 * n_gains].view(np.complex128)
+        v_fit = res.x[2 * n_gains:].view(np.complex128)
 
         if method == "phase":
             g_fit = g_fit / np.abs(g_fit)
         if method == "amp":
             g_fit = np.abs(np.real(g_fit))
 
-        if show_solution == True:
+        if show_solution:
             print(np.abs(g_fit))
             print(np.abs(v_fit))
     else:
@@ -400,8 +404,9 @@ def network_cal_scan(scan, zbl, sites, clustered_sites, polrep='stokes', pol='I'
             rscale = g_fit[site_key]**-1
             lscale = g_fit[site_key]**-1
 
-            # Note: we may want to give two entries for the start/stop times when a non-zero solution interval is used
-            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=DTCAL)
+            # Note: we may want to give two entries for the start/stop times
+            # when a non-zero solution interval is used
+            caldict[site] = np.array((scan['time'][0], rscale, lscale), dtype=ehc.DTCAL)
 
         out = caldict
 
@@ -445,8 +450,9 @@ def get_network_scan_cal2(i, n, scan, zbl, sites, cluster_data, polrep, pol,
     if n > 1:
         global counter
         counter.increment()
-        prog_msg(counter.value(), counter.maxval, msgtype, counter.value()-1)
+        obsh.prog_msg(counter.value(), counter.maxval, msgtype, counter.value() - 1)
 
-    return network_cal_scan(scan, zbl, sites, cluster_data, polrep=polrep, pol=pol, zbl_uvidst_max=ZBLCUTOFF,
-                            method=method, caltable=caltable, show_solution=show_solution,
+    return network_cal_scan(scan, zbl, sites, cluster_data, polrep=polrep, pol=pol,
+                            zbl_uvidst_max=ZBLCUTOFF, method=method, caltable=caltable,
+                            show_solution=show_solution,
                             pad_amp=pad_amp, gain_tol=gain_tol, debias=debias)

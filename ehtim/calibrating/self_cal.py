@@ -31,7 +31,7 @@ import copy
 from multiprocessing import cpu_count, Pool
 
 import ehtim.obsdata
-
+import ehtim.parloop as parloop
 import ehtim.calibrating.cal_helpers as calh
 import ehtim.observing.obs_helpers as obsh
 import ehtim.const_def as ehc
@@ -117,11 +117,11 @@ def self_cal(obs, im, sites=[], method="both", pol='I', minimizer_method='BFGS',
 
     # Make the pool for parallel processing
     if processes > 0:
-        counter = calh.Counter(initval=0, maxval=len(scans))
+        counter = parloop.Counter(initval=0, maxval=len(scans))
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
     elif processes == 0:
-        counter = calh.Counter(initval=0, maxval=len(scans))
+        counter = parloop.Counter(initval=0, maxval=len(scans))
         processes = int(cpu_count())
         print("Using Multiprocessing with %d Processes" % processes)
         pool = Pool(processes=processes, initializer=init, initargs=(counter,))
