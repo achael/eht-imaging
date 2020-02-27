@@ -177,7 +177,7 @@ def make_uvpoints(array, ra, dec, rf, bw, tint, tadv, tstart, tstop,
 
 
 def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
-               ttype="nfft", cache=False, fft_pad_factor=2, zero_empty_pol=True):
+               ttype="nfft", cache=False, fft_pad_factor=2, zero_empty_pol=True, verbose=True):
     """Observe a image on given baselines with no noise.
 
        Args:
@@ -189,6 +189,7 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
            fft_pad_factor (float): zero pad the image to fft_pad_factor * image size in FFT
            zero_empty_pol (bool): if True, returns zero vec if the polarization doesn't exist.
                                   Otherwise return None
+           verbose (bool): Boolean value controls output prints.
 
        Returns:
            (Obsdata): an observation object
@@ -355,11 +356,10 @@ def sample_vis(im_org, uv, sgrscat=False, polrep_obs='stokes',
                 obsdata.append(vis)
 
     # Scatter the visibilities with the SgrA* kernel
-    # TODO: fix sgra_kernel_uv so you can take this out of a  loop!
     if sgrscat:
-        print('Scattering Visibilities with Sgr A* kernel!')
-        ker = np.fromiter((obsh.sgra_kernel_uv(im.rf, uv[i, 0], uv[i, 1])
-                           for i in range(len(vis))), 'c16')
+        if verbose:
+            print('Scattering Visibilities with Sgr A* kernel!')
+        ker = obsh.sgra_kernel_uv(im.rf, uv[:, 0], uv[:, 1])
         for data in obsdata:
             if data is None:
                 continue
