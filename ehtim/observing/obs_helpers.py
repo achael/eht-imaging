@@ -546,23 +546,34 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
 
 
 def sgra_kernel_uv(rf, u, v):
-    """Return the value of the Sgr A* scattering kernel at a given u,v pt (in lambda),
-    """
+    """Return the value of the Sgr A* scattering kernel at a given u,v (in lambda)
 
-    lcm = (ehc.C/rf) * 100  # in cm
-    sigma_maj = ehc.FWHM_MAJ * (lcm**2) / (2*np.sqrt(2*np.log(2))) * ehc.RADPERUAS
-    sigma_min = ehc.FWHM_MIN * (lcm**2) / (2*np.sqrt(2*np.log(2))) * ehc.RADPERUAS
+    Args:
+        rf (float): The observation frequency in Hz
+        u (float or ndarray): an array of u coordinates
+        v (float or ndarray): an array of v coordinates
+
+    Returns:
+       g (float ndarray): Sgr A* scattering kernel
+    """
+    u = np.array(u)
+    v = np.array(v)
+    assert u.size == v.size, 'u and v should have the same size'
+
+    lcm = (ehc.C / rf) * 100  # in cm
+    sigma_maj = ehc.FWHM_MAJ * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
+    sigma_min = ehc.FWHM_MIN * (lcm ** 2) / (2 * np.sqrt(2 * np.log(2))) * ehc.RADPERUAS
     theta = -ehc.POS_ANG * ehc.DEGREE  # theta needs to be negative in this convention!
 
     # Covariance matrix
-    a = (sigma_min * np.cos(theta))**2 + (sigma_maj*np.sin(theta))**2
-    b = (sigma_maj * np.cos(theta))**2 + (sigma_min*np.sin(theta))**2
-    c = (sigma_min**2 - sigma_maj**2) * np.cos(theta) * np.sin(theta)
+    a = (sigma_min * np.cos(theta)) ** 2 + (sigma_maj * np.sin(theta)) ** 2
+    b = (sigma_maj * np.cos(theta)) ** 2 + (sigma_min * np.sin(theta)) ** 2
+    c = (sigma_min ** 2 - sigma_maj ** 2) * np.cos(theta) * np.sin(theta)
     m = np.array([[a, c], [c, b]])
     uv = np.array([u, v])
 
-    x2 = np.dot(uv, np.dot(m, uv))
-    g = np.exp(-2 * np.pi**2 * x2)
+    x2 = (uv * np.dot(m, uv)).sum(axis=0)
+    g = np.exp(-2 * np.pi ** 2 * x2)
 
     return g
 

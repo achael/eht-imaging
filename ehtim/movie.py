@@ -1030,6 +1030,7 @@ class Movie(object):
 
         # Observe nearest frame
         obsdata_out = []
+        verbose = True
         for i in range(len(obslist)):
             obsdata = obslist[i]
 
@@ -1055,8 +1056,9 @@ class Movie(object):
 
             data = simobs.sample_vis(im, uv, sgrscat=sgrscat, polrep_obs=obs.polrep,
                                      ttype=ttype, fft_pad_factor=fft_pad_factor,
-                                     zero_empty_pol=True)
-
+                                     zero_empty_pol=True, verbose=verbose)
+            verbose = False
+            
             # Put visibilities into the obsdata
             if obs.polrep == 'stokes':
                 obsdata['vis'] = data[0]
