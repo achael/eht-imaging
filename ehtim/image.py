@@ -3021,9 +3021,9 @@ class Image(object):
             return axis
         return ax
 
-    def display(self, pol=None, cfun='afmhot', interp='gaussian',
+    def display(self, pol=None, cfun=False, interp='gaussian',
                 scale='lin', gamma=0.5, dynamic_range=1.e3,
-                plotp=False, plot_stokes=True, nvec=20,
+                plotp=False, plot_stokes=False, nvec=20,
                 vec_cfun=None,
                 pcut=0.1, mcut=0.01, log_offset=False,
                 label_type='ticks', has_title=True, alpha=1,
@@ -3036,7 +3036,9 @@ class Image(object):
 
            Args:
                pol (str): which polarization image to plot. Default is self.pol_prim
-               cfun (str): matplotlib.pyplot color function
+                          pol='spec' will plot spectral index!
+               cfun (str): matplotlib.pyplot color function. 
+                           False changes with 'pol',  but is 'afmhot' for most 
                interp (str): image interpolation 'gauss' or 'lin'
 
                scale (str): image scaling in ['log','gamma','lin']
@@ -3172,28 +3174,44 @@ class Image(object):
             raise ValueError('cbar_unit ' + cbar_unit[1] + ' is not a possible option')
 
         if not plotp:  # Plot a single polarization image
+            cbar_lims_p = ()
 
-            if pol.lower() == 'm':
+            if pol.lower() == 'spec':                
+                imvec = self.specvec
+                unit = r'$\alpha$'
+                factor = 1
+                cbar_lims_p = [-5,5]
+                cfun_p = 'jet'
+            elif pol.lower() == 'm':
                 imvec = self.mvec
                 unit = r'$\|\breve{m}|$'
                 factor = 1
-                cbar_lims = [0, 1]
+                cbar_lims_p = [0, 1]
+                cfun_p = 'cool'
             elif pol.lower() == 'p':
                 imvec = self.mvec * self.ivec
                 unit = r'$\|P|$'
+                cfun_p = 'afmhot'
             elif pol.lower() == 'chi':
                 imvec = self.chivec / ehc.DEGREE
                 unit = r'$\chi (^\circ)$'
                 factor = 1
-                cbar_lims = [0, 180]
+                cbar_lims_p = [0, 180]
+                cfun_p = 'hsv'
             elif pol.lower() == 'e':
                 imvec = self.evec
                 unit = r'$E$-mode'
+                cfun_p = 'Spectral'
             elif pol.lower() == 'b':
                 imvec = self.bvec
                 unit = r'$B$-mode'
+                cfun_p = 'Spectral'
             else:
                 pol = pol.upper()
+                if pol == 'V':
+                    cfun_p = 'bwr'
+                else:
+                    cfun_p = 'afmhot'
                 try:
                     imvec = np.array(self._imdict[pol]).reshape(-1) / (10.**power)
                 except KeyError:
@@ -3234,14 +3252,20 @@ class Image(object):
                 imarr = (imarr + np.max(imarr) / dynamic_range)**(gamma)
                 unit = '(' + unit + ')^' + str(gamma)
 
+            if not cbar_lims and cbar_lims_p:
+                cbar_lims = cbar_lims_p
+
             if cbar_lims:
                 cbar_lims[0] = cbar_lims[0] / (10.**power)
                 cbar_lims[1] = cbar_lims[1] / (10.**power)
                 imarr[imarr > cbar_lims[1]] = cbar_lims[1]
                 imarr[imarr < cbar_lims[0]] = cbar_lims[0]
-
+                
             if has_title:
                 plt.title("%s %.2f GHz %s" % (self.source, self.rf / 1e9, pol), fontsize=16)
+
+            if not cfun:
+                cfun = cfun_p
 
             if cbar_lims:
                 im = plt.imshow(imarr, alpha=alpha, cmap=plt.get_cmap(cfun), interpolation=interp,
