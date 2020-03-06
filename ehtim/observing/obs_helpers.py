@@ -37,6 +37,7 @@ import astropy.coordinates as coords
 import numpy as np
 import itertools as it
 import scipy.ndimage as nd
+import scipy.spatial.distance
 import copy
 import sys
 
@@ -545,6 +546,24 @@ def gauss_uv(u, v, flux, beamparams, x=0., y=0.):
     return flux * g * p
 
 
+def rbf_kernel_covariance(x, sigma):
+    """Compute a covariance matrix from an RBF kernel
+
+    Args:
+        x (ndarray): 1D data points for which to compute the covariance
+        sigma (float): std for the covariance. Controls correlation length / time.
+
+    Returns:
+       cov (ndarray): Covariance matrix
+    """
+    x = np.expand_dims(x, 1) if x.ndim==1 else x
+    norm = -0.5 * scipy.spatial.distance.cdist(x, x, 'sqeuclidean') / sigma**2
+    cov = np.exp(norm)
+    cov *= 1.0 / cov.sum(axis=0)
+    return cov
+
+
+
 def sgra_kernel_uv(rf, u, v):
     """Return the value of the Sgr A* scattering kernel at a given u,v (in lambda)
 
@@ -647,6 +666,13 @@ def cerror_hash(sigma, *args):
 
     return err
 
+def hashmultivariaterandn(size, cov, *args):
+    """set the seed according to a collection of arguments and return random multivariate gaussian var
+    """
+    np.random.seed(hash(",".join(map(repr, args))) % 4294967295)
+    mean = np.zeros(size)
+    noise = np.random.multivariate_normal(mean, cov, check_valid='ignore')
+    return noise
 
 def hashrandn(*args):
     """set the seed according to a collection of arguments and return random gaussian var

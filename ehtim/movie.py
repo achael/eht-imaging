@@ -1100,7 +1100,7 @@ class Movie(object):
                      tau=ehc.TAUDEF, taup=ehc.GAINPDEF,
                      gainp=ehc.GAINPDEF, gain_offset=ehc.GAINPDEF,
                      dterm_offset=ehc.DTERMPDEF,
-                     caltable_path=None, seed=False):
+                     caltable_path=None, seed=False, sigmat=None):
         """Observe the image on the same baselines as an existing observation object and add noise.
 
            Args:
@@ -1133,7 +1133,9 @@ class Movie(object):
                                     or a dict giving one offset per site
                dterm_offset (float): the base dterm offset at all sites,
                                      or a dict giving one dterm offset per site
-
+               seed : a seed for the random number generators, uses system time if false
+               sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                                If sigmat=None then an iid gain noise is applied.
             Returns:
                (Obsdata): an observation object
 
@@ -1158,7 +1160,7 @@ class Movie(object):
                                                  neggains=neggains,
                                                  gainp=gainp, taup=taup, gain_offset=gain_offset,
                                                  dterm_offset=dterm_offset,
-                                                 caltable_path=caltable_path, seed=seed)
+                                                 caltable_path=caltable_path, seed=seed, sigmat=sigmat)
 
             obs = ehtim.obsdata.Obsdata(obs.ra, obs.dec, obs.rf, obs.bw, obsdata, obs.tarr,
                                         source=obs.source, mjd=obs.mjd, polrep=obs_in.polrep,
