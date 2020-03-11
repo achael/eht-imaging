@@ -25,6 +25,7 @@ from builtins import object
 
 import time as ttime
 import scipy.ndimage as nd
+from scipy.interpolate import interp1d
 import numpy as np
 import copy
 try:
@@ -379,7 +380,7 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                stabilize_scan_phase=False, stabilize_scan_amp=False, neggains=False,
                taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                gain_offset=ehc.GAINPDEF, dterm_offset=ehc.DTERMPDEF,
-               caltable_path=None, seed=False):
+               caltable_path=None, seed=False, sigmat=None):
     """Computes Jones Matrices for a list of times (non repeating), with gain and dterm errors.
 
        Args:
@@ -398,6 +399,8 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
+           sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                           If sigmat=None then an iid gain noise is applied.
 
        Returns:
            (dict): a nested dictionary of matrices indexed by the site, then by the time
@@ -517,24 +520,45 @@ def make_jones(obs, opacitycal=True, ampcal=True, phasecal=True, dcal=True,
                 gainR_constant = -np.abs(gainR_constant)
                 gainL_constant = -np.abs(gainL_constant)
 
-            # Total gain
-            gainR = np.sqrt(np.abs(np.fromiter((
-                (1.0 + gainR_constant) *
-                (1.0 + gain_mult * obsh.hashrandn(site, 'gain', str(time), str(gain_mult), seed))
-                for time in times_stable_amp
-            ), float)))
+            # Total gain (iid sampling)
+            if sigmat is None:
+                gainR = np.sqrt(np.abs(np.fromiter((
+                    (1.0 + gainR_constant) *
+                    (1.0 + gain_mult * obsh.hashrandn(site, 'gain', str(time), str(gain_mult), seed))
+                    for time in times_stable_amp
+                ), float)))
 
-            gainL = np.sqrt(np.abs(np.fromiter((
-                (1.0 + gainL_constant) *
-                (1.0 + gain_mult * obsh.hashrandn(site, 'gain', str(time), str(gain_mult), seed))
-                for time in times_stable_amp
-            ), float)))
+                gainL = np.sqrt(np.abs(np.fromiter((
+                    (1.0 + gainL_constant) *
+                    (1.0 + gain_mult * obsh.hashrandn(site, 'gain', str(time), str(gain_mult), seed))
+                    for time in times_stable_amp
+                ), float)))
+
+            # Total gain (correlated sampling)
+            else:
+                scan_start_times = scans[:,0]
+                cov = obsh.rbf_kernel_covariance(scan_start_times, sigmat)
+                gainR = np.sqrt(np.abs(
+                    (1 + gainR_constant) *
+                    (1 + gain_mult * obsh.hashmultivariaterandn(
+                        len(scan_start_times), cov, site, 'gain', str(time), str(gain_mult), seed))
+                ))
+                gainR_interpolateor = interp1d(scan_start_times, gainR, kind='zero')
+                gainR = gainR_interpolateor(times_stable_amp)
+
+                gainL = np.sqrt(np.abs(
+                    (1 + gainL_constant) *
+                    (1 + gain_mult * obsh.hashmultivariaterandn(
+                        len(scan_start_times), cov, site, 'gain', str(time), str(gain_mult), seed))
+                ))
+                gainL_interpolateor = interp1d(scan_start_times, gainL, kind='zero')
+                gainL = gainL_interpolateor(times_stable_amp)
+
 
         # Opacity attenuation of amplitude gain
         if not opacitycal:
             taus = np.abs(np.fromiter((
-                taudict[site][j] * (1.0 + taup * obsh.hashrandn(site,
-                                                                'tau', times_stable_amp[j], seed))
+                taudict[site][j] * (1.0 + taup * obsh.hashrandn(site, 'tau', times_stable_amp[j], seed))
                 for j in range(len(times))
             ), float))
             atten = np.exp(-taus/(ehc.EP + 2.0*np.sin(el_angles)))
@@ -738,7 +762,7 @@ def add_jones_and_noise(obs, add_th_noise=True,
                         taup=ehc.GAINPDEF, gainp=ehc.GAINPDEF,
                         gain_offset=ehc.GAINPDEF, dterm_offset=ehc.DTERMPDEF,
                         caltable_path=None, seed=False,
-                        verbose=True):
+                        verbose=True, sigmat=None):
     """Corrupt visibilities in obs with jones matrices and add thermal noise
 
        Args:
@@ -758,7 +782,8 @@ def add_jones_and_noise(obs, add_th_noise=True,
            dterm_offset (float): the base std. dev. of random additive error at all sites,
                                 or a dict giving one std. dev. per site
            seed : a seed for the random number generators, uses system time if false
-s
+           sigmat (float): temporal std for a Gaussian Process used to generate gain noise.
+                        If sigmat=None then an iid gain noise is applied.
        Returns:
            (np.array): an observation  data array
     """
@@ -773,7 +798,7 @@ s
                          stabilize_scan_amp=stabilize_scan_amp, neggains=neggains,
                          gainp=gainp, taup=taup,
                          gain_offset=gain_offset, dterm_offset=dterm_offset,
-                         caltable_path=caltable_path, seed=seed)
+                         caltable_path=caltable_path, seed=seed, sigmat=sigmat)
 
     # Change pol rep:
     obs_circ = obs.switch_polrep('circ')
