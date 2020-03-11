@@ -3300,6 +3300,7 @@ class Image(object):
                     cb.update_ticks()
 
         else:  # plot polarization with ticks!
+
             im_stokes = self.switch_polrep(polrep_out='stokes')
             imvec = np.array(im_stokes.imvec).reshape(-1) / (10**power)
             qvec = np.array(im_stokes.qvec).reshape(-1) / (10**power)
@@ -3486,6 +3487,10 @@ class Image(object):
                 ax = plt.subplot2grid((2, 5), (0, 3), rowspan=2, colspan=2)
             else:
                 ax = plt.gca()
+
+            if not cfun:
+                cfun = 'afmhot'
+
             # Big Stokes I plot
             if cbar_lims:
                 im = plt.imshow(imarr2, cmap=plt.get_cmap(cfun), interpolation=interp,
