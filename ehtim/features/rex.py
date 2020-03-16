@@ -35,7 +35,7 @@ import scipy.optimize
 import scipy.stats
 from astropy.stats import median_absolute_deviation
 
-from ehtim.image import load_fits
+from ehtim.image import load_image
 import ehtim.imaging.dynamical_imaging as di
 import ehtim.parloop as ploop
 import ehtim.const_def as ehc
@@ -278,6 +278,17 @@ class Profiles(object):
         dimflux = np.sum(immask.imvec[(maskvec_dimhalf)])
         self.RingFlux = brightflux + dimflux
         self.RingAsym2 = ((brightflux-dimflux)/(brightflux+dimflux), brightflux/dimflux)
+
+        # Polarization brightness ratio 
+        # AC TODO FOR PAPER VIII ANALYSIS
+        RingAsymPol = (0.,0.)
+        if len(immask.qvec) > 0 and len(immask.uvec) > 0:
+            pvec = np.sqrt(immask.qvec**2 + immask.uvec**2)
+            brightflux_pol = np.sum(pvec[(maskvec_brighthalf)])
+            dimflux_pol = np.sum(pvec[(maskvec_dimhalf)])
+            RingAsymPol = ((brightflux_pol-dimflux_pol)/(brightflux_pol+dimflux_pol), 
+                            brightflux_pol/dimflux_pol)
+        self.RingAsymPol = RingAsymPol
 
         # calculate dynamic range
         mask = self.im.copy()
@@ -727,8 +738,12 @@ def FindProfileSingle(imname, postprocdir,
 
     # print("nrays",nrays_search,"nrs",nrs_search,"fov",fov_search)
     with ploop.HiddenPrints():
-        # if True:
-        im_raw = load_fits(imname, aipscc=aipscc)
+
+        im_raw = load_image(imname, aipscc=aipscc)
+
+        # blur image if requested
+        if blur > 0:
+            im_raw = im_raw.blur_circ(blur*ehc.RADPERUAS)
 
         # center image and regrid to uniform pixel size and fox
         im = di.center_core(im_raw)
@@ -737,9 +752,9 @@ def FindProfileSingle(imname, postprocdir,
         im = im.regrid_image(imsize, npix)
 
         # blur image if requested
-        if blur > 0:
-            im_search = im_search.blur_circ(blur*ehc.RADPERUAS)
-            im = im.blur_circ(blur*ehc.RADPERUAS)
+        # if blur > 0:
+        #    im_search = im_search.blur_circ(blur*ehc.RADPERUAS)
+        #    im = im.blur_circ(blur*ehc.RADPERUAS)
 
         # blur and threshold image FOR SEARCH ONLY
         # if blur==0:
@@ -756,8 +771,8 @@ def FindProfileSingle(imname, postprocdir,
                          nrays_search=nrays_search, nrs_search=nrs_search,
                          fov_search=fov_search, n_search=n_search, flux_norm=flux_norm)
 
-        print("compute profile")
         # compute profiles using the original (regridded, flux centroid centered) image
+        print("compute profile")
         pp = compute_ring_profile(im, res[0], res[1], nrs=nrs, nrays=nrays,
                                   rmin=rmin, rmax=rmax, flux_norm=flux_norm)
         pp.calc_meanprof_and_stats()
@@ -815,6 +830,9 @@ def FindProfileSingle(imname, postprocdir,
             f.write('ring_diameter_med ' + str(pp.RingSize1_med[0]) + '\n')
             f.write('ring_diameter_medabsdev ' + str(pp.RingSize1_med[1]) + '\n')
 
+            f.write('ring_asym_pol ' + str(pp.RingAsymPol[0]) + '\n')
+            f.write('ring_brighthalf_over_dimhalf_pol ' + str(pp.RingAsymPol[1]) + '\n')
+
             f.close()
 
             #  save unwrapped and centered fits image
@@ -864,16 +882,22 @@ def FindProfiles(foldername, postprocdir, processes=-1,
     """find profiles for all images  in a directory
     """
 
-    print("HI")
-    foldername = os.path.abspath(foldername)
+    foldername = os.path.abspath(foldername)    
     imlist = np.array(glob.glob(foldername + '/*.fits'))
+    ext = '.fits'
 
-    imlist = np.sort(imlist)
-
-    print("\nfound ", len(imlist), "  .fits files in ", foldername)
+    # Look for hdf5 files for EHT library runs
     if len(imlist) == 0:
+        imlist = np.array(glob.glob(foldername + '/*.h5'))
+        ext = '.h5'
+
+    if len(imlist) == 0:
+        print("\nfound no image files in ", foldername)
         return []
 
+    print("\nfound ", len(imlist), "  ", ext, " files in ", foldername)
+
+    imlist = np.sort(imlist)
     arglist = [[imlist[i], postprocdir,
                 save_files, blur,
                 aipscc, tag, rerun, return_pp,
