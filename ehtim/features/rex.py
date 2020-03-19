@@ -75,7 +75,8 @@ POSTPROCDIR = '.'  # default postprocessing directory
 
 class Profiles(object):
 
-    def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX, flux_norm=NORMFLUX):
+    def __init__(self, im, x0, y0, profs, thetas, rmin=RMIN, rmax=RMAX, flux_norm=NORMFLUX,
+                 profsQ=[],profsU=[]):
 
         self.x0 = x0
         self.y0 = y0
@@ -105,6 +106,9 @@ class Profiles(object):
         self.interp = scipy.interpolate.interp2d(self.ys, self.xs, self.imarr, kind='cubic')
 
         self.profiles = np.array(profs)
+        self.profilesQ = np.array(profsQ)
+        self.profilesU = np.array(profsU)
+        self.profilesP = np.sqrt(self.profilesQ**2 + self.profilesU**2)
         self.thetas = np.array(thetas)
         self.nang = len(thetas)
         self.nrs = len(self.profiles[0])
@@ -281,14 +285,48 @@ class Profiles(object):
 
         # Polarization brightness ratio 
         # AC TODO FOR PAPER VIII ANALYSIS
-        RingAsymPol = (0.,0.)
-        if len(immask.qvec) > 0 and len(immask.uvec) > 0:
-            pvec = np.sqrt(immask.qvec**2 + immask.uvec**2)
+        self.RingAsymPol = (0.,0.)
+        self.RingAsymPol = (0.,0.)
+        if len(self.im.qvec) > 0 and len(self.im.uvec) > 0:
+            pvec = np.sqrt(self.im.qvec**2 + self.im.uvec**2)
+        
+            ringanglesPol = []
+            ringasymsPol = []
+            for i in range(self.lhloc, self.rhloc+1):
+                angprof = self.profilesP.T[i]
+                # simple maximum AC TODO
+                ringanglesPol.append(self.thetas[np.argmax(angprof)])
+
+                # weighted avg
+                #angle_asym = self.calc_ringangle_asymmetry(angprof)
+                #ringanglesPol.append(angle_asym[0])
+                #ringasymsPol.append(angle_asym[1])
+
+            self.RingAnglePol = (scipy.stats.circmean(ringanglesPol),
+                                 scipy.stats.circstd(ringanglesPol))
+
+            cangle = self.RingAnglePol[0]
+            def anglemask_pol(x, y):
+                ang = np.mod(-np.arctan2(y-y0_c, x-x0_c)+np.pi/2., 2*np.pi)
+                # return ang
+                if np.mod(np.abs(ang-cangle), 2*np.pi) > 0.5*np.pi:
+                    return False
+                else:
+                    return True
+
+            maskvec_ang = np.array([[anglemask_pol(i, j) for i in xlist]
+                                    for j in ylist]).flatten().astype(bool)
+
+            # combine masks and get the bright and dim pol flux
+            maskvec_brighthalf = maskvec_annulus * maskvec_ang
+            maskvec_dimhalf = maskvec_annulus * ~maskvec_ang
+
+            # calculate polarized asymmetry /  birghtness ratio
             brightflux_pol = np.sum(pvec[(maskvec_brighthalf)])
             dimflux_pol = np.sum(pvec[(maskvec_dimhalf)])
-            RingAsymPol = ((brightflux_pol-dimflux_pol)/(brightflux_pol+dimflux_pol), 
-                            brightflux_pol/dimflux_pol)
-        self.RingAsymPol = RingAsymPol
+            self.RingAsymPol = ((brightflux_pol-dimflux_pol)/(brightflux_pol+dimflux_pol), 
+                                 brightflux_pol/dimflux_pol)
+
 
         # calculate dynamic range
         mask = self.im.copy()
@@ -650,7 +688,7 @@ def quad_interp_radius(r_max, dr, val_list):
 
 def compute_ring_profile(im, x0, y0, title="",
                          nrays=NRAYS, nrs=NRS, rmin=RMIN, rmax=RMAX,
-                         flux_norm=NORMFLUX):
+                         flux_norm=NORMFLUX, pol_profs=False):
     """compute a ring profile  given a center location
     """
 
@@ -666,7 +704,6 @@ def compute_ring_profile(im, x0, y0, title="",
     interp = scipy.interpolate.interp2d(ys, xs, imarr, kind='cubic')
 
     def ringVals(theta):
-
         xxs = x0 - rs*np.sin(theta)
         yys = y0 + rs*np.cos(theta)
 
@@ -678,7 +715,35 @@ def compute_ring_profile(im, x0, y0, title="",
         vals = ringVals(thetas[j])
         profs.append(vals)
 
-    profiles = Profiles(im, x0, y0, profs, thetas, rmin=rmin, rmax=rmax, flux_norm=flux_norm)
+    # polarization profiles
+    profsQ = []
+    profsU = []
+    if len(im.qvec)>0 and len(im.uvec>0) and pol_profs:
+        qarr = im.qvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
+        uarr = im.uvec.reshape(im.ydim, im.xdim)[::-1] * factor  # in brightness temperature K
+        interpQ = scipy.interpolate.interp2d(ys, xs, qarr, kind='cubic')
+        interpU = scipy.interpolate.interp2d(ys, xs, uarr, kind='cubic')
+        def ringValsQ(theta):
+            xxs = x0 - rs*np.sin(theta)
+            yys = y0 + rs*np.cos(theta)
+
+            vals = [interpQ(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+            return vals
+        def ringValsU(theta):
+            xxs = x0 - rs*np.sin(theta)
+            yys = y0 + rs*np.cos(theta)
+
+            vals = [interpU(xxs[i], yys[i])[0] for i in np.arange(len(rs))]
+            return vals
+
+        for j in range(nrays):
+            valsQ = ringValsQ(thetas[j])
+            profsQ.append(valsQ)
+            valsU = ringValsU(thetas[j])
+            profsU.append(valsU)
+
+    profiles = Profiles(im, x0, y0, profs, thetas, rmin=rmin, rmax=rmax, flux_norm=flux_norm,
+                        profsQ=profsQ, profsU=profsU)
 
     return profiles
 
@@ -743,7 +808,7 @@ def FindProfileSingle(imname, postprocdir,
 
         # blur image if requested
         if blur > 0:
-            im_raw = im_raw.blur_circ(blur*ehc.RADPERUAS)
+            im_raw = im_raw.blur_circ(blur*ehc.RADPERUAS,blur*ehc.RADPERUAS)
 
         # center image and regrid to uniform pixel size and fox
         im = di.center_core(im_raw)
@@ -774,7 +839,8 @@ def FindProfileSingle(imname, postprocdir,
         # compute profiles using the original (regridded, flux centroid centered) image
         print("compute profile")
         pp = compute_ring_profile(im, res[0], res[1], nrs=nrs, nrays=nrays,
-                                  rmin=rmin, rmax=rmax, flux_norm=flux_norm)
+                                  rmin=rmin, rmax=rmax, flux_norm=flux_norm,
+                                  pol_profs=True)
         pp.calc_meanprof_and_stats()
         pp.imname = imname
 
@@ -784,8 +850,8 @@ def FindProfileSingle(imname, postprocdir,
             if not os.path.exists(postprocdir + '/' + dirname):
                 subprocess.call(['mkdir', postprocdir + '/' + dirname])
 
-            basename = os.path.basename(imname)
-            txtname = postprocdir + '/' + dirname + '/' + basename[:-5] + tag + '.txt'
+            basename = os.path.splitext(os.path.basename(imname))[0]
+            txtname = postprocdir + '/' + dirname + '/' + basename + tag + '.txt'
 
             if os.path.exists(txtname):
                 os.remove(txtname)
@@ -829,6 +895,9 @@ def FindProfileSingle(imname, postprocdir,
 
             f.write('ring_diameter_med ' + str(pp.RingSize1_med[0]) + '\n')
             f.write('ring_diameter_medabsdev ' + str(pp.RingSize1_med[1]) + '\n')
+
+            f.write('ring_angle_pol ' + str(pp.RingAnglePol[0]) + '\n')
+            f.write('ring_angle_pol_sigma ' + str(pp.RingAnglePol[1]) + '\n')
 
             f.write('ring_asym_pol ' + str(pp.RingAsymPol[0]) + '\n')
             f.write('ring_brighthalf_over_dimhalf_pol ' + str(pp.RingAsymPol[1]) + '\n')
