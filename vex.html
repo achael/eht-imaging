@@ -175,37 +175,77 @@ Assumes there is only 1 MODE in vex file</p>
 <dl class="attribute">
 <dt id="ehtim.vex.Vex.filename">
 <code class="descname">filename</code><a class="headerlink" href="#ehtim.vex.Vex.filename" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; The .vex filename.</p>
+<dd><p>The .vex filename.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.vex.Vex.source">
 <code class="descname">source</code><a class="headerlink" href="#ehtim.vex.Vex.source" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; The source name.</p>
+<dd><p>The source name.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.vex.Vex.metalist">
 <code class="descname">metalist</code><a class="headerlink" href="#ehtim.vex.Vex.metalist" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; The observation information.</p>
+<dd><p>The observation information.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.vex.Vex.sched">
 <code class="descname">sched</code><a class="headerlink" href="#ehtim.vex.Vex.sched" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>list</em> &#8211; The schedule information.</p>
+<dd><p>The schedule information.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.vex.Vex.array">
 <code class="descname">array</code><a class="headerlink" href="#ehtim.vex.Vex.array" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>Array</em> &#8211; an Array object of sites.</p>
+<dd><p>an Array object of sites.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference internal" href="array.html#ehtim.array.Array" title="ehtim.array.Array">Array</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.vex.Vex.find_variable">
 <code class="descname">find_variable</code><span class="sig-paren">(</span><em>vname</em>, <em>line</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.find_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.find_variable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to find a variable &#8216;vname&#8217; in a line.</p>
+<dd><p>Function to find a variable ‘vname’ in a line.</p>
 </dd></dl>
 
 <dl class="method">
@@ -224,13 +264,13 @@ and the time that the last station stops observing the source.</p>
 <dl class="method">
 <dt id="ehtim.vex.Vex.get_sector">
 <code class="descname">get_sector</code><span class="sig-paren">(</span><em>sname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_sector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_sector" title="Permalink to this definition">¶</a></dt>
-<dd><p>Obtain a desired sector from &#8216;metalist&#8217;.</p>
+<dd><p>Obtain a desired sector from ‘metalist’.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ehtim.vex.Vex.get_variable">
 <code class="descname">get_variable</code><span class="sig-paren">(</span><em>vname</em>, <em>line</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/vex.html#Vex.get_variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.vex.Vex.get_variable" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to get a value of &#8216;vname&#8217; in a line.</p>
+<dd><p>Function to get a value of ‘vname’ in a line.</p>
 </dd></dl>
 
 </dd></dl>
@@ -297,7 +337,7 @@ and the time that the last station stops observing the source.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
 
   
 

@@ -174,20 +174,44 @@
 <dl class="attribute">
 <dt id="ehtim.array.Array.tarr">
 <code class="descname">tarr</code><a class="headerlink" href="#ehtim.array.Array.tarr" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; The array of telescope data with datatype DTARR</p>
+<dd><p>The array of telescope data with datatype DTARR</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body">numpy.recarray</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.array.Array.tkey">
 <code class="descname">tkey</code><a class="headerlink" href="#ehtim.array.Array.tkey" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; A dictionary of rows in the tarr for each site name</p>
+<dd><p>A dictionary of rows in the tarr for each site name</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="ehtim.array.Array.ephem">
 <code class="descname">ephem</code><a class="headerlink" href="#ehtim.array.Array.ephem" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; A dictionary of TLEs for each space antenna,
+<dd><p>A dictionary of TLEs for each space antenna,
 Space antennas have x=y=z=0 in the tarr</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)">dict</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -207,7 +231,7 @@ Space antennas have x=y=z=0 in the tarr</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of sites in the subarray</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of sites in the subarray</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">an Array object with specified sites and metadata</td>
 </tr>
@@ -226,18 +250,18 @@ Space antennas have x=y=z=0 in the tarr</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the source right ascension in fractional hours</li>
-<li><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the source declination in fractional degrees</li>
-<li><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the scan integration time in seconds</li>
-<li><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the uniform cadence between scans in seconds</li>
-<li><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the start time of the observation in hours</li>
-<li><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the end time of the observation in hours</li>
-<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; the mjd of the observation</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; how to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; polarization representation, either &#8216;stokes&#8217; or &#8216;circ&#8217;</li>
-<li><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; station minimum elevation in degrees</li>
-<li><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; station maximum elevation in degrees</li>
-<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; the base opacity at all sites, or a dict giving one opacity per site</li>
+<li><strong>ra</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – the source right ascension in fractional hours</li>
+<li><strong>dec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – the source declination in fractional degrees</li>
+<li><strong>tint</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – the scan integration time in seconds</li>
+<li><strong>tadv</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – the uniform cadence between scans in seconds</li>
+<li><strong>tstart</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – the start time of the observation in hours</li>
+<li><strong>tstop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – the end time of the observation in hours</li>
+<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – the mjd of the observation</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – how to interpret tstart and tstop; either ‘GMST’ or ‘UTC’</li>
+<li><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – polarization representation, either ‘stokes’ or ‘circ’</li>
+<li><strong>elevmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – station minimum elevation in degrees</li>
+<li><strong>elevmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – station maximum elevation in degrees</li>
+<li><strong>tau</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – the base opacity at all sites, or a dict giving one opacity per site</li>
 </ul>
 </td>
 </tr>
@@ -259,7 +283,7 @@ Space antennas have x=y=z=0 in the tarr</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to output array file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to output array file</td>
 </tr>
 </tbody>
 </table>
@@ -277,8 +301,8 @@ Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input array file</li>
-<li><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to directroy with 2TLE ephemerides for spacecraft</li>
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input array file</li>
+<li><strong>ephemdir</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to directroy with 2TLE ephemerides for spacecraft</li>
 </ul>
 </td>
 </tr>
@@ -348,7 +372,7 @@ Sites with x=y=z=0 are spacecraft, TLE ephemerides read from ephemdir.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
 
   
 

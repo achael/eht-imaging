@@ -168,23 +168,23 @@
 <span></span><span class="c1"># Michael Johnson, 2/15/2017</span>
 <span class="c1"># See http://adsabs.harvard.edu/abs/2016ApJ...833...74J for details about this module</span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">range</span>
-<span class="kn">from</span> <span class="nn">builtins</span> <span class="k">import</span> <span class="nb">object</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">range</span>
+<span class="kn">from</span> <span class="nn">builtins</span> <span class="kn">import</span> <span class="nb">object</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.signal</span>
 <span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">sps</span>
 <span class="kn">import</span> <span class="nn">scipy.integrate</span> <span class="k">as</span> <span class="nn">integrate</span>
-<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="k">import</span> <span class="n">minimize</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">minimize</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">IPython</span> <span class="k">import</span> <span class="n">display</span>
+<span class="kn">from</span> <span class="nn">IPython</span> <span class="kn">import</span> <span class="n">display</span>
 
 <span class="kn">import</span> <span class="nn">ehtim.image</span> <span class="k">as</span> <span class="nn">image</span>
 <span class="kn">import</span> <span class="nn">ehtim.movie</span> <span class="k">as</span> <span class="nn">movie</span>
 <span class="kn">import</span> <span class="nn">ehtim.obsdata</span> <span class="k">as</span> <span class="nn">obsdata</span>
-<span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="k">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span> <span class="c1">#Note: C is m/s rather than cm/s.</span>
+<span class="kn">from</span> <span class="nn">ehtim.observing.obs_helpers</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="kn">import</span> <span class="o">*</span> <span class="c1">#Note: C is m/s rather than cm/s.</span>
 
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">import</span> <span class="nn">cmath</span>
@@ -223,7 +223,7 @@
 <span class="sd">            rF (function): The Fresnel scale of the scattering screen at the specific wavelength.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="s1">&#39;dipole&#39;</span><span class="p">,</span> <span class="n">scatt_alpha</span> <span class="o">=</span> <span class="mf">1.38</span><span class="p">,</span> <span class="n">observer_screen_distance</span> <span class="o">=</span> <span class="mf">2.82</span> <span class="o">*</span> <span class="mf">3.086e21</span><span class="p">,</span> <span class="n">source_screen_distance</span> <span class="o">=</span> <span class="mf">5.53</span> <span class="o">*</span> <span class="mf">3.086e21</span><span class="p">,</span> <span class="n">theta_maj_mas_ref</span> <span class="o">=</span> <span class="mf">1.380</span><span class="p">,</span> <span class="n">theta_min_mas_ref</span> <span class="o">=</span> <span class="mf">0.703</span><span class="p">,</span> <span class="n">POS_ANG</span> <span class="o">=</span> <span class="mf">81.9</span><span class="p">,</span> <span class="n">wavelength_reference_cm</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">r_in</span> <span class="o">=</span> <span class="mf">800e5</span><span class="p">,</span> <span class="n">r_out</span> <span class="o">=</span> <span class="mf">1e20</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="s1">&#39;dipole&#39;</span><span class="p">,</span> <span class="n">scatt_alpha</span> <span class="o">=</span> <span class="mf">1.38</span><span class="p">,</span> <span class="n">observer_screen_distance</span> <span class="o">=</span> <span class="mf">2.82</span> <span class="o">*</span> <span class="mf">3.086e21</span><span class="p">,</span> <span class="n">source_screen_distance</span> <span class="o">=</span> <span class="mf">5.53</span> <span class="o">*</span> <span class="mf">3.086e21</span><span class="p">,</span> <span class="n">theta_maj_mas_ref</span> <span class="o">=</span> <span class="mf">1.380</span><span class="p">,</span> <span class="n">theta_min_mas_ref</span> <span class="o">=</span> <span class="mf">0.703</span><span class="p">,</span> <span class="n">POS_ANG</span> <span class="o">=</span> <span class="mf">81.9</span><span class="p">,</span> <span class="n">wavelength_reference_cm</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">r_in</span> <span class="o">=</span> <span class="mf">800e5</span><span class="p">,</span> <span class="n">r_out</span> <span class="o">=</span> <span class="mf">1e20</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;To initialize the scattering model, specify:</span>
 
 <span class="sd">           Attributes:</span>
@@ -717,23 +717,19 @@
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning!! assuming a constant frame duration, but Movie objects now support unequally spaced frames!&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">!=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span> <span class="ow">and</span> <span class="n">framedur_sec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">!=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span> <span class="ow">and</span> <span class="n">framedur_sec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;If scattering a list of images or static image, the framedur must be specified!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
 
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span> <span class="ow">and</span> <span class="n">N_frames</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">image</span><span class="o">.</span><span class="n">Image</span> <span class="ow">and</span> <span class="n">N_frames</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;If scattering a static image, the total number of frames must be specified (N_frames)!&quot;</span><span class="p">)</span>
             <span class="k">return</span>
 
-        <span class="k">if</span> <span class="n">framedur_sec</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
-
-            <span class="n">framedur_sec</span> <span class="o">=</span> <span class="p">(</span><span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">3600</span>
-            <span class="c1">#framedur_sec = Unscattered_Movie.framedur</span>
-
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Frame Duration (seconds):&quot;</span><span class="p">,</span><span class="n">framedur_sec</span><span class="p">)</span>
-
         <span class="c1"># time list in hr</span>
-        <span class="n">tlist_hr</span> <span class="o">=</span> <span class="p">[</span><span class="n">framedur_sec</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">*</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">,</span> <span class="s1">&#39;times&#39;</span><span class="p">):</span>
+            <span class="n">tlist_hr</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">times</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tlist_hr</span> <span class="o">=</span> <span class="p">[</span><span class="n">framedur_sec</span><span class="o">/</span><span class="mf">3600.0</span><span class="o">*</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
 
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">Unscattered_Movie</span><span class="p">)</span> <span class="o">==</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">:</span>
             <span class="n">N</span> <span class="o">=</span> <span class="n">Unscattered_Movie</span><span class="o">.</span><span class="n">xdim</span>
@@ -792,13 +788,13 @@
             <span class="n">Epsilon_Screen</span> <span class="o">=</span> <span class="n">MakeEpsilonScreen</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span>
 
         <span class="n">scattered_im_List</span> <span class="o">=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">get_frame</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">Epsilon_Screen</span><span class="p">,</span> <span class="n">obs_frequency_Hz</span> <span class="o">=</span> <span class="n">obs_frequency_Hz</span><span class="p">,</span> <span class="n">Vx_km_per_s</span> <span class="o">=</span> <span class="n">Vx_km_per_s</span><span class="p">,</span> <span class="n">Vy_km_per_s</span> <span class="o">=</span> <span class="n">Vy_km_per_s</span><span class="p">,</span> 
-                              <span class="n">time</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="n">Linearized_Approximation</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="n">Force_Positivity</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
+                              <span class="n">t_hr</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">sqrtQ</span><span class="o">=</span><span class="n">sqrtQ</span><span class="p">,</span> <span class="n">Linearized_Approximation</span><span class="o">=</span><span class="n">Linearized_Approximation</span><span class="p">,</span> <span class="n">Force_Positivity</span><span class="o">=</span><span class="n">Force_Positivity</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N_frames</span><span class="p">)]</span>
 
         <span class="k">if</span> <span class="n">Return_Image_List</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">scattered_im_List</span>
 
         <span class="n">Scattered_Movie</span> <span class="o">=</span> <span class="n">movie</span><span class="o">.</span><span class="n">Movie</span><span class="p">(</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">imvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">],</span>
-                                       <span class="n">times</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">,</span> <span class="n">psize</span> <span class="o">=</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span> <span class="o">=</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="o">=</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">rf</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">,</span> <span class="n">start_hr</span><span class="o">=</span><span class="n">start_hr</span><span class="p">)</span>
+                                       <span class="n">times</span><span class="o">=</span><span class="n">tlist_hr</span><span class="p">,</span> <span class="n">psize</span> <span class="o">=</span> <span class="n">psize</span><span class="p">,</span> <span class="n">ra</span> <span class="o">=</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="o">=</span> <span class="n">dec</span><span class="p">,</span> <span class="n">rf</span><span class="o">=</span><span class="n">rf</span><span class="p">,</span> <span class="n">pulse</span><span class="o">=</span><span class="n">pulse</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">mjd</span><span class="o">=</span><span class="n">mjd</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">has_pol</span><span class="p">:</span>
             <span class="n">Scattered_Movie_Q</span> <span class="o">=</span> <span class="p">[</span><span class="n">im</span><span class="o">.</span><span class="n">qvec</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">im</span><span class="o">.</span><span class="n">xdim</span><span class="p">,</span><span class="n">im</span><span class="o">.</span><span class="n">ydim</span><span class="p">))</span> <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">scattered_im_List</span><span class="p">]</span>
@@ -1004,7 +1000,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="../../../_static/language_data.js"></script>
 
   
 

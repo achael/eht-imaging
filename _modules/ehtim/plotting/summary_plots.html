@@ -185,21 +185,21 @@
 
 <span class="c1">#TODO add systematic noise to individual closure quantities? </span>
 
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">matplotlib.gridspec</span> <span class="k">as</span> <span class="nn">gridspec</span>
-<span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="k">import</span> <span class="n">PdfPages</span>
-<span class="kn">from</span> <span class="nn">matplotlib.font_manager</span> <span class="k">import</span> <span class="n">FontProperties</span>
+<span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="kn">import</span> <span class="n">PdfPages</span>
+<span class="kn">from</span> <span class="nn">matplotlib.font_manager</span> <span class="kn">import</span> <span class="n">FontProperties</span>
 <span class="kn">import</span> <span class="nn">argparse</span>
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">datetime</span>
 
-<span class="kn">from</span> <span class="nn">ehtim.plotting.comp_plots</span> <span class="k">import</span> <span class="n">plotall_obs_compare</span><span class="p">,</span> <span class="n">plot_bl_obs_compare</span><span class="p">,</span> <span class="n">plot_cphase_obs_compare</span><span class="p">,</span> <span class="n">plot_camp_obs_compare</span>
-<span class="kn">from</span> <span class="nn">ehtim.calibrating.self_cal</span> <span class="k">import</span> <span class="n">self_cal</span> <span class="k">as</span> <span class="n">selfcal</span>
-<span class="kn">from</span> <span class="nn">ehtim.calibrating.pol_cal</span> <span class="k">import</span> <span class="n">leakage_cal</span><span class="p">,</span> <span class="n">plot_leakage</span>
-<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">ehtim.plotting.comp_plots</span> <span class="kn">import</span> <span class="n">plotall_obs_compare</span><span class="p">,</span> <span class="n">plot_bl_obs_compare</span><span class="p">,</span> <span class="n">plot_cphase_obs_compare</span><span class="p">,</span> <span class="n">plot_camp_obs_compare</span>
+<span class="kn">from</span> <span class="nn">ehtim.calibrating.self_cal</span> <span class="kn">import</span> <span class="n">self_cal</span> <span class="k">as</span> <span class="n">selfcal</span>
+<span class="kn">from</span> <span class="nn">ehtim.calibrating.pol_cal</span> <span class="kn">import</span> <span class="n">leakage_cal</span><span class="p">,</span> <span class="n">plot_leakage</span>
+<span class="kn">from</span> <span class="nn">ehtim.const_def</span> <span class="kn">import</span> <span class="o">*</span>
 
 <span class="n">FONTSIZE</span> <span class="o">=</span> <span class="mi">22</span>
 <span class="n">WSPACE</span><span class="o">=</span><span class="mf">0.8</span>
@@ -211,7 +211,7 @@
 <div class="viewcode-block" id="imgsum"><a class="viewcode-back" href="../../../plotting.html#ehtim.plotting.summary_plots.imgsum">[docs]</a><span class="k">def</span> <span class="nf">imgsum</span><span class="p">(</span><span class="n">im_or_mov</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">obs_uncal</span><span class="p">,</span> <span class="n">outname</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;imgsum&#39;</span><span class="p">,</span> <span class="n">commentstr</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> 
            <span class="n">fontsize</span><span class="o">=</span><span class="n">FONTSIZE</span><span class="p">,</span> <span class="n">cfun</span><span class="o">=</span><span class="s1">&#39;afmhot&#39;</span><span class="p">,</span> <span class="n">snrcut</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">maxset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="s1">&#39;nfft&#39;</span><span class="p">,</span>
            <span class="n">gainplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ampplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cphaseplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">campplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">ebar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-           <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">force_extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+           <span class="n">debias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cp_uv_min</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">force_extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">processes</span><span class="o">=</span><span class="n">PROCESSES</span><span class="p">,</span>
            <span class="n">sysnoise</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">syscnoise</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;Produce an image summary plot for an image and uvfits file.</span>
@@ -245,6 +245,7 @@
 
 <span class="sd">           ttype (str): &quot;fast&quot; or &quot;nfft&quot; or &quot;direct&quot; </span>
 <span class="sd">           force_extrapolate (bool): if True, always extrapolate movie start/stop frames</span>
+<span class="sd">           processes (int): number of cores to use in multiprocessing</span>
 <span class="sd">       Returns:</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -634,7 +635,7 @@
                 <span class="n">ct</span> <span class="o">=</span> <span class="n">selfcal</span><span class="p">(</span><span class="n">obs_tmp</span><span class="p">,</span> <span class="n">im_or_mov</span><span class="p">,</span> 
                               <span class="n">method</span><span class="o">=</span><span class="s1">&#39;amp&#39;</span><span class="p">,</span> <span class="n">ttype</span><span class="o">=</span><span class="n">ttype</span><span class="p">,</span> 
                               <span class="n">caltable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gain_tol</span><span class="o">=.</span><span class="mi">2</span><span class="p">,</span>
-                              <span class="n">processes</span><span class="o">=</span><span class="n">PROCESSES</span><span class="p">)</span>
+                              <span class="n">processes</span><span class="o">=</span><span class="n">processes</span><span class="p">)</span>
                 <span class="n">ct</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">pad_scans</span><span class="p">()</span>
                 <span class="n">obs_tmp</span> <span class="o">=</span>  <span class="n">ct</span><span class="o">.</span><span class="n">applycal</span><span class="p">(</span><span class="n">obs_tmp</span><span class="p">,</span><span class="n">interp</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span><span class="n">extrapolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1">#apply caltable</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">obs_tmp</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;vis&#39;</span><span class="p">])):</span>
@@ -1905,7 +1906,7 @@
       <script type="text/javascript" src="../../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="../../../_static/language_data.js"></script>
 
   
 

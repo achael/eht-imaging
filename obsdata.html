@@ -170,151 +170,40 @@
 <span class="target" id="module-ehtim.obsdata"></span><dl class="class">
 <dt id="ehtim.obsdata.Obsdata">
 <em class="property">class </em><code class="descclassname">ehtim.obsdata.</code><code class="descname">Obsdata</code><span class="sig-paren">(</span><em>ra</em>, <em>dec</em>, <em>rf</em>, <em>bw</em>, <em>datatable</em>, <em>tarr</em>, <em>scantable=None</em>, <em>polrep='stokes'</em>, <em>source='SgrA'</em>, <em>mjd=51544</em>, <em>timetype='UTC'</em>, <em>ampcal=True</em>, <em>phasecal=True</em>, <em>opacitycal=True</em>, <em>dcal=True</em>, <em>frcal=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata" title="Permalink to this definition">¶</a></dt>
-<dd><p>A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).</p>
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.source">
-<code class="descname">source</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.source" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; The source name</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.ra">
-<code class="descname">ra</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.ra" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; The source Right Ascension in fractional hours</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.dec">
-<code class="descname">dec</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.dec" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; The source declination in fractional degrees</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.mjd">
-<code class="descname">mjd</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.mjd" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>int</em> &#8211; The integer MJD of the observation</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.tstart">
-<code class="descname">tstart</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tstart" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; The start time of the observation in hours</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.tstop">
-<code class="descname">tstop</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tstop" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; The end time of the observation in hours</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.rf">
-<code class="descname">rf</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.rf" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; The observation frequency in Hz</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.bw">
-<code class="descname">bw</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.bw" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> &#8211; The observation bandwidth in Hz</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.timetype">
-<code class="descname">timetype</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.timetype" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; How to interpret tstart and tstop; either &#8216;GMST&#8217; or &#8216;UTC&#8217;</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.polrep">
-<code class="descname">polrep</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.polrep" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>str</em> &#8211; polarization representation, either &#8216;stokes&#8217; or &#8216;circ&#8217;</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.tarr">
-<code class="descname">tarr</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tarr" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; The array of telescope data with datatype DTARR</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.tkey">
-<code class="descname">tkey</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.tkey" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>dict</em> &#8211; A dictionary of rows in the tarr for each site name</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.data">
-<code class="descname">data</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.data" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; the basic data with datatype DTPOL_STOKES or DTPOL_CIRC</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.scantable">
-<code class="descname">scantable</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.scantable" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; The array of scan information</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.ampcal">
-<code class="descname">ampcal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.ampcal" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>bool</em> &#8211; True if amplitudes calibrated</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.phasecal">
-<code class="descname">phasecal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.phasecal" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>bool</em> &#8211; True if phases calibrated</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.opacitycal">
-<code class="descname">opacitycal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.opacitycal" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>bool</em> &#8211; True if time-dependent opacities correctly accounted for in sigmas</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.frcal">
-<code class="descname">frcal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.frcal" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>bool</em> &#8211; True if feed rotation calibrated out of visibilities</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.dcal">
-<code class="descname">dcal</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.dcal" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>bool</em> &#8211; True if D terms calibrated out of visibilities</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.amp">
-<code class="descname">amp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.amp" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) visibility amplitudes</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.bispec">
-<code class="descname">bispec</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.bispec" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) bispectra</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.cphase">
-<code class="descname">cphase</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.cphase" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) closure phases</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.camp">
-<code class="descname">camp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.camp" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) closure amplitudes</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="ehtim.obsdata.Obsdata.logcamp">
-<code class="descname">logcamp</code><a class="headerlink" href="#ehtim.obsdata.Obsdata.logcamp" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.recarray</em> &#8211; An array of saved (averaged) log closure amplitudes</p>
-</dd></dl>
-
+<dd><p>A polarimetric VLBI observation of visibility amplitudes and phases (in Jy).
+ehc.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Attributes:</dt>
+<dd><p class="first">source (str): The source name
+ra (float): The source Right Ascension in fractional hours
+dec (float): The source declination in fractional degrees
+mjd (int): The integer MJD of the observation
+tstart (float): The start time of the observation in hours
+tstop (float): The end time of the observation in hours
+rf (float): The observation frequency in Hz
+bw (float): The observation bandwidth in Hz
+timetype (str): How to interpret tstart and tstop; either ‘GMST’ or ‘UTC’
+polrep (str): polarization representation, either ‘stokes’ or ‘circ’</p>
+<p>tarr (numpy.recarray): The array of telescope data with datatype DTARR
+tkey (dict): A dictionary of rows in the tarr for each site name
+data (numpy.recarray): the basic data with datatype DTPOL_STOKES or DTPOL_CIRC
+scantable (numpy.recarray): The array of scan information</p>
+<p>ampcal (bool): True if amplitudes calibrated
+phasecal (bool): True if phases calibrated
+opacitycal (bool): True if time-dependent opacities correctly accounted for in sigmas
+frcal (bool): True if feed rotation calibrated out of visibilities
+dcal (bool): True if D terms calibrated out of visibilities</p>
+<p class="last">amp (numpy.recarray): An array of (averaged) visibility amplitudes
+bispec (numpy.recarray): An array of (averaged) bispectra
+cphase (numpy.recarray): An array of (averaged) closure phases
+cphase_diag (numpy.recarray): An array of (averaged) diagonalized closure phases
+camp (numpy.recarray): An array of (averaged) closure amplitudes
+logcamp (numpy.recarray): An array of (averaged) log closure amplitudes
+logcamp_diag (numpy.recarray): An array of (averaged) diagonalized log closure amps</p>
+</dd>
+</dl>
+</div></blockquote>
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.add_all">
 <code class="descname">add_all</code><span class="sig-paren">(</span><em>avg_time=0</em>, <em>return_type='rec'</em>, <em>count='max'</em>, <em>debias=True</em>, <em>snrcut=0.0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_all" title="Permalink to this definition">¶</a></dt>
@@ -325,15 +214,15 @@ self.amp,self.bispec,self.cphase,self.camp,self.logcamp</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
-<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of closure quantities,
-if &#8216;max&#8217; return all closure quantities</li>
-<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
-<li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
-<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – closure amplitude averaging timescale</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the closure amplitude</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of closure quantities,
+if ‘max’ return all closure quantities</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>num_samples</strong> – number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
 </ul>
 </td>
 </tr>
@@ -350,13 +239,13 @@ if &#8216;max&#8217; return all closure quantities</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; incoherent integration time in seconds</li>
-<li><strong>scan_avg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, average over scans in self.scans instead of intime</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True then apply debiasing</li>
-<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
-<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag amplitudes with snr lower than this</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – incoherent integration time in seconds</li>
+<li><strong>scan_avg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, average over scans in self.scans instead of intime</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True then apply debiasing</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag amplitudes with snr lower than this</li>
 </ul>
 </td>
 </tr>
@@ -373,14 +262,14 @@ if &#8216;max&#8217; return all closure quantities</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; bispectrum averaging timescale</li>
-<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of bispectra,
-if &#8216;max&#8217; return all bispectra up to reordering</li>
-<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
-<li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
-<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag bispectra with snr lower than this</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – bispectrum averaging timescale</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of bispectra,
+if ‘max’ return all bispectra up to reordering</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>num_samples</strong> – number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag bispectra with snr lower than this</li>
 </ul>
 </td>
 </tr>
@@ -397,16 +286,16 @@ if &#8216;max&#8217; return all bispectra up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
-<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of amplitudes,
-if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
-<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
-<li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
-<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – closure amplitude averaging timescale</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The closure amplitude type (‘camp’ or ‘logcamp’)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the closure amplitude</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of amplitudes,
+if ‘max’ return all closure amplitudes up to inverses</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>num_samples</strong> – number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
 </ul>
 </td>
 </tr>
@@ -423,14 +312,39 @@ if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; closure phase averaging timescale</li>
-<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of phases,
-if &#8216;max&#8217; return all closure phases up to reordering</li>
-<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
-<li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
-<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure phases with snr lower than this</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – closure phase averaging timescale</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of phases,
+if ‘max’ return all closure phases up to reordering</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>num_samples</strong> – number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure phases with snr lower than this</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.add_cphase_diag">
+<code class="descname">add_cphase_diag</code><span class="sig-paren">(</span><em>avg_time=0</em>, <em>return_type='rec'</em>, <em>vtype='vis'</em>, <em>count='min'</em>, <em>snrcut=0.0</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em>, <em>uv_min=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_cphase_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_cphase_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds attribute self.cphase_diag: cphase_diag table averaged for dt</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – closure phase averaging timescale</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Visibility type (e.g., ‘vis’, ‘llvis’, ‘rrvis’, etc.)</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of phases,
+If ‘max’ return all closure phases up to reordering</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>num_samples</strong> – number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure phases with snr lower than this</li>
 </ul>
 </td>
 </tr>
@@ -443,14 +357,14 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <code class="descname">add_fractional_noise</code><span class="sig-paren">(</span><em>frac_noise</em>, <em>debias=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_fractional_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_fractional_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a constant fraction of amplitude at quadrature to thermal noise.
 Effectively imposes a maximal signal-to-noise ratio.
-!!! this operation is not currently tracked and should be applied with extreme caution!!!</p>
+!! this operation is not currently tracked and should be applied with extreme caution!!</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>frac_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The fraction of noise to add.</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Whether or not to add frac_noise of debiased amplitudes.</li>
+<li><strong>frac_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – The fraction of noise to add.</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Whether or not to add frac_noise of debiased amplitudes.</li>
 </ul>
 </td>
 </tr>
@@ -469,15 +383,15 @@ Effectively imposes a maximal signal-to-noise ratio.
 <code class="descname">add_leakage_noise</code><span class="sig-paren">(</span><em>Dterm_amp=0.1</em>, <em>min_noise=0.01</em>, <em>debias=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_leakage_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_leakage_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add estimated systematic noise from leakage at quadrature to thermal noise.
 Requires cross-hand visibilities.
-!!! this operation is not currently tracked and should be applied with extreme caution!!!</p>
+!! this operation is not currently tracked and should be applied with extreme caution!!</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Dterm_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Estimated magnitude of leakage terms</li>
-<li><strong>min_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Minimum fractional systematic noise to add</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Debias amplitudes before computing fractional noise</li>
+<li><strong>Dterm_amp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Estimated magnitude of leakage terms</li>
+<li><strong>min_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Minimum fractional systematic noise to add</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Debias amplitudes before computing fractional noise</li>
 </ul>
 </td>
 </tr>
@@ -500,16 +414,41 @@ Requires cross-hand visibilities.
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; closure amplitude averaging timescale</li>
-<li><strong>return_type</strong> &#8211; data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</li>
-<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of amplitudes,
-if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
-<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
-<li><strong>num_samples</strong> &#8211; number of bootstrap (re)samples if measuring error</li>
-<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; accuracy of datetime object in seconds</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – closure amplitude averaging timescale</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The closure amplitude type (‘camp’ or ‘logcamp’)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the closure amplitude</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of amplitudes,
+if ‘max’ return all closure amplitudes up to inverses</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>num_samples</strong> – number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.add_logcamp_diag">
+<code class="descname">add_logcamp_diag</code><span class="sig-paren">(</span><em>avg_time=0</em>, <em>return_type='rec'</em>, <em>count='min'</em>, <em>snrcut=0.0</em>, <em>debias=True</em>, <em>err_type='predicted'</em>, <em>num_samples=1000</em>, <em>round_s=0.1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.add_logcamp_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.add_logcamp_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds attribute self.logcamp_diag: logcamp_diag table averaged for dt</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>avg_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – diagonal log closure amplitude averaging timescale</li>
+<li><strong>return_type</strong> – data frame (‘df’) or recarray (‘rec’)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the diagonal log closure amplitude</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of amplitudes,
+If ‘max’ return all diagonal log closure amplitudes up to inverses</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
+<li><strong>num_samples</strong> – number of bootstrap (re)samples if measuring error</li>
+<li><strong>round_s</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – accuracy of datetime object in seconds</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag diagonal log closure amplitudes with snr lower than this</li>
 </ul>
 </td>
 </tr>
@@ -526,11 +465,11 @@ if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;self&#8217; to infer from data, &#8216;txt&#8217; for text file,
-&#8216;vex&#8217; for vex schedule file</li>
-<li><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to txt/vex file with scans info</li>
-<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; minimal time interval between scans in hours</li>
-<li><strong>margin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; padding scans by that time margin in hours</li>
+<li><strong>info</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘self’ to infer from data, ‘txt’ for text file,
+‘vex’ for vex schedule file</li>
+<li><strong>filepath</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to txt/vex file with scans info</li>
+<li><strong>dt</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – minimal time interval between scans in hours</li>
+<li><strong>margin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – padding scans by that time margin in hours</li>
 </ul>
 </td>
 </tr>
@@ -540,15 +479,16 @@ if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
 
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.avg_coherent">
-<code class="descname">avg_coherent</code><span class="sig-paren">(</span><em>inttime</em>, <em>scan_avg=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.avg_coherent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.avg_coherent" title="Permalink to this definition">¶</a></dt>
+<code class="descname">avg_coherent</code><span class="sig-paren">(</span><em>inttime</em>, <em>scan_avg=False</em>, <em>moving=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.avg_coherent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.avg_coherent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Coherently average data along u,v tracks in chunks of length inttime (sec)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>inttime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; coherent integration time in seconds</li>
-<li><strong>scan_avg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, average over scans in self.scans instead of intime</li>
+<li><strong>inttime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – coherent integration time in seconds</li>
+<li><strong>scan_avg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, average over scans in self.scans instead of intime</li>
+<li><strong>moving</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – averaging with moving window (boxcar width in seconds)</li>
 </ul>
 </td>
 </tr>
@@ -571,10 +511,10 @@ if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>inttime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; incoherent integration time in seconds</li>
-<li><strong>scan_avg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, average over scans in self.scans instead of intime</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, debias the averaged amplitudes</li>
-<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;predicted&#8217; or &#8216;measured&#8217;</li>
+<li><strong>inttime</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – incoherent integration time in seconds</li>
+<li><strong>scan_avg</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, average over scans in self.scans instead of intime</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, debias the averaged amplitudes</li>
+<li><strong>err_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘predicted’ or ‘measured’</li>
 </ul>
 </td>
 </tr>
@@ -597,15 +537,15 @@ if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble bispectra
-(&#8216;vis&#8217;, &#8216;qvis&#8217;, &#8216;uvis&#8217;,&#8217;vvis&#8217;,&#8217;rrvis&#8217;,&#8217;lrvis&#8217;,&#8217;rlvis&#8217;,&#8217;llvis&#8217;)</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return phases in a list of equal time arrays,
-if &#8216;all&#8217;, return all phases in a single array</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of bispectra,
-if &#8216;max&#8217; return all bispectra up to reordering</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag baselines shorter than this before forming closure quantities</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag bispectra with snr lower than this</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type from which to assemble bispectra
+(‘vis’, ‘qvis’, ‘uvis’,’vvis’,’rrvis’,’lrvis’,’rlvis’,’llvis’)</li>
+<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘time’, return phases in a list of equal time arrays,
+if ‘all’, return all phases in a single array</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of bispectra,
+if ‘max’ return all bispectra up to reordering</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag baselines shorter than this before forming closure quantities</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag bispectra with snr lower than this</li>
 </ul>
 </td>
 </tr>
@@ -628,15 +568,15 @@ if &#8216;max&#8217; return all bispectra up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 1 name</li>
-<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 2 name</li>
-<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 3 name</li>
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble bispectra
-(&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag bispectra with snr lower than this</li>
-<li><strong>bs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; optionally pass in the precomputed, time-sorted bispectra</li>
-<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, recompute bispectra instead of using saved data</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 3 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type from which to assemble bispectra
+(‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘UTC’ or ‘GMST’</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag bispectra with snr lower than this</li>
+<li><strong>bs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – optionally pass in the precomputed, time-sorted bispectra</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, recompute bispectra instead of using saved data</li>
 </ul>
 </td>
 </tr>
@@ -658,11 +598,11 @@ if &#8216;max&#8217; return all bispectra up to reordering</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if tlist_out includes conjugate baselines.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True if tlist_out includes conjugate baselines.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of data tables containing baseline-partitioned data</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -677,20 +617,53 @@ if &#8216;max&#8217; return all bispectra up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble closure amplitudes
-(&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
-<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return amplitudes in a list of equal time arrays,
-if &#8216;all&#8217;, return all amplitudes in a single array</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of amplitudes,
-if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type from which to assemble closure amplitudes
+(‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The closure amplitude type (‘camp’ or ‘logcamp’)</li>
+<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘time’, return amplitudes in a list of equal time arrays,
+if ‘all’, return all amplitudes in a single array</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of amplitudes,
+if ‘max’ return all closure amplitudes up to inverses</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the closure amplitude</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A recarray of the closure amplitudes with datatype DTCAMP</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(numpy.recarry)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.c_log_amplitudes_diag">
+<code class="descname">c_log_amplitudes_diag</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>mode='all'</em>, <em>count='min'</em>, <em>debias=True</em>, <em>timetype=False</em>, <em>snrcut=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.c_log_amplitudes_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.c_log_amplitudes_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a recarray of the equal time diagonalized log closure amplitudes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type (‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)
+From which to assemble closure amplitudes</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The closure amplitude type (‘camp’ or ‘logcamp’)</li>
+<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘time’, return amplitudes in a list of equal time arrays,
+If ‘all’, return all amplitudes in a single array</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of amplitudes,
+If ‘max’ return all closure amplitudes up to inverses</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the closure amplitude -
+The individual visibility amplitudes are always debiased.</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A recarray of diagonalized closure amps with datatype DTLOGCAMPDIAG</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(numpy.recarry)</p>
@@ -709,20 +682,55 @@ if &#8216;max&#8217; return all closure amplitudes up to inverses</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble closure phases
-(&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;time&#8217;, return phases in a list of equal time arrays,
-if &#8216;all&#8217;, return all phases in a single array</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, return minimal set of phases,
-if &#8216;max&#8217; return all closure phases up to reordering</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;deg&#8217;, return closure phases in degrees, else return in radians</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
-<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag baselines shorter than this before forming closure quantities</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag bispectra with snr lower than this</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type from which to assemble closure phases
+(‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)</li>
+<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘time’, return phases in a list of equal time arrays,
+if ‘all’, return all phases in a single array</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of phases,
+if ‘max’ return all closure phases up to reordering</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘deg’, return closure phases in degrees, else return in radians</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘UTC’ or ‘GMST’</li>
+<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag baselines shorter than this before forming closure quantities</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag bispectra with snr lower than this</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A recarray of the closure phases with datatype DTCPHASE</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(numpy.recarry)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="ehtim.obsdata.Obsdata.c_phases_diag">
+<code class="descname">c_phases_diag</code><span class="sig-paren">(</span><em>vtype='vis'</em>, <em>count='min'</em>, <em>ang_unit='deg'</em>, <em>timetype=False</em>, <em>uv_min=False</em>, <em>snrcut=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.c_phases_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.c_phases_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a recarray of the equal time diagonalized closure phases.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type (‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)
+from which to assemble closure phases</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, return minimal set of phases,
+If ‘min-cut0bl’ return minimal set after flaggin zero-baselines</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘deg’, return closure phases in degrees, else return in radians</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘UTC’ or ‘GMST’</li>
+<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag baselines shorter than this before forming closure quantities</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag bispectra with snr lower than this</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>A recarray of diagonalized closure phases (datatype DTCPHASEDIAG),</dt>
+<dd><p class="first last">along with associated triangles and transformation matrices</p>
+</dd>
+</dl>
+</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(numpy.recarry)</p>
@@ -741,18 +749,18 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 1 name</li>
-<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 2 name</li>
-<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 3 name</li>
-<li><strong>site4</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 4 name</li>
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble closure amplitudes
-(&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
-<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;UTC&#8217; or &#8216;GMST&#8217;</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
-<li><strong>camps</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; optionally pass in the time-sorted, precomputed camps</li>
-<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using saved data</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 3 name</li>
+<li><strong>site4</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 4 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type from which to assemble closure amplitudes
+(‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The closure amplitude type (‘camp’ or ‘logcamp’)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the closure amplitude</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘UTC’ or ‘GMST’</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
+<li><strong>camps</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – optionally pass in the time-sorted, precomputed camps</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, do not use save closure amplitude data</li>
 </ul>
 </td>
 </tr>
@@ -775,29 +783,29 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>im_or_mov</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a><em> or </em><a class="reference internal" href="movie.html#ehtim.movie.Movie" title="ehtim.movie.Movie"><em>Movie</em></a>) &#8211; image or movie object on which to test chi^2</li>
-<li><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; data type of chi^2 (e.g., &#8216;vis&#8217;, &#8216;amp&#8217;, &#8216;bs&#8217;, &#8216;cphase&#8217;)</li>
-<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; polarization type (&#8216;I&#8217;, &#8216;Q&#8217;, &#8216;U&#8217;, &#8216;V&#8217;, &#8216;LL&#8217;, &#8216;RR&#8217;, &#8216;LR&#8217;, or &#8216;RL&#8217;</li>
-<li><strong>mask</strong> (<em>arr</em>) &#8211; mask of same dimension as im.imvec</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
-<li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to (fft_pad_factor * image size) in FFT</li>
-<li><strong>conv_func</strong> (<em>'str'</em>) &#8211; The convolving function for gridding; &#8216;gaussian&#8217;, &#8216;pill&#8217;,&#8217;cubic&#8217;</li>
-<li><strong>p_rad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The pixel radius for the convolving function</li>
-<li><strong>order</strong> (<em>'str'</em>) &#8211; Interpolation order for sampling the FFT</li>
-<li><strong>systematic_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; adds a fractional systematic noise tolerance to sigmas</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; a  snr cutoff for including data in the chi^2 sum</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True then apply debiasing to amplitudes/closure amplitudes</li>
-<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;natural&#8217; or &#8216;uniform&#8217;</li>
-<li><strong>systematic_cphase_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; a value in degrees to add to the closure phase sigmas</li>
-<li><strong>cp_uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag baselines shorter than this before forming closure quantities</li>
-<li><strong>maxset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, use maximal set instead of minimal for closure quantities</li>
+<li><strong>im_or_mov</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a><em> or </em><a class="reference internal" href="movie.html#ehtim.movie.Movie" title="ehtim.movie.Movie"><em>Movie</em></a>) – image or movie object on which to test chi^2</li>
+<li><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – data type of chi^2 (e.g., ‘vis’, ‘amp’, ‘bs’, ‘cphase’)</li>
+<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – polarization type (‘I’, ‘Q’, ‘U’, ‘V’, ‘LL’, ‘RR’, ‘LR’, or ‘RL’</li>
+<li><strong>mask</strong> (<em>arr</em>) – mask of same dimension as im.imvec</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – “fast” or “nfft” or “direct”</li>
+<li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – zero pad the image to (fft_pad_factor * image size) in FFT</li>
+<li><strong>conv_func</strong> (<em>'str'</em>) – The convolving function for gridding; ‘gaussian’, ‘pill’,’cubic’</li>
+<li><strong>p_rad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – The pixel radius for the convolving function</li>
+<li><strong>order</strong> (<em>'str'</em>) – Interpolation order for sampling the FFT</li>
+<li><strong>systematic_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – adds a fractional systematic noise tolerance to sigmas</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – a  snr cutoff for including data in the chi^2 sum</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True then apply debiasing to amplitudes/closure amplitudes</li>
+<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘natural’ or ‘uniform’</li>
+<li><strong>systematic_cphase_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – a value in degrees to add to closure phase sigmas</li>
+<li><strong>cp_uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag short baselines before forming closure quantities</li>
+<li><strong>maxset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, use maximal set instead of minimal for closure quantities</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">image chi^2</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a>)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -813,9 +821,9 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The pixel size of the square output image.</li>
-<li><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The field of view of the square output image in radians.</li>
-<li><strong>pulse</strong> (<em>function</em>) &#8211; The function convolved with the pixel values for continuous image.</li>
+<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – The pixel size of the square output image.</li>
+<li><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – The field of view of the square output image in radians.</li>
+<li><strong>pulse</strong> (<em>function</em>) – The function convolved with the pixel values for continuous image.</li>
 </ul>
 </td>
 </tr>
@@ -855,16 +863,16 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 1 name</li>
-<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 2 name</li>
-<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 3 name</li>
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble closure phases
-(&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;deg&#8217;, return closure phases in degrees, else return in radians</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag bispectra with snr lower than this</li>
-<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; optionally pass in the precomputed time-sorted cphases</li>
-<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using saved data</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 3 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type from which to assemble closure phases
+(‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘deg’, return closure phases in degrees, else return in radians</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag bispectra with snr lower than this</li>
+<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – optionally pass in the precomputed time-sorted cphases</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, do not use save closure phase tables</li>
 </ul>
 </td>
 </tr>
@@ -921,10 +929,10 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The pixel size of the square output image.</li>
-<li><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The field of view of the square output image in radians.</li>
-<li><strong>pulse</strong> (<em>function</em>) &#8211; The function convolved with the pixel values for continuous image.</li>
-<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;uniform&#8217; or &#8216;natural&#8217;</li>
+<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – The pixel size of the square output image.</li>
+<li><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – The field of view of the square output image in radians.</li>
+<li><strong>pulse</strong> (<em>function</em>) – The function convolved with the pixel values for continuous image.</li>
+<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘uniform’ or ‘natural’</li>
 </ul>
 </td>
 </tr>
@@ -947,10 +955,10 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The pixel size of the square output image.</li>
-<li><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The field of view of the square output image in radians.</li>
-<li><strong>pulse</strong> (<em>function</em>) &#8211; The function convolved with the pixel values for continuous image.</li>
-<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;uniform&#8217; or &#8216;natural&#8217;</li>
+<li><strong>npix</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – The pixel size of the square output image.</li>
+<li><strong>fov</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – The field of view of the square output image in radians.</li>
+<li><strong>pulse</strong> (<em>function</em>) – The function convolved with the pixel values for continuous image.</li>
+<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘uniform’ or ‘natural’</li>
 </ul>
 </td>
 </tr>
@@ -969,28 +977,28 @@ if &#8216;max&#8217; return all closure phases up to reordering</li>
 <code class="descname">estimate_noise_rescale_factor</code><span class="sig-paren">(</span><em>max_diff_sec=0.0</em>, <em>min_num=10</em>, <em>median_snr_cut=0</em>, <em>count='max'</em>, <em>vtype='vis'</em>, <em>print_std=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.estimate_noise_rescale_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.estimate_noise_rescale_factor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Estimate a constant noise rescaling factor on all baselines, times, and polarizations.
 Uses pairwise differences of closure phases relative to the expected scatter.
-This is useful for AIPS data, which has a missing factor relating &#8216;weights&#8217; to noise.</p>
+This is useful for AIPS data, which has a missing factor relating ‘weights’ to noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>max_diff_sec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The maximum difference of adjacent closure phases (in seconds)
-If 0, auto-estimates this value to twice the median scan length.</li>
-<li><strong>min_num</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The minimum number of closure phase differences for a triangle
+<li><strong>max_diff_sec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – The maximum difference of adjacent closure phases (in seconds)
+If 0, auto-estimates to twice the median scan length.</li>
+<li><strong>min_num</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – The minimum number of closure phase differences for a triangle
 to be included in the set of estimators.</li>
-<li><strong>median_snr_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Do not include a triangle if its median SNR is below this</li>
-<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; If &#8216;min&#8217;, use minimal set of phases,
-if &#8216;max&#8217; use all closure phases up to reordering</li>
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Visibility type (e.g., &#8216;vis&#8217;, &#8216;llvis&#8217;, &#8216;rrvis&#8217;, etc.)</li>
-<li><strong>print_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Whether or not to print the std dev. for each closure triangle.</li>
+<li><strong>median_snr_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Do not include a triangle if its median SNR is below this</li>
+<li><strong>count</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – If ‘min’, use minimal set of phases,
+if ‘max’ use all closure phases up to reordering</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Visibility type (e.g., ‘vis’, ‘llvis’, ‘rrvis’, etc.)</li>
+<li><strong>print_std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Whether or not to print the std dev. for each closure triangle.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The rescaling factor.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a>)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -1000,7 +1008,7 @@ if &#8216;max&#8217; use all closure phases up to reordering</li>
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.filter_subscan_dropouts">
 <code class="descname">filter_subscan_dropouts</code><span class="sig-paren">(</span><em>perc=0</em>, <em>return_type='rec'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.filter_subscan_dropouts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.filter_subscan_dropouts" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fancy filtration that drops data to ensure that we only average parts with same timestamp.
+<dd><p>Filtration to drop data and ensure that we only average parts with same timestamp.
 Potentially this could reduce risk of non-closing errors.</p>
 <blockquote>
 <div><dl class="docutils">
@@ -1009,7 +1017,7 @@ Potentially this could reduce risk of non-closing errors.</p>
 <dt>perc (float): drop baseline from scan if it has less than this fraction</dt>
 <dd>of median baseline observation time during the scan</dd>
 </dl>
-<p class="last">return_type (str): data frame (&#8216;df&#8217;) or recarray (&#8216;rec&#8217;)</p>
+<p class="last">return_type (str): data frame (‘df’) or recarray (‘rec’)</p>
 </dd>
 <dt>Returns:</dt>
 <dd>(Obsdata): a observation object with flagged data points removed</dd>
@@ -1033,16 +1041,16 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;uniform&#8217; or &#8216;natural&#8217;.</li>
-<li><strong>units</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.7)"><em>string</em></a>) &#8211; &#8216;rad&#8217; returns values in radians,
-&#8216;natural&#8217; returns FWHMs in uas and theta in degrees</li>
+<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘uniform’ or ‘natural’.</li>
+<li><strong>units</strong> (<em>string</em>) – ‘rad’ returns values in radians,
+‘natural’ returns FWHMs in uas and theta in degrees</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a tuple (fwhm_maj, fwhm_min, theta) of the dirty beam parameters in radians.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)">tuple</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -1058,16 +1066,16 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; total flux in the fitted gaussian</li>
-<li><strong>fitttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;amp&#8221; to fit to visibilty amplitudes</li>
-<li><strong>paramguess</strong> (<em>tuble</em>) &#8211; initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta)</li>
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – total flux in the fitted gaussian</li>
+<li><strong>fitttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – “amp” to fit to visibilty amplitudes</li>
+<li><strong>paramguess</strong> (<em>tuble</em>) – initial guess of fit Gaussian (fwhm_maj, fwhm_min, theta)</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(fwhm_maj, fwhm_min, theta) of the fit Gaussian parameters in radians.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a>)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.8)">tuple</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -1083,11 +1091,11 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>UT_start_hour</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; start of  time window</li>
-<li><strong>UT_stop_hour</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; end of time window</li>
-<li><strong>flag_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;all&#8217;, &#8216;baseline&#8217;, or  &#8216;station&#8217;</li>
-<li><strong>flag_what</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; baseline or station to flag</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>UT_start_hour</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – start of  time window</li>
+<li><strong>UT_stop_hour</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – end of time window</li>
+<li><strong>flag_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘all’, ‘baseline’, or  ‘station’</li>
+<li><strong>flag_what</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – baseline or station to flag</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1110,10 +1118,10 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The quantity to test for</li>
-<li><strong>max_diff_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The moving window size for testing outliers</li>
-<li><strong>robust_nsigma_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Outliers further than this from the mean are removed</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The quantity to test for</li>
+<li><strong>max_diff_seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – The moving window size for testing outliers</li>
+<li><strong>robust_nsigma_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Outliers further than this from the mean are removed</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1136,8 +1144,8 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; baseline to remove from the data</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – baseline to remove from the data</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1160,9 +1168,9 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>elev_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Minimum elevation (deg)</li>
-<li><strong>elev_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Maximum elevation (deg)</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>elev_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Minimum elevation (deg)</li>
+<li><strong>elev_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Maximum elevation (deg)</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1185,9 +1193,9 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>sigma_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; remove points with sigma higher than  this</li>
-<li><strong>sigma_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; sigma type (sigma, rrsigma, llsigma, etc.)</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>sigma_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – remove points with sigma higher than  this</li>
+<li><strong>sigma_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – sigma type (sigma, rrsigma, llsigma, etc.)</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1210,8 +1218,8 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>max_fractional_pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Maximum fractional polarization</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>max_fractional_pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Maximum fractional polarization</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1234,8 +1242,8 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>snr_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; remove points with snr lower than  this</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>snr_cut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – remove points with snr lower than  this</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1258,8 +1266,8 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of sites to remove from the data</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>sites</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of sites to remove from the data</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1282,9 +1290,9 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; remove points with uvdist less than  this</li>
-<li><strong>uv_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; remove points with uvdist greater than  this</li>
-<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; returns &#8216;kept&#8217;, &#8216;flagged&#8217;, or &#8216;both&#8217; (a dictionary)</li>
+<li><strong>uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – remove points with uvdist less than  this</li>
+<li><strong>uv_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – remove points with uvdist greater than  this</li>
+<li><strong>output</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – returns ‘kept’, ‘flagged’, or ‘both’ (a dictionary)</li>
 </ul>
 </td>
 </tr>
@@ -1306,7 +1314,7 @@ to make the image have a chisq close to the targeted value (1.0)</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flagfile</strong> &#8211; path to csv file with mjds of flagging start / stop time,
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flagfile</strong> – path to csv file with mjds of flagging start / stop time,
 and optionally baseline / stations</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a observation object with flagged data points removed</td>
@@ -1320,7 +1328,7 @@ and optionally baseline / stations</td>
 <dl class="method">
 <dt id="ehtim.obsdata.Obsdata.obsdata_args">
 <code class="descname">obsdata_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.obsdata_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.obsdata_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>&#8220;Copy arguments for making a  new Obsdata into a list and dictonary</p>
+<dd><p>“Copy arguments for making a  new Obsdata into a list and dictonary</p>
 </dd></dl>
 
 <dl class="method">
@@ -1332,25 +1340,25 @@ and optionally baseline / stations</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 1 name</li>
-<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 2 name</li>
-<li><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; y-axis field (from FIELDS)</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias amplitudes.</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
-<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis limits</li>
-<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
-<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; color for scatterplot points</li>
-<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; matplotlib plot marker</li>
-<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; size of plot markers</li>
-<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; plot legend label</li>
-<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot gridlines if True</li>
-<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
-<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
-<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show legend if True</li>
-<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if true</li>
-<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 2 name</li>
+<li><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – y-axis field (from FIELDS)</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias amplitudes.</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – phase unit ‘deg’ or ‘rad’</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) – add plot to this axis</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [xmin, xmax] x-axis limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [ymin, ymax] y-axis limits</li>
+<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – color for scatterplot points</li>
+<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – matplotlib plot marker</li>
+<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – size of plot markers</li>
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – plot legend label</li>
+<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot gridlines if True</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot error bars if True</li>
+<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show axis labels if True</li>
+<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show legend if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Display the plot if true</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to pdf file to save figure</li>
 </ul>
 </td>
 </tr>
@@ -1373,31 +1381,31 @@ and optionally baseline / stations</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 1 name</li>
-<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 2 name</li>
-<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 3 name</li>
-<li><strong>site4</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 4 name</li>
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type  from which to assemble closure amplitudes
-(&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
-<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The closure amplitude type (&#8216;camp&#8217; or &#8216;logcamp&#8217;)</li>
-<li><strong>camps</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; optionally pass in camps so they don&#8217;t have to be recomputed</li>
-<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, recompute camps instead of using stored data</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias the closure amplitude</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; amake_cdd plot to this axis</li>
-<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis limits</li>
-<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
-<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; color for scatterplot points</li>
-<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; matplotlib plot marker</li>
-<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; size of plot markers</li>
-<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; plot legend label</li>
-<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot gridlines if True</li>
-<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
-<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
-<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show legend if True</li>
-<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if True</li>
-<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 3 name</li>
+<li><strong>site4</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 4 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type  from which to assemble closure amplitudes
+(‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The closure amplitude type (‘camp’ or ‘logcamp’)</li>
+<li><strong>camps</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – optionally pass in camps so they don’t have to be recomputed</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, recompute camps instead of using stored data</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias the closure amplitude</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) – amake_cdd plot to this axis</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [xmin, xmax] x-axis limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [ymin, ymax] y-axis limits</li>
+<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – color for scatterplot points</li>
+<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – matplotlib plot marker</li>
+<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – size of plot markers</li>
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – plot legend label</li>
+<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot gridlines if True</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot error bars if True</li>
+<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show axis labels if True</li>
+<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show legend if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Display the plot if True</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to pdf file to save figure</li>
 </ul>
 </td>
 </tr>
@@ -1420,29 +1428,29 @@ and optionally baseline / stations</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 1 name</li>
-<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 2 name</li>
-<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; station 3 name</li>
-<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; The visibilty type from which to assemble closure phases
-(&#8216;vis&#8217;,&#8217;qvis&#8217;,&#8217;uvis&#8217;,&#8217;vvis&#8217;,&#8217;pvis&#8217;)</li>
-<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; optionally pass in the prcomputed, time-sorted closure phases</li>
-<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, recompute closure phases instead of using stored data</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
-<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis limits</li>
-<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
-<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; color for scatterplot points</li>
-<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; matplotlib plot marker</li>
-<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; size of plot markers</li>
-<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; plot legend label</li>
-<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot gridlines if True</li>
-<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
-<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
-<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show legend if True</li>
-<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if True</li>
-<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 1 name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 2 name</li>
+<li><strong>site3</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – station 3 name</li>
+<li><strong>vtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The visibilty type from which to assemble closure phases
+(‘vis’,’qvis’,’uvis’,’vvis’,’pvis’)</li>
+<li><strong>cphases</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – optionally pass in the prcomputed, time-sorted closure phases</li>
+<li><strong>force_recompute</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, do not use stored closure phase able</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – phase unit ‘deg’ or ‘rad’</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) – add plot to this axis</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [xmin, xmax] x-axis limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [ymin, ymax] y-axis limits</li>
+<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – color for scatterplot points</li>
+<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – matplotlib plot marker</li>
+<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – size of plot markers</li>
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – plot legend label</li>
+<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot gridlines if True</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot error bars if True</li>
+<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show axis labels if True</li>
+<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show legend if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Display the plot if True</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to pdf file to save figure</li>
 </ul>
 </td>
 </tr>
@@ -1465,27 +1473,27 @@ and optionally baseline / stations</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>field1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; x-axis field (from FIELDS)</li>
-<li><strong>field2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; y-axis field (from FIELDS)</li>
-<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot conjuage baseline data points if True</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, debias amplitudes.</li>
-<li><strong>tag_bl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, label each baseline</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; phase unit &#8216;deg&#8217; or &#8216;rad&#8217;</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217;</li>
-<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) &#8211; add plot to this axis</li>
-<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [xmin, xmax] x-axis limits</li>
-<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; [ymin, ymax] y-axis limits</li>
-<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; color for scatterplot points</li>
-<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; matplotlib plot marker</li>
-<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; size of plot markers</li>
-<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; plot legend label</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag closure amplitudes with snr lower than this</li>
-<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot gridlines if True</li>
-<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Plot error bars if True</li>
-<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show axis labels if True</li>
-<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Show legend if True</li>
-<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Display the plot if true</li>
-<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to pdf file to save figure</li>
+<li><strong>field1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – x-axis field (from FIELDS)</li>
+<li><strong>field2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – y-axis field (from FIELDS)</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot conjuage baseline data points if True</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, debias amplitudes.</li>
+<li><strong>tag_bl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, label each baseline</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – phase unit ‘deg’ or ‘rad’</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’</li>
+<li><strong>axis</strong> (<em>matplotlib.axes.Axes</em>) – add plot to this axis</li>
+<li><strong>rangex</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [xmin, xmax] x-axis limits</li>
+<li><strong>rangey</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – [ymin, ymax] y-axis limits</li>
+<li><strong>color</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – color for scatterplot points</li>
+<li><strong>marker</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – matplotlib plot marker</li>
+<li><strong>markersize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – size of plot markers</li>
+<li><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – plot legend label</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag closure amplitudes with snr lower than this</li>
+<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot gridlines if True</li>
+<li><strong>ebar</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Plot error bars if True</li>
+<li><strong>axislabels</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show axis labels if True</li>
+<li><strong>legend</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Show legend if True</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Display the plot if true</li>
+<li><strong>export_pdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to pdf file to save figure</li>
 </ul>
 </td>
 </tr>
@@ -1508,30 +1516,30 @@ and optionally baseline / stations</td>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) &#8211; image to test polarimetric chi^2</li>
-<li><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; data type of polarimetric chi^2 (&#8216;pvis&#8217;,&#8217;m&#8217;,&#8217;pbs&#8217;)</li>
-<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; polarization type (&#8216;I&#8217;, &#8216;Q&#8217;, &#8216;U&#8217;, &#8216;V&#8217;, &#8216;LL&#8217;, &#8216;RR&#8217;, &#8216;LR&#8217;, or &#8216;RL&#8217;</li>
-<li><strong>mask</strong> (<em>arr</em>) &#8211; mask of same dimension as im.imvec</li>
-<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8220;fast&#8221; or &#8220;nfft&#8221; or &#8220;direct&#8221;</li>
-<li><strong>pol_prim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;amp_phase&#8221; I,m,chi &#8220;qu&#8221; for IQU, &#8220;qu_frac&#8221; for I,Q/I,U/I</li>
-<li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; zero pad the image to (fft_pad_factor * image size) in FFT</li>
-<li><strong>conv_func</strong> (<em>'str'</em>) &#8211; The convolving function for gridding; &#8216;gaussian&#8217;, &#8216;pill&#8217;,&#8217;cubic&#8217;</li>
-<li><strong>p_rad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; The pixel radius for the convolving function</li>
-<li><strong>order</strong> (<em>'str'</em>) &#8211; Interpolation order for sampling the FFT</li>
-<li><strong>systematic_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; adds a fractional systematic noise tolerance to sigmas</li>
-<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; a  snr cutoff for including data in the chi^2 sum</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True then apply debiasing to amplitudes/closure amplitudes</li>
-<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;natural&#8217; or &#8216;uniform&#8217;</li>
-<li><strong>systematic_cphase_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; a value in degrees to add to the closure phase sigmas</li>
-<li><strong>cp_uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; flag baselines shorter than this before forming closure quantities</li>
-<li><strong>maxset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; if True, use maximal set instead of minimal for closure quantities</li>
+<li><strong>im</strong> (<a class="reference internal" href="image.html#ehtim.image.Image" title="ehtim.image.Image"><em>Image</em></a>) – image to test polarimetric chi^2</li>
+<li><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – data type of polarimetric chi^2 (‘pvis’,’m’,’pbs’)</li>
+<li><strong>pol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – polarization type (‘I’, ‘Q’, ‘U’, ‘V’, ‘LL’, ‘RR’, ‘LR’, or ‘RL’</li>
+<li><strong>mask</strong> (<em>arr</em>) – mask of same dimension as im.imvec</li>
+<li><strong>ttype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – if “fast” or “nfft” or “direct”</li>
+<li><strong>pol_prim</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – “amp_phase” I,m,chi “qu” for IQU, “qu_frac” for I,Q/I,U/I</li>
+<li><strong>fft_pad_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – zero pad the image to (fft_pad_factor * image size) in FFT</li>
+<li><strong>conv_func</strong> (<em>'str'</em>) – The convolving function for gridding; ‘gaussian’, ‘pill’,’cubic’</li>
+<li><strong>p_rad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – The pixel radius for the convolving function</li>
+<li><strong>order</strong> (<em>'str'</em>) – Interpolation order for sampling the FFT</li>
+<li><strong>systematic_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – adds a fractional systematic noise tolerance to sigmas</li>
+<li><strong>snrcut</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – a  snr cutoff for including data in the chi^2 sum</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True then apply debiasing to amplitudes/closure amplitudes</li>
+<li><strong>weighting</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘natural’ or ‘uniform’</li>
+<li><strong>systematic_cphase_noise</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – value in degrees to add to closure phase sigmas</li>
+<li><strong>cp_uv_min</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – flag short baselines before forming closure quantities</li>
+<li><strong>maxset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – if True, use maximal set instead of minimal for closure quantities</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">image chi^2</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a>)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -1590,7 +1598,7 @@ and optionally baseline / stations</td>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">normal array resolution in radians</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)">float</a>)</td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1600,12 +1608,12 @@ and optionally baseline / stations</td>
 <dt id="ehtim.obsdata.Obsdata.rescale_noise">
 <code class="descname">rescale_noise</code><span class="sig-paren">(</span><em>noise_rescale_factor=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#Obsdata.rescale_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.Obsdata.rescale_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rescale the thermal noise on all Stokes parameters by a constant factor.
-This is useful for AIPS data, which has a missing factor relating &#8216;weights&#8217; to noise.</p>
+This is useful for AIPS data, which has a missing factor relating ‘weights’ to noise.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>noise_rescale_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; The number to multiple the existing sigmas by.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>noise_rescale_factor</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – The number to multiple the existing sigmas by.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An Obsdata object with the rescaled noise values.</td>
 </tr>
@@ -1624,9 +1632,9 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>totflux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; new total flux to rescale to</li>
-<li><strong>uv_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; maximum baseline length to rescale</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; Debias amplitudes before computing original total flux from short bls</li>
+<li><strong>totflux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – new total flux to rescale to</li>
+<li><strong>uv_max</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – maximum baseline length to rescale</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – Debias amplitudes before computing original total flux from short bls</li>
 </ul>
 </td>
 </tr>
@@ -1648,7 +1656,7 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fwhm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; real space fwhm size of convolution kernel in radian</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fwhm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – real space fwhm size of convolution kernel in radian</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a new reverse-tapered observation object</td>
 </tr>
@@ -1667,8 +1675,8 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>uv_radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; radius in uv-plane to look for nearby points</li>
-<li><strong>weightdist</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; <p>??</p>
+<li><strong>uv_radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – radius in uv-plane to look for nearby points</li>
+<li><strong>weightdist</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – <p>??</p>
 </li>
 </ul>
 </td>
@@ -1692,8 +1700,8 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to output text file</li>
-<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; normalization total flux</li>
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to output text file</li>
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – normalization total flux</li>
 </ul>
 </td>
 </tr>
@@ -1709,7 +1717,7 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to output text file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to output text file</td>
 </tr>
 </tbody>
 </table>
@@ -1724,9 +1732,9 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to output text file</li>
-<li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; if &#8216;R&#8217; or &#8216;L&#8217;, will interpret stokes I field as &#8216;RR&#8217; or &#8216;LL&#8217;</li>
-<li><strong>polrep_out</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;circ&#8217; or &#8216;stokes&#8217;: how data should be stored in the uvfits file</li>
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to output text file</li>
+<li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – if ‘R’ or ‘L’, will interpret stokes I field as ‘RR’ or ‘LL’</li>
+<li><strong>polrep_out</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘circ’ or ‘stokes’: how data should be stored in the uvfits file</li>
 </ul>
 </td>
 </tr>
@@ -1762,7 +1770,7 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of single-scan Obsdata objects</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1777,11 +1785,11 @@ This is useful for AIPS data, which has a missing factor relating &#8216;weights
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>polrep_out</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; the polrep of the output data</li>
-<li><strong>allow_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If True, treat single-polarization data as Stokes I
-when converting from &#8216;circ&#8217; polrep to &#8216;stokes&#8217;</li>
-<li><strong>singlepol_hand</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;R&#8217; or &#8216;L&#8217;; determines which parallel-hand is assumed
-when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present</li>
+<li><strong>polrep_out</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – the polrep of the output data</li>
+<li><strong>allow_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If True, treat single-polarization data as Stokes I
+when converting from ‘circ’ polrep to ‘stokes’</li>
+<li><strong>singlepol_hand</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘R’ or ‘L’; determines which parallel-hand is assumed
+when converting ‘stokes’ to ‘circ’ if only I is present</li>
 </ul>
 </td>
 </tr>
@@ -1803,7 +1811,7 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8220;UTC&#8221; or &#8220;GMST&#8221;</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – “UTC” or “GMST”</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">new Obsdata object with potentially different timetype</td>
 </tr>
@@ -1821,7 +1829,7 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fwhm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; real space fwhm size of convolution kernel in radian</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fwhm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – real space fwhm size of convolution kernel in radian</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a new tapered observation object</td>
 </tr>
@@ -1840,16 +1848,16 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if tlist_out includes conjugate baselines.</li>
-<li><strong>t_gather</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; Grouping timescale (in seconds). 0.0 indicates no grouping.</li>
-<li><strong>scan_gather</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; If true, gather data into scans</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True if tlist_out includes conjugate baselines.</li>
+<li><strong>t_gather</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – Grouping timescale (in seconds). 0.0 indicates no grouping.</li>
+<li><strong>scan_gather</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – If true, gather data into scans</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a list of data tables containing time-partitioned data</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>)</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)">list</a>)</p>
 </td>
 </tr>
 </tbody>
@@ -1865,13 +1873,13 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of unpacked quantities from availalbe quantities in FIELDS</li>
-<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;all&#8217; returns all data in single table,
-&#8216;time&#8217; groups output by equal time, &#8216;bl&#8217; groups by baseline</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
-<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to include conjugate baselines</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217; changes what is returned for &#8216;time&#8217;</li>
+<li><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of unpacked quantities from availalbe quantities in FIELDS</li>
+<li><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘all’ returns all data in single table,
+‘time’ groups output by equal time, ‘bl’ groups by baseline</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘deg’ for degrees and ‘rad’ for radian phases</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True to debias visibility amplitudes</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True to include conjugate baselines</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’ changes what is returned for ‘time’</li>
 </ul>
 </td>
 </tr>
@@ -1894,12 +1902,12 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; First site name</li>
-<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; Second site name</li>
-<li><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of unpacked quantities from available quantities in FIELDS</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217; changes what is returned for &#8216;time&#8217;</li>
+<li><strong>site1</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – First site name</li>
+<li><strong>site2</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – Second site name</li>
+<li><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of unpacked quantities from available quantities in FIELDS</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘deg’ for degrees and ‘rad’ for radian phases</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True to debias visibility amplitudes</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’ changes what is returned for ‘time’</li>
 </ul>
 </td>
 </tr>
@@ -1922,12 +1930,12 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>data</strong> (<em>numpy.recarray</em>) &#8211; data recarray of format DTPOL_STOKES or DTPOL_CIRC</li>
-<li><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of unpacked quantities from availalbe quantities in FIELDS</li>
-<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to include conjugate baselines</li>
-<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;deg&#8217; for degrees and &#8216;rad&#8217; for radian phases</li>
-<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True to debias visibility amplitudes</li>
-<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; &#8216;GMST&#8217; or &#8216;UTC&#8217; changes what is returned for &#8216;time&#8217;</li>
+<li><strong>data</strong> (<em>numpy.recarray</em>) – data recarray of format DTPOL_STOKES or DTPOL_CIRC</li>
+<li><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of unpacked quantities from availalbe quantities in FIELDS</li>
+<li><strong>conj</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True to include conjugate baselines</li>
+<li><strong>ang_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘deg’ for degrees and ‘rad’ for radian phases</li>
+<li><strong>debias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True to debias visibility amplitudes</li>
+<li><strong>timetype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘GMST’ or ‘UTC’ changes what is returned for ‘time’</li>
 </ul>
 </td>
 </tr>
@@ -1952,16 +1960,16 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>arrfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input array file</li>
-<li><strong>obsspec</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input obs spec file</li>
-<li><strong>ifile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input Stokes I data file</li>
-<li><strong>qfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input Stokes Q data file</li>
-<li><strong>ufile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input Stokes U data file</li>
-<li><strong>vfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input Stokes V data file</li>
-<li><strong>src</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; source name</li>
-<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) &#8211; integer observation  MJD</li>
-<li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if amplitude calibrated</li>
-<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; True if phase calibrated</li>
+<li><strong>arrfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input array file</li>
+<li><strong>obsspec</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input obs spec file</li>
+<li><strong>ifile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input Stokes I data file</li>
+<li><strong>qfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input Stokes Q data file</li>
+<li><strong>ufile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input Stokes U data file</li>
+<li><strong>vfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input Stokes V data file</li>
+<li><strong>src</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – source name</li>
+<li><strong>mjd</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><em>int</em></a>) – integer observation  MJD</li>
+<li><strong>ampcal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True if amplitude calibrated</li>
+<li><strong>phasecal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True if phase calibrated</li>
 </ul>
 </td>
 </tr>
@@ -1984,8 +1992,8 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) &#8211; path to input text file</li>
-<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) &#8211; normalization total flux</li>
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input text file</li>
+<li><strong>flux</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><em>float</em></a>) – normalization total flux</li>
 </ul>
 </td>
 </tr>
@@ -2002,18 +2010,22 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <dl class="function">
 <dt id="ehtim.obsdata.load_txt">
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">load_txt</code><span class="sig-paren">(</span><em>fname</em>, <em>polrep='stokes'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_txt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_txt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read an observation from a text file.
-:param fname: path to input text file
-:type fname: str
-:param polrep: load data as either &#8216;stokes&#8217; or &#8216;circ&#8217;
-:type polrep: str</p>
+<dd><p>Read an observation from a text file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input text file</li>
+<li><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – load data as either ‘stokes’ or ‘circ’</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Obsdata object loaded from file</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -2022,28 +2034,27 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <dl class="function">
 <dt id="ehtim.obsdata.load_uvfits">
 <code class="descclassname">ehtim.obsdata.</code><code class="descname">load_uvfits</code><span class="sig-paren">(</span><em>fname</em>, <em>flipbl=False</em>, <em>remove_nan=False</em>, <em>force_singlepol=None</em>, <em>channel=&lt;built-in function all&gt;</em>, <em>IF=&lt;built-in function all&gt;</em>, <em>polrep='stokes'</em>, <em>allow_singlepol=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ehtim/obsdata.html#load_uvfits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ehtim.obsdata.load_uvfits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load observation data from a uvfits file.
-:param fname: path to input text file
-:type fname: str
-:param flipbl: flip baseline phases if True.
-:type flipbl: bool
-:param remove_nan: True to remove nans from missing polarizations
-:type remove_nan: bool
-:param polrep: load data as either &#8216;stokes&#8217; or &#8216;circ&#8217;
-:type polrep: str
-:param force_singlepol: &#8216;R&#8217; or &#8216;L&#8217; to load only 1 polarization
-:type force_singlepol: str
-:param channel: list of channels to average in the import. channel=all averages all
-:type channel: list
-:param IF: list of IFs to  average in  the import. IF=all averages all IFS
-:type IF: list</p>
+<dd><p>Load observation data from a uvfits file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Obsdata object loaded from file</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – path to input text file</li>
+<li><strong>flipbl</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – flip baseline phases if True.</li>
+<li><strong>remove_nan</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – True to remove nans from missing polarizations</li>
+<li><strong>polrep</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – load data as either ‘stokes’ or ‘circ’</li>
+<li><strong>force_singlepol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – ‘R’ or ‘L’ to load only 1 polarization</li>
+<li><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of channels to average in the import. channel=all averages all</li>
+<li><strong>IF</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of IFs to  average in  the import. IF=all averages all IFS</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Obsdata object loaded from file</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">obs (<a class="reference internal" href="#ehtim.obsdata.Obsdata" title="ehtim.obsdata.Obsdata">Obsdata</a>)</p>
+</td>
 </tr>
 </tbody>
 </table>
@@ -2058,8 +2069,8 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>obs_List</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) &#8211; list of split observation Obsdata objects.</li>
-<li><strong>force_merge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) &#8211; forces the observations to merge even if parameters are different</li>
+<li><strong>obs_List</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.8)"><em>list</em></a>) – list of split observation Obsdata objects.</li>
+<li><strong>force_merge</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a>) – forces the observations to merge even if parameters are different</li>
 </ul>
 </td>
 </tr>
@@ -2129,7 +2140,7 @@ when converting &#8216;stokes&#8217; to &#8216;circ&#8217; if only I is present<
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
 
   
 
