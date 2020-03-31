@@ -47,8 +47,8 @@ import ehtim.const_def as ehc
 EP = 1.e-16
 BIG = 1./EP
 
-IMSIZE = 250*ehc.RADPERUAS  # FOV of resampled image (muas)
-NPIX = 128             # pixels in resampled image
+IMSIZE = 160*ehc.RADPERUAS #250*ehc.RADPERUAS  # FOV of resampled image (muas)
+NPIX = 160      #128             # pixels in resampled image
 
 NRAYS = 360       # number of angular rays in final profile
 NRS = 100         # number of radial points in final profile
@@ -56,8 +56,8 @@ NRS = 100         # number of radial points in final profile
 RMAX = 50               # maximum radius in every profile slice (muas)
 RMIN = 5         # radius threshold for averaging inside ring (muas)
 
-RPRIOR_MIN = 5.   # minimum radius for search (muas)
-RPRIOR_MAX = 60.  # maximum radius for search (muas)
+RPRIOR_MIN = 15. #5.   # minimum radius for search (muas)
+RPRIOR_MAX = 50. #60.  # maximum radius for search (muas)
 NRAYS_SEARCH = 25  # number of angular rays in search profiles
 NRS_SEARCH = 50   # number of radial points in search profiles
 THRESH = 0.05     # thresholding level for the images in the search
@@ -289,7 +289,8 @@ class Profiles(object):
         self.RingAsymPol = (0.,0.)
         if len(self.im.qvec) > 0 and len(self.im.uvec) > 0:
             pvec = np.sqrt(self.im.qvec**2 + self.im.uvec**2)
-        
+            pvec_C = (self.im.qvec + 1j*self.im.uvec)
+
             ringanglesPol = []
             ringasymsPol = []
             for i in range(self.lhloc, self.rhloc+1):
@@ -320,11 +321,15 @@ class Profiles(object):
             # combine masks and get the bright and dim pol flux
             maskvec_brighthalf = maskvec_annulus * maskvec_ang
             maskvec_dimhalf = maskvec_annulus * ~maskvec_ang
+            #maskvec_brighthalf = maskvec_ang
+            #maskvec_dimhalf = ~maskvec_ang
 
             # calculate polarized asymmetry /  birghtness ratio
+            brightflux_pol_C = np.abs(np.sum(pvec_C[(maskvec_brighthalf)]))
+            dimflux_pol_C = np.abs(np.sum(pvec_C[(maskvec_dimhalf)]))
             brightflux_pol = np.sum(pvec[(maskvec_brighthalf)])
             dimflux_pol = np.sum(pvec[(maskvec_dimhalf)])
-            self.RingAsymPol = ((brightflux_pol-dimflux_pol)/(brightflux_pol+dimflux_pol), 
+            self.RingAsymPol = ((brightflux_pol_C/dimflux_pol_C), 
                                  brightflux_pol/dimflux_pol)
 
 
@@ -899,8 +904,8 @@ def FindProfileSingle(imname, postprocdir,
             f.write('ring_angle_pol ' + str(pp.RingAnglePol[0]) + '\n')
             f.write('ring_angle_pol_sigma ' + str(pp.RingAnglePol[1]) + '\n')
 
-            f.write('ring_asym_pol ' + str(pp.RingAsymPol[0]) + '\n')
-            f.write('ring_brighthalf_over_dimhalf_pol ' + str(pp.RingAsymPol[1]) + '\n')
+            f.write('ring_pol_ratio_p ' + str(pp.RingAsymPol[0]) + '\n')
+            f.write('ring_pol_ratio_m ' + str(pp.RingAsymPol[1]) + '\n')
 
             f.close()
 

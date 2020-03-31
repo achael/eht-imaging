@@ -3402,7 +3402,7 @@ class Image(object):
                 ax = plt.subplot2grid((2, 5), (0, 0))
                 im = plt.imshow(p, cmap=plt.get_cmap('bwr'), interpolation=interp,
                                 vmin=-maxval, vmax=maxval)
-                plt.contour(imarr, colors='k', linewidth=.25)
+                plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 if has_title:
@@ -3430,7 +3430,7 @@ class Image(object):
                 ax = plt.subplot2grid((2, 5), (1, 0))
                 plt.imshow(qarr, cmap=plt.get_cmap('bwr'), interpolation=interp,
                            vmin=-maxval, vmax=maxval)
-                plt.contour(imarr, colors='k', linewidth=.25)
+                plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 if has_title:
@@ -3440,7 +3440,7 @@ class Image(object):
                 ax = plt.subplot2grid((2, 5), (1, 1))
                 plt.imshow(uarr, cmap=plt.get_cmap('bwr'), interpolation=interp,
                            vmin=-maxval, vmax=maxval)
-                plt.contour(imarr, colors='k', linewidth=.25)
+                plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 if has_title:
@@ -3452,7 +3452,7 @@ class Image(object):
                                 vmin=-1, vmax=1)
                 if has_title:
                     plt.title('V/I')
-                plt.contour(imarr, colors='k', linewidth=.25)
+                plt.contour(imarr, colors='k', linewidths=.25)
                 ax.set_xticks([])
                 ax.set_yticks([])
                 if has_cbar:
@@ -3473,7 +3473,7 @@ class Image(object):
                 ax.set_yticks([])
                 if has_title:
                     plt.title('m')
-                plt.contour(imarr, colors='k', linewidth=.25)
+                plt.contour(imarr, colors='k', linewidths=.25)
                 plt.quiver(x, y, a, b,
                            headaxislength=20, headwidth=1, headlength=.01, minlength=0, minshaft=1,
                            width=.01 * self.xdim, units='x', pivot='mid', color='k', angles='uv',
